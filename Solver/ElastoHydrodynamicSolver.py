@@ -11,7 +11,7 @@ from scipy.linalg import cho_factor
 from scipy.linalg import cho_solve
 import matplotlib.pyplot as plt
 
-def FiniteDiff_operator(w,EltCrack,muPrime,Mesh,InCrack):
+def FiniteDiff_operator_laminar(w,EltCrack,muPrime,Mesh,InCrack):
     
     FinDiffOprtr    = np.zeros((w.size,w.size),dtype=np.float64)
     dx      = Mesh.hx
@@ -33,7 +33,54 @@ def FiniteDiff_operator(w,EltCrack,muPrime,Mesh,InCrack):
 
 
 ######################################
-def MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack,Mesh,dt,Q,C,muPrime,InCrack,LeakOff,sigma0):
+
+def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vxkm1LftEdge,vxkm1RgtEdge,vykm1BtmEdge,vykm1TopEdge,C,sigma0):
+    
+    FinDiffOprtr    = np.zeros((w.size,w.size),dtype=np.float64)
+    dx      = Mesh.hx
+    dy      = Mesh.hy
+    mu      = muPrime/12
+    
+    wLftEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,0]])/2*InCrack[Mesh.NeiElements[EltCrack,0]]
+    wRgtEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,1]])/2*InCrack[Mesh.NeiElements[EltCrack,1]]
+    wBtmEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,2]])/2*InCrack[Mesh.NeiElements[EltCrack,2]]
+    wTopEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,3]])/2*InCrack[Mesh.NeiElements[EltCrack,3]]
+    
+    (dpdxLft,dpdxRgt,dpdyBtm,dpdyTop) = pressure_gradient(w,C,sigma0,Mesh,EltCrack)
+    
+#    ReLftEdge = 4/3 * rho*wLftEdge*vkm1LftEdge/muPrime*12
+#    ReRgtEdge = 4/3 * rho*wRgtEdge*vkm1RgtEdge/muPrime*12
+#    ReBtmEdge = 4/3 * rho*wBtmEdge*vkm1BtmEdge/muPrime*12
+#    ReTopEdge = 4/3 * rho*wTopEdge*vkm1TopEdge/muPrime*12
+    
+    ffLftEdge = 4/3 * 16*mu[EltCrack]/(rho*vxkm1LftEdge*wLftEdge)
+    ffRgtEdge = 4/3 * 16*mu[EltCrack]/(rho*vxkm1RgtEdge*wRgtEdge)
+    ffBtmEdge = 4/3 * 16*mu[EltCrack]/(rho*vykm1BtmEdge*wBtmEdge)
+    ffTopEdge = 4/3 * 16*mu[EltCrack]/(rho*vykm1TopEdge*wTopEdge)
+    
+    VxLft = (wLftEdge/(rho*ffLftEdge)*dpdxLft)**0.5
+    VxRgt = (wRgtEdge/(rho*ffRgtEdge)*dpdxLft)**0.5
+    VyBtm = (wBtmEdge/(rho*ffBtmEdge)*dpdyBtm)**0.5
+    VyTop = (wTopEdge/(rho*ffTopEdge)*dpdyTop)**0.5
+    
+    ffLftEdge = 4/3 * 16*mu[EltCrack]/(rho*VxLft*wLftEdge)
+    ffRgtEdge = 4/3 * 16*mu[EltCrack]/(rho*VxRgt*wRgtEdge)
+    ffBtmEdge = 4/3 * 16*mu[EltCrack]/(rho*VyBtm*wBtmEdge)
+    ffTopEdge = 4/3 * 16*mu[EltCrack]/(rho*VyTop*wTopEdge)
+    
+    FinDiffOprtr[EltCrack,EltCrack] = -(wLftEdge**2/(rho*ffLftEdge*VxLft) + wRgtEdge**2/(rho*ffRgtEdge*VxRgt))/dx**2 - (wBtmEdge**2/(rho*ffBtmEdge*VyBtm) + wTopEdge**2/(rho*ffTopEdge*VyTop))/dy**2
+    FinDiffOprtr[EltCrack,Mesh.NeiElements[EltCrack,0]] = wLftEdge**2/(rho*ffLftEdge*VxLft)/dx**2
+    FinDiffOprtr[EltCrack,Mesh.NeiElements[EltCrack,1]] = wRgtEdge**2/(rho*ffRgtEdge*VxRgt)/dx**2
+    FinDiffOprtr[EltCrack,Mesh.NeiElements[EltCrack,2]] = wBtmEdge**2/(rho*ffBtmEdge*VyBtm)/dy**2
+    FinDiffOprtr[EltCrack,Mesh.NeiElements[EltCrack,3]] = wTopEdge**2/(rho*ffTopEdge*VyTop)/dy**2
+    
+           
+    return (FinDiffOprtr,VxLft,VxRgt,VyBtm,VyTop)
+
+
+######################################
+
+def MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack,Mesh,dt,Q,C,muPrime,rho,InCrack,LeakOff,sigma0,vxkm1Lft,vkm1xRgt,vykm1Btm,vykm1Top):
     
     
     Ccc     = C[np.ix_(EltChannel,EltChannel)]
@@ -46,12 +93,20 @@ def MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCra
     wcNplusOne[EltChannel]  = wcNplusOne[EltChannel]+delwK
     wcNplusOne[EltsTipNew]  = wTip
 
-    cond    = FiniteDiff_operator(wcNplusOne,EltCrack,muPrime,Mesh,InCrack)
+    (FinDiffOprtr,VxLft,VxRgt,VxBtm,VxTop)    = FiniteDiff_operator_turbulent(wcNplusOne,EltCrack,muPrime,Mesh,InCrack,rho,vxkm1Lft,vkm1xRgt,vykm1Btm,vykm1Top,C,sigma0)
+                                                                                
+#    cond    = FiniteDiff_operator_laminar(wcNplusOne,EltCrack,muPrime,Mesh,InCrack)
     
-    condCC  = cond[np.ix_(EltChannel,EltChannel)]
-    condCT  = cond[np.ix_(EltChannel,EltsTipNew)]
-    condTC  = cond[np.ix_(EltsTipNew,EltChannel)]
-    condTT  = cond[np.ix_(EltsTipNew,EltsTipNew)]    
+#    (dpdxLft,dpdxRgt,dpdyBtm,dpdyTop) = pressure_gradient(wcNplusOne,C,sigma0,Mesh)
+#    vxLft = VxbyP_Lft*dpdxLft
+#    vxRgt = VxbyP_Rgt*dpdxRgt
+#    vxBtm = VxbyP_Btm*dpdyBtm
+#    vxTop = VxbyP_Top*dpdyTop
+    
+    condCC  = FinDiffOprtr[np.ix_(EltChannel,EltChannel)]
+    condCT  = FinDiffOprtr[np.ix_(EltChannel,EltsTipNew)]
+    condTC  = FinDiffOprtr[np.ix_(EltsTipNew,EltChannel)]
+    condTT  = FinDiffOprtr[np.ix_(EltsTipNew,EltsTipNew)]    
     
     Channel     = np.arange(EltChannel.size)
     Tip         = Channel.size+np.arange(EltsTipNew.size)
@@ -65,7 +120,7 @@ def MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCra
     S[Channel]  = dt*np.dot(condCC,np.dot(Ccc,wLastTS[EltChannel])+np.dot(Cct,wTip)+sigma0[EltChannel]) + dt/Mesh.hx/Mesh.hy*Q[EltChannel] - LeakOff[EltChannel]/Mesh.hx/Mesh.hy
     S[Tip]      = -(wTip-wLastTS[EltsTipNew]) + dt*np.dot(condTC,np.dot(Ccc,wLastTS[EltChannel])+np.dot(Cct,wTip)+sigma0[EltChannel]) - LeakOff[EltsTipNew]/Mesh.hx/Mesh.hy 
     
-    return (A,S)
+    return (A,S,VxLft,VxRgt,VxBtm,VxTop)
 
 ######################################
 
@@ -73,7 +128,7 @@ def MakeEquationSystemSameFP(delwk,w,EltCrack,NeiElements,Q,myC,dt,EltArea,muPri
     
     wnPlus1 = np.copy(w)
     wnPlus1[EltCrack] = wnPlus1[EltCrack]+delwk
-    con     = FiniteDiff_operator(wnPlus1,EltCrack,muPrime,mesh,InCrack)
+    con     = FiniteDiff_operator_laminar(wnPlus1,EltCrack,muPrime,mesh,InCrack)
     con     = con[np.ix_(EltCrack,EltCrack)]
     CCrack  = myC[np.ix_(EltCrack,EltCrack)]
     
@@ -100,15 +155,16 @@ def ElastoHydrodynamicSolver_SameFP(guess,Tol,w,NeiElements,EltCrack,dt,Q,myC,El
     print('Iterations = '+repr(k)+', exiting norm Picard method= '+repr(norm))    
     return solk
     
-def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipNew,wLastTS,wTip,Mesh,dt,Q,C,muPrime,InCrack,DLeakOff,sigma0):
+def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipNew,wLastTS,wTip,Mesh,dt,Q,C,muPrime,rho,InCrack,DLeakOff,sigma0):
     maxitr  = 100   
     solk    = guess
     k       = 0
     norm    = 1 
+    (vkxLft,vkxRgt,vkyBtm,vkyTop)= velocity(wLastTS,EltCrack_k,Mesh,InCrack,muPrime[EltCrack_k])
     while norm>Tol:
         delwK   = solk[np.arange(EltChannel.size)]
         delwK   = abs(delwK) # Keep the solution positive
-        (A,S)   = MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack_k,Mesh,dt,Q,C,muPrime,InCrack,DLeakOff,sigma0)
+        (A,S,vkxLft,vkxRgt,vkyBtm,vkyTop)   = MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack_k,Mesh,dt,Q,C,muPrime,rho,InCrack,DLeakOff,sigma0,vkxLft,vkxRgt,vkyBtm,vkyTop)
 
 #        (A,S)   = MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack_k,Mesh.NeiElements,dt,Q,C,muPrime,InCrack,Mesh.hx,Mesh.hy)
 #        print('positive definite '+repr(np.linalg.eigvals(A)))
@@ -135,4 +191,28 @@ def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipN
         raise SystemExit('delw sol is not evaluated correctly '+repr(solk))
     print('Iterations = '+repr(k)+', exiting norm Picard method= '+repr(norm))
     return solk
+
+###################################################
+
+def velocity(w,EltCrack,Mesh,InCrack,muPrime):
+    wLftEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,0]])/2*InCrack[Mesh.NeiElements[EltCrack,0]]
+    wRgtEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,1]])/2*InCrack[Mesh.NeiElements[EltCrack,1]]
+    wBtmEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,2]])/2*InCrack[Mesh.NeiElements[EltCrack,2]]
+    wTopEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,3]])/2*InCrack[Mesh.NeiElements[EltCrack,3]]
+    
+    return (wLftEdge**2/muPrime, wRgtEdge**2/muPrime, wBtmEdge**2/muPrime, wTopEdge**2/muPrime)
+
+def pressure_gradient(w,C,sigma0,Mesh,EltCrack):
+    
+    pf          = np.dot(C[np.ix_(EltCrack,EltCrack)],w[EltCrack]) + sigma0
+        
+    dpdxLft     = pf[EltCrack]-pf[Mesh.NeiElements[EltCrack,0]]
+    dpdxRgt     = pf[Mesh.NeiElements[EltCrack,1]]-pf[EltCrack]
+    dpdyBtm     = pf[EltCrack]-pf[Mesh.NeiElements[EltCrack,2]]
+    dpdyTop     = pf[Mesh.NeiElements[EltCrack,3]]-pf[EltCrack]
+    
+    return (dpdxLft,dpdxRgt,dpdyBtm,dpdyTop)
+    
+    
+    
     
