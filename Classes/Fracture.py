@@ -643,6 +643,12 @@ class Fracture(Domain):
             print('Calculating filling fraction of tip elements with new front location...')
             (EltsTipNew, l_k, alpha_k, CellStatus)= TrackFront(sgndDist_k, self.EltChannel, self.mesh)  # gets the new tip elements & \ell_k & alpha_k (also containing the elements which are fully filled after the front is moved outward)
             
+            #check if still in the grid            
+            tipNeighb = self.mesh.NeiElements[EltsTipNew,:]
+            for i in range(0,len(EltsTipNew)):
+                if (np.where(tipNeighb[i,:]==EltsTipNew[i])[0]).size>0:
+                    raise SystemExit('Reached end of the grid. exiting....')
+            
             InCrack_k   = np.zeros((self.mesh.NumberOfElts,),dtype=np.uint8)
             InCrack_k[self.EltChannel] = 1
             InCrack_k[EltsTipNew] = 1

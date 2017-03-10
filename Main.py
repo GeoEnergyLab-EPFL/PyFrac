@@ -5,11 +5,16 @@ Created on Fri Dec 23 17:49:21 2016
 @author: Haseeb
 """
 import sys
-sys.path.append('.\\Utility')
-sys.path.append('.\\Classes')
-sys.path.append('.\\FractureMechanics')
-sys.path.append('.\\LevelSet')
-sys.path.append('.\\Solver')
+if not '.\\Utility' in sys.path:
+    sys.path.append('.\\Utility')
+if not '.\\Classes' in sys.path:
+    sys.path.append('.\\Classes')
+if not '.\\FractureMechanics' in sys.path:
+    sys.path.append('.\\FractureMechanics')
+if not '.\\LevelSet' in sys.path:
+    sys.path.append('.\\LevelSet')
+if not '.\\Solver' in sys.path:
+    sys.path.append('.\\Solver')  
 
 
 
@@ -48,8 +53,7 @@ minw        = np.asarray([])
 
 Fr      = Fracture(Mesh,Eprime,Kprime,sigma0,Cprime,muPrime,rho,Q0)
 Fr.InitializeRadialFracture(initRad,'radius','M')
-#Fr.InitializePKN(t0,0,h)
-#Fr.PlotFracture('complete','footPrint',l_cr,evol=1)
+
 timeout = Fr.time
 
 #upLayer = np.where(Mesh.CenterCoor[:,0]>h/2)
@@ -65,13 +69,13 @@ timeout = Fr.time
 #Fr.Q= np.zeros((Fr.mesh.NumberOfElts),float)
 #Fr.Q[src] = Q0/len(src)
 
-src = np.where(abs(Fr.mesh.CenterCoor[:,1])<Fr.mesh.hy)[0]
-src = src[np.where(abs(Fr.mesh.CenterCoor[src,0])<h/2-Fr.mesh.hx)[0]]
-Fr.Q= np.zeros((Fr.mesh.NumberOfElts),float)
-Fr.Q[src] = Q0/len(src)
+#src = np.where(abs(Fr.mesh.CenterCoor[:,1])<Fr.mesh.hy)[0]
+#src = src[np.where(abs(Fr.mesh.CenterCoor[src,0])<h/2-Fr.mesh.hx)[0]]
+#Fr.Q= np.zeros((Fr.mesh.NumberOfElts),float)
+#Fr.Q[src] = Q0/len(src)
 
 print('making global matrix')
-#C       = ElasticityMatrixAllMesh(Mesh,Eprime);
+C       = ElasticityMatrixAllMesh(Mesh,Eprime);
 print('Global matrix done')
 
 while Fr.time<Tend:
