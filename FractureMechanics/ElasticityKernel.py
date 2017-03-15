@@ -25,13 +25,18 @@ def ElasticityMatrixAllMesh(Mesh,Ep):
     b= Mesh.hy /2. ;
     Ne=Mesh.NumberOfElts;
     
-    A=np.empty([Ne, Ne],dtype=float);
+    A=np.empty([Ne, Ne],dtype=float, order='F');
     
     for i in range(0,Ne):
         for j in range (0,Ne):
             x=Mesh.CenterCoor[i,0]-Mesh.CenterCoor[j,0];
             y=Mesh.CenterCoor[i,1]-Mesh.CenterCoor[j,1];
-            A[i,j]=KernelZZ(a,b,x,y,Ep);
+            amx=a-x;
+            apx=a+x;
+            bmy=b-y;
+            bpy=b+y;
+            A[i,j]=(Ep/(8*(np.pi)))*(np.sqrt(amx**2+bmy**2)/(amx*bmy)+np.sqrt(apx**2+bmy**2)/(apx*bmy) +np.sqrt(amx**2+bpy**2)/(amx*bpy) +np.sqrt(apx**2+bpy**2)/(apx*bpy) )
+#            A[i,j]=KernelZZ(a,b,x,y,Ep);
     
     return A
 #################################

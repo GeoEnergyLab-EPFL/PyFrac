@@ -271,22 +271,22 @@ class Fracture(Domain):
         
         self.sgndDist = RadiusLevelSet(self.mesh.CenterCoor,self.initRad)
         
-#        self.ZeroVertex = np.zeros((len(EltTip)),int)
-#        for i in range(0,len(EltTip)):
-#            if self.mesh.CenterCoor[i,0]<=0 and self.mesh.CenterCoor[i,1]<=0:
-#                self.ZeroVertex[i] = 0
-#            elif self.mesh.CenterCoor[i,0]>=0 and self.mesh.CenterCoor[i,1]<=0:
-#                self.ZeroVertex[i] = 1
-#            elif self.mesh.CenterCoor[i,0]<=0 and self.mesh.CenterCoor[i,1]>=0:
-#                self.ZeroVertex[i] = 3
-#            elif self.mesh.CenterCoor[i,0]>=0 and self.mesh.CenterCoor[i,1]>=0:
-#                self.ZeroVertex[i] = 2
-        
         (self.EltTip, self.l, self.alpha, CSt)= TrackFront(self.sgndDist, EltChannel, self.mesh)
         self.FillF = FillF[np.arange(EltTip.shape[0])[np.in1d(EltTip,self.EltTip)]]
         (self.EltChannel,self.EltRibbon,self.EltCrack) = (EltChannel,EltRibbon,EltCrack)
         (self.Ffront,self.CellStatus,self.InCrack) = (np.concatenate((I,J),axis=1),CellStatus,InCrack)
         self.v = v*np.ones((len(self.l)),float)
+        
+        self.ZeroVertex=np.zeros((len(self.EltTip),),int)
+        for i in range(0,len(self.EltTip)):
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 2
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 3
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 1
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 0
         
         distFrmCentr = (self.mesh.CenterCoor[:,0]**2 + self.mesh.CenterCoor[:,1]**2)**0.5
         self.Tarrival = np.zeros((self.mesh.NumberOfElts,),dtype=np.float) 
@@ -380,17 +380,6 @@ class Fracture(Domain):
                 sgndDist[self.EltRibbon[i]]=-(h/2-abs(self.mesh.CenterCoor[self.EltRibbon[i],1]))
         
         
-        self.ZeroVertex=np.zeros((len(self.EltTip),),int)
-        for i in range(0,len(self.EltTip)):
-            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
-                self.ZeroVertex[i] = 0
-            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
-                self.ZeroVertex[i] = 1
-            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
-                self.ZeroVertex[i] = 3
-            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
-                self.ZeroVertex[i] = 2
-                    
         SolveFMM(sgndDist, self.EltRibbon, self.EltChannel, self.mesh)
         
 #        D=np.resize(sgndDist,(self.mesh.ny,self.mesh.nx))
@@ -408,6 +397,18 @@ class Fracture(Domain):
         self.time = initValue
         self.EltTip = ElmntTip
         
+        self.ZeroVertex=np.zeros((len(self.EltTip),),int)
+        for i in range(0,len(self.EltTip)):
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 3
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 2
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 1
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 0
+                
+                
     def PlotFracture(self,Elem_Identifier,Parameter_Identifier,analytical=0,evol=False,identify=[]):
         """3D plot of all elements given in the form of a list;
         
@@ -642,8 +643,13 @@ class Fracture(Domain):
 
             print('Calculating filling fraction of tip elements with new front location...')
             (EltsTipNew, l_k, alpha_k, CellStatus)= TrackFront(sgndDist_k, self.EltChannel, self.mesh)  # gets the new tip elements & \ell_k & alpha_k (also containing the elements which are fully filled after the front is moved outward)
+    
+            tipNeighb = self.mesh.NeiElements[EltsTipNew,:]
+            for i in range(0,len(EltsTipNew)):
+                if (np.where(tipNeighb[i,:]==EltsTipNew[i])[0]).size>0:
+                    raise SystemExit('Reached end of the grid. exiting....')
             
-            InCrack_k   = np.zeros((self.mesh.NumberOfElts,),dtype=np.uint8)
+            InCrack_k   = np.zeros((self.mesh.NumberOfElts,),dtype=np.int8)
             InCrack_k[self.EltChannel] = 1
             InCrack_k[EltsTipNew] = 1
 
@@ -724,7 +730,7 @@ class Fracture(Domain):
                 guess[self.EltChannel.size+np.arange(EltsTipNew.size)] = pguess
     
                 print('Not converged, solving non linear system with extended footprint')
-                sol     = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,InCrack_k,DLkOff,self.sigma0)
+                sol     = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,self.rho,InCrack_k,DLkOff,self.sigma0)
 
 #                if itrcount>30:
 #                    if norm_km1-norm<1e-5:
