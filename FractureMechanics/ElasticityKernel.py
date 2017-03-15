@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Tue Dec 27 17:41:56 2016
@@ -6,6 +7,7 @@ Created on Tue Dec 27 17:41:56 2016
 """
 
 import numpy as np
+import pickle
 
 # Elasticity kernel ....
 #################################
@@ -40,3 +42,26 @@ def ElasticityMatrixAllMesh(Mesh,Ep):
     
     return A
 #################################
+
+def LoadElastMatrix(Mesh,EPrime):
+    print('Reading global elasticity matrix...')
+    try:
+        with open('CMatrix', 'rb') as input:
+            (C,MeshLoaded,EPrimeLoaded) = pickle.load(input)
+        if Mesh.nx==MeshLoaded.nx and  Mesh.ny==MeshLoaded.ny and Mesh.Lx==MeshLoaded.Lx and Mesh.Ly==MeshLoaded.Ly and EPrime==EPrimeLoaded:
+            return C
+        else:
+            print('loaded Matrix not correct\nMaking gloabal matrix...')
+            C = ElasticityMatrixAllMesh(Mesh,EPrime)
+            Elast = (C,Mesh,EPrime)
+            with open('CMatrix', 'wb') as output:
+                pickle.dump(Elast, output, -1)
+            return C
+    except FileNotFoundError:
+        print('file not found\nMaking gloabal matrix...')
+        C = ElasticityMatrixAllMesh(Mesh,EPrime)
+        Elast = (C,Mesh,EPrime)
+        with open('CMatrix', 'wb') as output:
+            pickle.dump(Elast, output, -1)
+        return C
+                    
