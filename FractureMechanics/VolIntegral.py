@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 14 18:27:39 2016
+This file is part of PyFrac.
 
-@author: Haseeb Zia
+Created by Haseeb Zia on Fri Oct 14 18:27:39 2016.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
+See the LICENSE.TXT file for more details.
+
 
 Functions to calculate tip volumes, given the propagation regime
 

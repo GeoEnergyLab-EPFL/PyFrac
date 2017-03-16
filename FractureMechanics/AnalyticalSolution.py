@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov 16 18:33:56 2016
+This file is part of PyFrac.
 
-@author: Haseeb zia
+Created by Haseeb Zia on Wed Nov 16 18:33:56 2016.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017. All rights reserved.
+See the LICENSE.TXT file for more details.
 
 Analytical solutions for planar radial fracture with constant injection rate
 """

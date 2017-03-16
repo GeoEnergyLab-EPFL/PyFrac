@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Dec 22 17:18:37 2016
+This file is part of PyFrac.
 
-@author: Haseeb
+Created by Haseeb Zia on Thu Dec 22 17:18:37 2016.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
+See the LICENSE.TXT file for more details.
 """
+
 import numpy as np
 from VolIntegral import Pdistance
 import matplotlib.pyplot as plt

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Dec 23 17:49:21 2016
+This file is part of PyFrac.
 
-@author: Haseeb
+Created by Haseeb Zia on Fri Dec 23 17:49:21 2016.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
+See the LICENSE.TXT file for more details.
 """
 import sys
 if not '.\\Utility' in sys.path:
@@ -90,16 +92,11 @@ while Fr.time<Tend:
         l_cr    = (Eprime*Q0**3*Fr.time**4/(4*np.pi**3*(h+2*Mesh.hx)**4*(muPrime/12)))**(1/5)
         plt.close("all")
         status=Fr.PlotFracture('complete','footPrint',R_Msol)
-        plt.pause(1)
 #        Fr.SaveFracture('..\\StressJumpData\\Vertical2\\file'+repr(prntcount))
         prntcount+=1
         timeout+=timeinc
         
     fract   = np.where(Fr.w>1e-10)[0]
-    ln   = np.amax(abs(Mesh.CenterCoor[fract,1]))
-    l_cr    = (Eprime*Q0**3*Fr.time**4/(4*np.pi**3*(0.055)**4*(muPrime/12)))**(1/5)
-    print('ratio = '+repr(ln/l_cr))
-    
     print('injected = '+repr(Q0*Fr.time)+' leaked off '+repr(sum(Fr.Leakedoff))+' in Fracture '+repr(Fr.mesh.EltArea*sum(Fr.w)))
     print('diff = '+repr(1-(sum(Fr.Leakedoff)+Fr.mesh.EltArea*sum(Fr.w))/(Q0*Fr.time)))
     

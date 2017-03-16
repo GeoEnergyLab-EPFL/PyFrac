@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov  1 15:22:00 2016
+This file is part of PyFrac.
 
-@author: Haseeb Zia
+Created by Haseeb Zia on Tue Nov  1 15:22:00 2016.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
+See the LICENSE.TXT file for more details.
 
 Tip inversion for different flow regimes. The functions take width opening and gives distance from tip calculated using the given propagation regime
 """
+
 import math
 import numpy as np
 from scipy.optimize import brentq

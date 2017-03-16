@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Dec 28 14:43:38 2016
+This file is part of PyFrac.
 
-@author: Haseeb
+Created by Haseeb Zia on Wed Dec 28 14:43:38 2016.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
+See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
