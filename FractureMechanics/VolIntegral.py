@@ -157,13 +157,13 @@ def VolumeIntegral(alpha, l, dx, dy, regime, Kprime, Eprime, muPrime, Cbar, Vel,
     volume = np.zeros((len(l),),float)
     for i in range(0,len(l)):
 
-        if abs(alpha[i])<1e-5:
+        if abs(alpha[i])<1e-10:
             if l[i]<=dx:
                 volume[i]  = Area(l[i],regime, Kprime[i], Eprime, muPrime[i], Cbar[i], Vel[i], stagnant[i], KIPrime[i])*dy
             else:
                 volume[i]  = (Area(l[i],regime, Kprime[i], Eprime, muPrime[i], Cbar[i], Vel[i], stagnant[i], KIPrime[i])-Area(l[i]-dx,regime, Kprime[i], Eprime, muPrime[i], Cbar[i], Vel[i], stagnant[i], KIPrime[i]))*dy
         
-        elif abs(alpha[i] - np.pi/2)<1e-5:
+        elif abs(alpha[i] - np.pi/2)<1e-10:
             if l[i]<=dy:
                 volume[i]  = Area(l[i],regime, Kprime[i], Eprime, muPrime[i], Cbar[i], Vel[i], stagnant[i], KIPrime[i])*dx
             else:

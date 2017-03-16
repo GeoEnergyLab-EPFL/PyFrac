@@ -108,7 +108,9 @@ def PlotMeshFractureTrace(Mesh,EltTip,EltChannel,EltRibbon,I,J,Ranalytical,sigma
         circle.set_fill(False)
         ax.add_patch(circle)
 
-
+    for i in range(len(Identify)):
+        ax.text(Mesh.CenterCoor[Identify[i],0]-Mesh.hx/4,Mesh.CenterCoor[Identify[i],1]-Mesh.hy/4,repr(Identify[i]),fontsize=10)
+        
     for e in range(0,len(I)) :
 #        print(abs(max(I[e,:]-J[e,:])))
         if max(abs(I[e,:]-J[e,:]))<3*(Mesh.hx**2+Mesh.hy**2)**0.5: #sometimes get very large values, needs to be resolved

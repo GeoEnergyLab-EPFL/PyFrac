@@ -29,7 +29,8 @@ class Fracture(Domain):
             Cprime (ndarray-float):     Carter's leak off coefficient (C' parameter) for each cell in the domain (see e.g. Detournay 2016, Annual Review)
             muPrime (ndarray-float):    viscocity (mu' parameter) for each cell in the domain (see e.g. Detournay 2016, Annual Review)
             w (ndarray-float):          fracture opening (width)
-            p (ndarray-float):          fracture pressure 
+            p (ndarray-float):          fracture pressure
+            time (float):               time after the start of injection
             EltChannel (ndarray-int):   list of cells currently in the channel region
             EltCrack (ndarray-int):     list of cells currently in the crack region
             EltRibbon (ndarray-int):    list of cells currently in the Ribbon region
@@ -44,7 +45,10 @@ class Fracture(Domain):
             initTime (float):           starting time
             sgndDist (ndarray-float):   signed minimun distace from fractire front of each cell in the domain
             Q (ndarray-float):          injection rate into each cell of the domain
+            FractEvol (ndarray-float):  array containing the coordinates of the individual fracture front lines; used for printing fracture evolution through time 
+            InCrack (ndarray-int):      array specifying whether the cell is inside or outside the fracture.
             
+                                            
         functions:
             InitializeRadialFracture:   set initial conditions of a radial fracture to start simulation
             InitializePKN               set initial conditions of a PKN fracture
@@ -271,22 +275,22 @@ class Fracture(Domain):
         
         self.sgndDist = RadiusLevelSet(self.mesh.CenterCoor,self.initRad)
         
-#        self.ZeroVertex = np.zeros((len(EltTip)),int)
-#        for i in range(0,len(EltTip)):
-#            if self.mesh.CenterCoor[i,0]<=0 and self.mesh.CenterCoor[i,1]<=0:
-#                self.ZeroVertex[i] = 0
-#            elif self.mesh.CenterCoor[i,0]>=0 and self.mesh.CenterCoor[i,1]<=0:
-#                self.ZeroVertex[i] = 1
-#            elif self.mesh.CenterCoor[i,0]<=0 and self.mesh.CenterCoor[i,1]>=0:
-#                self.ZeroVertex[i] = 3
-#            elif self.mesh.CenterCoor[i,0]>=0 and self.mesh.CenterCoor[i,1]>=0:
-#                self.ZeroVertex[i] = 2
-        
         (self.EltTip, self.l, self.alpha, CSt)= TrackFront(self.sgndDist, EltChannel, self.mesh)
         self.FillF = FillF[np.arange(EltTip.shape[0])[np.in1d(EltTip,self.EltTip)]]
         (self.EltChannel,self.EltRibbon,self.EltCrack) = (EltChannel,EltRibbon,EltCrack)
         (self.Ffront,self.CellStatus,self.InCrack) = (np.concatenate((I,J),axis=1),CellStatus,InCrack)
         self.v = v*np.ones((len(self.l)),float)
+        
+        self.ZeroVertex=np.zeros((len(self.EltTip),),int)
+        for i in range(0,len(self.EltTip)):
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 2
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 3
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 1
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 0
         
         distFrmCentr = (self.mesh.CenterCoor[:,0]**2 + self.mesh.CenterCoor[:,1]**2)**0.5
         self.Tarrival = np.zeros((self.mesh.NumberOfElts,),dtype=np.float) 
@@ -380,17 +384,6 @@ class Fracture(Domain):
                 sgndDist[self.EltRibbon[i]]=-(h/2-abs(self.mesh.CenterCoor[self.EltRibbon[i],1]))
         
         
-        self.ZeroVertex=np.zeros((len(self.EltTip),),int)
-        for i in range(0,len(self.EltTip)):
-            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
-                self.ZeroVertex[i] = 0
-            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
-                self.ZeroVertex[i] = 1
-            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
-                self.ZeroVertex[i] = 3
-            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
-                self.ZeroVertex[i] = 2
-                    
         SolveFMM(sgndDist, self.EltRibbon, self.EltChannel, self.mesh)
         
 #        D=np.resize(sgndDist,(self.mesh.ny,self.mesh.nx))
@@ -408,6 +401,18 @@ class Fracture(Domain):
         self.time = initValue
         self.EltTip = ElmntTip
         
+        self.ZeroVertex=np.zeros((len(self.EltTip),),int)
+        for i in range(0,len(self.EltTip)):
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 3
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]<0:
+                self.ZeroVertex[i] = 2
+            if self.mesh.CenterCoor[self.EltTip[i],0] < 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 1
+            if self.mesh.CenterCoor[self.EltTip[i],0] > 0 and self.mesh.CenterCoor[self.EltTip[i],1]>0:
+                self.ZeroVertex[i] = 0
+                
+                
     def PlotFracture(self,Elem_Identifier,Parameter_Identifier,analytical=0,evol=False,identify=[]):
         """3D plot of all elements given in the form of a list;
         
@@ -564,7 +569,7 @@ class Fracture(Domain):
 
 
 ######################################     
-    def Propagate(self,dt,C,tol_frntPos,tol_Picard,regime='U',maxitr=25):
+    def Propagate(self,C,tol_frntPos,tol_Picard,regime='U',maxitr=25,CFL=0.6):
         """ Propagate fracture one time step
             Arguments:
                 dt (float):         time step
@@ -581,190 +586,221 @@ class Fracture(Domain):
                                         regime -- U  gives tip volume according to the Universal assymptote (Donstov and Pierce, 2017)
                                         regime -- MK gives tip volume according to the M-K transition assymptote
                 maxitr (int)        maximum iterations to find front position (default 25).
+                
+            return:
+                exitstatus (int):   possible values:
+                                        0       -- not propagated
+                                        1       -- iteration successfull
+                                        2       -- evaluated level set is not valid
+                                        3       -- front is not tracked correctly
+                                        4       -- evaluated tip volume is not valied
+                                        5       -- solution of elastohydrodynamic solver is not valid
+                                        6       -- did not converge after max iterations
+                                        7       -- tip inversion not successful 
+                                        8       -- Ribbon element not found in the enclosure of a tip cell
+                                        
+                                    
+                
         """
+        itrFact     = 1         #the factor multipled to time step to retry iteration if not successful 
+        tmStpItr    = 0         #max retries with smaller dt
+        exitstatus  = 0         #exit code returned
         
-        norm    = 1000
-        print('Elememts currently in crack:  ' + repr(len(self.EltCrack)))
-    
-        C_EltTip = C[np.ix_(self.EltTip,self.EltTip)] 
-        for e in range(0,len(self.EltTip)) :
-            r=self.FillF[e]-.25;
-            if r<0.1 :
-                r=0.1
-            ac=(1-r)/r;
-            C[self.EltTip[e],self.EltTip[e]]=C[self.EltTip[e],self.EltTip[e]]*(1.+ac*np.pi/4.)
-        
-
-        guess = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float) # average injected fluid over footprint
-        print('Solving non linear system with same footprint')
-        
-        DLkOff              = np.zeros((self.mesh.NumberOfElts,),float)
-#        TarrivalNode        = self.time-dt - self.l/self.v
-#        TarrivalMid         = ((self.time-dt)+TarrivalNode)/2
-#        if ((self.time-dt-TarrivalMid)<0).any():
-#            TarrivalMid[np.where((T-dt-TarrivalMid)<0)]=T-dt
-#        DLkOff[self.EltTip]         = 2*self.Cprime[self.EltTip]*self.FillF*self.mesh.EltArea* ((self.time-TarrivalMid)**0.5-(self.time-dt-TarrivalMid)**0.5)
-#        DLkOff[self.EltChannel]     = 2*self.Cprime[self.EltChannel]*self.mesh.EltArea*((self.time - self.Tarrival[self.EltChannel])**0.5 - (self.time-dt - self.Tarrival[self.EltChannel])**0.5)
-
-        sol     =   ElastoHydrodynamicSolver_SameFP(guess,tol_Picard,self.w,self.mesh.NeiElements,self.EltCrack,dt,self.Q,C,self.mesh.EltArea,self.muPrime,self.mesh,self.InCrack,DLkOff,self.sigma0)
-                                            
-        C[np.ix_(self.EltTip,self.EltTip)]=C_EltTip  #retain origional C (without fill fraction correction)
-
-        w_k          = np.copy(self.w)
-        w_k[self.EltCrack] = w_k[self.EltCrack]+sol
-
-        
-        print('Starting iteration')
-        itrcount = 1
-        
-        FillFrac_km1 = []    # filling fraction last iteration; used to calculate norm
-        DLkOffEltChannel = DLkOff[self.EltChannel]
-    #   Fracture front loop
-        while (norm>tol_frntPos) :
-                    
-            #Initialization the signed distance in the ribbon element - by inverting the tip asymptotics    
-            sgndDist_k                  = 1e10*np.ones((self.mesh.NumberOfElts,),float); # uncalculated cells get very large value
-            sgndDist_k[self.EltChannel] = 0
-            sgndDist_k[self.EltRibbon]  = -TipAsymInversion(w_k,self.EltRibbon,self.Kprime,self.Eprime,regime,self.muPrime,self.Cprime,self.sgndDist,dt)
-            if np.isnan(sgndDist_k[self.EltRibbon]).any():
-                print('Tip inversion is not correct'+'\n time step failed .............')
-                self.exitstatus = 7
-                return
-            
-            SolveFMM(sgndDist_k, self.EltRibbon, self.EltChannel, self.mesh)    # solve Eikonal eq via Fast Marching Method starting from the element close to the ribbon elt (i.e. the Tip element of the last time step)
-                
-#            PrintDomain(np.arange(self.mesh.NumberOfElts),sgndDist_k,self.mesh)
-#            plt.pause(1)
-            if max(sgndDist_k)==1e10:
-                print('FMM not worked properly = '+repr(np.where(sgndDist_k==1e10))+'\ntime step failed .............')
-                self.exitstatus = 2
-                return
-
-            print('Calculating filling fraction of tip elements with new front location...')
-            (EltsTipNew, l_k, alpha_k, CellStatus)= TrackFront(sgndDist_k, self.EltChannel, self.mesh)  # gets the new tip elements & \ell_k & alpha_k (also containing the elements which are fully filled after the front is moved outward)
-            
-            #check if still in the grid            
-            tipNeighb = self.mesh.NeiElements[EltsTipNew,:]
-            for i in range(0,len(EltsTipNew)):
-                if (np.where(tipNeighb[i,:]==EltsTipNew[i])[0]).size>0:
-                    raise SystemExit('Reached end of the grid. exiting....')
-            
-            InCrack_k   = np.zeros((self.mesh.NumberOfElts,),dtype=np.uint8)
-            InCrack_k[self.EltChannel] = 1
-            InCrack_k[EltsTipNew] = 1
-
-            Vel_k =  -(sgndDist_k[EltsTipNew] - self.sgndDist[EltsTipNew])/dt
-
-            
-            FillFrac_k     = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, 'A', self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)/self.mesh.EltArea # Calculate filling fraction for current iteration
-            # some of the list are redundant to calculate on each iteration            
-            (EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k) = UpdateLists(self.EltChannel, EltsTipNew, FillFrac_k, sgndDist_k, self.mesh) # Evaluate the element lists for current iteration
-            
-            NewTipinTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]  # EletsTipNew may contain fully filled elements also  
-            
-            if len(FillFrac_km1)==len(FillFrac_k):
-                norm = np.linalg.norm(FillFrac_k-FillFrac_km1)
+        while exitstatus != 1:  # loop to retry an iteration with smaller time step in case not succussfull
+            dt = CFL*itrFact*min(self.mesh.hx,self.mesh.hy)/max(self.v)
+            if exitstatus>1:
+                print('exit status last advancement '+repr(exitstatus)+'\nre-advancing to time = ' + repr(self.time+dt))
             else:
-                norm = 1
-            print('Norm with new filling fraction = '+repr(norm))
+                print('advancing to time '+repr(self.time+dt))
+            norm    = 1000
+            print('Elememts currently in crack:  ' + repr(len(self.EltCrack)))
+        
+            C_EltTip = C[np.ix_(self.EltTip,self.EltTip)] 
+            for e in range(0,len(self.EltTip)) :
+                r=self.FillF[e]-.25;
+                if r<0.1 :
+                    r=0.1
+                ac=(1-r)/r;
+                C[self.EltTip[e],self.EltTip[e]]=C[self.EltTip[e],self.EltTip[e]]*(1.+ac*np.pi/4.)
             
-#            highStress = np.append(np.where(self.mesh.CenterCoor[:,0]>0.048/2+self.mesh.hx),np.where(self.mesh.CenterCoor[:,0]<-0.048/2-self.mesh.hx))
-##           np.where(self.Kprime!=self.Kprime[self.mesh.CenterElts[0]])
-#            
-#            for i in range(0,len(EltsTipNew)):
-#                if np.where(highStress==EltsTipNew[i])[0].size > 0:
-#                    alpha_k[i]=0
-                    
-            nan = np.logical_or(np.isnan(alpha_k),np.isnan(l_k))
-            if nan.any():
-#                problem = np.where(nan)[0]
-#                for i in range(0,len(problem)):
-#                    neighbors  = np.asarray(Neighbors(EltsTipNew[problem[i]],self.mesh.nx,self.mesh.ny))
-#                    inTip = np.asarray([],int)
-#                    for j in range(0,len(neighbors)):
-#                        inTip = np.append(inTip,np.where(EltsTipNew==neighbors[j]))
-#                    alpha_k[problem[i]]=np.mean(alpha_k[inTip])
-                    
-                    
-                print('Front is not tracked correctly, '+ 'problem in cell(s) '+repr(EltsTipNew[np.where(nan)])+'\ntime step failed .............')
-                self.exitstatus = 3
-                return
+    
+            guess = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float) # average injected fluid over footprint
+            print('Solving non linear system with same footprint')
             
-          
-            if norm>tol_frntPos:
-                stagnant     = abs(1-sgndDist_k[EltsTipNew]/self.sgndDist[EltsTipNew]) < 1e-8  #tip cells whose distance from front has not changed.
-                if stagnant.any():
-                    KIPrime = StressIntensityFactor(w_k,sgndDist_k,EltsTipNew,EltRibbon_k,stagnant,self.mesh,self.Eprime)       # calculate stress intensity factor for stagnant cells
-                    if np.isnan(KIPrime).any():
-                        np.where(np.isnan(KIPrime))
-                        print('Ribbon element not found in the enclosure of tip cell. tip cell '+repr(EltsTipNew[np.where(np.isnan(KIPrime))])+'\n time step failed .............')
-                        self.exitstatus = 8
-                        return
-                    wTip        = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, regime, self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k, stagnant, KIPrime)/self.mesh.EltArea    
+            DLkOff              = np.zeros((self.mesh.NumberOfElts,),float)
+    #        TarrivalNode        = self.time-dt - self.l/self.v
+    #        TarrivalMid         = ((self.time-dt)+TarrivalNode)/2
+    #        if ((self.time-dt-TarrivalMid)<0).any():
+    #            TarrivalMid[np.where((T-dt-TarrivalMid)<0)]=T-dt
+    #        DLkOff[self.EltTip]         = 2*self.Cprime[self.EltTip]*self.FillF*self.mesh.EltArea* ((self.time-TarrivalMid)**0.5-(self.time-dt-TarrivalMid)**0.5)
+    #        DLkOff[self.EltChannel]     = 2*self.Cprime[self.EltChannel]*self.mesh.EltArea*((self.time - self.Tarrival[self.EltChannel])**0.5 - (self.time-dt - self.Tarrival[self.EltChannel])**0.5)
+    
+            sol     =   ElastoHydrodynamicSolver_SameFP(guess,tol_Picard,self.w,self.mesh.NeiElements,self.EltCrack,dt,self.Q,C,self.mesh.EltArea,self.muPrime,self.mesh,self.InCrack,DLkOff,self.sigma0)
+                                                
+            C[np.ix_(self.EltTip,self.EltTip)]=C_EltTip  #retain origional C (without fill fraction correction)
+    
+            w_k          = np.copy(self.w)
+            w_k[self.EltCrack] = w_k[self.EltCrack]+sol
+    
+            
+            print('Starting iteration')
+            itrcount = 1
+            
+            FillFrac_km1 = []    # filling fraction last iteration; used to calculate norm
+            DLkOffEltChannel = DLkOff[self.EltChannel]
+        #   Fracture front loop
+            while (norm>tol_frntPos) :
+                        
+                #Initialization the signed distance in the ribbon element - by inverting the tip asymptotics    
+                sgndDist_k                  = 1e10*np.ones((self.mesh.NumberOfElts,),float); # uncalculated cells get very large value
+                sgndDist_k[self.EltChannel] = 0
+                sgndDist_k[self.EltRibbon]  = -TipAsymInversion(w_k,self.EltRibbon,self.Kprime,self.Eprime,regime,self.muPrime,self.Cprime,self.sgndDist,dt)
+                if np.isnan(sgndDist_k[self.EltRibbon]).any():
+                    print('Tip inversion is not correct'+'\n time step failed .............')
+                    exitstatus = 7
+                    break
+                
+                SolveFMM(sgndDist_k, self.EltRibbon, self.EltChannel, self.mesh)    # solve Eikonal eq via Fast Marching Method starting from the element close to the ribbon elt (i.e. the Tip element of the last time step)
+                    
+    #            PrintDomain(np.arange(self.mesh.NumberOfElts),sgndDist_k,self.mesh)
+    #            plt.pause(1)
+                if max(sgndDist_k)==1e10:
+                    print('FMM not worked properly = '+repr(np.where(sgndDist_k==1e10))+'\ntime step failed .............')
+                    exitstatus = 2
+                    break
+    
+                print('Calculating filling fraction of tip elements with new front location...')
+                (EltsTipNew, l_k, alpha_k, CellStatus)= TrackFront(sgndDist_k, self.EltChannel, self.mesh)  # gets the new tip elements & \ell_k & alpha_k (also containing the elements which are fully filled after the front is moved outward)
+        
+                tipNeighb = self.mesh.NeiElements[EltsTipNew,:]
+                for i in range(0,len(EltsTipNew)):
+                    if (np.where(tipNeighb[i,:]==EltsTipNew[i])[0]).size>0:
+                        raise SystemExit('Reached end of the grid. exiting....')
+                
+                InCrack_k   = np.zeros((self.mesh.NumberOfElts,),dtype=np.int8)
+                InCrack_k[self.EltChannel] = 1
+                InCrack_k[EltsTipNew] = 1
+    
+                Vel_k =  -(sgndDist_k[EltsTipNew] - self.sgndDist[EltsTipNew])/dt
+    
+                
+                FillFrac_k     = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, 'A', self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)/self.mesh.EltArea # Calculate filling fraction for current iteration
+                # some of the list are redundant to calculate on each iteration            
+                (EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k) = UpdateLists(self.EltChannel, EltsTipNew, FillFrac_k, sgndDist_k, self.mesh) # Evaluate the element lists for current iteration
+                
+                NewTipinTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]  # EletsTipNew may contain fully filled elements also  
+                
+                if len(FillFrac_km1)==len(FillFrac_k):
+                    norm = np.linalg.norm(FillFrac_k-FillFrac_km1)
                 else:
-                    wTip        = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, regime, self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)/self.mesh.EltArea
+                    norm = 1
+                print('Norm with new filling fraction = '+repr(norm))
                 
-
-                smallNgtvWTip = np.where(np.logical_and(wTip<0, wTip>-10**-4*np.mean(wTip))) # check if the tip volume has gone into negative
-                if np.asarray(smallNgtvWTip).size>0:
-#                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
-                    wTip[smallNgtvWTip]= abs(wTip[smallNgtvWTip])
+    #            highStress = np.append(np.where(self.mesh.CenterCoor[:,0]>0.048/2+self.mesh.hx),np.where(self.mesh.CenterCoor[:,0]<-0.048/2-self.mesh.hx))
+    ##           np.where(self.Kprime!=self.Kprime[self.mesh.CenterElts[0]])
+    #            
+    #            for i in range(0,len(EltsTipNew)):
+    #                if np.where(highStress==EltsTipNew[i])[0].size > 0:
+    #                    alpha_k[i]=0
+                        
+                nan = np.logical_or(np.isnan(alpha_k),np.isnan(l_k))
+                if nan.any():
+    #                problem = np.where(nan)[0]
+    #                for i in range(0,len(problem)):
+    #                    neighbors  = np.asarray(Neighbors(EltsTipNew[problem[i]],self.mesh.nx,self.mesh.ny))
+    #                    inTip = np.asarray([],int)
+    #                    for j in range(0,len(neighbors)):
+    #                        inTip = np.append(inTip,np.where(EltsTipNew==neighbors[j]))
+    #                    alpha_k[problem[i]]=np.mean(alpha_k[inTip])
+                        
+                        
+                    print('Front is not tracked correctly, '+ 'problem in cell(s) '+repr(EltsTipNew[np.where(nan)])+'\ntime step failed .............')
+                    exitstatus = 3
+                    break
                 
-                if (wTip<-10**-4*np.mean(wTip)).any():
-                    print('wTip not right'+'\n time step failed .............')
-                    self.exitstatus = 4
-                    return
-   
-                DLkOff              = np.zeros((self.mesh.NumberOfElts,),float)
-#                LkOffTipTn          = 2*self.Cprime[EltsTipNew]*VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, 'Lk', self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)
-#                DLkOff[EltsTipNew]  = LkOffTipTn-self.Leakedoff[EltsTipNew]
-#                DLkOff[self.EltChannel] = DLkOffEltChannel
-#                PrintDomain(np.arange(self.mesh.NumberOfElts),DLkOff,self.mesh)
-                
-         
-                guess = np.zeros((self.EltChannel.size+EltsTipNew.size,), float)
-                pguess = self.p[EltsTipNew]
-                
-        
-                guess[np.arange(self.EltChannel.size)] = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float)        
-                guess[self.EltChannel.size+np.arange(EltsTipNew.size)] = pguess
+              
+                if norm>tol_frntPos:
+                    stagnant     = abs(1-sgndDist_k[EltsTipNew]/self.sgndDist[EltsTipNew]) < 1e-8  #tip cells whose distance from front has not changed.
+                    if stagnant.any():
+                        KIPrime = StressIntensityFactor(w_k,sgndDist_k,EltsTipNew,EltRibbon_k,stagnant,self.mesh,self.Eprime)       # calculate stress intensity factor for stagnant cells
+                        if np.isnan(KIPrime).any():
+                            np.where(np.isnan(KIPrime))
+                            print('Ribbon element not found in the enclosure of tip cell. tip cell '+repr(EltsTipNew[np.where(np.isnan(KIPrime))])+'\n time step failed .............')
+                            exitstatus = 8
+                            break
+                        wTip        = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, regime, self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k, stagnant, KIPrime)/self.mesh.EltArea    
+                    else:
+                        wTip        = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, regime, self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)/self.mesh.EltArea
+                    
     
-                print('Not converged, solving non linear system with extended footprint')
-                sol     = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,InCrack_k,DLkOff,self.sigma0)
-
-#                if itrcount>30:
-#                    if norm_km1-norm<1e-5:
-#                        norm = 1e-4
-##                    self.PlotFracture('complete','footPrint')
-#                    plt.pause(1)
-#                    print(repr(FillFrac_k)+repr(FillFrac_km1))
-#                    sol[np.arange(self.EltChannel.size)] = 1.5*sol[np.arange(self.EltChannel.size)]
-#                    itrcount=1
-                w_k[self.EltChannel] =  self.w[self.EltChannel] + sol[np.arange(self.EltChannel.size)]
-                if np.isnan(w_k).any() or (w_k<0).any():
-                    print('width not correct. Solution obtained in the last iteration'+repr(sol)+'\n time step failed .............')
-                    self.exitstatus = 5
-                    return
-    #            pTip_k      = sol[self.EltChannel.size+np.arange(EltsTipNew.size)]
-
-                itrcount = itrcount +1 
-                print('\niteration ' + repr(itrcount))
-
-                if itrcount>=maxitr:
-                    print('did not converge after '+repr(maxitr)+' iterations'+'\n time step failed .............')
-                    self.exitstatus = 6
-                    return
-                FillFrac_km1 = np.copy(FillFrac_k)
-            else:
-                print('converged, exiting loop...')
-                break
+                    smallNgtvWTip = np.where(np.logical_and(wTip<0, wTip>-10**-4*np.mean(wTip))) # check if the tip volume has gone into negative
+                    if np.asarray(smallNgtvWTip).size>0:
+    #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+                        wTip[smallNgtvWTip]= abs(wTip[smallNgtvWTip])
+                    
+                    if (wTip<-10**-4*np.mean(wTip)).any():
+                        print('wTip not right'+'\n time step failed .............')
+                        exitstatus = 4
+                        break
+       
+                    DLkOff              = np.zeros((self.mesh.NumberOfElts,),float)
+    #                LkOffTipTn          = 2*self.Cprime[EltsTipNew]*VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, 'Lk', self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)
+    #                DLkOff[EltsTipNew]  = LkOffTipTn-self.Leakedoff[EltsTipNew]
+    #                DLkOff[self.EltChannel] = DLkOffEltChannel
+    #                PrintDomain(np.arange(self.mesh.NumberOfElts),DLkOff,self.mesh)
+                    
+             
+                    guess = np.zeros((self.EltChannel.size+EltsTipNew.size,), float)
+                    pguess = self.p[EltsTipNew]
+                    
             
-#        NewChannelinTip  = np.arange(EltsTipNew.shape[0])[~np.in1d(EltsTipNew, EltTip_k)]
-#        EltsChannelNew  = EltsTipNew[NewChannelinTip]
-#        lmbda           = self.mesh.hx*np.cos(alpha_k[NewChannelinTip])+self.mesh.hy*np.sin(alpha_k[NewChannelinTip])
-#        self.Tarrival[EltsChannelNew] = (2*self.time - (l_k[NewChannelinTip]-lmbda)/Vel_k[NewChannelinTip] - l_k[NewChannelinTip]/Vel_k[NewChannelinTip])/2
-#        self.Leakedoff += DLkOff     
+                    guess[np.arange(self.EltChannel.size)] = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float)        
+                    guess[self.EltChannel.size+np.arange(EltsTipNew.size)] = pguess
         
+                    print('Not converged, solving non linear system with extended footprint')
+                    sol     = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,self.rho,InCrack_k,DLkOff,self.sigma0)
+    
+    #                if itrcount>30:
+    #                    if norm_km1-norm<1e-5:
+    #                        norm = 1e-4
+    ##                    self.PlotFracture('complete','footPrint')
+    #                    plt.pause(1)
+    #                    print(repr(FillFrac_k)+repr(FillFrac_km1))
+    #                    sol[np.arange(self.EltChannel.size)] = 1.5*sol[np.arange(self.EltChannel.size)]
+    #                    itrcount=1
+                    w_k[self.EltChannel] =  self.w[self.EltChannel] + sol[np.arange(self.EltChannel.size)]
+                    if np.isnan(w_k).any() or (w_k<0).any():
+                        print('width not correct.\n\n time step failed .............')
+                        exitstatus = 5
+                        break
+        #            pTip_k      = sol[self.EltChannel.size+np.arange(EltsTipNew.size)]
+    
+                    itrcount = itrcount +1 
+                    print('\niteration ' + repr(itrcount))
+    
+                    if itrcount>=maxitr:
+                        print('did not converge after '+repr(maxitr)+' iterations'+'\n time step failed .............')
+                        exitstatus = 6
+                        break
+                    FillFrac_km1 = np.copy(FillFrac_k)
+                else:
+                    exitstatus = 1
+                    print('converged, exiting loop...')
+                    break
+            
+            if exitstatus != 1:
+                itrFact *= 0.8
+                tmStpItr+= 1
+                if tmStpItr == 4:
+                    raise SystemExit('time stepping not successful, exit status = '+repr(exitstatus))
+                    #return exitstatus
+                
+    #        NewChannelinTip  = np.arange(EltsTipNew.shape[0])[~np.in1d(EltsTipNew, EltTip_k)]
+    #        EltsChannelNew  = EltsTipNew[NewChannelinTip]
+    #        lmbda           = self.mesh.hx*np.cos(alpha_k[NewChannelinTip])+self.mesh.hy*np.sin(alpha_k[NewChannelinTip])
+    #        self.Tarrival[EltsChannelNew] = (2*self.time - (l_k[NewChannelinTip]-lmbda)/Vel_k[NewChannelinTip] - l_k[NewChannelinTip]/Vel_k[NewChannelinTip])/2
+    #        self.Leakedoff += DLkOff     
+            
         w_k[EltsTipNew]             = wTip
         self.w                      = w_k
         self.FillF                  = FillFrac_k[NewTipinTip]      
@@ -774,8 +810,7 @@ class Fracture(Domain):
         (self.alpha,self.l,self.v)  = (alpha_k[NewTipinTip],l_k[NewTipinTip],Vel_k[NewTipinTip])
         self.InCrack                = InCrack_k
         self.time += dt
-        self.exitstatus = 1
-        return
+        return exitstatus
         
   
     def SaveFracture(self,filename):
