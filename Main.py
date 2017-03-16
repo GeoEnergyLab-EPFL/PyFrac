@@ -30,7 +30,7 @@ K_Ic    = 0.005e6
 Kprime  = 4 * (2/math.pi)**0.5 * K_Ic
 nu      = 0.4
 Eprime  = 3.3e10/(1-nu**2)
-Q0      = 0.025
+Q0      = 0.027
 Cprime  = 0*0.00025
 muPrime = 12*1.1e-3
 rho     = 1000
@@ -76,28 +76,11 @@ timeout = Fr.time
 #src = src[np.where(abs(Fr.mesh.CenterCoor[src,0])<h/2-Fr.mesh.hx)[0]]
 #Fr.Q= np.zeros((Fr.mesh.NumberOfElts),float)
 #Fr.Q[src] = Q0/len(src)
-
-print('making global matrix')
-C       = ElasticityMatrixAllMesh(Mesh,Eprime);
-print('Global matrix done')
+C = LoadElastMatrix(Mesh,Eprime)
 
 while Fr.time<Tend:
     print('\n*********************\ntime = ' + repr(Fr.time))
-    itrFact = 1
-    tmStpItr= 0
-    Fr.exitstatus  = 0
-    while Fr.exitstatus != 1:
-        dt = CFL*itrFact*min(Mesh.hx,Mesh.hy)/max(Fr.v)
-        print('exit status last advancement '+repr(Fr.exitstatus)+'\nre-advancing to time = ' + repr(Fr.time+dt))
-        Fr.Propagate(dt,C,tol_FrntPos,tol_Picard,'M')
-        itrFact *= 0.8
-        tmStpItr+= 1
-        if tmStpItr >=4 and Fr.exitstatus!=1:
-#            Fr=ReadFracture('..\\StressJumpData\\Vertical\\file'+repr(prntcount-2))
-#            tmStpItr = 0
-#            CFL *= 0.8
-            Fr.PlotFracture('complete','footPrint')
-            raise SystemExit('time stepping not successful, exit status = '+repr(Fr.exitstatus))
+    Fr.Propagate(C,tol_FrntPos,tol_Picard,'M',CFL=0.6)
     R_Msol  = 0.6976*Fr.Eprime**(1/9)*sum(Fr.Q)**(1/3)*Fr.time**(4/9)/np.mean(Fr.muPrime)**(1/9)     #Viscocity dominated
 #    R_Mtsol = (2*sum(Fr.Q)/np.mean(Fr.Cprime))**0.5*Fr.time**0.25/np.pi
 #    R_Ksol  = (3/2**0.5/np.pi * Q0*Eprime*Fr.time/Kprime)**0.4 
@@ -106,7 +89,7 @@ while Fr.time<Tend:
         print(repr(Fr.time//timeout)+' cnt '+repr(prntcount))
         l_cr    = (Eprime*Q0**3*Fr.time**4/(4*np.pi**3*(h+2*Mesh.hx)**4*(muPrime/12)))**(1/5)
         plt.close("all")
-        Fr.PlotFracture('complete','footPrint',R_Msol)
+        status=Fr.PlotFracture('complete','footPrint',R_Msol)
         plt.pause(1)
 #        Fr.SaveFracture('..\\StressJumpData\\Vertical2\\file'+repr(prntcount))
         prntcount+=1

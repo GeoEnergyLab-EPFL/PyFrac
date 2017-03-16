@@ -202,6 +202,7 @@ def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipN
     k       = 0
     norm    = 1
     relax   = 1
+    normlist = np.zeros((maxitr,),float)
     
     delwK   = solk[np.arange(EltChannel.size)]
     wcNplusOne              = np.copy(wLastTS)
@@ -232,11 +233,16 @@ def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipN
             solk    = np.linalg.solve(A,S)
             
         norm    = np.linalg.norm(abs(solk/solkm1-1))
-        k       = k+1 
-        if k>maxitr:
-            raise SystemExit('Picard iteration not converged after '+repr(maxitr)+' iterations')
-    if np.isnan(solk).any():
-        raise SystemExit('delw sol is not evaluated correctly '+repr(solk))
+        normlist[k] = norm
+        if norm>normlist[k-1] and norm<1e-4:
+            break
+        k       = k+1
+        if k>=maxitr:
+            print('Picard iteration not converged after '+repr(maxitr)+' iterations')
+            print('norms of the last iterations'+repr(normlist))
+            solk = np.full((len(solk),),np.nan,dtype=np.float64)
+            break
+
     print('Iterations = '+repr(k)+', exiting norm Picard method= '+repr(norm))
     return solk
 
