@@ -8,11 +8,13 @@ See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
+# import numdifftools as nd
 import scipy.sparse.linalg as spla
 from scipy.linalg import cho_factor
 from scipy.linalg import cho_solve
 import matplotlib.pyplot as plt
 from Utility import *
+
 
 def FiniteDiff_operator_laminar(w,EltCrack,muPrime,Mesh,InCrack):
     
@@ -56,7 +58,9 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
     ReRgtEdge = 4/3 * rho*wRgtEdge*(vkm1[1,EltCrack]**2+vkm1[5,EltCrack]**2)**0.5/mu[EltCrack]
     ReBtmEdge = 4/3 * rho*wBtmEdge*(vkm1[2,EltCrack]**2+vkm1[6,EltCrack]**2)**0.5/mu[EltCrack]
     ReTopEdge = 4/3 * rho*wTopEdge*(vkm1[3,EltCrack]**2+vkm1[7,EltCrack]**2)**0.5/mu[EltCrack]
-    
+
+    maxRe = max(ReLftEdge)
+
     rough     = 10000*np.ones((EltCrack.size,),np.float64)
     ffLftEdge = FF_YangJoseph(ReLftEdge,rough)
     ffRgtEdge = FF_YangJoseph(ReRgtEdge,rough)
@@ -87,8 +91,6 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
     ReRgtEdge = 4/3 * rho*wRgtEdge*(vk[1,EltCrack]**2+vk[5,EltCrack]**2)**0.5/mu[EltCrack]
     ReBtmEdge = 4/3 * rho*wBtmEdge*(vk[2,EltCrack]**2+vk[6,EltCrack]**2)**0.5/mu[EltCrack]
     ReTopEdge = 4/3 * rho*wTopEdge*(vk[3,EltCrack]**2+vk[7,EltCrack]**2)**0.5/mu[EltCrack]
-    
-    maxRe = max(ReLftEdge)
     
     ffLftEdge = FF_YangJoseph(ReLftEdge,rough)
     ffRgtEdge = FF_YangJoseph(ReRgtEdge,rough)
@@ -129,15 +131,17 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
 
 ######################################
 
-def MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack,Mesh,dt,Q,C,muPrime,rho,InCrack,LeakOff,sigma0,vkm1):
-    
+def MakeEquationSystemExtendedFP(solk,vkm1,*args):
+
+    (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0) = args
     
     Ccc     = C[np.ix_(EltChannel,EltChannel)]
     Cct     = C[np.ix_(EltChannel,EltsTipNew)]
     
     A       = np.zeros((EltChannel.size+EltsTipNew.size,EltChannel.size+EltsTipNew.size),dtype=np.float64)
     S       = np.zeros((EltChannel.size+EltsTipNew.size,),dtype=np.float64)
-    
+
+    delwK = solk[np.arange(EltChannel.size)]
     wcNplusOne              = np.copy(wLastTS)
     wcNplusOne[EltChannel]  = wcNplusOne[EltChannel]+delwK
     wcNplusOne[EltsTipNew]  = wTip
@@ -204,7 +208,7 @@ def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipN
     k       = 0
     norm    = 1
     relax   = 1
-    normlist = np.zeros((maxitr,),float)
+    normlist = np.ones((maxitr,),float)
     
     delwK   = solk[np.arange(EltChannel.size)]
     wcNplusOne              = np.copy(wLastTS)
@@ -215,10 +219,10 @@ def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipN
     while norm>Tol:
     
         delwK   = solk[np.arange(EltChannel.size)]
-        delwK   = abs(delwK) # Keep the solution positive
+        # delwK   = abs(delwK) # Keep the solution positive
         (A,S,vk)   = MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack_k,Mesh,dt,Q,C,muPrime,rho,InCrack,DLeakOff,sigma0,vk)
 
-  #        print('positive definite '+repr(np.linalg.eigvals(A)))
+#        print('positive definite '+repr(np.linalg.eigvals(A)))
 #        Eig = np.linalg.eigvals(A)
 #        print('min '+("%04.03e" % Eig.min())+' max '+("%04.03e" % Eig.max()))
 #        print('min diagonal '+("%04.03e" % min(A.diagonal())))
@@ -236,11 +240,13 @@ def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipN
             
         norm    = np.linalg.norm(abs(solk/solkm1-1))
         normlist[k] = norm
-        if norm>normlist[k-1] and norm<1e-4:
+        norm=0
+        if norm>normlist[k-1] and normlist[k-1]<1e-4:
             break
         k       = k+1
         if k>=maxitr:
-            print('Picard iteration not converged after '+repr(maxitr)+' iterations')
+            f = open('log', 'a')
+            f.write('Picard iteration not converged after '+repr(maxitr)+' iterations\n')
             print('norms of the last iterations'+repr(normlist))
             solk = np.full((len(solk),),np.nan,dtype=np.float64)
             break
@@ -282,12 +288,78 @@ def pressure_gradient(w,C,sigma0,Mesh,EltCrack,InCrack):
 def FF_YangJoseph(ReNum,rough):
     
     ff = np.full((len(ReNum),),np.inf,dtype=np.float64)
-    nonzero = np.where(abs(ReNum)>1e-5)[0]    
 
-    lamdaS =   (-((-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5) - 64/ReNum[nonzero] + 0.3164/ReNum[nonzero]**0.25)/(1 + 3810**15/ReNum[nonzero]**15)**0.5 + (-((-((-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5) - 64/ReNum[nonzero] + 0.3164/ReNum[nonzero]**0.25)/(1 + 3810**15/ReNum[nonzero]**15)**0.5) - (-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5 - 64/ReNum[nonzero] + 0.1537/ReNum[nonzero]**0.185)/(1 + 1680700000000000000000000/ReNum[nonzero]**5)**0.5 + (-((-((-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5) - 64/ReNum[nonzero] + 0.3164/ReNum[nonzero]**0.25)/(1 + 3810**15/ReNum[nonzero]**15)**0.5) - (-((-((-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5) - 64/ReNum[nonzero] + 0.3164/ReNum[nonzero]**0.25)/(1 + 3810**15/ReNum[nonzero]**15)**0.5) - (-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5 - 64/ReNum[nonzero] + 0.1537/ReNum[nonzero]**0.185)/(1 + 1680700000000000000000000/ReNum[nonzero]**5)**0.5 - (-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5 - 64/ReNum[nonzero] + 0.0753/ReNum[nonzero]**0.136)/(1 + 4000000000000/ReNum[nonzero]**2)**0.5 + (-64/ReNum[nonzero] + 0.000083*ReNum[nonzero]**0.75)/(1 + 2320**50/ReNum[nonzero]**50)**0.5 + 64/ReNum[nonzero]
-    lamdaR =   ReNum[nonzero]**(-0.2032 + 7.348278/rough[nonzero]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[nonzero]**0.03569244 - 0.00255391*rough[nonzero]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[nonzero]**50)**0.5 + 0.00255391*rough[nonzero]**0.8353877) + (-(ReNum[nonzero]**(-0.2032 + 7.348278/rough[nonzero]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[nonzero]**0.03569244 - 0.00255391*rough[nonzero]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[nonzero]**50)**0.5 + 0.00255391*rough[nonzero]**0.8353877)) + 0.01105244*ReNum[nonzero]**(-0.191 + 0.62935712/rough[nonzero]**0.28022284)*rough[nonzero]**0.23275646 + (ReNum[nonzero]**(0.015 + 0.26827956/rough[nonzero]**0.28852025)*(0.0053 + 0.02166401/rough[nonzero]**0.30702955) - 0.01105244*ReNum[nonzero]**(-0.191 + 0.62935712/rough[nonzero]**0.28022284)*rough[nonzero]**0.23275646 + (ReNum[nonzero]**0.002*(0.011 + 0.18954211/rough[nonzero]**0.510031) - ReNum[nonzero]**(0.015 + 0.26827956/rough[nonzero]**0.28852025)*(0.0053 + 0.02166401/rough[nonzero]**0.30702955) + (0.0098 - ReNum[nonzero]**0.002*(0.011 + 0.18954211/rough[nonzero]**0.510031) + 0.17805185/rough[nonzero]**0.46785053)/(1 + (8.733801045300249e10*rough[nonzero]**0.90870686)/ReNum[nonzero]**2)**0.5)/(1 + (6.44205549308073e15*rough[nonzero]**5.168887)/ReNum[nonzero]**5)**0.5)/(1 + (1.1077593467238922e13*rough[nonzero]**4.9771653)/ReNum[nonzero]**5)**0.5)/(1 + (2.9505925619934144e14*rough[nonzero]**3.7622822)/ReNum[nonzero]**5)**0.5
-    ff[nonzero] = np.asarray(lamdaS + (lamdaR-lamdaS)/(1+(ReNum[nonzero]/(45.196502*rough[nonzero]**1.2369807+1891))**-5)**0.5,float)/4
+    lam = np.where(abs(ReNum)<2100)[0]
+    ff[lam] = 16/ReNum[lam]
+
+    turb = np.where(abs(ReNum)>=2100)[0]
+    lamdaS =   (-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5 + (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.1537/ReNum[turb]**0.185)/(1 + 1680700000000000000000000/ReNum[turb]**5)**0.5 + (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.1537/ReNum[turb]**0.185)/(1 + 1680700000000000000000000/ReNum[turb]**5)**0.5 - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.0753/ReNum[turb]**0.136)/(1 + 4000000000000/ReNum[turb]**2)**0.5 + (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 + 64/ReNum[turb]
+    lamdaR =   ReNum[turb]**(-0.2032 + 7.348278/rough[turb]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[turb]**0.03569244 - 0.00255391*rough[turb]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[turb]**50)**0.5 + 0.00255391*rough[turb]**0.8353877) + (-(ReNum[turb]**(-0.2032 + 7.348278/rough[turb]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[turb]**0.03569244 - 0.00255391*rough[turb]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[turb]**50)**0.5 + 0.00255391*rough[turb]**0.8353877)) + 0.01105244*ReNum[turb]**(-0.191 + 0.62935712/rough[turb]**0.28022284)*rough[turb]**0.23275646 + (ReNum[turb]**(0.015 + 0.26827956/rough[turb]**0.28852025)*(0.0053 + 0.02166401/rough[turb]**0.30702955) - 0.01105244*ReNum[turb]**(-0.191 + 0.62935712/rough[turb]**0.28022284)*rough[turb]**0.23275646 + (ReNum[turb]**0.002*(0.011 + 0.18954211/rough[turb]**0.510031) - ReNum[turb]**(0.015 + 0.26827956/rough[turb]**0.28852025)*(0.0053 + 0.02166401/rough[turb]**0.30702955) + (0.0098 - ReNum[turb]**0.002*(0.011 + 0.18954211/rough[turb]**0.510031) + 0.17805185/rough[turb]**0.46785053)/(1 + (8.733801045300249e10*rough[turb]**0.90870686)/ReNum[turb]**2)**0.5)/(1 + (6.44205549308073e15*rough[turb]**5.168887)/ReNum[turb]**5)**0.5)/(1 + (1.1077593467238922e13*rough[turb]**4.9771653)/ReNum[turb]**5)**0.5)/(1 + (2.9505925619934144e14*rough[turb]**3.7622822)/ReNum[turb]**5)**0.5
+    ff[turb] = np.asarray(lamdaS + (lamdaR-lamdaS)/(1+(ReNum[turb]/(45.196502*rough[turb]**1.2369807+1891))**-5)**0.5,float)/4
     
-    return ff    
-    
-    
+    return ff
+
+
+def Elastohydrodynamic_Residual_function(solk, interItr,*args):
+
+    (A, S, vk) = MakeEquationSystemExtendedFP(solk,interItr,*args)
+    return (np.dot(A,solk)-S,vk)
+
+
+def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, relax, Tol, maxitr, *args):
+    solk = guess
+    k = 1
+    norm = 1
+    normlist = np.zeros((maxitr,), float)
+
+    tryNewton = False
+    newton = 0
+
+    while norm > Tol:
+
+        solkm1 = solk
+        if k % 100 == 0 or tryNewton:
+            (Fx,interItr) = Res_fun(solk,interItr, *args)
+            if newton %3 == 0:
+                Jac = Jacobian(Res_fun, solk, interItr, TypValue, *args)
+            dx = np.linalg.solve(Jac, -Fx)
+            solk = solkm1 + dx
+            newton += 1
+        else:
+            # try:
+            (A, b, interItr) = sys_fun(solk,interItr,*args)
+            solk = (1 - relax) * solkm1 + relax * np.linalg.solve(A, b)
+            # except np.linalg.LinAlgError:  # if condition number too high
+            #     A = A + 1e-13 * np.identity(A.shape[0])
+            #     solk = np.linalg.solve(A, b)
+
+        norm = np.linalg.norm(abs(solk / solkm1 - 1))
+        normlist[k] = norm
+        # residual = np.linalg.norm((np.dot(A,solk)-b))
+
+        if norm > normlist[k - 1] and norm < 10:
+            tryNewton = True
+        k = k + 1
+        if k >= maxitr:
+            print('Picard iteration not converged after ' + repr(maxitr) + ' iterations')
+            print('norms of the last iterations' + repr(normlist))
+            solk = np.full((len(solk),), np.nan, dtype=np.float64)
+            break
+
+    print('Iterations = ' + repr(k) + ', exiting norm = ' + repr(norm))
+    return solk
+
+
+def Jacobian(Residual_function, x,interItr, TypValue,*args):
+    (Fx,interItr) = Residual_function(x,interItr,*args)
+    Jac = np.zeros((len(x), len(x)), dtype=np.float64)
+    for i in range(0, len(x)):
+        Epsilon = np.finfo(float).eps ** 0.5 * max(x[i],TypValue[i])
+        xip = np.copy(x)
+        # xin = np.copy(x)
+        xip[i] = xip[i] + Epsilon
+        # xin[i] = xin[i]-Epsilon
+        (Fxi,interItr) = Residual_function(xip,interItr,*args)
+        Jac[:, i] = (Fxi - Fx) / Epsilon
+        # Jac[:,i] = (Residual_function(xip,interItr,*args)[0] - Residual_function(xin,interItr,*args)[0])/(2*Epsilon)
+    return Jac

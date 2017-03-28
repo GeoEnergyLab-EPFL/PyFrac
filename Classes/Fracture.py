@@ -303,6 +303,10 @@ class Fracture(Domain):
         self.Leakedoff[self.EltChannel]= 2*self.Cprime[self.EltChannel]*self.mesh.EltArea*(self.time-self.Tarrival[self.EltChannel])**0.5
         self.Leakedoff[self.EltTip]    = 2*self.Cprime[self.EltTip]*VolumeIntegral(self.alpha, self.l, self.mesh.hx, self.mesh.hy, 'Lk', self.Kprime[self.EltTip], self.Eprime, self.muPrime[self.EltTip], self.Cprime[self.EltTip], self.v)
 
+        f = open('log', 'w+')
+        from time import gmtime, strftime
+        f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime())+'\n\n\n')
+
 #        D=np.resize(self.Leakedoff,(self.mesh.ny,self.mesh.nx))
 #        plt.matshow(D)
 #        cm.colorbar
@@ -600,14 +604,15 @@ class Fracture(Domain):
                                         6       -- did not converge after max iterations
                                         7       -- tip inversion not successful 
                                         8       -- Ribbon element not found in the enclosure of a tip cell
-                                        
+                                        9       -- Filling fraction not correct
                                     
                 
         """
         itrFact     = 1         #the factor multipled to time step to retry iteration if not successful 
         tmStpItr    = 0         #max retries with smaller dt
         exitstatus  = 0         #exit code returned
-        
+
+        f = open('log', 'a')
         while exitstatus != 1:  # loop to retry an iteration with smaller time step in case not succussfull
             dt = CFL*itrFact*min(self.mesh.hx,self.mesh.hy)/max(self.v)
             if exitstatus>1:
@@ -659,6 +664,7 @@ class Fracture(Domain):
                 sgndDist_k[self.EltRibbon]  = -TipAsymInversion(w_k,self.EltRibbon,self.Kprime,self.Eprime,regime,self.muPrime,self.Cprime,self.sgndDist,dt)
                 if np.isnan(sgndDist_k[self.EltRibbon]).any():
                     print('Tip inversion is not correct'+'\n time step failed .............')
+                    f.write('Tip inversion is not correct'+'\n time step failed .............\n\n')
                     exitstatus = 7
                     break
                 
@@ -668,6 +674,7 @@ class Fracture(Domain):
     #            plt.pause(1)
                 if max(sgndDist_k)==1e10:
                     print('FMM not worked properly = '+repr(np.where(sgndDist_k==1e10))+'\ntime step failed .............')
+                    f.write('FMM not worked properly = '+repr(np.where(sgndDist_k==1e10))+'\ntime step failed .............')
                     exitstatus = 2
                     break
     
@@ -677,6 +684,8 @@ class Fracture(Domain):
                 tipNeighb = self.mesh.NeiElements[EltsTipNew,:]
                 for i in range(0,len(EltsTipNew)):
                     if (np.where(tipNeighb[i,:]==EltsTipNew[i])[0]).size>0:
+                        self.PlotFracture('complete', 'footPrint')
+                        f.write('Reached end of the grid. exiting....\n\n')
                         raise SystemExit('Reached end of the grid. exiting....')
                 
                 InCrack_k   = np.zeros((self.mesh.NumberOfElts,),dtype=np.int8)
@@ -687,6 +696,13 @@ class Fracture(Domain):
     
                 
                 FillFrac_k     = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, 'A', self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)/self.mesh.EltArea # Calculate filling fraction for current iteration
+                if (FillFrac_k>1.0+1e-10).any() or (FillFrac_k<0-np.finfo(float).eps).any():
+                    print(repr(FillFrac_k))
+                    print(repr(FillFrac_k < 0))
+                    print('Filling fraction not correct.\ntime step failed .............')
+                    f.write('Filling fraction not correct.\ntime step failed .............\n\n')
+                    exitstatus = 9
+                    break
                 # some of the list are redundant to calculate on each iteration            
                 (EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k) = UpdateLists(self.EltChannel, EltsTipNew, FillFrac_k, sgndDist_k, self.mesh) # Evaluate the element lists for current iteration
                 
@@ -717,6 +733,7 @@ class Fracture(Domain):
                         
                         
                     print('Front is not tracked correctly, '+ 'problem in cell(s) '+repr(EltsTipNew[np.where(nan)])+'\ntime step failed .............')
+                    f.write('Front is not tracked correctly, '+ 'problem in cell(s) '+repr(EltsTipNew[np.where(nan)])+'\ntime step failed .............\n\n')
                     exitstatus = 3
                     break
                 
@@ -728,6 +745,7 @@ class Fracture(Domain):
                         if np.isnan(KIPrime).any():
                             np.where(np.isnan(KIPrime))
                             print('Ribbon element not found in the enclosure of tip cell. tip cell '+repr(EltsTipNew[np.where(np.isnan(KIPrime))])+'\n time step failed .............')
+                            f.write('Ribbon element not found in the enclosure of tip cell. tip cell '+repr(EltsTipNew[np.where(np.isnan(KIPrime))])+'\n time step failed .............\n\n')
                             exitstatus = 8
                             break
                         wTip        = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, regime, self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k, stagnant, KIPrime)/self.mesh.EltArea    
@@ -742,6 +760,7 @@ class Fracture(Domain):
                     
                     if (wTip<-10**-4*np.mean(wTip)).any():
                         print('wTip not right'+'\n time step failed .............')
+                        f.write('wTip not right'+'\n time step failed .............\n\n')
                         exitstatus = 4
                         break
        
@@ -753,16 +772,25 @@ class Fracture(Domain):
                     
              
                     guess = np.zeros((self.EltChannel.size+EltsTipNew.size,), float)
-                    pguess = self.p[EltsTipNew]
+                    # pguess = self.p[EltsTipNew]
                     
             
                     guess[np.arange(self.EltChannel.size)] = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float)        
-                    guess[self.EltChannel.size+np.arange(EltsTipNew.size)] = pguess
-        
+                    # guess[self.EltChannel.size+np.arange(EltsTipNew.size)] = pguess
+                    wguess = np.copy(self.w)
+                    wguess[self.EltChannel] = wguess[self.EltChannel] + guess[np.arange(self.EltChannel.size)]
+                    wguess[EltsTipNew] = wTip
+                    vk = velocity(wguess, EltCrack_k, self.mesh, InCrack_k, self.muPrime, C, self.sigma0)
+
                     print('Not converged, solving non linear system with extended footprint')
-                    sol     = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,self.rho,InCrack_k,DLkOff,self.sigma0)
-    
+
+                    # sol = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,self.rho,InCrack_k,DLkOff,self.sigma0)
+                    TypValue = np.copy(guess)
+                    TypValue[self.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
+                    arg = (self.EltChannel, EltsTipNew, self.w, wTip, EltCrack_k, self.mesh, dt, self.Q, C, self.muPrime, self.rho, InCrack_k, DLkOff, self.sigma0)
+                    sol = Picard_Newton(Elastohydrodynamic_Residual_function, MakeEquationSystemExtendedFP, guess, TypValue, vk, 1.0, tol_Picard, 100, *arg)
     #                if itrcount>30:
+
     #                    if norm_km1-norm<1e-5:
     #                        norm = 1e-4
     ##                    self.PlotFracture('complete','footPrint')
@@ -772,7 +800,8 @@ class Fracture(Domain):
     #                    itrcount=1
                     w_k[self.EltChannel] =  self.w[self.EltChannel] + sol[np.arange(self.EltChannel.size)]
                     if np.isnan(w_k).any() or (w_k<0).any():
-                        print('width not correct.\n\n time step failed .............')
+
+                        f.write('width solution not correct.\ntime step failed .............\n\n')
                         exitstatus = 5
                         break
         #            pTip_k      = sol[self.EltChannel.size+np.arange(EltsTipNew.size)]
@@ -782,6 +811,7 @@ class Fracture(Domain):
     
                     if itrcount>=maxitr:
                         print('did not converge after '+repr(maxitr)+' iterations'+'\n time step failed .............')
+                        f.write('did not converge after '+repr(maxitr)+' iterations'+'\n time step failed .............\n\n')
                         exitstatus = 6
                         break
                     FillFrac_km1 = np.copy(FillFrac_k)
@@ -794,6 +824,8 @@ class Fracture(Domain):
                 itrFact *= 0.8
                 tmStpItr+= 1
                 if tmStpItr == 4:
+                    self.PlotFracture('complete','footPrint')
+                    f.write('time stepping not successful, exit status = '+repr(exitstatus)+'\n')
                     raise SystemExit('time stepping not successful, exit status = '+repr(exitstatus))
                     #return exitstatus
                 
