@@ -575,7 +575,7 @@ class Fracture(Domain):
 
 
 ######################################     
-    def Propagate(self,C,tol_frntPos,tol_Picard,regime='U',maxitr=25,CFL=0.6):
+    def Propagate(self,C,tol_frntPos,tol_Picard,regime='U',maxitr=25,CFL=0.6,turb=False):
         """ Propagate fracture one time step
             Arguments:
                 dt (float):         time step
@@ -592,6 +592,7 @@ class Fracture(Domain):
                                         regime -- U  gives tip volume according to the Universal assymptote (Donstov and Pierce, 2017)
                                         regime -- MK gives tip volume according to the M-K transition assymptote
                 maxitr (int)        maximum iterations to find front position (default 25).
+                turb (bool)         flag specifying if turbulence is taken into account.
                 
             return:
                 exitstatus (int):   possible values:
@@ -629,8 +630,8 @@ class Fracture(Domain):
                     r=0.1
                 ac=(1-r)/r;
                 C[self.EltTip[e],self.EltTip[e]]=C[self.EltTip[e],self.EltTip[e]]*(1.+ac*np.pi/4.)
-            
-    
+
+            # guess = np.zeros((len(self.EltCrack),),dtype = np.float64)
             guess = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float) # average injected fluid over footprint
             print('Solving non linear system with same footprint')
             
@@ -641,8 +642,14 @@ class Fracture(Domain):
     #            TarrivalMid[np.where((T-dt-TarrivalMid)<0)]=T-dt
     #        DLkOff[self.EltTip]         = 2*self.Cprime[self.EltTip]*self.FillF*self.mesh.EltArea* ((self.time-TarrivalMid)**0.5-(self.time-dt-TarrivalMid)**0.5)
     #        DLkOff[self.EltChannel]     = 2*self.Cprime[self.EltChannel]*self.mesh.EltArea*((self.time - self.Tarrival[self.EltChannel])**0.5 - (self.time-dt - self.Tarrival[self.EltChannel])**0.5)
-    
-            sol     =   ElastoHydrodynamicSolver_SameFP(guess,tol_Picard,self.w,self.mesh.NeiElements,self.EltCrack,dt,self.Q,C,self.mesh.EltArea,self.muPrime,self.mesh,self.InCrack,DLkOff,self.sigma0)
+
+            wguess = np.copy(self.w)
+            wguess[self.EltCrack] = wguess[self.EltCrack] + guess
+            vk = velocity(wguess, self.EltCrack, self.mesh, self.InCrack, self.muPrime, C, self.sigma0)
+
+            argSameFP = (self.w, self.EltCrack, self.Q, C, dt, self.muPrime, self.mesh, self.InCrack, DLkOff, self.sigma0, self.rho, turb)
+            (sol,vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP, MakeEquationSystemSameFP, guess, guess, vk, 1.0, tol_Picard, 100, *argSameFP)
+            # sol     =   ElastoHydrodynamicSolver_SameFP(guess,tol_Picard,self.w,self.mesh.NeiElements,self.EltCrack,dt,self.Q,C,self.mesh.EltArea,self.muPrime,self.mesh,self.InCrack,DLkOff,self.sigma0)
                                                 
             C[np.ix_(self.EltTip,self.EltTip)]=C_EltTip  #retain origional C (without fill fraction correction)
     
@@ -670,8 +677,7 @@ class Fracture(Domain):
                 
                 SolveFMM(sgndDist_k, self.EltRibbon, self.EltChannel, self.mesh)    # solve Eikonal eq via Fast Marching Method starting from the element close to the ribbon elt (i.e. the Tip element of the last time step)
                     
-    #            PrintDomain(np.arange(self.mesh.NumberOfElts),sgndDist_k,self.mesh)
-    #            plt.pause(1)
+
                 if max(sgndDist_k)==1e10:
                     print('FMM not worked properly = '+repr(np.where(sgndDist_k==1e10))+'\ntime step failed .............')
                     f.write('FMM not worked properly = '+repr(np.where(sgndDist_k==1e10))+'\ntime step failed .............')
@@ -696,9 +702,10 @@ class Fracture(Domain):
     
                 
                 FillFrac_k     = VolumeIntegral(alpha_k, l_k, self.mesh.hx, self.mesh.hy, 'A', self.Kprime[EltsTipNew], self.Eprime, self.muPrime[EltsTipNew], self.Cprime[EltsTipNew], Vel_k)/self.mesh.EltArea # Calculate filling fraction for current iteration
-                if (FillFrac_k>1.0+1e-10).any() or (FillFrac_k<0-np.finfo(float).eps).any():
-                    print(repr(FillFrac_k))
-                    print(repr(FillFrac_k < 0))
+                FillFrac_k[np.logical_and(FillFrac_k>1.0,FillFrac_k<1+1e-6)]=1.0
+                if (FillFrac_k>1.0).any() or (FillFrac_k<0.0-np.finfo(float).eps).any():
+                    print('incorrect filling fraction '+repr(FillFrac_k[np.where(FillFrac_k>1.0+1e-6)]))
+                    print(repr(FillFrac_k[np.where(FillFrac_k < 0.0-np.finfo(float).eps)]))
                     print('Filling fraction not correct.\ntime step failed .............')
                     f.write('Filling fraction not correct.\ntime step failed .............\n\n')
                     exitstatus = 9
@@ -708,10 +715,8 @@ class Fracture(Domain):
                 
                 NewTipinTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]  # EletsTipNew may contain fully filled elements also  
                 
-                if len(FillFrac_km1)==len(FillFrac_k):
-                    norm = np.linalg.norm(FillFrac_k-FillFrac_km1)
-                else:
-                    norm = 1
+
+                norm = abs((np.linalg.norm(FillFrac_k)-np.linalg.norm(FillFrac_km1))/len(FillFrac_k))
                 print('Norm with new filling fraction = '+repr(norm))
                 
     #            highStress = np.append(np.where(self.mesh.CenterCoor[:,0]>0.048/2+self.mesh.hx),np.where(self.mesh.CenterCoor[:,0]<-0.048/2-self.mesh.hx))
@@ -775,7 +780,7 @@ class Fracture(Domain):
                     # pguess = self.p[EltsTipNew]
                     
             
-                    guess[np.arange(self.EltChannel.size)] = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float)        
+                    guess[np.arange(self.EltChannel.size)] = dt*sum(self.Q)/self.EltCrack.size*np.ones((self.EltCrack.size,), float)
                     # guess[self.EltChannel.size+np.arange(EltsTipNew.size)] = pguess
                     wguess = np.copy(self.w)
                     wguess[self.EltChannel] = wguess[self.EltChannel] + guess[np.arange(self.EltChannel.size)]
@@ -784,28 +789,22 @@ class Fracture(Domain):
 
                     print('Not converged, solving non linear system with extended footprint')
 
-                    # sol = ElastoHydrodynamicSolver_ExtendedFP(guess,tol_Picard,self.EltChannel,EltCrack_k,EltsTipNew,self.w,wTip,self.mesh,dt,self.Q,C,self.muPrime,self.rho,InCrack_k,DLkOff,self.sigma0)
                     TypValue = np.copy(guess)
                     TypValue[self.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
-                    arg = (self.EltChannel, EltsTipNew, self.w, wTip, EltCrack_k, self.mesh, dt, self.Q, C, self.muPrime, self.rho, InCrack_k, DLkOff, self.sigma0)
-                    sol = Picard_Newton(Elastohydrodynamic_Residual_function, MakeEquationSystemExtendedFP, guess, TypValue, vk, 1.0, tol_Picard, 100, *arg)
-    #                if itrcount>30:
+                    arg = (self.EltChannel, EltsTipNew, self.w, wTip, EltCrack_k, self.mesh, dt, self.Q, C, self.muPrime, self.rho, InCrack_k, DLkOff, self.sigma0, turb)
+                    (sol,vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP, MakeEquationSystemExtendedFP, guess, TypValue, vk, 1.0, tol_Picard, 100, *arg)
 
-    #                    if norm_km1-norm<1e-5:
-    #                        norm = 1e-4
-    ##                    self.PlotFracture('complete','footPrint')
-    #                    plt.pause(1)
-    #                    print(repr(FillFrac_k)+repr(FillFrac_km1))
-    #                    sol[np.arange(self.EltChannel.size)] = 1.5*sol[np.arange(self.EltChannel.size)]
-    #                    itrcount=1
-                    w_k[self.EltChannel] =  self.w[self.EltChannel] + sol[np.arange(self.EltChannel.size)]
+
+                    # w_k[self.EltChannel] =  self.w[self.EltChannel] + sol[np.arange(self.EltChannel.size)]
+                    # wLftEdge = (w_k[EltCrack_k] + w_k[self.mesh.NeiElements[EltCrack_k, 0]]) / 2
+                    # ReLftEdge = 4/3 * self.rho*wLftEdge*(vel[0,EltCrack_k]**2+vel[4,EltCrack_k]**2)**0.5/self.muPrime[EltCrack_k]*12
+
                     if np.isnan(w_k).any() or (w_k<0).any():
 
                         f.write('width solution not correct.\ntime step failed .............\n\n')
                         exitstatus = 5
                         break
-        #            pTip_k      = sol[self.EltChannel.size+np.arange(EltsTipNew.size)]
-    
+
                     itrcount = itrcount +1 
                     print('\niteration ' + repr(itrcount))
     
@@ -823,7 +822,7 @@ class Fracture(Domain):
             if exitstatus != 1:
                 itrFact *= 0.8
                 tmStpItr+= 1
-                if tmStpItr == 4:
+                if tmStpItr == 6:
                     self.PlotFracture('complete','footPrint')
                     f.write('time stepping not successful, exit status = '+repr(exitstatus)+'\n')
                     raise SystemExit('time stepping not successful, exit status = '+repr(exitstatus))
@@ -834,7 +833,16 @@ class Fracture(Domain):
     #        lmbda           = self.mesh.hx*np.cos(alpha_k[NewChannelinTip])+self.mesh.hy*np.sin(alpha_k[NewChannelinTip])
     #        self.Tarrival[EltsChannelNew] = (2*self.time - (l_k[NewChannelinTip]-lmbda)/Vel_k[NewChannelinTip] - l_k[NewChannelinTip]/Vel_k[NewChannelinTip])/2
     #        self.Leakedoff += DLkOff     
-            
+
+        # PrintDomain(EltCrack_k, ReLftEdge, self.mesh)
+        # D = np.zeros((self.mesh.NumberOfElts),float)
+        # D[EltCrack_k] = ReLftEdge
+        # D=np.resize(D,(self.mesh.ny,self.mesh.nx))
+        # plt.matshow(D)
+        # plt.colorbar()
+        # plt.axis('equal')
+        # plt.pause(0.01)
+
         w_k[EltsTipNew]             = wTip
         self.w                      = w_k
         self.FillF                  = FillFrac_k[NewTipinTip]      
@@ -850,6 +858,4 @@ class Fracture(Domain):
     def SaveFracture(self,filename):
         with open(filename, 'wb') as output:
             pickle.dump(self, output, -1)
-    
 
-            

@@ -19,8 +19,8 @@ from Utility import *
 def FiniteDiff_operator_laminar(w,EltCrack,muPrime,Mesh,InCrack):
     
     FinDiffOprtr    = np.zeros((w.size,w.size),dtype=np.float64)
-    dx      = Mesh.hx
-    dy      = Mesh.hy
+    dx  = Mesh.hx
+    dy  = Mesh.hy
     
     wLftEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,0]])/2*InCrack[Mesh.NeiElements[EltCrack,0]]
     wRgtEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,1]])/2*InCrack[Mesh.NeiElements[EltCrack,1]]
@@ -66,11 +66,7 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
     ffRgtEdge = FF_YangJoseph(ReRgtEdge,rough)
     ffBtmEdge = FF_YangJoseph(ReBtmEdge,rough)
     ffTopEdge = FF_YangJoseph(ReTopEdge,rough)
-#    ffLftEdge = 3/4 * 16*mu[EltCrack]/(rho*(vkm1[0,EltCrack]**2+vkm1[4,EltCrack]**2)**0.5*wLftEdge)
-#    ffRgtEdge = 3/4 * 16*mu[EltCrack]/(rho*(vkm1[1,EltCrack]**2+vkm1[5,EltCrack]**2)**0.5*wRgtEdge)
-#    ffBtmEdge = 3/4 * 16*mu[EltCrack]/(rho*(vkm1[2,EltCrack]**2+vkm1[6,EltCrack]**2)**0.5*wBtmEdge)
-#    ffTopEdge = 3/4 * 16*mu[EltCrack]/(rho*(vkm1[3,EltCrack]**2+vkm1[7,EltCrack]**2)**0.5*wTopEdge)
-    
+
     # velocity current iteration, arrangement row wise: left x, right x, bottom y, top y, left y, right y, bottom x, top x
     vk      = np.zeros((8,Mesh.NumberOfElts),dtype=np.float64) 
     vk[0,EltCrack] = -wLftEdge/(rho*ffLftEdge*(vkm1[0,EltCrack]**2+vkm1[4,EltCrack]**2)**0.5)*dpdxLft
@@ -97,10 +93,7 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
     ffBtmEdge = FF_YangJoseph(ReBtmEdge,rough)
     ffTopEdge = FF_YangJoseph(ReTopEdge,rough)
     
-#    ffLftEdge = 3/4 * 16*mu[EltCrack]/(rho*(vk[0,EltCrack]**2+vk[4,EltCrack]**2)**0.5*wLftEdge)
-#    ffRgtEdge = 3/4 * 16*mu[EltCrack]/(rho*(vk[1,EltCrack]**2+vk[5,EltCrack]**2)**0.5*wRgtEdge)
-#    ffBtmEdge = 3/4 * 16*mu[EltCrack]/(rho*(vk[2,EltCrack]**2+vk[6,EltCrack]**2)**0.5*wBtmEdge)
-#    ffTopEdge = 3/4 * 16*mu[EltCrack]/(rho*(vk[3,EltCrack]**2+vk[7,EltCrack]**2)**0.5*wTopEdge)
+
     ffLftEdge[np.where(np.isinf(ffLftEdge))]=0 # for edges adjacent to cells outside fracture
     ffRgtEdge[np.where(np.isinf(ffRgtEdge))]=0
     ffBtmEdge[np.where(np.isinf(ffBtmEdge))]=0
@@ -133,30 +126,32 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
 
 def MakeEquationSystemExtendedFP(solk,vkm1,*args):
 
-    (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0) = args
+    (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0, turb) = args
     
-    Ccc     = C[np.ix_(EltChannel,EltChannel)]
-    Cct     = C[np.ix_(EltChannel,EltsTipNew)]
+    Ccc = C[np.ix_(EltChannel,EltChannel)]
+    Cct = C[np.ix_(EltChannel,EltsTipNew)]
     
-    A       = np.zeros((EltChannel.size+EltsTipNew.size,EltChannel.size+EltsTipNew.size),dtype=np.float64)
-    S       = np.zeros((EltChannel.size+EltsTipNew.size,),dtype=np.float64)
+    A   = np.zeros((EltChannel.size+EltsTipNew.size,EltChannel.size+EltsTipNew.size),dtype=np.float64)
+    S   = np.zeros((EltChannel.size+EltsTipNew.size,),dtype=np.float64)
 
     delwK = solk[np.arange(EltChannel.size)]
     wcNplusOne              = np.copy(wLastTS)
     wcNplusOne[EltChannel]  = wcNplusOne[EltChannel]+delwK
     wcNplusOne[EltsTipNew]  = wTip
 
-    (FinDiffOprtr,vk)    = FiniteDiff_operator_turbulent(wcNplusOne,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sigma0)
-                                                                                
-#    FinDiffOprtr    = FiniteDiff_operator_laminar(wcNplusOne,EltCrack,muPrime,Mesh,InCrack)
+    if turb:
+        (FinDiffOprtr,vk)    = FiniteDiff_operator_turbulent(wcNplusOne,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sigma0)
+    else:
+        FinDiffOprtr  = FiniteDiff_operator_laminar(wcNplusOne,EltCrack,muPrime,Mesh,InCrack)
+        vk = vkm1
         
     condCC  = FinDiffOprtr[np.ix_(EltChannel,EltChannel)]
     condCT  = FinDiffOprtr[np.ix_(EltChannel,EltsTipNew)]
     condTC  = FinDiffOprtr[np.ix_(EltsTipNew,EltChannel)]
     condTT  = FinDiffOprtr[np.ix_(EltsTipNew,EltsTipNew)]    
     
-    Channel     = np.arange(EltChannel.size)
-    Tip         = Channel.size+np.arange(EltsTipNew.size)
+    Channel = np.arange(EltChannel.size)
+    Tip     = Channel.size+np.arange(EltsTipNew.size)
     
     A[np.ix_(Channel,Channel)]   = np.identity(Channel.size) - dt*np.dot(condCC,Ccc)
     A[np.ix_(Channel,Tip)]       = -dt*condCT
@@ -171,90 +166,31 @@ def MakeEquationSystemExtendedFP(solk,vkm1,*args):
 
 ######################################
 
-def MakeEquationSystemSameFP(delwk,w,EltCrack,NeiElements,Q,myC,dt,EltArea,muPrime,mesh,InCrack,LeakOff,sigma0):
-    
+def MakeEquationSystemSameFP(delwk,vkm1,*args):
+    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb) = args
     wnPlus1 = np.copy(w)
     wnPlus1[EltCrack] = wnPlus1[EltCrack]+delwk
-    con     = FiniteDiff_operator_laminar(wnPlus1,EltCrack,muPrime,mesh,InCrack)
+
+    if turb:
+        (con,vk)= FiniteDiff_operator_turbulent(wnPlus1,EltCrack,muPrime,mesh,InCrack, rho, vkm1, C, sigma0)
+    else:
+        con = FiniteDiff_operator_laminar(wnPlus1, EltCrack, muPrime, mesh, InCrack)
+        vk  = vkm1
     con     = con[np.ix_(EltCrack,EltCrack)]
-    CCrack  = myC[np.ix_(EltCrack,EltCrack)]
+    CCrack  = C[np.ix_(EltCrack,EltCrack)]
     
     A = np.identity(EltCrack.size)-dt*np.dot(con,CCrack)
-    S = dt*np.dot(con,np.dot(CCrack,w[EltCrack])+sigma0[EltCrack]) + dt/EltArea*Q[EltCrack] - LeakOff[EltCrack]/EltArea
-    return (A,S)
+    S = dt*np.dot(con,np.dot(CCrack,w[EltCrack])+sigma0[EltCrack]) + dt/mesh.EltArea*Q[EltCrack] - LeakOff[EltCrack]/mesh.EltArea
+    return (A,S,vk)
 
 #######################################
 
-def ElastoHydrodynamicSolver_SameFP(guess,Tol,w,NeiElements,EltCrack,dt,Q,myC,EltArea,muPrime,mesh,InCrack,DLeakOff,sigma0):
-    maxitr  = 100    
-    solk    = guess
-    k       = 0
-    norm    = 1 
-    while norm>Tol:
-        (A,S)   = MakeEquationSystemSameFP(solk,w,EltCrack,NeiElements,Q,myC,dt,EltArea,muPrime,mesh,InCrack,DLeakOff,sigma0)
-        solkm1  = solk
-#        print('condtion = '+repr(np.linalg.cond(A))+ ' precision = '+repr(2.220446049250313e-16))        
-        solk    = np.linalg.solve(A,S)
-        norm    = np.linalg.norm(abs(solk/solkm1-1))
-        k       = k+1
-        if k>maxitr:
-            raise SystemExit('Picard iteration not converged after '+repr(maxitr)+' iterations, norm = '+repr(norm))
-    print('Iterations = '+repr(k)+', exiting norm Picard method= '+repr(norm))    
-    return solk
-    
-def ElastoHydrodynamicSolver_ExtendedFP(guess,Tol,EltChannel,EltCrack_k,EltsTipNew,wLastTS,wTip,Mesh,dt,Q,C,muPrime,rho,InCrack,DLeakOff,sigma0):
-    maxitr  = 100   
-    solk    = guess
-    k       = 0
-    norm    = 1
-    relax   = 1
-    normlist = np.ones((maxitr,),float)
-    
-    delwK   = solk[np.arange(EltChannel.size)]
-    wcNplusOne              = np.copy(wLastTS)
-    wcNplusOne[EltChannel]  = wcNplusOne[EltChannel]+delwK
-    wcNplusOne[EltsTipNew]  = wTip
-    vk = velocity(wcNplusOne,EltCrack_k,Mesh,InCrack,muPrime,C,sigma0)
+def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr,*args):
 
-    while norm>Tol:
-    
-        delwK   = solk[np.arange(EltChannel.size)]
-        # delwK   = abs(delwK) # Keep the solution positive
-        (A,S,vk)   = MakeEquationSystemExtendedFP(delwK,EltChannel,EltsTipNew,wLastTS,wTip,EltCrack_k,Mesh,dt,Q,C,muPrime,rho,InCrack,DLeakOff,sigma0,vk)
+    (A, S, vk) = MakeEquationSystemSameFP(solk,interItr,*args)
+    return (np.dot(A,solk)-S,vk)
 
-#        print('positive definite '+repr(np.linalg.eigvals(A)))
-#        Eig = np.linalg.eigvals(A)
-#        print('min '+("%04.03e" % Eig.min())+' max '+("%04.03e" % Eig.max()))
-#        print('min diagonal '+("%04.03e" % min(A.diagonal())))
-        solkm1  = solk
-
-        try:        
-#            M2 = spla.spilu(A)
-#            M_x = lambda x: M2.solve(x)
-#            M = spla.LinearOperator(A.shape, M_x)
-#            solk = spla.gmres(A,S,M=M)[0]
-            solk    = (1-relax)*solkm1+relax*np.linalg.solve(A,S)
-        except np.linalg.LinAlgError: #if condition number too high
-            A = A + 1e-13*np.identity(A.shape[0])
-            solk    = np.linalg.solve(A,S)
-            
-        norm    = np.linalg.norm(abs(solk/solkm1-1))
-        normlist[k] = norm
-        norm=0
-        if norm>normlist[k-1] and normlist[k-1]<1e-4:
-            break
-        k       = k+1
-        if k>=maxitr:
-            f = open('log', 'a')
-            f.write('Picard iteration not converged after '+repr(maxitr)+' iterations\n')
-            print('norms of the last iterations'+repr(normlist))
-            solk = np.full((len(solk),),np.nan,dtype=np.float64)
-            break
-
-    print('Iterations = '+repr(k)+', exiting norm Picard method= '+repr(norm))
-    return solk
-
-###################################################
+#######################################
 
 def velocity(w,EltCrack,Mesh,InCrack,muPrime,C,sigma0):
     
@@ -273,10 +209,12 @@ def velocity(w,EltCrack,Mesh,InCrack,muPrime,C,sigma0):
 
     return vel
 
+#######################################
+
 def pressure_gradient(w,C,sigma0,Mesh,EltCrack,InCrack):
     
     pf          = np.zeros((Mesh.NumberOfElts,),dtype=np.float64)
-    pf[EltCrack]          = np.dot(C[np.ix_(EltCrack,EltCrack)],w[EltCrack]) + sigma0[EltCrack]
+    pf[EltCrack]= np.dot(C[np.ix_(EltCrack,EltCrack)],w[EltCrack]) + sigma0[EltCrack]
         
     dpdxLft     = (pf[EltCrack]-pf[Mesh.NeiElements[EltCrack,0]])*InCrack[Mesh.NeiElements[EltCrack,0]]
     dpdxRgt     = (pf[Mesh.NeiElements[EltCrack,1]]-pf[EltCrack])*InCrack[Mesh.NeiElements[EltCrack,1]]
@@ -284,7 +222,9 @@ def pressure_gradient(w,C,sigma0,Mesh,EltCrack,InCrack):
     dpdyTop     = (pf[Mesh.NeiElements[EltCrack,3]]-pf[EltCrack])*InCrack[Mesh.NeiElements[EltCrack,3]]
     
     return (dpdxLft,dpdxRgt,dpdyBtm,dpdyTop)
-    
+
+#######################################
+
 def FF_YangJoseph(ReNum,rough):
     
     ff = np.full((len(ReNum),),np.inf,dtype=np.float64)
@@ -293,26 +233,42 @@ def FF_YangJoseph(ReNum,rough):
     ff[lam] = 16/ReNum[lam]
 
     turb = np.where(abs(ReNum)>=2100)[0]
-    lamdaS =   (-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5 + (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.1537/ReNum[turb]**0.185)/(1 + 1680700000000000000000000/ReNum[turb]**5)**0.5 + (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.1537/ReNum[turb]**0.185)/(1 + 1680700000000000000000000/ReNum[turb]**5)**0.5 - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.0753/ReNum[turb]**0.136)/(1 + 4000000000000/ReNum[turb]**2)**0.5 + (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 + 64/ReNum[turb]
-    lamdaR =   ReNum[turb]**(-0.2032 + 7.348278/rough[turb]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[turb]**0.03569244 - 0.00255391*rough[turb]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[turb]**50)**0.5 + 0.00255391*rough[turb]**0.8353877) + (-(ReNum[turb]**(-0.2032 + 7.348278/rough[turb]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[turb]**0.03569244 - 0.00255391*rough[turb]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[turb]**50)**0.5 + 0.00255391*rough[turb]**0.8353877)) + 0.01105244*ReNum[turb]**(-0.191 + 0.62935712/rough[turb]**0.28022284)*rough[turb]**0.23275646 + (ReNum[turb]**(0.015 + 0.26827956/rough[turb]**0.28852025)*(0.0053 + 0.02166401/rough[turb]**0.30702955) - 0.01105244*ReNum[turb]**(-0.191 + 0.62935712/rough[turb]**0.28022284)*rough[turb]**0.23275646 + (ReNum[turb]**0.002*(0.011 + 0.18954211/rough[turb]**0.510031) - ReNum[turb]**(0.015 + 0.26827956/rough[turb]**0.28852025)*(0.0053 + 0.02166401/rough[turb]**0.30702955) + (0.0098 - ReNum[turb]**0.002*(0.011 + 0.18954211/rough[turb]**0.510031) + 0.17805185/rough[turb]**0.46785053)/(1 + (8.733801045300249e10*rough[turb]**0.90870686)/ReNum[turb]**2)**0.5)/(1 + (6.44205549308073e15*rough[turb]**5.168887)/ReNum[turb]**5)**0.5)/(1 + (1.1077593467238922e13*rough[turb]**4.9771653)/ReNum[turb]**5)**0.5)/(1 + (2.9505925619934144e14*rough[turb]**3.7622822)/ReNum[turb]**5)**0.5
+    lamdaS = (-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5 + (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.1537/ReNum[turb]**0.185)/(1 + 1680700000000000000000000/ReNum[turb]**5)**0.5 + (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-((-((-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5) - 64/ReNum[turb] + 0.3164/ReNum[turb]**0.25)/(1 + 3810**15/ReNum[turb]**15)**0.5) - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.1537/ReNum[turb]**0.185)/(1 + 1680700000000000000000000/ReNum[turb]**5)**0.5 - (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 - 64/ReNum[turb] + 0.0753/ReNum[turb]**0.136)/(1 + 4000000000000/ReNum[turb]**2)**0.5 + (-64/ReNum[turb] + 0.000083*ReNum[turb]**0.75)/(1 + 2320**50/ReNum[turb]**50)**0.5 + 64/ReNum[turb]
+    lamdaR = ReNum[turb]**(-0.2032 + 7.348278/rough[turb]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[turb]**0.03569244 - 0.00255391*rough[turb]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[turb]**50)**0.5 + 0.00255391*rough[turb]**0.8353877) + (-(ReNum[turb]**(-0.2032 + 7.348278/rough[turb]**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough[turb]**0.03569244 - 0.00255391*rough[turb]**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough[turb]**50)**0.5 + 0.00255391*rough[turb]**0.8353877)) + 0.01105244*ReNum[turb]**(-0.191 + 0.62935712/rough[turb]**0.28022284)*rough[turb]**0.23275646 + (ReNum[turb]**(0.015 + 0.26827956/rough[turb]**0.28852025)*(0.0053 + 0.02166401/rough[turb]**0.30702955) - 0.01105244*ReNum[turb]**(-0.191 + 0.62935712/rough[turb]**0.28022284)*rough[turb]**0.23275646 + (ReNum[turb]**0.002*(0.011 + 0.18954211/rough[turb]**0.510031) - ReNum[turb]**(0.015 + 0.26827956/rough[turb]**0.28852025)*(0.0053 + 0.02166401/rough[turb]**0.30702955) + (0.0098 - ReNum[turb]**0.002*(0.011 + 0.18954211/rough[turb]**0.510031) + 0.17805185/rough[turb]**0.46785053)/(1 + (8.733801045300249e10*rough[turb]**0.90870686)/ReNum[turb]**2)**0.5)/(1 + (6.44205549308073e15*rough[turb]**5.168887)/ReNum[turb]**5)**0.5)/(1 + (1.1077593467238922e13*rough[turb]**4.9771653)/ReNum[turb]**5)**0.5)/(1 + (2.9505925619934144e14*rough[turb]**3.7622822)/ReNum[turb]**5)**0.5
     ff[turb] = np.asarray(lamdaS + (lamdaR-lamdaS)/(1+(ReNum[turb]/(45.196502*rough[turb]**1.2369807+1891))**-5)**0.5,float)/4
-    
     return ff
 
+#######################################
 
-def Elastohydrodynamic_Residual_function(solk, interItr,*args):
+def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, interItr,*args):
 
     (A, S, vk) = MakeEquationSystemExtendedFP(solk,interItr,*args)
     return (np.dot(A,solk)-S,vk)
 
+#######################################
 
 def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, relax, Tol, maxitr, *args):
+    """
+    Mixed Picard Newton solver for nonlinear systems.
+        
+    :param Res_fun: The function calculating the residual
+    :param sys_fun: The function giving the system A,b for the Picard solver to solve the linear system of the form Ax=b
+    :param guess:   The initial guess
+    :param TypValue:Typical value of the variable to estimate the Epsilon to calculate jacobian
+    :param interItr:Initial value of the variable exchanged between the iterations, if any 
+    :param relax:   The relaxation factor
+    :param Tol:     Tolerance
+    :param maxitr:  Maximum number of iterations
+    :param args:    arguments given to the residual and systems functions
+    :return:        solution
+    """
     solk = guess
     k = 1
     norm = 1
-    normlist = np.zeros((maxitr,), float)
+    normlist = np.ones((maxitr,), float)
 
     tryNewton = False
+
     newton = 0
 
     while norm > Tol:
@@ -337,18 +293,21 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, relax, Tol, maxit
         normlist[k] = norm
         # residual = np.linalg.norm((np.dot(A,solk)-b))
 
-        if norm > normlist[k - 1] and norm < 10:
-            tryNewton = True
+        if norm > normlist[k - 1] and normlist[k - 1]<2e-4:
+             break
         k = k + 1
         if k >= maxitr:
             print('Picard iteration not converged after ' + repr(maxitr) + ' iterations')
-            print('norms of the last iterations' + repr(normlist))
+            plt.plot(np.arange(100),normlist,'.')
+            plt.axis([0,100,0,0.0016])
+            plt.pause(0.01)
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             break
 
     print('Iterations = ' + repr(k) + ', exiting norm = ' + repr(norm))
-    return solk
+    return (solk,interItr)
 
+#######################################
 
 def Jacobian(Residual_function, x,interItr, TypValue,*args):
     (Fx,interItr) = Residual_function(x,interItr,*args)
