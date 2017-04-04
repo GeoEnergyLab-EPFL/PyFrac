@@ -18,13 +18,20 @@ Functions to calculate tip volumes, given the propagation regime
     regime -- MK gives tip volume according to the M-K transition assymptote
     
 """
+
+# imports
 import numpy as np
 from importlib.machinery import SourceFileLoader
 import matplotlib.pyplot as plt
-from TipInversion import f
 from scipy.optimize import brentq
 
- 
+
+from src.TipInversion import f
+
+
+
+# ----------
+
 def TipAsym_UniversalW_zero_Res(w,*args):
     """Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)"""
     (dist,Kprime,Eprime,muPrime,Cbar,Vel) = args     
@@ -149,8 +156,10 @@ def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
         return M0 
         
     elif regime == 'MK': 
-        return (7.348618459729571e-6*Kprime*(-1.7320508075688772*Kprime**9 + (1. + (31.17691453623979*(dist)**0.5*Eprime**2*muPrime*Vel)/Kprime**3)**0.3333333333333333*(1.7320508075688772*Kprime**9 - 18.*(dist)**0.5*Eprime**2*Kprime**6*muPrime*Vel + 374.12297443487745*dist*Eprime**4*Kprime**3*muPrime**2*Vel**2 + 81648.*dist**1.5*Eprime**6*muPrime**3*Vel**3)))/(Eprime**7*muPrime**3*Vel**3)
-        
+        return (7.348618459729571e-6*Kprime*(-1.7320508075688772*Kprime**9 +
+                                             (1. + (31.17691453623979*(dist)**0.5*Eprime**2*muPrime*Vel)/Kprime**3)**0.3333333333333333*(1.7320508075688772*Kprime**9 - 18.*(dist)**0.5*Eprime**2*Kprime**6*muPrime*Vel + 374.12297443487745*dist*Eprime**4*Kprime**3*muPrime**2*Vel**2 + 81648.*dist**1.5*Eprime**6*muPrime**3*Vel**3)))/(Eprime**7*muPrime**3*Vel**3)
+
+
 def VolumeIntegral(alpha, l, dx, dy, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant=[], KIPrime=[]):
     """Calculate Volume integrals of the grid cells according to the tip assymptote given by the variable regime"""
     if len(stagnant)==0:
@@ -228,7 +237,7 @@ def FindBracket_w(dist,Kprime,Eprime,muPrime,Cprime,Vel):
 #                Kh = Kprime[EltRibbon[i]]*x[j]**0.5/(Eprime*w[EltRibbon[i]])
 #                Ch = 2*Cbar[EltRibbon[i]]*x[j]**0.5/(Vel**0.5*w[EltRibbon[i]])
 #                g0[j] = f(Kh,0.9911799823*Ch,6*3**0.5)
-            raise SystemExit('fracture width bracket cannot be found')
+            raise SystemExit('fracture width bracket cannot be found within 50 iterations')
             
     
     return (a,b)

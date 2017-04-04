@@ -20,8 +20,7 @@ from CartesianMesh import *
 #foo = SourceFileLoader("Fracture", "./Classes/Fracture.py").load_module()
 from Fracture import *
 
-#foo = SourceFileLoader("ElasticityKernel", "./FractureMechanics/ElasticityKernel.py").load_module()
-from ElasticityKernel import *
+from Elasticity import *
 
 #foo = SourceFileLoader("LevelSet", "./LevelSet/LevelSet.py").load_module()
 from LevelSet import *

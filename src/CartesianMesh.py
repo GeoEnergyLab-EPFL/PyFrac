@@ -6,10 +6,14 @@ Created by Haseeb Zia on Thu Dec 22 11:51:00 2016.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017. All rights reserved.
 See the LICENSE.TXT file for more details.
 """
+# import
 import numpy as np
 from importlib.machinery import SourceFileLoader
 
-from Utility import Neighbors
+from src.Utility import Neighbors
+
+## TO DO: Center  the mesh on origin (i.e. origin at mid points of an element)
+
 
 class CartesianMesh :
     """ Class defining a Cartesian Mesh.
@@ -46,15 +50,19 @@ class CartesianMesh :
         self.Ly = Ly   
         self.nx = nx     
         self.ny = ny
-        x = np.linspace(-Lx,Lx, nx+1) 
-        y = np.linspace(-Ly, Ly, ny+1)
+        self.hx = 2. * Lx / nx
+        self.hy = 2. * Ly / ny
+
+        # trying to center the mesh on 0,0
+        x = np.linspace(-Lx-self.hx/2.,Lx+self.hx/2., nx+1)
+        y = np.linspace(-Ly-self.hy/2., Ly+self.hy/2., ny+1)
         xv, yv = np.meshgrid(x, y)   # coordinates of the vertex of each elements
+
         a=np.resize(xv,((nx+1)*(ny+1),1))
         b=np.resize(yv,((nx+1)*(ny+1),1))
 
         self.VertexCoor =np.reshape(np.stack((a,b),axis=-1),(len(a),2))
-        self.hx = 2.*Lx/nx
-        self.hy = 2.*Ly/ny
+
         self.NumberOfElts = nx*ny
         self.EltArea = self.hx*self.hy
         
@@ -81,6 +89,7 @@ class CartesianMesh :
         self.CenterCoor=CoorMid;
         
         self.distCenter = (CoorMid[:,0]**2+CoorMid[:,1]**2)**0.5
+
         ### Giving four neigbouring elements in the following order: [left,right,bottom,up]
         Nei     = np.zeros((self.NumberOfElts,4),int)
         for i in range(0,self.NumberOfElts):
@@ -90,6 +99,10 @@ class CartesianMesh :
         ### the element(s) in the center (used usually for fluid injection)
         (minx,miny) = (min(abs(self.CenterCoor[:,0])),min(abs(self.CenterCoor[:,1])))
         self.CenterElts=np.intersect1d(np.where(abs(self.CenterCoor[:,0])-minx<0.000001),np.where(abs(self.CenterCoor[:,1])-miny<0.000001))
+
+    def locate_element(self,x,y):
+        e = np.intersect1d(np.where(abs(self.CenterCoor[:,0])-x<0.000001),np.where(abs(self.CenterCoor[:,1])-y<0.000001))
+        return e
 
 
 #############################################

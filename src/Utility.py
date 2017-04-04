@@ -8,11 +8,13 @@ See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
-from VolIntegral import Pdistance
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
+
+from src.VolIntegral import Pdistance
+
 
 def RadiusLevelSet(xy,R) :
     """sign distance for a circle <0 inside circle , >0 outside, - zero at boundary"""
@@ -22,7 +24,7 @@ def RadiusLevelSet(xy,R) :
         return np.linalg.norm(xy,2)-R
 
 def Neighbors(elem,nx,ny) :
-    """Neighbouring elements of an element. Boundary elements have themselves as neighbor"""
+    """Neighbouring elements of an element within the mesh . Boundary elements have themselves as neighbor"""
 
     j = elem//nx
     i = elem%nx
@@ -123,11 +125,13 @@ def PlotMeshFractureTrace(Mesh,EltTip,EltChannel,EltRibbon,I,J,Ranalytical,sigma
     plt.axis('equal')
 
     mng = plt.get_current_fig_manager()
-    mng.window.showMaximized()
+#    mng.window.showMaximized()
 
     return  plt.show()
     
 ######################################
+
+# why is located in this file ? -> move to a TipAsymptotics file
 
 def StressIntensityFactor(w,lvlSetData,EltTip,EltRibbon,stagnant,mesh,Eprime):
     """ See Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2017"""

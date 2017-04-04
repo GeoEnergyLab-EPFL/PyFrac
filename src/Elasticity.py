@@ -11,6 +11,7 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 import pickle
 
+
 # Elasticity kernel ....
 #################################
 def KernelZZ(ax,ay,x,y,Ep):
@@ -18,13 +19,17 @@ def KernelZZ(ax,ay,x,y,Ep):
     apx=ax+x;
     bmy=ay-y;
     bpy =ay+y;
-    return (Ep/(8*(np.pi)))*(np.sqrt(amx**2+bmy**2)/(amx*bmy)+np.sqrt(apx**2+bmy**2)/(apx*bmy) +np.sqrt(amx**2+bpy**2)/(amx*bpy) +np.sqrt(apx**2+bpy**2)/(apx*bpy) )
+    return (Ep/(8*(np.pi)))*(np.sqrt(amx**2+bmy**2)/(amx*bmy)+np.sqrt(apx**2+bmy**2)/(apx*bmy) +
+                             np.sqrt(amx**2+bpy**2)/(amx*bpy) +np.sqrt(apx**2+bpy**2)/(apx*bpy) )
 
 #################################
 
 
 def ElasticityMatrixAllMesh(Mesh,Ep):
-    # Assemble the Elasticity matrix for the whole mesh    
+    # Mesh
+    # Ep : Plane Strain Modulus
+    # Assemble the Elasticity matrix for the whole mesh
+
     a = Mesh.hx /2.;
     b= Mesh.hy /2. ;
     Ne=Mesh.NumberOfElts;
@@ -39,13 +44,15 @@ def ElasticityMatrixAllMesh(Mesh,Ep):
             apx=a+x;
             bmy=b-y;
             bpy=b+y;
-            A[i,j]=(Ep/(8*(np.pi)))*(np.sqrt(amx**2+bmy**2)/(amx*bmy)+np.sqrt(apx**2+bmy**2)/(apx*bmy) +np.sqrt(amx**2+bpy**2)/(amx*bpy) +np.sqrt(apx**2+bpy**2)/(apx*bpy) )
+            A[i,j]=(Ep/(8*(np.pi)))*(np.sqrt(amx**2+bmy**2)/(amx*bmy)+np.sqrt(apx**2+bmy**2)/(apx*bmy) +
+                                     np.sqrt(amx**2+bpy**2)/(amx*bpy) +np.sqrt(apx**2+bpy**2)/(apx*bpy) )
 #            A[i,j]=KernelZZ(a,b,x,y,Ep);
     
     return A
 #################################
 
 def LoadElastMatrix(Mesh,EPrime):
+
     print('Reading global elasticity matrix...')
     try:
         with open('CMatrix', 'rb') as input:
@@ -53,17 +60,16 @@ def LoadElastMatrix(Mesh,EPrime):
         if Mesh.nx==MeshLoaded.nx and  Mesh.ny==MeshLoaded.ny and Mesh.Lx==MeshLoaded.Lx and Mesh.Ly==MeshLoaded.Ly and EPrime==EPrimeLoaded:
             return C
         else:
-            print('loaded Matrix not correct\nMaking gloabal matrix...')
+            print('The loaded matrix is not correct w.r. to the current mesh \nMaking global matrix...')
             C = ElasticityMatrixAllMesh(Mesh,EPrime)
             Elast = (C,Mesh,EPrime)
             with open('CMatrix', 'wb') as output:
                 pickle.dump(Elast, output, -1)
             return C
     except FileNotFoundError:
-        print('file not found\nMaking gloabal matrix...')
+        print('file not found\n Building the global elasticity matrix...')
         C = ElasticityMatrixAllMesh(Mesh,EPrime)
         Elast = (C,Mesh,EPrime)
         with open('CMatrix', 'wb') as output:
             pickle.dump(Elast, output, -1)
         return C
-                    

@@ -9,6 +9,7 @@ See the LICENSE.TXT file for more details.
 Tip inversion for different flow regimes. The functions take width opening and gives distance from tip calculated using the given propagation regime
 """
 
+# imports
 import math
 import numpy as np
 from scipy.optimize import brentq
@@ -16,6 +17,8 @@ from scipy.optimize import newton
 import matplotlib.pyplot as plt
 
 
+
+##########################################
 def TipAsym_viscStor_Res(dist,*args):
     """Residual function for viscocity dominate regime, without leak off"""
     

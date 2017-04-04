@@ -13,7 +13,9 @@ import scipy.sparse.linalg as spla
 from scipy.linalg import cho_factor
 from scipy.linalg import cho_solve
 import matplotlib.pyplot as plt
-from Utility import *
+
+from src.Utility import *
+
 
 
 def FiniteDiff_operator_laminar(w,EltCrack,muPrime,Mesh,InCrack):
@@ -45,7 +47,7 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
     FinDiffOprtr    = np.zeros((w.size,w.size),dtype=np.float64)
     dx      = Mesh.hx
     dy      = Mesh.hy
-    mu      = muPrime/12
+    mu      = muPrime/12     #### loosy should pass mu instead ?
     
     wLftEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,0]])/2
     wRgtEdge = (w[EltCrack]+w[Mesh.NeiElements[EltCrack,1]])/2
@@ -123,7 +125,7 @@ def FiniteDiff_operator_turbulent(w,EltCrack,muPrime,Mesh,InCrack,rho,vkm1,C,sig
 
 
 ######################################
-
+# ARHHHHHHH DON T USE pointers !!!!!!
 def MakeEquationSystemExtendedFP(solk,vkm1,*args):
 
     (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0, turb) = args
@@ -159,13 +161,15 @@ def MakeEquationSystemExtendedFP(solk,vkm1,*args):
     A[np.ix_(Tip,Tip)]           = -dt*condTT
 
    
-    S[Channel]  = dt*np.dot(condCC,np.dot(Ccc,wLastTS[EltChannel])+np.dot(Cct,wTip)+sigma0[EltChannel]) + dt/Mesh.hx/Mesh.hy*Q[EltChannel] - LeakOff[EltChannel]/Mesh.hx/Mesh.hy
-    S[Tip]      = -(wTip-wLastTS[EltsTipNew]) + dt*np.dot(condTC,np.dot(Ccc,wLastTS[EltChannel])+np.dot(Cct,wTip)+sigma0[EltChannel]) - LeakOff[EltsTipNew]/Mesh.hx/Mesh.hy 
+    S[Channel]  = dt*np.dot(condCC,np.dot(Ccc,wLastTS[EltChannel])+np.dot(Cct,wTip)+sigma0[EltChannel]) + dt/Mesh.hx/Mesh.hy*Q[EltChannel] \
+                  - LeakOff[EltChannel]/Mesh.hx/Mesh.hy
+    S[Tip]      = -(wTip-wLastTS[EltsTipNew]) + dt*np.dot(condTC,np.dot(Ccc,wLastTS[EltChannel])+np.dot(Cct,wTip)+sigma0[EltChannel]) \
+                  - LeakOff[EltsTipNew]/Mesh.hx/Mesh.hy
     
     return (A,S,vk)
 
 ######################################
-
+#
 def MakeEquationSystemSameFP(delwk,vkm1,*args):
     (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb) = args
     wnPlus1 = np.copy(w)
@@ -224,7 +228,7 @@ def pressure_gradient(w,C,sigma0,Mesh,EltCrack,InCrack):
     return (dpdxLft,dpdxRgt,dpdyBtm,dpdyTop)
 
 #######################################
-
+#  in the future the following should be move to a separate files containing the fluid models....
 def FF_YangJoseph(ReNum,rough):
     
     ff = np.full((len(ReNum),),np.inf,dtype=np.float64)
@@ -289,13 +293,15 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, relax, Tol, maxit
             #     A = A + 1e-13 * np.identity(A.shape[0])
             #     solk = np.linalg.solve(A, b)
 
-        norm = np.linalg.norm(abs(solk / solkm1 - 1))
+        norm = np.linalg.norm(abs(solk   - solkm1))/np.linalg.norm(abs(solkm1))
+
         normlist[k] = norm
         # residual = np.linalg.norm((np.dot(A,solk)-b))
 
-        if norm > normlist[k - 1] and normlist[k - 1]<2e-4:
+        if norm > normlist[k - 1] and normlist[k - 1]<2e-4:  # WTF IS THAT ?
              break
         k = k + 1
+
         if k >= maxitr:
             print('Picard iteration not converged after ' + repr(maxitr) + ' iterations')
             plt.plot(np.arange(100),normlist,'.')
@@ -308,6 +314,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, relax, Tol, maxit
     return (solk,interItr)
 
 #######################################
+# ARHHHHHHH DON T USE pointers !!!!!!
 
 def Jacobian(Residual_function, x,interItr, TypValue,*args):
     (Fx,interItr) = Residual_function(x,interItr,*args)

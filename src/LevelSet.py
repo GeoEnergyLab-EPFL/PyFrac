@@ -7,16 +7,21 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
+# imports
 import numpy as np
 #from importlib.machinery import SourceFileLoader
 
-from Utility import Neighbors
+from src.Utility import Neighbors
 
+
+
+#-----------------------------
 def Eikonal_Res(Tij, *args): 
     """quadratic Eikonal equation residual to be used for numerical root finding solver"""
 
     (Tleft, Tright, Tbottom, Ttop, Fij, dx, dy) = args
-    return np.nanmax([(Tij-Tleft)/dx, 0])**2 + np.nanmin([(Tright-Tij)/dx, 0])**2 + np.nanmax([(Tij-Tbottom)/dy, 0])**2 + np.nanmin([(Ttop-Tij)/dy, 0])**2 - Fij**2
+    return np.nanmax([(Tij-Tleft)/dx, 0])**2 + np.nanmin([(Tright-Tij)/dx, 0])**2 + np.nanmax([(Tij-Tbottom)/dy, 0])**2 + \
+           np.nanmin([(Ttop-Tij)/dy, 0])**2 - Fij**2
 
 #################################    
 
@@ -41,8 +46,7 @@ def SolveFMM(T, EltRibbon, EltChannel,mesh):
                 if np.where(FarAway==neighbor)[0].size > 0:
                     NarrowBand  = np.append(NarrowBand, neighbor)
                     FarAway     = np.delete(FarAway,np.where(FarAway==neighbor))
-                
-                        
+
                 Stencil = np.asarray(Neighbors(neighbor,mesh.nx,mesh.ny)) 
             
                 NeigxMin= min(T[Stencil[0]],T[Stencil[1]])
@@ -75,7 +79,7 @@ def SolveFMM(T, EltRibbon, EltChannel,mesh):
 #            T[notEvaltd[i]]=np.mean(T[np.asarray(Neighbors(notEvaltd[i],mesh.nx,mesh.ny))])
 
 
-def TrackFront(dist, EltChannel, mesh):
+def TrackFront(dist, EltChannel, mesh):    # rename : it should be ReconstructFront
     """Track the fracture front, l and alpha from the Distances calculated with FMM"""
     
     EltRest = np.delete(range(mesh.NumberOfElts),np.intersect1d(range(mesh.NumberOfElts),EltChannel,None))
@@ -132,7 +136,7 @@ def TrackFront(dist, EltChannel, mesh):
     
 
 ################################# 
-
+# what is the goal of this one below....
 def UpdateLists(EltsChannel, EltsTipNew, FillFrac, Dist, mesh):
     """Update the Element lists"""
 
