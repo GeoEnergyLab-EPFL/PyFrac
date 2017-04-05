@@ -25,7 +25,7 @@ from src.Elasticity import *
 from src.Properties import *
 from src.FractureFrontLoop import *
 
-Mesh  = CartesianMesh(10,10,25,25)
+Mesh  = CartesianMesh(5,5,5,5)
 
 Fluid=FluidProperties(1.1e-3)
 
@@ -33,12 +33,17 @@ nu      = 0.4
 Eprime  = 3.3e10/(1-nu**2)
 K_Ic    = 0.005e6
 sigma0  = 0*1e6
-Solid =MaterialProperties(Eprime,K_Ic,0.,sigma0,Mesh)
+Solid = MaterialProperties(Eprime,K_Ic,0.,sigma0,Mesh)
 
 Q0 = 0.027 # injection rate
 well_location = np.array([0.,0.])
 
 Injection = InjectionProperties(Q0,well_location,Mesh)
+
+
+# elasticity matrix
+
+C = LoadElastMatrix(Mesh,Solid.Eprime)
 
 # initial radius of fracture
 initRad = 5
@@ -60,22 +65,15 @@ simul_p= SimulationParameters()
 Fr      = Fracture(Mesh,Fluid,Solid)
 Fr.InitializeRadialFracture(initRad,'radius','M',Solid,Fluid,Injection)
 
-
 Fr.PlotFracture('complete','footPrint')
 
-#plt.pause(1)
-#Fr.InitializePKN(t0,0,h)
-#Fr.PlotFracture('complete','footPrint',l_cr,evol=1,Solid)
 
-timeout = Fr.time
-
-# elasticity matrix
-
-C = LoadElastMatrix(Mesh,Solid.Eprime)
+time0 = Fr.time
 
 
-MaximumTimeSteps = 4
+MaximumTimeSteps = 5
 TimeStep = 0.5
+
 i=0
 Tend=10.
 
@@ -96,7 +94,7 @@ while (Fr.time<Tend) and (i<MaximumTimeSteps) :
         Fr=copy.deepcopy(Fr_k)
 
     # we need to use functions for the analytical solution not such inline stuff, come on ! what the heck with np.mean(muPrime ) ?
-    R_Msol  = 0.6976*Solid.Eprime**(1/9)*(Injection.injectionrate)**(1/3)*Fr.time**(4/9)/(Fluid.muprime)**(1/9)     #Viscoity dominated
+    R_Msol  = 0.6976*Solid.Eprime**(1/9)*(Injection.injectionrate)**(1/3)*Fr_k.time**(4/9)/(Fluid.muprime)**(1/9)     #Viscoity dominated
     Fr.PlotFracture('complete', 'footPrint', R_Msol)
 
 #    R_Mtsol = (2*sum(Fr.Q)/np.mean(Fr.Cprime))**0.5*Fr.time**0.25/np.pi

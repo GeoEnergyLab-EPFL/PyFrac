@@ -41,6 +41,8 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
 
     """
 
+    print('Starting Fracture Front loop')
+
     CurrentRate = Injection_Parameters.injectionrate
     Qin = (np.zeros((Frac.mesh.NumberOfElts),float) )
     Qin[Injection_Parameters.source_location]=CurrentRate
@@ -83,7 +85,6 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
     w_k = np.copy(Frac.w)
     w_k[Frac.EltCrack] = w_k[Frac.EltCrack] + sol
 
-    print('Starting Fracture Front loop')
     itrcount = 1
 
     FillFrac_km1 = []  # filling fraction last iteration; used to calculate norm
@@ -98,10 +99,10 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
     # i have tried my best, far from readable code
     # it is not working - always do only 2 its.
 #
-    while (norm > Simulation_Parameters.ToleranceFractureFront) and ( k < maxitr ):
+    while (norm > Simulation_Parameters.ToleranceFractureFront) and ( k < maxitr ) or (k<3):
         k=k+1
 
-        print('\n iteration ' + repr(k))
+        print('\n Fracture front iteration #' + repr(k))
         # NEW FRAC FRONT ESTIMATION
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
@@ -154,7 +155,6 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
         FillFrac_k = VolumeIntegral(alpha_k, l_k, Frac.mesh.hx, Frac.mesh.hy, 'A', Material_properties.Kprime[EltsTipNew],
                                     Material_properties.Eprime, Frac.muPrime[EltsTipNew], Material_properties.Cprime[EltsTipNew],
                                     Vel_k) / Frac.mesh.EltArea
-        print("fill frac "+ repr(FillFrac_k))
 
         FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-6)] = 1.0  # humm what is this fix for ?
 
@@ -220,6 +220,7 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
                                       Frac.Kprime[EltsTipNew],
                                       Frac.Eprime, Frac.muPrime[EltsTipNew], Frac.Cprime[EltsTipNew], Vel_k,
                                       stagnant, KIPrime) / Frac.mesh.EltArea
+
         else:
             # directly calculate the tip volume from the propagation HF asymptote
             wTip = VolumeIntegral(alpha_k, l_k, Frac.mesh.hx, Frac.mesh.hy, Simulation_Parameters.tip_asymptote,
@@ -254,6 +255,16 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
         vk = velocity(wguess, EltCrack_k, Frac.mesh, InCrack_k, Frac.muPrime, C, Frac.SigmaO)
 
         # why is C not adjusted here for tip element correction HERE ?
+        C_EltTip = C[np.ix_( EltTip_k,  EltTip_k)]  # keep the tip element entries
+
+        # filling fraction correction for element in the very tip region
+        for e in range(0, len(EltTip_k)):
+            r = FillFrac_k[e] - .25;
+            if r < 0.1:
+                r = 0.1
+            ac = (1 - r) / r;
+            C[EltTip_k[e], EltTip_k[e]] = C[EltTip_k[e], EltTip_k[e]] * (1. + ac * np.pi / 4.)
+
 
         TypValue = np.copy(guess)
         TypValue[Frac.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
@@ -266,6 +277,8 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
         (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP, MakeEquationSystemExtendedFP,
                                      guess, TypValue, vk, 1.0, Simulation_Parameters.ToleranceEHL, 100, *arg)
 
+        C[np.ix_( EltTip_k, EltTip_k)] = C_EltTip  # regain original C (without fill fraction correction)
+
         w_k = np.copy(Frac.w)
         w_k[EltCrack_k] = w_k[EltCrack_k] + sol
 
@@ -277,7 +290,7 @@ def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Pa
 
     if norm < Simulation_Parameters.ToleranceFractureFront :  # which means  convergence of the fracture front
         exitstatus = 1
-        print('Fracture front has now converged, exiting loop...')
+        print('Fracture front has now converged, saving & exiting loop...')
         w_k[EltsTipNew] = wTip
         Frac.w = w_k
         Frac.FillF = FillFrac_k[NewTipinTip]

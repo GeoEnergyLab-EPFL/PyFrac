@@ -100,8 +100,10 @@ class CartesianMesh :
         (minx,miny) = (min(abs(self.CenterCoor[:,0])),min(abs(self.CenterCoor[:,1])))
         self.CenterElts=np.intersect1d(np.where(abs(self.CenterCoor[:,0])-minx<0.000001),np.where(abs(self.CenterCoor[:,1])-miny<0.000001))
 
-    def locate_element(self,x,y):
-        e = np.intersect1d(np.where(abs(self.CenterCoor[:,0])-x<0.000001),np.where(abs(self.CenterCoor[:,1])-y<0.000001))
+    def locate_element(self,x,y):  # wrong - need to be redone
+        dist = ((self.CenterCoor[:,0]-x)**2+(self.CenterCoor[:,1]-y)**2)**0.5
+        offset = ((self.hx/2.)**2 + (self.hy/2.)**2)**1./2.
+        e = np.where(dist<offset)
         return e
 
 
