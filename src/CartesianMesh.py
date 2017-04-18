@@ -47,13 +47,26 @@ class CartesianMesh:
 
         self.Lx = Lx
         self.Ly = Ly
-        # todo: Check if odd to have origin at mid points of a single element
-        self.nx = nx
-        self.ny = ny
+
+        # Check if odd to have origin at mid points of a single element
+        if nx % 2 == 0:
+            print("Number of elements in x-direction are even\nUsing " + repr(nx+1) + " elements to have origin at a "
+                                                                                      "cell center")
+            self.nx = nx+1
+        else:
+            self.nx = nx
+
+        if ny % 2 == 0:
+            print("Number of elements in y-direction are even\nUsing " + repr(ny+1) + " elements to have origin at a "
+                                                                                      "cell center")
+            self.ny = ny+1
+        else:
+            self.ny = ny
+
+
         self.hx = 2. * Lx / (nx - 1)
         self.hy = 2. * Ly / (ny - 1)
 
-        # todo: trying to center the mesh on 0,0
         x = np.linspace(-Lx - self.hx / 2., Lx + self.hx / 2., nx + 1)
         y = np.linspace(-Ly - self.hy / 2., Ly + self.hy / 2., ny + 1)
 

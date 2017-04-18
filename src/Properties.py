@@ -167,18 +167,28 @@ class SimulationParameters:
                                                         regime -- U  Universal regime accommodating viscosity, toughness 
                                                                      and leak off (see Donstov and Pierce, 2017)
                                                         regime -- M-K transition regime
-            maxSolverItr
-            maxReattempts
-            reAttemptFactor
-            outputTimePeriod
-            plotFigure
-            saveToDisk
+            maxSolverItr (int, default 100):        maximum iterations for the EHL iterative solver (Picard-Newton
+                                                    hybrid) in this case.
+            maxReattempts (int, default 5):         maximum number of reattempts in case of failure of a time step. Á
+                                                    smaller time step will be attempted the given number of times. 
+            reAttemptFactor (float, default 0.8):   the factor multiplied with the time step before reattempt.
+            outputTimePeriod (float, default inf):  the time period after which the output file is written or the figures
+                                                    are plotted. 
+            plotFigure (boolean, default False):    flag specifying to plot fracture trace after the given time period
+            saveToDisk (boolean, default False):    flag specifying to save fracture to dist after the given time period
+            out_file_address (string, default "None"): disk address of the files to be saved            
+            plot_analytical (boolean, default False): flag specifying to plot the analytical solution
+            analyticalSol (String, default "M"):    the analytical solution of the radial fracture to be plotted on the
+                                                    fracture. Possible options:
+                                                        "M" -- viscosity dominated
+                                                        "K" -- toughness dominated
+            
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
                  cfl_factor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=10, max_reattemps = 5,
                  reattempt_factor = 0.8, output_time_period = np.inf, plot_figure = False, save_to_disk = False,
-                 out_file_address = "None", plot_analytical = False):
+                 out_file_address = "None", plot_analytical = False, analytical_sol = "M"):
 
         self.maxTimeSteps = maximum_steps
         self.tolFractFront = toleranceFractureFront
@@ -205,6 +215,7 @@ class SimulationParameters:
         self.plotFigure = plot_figure
         if plot_figure:
             self.plotAnalytical = plot_analytical
+            self.analyticalSol = analytical_sol
 
         self.saveToDisk = save_to_disk
 

@@ -69,7 +69,7 @@ def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
 
             # output
             if Simulation_Parameters.plotFigure or Simulation_Parameters.saveToDisk:
-                output(Frac, Fr, Simulation_Parameters, Material_properties)
+                output(Frac, Fr, Simulation_Parameters, Material_properties, Injection_Parameters, Fluid_properties)
 
             return status, Fr
         else:
@@ -464,7 +464,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties):
+def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties, injection_parameters, fluid_properties):
     """
     This function plot the fracture footprint and/or save file to disk according to the given time period.
     
@@ -476,10 +476,22 @@ def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties)
          
     Returns: 
     """
-    if Fr_lstTmStp.time // simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod:
+    if (Fr_lstTmStp.time // simulation_parameters.outputTimePeriod !=
+                Fr_advanced.time // simulation_parameters.outputTimePeriod):
         # plot fracture footprint
         if simulation_parameters.plotFigure:
-            Fr_advanced.plot_fracture('complete', 'footPrint', mat_Properties = material_properties)
+            # if ploting analytical solution enabled
+            if simulation_parameters.plotAnalytical:
+                Q0 = injection_parameters.injectionRate[1, 0] # injection rate at the time of injection
+                if simulation_parameters.analyticalSol == "M":
+                    (R, p, w, v) = M_vertex_solution_t_given(material_properties.Eprime, Q0, fluid_properties.muPrime,
+                                                         Fr_lstTmStp.mesh, Fr_advanced.time)
+                elif simulation_parameters.analyticalSol == "K":
+                    (R, p, w, v) = K_vertex_solution_t_given(material_properties.Kprime, material_properties.Eprime, Q0,
+                                                         Fr_lstTmStp.mesh, Fr_advanced.time)
+                Fr_advanced.plot_fracture('complete', 'footPrint', analytical=R, mat_Properties=material_properties)
+            else:
+                Fr_advanced.plot_fracture('complete', 'footPrint', mat_Properties = material_properties)
 
         # save fracture to disk
         if simulation_parameters.saveToDisk:

@@ -217,15 +217,19 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
 
     # the conductivity matrix
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
-    cond[0, :] = wLftEdge ** 2 / (rho * ffLftEdge * vk[0, EltCrack])
-    cond[1, :] = wRgtEdge ** 2 / (rho * ffRgtEdge * vk[1, EltCrack])
-    cond[2, :] = wBtmEdge ** 2 / (rho * ffBtmEdge * vk[2, EltCrack])
-    cond[3, :] = wTopEdge ** 2 / (rho * ffTopEdge * vk[3, EltCrack])
+    cond[0, ReLftEdge_nonZero] = wLftEdge[ReLftEdge_nonZero] ** 2 / (rho * ffLftEdge[ReLftEdge_nonZero]
+                                                                     * vk[0, EltCrack[ReLftEdge_nonZero]])
+    cond[1, ReRgtEdge_nonZero] = wRgtEdge[ReRgtEdge_nonZero] ** 2 / (rho * ffRgtEdge[ReRgtEdge_nonZero]
+                                                                     * vk[1, EltCrack[ReRgtEdge_nonZero]])
+    cond[2, ReBtmEdge_nonZero] = wBtmEdge[ReBtmEdge_nonZero] ** 2 / (rho * ffBtmEdge[ReBtmEdge_nonZero]
+                                                                     * vk[2, EltCrack[ReBtmEdge_nonZero]])
+    cond[3, ReTopEdge_nonZero] = wTopEdge[ReTopEdge_nonZero] ** 2 / (rho * ffTopEdge[ReTopEdge_nonZero]
+                                                                     * vk[3, EltCrack[ReTopEdge_nonZero]])
 
-    cond[0, np.where(np.isinf(cond[0, :]))] = 0 # for cells with neighbors outside the fracture
-    cond[1, np.where(np.isinf(cond[1, :]))] = 0
-    cond[2, np.where(np.isinf(cond[2, :]))] = 0
-    cond[3, np.where(np.isinf(cond[3, :]))] = 0
+    # cond[0, np.where(np.isinf(cond[0, :]))] = 0 # for cells with neighbors outside the fracture
+    # cond[1, np.where(np.isinf(cond[1, :]))] = 0
+    # cond[2, np.where(np.isinf(cond[2, :]))] = 0
+    # cond[3, np.where(np.isinf(cond[3, :]))] = 0
 
     # assembling the finite difference matrix
     FinDiffOprtr[EltCrack, EltCrack] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2

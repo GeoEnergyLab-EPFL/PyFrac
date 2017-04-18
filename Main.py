@@ -8,10 +8,14 @@ See the LICENSE.TXT file for more details.
 """
 
 
-
-# import sys
-# if not './src' in sys.path:
-#     sys.path.append('./src')
+# adding src folder to the path
+import sys
+if "win" in sys.platform:
+    slash = "\\"
+else:
+    slash = "/"
+if not '.' + slash + 'src' in sys.path:
+    sys.path.append('.' + slash + 'src')
 
 # imports
 import numpy as np
@@ -34,16 +38,16 @@ sigma0 = 0 * 1e6
 Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, Mesh)
 
 # injection parameters
-Q0 = 0.1  # injection rate
+Q0 = 0.09  # injection rate
 well_location = np.array([0., 0.])
 Injection = InjectionProperties(Q0, well_location, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(1.1e-3, Mesh, turbulence=True )
+Fluid = FluidProperties(1.1e-3, Mesh, turbulence=True)
 
 # simulation properties
-simulProp = SimulationParameters(tip_asymptote = "U", output_time_period = 1e-4, save_to_disk = True,
-                                 out_file_address = ".\\Data\\TurbRough")
+simulProp = SimulationParameters(tip_asymptote="U", output_time_period=1e-4, plot_figure=True,
+                                 save_to_disk=True, out_file_address=".\\Data\\TurbLamTough", plot_analytical=True)
 
 
 # initializing fracture
