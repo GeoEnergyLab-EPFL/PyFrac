@@ -79,7 +79,7 @@ def SolveFMM(T, EltRibbon, EltChannel,mesh):
 #            T[notEvaltd[i]]=np.mean(T[np.asarray(Neighbors(notEvaltd[i],mesh.nx,mesh.ny))])
 
 
-def TrackFront(dist, EltChannel, mesh):    # rename : it should be ReconstructFront
+def reconstruct_front(dist, EltChannel, mesh):
     """Track the fracture front, l and alpha from the Distances calculated with FMM"""
     
     EltRest = np.delete(range(mesh.NumberOfElts),np.intersect1d(range(mesh.NumberOfElts),EltChannel,None))

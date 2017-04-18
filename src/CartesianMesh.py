@@ -12,10 +12,9 @@ from importlib.machinery import SourceFileLoader
 
 from src.Utility import Neighbors
 
-## TO DO: Center  the mesh on origin (i.e. origin at mid points of an element)
 
 
-class CartesianMesh :
+class CartesianMesh:
     """ Class defining a Cartesian Mesh.
 
         instance variables:
@@ -35,9 +34,9 @@ class CartesianMesh :
         methods:
             __init__()      -- create a uniform Cartesian mesh centered  [-Lx,Lx]*[-Ly,Ly]
             remesh()        -- remesh the grid uniformly with a given factor to grid spacing 
-    """    
-    
-    def __init__(self, Lx,Ly,nx,ny):
+    """
+
+    def __init__(self, Lx, Ly, nx, ny):
         """ 
         Constructor
         create a uniform Cartesian mesh centered  [-Lx,Lx]*[-Ly,Ly]
@@ -45,65 +44,68 @@ class CartesianMesh :
             nx,ny -- number of elt in x and y directions respectively
             Lx,Ly -- lengths in x and y directions respectively
         """
-        
-        self.Lx = Lx     
-        self.Ly = Ly   
-        self.nx = nx     
+
+        self.Lx = Lx
+        self.Ly = Ly
+        # todo: Check if odd to have origin at mid points of a single element
+        self.nx = nx
         self.ny = ny
-        self.hx = 2. * Lx / nx
-        self.hy = 2. * Ly / ny
+        self.hx = 2. * Lx / (nx - 1)
+        self.hy = 2. * Ly / (ny - 1)
 
-        # trying to center the mesh on 0,0
-        x = np.linspace(-Lx-self.hx/2.,Lx+self.hx/2., nx+1)
-        y = np.linspace(-Ly-self.hy/2., Ly+self.hy/2., ny+1)
-        xv, yv = np.meshgrid(x, y)   # coordinates of the vertex of each elements
+        # todo: trying to center the mesh on 0,0
+        x = np.linspace(-Lx - self.hx / 2., Lx + self.hx / 2., nx + 1)
+        y = np.linspace(-Ly - self.hy / 2., Ly + self.hy / 2., ny + 1)
 
-        a=np.resize(xv,((nx+1)*(ny+1),1))
-        b=np.resize(yv,((nx+1)*(ny+1),1))
+        xv, yv = np.meshgrid(x, y)  # coordinates of the vertex of each elements
 
-        self.VertexCoor =np.reshape(np.stack((a,b),axis=-1),(len(a),2))
+        a = np.resize(xv, ((nx + 1) * (ny + 1), 1))
+        b = np.resize(yv, ((nx + 1) * (ny + 1), 1))
 
-        self.NumberOfElts = nx*ny
-        self.EltArea = self.hx*self.hy
-        
+        self.VertexCoor = np.reshape(np.stack((a, b), axis=-1), (len(a), 2))
+
+        self.NumberOfElts = nx * ny
+        self.EltArea = self.hx * self.hy
+
         ### Connectivity array giving four vertices of an element in the following order
         #     3         2
         #     0   -     1
-        conn=np.empty([self.NumberOfElts, 4],dtype=int)  # to ensure an array of integers.
-        k=0
-        for j in range (0,ny):
-            for i in range(0,nx) :
-                conn[k,0]=  (i + j*(nx + 1) )
-                conn[k,1]= (i + 1) + j * (nx + 1)
-                conn[k,2] = i + 1 + (j+1)* (nx + 1)
-                conn[k,3] = (i) + (j+1)* (nx + 1) 
-                k=k+1
+        conn = np.empty([self.NumberOfElts, 4], dtype=int)  # to ensure an array of integers.
+        k = 0
+        for j in range(0, ny):
+            for i in range(0, nx):
+                conn[k, 0] = (i + j * (nx + 1))
+                conn[k, 1] = (i + 1) + j * (nx + 1)
+                conn[k, 2] = i + 1 + (j + 1) * (nx + 1)
+                conn[k, 3] = i + (j + 1) * (nx + 1)
+                k = k + 1
 
-        self.Connectivity=conn;
+        self.Connectivity = conn
 
-        ### coordinates of the center of the elements       
-        CoorMid=np.empty([self.NumberOfElts, 2],dtype=float) 
-        for e in range(0,self.NumberOfElts) :
-            t=np.reshape(self.VertexCoor[conn[e]],(4,2))
-            CoorMid[e]=np.mean(t,axis=0)
-        self.CenterCoor=CoorMid;
-        
-        self.distCenter = (CoorMid[:,0]**2+CoorMid[:,1]**2)**0.5
+        # coordinates of the center of the elements
+        CoorMid = np.empty([self.NumberOfElts, 2], dtype=float)
+        for e in range(0, self.NumberOfElts):
+            t = np.reshape(self.VertexCoor[conn[e]], (4, 2))
+            CoorMid[e] = np.mean(t, axis=0)
+        self.CenterCoor = CoorMid
 
-        ### Giving four neigbouring elements in the following order: [left,right,bottom,up]
-        Nei     = np.zeros((self.NumberOfElts,4),int)
-        for i in range(0,self.NumberOfElts):
-            Nei[i,:] = np.asarray(Neighbors(i,self.nx,self.ny))
+        self.distCenter = (CoorMid[:, 0] ** 2 + CoorMid[:, 1] ** 2) ** 0.5
+
+        # Giving four neighbouring elements in the following order: [left,right,bottom,up]
+        Nei = np.zeros((self.NumberOfElts, 4), int)
+        for i in range(0, self.NumberOfElts):
+            Nei[i, :] = np.asarray(Neighbors(i, self.nx, self.ny))
         self.NeiElements = Nei
-        
-        ### the element(s) in the center (used usually for fluid injection)
-        (minx,miny) = (min(abs(self.CenterCoor[:,0])),min(abs(self.CenterCoor[:,1])))
-        self.CenterElts=np.intersect1d(np.where(abs(self.CenterCoor[:,0])-minx<0.000001),np.where(abs(self.CenterCoor[:,1])-miny<0.000001))
 
-    def locate_element(self,x,y):
-        e = np.intersect1d(np.where(abs(self.CenterCoor[:,0])-x<0.000001),np.where(abs(self.CenterCoor[:,1])-y<0.000001))
+        # the element(s) in the center (used for fluid injection)
+        (minx, miny) = (min(abs(self.CenterCoor[:, 0])), min(abs(self.CenterCoor[:, 1])))
+        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) - minx < 1e-10),
+                                         np.where(abs(self.CenterCoor[:, 1]) - miny < 1e-10))
+
+    def locate_element(self, x, y):
+        e = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) - x < 1e-10),
+                           np.where(abs(self.CenterCoor[:, 1]) - y < 1e-10))
+        # todo: form mesh according to the injection point
         return e
 
-
 #############################################
-

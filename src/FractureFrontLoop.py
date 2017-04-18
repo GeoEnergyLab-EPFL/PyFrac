@@ -11,289 +11,478 @@ from src.Utility import *
 from src.TipInversion import *
 from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
-
+from src.HFAnalyticalSolutions import *
 import copy
 
+errorMessages = ("Propagated not attempted",
+                 "Time step successful",
+                 "Evaluated level set is not valid",
+                 "Front is not tracked correctly",
+                 "Evaluated tip volume is not valid",
+                 "Solution obtained from the elastohydrodynamic solver is not valid",
+                 "Did not converge after max iterations",
+                 "Tip inversion is not correct",
+                 "Ribbon element not found in the enclosure of the tip cell",
+                 "Filling fraction not correct"
+                 )
 
-def FractureFrontLoop(Frac, C,Material_properties,Fluid_properties,Simulation_Parameters,Injection_Parameters,TimeStep):
-    """ Propagate fracture one time step
-        Arguments:
-            TimeStep (float):         time step
-            C (ndarray-float):  Elasticity matrix
-            tol_frntPos(float): tolerance for the front position iteration. The front position is assumed to be converged
-                                if the norm of current iteration is below this tolerance.
-            tol_Picard(float):  tolerance for Picard iteration.
-            maxitr (int)        maximum iterations to find front position (default 25).
-            turb (bool)         flag specifying if turbulence is taken into account.
 
-        return:
-            exitstatus (int):   possible values:
+def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
+                      TimeStep):
+    """
+    This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller time
+    steps. A system exit is raised after maximum allowed reattempts. 
+    Arguments:
+        Frac (Fracture object):                             fracture object from the last time step 
+        C (ndarray-float):                                  the elasticity matrix 
+        Material_properties (MaterialProperties object):    material properties
+        Fluid_properties (FluidProperties object):          fluid properties 
+        Simulation_Parameters (SimulationParameters object): simulation parameters
+        Injection_Parameters (InjectionProperties object):  injection properties
+        TimeStep (float):                                   time step to be attempted 
+    
+    Return:
+        int:   possible values:
                                     0       -- not propagated
-                                    1       -- iteration successfull
+                                    1       -- iteration successful
                                     2       -- evaluated level set is not valid
                                     3       -- front is not tracked correctly
-                                    4       -- evaluated tip volume is not valied
+                                    4       -- evaluated tip volume is not valid
                                     5       -- solution of elastohydrodynamic solver is not valid
                                     6       -- did not converge after max iterations
                                     7       -- tip inversion not successful
                                     8       -- Ribbon element not found in the enclosure of a tip cell
                                     9       -- Filling fraction not correct
+                                    
+        Fracture object:            fracture after advancing time step. 
+    """
+    print("Attempting time step of " + repr(TimeStep) + " sec...")
+    # loop for reattempting time stepping in case of failure.
+    for i in range(0, Simulation_Parameters.maxReattempts):
+        # smaller time step to reattempt time stepping; equal to the given time step on first iteration
+        smallerTimeStep = TimeStep * Simulation_Parameters.reAttemptFactor ** i
 
+        status, Fr = FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters,
+                                       Injection_Parameters, smallerTimeStep)
+        if status == 1:
+            print(errorMessages[status])
+
+            # output
+            if Simulation_Parameters.plotFigure or Simulation_Parameters.saveToDisk:
+                output(Frac, Fr, Simulation_Parameters, Material_properties)
+
+            return status, Fr
+        else:
+            print(errorMessages[status])
+
+        print("Time step failed...")
+        print("Reattempting with time step of " + repr(
+            TimeStep * Simulation_Parameters.reAttemptFactor ** (i + 1)) + " sec")
+    raise SystemExit("Propagation not successful. Exiting...")
+
+
+def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
+                      TimeStep):
+    """ Propagate fracture one time step. The function injects fluid into the fracture, first by keeping the same
+    footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
+    until convergence is achieved.
+    
+    Arguments:
+        Frac (Fracture object):                             fracture object from the last time step 
+        C (ndarray-float):                                  the elasticity matrix 
+        Material_properties (MaterialProperties object):    material properties
+        Fluid_properties (FluidProperties object):          fluid properties 
+        Simulation_Parameters (SimulationParameters object): simulation parameters
+        Injection_Parameters (InjectionProperties object):  injection properties
+        TimeStep (float):                                   time step 
+    
+    Return:
+        int:   possible values:
+                                    0       -- not propagated
+                                    1       -- iteration successful
+                                    2       -- evaluated level set is not valid
+                                    3       -- front is not tracked correctly
+                                    4       -- evaluated tip volume is not valid
+                                    5       -- solution of elastohydrodynamic solver is not valid
+                                    6       -- did not converge after max iterations
+                                    7       -- tip inversion not successful
+                                    8       -- Ribbon element not found in the enclosure of a tip cell
+                                    9       -- Filling fraction not correct
+                                    
+        Fracture object:            fracture after advancing time step. 
     """
 
-    CurrentRate = Injection_Parameters.injectionrate
-    Qin = (np.zeros((Frac.mesh.NumberOfElts),float) )
-    Qin[Injection_Parameters.source_location]=CurrentRate
+    exitstatus = 0  # exit code to be returned
 
-    exitstatus = 0  # exit code returned
+    # index of current time in the time series (first row) of the injection rate array
+    indxCurTime = max(np.where(Frac.time >= Injection_Parameters.injectionRate[0, :])[0])
+    CurrentRate = Injection_Parameters.injectionRate[1, indxCurTime]  # current injection rate
+
+    Qin = np.zeros((Frac.mesh.NumberOfElts), float)
+    Qin[Injection_Parameters.source_location] = CurrentRate # current injection over the domain
+
 
     f = open('log', 'a')
 
-    C_EltTip = C[np.ix_(Frac.EltTip, Frac.EltTip)] # keep the tip element entries
+    print('Solving ElastoHydrodynamic equations with same footprint...')
+    # width by injecting the fracture with the same foot print (balloon like inflation)
+    exitstatus, w_k = injection_same_footprint(Frac, C, TimeStep, Qin, Material_properties, Fluid_properties,
+                                               Simulation_Parameters)
 
-    # filling fraction correction for element in the very tip region
-    for e in range(0, len(Frac.EltTip)):
-        r = Frac.FillF[e] - .25;
+    if exitstatus != 1:
+        return exitstatus, None
+
+    # Fracture front loop for new fracture front estimation
+    print('Starting Fracture Front loop...')
+
+    norm = 10.
+    k = 0
+    Fr_k = Frac
+
+    while norm > Simulation_Parameters.tolFractFront:
+        k = k + 1
+        print('\nIteration ' + repr(k))
+        Fr_kminus1 = copy.deepcopy(Fr_k)
+
+        # calculate new fracture with the width evaluated in the last fracture front iteration
+        (exitstatus, Fr_k) = injection_extended_footprint(w_k, Frac, C, TimeStep, Qin, Material_properties,
+                                                          Fluid_properties, Simulation_Parameters)
+        if exitstatus != 1:
+            return exitstatus, None
+
+        w_k = np.copy(Fr_k.w)
+
+        norm = abs((sum(Fr_k.FillF) - sum(Fr_kminus1.FillF)) / len(Fr_k.FillF))
+        print('Norm of subsequent filling fraction estimates = ' + repr(norm))
+
+        if k == Simulation_Parameters.maxFrontItr:
+            exitstatus = 6
+            return exitstatus, None
+
+    return exitstatus, Fr_k
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Fluid_properties, Simulation_Parameters):
+    """
+    This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
+    to be the same as in the fracture from the last time step.
+    Arguments:
+        Fr_lstTmStp (Fracture object):                      fracture object from the last time step 
+        C (ndarray-float):                                  the elasticity matrix 
+        timeStep (float):                                   time step 
+        Qin (ndarray-float):                                current injection rate
+        mat_properties (MaterialProperties object):         material properties
+        Fluid_properties (FluidProperties object):          fluid properties 
+        Simulation_Parameters (SimulationParameters object): simulation parameters
+        
+    Returns:
+        int:            exit status
+        ndarray-float:  width of the fracture after injection with the same footprint
+    
+    """
+    C_EltTip = C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)]  # keeping the tip element entries to restore current
+    #  tip correction. This is done to avoid copying the full elasticity matrix.
+
+    # filling fraction correction for element in the tip region
+    for e in range(0, len(Fr_lstTmStp.EltTip)):
+        r = Fr_lstTmStp.FillF[e] - .25
         if r < 0.1:
             r = 0.1
-        ac = (1 - r) / r;
-        C[Frac.EltTip[e], Frac.EltTip[e]] = C[Frac.EltTip[e], Frac.EltTip[e]] * (1. + ac * np.pi / 4.)
+        ac = (1 - r) / r
+        C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
+                                                                                                             + ac * np.pi / 4.)
 
+    # average injected fluid over footprint taken as [\delta] W guess for the iterative solver
+    delwGuess = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size * np.ones((Fr_lstTmStp.EltCrack.size,), float)
 
-    # average injected fluid over footprint
-    guess = TimeStep * CurrentRate / Frac.EltCrack.size * np.ones((Frac.EltCrack.size,),float)
+    # todo: leak off is assumed zero.
+    DLkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
-    print('Solving the EHL system with the same fracture footprint')
+    # width of the guess. Evaluated to calculate the current velocity at the cell edges
+    wguess = np.copy(Fr_lstTmStp.w)
+    wguess[Fr_lstTmStp.EltCrack] = wguess[Fr_lstTmStp.EltCrack] + delwGuess
 
-    DLkOff = np.zeros((Frac.mesh.NumberOfElts,), float)
-
-    wguess = np.copy(Frac.w)
-    wguess[Frac.EltCrack] = wguess[Frac.EltCrack] + guess
-    vk = velocity(wguess, Frac.EltCrack, Frac.mesh, Frac.InCrack, Frac.muPrime, C, Frac.SigmaO)
+    # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
+    vk = velocity(wguess, Fr_lstTmStp.EltCrack, Fr_lstTmStp.mesh, Fr_lstTmStp.InCrack, Fr_lstTmStp.muPrime, C,
+                  mat_properties.SigmaO)
 
     argSameFP = (
-        Frac.w, Frac.EltCrack, Qin, C, TimeStep, Frac.muPrime, Frac.mesh, Frac.InCrack, DLkOff, Frac.SigmaO, Frac.rho,
+        Fr_lstTmStp.w, Fr_lstTmStp.EltCrack, Qin, C, timeStep, Fr_lstTmStp.muPrime, Fr_lstTmStp.mesh,
+        Fr_lstTmStp.InCrack, DLkOff, mat_properties.SigmaO, Fluid_properties.density, Fluid_properties.turbulence)
+
+    # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function)
+    # todo: guess is taken as typical values. Needs to be reconsidered
+    typclValue = delwGuess
+
+    # solving the system
+    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP, MakeEquationSystemSameFP, delwGuess, typclValue,
+                               vk, Simulation_Parameters.toleranceEHL, Simulation_Parameters.maxSolverItr, *argSameFP)
+
+    # getting new width by adding [\delta] w solution to the width from last time step
+    w_k = np.copy(Fr_lstTmStp.w)
+    w_k[Fr_lstTmStp.EltCrack] = w_k[Fr_lstTmStp.EltCrack] + sol
+
+    # regain original C (without filling fraction correction)
+    C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)] = C_EltTip
+
+    # check if the solution is valid
+    if np.isnan(w_k).any() or (w_k < 0).any():
+        exitstatus = 5
+        return exitstatus, None
+    else:
+        exitstatus = 1
+        return exitstatus, w_k
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_properties, Fluid_properties,
+                                 sim_parameters):
+    """
+    This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
+    (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
+    the new fracture width.
+     
+    Arguments:
+        w_k (ndarray-float);                                fracture width from the last iteration
+        Fr_lstTmStp (Fracture object):                      fracture object from the last time step 
+        C (ndarray-float):                                  the elasticity matrix 
+        timeStep (float):                                   time step 
+        Qin (ndarray-float):                                current injection rate
+        Material_properties (MaterialProperties object):    material properties
+        Fluid_properties (FluidProperties object):          fluid properties 
+        sim_Parameters (SimulationParameters object):       simulation parameters
+    
+    Returns:
+        int:   possible values:
+                                    0       -- not propagated
+                                    1       -- iteration successful
+                                    2       -- evaluated level set is not valid
+                                    3       -- front is not tracked correctly
+                                    4       -- evaluated tip volume is not valid
+                                    5       -- solution of elastohydrodynamic solver is not valid
+                                    6       -- did not converge after max iterations
+                                    7       -- tip inversion not successful
+                                    8       -- Ribbon element not found in the enclosure of a tip cell
+                                    9       -- Filling fraction not correct
+                                    
+        Fracture object:            fracture after advancing time step. 
+    """
+    # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
+    sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
+    # float value. (algorithm requires inf)
+    sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
+
+    # Tip asymptote inversion
+    sgndDist_k[Fr_lstTmStp.EltRibbon] = -TipAsymInversion(w_k, Fr_lstTmStp, Material_properties, sim_parameters,
+                                                          timeStep)
+
+    # if tip inversion returns nan
+    if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
+        exitstatus = 7
+        return exitstatus, None
+
+    # SOLVE EIKONAL eq via Fast Marching Method starting from the element adjacent to the ribbon elements
+    # (i.e. the tip elements of the last time step)
+    SolveFMM(sgndDist_k, Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
+
+    # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
+    # todo: not satisfied with why this happens. need re-examining
+    if max(sgndDist_k) == 1e10:
+        exitstatus = 2
+        return exitstatus, None
+
+    print('Calculating the filling fraction of tip elements with the new fracture front location...')
+
+    # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
+    # the elements which are fully filled after the front is moved outward)
+    (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
+
+    # If the angle and length of the perpendicular are not correct
+    nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
+    if nan.any() or (l_k < 0).any() or (alpha_k < 0).any() or (alpha_k > np.pi / 2).any():
+        exitstatus = 3
+        return exitstatus, None
+
+    # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
+    tipNeighb = Fr_lstTmStp.mesh.NeiElements[EltsTipNew, :]
+    for i in range(0, len(EltsTipNew)):
+        if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
+            Fr_lstTmStp.plot_fracture('complete', 'footPrint')
+            f.write('Reached end of the grid. exiting....\n\n')
+            raise SystemExit('Reached end of the grid. exiting....')
+
+    # generate the InCrack array for the current front position
+    InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
+    InCrack_k[Fr_lstTmStp.EltChannel] = 1
+    InCrack_k[EltsTipNew] = 1
+
+    # the velocity of the front for the current front position
+    Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+
+    # Calculate filling fraction of the tip cells for the current fracture position
+    FillFrac_k = VolumeIntegral(EltsTipNew, alpha_k, l_k, Fr_lstTmStp.mesh, 'A', Material_properties,
+                                Fr_lstTmStp.muPrime,
+                                Vel_k) / Fr_lstTmStp.mesh.EltArea
+
+    # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-6 (up to 6 figures)
+    FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-6)] = 1.0
+
+    # if filling fraction is below zero or above 1+1e-6
+    if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
+        exitstatus = 9
+        return exitstatus, None
+
+    # some of the list are redundant to calculate on each iteration
+    # Evaluate the element lists for the trial fracture front
+    (EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
+                                                                                             EltsTipNew,
+                                                                                             FillFrac_k,
+                                                                                             sgndDist_k,
+                                                                                             Fr_lstTmStp.mesh)
+
+    # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
+    partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
+
+    print('Solving the EHL system with the new trial footprint')
+    # tip cells whose distance from front has not changed.
+    stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-8
+    if stagnant.any():
+        # if any tip cell with stagnant front
+        # calculate stress intensity factor for stagnant cells
+        KIPrime = StressIntensityFactor(w_k, sgndDist_k, EltsTipNew, EltRibbon_k, stagnant, Fr_lstTmStp.mesh,
+                                        Fr_lstTmStp.Eprime)
+
+        # todo: Find the right cause of failure
+        # if the stress Intensity factor cannot be found. The most common reason is wiggles in the front resulting
+        # in isolated tip cells.
+        if np.isnan(KIPrime).any():
+            exitstatus = 8
+            return exitstatus, None
+
+        # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
+        # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
+        wTip = VolumeIntegral(EltsTipNew, alpha_k, l_k, Fr_lstTmStp.mesh, sim_parameters.tipAsymptote,
+                              Material_properties,
+                              Fr_lstTmStp.muPrime, Vel_k, stagnant, KIPrime) / Fr_lstTmStp.mesh.EltArea
+    else:
+        # Calculate average width in the tip cells by integrating tip asymptote
+        wTip = VolumeIntegral(EltsTipNew, alpha_k, l_k, Fr_lstTmStp.mesh, sim_parameters.tipAsymptote,
+                              Material_properties,
+                              Fr_lstTmStp.muPrime, Vel_k) / Fr_lstTmStp.mesh.EltArea
+
+    # # check if the tip volume has gone into negative
+    # # todo: !!! Hack: if the evaluated tip width is negative but greater than 1e-4 times the mean width, it is ignored
+    # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
+    # if np.asarray(smallNgtvWTip).size > 0:
+    #     #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+    #     wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
+
+
+    if (wTip < 0).any():
+        exitstatus = 4
+        return exitstatus, None
+
+    guess = np.zeros((Fr_lstTmStp.EltChannel.size + EltsTipNew.size,), float)
+    # pguess = Fr_lstTmStp.p[EltsTipNew]
+
+    guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                    * np.ones((Fr_lstTmStp.EltCrack.size,), float)
+    DLkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), float)  # leak off set to zero
+
+    # width of guess. Evaluated to calculate the current velocity at the cell edges
+    wguess = np.copy(Fr_lstTmStp.w)
+    wguess[Fr_lstTmStp.EltChannel] = wguess[Fr_lstTmStp.EltChannel] + guess[np.arange(Fr_lstTmStp.EltChannel.size)]
+    wguess[EltsTipNew] = wTip
+
+    # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
+    vk = velocity(wguess, EltCrack_k, Fr_lstTmStp.mesh, InCrack_k, Fr_lstTmStp.muPrime, C, Material_properties.SigmaO)
+
+    # typical value for pressure
+    typValue = np.copy(guess)
+    typValue[Fr_lstTmStp.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
+    arg = (
+        Fr_lstTmStp.EltChannel, EltsTipNew, Fr_lstTmStp.w, wTip, EltCrack_k, Fr_lstTmStp.mesh, timeStep, Qin, C,
+        Fr_lstTmStp.muPrime, Fluid_properties.density, InCrack_k, DLkOff, Fr_lstTmStp.SigmaO,
         Fluid_properties.turbulence)
 
-    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP, MakeEquationSystemSameFP, guess, guess, vk,
-                               1.0, Simulation_Parameters.ToleranceEHL, 100, *argSameFP)  # why 2 guess in input ?
+    # sloving the system of equations for [\delta] w in the channel elements and pressure in the tip elements
+    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP, MakeEquationSystemExtendedFP,
+                               guess, typValue, vk, sim_parameters.toleranceEHL, sim_parameters.maxSolverItr, *arg)
 
-    C[np.ix_(Frac.EltTip, Frac.EltTip)] = C_EltTip  # regain origional C (without fill fraction correction)
+    # the fracture to be returned for k plus 1 iteration
+    Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
 
-    w_k = np.copy(Frac.w)
-    w_k[Frac.EltCrack] = w_k[Frac.EltCrack] + sol
+    Fr_kplus1.time += timeStep
 
-    print('Starting Fracture Front loop')
-    itrcount = 1
+    Fr_kplus1.w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+    Fr_kplus1.w[EltsTipNew] = wTip
 
-    FillFrac_km1 = []  # filling fraction last iteration; used to calculate norm
-    DLkOffEltChannel = DLkOff[Frac.EltChannel]
+    # check if the new width is valid
+    if np.isnan(Fr_kplus1.w).any() or (Fr_kplus1.w < 0).any():
+        exitstatus = 5
+        return exitstatus, None
 
-    #   Fracture front loop
-    norm=10.
-    k=0
-    maxitr=Simulation_Parameters.MaximumFrontIts
-
-    # todo i don t like the way this loop is written - it is not a clean architecture to have and if break within a while
-    # i have tried my best, far from readable code
-    # it is not working - always do only 2 its.
-#
-    while (norm > Simulation_Parameters.ToleranceFractureFront) and ( k < maxitr ):
-        k=k+1
-
-        print('\n iteration ' + repr(k))
-        # NEW FRAC FRONT ESTIMATION
-
-        # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        sgndDist_k = 1e10 * np.ones((Frac.mesh.NumberOfElts,), float);  # uncalculated cells get very large value , WTF?
-        sgndDist_k[Frac.EltChannel] = 0
-        # Tip asymptotic inversion
-        # the order of fct arg is whacky here
-        sgndDist_k[Frac.EltRibbon] = -TipAsymInversion(w_k, Frac.EltRibbon, Material_properties.Kprime, Material_properties.Eprime,
-                                                       Simulation_Parameters.tip_asymptote,
-                                                       Frac.muPrime, Material_properties.Cprime, Frac.sgndDist, TimeStep)
-
-        if np.isnan(sgndDist_k[Frac.EltRibbon]).any():
-            print('Tip inversion is not correct' + '\n time step failed .............')
-            f.write('Tip inversion is not correct' + '\n time step failed .............\n\n')
-            exitstatus = 7
-            break
-
-        # SOLVE EIKONAL eq via Fast Marching Method starting from the element close to the ribbon elt
-        # (i.e. the tip element of the last time step)
-        SolveFMM(sgndDist_k, Frac.EltRibbon, Frac.EltChannel, Frac.mesh)
-
-        if max(sgndDist_k) == 1e10:  # why 1.e10 ???
-            print(
-                'FMM not worked properly = ' + repr(np.where(sgndDist_k == 1e10)) + '\ntime step failed .............')
-            f.write(
-                'FMM not worked properly = ' + repr(np.where(sgndDist_k == 1e10)) + '\ntime step failed .............')
-            exitstatus = 2
-            break
-
-        print('Calculating the filling fraction of tip elements with the new fracture front location...')
-
-        # gets the new tip elements & \ell_k & alpha_k (also containing the elements
-        # which are fully filled after the front is moved outward)
-        (EltsTipNew, l_k, alpha_k, CellStatus) = TrackFront(sgndDist_k, Frac.EltChannel, Frac.mesh) # should be named ReconstructFront not TrackFront
-
-        tipNeighb = Frac.mesh.NeiElements[EltsTipNew, :]
-        for i in range(0, len(EltsTipNew)):
-            if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
-                Frac.PlotFracture('complete', 'footPrint')
-                f.write('Reached end of the grid. exiting....\n\n')
-                raise SystemExit('Reached end of the grid. exiting....')
-
-        InCrack_k = np.zeros((Frac.mesh.NumberOfElts,), dtype=np.int8)
-        InCrack_k[Frac.EltChannel] = 1
-        InCrack_k[EltsTipNew] = 1
-
-        Vel_k = -(sgndDist_k[EltsTipNew] - Frac.sgndDist[EltsTipNew]) / TimeStep
-
-        # Calculate filling fraction for current iteration
-        FillFrac_k = VolumeIntegral(alpha_k, l_k, Frac.mesh.hx, Frac.mesh.hy, 'A', Material_properties.Kprime[EltsTipNew],
-                                    Material_properties.Eprime, Frac.muPrime[EltsTipNew], Material_properties.Cprime[EltsTipNew],
-                                    Vel_k) / Frac.mesh.EltArea
-        print("fill frac "+ repr(FillFrac_k))
-
-        FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-6)] = 1.0  # humm what is this fix for ?
-
-        if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
-            print('incorrect filling fraction ' + repr(FillFrac_k[np.where(FillFrac_k > 1.0 + 1e-6)]))
-            print(repr(FillFrac_k[np.where(FillFrac_k < 0.0 - np.finfo(float).eps)]))
-            print('Filling fraction not correct.\ntime step failed .............')
-            f.write('Filling fraction not correct.\ntime step failed .............\n\n')
-            exitstatus = 9
-            break
-
-        # some of the list are redundant to calculate on each iteration
-        # Evaluate the element lists for current iteration
-        (EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k) = UpdateLists(Frac.EltChannel,
-                                                                                                 EltsTipNew,
-                                                                                                 FillFrac_k,
-                                                                                                 sgndDist_k,
-                                                                                                 Frac.mesh)
-
-        # EletsTipNew may contain fully filled elements also
-        NewTipinTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]  # poor variable name !
-
-        norm = abs((np.linalg.norm(FillFrac_k) - np.linalg.norm(FillFrac_km1)) / len(FillFrac_k))
-        FillFrac_km1 = copy.deepcopy(FillFrac_k)
-        print('Norm of subsequent filling fraction estimates = ' + repr(norm))  #
-
-        # What is this for below ???
-        nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
-        if nan.any():
-            #                problem = np.where(nan)[0]
-            #                for i in range(0,len(problem)):
-            #                    neighbors  = np.asarray(Neighbors(EltsTipNew[problem[i]],Frac.mesh.nx,Frac.mesh.ny))
-            #                    inTip = np.asarray([],int)
-            #                    for j in range(0,len(neighbors)):
-            #                        inTip = np.append(inTip,np.where(EltsTipNew==neighbors[j]))
-            #                    alpha_k[problem[i]]=np.mean(alpha_k[inTip])
-            print('Front is not tracked correctly, ' + 'problem in cell(s) ' + repr(
-                EltsTipNew[np.where(nan)]) + '\ntime step failed .............')
-            f.write('Front is not tracked correctly, ' + 'problem in cell(s) ' + repr(
-                EltsTipNew[np.where(nan)]) + '\ntime step failed .............\n\n')
-            exitstatus = 3
-            break
+    # wLftEdge = (Fr_kplus1.w[EltCrack_k] + Fr_kplus1.w[Fr_kplus1.mesh.NeiElements[EltCrack_k, 0]]) / 2
+    # ReLftEdge = 4 / 3 * Fluid_properties.density * wLftEdge * vel[0, EltCrack_k] / Fluid_properties.viscosity
+    # ReyNumber = np.zeros((Fr_kplus1.mesh.NumberOfElts,), )
+    # ReyNumber[EltCrack_k] = ReLftEdge
+    # # plt.matshow(np.resize(ReyNumber, (Fr_kplus1.mesh.ny, Fr_kplus1.mesh.ny)))
+    # fig1 = plt.figure()
+    # ax1 = fig1.add_subplot(111)
+    # ax1.contour(np.resize(ReyNumber, (Fr_kplus1.mesh.ny, Fr_kplus1.mesh.ny)),levels=[1,2100,10000,25000,50000,80000])
+    # ax1.axis('equal')
+    # fig1.savefig(".//Data//figures//" + repr(int(Fr_kplus1.time * 1e4)))
+    # plt.close(fig1)
 
 
-        print(' Solving the EHL system with the new trial footprint')
-        # tip cells whose distance from front has not changed.
-        stagnant = abs(1 - sgndDist_k[EltsTipNew] / Frac.sgndDist[EltsTipNew]) < 1e-8
-        if stagnant.any():
-            # calculate stress intensity factor for stagnant cells
-            KIPrime = StressIntensityFactor(w_k, sgndDist_k, EltsTipNew, EltRibbon_k, stagnant, Frac.mesh,
-                                                Frac.Eprime)
-
-            if np.isnan(KIPrime).any():
-                np.where(np.isnan(KIPrime))
-                print('Ribbon element not found in the enclosure of tip cell. tip cell ' + repr(
-                        EltsTipNew[np.where(np.isnan(KIPrime))]) + '\n time step failed .............')
-                f.write('Ribbon element not found in the enclosure of tip cell. tip cell ' + repr(
-                        EltsTipNew[np.where(np.isnan(KIPrime))]) + '\n time step failed .............\n\n')
-                exitstatus = 8
-                break
-
-            wTip = VolumeIntegral(alpha_k, l_k, Frac.mesh.hx, Frac.mesh.hy, Simulation_Parameters.tip_asymptote,
-                                      Frac.Kprime[EltsTipNew],
-                                      Frac.Eprime, Frac.muPrime[EltsTipNew], Frac.Cprime[EltsTipNew], Vel_k,
-                                      stagnant, KIPrime) / Frac.mesh.EltArea
-        else:
-            # directly calculate the tip volume from the propagation HF asymptote
-            wTip = VolumeIntegral(alpha_k, l_k, Frac.mesh.hx, Frac.mesh.hy, Simulation_Parameters.tip_asymptote,
-                                      Material_properties.Kprime[EltsTipNew],
-                                      Material_properties.Eprime, Frac.muPrime[EltsTipNew], Material_properties.Cprime[EltsTipNew],
-                                      Vel_k) / Frac.mesh.EltArea
-
-        # check if the tip volume has gone into negative
-        smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -10 ** -4 * np.mean(wTip))) #wtf with variable name
-        if np.asarray(smallNgtvWTip).size > 0:
-             #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
-            wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
-
-            # what is that for ? please comment
-        if (wTip < -10 ** -4 * np.mean(wTip)).any():
-            print('wTip not right' + '\n time step failed .............')
-            f.write('wTip not right' + '\n time step failed .............\n\n')
-            exitstatus = 4
-            break
-
-        DLkOff = np.zeros((Frac.mesh.NumberOfElts,), float) # what is this doing here ????
-
-        guess = np.zeros((Frac.EltChannel.size + EltsTipNew.size,), float)
-            # pguess = Frac.p[EltsTipNew]
-
-        guess[np.arange(Frac.EltChannel.size)] = TimeStep * CurrentRate / Frac.EltCrack.size\
-                                                     * np.ones( (Frac.EltCrack.size,), float)
-
-        wguess = np.copy(Frac.w)
-        wguess[Frac.EltChannel] = wguess[Frac.EltChannel] + guess[np.arange(Frac.EltChannel.size)]
-        wguess[EltsTipNew] = wTip
-        vk = velocity(wguess, EltCrack_k, Frac.mesh, InCrack_k, Frac.muPrime, C, Frac.SigmaO)
-
-        # why is C not adjusted here for tip element correction HERE ?
-
-        TypValue = np.copy(guess)
-        TypValue[Frac.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
-        arg = (
-                Frac.EltChannel, EltsTipNew, Frac.w, wTip, EltCrack_k, Frac.mesh, TimeStep, Qin,
-                C, Frac.muPrime,
-                Fluid_properties.density,
-                InCrack_k, DLkOff, Frac.SigmaO, Fluid_properties.turbulence)
-
-        (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP, MakeEquationSystemExtendedFP,
-                                     guess, TypValue, vk, 1.0, Simulation_Parameters.ToleranceEHL, 100, *arg)
-
-        w_k = np.copy(Frac.w)
-        w_k[EltCrack_k] = w_k[EltCrack_k] + sol
-
-        if np.isnan(w_k).any() or (w_k < 0).any():
-            f.write('width solution not correct.\ntime step failed .............\n\n')
-            exitstatus = 5
-            break
-    # ---- end of while loop
-
-    if norm < Simulation_Parameters.ToleranceFractureFront :  # which means  convergence of the fracture front
-        exitstatus = 1
-        print('Fracture front has now converged, exiting loop...')
-        w_k[EltsTipNew] = wTip
-        Frac.w = w_k
-        Frac.FillF = FillFrac_k[NewTipinTip]
-        (Frac.EltChannel, Frac.EltTip, Frac.EltCrack, Frac.EltRibbon, Frac.ZeroVertex) = (
-            EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k)  # lazy writing change
-        Frac.p[Frac.EltCrack] = np.dot(C[np.ix_(Frac.EltCrack, Frac.EltCrack)], Frac.w[Frac.EltCrack])
-        Frac.sgndDist = sgndDist_k
-        (Frac.alpha, Frac.l, Frac.v) = (alpha_k[NewTipinTip], l_k[NewTipinTip], Vel_k[NewTipinTip])
-        Frac.InCrack = InCrack_k
-        Frac.time += TimeStep
 
 
-    if k >= maxitr:
-        print('did not converge after ' + repr(maxitr) + ' iterations' + '\n time step failed .............')
-        f.write(
-                'did not converge after ' + repr(maxitr) + ' iterations' + '\n time step failed .............\n\n')
-        exitstatus = 6
+    Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
+    Fr_kplus1.EltChannel = EltChannel_k
+    Fr_kplus1.EltTip = EltTip_k
+    Fr_kplus1.EltCrack = EltCrack_k
+    Fr_kplus1.EltRibbon = EltRibbon_k
+    Fr_kplus1.ZeroVertex = zrVertx_k
 
-    return exitstatus
+    # pressure evaluated by dot product of width and elasticity matrix
+    Fr_kplus1.p[Fr_kplus1.EltCrack] = np.dot(C[np.ix_(Fr_kplus1.EltCrack, Fr_kplus1.EltCrack)],
+                                             Fr_kplus1.w[Fr_kplus1.EltCrack])
+    Fr_kplus1.sgndDist = sgndDist_k
+
+    Fr_kplus1.alpha = alpha_k[partlyFilledTip]
+    Fr_kplus1.l = l_k[partlyFilledTip]
+    Fr_kplus1.v = Vel_k[partlyFilledTip]
+
+    Fr_kplus1.InCrack = InCrack_k
+
+    exitstatus = 1
+    return exitstatus, Fr_kplus1
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties):
+    """
+    This function plot the fracture footprint and/or save file to disk according to the given time period.
+    
+    Arguments:
+        Fr_lstTmStp (Fracture object):                      fracture from last time step
+        Fr_advanced (Fracture object):                      fracture after time step advancing
+        simulation_parameters (SimulationParameters object): simulation parameters 
+        material_properties (MaterialProperties object):    Material properties
+         
+    Returns: 
+    """
+    if Fr_lstTmStp.time // simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod:
+        # plot fracture footprint
+        if simulation_parameters.plotFigure:
+            Fr_advanced.plot_fracture('complete', 'footPrint', mat_Properties = material_properties)
+
+        # save fracture to disk
+        if simulation_parameters.saveToDisk:
+            simulation_parameters.lastSavedFile += 1
+            Fr_advanced.SaveFracture(simulation_parameters.outFileAddress + "file_"
+                                     + repr(simulation_parameters.lastSavedFile))

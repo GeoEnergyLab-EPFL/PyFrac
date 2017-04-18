@@ -11,15 +11,23 @@ import numpy as np
 
 from src.CartesianMesh import *
 
-class MaterialProperties :
+
+# todo !!! decide where to use system exit
+class MaterialProperties:
     """
-    Class defining  the solid Material properties
+    Class defining the solid Material properties
 
     instance variables:
-
+        Eprime (float)          : plain strain modulus
+        K1c (ndarray-float)     : Linear-Elastic Plane-Strain Fracture Toughness for each cell
+        Kprime (ndarray-float)  : 4*(2/pi)**0.5 * K1c 
+        Cprime (ndarray-float)  : 2 * Carter's leak off coefficient
+        SigmaO (ndarray-float)  : in-situ stress field
+        
     methods:
     """
-    def __init__(self,Eprime,Toughness,Cl,SigmaO,Mesh) :   # add Mesh as input directly here.
+
+    def __init__(self, Eprime, Toughness, Cl, SigmaO, Mesh):  # add Mesh as input directly here.
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
             print("Eprime  can not be an array as input ! - homogeneous medium only ")
@@ -27,109 +35,209 @@ class MaterialProperties :
             self.Eprime = Eprime
 
         if isinstance(Toughness, np.ndarray):  # check if float or ndarray
-            if Toughness.size ==Mesh.NumberOfElts :
+            if Toughness.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.K1c = Toughness
                 self.Kprime = (32 / math.pi) ** 0.5 * Toughness
             else:
-            # error
-                print(' Error in the size of Toughness input ')
+                # error
+                print('Error in the size of Toughness input ')
                 return
         else:
             self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
-            self.Kprime = (32 / math.pi) ** 0.5 * Toughness* np.ones((Mesh.NumberOfElts,), float)
+            self.Kprime = (32 / math.pi) ** 0.5 * Toughness * np.ones((Mesh.NumberOfElts,), float)
 
         if isinstance(Cl, np.ndarray):  # check if float or ndarray
-            if Cl.size == Mesh.NumberOfElts:
-                self.Cprime = 2.* Cl
+            if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.Cprime = 2. * Cl
             else:
-                print(' Error in the size of Leak-Off coefs input ')
+                print('Error in the size of Leak-Off coefficient input ')
                 return
         else:
             self.Cprime = 2. * Cl * np.ones((Mesh.NumberOfElts,), float)
 
         if isinstance(SigmaO, np.ndarray):  # check if float or ndarray
-            if SigmaO.size == Mesh.NumberOfElts:
+            if SigmaO.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.SigmaO = SigmaO
             else:
-                print(' Error in the size of Sigma coefs input ')
+                print('Error in the size of Sigma input ')
                 return
         else:
-            self.SigmaO =  SigmaO * np.ones((Mesh.NumberOfElts,), float)
+            self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
 
 
-#--------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------
 
-class FluidProperties :
+class FluidProperties:
     """
-       Class defining  the fluid  properties
+       Class defining the fluid properties
 
        instance variables:
-            viscosity: float
-            rheology : string
-            muprime : 12 viscosity (// plates viscosity factor)
-            density : float
+            viscosity (ndarray-float):      Viscosity of the fluid (note its different from local viscosity, see
+                                            fracture class for local viscosity) 
+            rheology (string):              string specifying rheology of the fluid. Possible options:
+                                                -- "Newtonian"
+                                                -- "non-Newtonian"
+            muPrime (float):                12 * viscosity (// plates viscosity factor)
+            density (float, default 1000):  density of the fluid
+            turbulence (bool, default False):turbulence flag. If true, turbulence will be taken into account
        methods:
        """
 
-    # todo: checks input
-    def __init__(self,viscosity,density=1000.,rheology = "Newtonian", turbulence=False):
+    def __init__(self, viscosity, mesh, density=1000., rheology="Newtonian", turbulence=False):
 
-        self.viscosity = viscosity
-        self.rheology = rheology
-        self.muprime = 12. * viscosity   # the geometric viscosity in the parallel plate solution
+        if isinstance(viscosity, np.ndarray):  # check if float or ndarray
+            print(' viscosity of the fluid is not an array. Note that its different from local viscosity (See local\n'
+                  ' viscosity variable in the fracture class')
+            return
+        else:
+            # uniform viscosity
+            self.viscosity = viscosity
+
+        rheologyOptions = ("Newtonian", "non-Newtonian")
+        if rheology in rheologyOptions:  # check if rheology match to any rheology option
+            self.rheology = rheology
+        else:
+            # error
+            print('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
+            return
+
+        self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
         self.density = density
-        self.turbulence = turbulence
+
+        if isinstance(turbulence, bool):
+            self.turbulence = turbulence
+        else:
+            # error
+            print('Invalid turbulence flag. Can be either True or False')
 
 
-#--------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------
 class InjectionProperties:
     """
         Class defining the injection schedule
 
         instance variables:
-            rate: float (could be extended to an array of time, rate changes - not implemented yet)
-            source_coordinates: np array (float)
+            injectionRate (ndarray-float):      Array specifying the time series (row 0) and the corresponding injection
+                                                rates (row 1).   
+            source_coordinates (ndarray-float): Array with a single row and two columns specifying the x and y coordinate
+                                                of the injection point coordinates.
+            source_location (ndarray-int):      The element(s) where the fluid is injected in the cartesian mesh.                             
     """
-# TODO: checks input, generalize to a an array of source, to the case of time varying rate...
-    def __init__(self,rate,source_coordinates,Mesh):  # add Mesh as input directly here to ensure consistency
-         self.injectionrate = rate
-         self.source_coordinates = source_coordinates
-         self.source_location = Mesh.locate_element(source_coordinates[0],source_coordinates[1])
+
+    def __init__(self, rate, source_coordinates, Mesh):  # add Mesh as input directly here to ensure consistency
+
+        if isinstance(rate, np.ndarray):
+            if rate.shape[0] != 2:
+                print('Invalid injection rate. The list should have 2 rows (to specify time and corresponding '
+                      'injection rate) for each entry')
+            else:
+                self.injectionRate = rate
+        else:
+            self.injectionRate = np.asarray([[0], [rate]])
+
+        if len(source_coordinates) == 2:
+            self.source_coordinates = source_coordinates
+        else:
+            # error
+            print('Invalid source coordinates. Correct format: a numpy array with a single row and two columns to \n'
+                  'specify x and y coordinate of the source e.g. np.array([x_coordinate, y_coordinate])')
+
+        self.source_location = Mesh.locate_element(source_coordinates[0], source_coordinates[1])
 
 
-#--------------------------------------------------------------------------------------------------------
+
+
+# --------------------------------------------------------------------------------------------------------
 class SimulationParameters:
     """
         Class defining the simulation parameters
 
         instance variables
-            MaximumNumberOfTimeSteps : integer (default 10)
-            ToleranceFractureFront : float (default 1.e-3)
-            ToleranceEHL : float (default 1.e-5)
-            maximum_steps: int (default 10)
-            cfl_factor  : factor for time-step adaptivity (default 0.8)
-            final_time: float (default 1000.)
-            tip_asymptote (string):    propagation regime. Possible options:
-                        regime -- A  gives the area (fill fraction)
-                        regime -- K  gives tip volume according to the square root assymptote
-                        regime -- M  gives tip volume according to the viscocity dominated assymptote
-                        regime -- Lk is used to calculate the leak off given the distance of the front l (note, its not tip volume)
-                        regime -- Mt gives tip volume according to the viscocity, Leak-off assymptote
-                        regime -- U  gives tip volume according to the Universal assymptote (Donstov and Pierce, 2017)
-                        regime -- MK gives tip volume according to the M-K transition assymptote
-
+            maxTimeSteps (integer, default 10):     maximum number of time steps.
+            tolFractFront (float, default 1.e-3):   tolerance for the fracture front loop.
+            toleranceEHL (float, default 1.e-5):    tolerance for the Elastohydrodynamic solver.
+            maximumItrEHL (int, default 100):       maximum number of iterations for the Elastohydrodynamic solver.
+            CFLfactor (float, default 0.8):         factor for time-step adaptivity. 
+            FinalTime (float, default 1000):        time where the simulation ends.
+            maxFrontItr (int, default 30):          maximum iterations to for the fracture front loop.
+            tipAsymptote (string, default "U"):     propagation regime. Possible options:
+                                                        regime -- K  toughness dominated regime, without leak off
+                                                        regime -- M  viscosity dominated regime, without leak off
+                                                        regime -- Mt viscosity dominated regime , with leak off
+                                                        regime -- U  Universal regime accommodating viscosity, toughness 
+                                                                     and leak off (see Donstov and Pierce, 2017)
+                                                        regime -- M-K transition regime
+            maxSolverItr
+            maxReattempts
+            reAttemptFactor
+            outputTimePeriod
+            plotFigure
+            saveToDisk
     """
-    # todo : checks input, ensure variable name consistency...
-    def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its = 20, cfl_factor=0.8,
-                 tip_asymptote='U',final_time=1000.,maximum_steps=10):
-        self.MaximumNumberOfTimeSteps = maximum_steps
-        self.ToleranceFractureFront =toleranceFractureFront
-        self.ToleranceEHL = toleranceEHL
-        self.CFL_factor =cfl_factor
+
+    def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
+                 cfl_factor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=10, max_reattemps = 5,
+                 reattempt_factor = 0.8, output_time_period = np.inf, plot_figure = False, save_to_disk = False,
+                 out_file_address = "None", plot_analytical = False):
+
+        self.maxTimeSteps = maximum_steps
+        self.tolFractFront = toleranceFractureFront
+        self.toleranceEHL = toleranceEHL
+        self.CFLfactor = cfl_factor
         self.FinalTime = final_time
-        self.tip_asymptote=tip_asymptote
-        self.MaximumFrontIts = maxfront_its
+
+        # todo: all the option structures can be put into one file
+        tipAssymptOptions = ("K", "M", "Mt", "U", "M-K")
+        if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
+            self.tipAsymptote = tip_asymptote
+        else:
+            # error
+            print('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
+            return
+
+        self.maxFrontItr = maxfront_its
+        self.maxSolverItr = max_itr_solver
+        self.maxReattempts = max_reattemps
+        self.reAttemptFactor = reattempt_factor
+
+        # output parameters
+        self.outputTimePeriod = output_time_period
+        self.plotFigure = plot_figure
+        if plot_figure:
+            self.plotAnalytical = plot_analytical
+
+        self.saveToDisk = save_to_disk
+
+        import sys
+        if "win" in sys.platform:
+            slash = "\\"
+        else:
+            slash = "/"
+
+        if out_file_address == "None" and save_to_disk:
+
+            # check operating system to get appropriate slash in the address
 
 
-#--------------------------------------------------------------------------------------------------------
+            # time stamp as the folder address
+            from time import gmtime, strftime
+            timeStamp = "runDate_"+ strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
 
+            # output folder address
+            address = "." + slash + "Data" + slash + timeStamp
+            # check if folder exists
+            import os
+            if not os.path.exists(address):
+                os.makedirs(address)
+
+            self.outFileAddress = address + slash
+            self.lastSavedFile = 0
+        elif save_to_disk:
+            import os
+            if not os.path.exists(out_file_address):
+                os.makedirs(out_file_address)
+
+            self.outFileAddress = out_file_address + slash
+            self.lastSavedFile = 0
+
+# ----------------------------------------------------------------------------------------------------------------------
