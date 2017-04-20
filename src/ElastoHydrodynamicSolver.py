@@ -89,7 +89,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
 
     # todo: can be evaluated at each cell edge
     rough = w[EltCrack]/dgrain
-    rough[np.where(rough<5)[0]] = 10.
+    rough[np.where(rough<10)[0]] = 10.
 
     # width on edges; evaluated by averaging the widths of adjacent cells
     wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2
@@ -719,7 +719,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
 
         normlist[k] = norm
 
-        # todo !!! Hack: Consider coverged if norm grows and last norm is greater than 2e-4
+        # todo !!! Hack: Consider coverged if norm grows and last norm is greater than 1e-4
         if norm > normlist[k - 1] and normlist[k - 1] < 1e-4:
             break
         k = k + 1
@@ -734,18 +734,21 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
 
 
 #######################################
-# ARHHHHHHH DON T USE pointers !!!!!!
 
-def Jacobian(Residual_function, x, interItr, TypValue, *args):
+
+def Jacobian(Residual_function, x, interItr, TypValue, *args, central=False):
     (Fx, interItr) = Residual_function(x, interItr, *args)
     Jac = np.zeros((len(x), len(x)), dtype=np.float64)
     for i in range(0, len(x)):
         Epsilon = np.finfo(float).eps ** 0.5 * max(x[i], TypValue[i])
         xip = np.copy(x)
-        # xin = np.copy(x)
         xip[i] = xip[i] + Epsilon
-        # xin[i] = xin[i]-Epsilon
-        (Fxi, interItr) = Residual_function(xip, interItr, *args)
-        Jac[:, i] = (Fxi - Fx) / Epsilon
-        # Jac[:,i] = (Residual_function(xip,interItr,*args)[0] - Residual_function(xin,interItr,*args)[0])/(2*Epsilon)
+        if central:
+            xin = np.copy(x)
+            xin[i] = xin[i]-Epsilon
+            Jac[:,i] = (Residual_function(xip,interItr,*args)[0] - Residual_function(xin,interItr,*args)[0])/(2*Epsilon)
+        else:
+            (Fxi, interItr) = Residual_function(xip, interItr, *args)
+            Jac[:, i] = (Fxi - Fx) / Epsilon
+
     return Jac

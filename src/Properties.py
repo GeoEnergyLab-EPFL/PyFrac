@@ -169,14 +169,15 @@ class SimulationParameters:
                                                         regime -- M-K transition regime
             maxSolverItr (int, default 100):        maximum iterations for the EHL iterative solver (Picard-Newton
                                                     hybrid) in this case.
-            maxReattempts (int, default 5):         maximum number of reattempts in case of failure of a time step. Á
+            maxReattempts (int, default 5):         maximum number of reattempts in case of failure of a time step. A
                                                     smaller time step will be attempted the given number of times. 
             reAttemptFactor (float, default 0.8):   the factor multiplied with the time step before reattempt.
-            outputTimePeriod (float, default inf):  the time period after which the output file is written or the figures
-                                                    are plotted. 
+            outputTimePeriod (float, default inf):  the time period after which the output file is written or the
+                                                    figures are plotted. 
             plotFigure (boolean, default False):    flag specifying to plot fracture trace after the given time period
             saveToDisk (boolean, default False):    flag specifying to save fracture to dist after the given time period
-            out_file_address (string, default "None"): disk address of the files to be saved            
+            out_file_address (string, default "None"): disk address of the files to be saved. If not given, a new
+                                                    ./Data/"tim stamp" folder will be automatically created.
             plot_analytical (boolean, default False): flag specifying to plot the analytical solution
             analyticalSol (String, default "M"):    the analytical solution of the radial fracture to be plotted on the
                                                     fracture. Possible options:
@@ -219,6 +220,7 @@ class SimulationParameters:
 
         self.saveToDisk = save_to_disk
 
+        # check operating system to get appropriate slash in the address
         import sys
         if "win" in sys.platform:
             slash = "\\"
@@ -226,10 +228,6 @@ class SimulationParameters:
             slash = "/"
 
         if out_file_address == "None" and save_to_disk:
-
-            # check operating system to get appropriate slash in the address
-
-
             # time stamp as the folder address
             from time import gmtime, strftime
             timeStamp = "runDate_"+ strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
