@@ -349,8 +349,8 @@ class Fracture():
         self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
         # calculate leaked off volume for the channel elements using Carter leak off (see e.g. Dontsov and Peirce, 2008)
         self.Leakedoff[self.EltChannel] = 2 * solid.Cprime[self.EltChannel] * self.mesh.EltArea * (self.time -
-                                                                                                   self.Tarrival[
-                                                                                                       self.EltChannel]) ** 0.5
+                                                                                            self.Tarrival[
+                                                                                            self.EltChannel]) ** 0.5
         # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
         self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip, self.alpha, self.l,
                                                                                      self.mesh, 'Lk', solid,
@@ -358,7 +358,8 @@ class Fracture():
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
-            self.plot_fracture('complete', 'footPrint', mat_Properties=solid)
+            fig = self.plot_fracture('complete', 'footPrint', mat_Properties=solid)
+            plt.show()
 
         if simulProp.saveToDisk:
             self.SaveFracture(simulProp.outFileAddress + "file_" + repr(0))
@@ -420,17 +421,16 @@ class Fracture():
         elif Parameter_Identifier == 'muPrime':
             values[Elts] = self.muPrime[Elts]
         elif Parameter_Identifier == 'footPrint':
-            self.print_fracture_trace(analytical, evol, identify, mat_Properties)
-            return
+            fig = self.print_fracture_trace(analytical, evol, identify, mat_Properties)
+            return fig
         else:
             print('invalid parameter identifier')
-            return
+            return None
 
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         ax.plot_trisurf(self.mesh.CenterCoor[:, 0], self.mesh.CenterCoor[:, 1], values, cmap=cm.jet, linewidth=0.2)
-        plt.show()
-        plt.pause(0.0001)
+        return fig
 
     ######################################
     # todo: commenting print_fracture_trace function
@@ -525,13 +525,15 @@ class Fracture():
         tmp = np.hstack((tmp, np.transpose(intrsct2)))
         if evol:
             self.FractEvol = np.vstack((self.FractEvol, tmp))
-            PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, self.FractEvol[:, 0:2],
+            fig = PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, self.FractEvol[:, 0:2],
                                   self.FractEvol[:, 2:4], rAnalytical, mat_properties, identify)
         else:
-             PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, tmp[:, 0:2], tmp[:, 2:4],
+            fig = PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, tmp[:, 0:2], tmp[:, 2:4],
                                   rAnalytical, mat_properties, identify)
+        return fig
 
-    ########################################################
+
+    #-------------------------------------------------------------------------------------------------------------------
 
     def SaveFracture(self, filename):
         with open(filename, 'wb') as output:

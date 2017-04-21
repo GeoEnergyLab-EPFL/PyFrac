@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import brentq
 
 from src.Utility import *
+from src.FluidModel import *
 
 
 def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
@@ -89,7 +90,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
 
     # todo: can be evaluated at each cell edge
     rough = w[EltCrack]/dgrain
-    rough[np.where(rough<10)[0]] = 10.
+    rough[np.where(rough < 15)[0]] = 15.
 
     # width on edges; evaluated by averaging the widths of adjacent cells
     wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2
@@ -226,10 +227,6 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     cond[3, ReTopEdge_nonZero] = wTopEdge[ReTopEdge_nonZero] ** 2 / (rho * ffTopEdge[ReTopEdge_nonZero]
                                                                      * vk[3, EltCrack[ReTopEdge_nonZero]])
 
-    # cond[0, np.where(np.isinf(cond[0, :]))] = 0 # for cells with neighbors outside the fracture
-    # cond[1, np.where(np.isinf(cond[1, :]))] = 0
-    # cond[2, np.where(np.isinf(cond[2, :]))] = 0
-    # cond[3, np.where(np.isinf(cond[3, :]))] = 0
 
     # assembling the finite difference matrix
     FinDiffOprtr[EltCrack, EltCrack] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2
@@ -290,85 +287,6 @@ def findBracket(func,guess,*args):
 
 
 
-def FiniteDiff_operator_turbulent(w, EltCrack, mu, Mesh, InCrack, rho, vkm1, C, sigma0):
-    FinDiffOprtr = np.zeros((w.size, w.size), dtype=np.float64)
-    dx = Mesh.hx
-    dy = Mesh.hy
-
-
-    wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2
-    wRgtEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2
-    wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2
-    wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2
-
-    (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
-
-    ReLftEdge = 4 / 3 * rho * wLftEdge * (vkm1[0, EltCrack] ** 2 + vkm1[4, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-    ReRgtEdge = 4 / 3 * rho * wRgtEdge * (vkm1[1, EltCrack] ** 2 + vkm1[5, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-    ReBtmEdge = 4 / 3 * rho * wBtmEdge * (vkm1[2, EltCrack] ** 2 + vkm1[6, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-    ReTopEdge = 4 / 3 * rho * wTopEdge * (vkm1[3, EltCrack] ** 2 + vkm1[7, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-
-
-    rough = 10000 * np.ones((EltCrack.size,), np.float64)
-    ffLftEdge = FF_YangJoseph(ReLftEdge, rough)
-    ffRgtEdge = FF_YangJoseph(ReRgtEdge, rough)
-    ffBtmEdge = FF_YangJoseph(ReBtmEdge, rough)
-    ffTopEdge = FF_YangJoseph(ReTopEdge, rough)
-
-    # velocity current iteration, arrangement row wise: left x, right x, bottom y, top y, left y, right y, bottom x, top x
-    vk = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
-    vk[0, EltCrack] = -wLftEdge / (rho * ffLftEdge * (vkm1[0, EltCrack] ** 2 + vkm1[4, EltCrack] ** 2) ** 0.5) * dpdxLft
-    vk[1, EltCrack] = -wRgtEdge / (rho * ffRgtEdge * (vkm1[1, EltCrack] ** 2 + vkm1[5, EltCrack] ** 2) ** 0.5) * dpdxRgt
-    vk[2, EltCrack] = -wBtmEdge / (rho * ffBtmEdge * (vkm1[2, EltCrack] ** 2 + vkm1[6, EltCrack] ** 2) ** 0.5) * dpdyBtm
-    vk[3, EltCrack] = -wTopEdge / (rho * ffTopEdge * (vkm1[3, EltCrack] ** 2 + vkm1[7, EltCrack] ** 2) ** 0.5) * dpdyTop
-    vk[0, np.where(np.isnan(vk[0, :]))] = 0  # for edges adjacent to cells outside fracture
-    vk[1, np.where(np.isnan(vk[1, :]))] = 0
-    vk[2, np.where(np.isnan(vk[2, :]))] = 0
-    vk[3, np.where(np.isnan(vk[3, :]))] = 0
-
-    vk[4, EltCrack] = (vk[2, Mesh.NeiElements[EltCrack, 0]] + vk[3, Mesh.NeiElements[EltCrack, 0]] + vk[2, EltCrack] +
-                       vk[3, EltCrack]) / 4
-    vk[5, EltCrack] = (vk[2, Mesh.NeiElements[EltCrack, 1]] + vk[3, Mesh.NeiElements[EltCrack, 1]] + vk[2, EltCrack] +
-                       vk[3, EltCrack]) / 4
-    vk[6, EltCrack] = (vk[0, Mesh.NeiElements[EltCrack, 2]] + vk[1, Mesh.NeiElements[EltCrack, 2]] + vk[0, EltCrack] +
-                       vk[1, EltCrack]) / 4
-    vk[7, EltCrack] = (vk[0, Mesh.NeiElements[EltCrack, 3]] + vk[1, Mesh.NeiElements[EltCrack, 3]] + vk[0, EltCrack] +
-                       vk[1, EltCrack]) / 4
-
-    ReLftEdge = 4 / 3 * rho * wLftEdge * (vk[0, EltCrack] ** 2 + vk[4, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-    ReRgtEdge = 4 / 3 * rho * wRgtEdge * (vk[1, EltCrack] ** 2 + vk[5, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-    ReBtmEdge = 4 / 3 * rho * wBtmEdge * (vk[2, EltCrack] ** 2 + vk[6, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-    ReTopEdge = 4 / 3 * rho * wTopEdge * (vk[3, EltCrack] ** 2 + vk[7, EltCrack] ** 2) ** 0.5 / mu[EltCrack]
-
-    ffLftEdge = FF_YangJoseph(ReLftEdge, rough)
-    ffRgtEdge = FF_YangJoseph(ReRgtEdge, rough)
-    ffBtmEdge = FF_YangJoseph(ReBtmEdge, rough)
-    ffTopEdge = FF_YangJoseph(ReTopEdge, rough)
-
-    ffLftEdge[np.where(np.isinf(ffLftEdge))] = 0  # for edges adjacent to cells outside fracture
-    ffRgtEdge[np.where(np.isinf(ffRgtEdge))] = 0
-    ffBtmEdge[np.where(np.isinf(ffBtmEdge))] = 0
-    ffTopEdge[np.where(np.isinf(ffTopEdge))] = 0
-
-    cond = np.zeros((4, EltCrack.size), dtype=np.float64)
-    cond[0, :] = wLftEdge ** 2 / (rho * ffLftEdge * (vk[0, EltCrack] ** 2 + vk[4, EltCrack] ** 2) ** 0.5)
-    cond[1, :] = wRgtEdge ** 2 / (rho * ffRgtEdge * (vk[1, EltCrack] ** 2 + vk[5, EltCrack] ** 2) ** 0.5)
-    cond[2, :] = wBtmEdge ** 2 / (rho * ffBtmEdge * (vk[2, EltCrack] ** 2 + vk[6, EltCrack] ** 2) ** 0.5)
-    cond[3, :] = wTopEdge ** 2 / (rho * ffTopEdge * (vk[3, EltCrack] ** 2 + vk[7, EltCrack] ** 2) ** 0.5)
-
-    cond[0, np.where(np.isinf(cond[0, :]))] = 0
-    cond[1, np.where(np.isinf(cond[1, :]))] = 0
-    cond[2, np.where(np.isinf(cond[2, :]))] = 0
-    cond[3, np.where(np.isinf(cond[3, :]))] = 0
-
-    FinDiffOprtr[EltCrack, EltCrack] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2
-    FinDiffOprtr[EltCrack, Mesh.NeiElements[EltCrack, 0]] = cond[0, :] / dx ** 2
-    FinDiffOprtr[EltCrack, Mesh.NeiElements[EltCrack, 1]] = cond[1, :] / dx ** 2
-    FinDiffOprtr[EltCrack, Mesh.NeiElements[EltCrack, 2]] = cond[2, :] / dy ** 2
-    FinDiffOprtr[EltCrack, Mesh.NeiElements[EltCrack, 3]] = cond[3, :] / dy ** 2
-
-    return (FinDiffOprtr, vk)
-
 
 ######################################
 
@@ -388,8 +306,6 @@ def MakeEquationSystemExtendedFP(solk, vkm1, *args):
     wcNplusOne[EltsTipNew] = wTip
 
     if turb:
-        # (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent(wcNplusOne, EltCrack, muPrime / 12, Mesh, InCrack, rho,
-        #                                                      vkm1, C, sigma0)
         (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent_implicit(wcNplusOne, EltCrack, muPrime/12, Mesh, InCrack,
                                                                     rho, vkm1, C, sigma0)
     else:
@@ -428,7 +344,6 @@ def MakeEquationSystemSameFP(delwk, vkm1, *args):
     wnPlus1[EltCrack] = wnPlus1[EltCrack] + delwk
 
     if turb:
-        #(con, vk) = FiniteDiff_operator_turbulent(wnPlus1, EltCrack, muPrime / 12, mesh, InCrack, rho, vkm1, C, sigma0)
         (con, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1, EltCrack, muPrime / 12, mesh, InCrack, rho, vkm1,
                                                            C, sigma0)
     else:
@@ -439,7 +354,7 @@ def MakeEquationSystemSameFP(delwk, vkm1, *args):
 
     A = np.identity(EltCrack.size) - dt * np.dot(con, CCrack)
     S = dt * np.dot(con, np.dot(CCrack, w[EltCrack]) + sigma0[EltCrack]) + dt / mesh.EltArea * Q[EltCrack] - LeakOff[
-                                                                                                                 EltCrack] / mesh.EltArea
+                                                                                            EltCrack] / mesh.EltArea
     return (A, S, vk)
 
 
@@ -455,6 +370,8 @@ def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr, *args):
 def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
     (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
 
+    # velocity at the edges in the following order (x-left edge, x-right edge, y-bottom edge, y-top edge, y-left edge,
+    #                                               y-right edge, x-bottom edge, x-top edge)
     vel = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
     vel[0, EltCrack] = -((w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2) ** 2 / muPrime[EltCrack] * dpdxLft
     vel[1, EltCrack] = -((w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2) ** 2 / muPrime[EltCrack] * dpdxRgt
@@ -470,7 +387,13 @@ def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
     vel[7, EltCrack] = (vel[0, Mesh.NeiElements[EltCrack, 3]] + vel[1, Mesh.NeiElements[EltCrack, 3]] + vel[
         0, EltCrack] + vel[1, EltCrack]) / 4
 
-    return vel
+    vel_magnitude = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
+    vel_magnitude[0, :] = (vel[0, :] ** 2 + vel[4, :] ** 2) ** 0.5
+    vel_magnitude[1, :] = (vel[1, :] ** 2 + vel[5, :] ** 2) ** 0.5
+    vel_magnitude[2, :] = (vel[2, :] ** 2 + vel[6, :] ** 2) ** 0.5
+    vel_magnitude[3, :] = (vel[3, :] ** 2 + vel[7, :] ** 2) ** 0.5
+
+    return vel_magnitude
 
 
 #######################################
@@ -488,188 +411,6 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 
 #######################################
-#  in the future the following should be move to a separate files containing the fluid models....
-def FF_YangJoseph(ReNum, rough):
-    ff = np.full((len(ReNum),), np.inf, dtype=np.float64)
-
-    lam = np.where(abs(ReNum) < 2100)[0]
-    ff[lam] = 16 / ReNum[lam]
-
-    turb = np.where(abs(ReNum) >= 2100)[0]
-    lamdaS = (-(
-    (-64 / ReNum[turb] + 0.000083 * ReNum[turb] ** 0.75) / (1 + 2320 ** 50 / ReNum[turb] ** 50) ** 0.5) - 64 / ReNum[
-                  turb] + 0.3164 / ReNum[turb] ** 0.25) / (1 + 3810 ** 15 / ReNum[turb] ** 15) ** 0.5 + (-((-(
-    (-64 / ReNum[turb] + 0.000083 * ReNum[turb] ** 0.75) / (1 + 2320 ** 50 / ReNum[turb] ** 50) ** 0.5) - 64 / ReNum[
-                                                                                                                turb] + 0.3164 /
-                                                                                                            ReNum[
-                                                                                                                turb] ** 0.25) / (
-                                                                                                           1 + 3810 ** 15 /
-                                                                                                           ReNum[
-                                                                                                               turb] ** 15) ** 0.5) - (
-                                                                                                         -64 / ReNum[
-                                                                                                             turb] + 0.000083 *
-                                                                                                         ReNum[
-                                                                                                             turb] ** 0.75) / (
-                                                                                                         1 + 2320 ** 50 /
-                                                                                                         ReNum[
-                                                                                                             turb] ** 50) ** 0.5 - 64 /
-                                                                                                         ReNum[
-                                                                                                             turb] + 0.1537 /
-                                                                                                         ReNum[
-                                                                                                             turb] ** 0.185) / (
-                                                                                                                               1 + 1680700000000000000000000 /
-                                                                                                                               ReNum[
-                                                                                                                                   turb] ** 5) ** 0.5 + (
-                                                                                                                                                        -(
-                                                                                                                                                        (
-                                                                                                                                                        -(
-                                                                                                                                                        (
-                                                                                                                                                        -64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.000083 *
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.75) / (
-                                                                                                                                                        1 + 2320 ** 50 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 50) ** 0.5) - 64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.3164 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.25) / (
-                                                                                                                                                        1 + 3810 ** 15 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 15) ** 0.5) - (
-                                                                                                                                                        -(
-                                                                                                                                                        (
-                                                                                                                                                        -(
-                                                                                                                                                        (
-                                                                                                                                                        -64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.000083 *
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.75) / (
-                                                                                                                                                        1 + 2320 ** 50 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 50) ** 0.5) - 64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.3164 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.25) / (
-                                                                                                                                                        1 + 3810 ** 15 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 15) ** 0.5) - (
-                                                                                                                                                        -64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.000083 *
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.75) / (
-                                                                                                                                                        1 + 2320 ** 50 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 50) ** 0.5 - 64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.1537 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.185) / (
-                                                                                                                                                        1 + 1680700000000000000000000 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 5) ** 0.5 - (
-                                                                                                                                                        -64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.000083 *
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.75) / (
-                                                                                                                                                        1 + 2320 ** 50 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 50) ** 0.5 - 64 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] + 0.0753 /
-                                                                                                                                                        ReNum[
-                                                                                                                                                            turb] ** 0.136) / (
-                                                                                                                                                                              1 + 4000000000000 /
-                                                                                                                                                                              ReNum[
-                                                                                                                                                                                  turb] ** 2) ** 0.5 + (
-                                                                                                                                                                                                       -64 /
-                                                                                                                                                                                                       ReNum[
-                                                                                                                                                                                                           turb] + 0.000083 *
-                                                                                                                                                                                                       ReNum[
-                                                                                                                                                                                                           turb] ** 0.75) / (
-                                                                                                                                                                                                                            1 + 2320 ** 50 /
-                                                                                                                                                                                                                            ReNum[
-                                                                                                                                                                                                                                turb] ** 50) ** 0.5 + 64 / \
-                                                                                                                                                                                                                                                      ReNum[
-                                                                                                                                                                                                                                                          turb]
-    lamdaR = ReNum[turb] ** (-0.2032 + 7.348278 / rough[turb] ** 0.96433953) * (
-    -0.022 + (-0.978 + 0.92820419 * rough[turb] ** 0.03569244 - 0.00255391 * rough[turb] ** 0.8353877) / (
-    1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249 / rough[
-        turb] ** 50) ** 0.5 + 0.00255391 * rough[turb] ** 0.8353877) + (-(
-    ReNum[turb] ** (-0.2032 + 7.348278 / rough[turb] ** 0.96433953) * (
-    -0.022 + (-0.978 + 0.92820419 * rough[turb] ** 0.03569244 - 0.00255391 * rough[turb] ** 0.8353877) / (
-    1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249 / rough[
-        turb] ** 50) ** 0.5 + 0.00255391 * rough[turb] ** 0.8353877)) + 0.01105244 * ReNum[turb] ** (
-                                                                        -0.191 + 0.62935712 / rough[
-                                                                            turb] ** 0.28022284) * rough[
-                                                                            turb] ** 0.23275646 + (ReNum[turb] ** (
-    0.015 + 0.26827956 / rough[turb] ** 0.28852025) * (0.0053 + 0.02166401 / rough[turb] ** 0.30702955) - 0.01105244 *
-                                                                                                   ReNum[turb] ** (
-                                                                                                   -0.191 + 0.62935712 /
-                                                                                                   rough[
-                                                                                                       turb] ** 0.28022284) *
-                                                                                                   rough[
-                                                                                                       turb] ** 0.23275646 + (
-                                                                                                   ReNum[
-                                                                                                       turb] ** 0.002 * (
-                                                                                                   0.011 + 0.18954211 /
-                                                                                                   rough[
-                                                                                                       turb] ** 0.510031) -
-                                                                                                   ReNum[turb] ** (
-                                                                                                   0.015 + 0.26827956 /
-                                                                                                   rough[
-                                                                                                       turb] ** 0.28852025) * (
-                                                                                                   0.0053 + 0.02166401 /
-                                                                                                   rough[
-                                                                                                       turb] ** 0.30702955) + (
-                                                                                                   0.0098 - ReNum[
-                                                                                                       turb] ** 0.002 * (
-                                                                                                   0.011 + 0.18954211 /
-                                                                                                   rough[
-                                                                                                       turb] ** 0.510031) + 0.17805185 /
-                                                                                                   rough[
-                                                                                                       turb] ** 0.46785053) / (
-                                                                                                   1 + (
-                                                                                                   8.733801045300249e10 *
-                                                                                                   rough[
-                                                                                                       turb] ** 0.90870686) /
-                                                                                                   ReNum[
-                                                                                                       turb] ** 2) ** 0.5) / (
-                                                                                                   1 + (
-                                                                                                   6.44205549308073e15 *
-                                                                                                   rough[
-                                                                                                       turb] ** 5.168887) /
-                                                                                                   ReNum[
-                                                                                                       turb] ** 5) ** 0.5) / (
-                                                                        1 + (1.1077593467238922e13 * rough[
-                                                                            turb] ** 4.9771653) / ReNum[
-                                                                            turb] ** 5) ** 0.5) / (1 + (
-    2.9505925619934144e14 * rough[turb] ** 3.7622822) / ReNum[turb] ** 5) ** 0.5
-    ff[turb] = np.asarray(
-        lamdaS + (lamdaR - lamdaS) / (1 + (ReNum[turb] / (45.196502 * rough[turb] ** 1.2369807 + 1891)) ** -5) ** 0.5,
-        float) / 4
-    return ff
-
-
-#######################################
-
-def FF_YangJoseph_float(ReNum, rough):
-
-    if ReNum<2100:
-        return 16/ReNum
-    else:
-        lamdaS = (-((-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5) - 64/ReNum + 0.3164/ReNum**0.25)/(1 + 3810**15/ReNum**15)**0.5 + (-((-((-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5) - 64/ReNum + 0.3164/ReNum**0.25)/(1 + 3810**15/ReNum**15)**0.5) - (-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5 - 64/ReNum + 0.1537/ReNum**0.185)/(1 + 1680700000000000000000000/ReNum**5)**0.5 + (-((-((-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5) - 64/ReNum + 0.3164/ReNum**0.25)/(1 + 3810**15/ReNum**15)**0.5) - (-((-((-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5) - 64/ReNum + 0.3164/ReNum**0.25)/(1 + 3810**15/ReNum**15)**0.5) - (-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5 - 64/ReNum + 0.1537/ReNum**0.185)/(1 + 1680700000000000000000000/ReNum**5)**0.5 - (-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5 - 64/ReNum + 0.0753/ReNum**0.136)/(1 + 4000000000000/ReNum**2)**0.5 + (-64/ReNum + 0.000083*ReNum**0.75)/(1 + 2320**50/ReNum**50)**0.5 + 64/ReNum
-        lamdaR = ReNum**(-0.2032 + 7.348278/rough**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough**0.03569244 - 0.00255391*rough**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough**50)**0.5 + 0.00255391*rough**0.8353877) + (-(ReNum**(-0.2032 + 7.348278/rough**0.96433953)*(-0.022 + (-0.978 + 0.92820419*rough**0.03569244 - 0.00255391*rough**0.8353877)/(1 + 265550686013728218770454203489441165109061383639474724663955742569518708077419167245843482753466249/rough**50)**0.5 + 0.00255391*rough**0.8353877)) + 0.01105244*ReNum**(-0.191 + 0.62935712/rough**0.28022284)*rough**0.23275646 + (ReNum**(0.015 + 0.26827956/rough**0.28852025)*(0.0053 + 0.02166401/rough**0.30702955) - 0.01105244*ReNum**(-0.191 + 0.62935712/rough**0.28022284)*rough**0.23275646 + (ReNum**0.002*(0.011 + 0.18954211/rough**0.510031) - ReNum**(0.015 + 0.26827956/rough**0.28852025)*(0.0053 + 0.02166401/rough**0.30702955) + (0.0098 - ReNum**0.002*(0.011 + 0.18954211/rough**0.510031) + 0.17805185/rough**0.46785053)/(1 + (8.733801045300249e10*rough**0.90870686)/ReNum**2)**0.5)/(1 + (6.44205549308073e15*rough**5.168887)/ReNum**5)**0.5)/(1 + (1.1077593467238922e13*rough**4.9771653)/ReNum**5)**0.5)/(1 + (2.9505925619934144e14*rough**3.7622822)/ReNum**5)**0.5
-        return (lamdaS + (lamdaR - lamdaS) / (1 + (ReNum / (45.196502 * rough ** 1.2369807 + 1891)) ** -5) ** 0.5) / 4
-
-
-#######################################
 def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, interItr, *args):
     (A, S, vk) = MakeEquationSystemExtendedFP(solk, interItr, *args)
     return (np.dot(A, solk) - S, vk)
@@ -677,7 +418,7 @@ def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, interItr, *args):
 
 #######################################
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0):
+def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0, PicardPerNewton = 100):
     """
     Mixed Picard Newton solver for nonlinear systems.
         
@@ -690,6 +431,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
     :param Tol:     Tolerance
     :param maxitr:  Maximum number of iterations
     :param args:    arguments given to the residual and systems functions
+    :param PicardPerNewton: For hybrid Picard/Newton solution. Number of picard iterations for every Newton iteration.
     :return:        solution
     """
     solk = guess
@@ -704,7 +446,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
     while norm > Tol and k < maxitr:
 
         solkm1 = solk
-        if k % 100 == 0 or tryNewton:
+        if k % PicardPerNewton == 0 or tryNewton:
             (Fx, interItr) = Res_fun(solk, interItr, *args)
             if newton % 3 == 0:
                 Jac = Jacobian(Res_fun, solk, interItr, TypValue, *args)

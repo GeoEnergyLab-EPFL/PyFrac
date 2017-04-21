@@ -425,21 +425,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         exitstatus = 5
         return exitstatus, None
 
-    # wLftEdge = (Fr_kplus1.w[EltCrack_k] + Fr_kplus1.w[Fr_kplus1.mesh.NeiElements[EltCrack_k, 0]]) / 2
-    # ReLftEdge = 4 / 3 * Fluid_properties.density * wLftEdge * vel[0, EltCrack_k] / Fluid_properties.viscosity
-    # ReyNumber = np.zeros((Fr_kplus1.mesh.NumberOfElts,), )
-    # ReyNumber[EltCrack_k] = ReLftEdge
-    # # plt.matshow(np.resize(ReyNumber, (Fr_kplus1.mesh.ny, Fr_kplus1.mesh.ny)))
-    # fig1 = plt.figure()
-    # ax1 = fig1.add_subplot(111)
-    # ax1.contour(np.resize(ReyNumber, (Fr_kplus1.mesh.ny, Fr_kplus1.mesh.ny)),levels=[1,2100,10000,25000,50000,80000])
-    # ax1.axis('equal')
-    # fig1.savefig(".//Data//figures//" + repr(int(Fr_kplus1.time * 1e4)))
-    # plt.close(fig1)
-
-
-
-
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
@@ -457,6 +442,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     Fr_kplus1.v = Vel_k[partlyFilledTip]
 
     Fr_kplus1.InCrack = InCrack_k
+
+    # # check if the tip has laminar flow, to be consistent with tip asymptote.
+    # ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, Fluid_properties, return_ReyNumb=True)
+    # # plot Reynold's number
+    # plot_Reynolds_number(Fr_kplus1, ReNumb, 1)
 
     exitstatus = 1
     return exitstatus, Fr_kplus1
@@ -489,12 +479,50 @@ def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties,
                 elif simulation_parameters.analyticalSol == "K":
                     (R, p, w, v) = K_vertex_solution_t_given(material_properties.Kprime, material_properties.Eprime, Q0,
                                                          Fr_lstTmStp.mesh, Fr_advanced.time)
-                Fr_advanced.plot_fracture('complete', 'footPrint', analytical=R, mat_Properties=material_properties)
+                fig = Fr_advanced.plot_fracture('complete', 'footPrint', analytical=R,
+                                                mat_Properties=material_properties)
             else:
-                Fr_advanced.plot_fracture('complete', 'footPrint', mat_Properties = material_properties)
+                fig = Fr_advanced.plot_fracture('complete', 'footPrint', mat_Properties = material_properties)
+            plt.show()
 
         # save fracture to disk
         if simulation_parameters.saveToDisk:
             simulation_parameters.lastSavedFile += 1
             Fr_advanced.SaveFracture(simulation_parameters.outFileAddress + "file_"
                                      + repr(simulation_parameters.lastSavedFile))
+
+
+def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
+
+    wLftEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 0]]) / 2
+    wRgtEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 1]]) / 2
+    wBtmEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 2]]) / 2
+    wTopEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 3]]) / 2
+
+    Re = np.zeros((4, Fr.EltRibbon.size, ), dtype=np.float64)
+    Re[0, :] = 4 / 3 * fluid.density * wLftEdge * abs(vel[0, Fr.EltRibbon]) / fluid.viscosity
+    Re[1, :] = 4 / 3 * fluid.density * wRgtEdge * abs(vel[1, Fr.EltRibbon]) / fluid.viscosity
+    Re[2, :] = 4 / 3 * fluid.density * wBtmEdge * abs(vel[2, Fr.EltRibbon]) / fluid.viscosity
+    Re[3, :] = 4 / 3 * fluid.density * wTopEdge * abs(vel[3, Fr.EltRibbon]) / fluid.viscosity
+
+    ReNum_Ribbon = []
+    for i in range(0,Fr.EltRibbon.size):
+        for j in range(0,4):
+            if np.where(Fr.mesh.NeiElements[Fr.EltRibbon[i], j] == Fr.EltTip)[0].size>0:
+                ReNum_Ribbon = np.append(ReNum_Ribbon, Re[j, i])
+
+    if return_ReyNumb:
+        wLftEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 0]]) / 2
+        wRgtEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 1]]) / 2
+        wBtmEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 2]]) / 2
+        wTopEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 3]]) / 2
+
+        Re = np.zeros((4, Fr.mesh.NumberOfElts,), dtype=np.float64)
+        Re[0, Fr.EltCrack] = 4 / 3 * fluid.density * wLftEdge * vel[0, Fr.EltCrack] / fluid.viscosity
+        Re[1, Fr.EltCrack] = 4 / 3 * fluid.density * wRgtEdge * vel[1, Fr.EltCrack] / fluid.viscosity
+        Re[2, Fr.EltCrack] = 4 / 3 * fluid.density * wBtmEdge * vel[2, Fr.EltCrack] / fluid.viscosity
+        Re[3, Fr.EltCrack] = 4 / 3 * fluid.density * wTopEdge * vel[3, Fr.EltCrack] / fluid.viscosity
+
+        return Re, (ReNum_Ribbon > 2100.).any()
+    else:
+        return (ReNum_Ribbon > 2100.).any()

@@ -157,11 +157,25 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
     mng = plt.get_current_fig_manager()
     mng.window.showMaximized()
 
-    return plt.show()
+    return fig
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+def plot_Reynolds_number(Fr, ReyNum, edge):
 
+    figr = Fr.plot_fracture("complete", "footPrint")
+    ax = figr.axes[0]
+    ReMesh = np.resize(ReyNum[edge, :], (Fr.mesh.ny, Fr.mesh.nx))
+    x = np.linspace(-Fr.mesh.Lx, Fr.mesh.Lx, Fr.mesh.nx)
+    y = np.linspace(-Fr.mesh.Ly, Fr.mesh.Ly, Fr.mesh.ny)
+    xv, yv = np.meshgrid(x, y)
+    cax = ax.contour(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])
+    figr.colorbar(cax)
+    plt.show()
+
+    return figr
+
+#-----------------------------------------------------------------------------------------------------------------------
 def ReadFracture(filename):
     with open(filename, 'rb') as input:
         return pickle.load(input)

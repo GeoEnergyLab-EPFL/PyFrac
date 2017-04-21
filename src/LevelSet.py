@@ -81,7 +81,8 @@ def SolveFMM(T, EltRibbon, EltChannel,mesh):
 
 def reconstruct_front(dist, EltChannel, mesh):
     """Track the fracture front, l and alpha from the Distances calculated with FMM"""
-    
+
+    # Elements that are not in channel
     EltRest = np.delete(range(mesh.NumberOfElts),np.intersect1d(range(mesh.NumberOfElts),EltChannel,None))
     ElmntTip= np.asarray([],int)
     l       = np.asarray([])
@@ -90,41 +91,51 @@ def reconstruct_front(dist, EltChannel, mesh):
     for i in range(0,len(EltRest)):
          neighbors  = np.asarray(Neighbors(EltRest[i],mesh.nx,mesh.ny))
 
-         if not np.isnan(neighbors).any():
-             minx = min(dist[neighbors[0]],dist[neighbors[1]])
-             miny = min(dist[neighbors[2]],dist[neighbors[3]])
-             Pdis = -(minx+miny)/2
-             
-             if Pdis >= 0:
-                ElmntTip= np.append(ElmntTip,EltRest[i])
-                l       = np.append(l,Pdis)
-                
-                # calculate angle imposed by the perpendicular on front (see Peirce & Detournay 2008)
-                delDist = miny - minx
-                beta    = mesh.hx/mesh.hy
-                theta   = (mesh.hx**2*(1+beta**2) - beta**2*delDist**2)**0.5
-                a1       = np.arccos((theta + beta**2*delDist)/(mesh.hx*(1+beta**2)))
-                sinalpha= beta*(theta-delDist)/(mesh.hx*(1+beta**2))
-                a2       = np.arcsin(sinalpha)
-                # angle with tan
+         minx = min(dist[neighbors[0]],dist[neighbors[1]])
+         miny = min(dist[neighbors[2]],dist[neighbors[3]])
+         # distance of the vertex (zero vertex, i.e. rotated) of the current cell from the front
+         Pdis = -(minx+miny)/2
+
+         # if the vertex distance is positive, meaning the fracture has passed the vertex
+         if Pdis >= 0:
+            ElmntTip= np.append(ElmntTip,EltRest[i])
+            l       = np.append(l,Pdis)
+
+
+            # calculate angle imposed by the perpendicular on front (see Peirce & Detournay 2008)
+            delDist = miny - minx
+            beta    = mesh.hx/mesh.hy
+            theta   = (mesh.hx**2*(1+beta**2) - beta**2*delDist**2)**0.5
+            # angle calculate with inverse of cosine trigonometric function
+            a1       = np.arccos((theta + beta**2*delDist)/(mesh.hx*(1+beta**2)))
+            # angle calculate with inverse of sine trigonometric function
+            sinalpha= beta*(theta-delDist)/(mesh.hx*(1+beta**2))
+            a2       = np.arcsin(sinalpha)
+            # angle with tan
 #                if minx<0 and miny<0:
 #                a3       = np.arccos(abs(minx-miny)/(mesh.hx**2+mesh.hy**2)**0.5)-np.arctan(mesh.hy/mesh.hx)
-           
-                # checks to remove numerical noise in angle calculation
-                if a2>=0 and a2<=np.pi/2:
-                    alpha   = np.append(alpha, a2)
-                elif a1>=0 and a1<=np.pi/2:
-                    alpha   = np.append(alpha, a1)
-                elif a2<0 and a2>-1e-6:
-                    alpha   = np.append(alpha, 0)
-                elif a2>np.pi/2 and a2<np.pi/2+1e-6:
-                    alpha   = np.append(alpha, np.pi/2)
-                elif a1<0 and a1>-1e-6:
-                    alpha   = np.append(alpha, 0)
-                elif a1>np.pi/2 and a1<np.pi/2+1e-6:
-                    alpha   = np.append(alpha, np.pi/2)
-                else:
-                    alpha   = np.append(alpha, np.nan)
+
+            # !!!Hack. this check of zero or 90 degree angle works better
+            if abs(1 - dist[neighbors[0]]/dist[neighbors[1]]) < 1e-8:
+                a2 = np.pi/2
+            elif abs(1 - dist[neighbors[2]]/dist[neighbors[3]]) < 1e-8:
+                a2 = 0
+
+            # checks to remove numerical noise in angle calculation
+            if a2>=0 and a2<=np.pi/2:
+                alpha   = np.append(alpha, a2)
+            elif a1>=0 and a1<=np.pi/2:
+                alpha   = np.append(alpha, a1)
+            elif a2<0 and a2>-1e-6:
+                alpha   = np.append(alpha, 0)
+            elif a2>np.pi/2 and a2<np.pi/2+1e-6:
+                alpha   = np.append(alpha, np.pi/2)
+            elif a1<0 and a1>-1e-6:
+                alpha   = np.append(alpha, 0)
+            elif a1>np.pi/2 and a1<np.pi/2+1e-6:
+                alpha   = np.append(alpha, np.pi/2)
+            else:
+                alpha   = np.append(alpha, np.nan)
     
          
     CellStatusNew             = np.zeros((mesh.NumberOfElts),int)  
