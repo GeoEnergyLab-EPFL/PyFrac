@@ -62,14 +62,24 @@ def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
         # smaller time step to reattempt time stepping; equal to the given time step on first iteration
         smallerTimeStep = TimeStep * Simulation_Parameters.reAttemptFactor ** i
 
-        status, Fr = FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters,
-                                       Injection_Parameters, smallerTimeStep)
+        status, Fr = FractureFrontLoop(Frac,
+                                       C,
+                                       Material_properties,
+                                       Fluid_properties,
+                                       Simulation_Parameters,
+                                       Injection_Parameters,
+                                       smallerTimeStep)
         if status == 1:
             print(errorMessages[status])
 
             # output
             if Simulation_Parameters.plotFigure or Simulation_Parameters.saveToDisk:
-                output(Frac, Fr, Simulation_Parameters, Material_properties, Injection_Parameters, Fluid_properties)
+                output(Frac,
+                       Fr,
+                       Simulation_Parameters,
+                       Material_properties,
+                       Injection_Parameters,
+                       Fluid_properties)
 
             return status, Fr
         else:
@@ -126,7 +136,12 @@ def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation
 
     print('Solving ElastoHydrodynamic equations with same footprint...')
     # width by injecting the fracture with the same foot print (balloon like inflation)
-    exitstatus, w_k = injection_same_footprint(Frac, C, TimeStep, Qin, Material_properties, Fluid_properties,
+    exitstatus, w_k = injection_same_footprint(Frac,
+                                               C,
+                                               TimeStep,
+                                               Qin,
+                                               Material_properties,
+                                               Fluid_properties,
                                                Simulation_Parameters)
 
     if exitstatus != 1:
@@ -145,8 +160,14 @@ def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation
         Fr_kminus1 = copy.deepcopy(Fr_k)
 
         # calculate new fracture with the width evaluated in the last fracture front iteration
-        (exitstatus, Fr_k) = injection_extended_footprint(w_k, Frac, C, TimeStep, Qin, Material_properties,
-                                                          Fluid_properties, Simulation_Parameters)
+        (exitstatus, Fr_k) = injection_extended_footprint(w_k,
+                                                          Frac,
+                                                          C,
+                                                          TimeStep,
+                                                          Qin,
+                                                          Material_properties,
+                                                          Fluid_properties,
+                                                          Simulation_Parameters)
         if exitstatus != 1:
             return exitstatus, None
 
@@ -192,7 +213,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
             r = 0.1
         ac = (1 - r) / r
         C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
-                                                                                                             + ac * np.pi / 4.)
+                                                                                                    + ac * np.pi / 4.)
 
     # average injected fluid over footprint taken as [\delta] W guess for the iterative solver
     delwGuess = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size * np.ones((Fr_lstTmStp.EltCrack.size,), float)
@@ -205,20 +226,41 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
     wguess[Fr_lstTmStp.EltCrack] = wguess[Fr_lstTmStp.EltCrack] + delwGuess
 
     # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
-    vk = velocity(wguess, Fr_lstTmStp.EltCrack, Fr_lstTmStp.mesh, Fr_lstTmStp.InCrack, Fr_lstTmStp.muPrime, C,
+    vk = velocity(wguess,
+                  Fr_lstTmStp.EltCrack,
+                  Fr_lstTmStp.mesh,
+                  Fr_lstTmStp.InCrack,
+                  Fr_lstTmStp.muPrime,
+                  C,
                   mat_properties.SigmaO)
 
     argSameFP = (
-        Fr_lstTmStp.w, Fr_lstTmStp.EltCrack, Qin, C, timeStep, Fr_lstTmStp.muPrime, Fr_lstTmStp.mesh,
-        Fr_lstTmStp.InCrack, DLkOff, mat_properties.SigmaO, Fluid_properties.density, Fluid_properties.turbulence)
+        Fr_lstTmStp.w,
+        Fr_lstTmStp.EltCrack,
+        Qin,
+        C,
+        timeStep,
+        Fr_lstTmStp.muPrime,
+        Fr_lstTmStp.mesh,
+        Fr_lstTmStp.InCrack,
+        DLkOff, mat_properties.SigmaO,
+        Fluid_properties.density,
+        Fluid_properties.turbulence
+        )
 
     # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function)
     # todo: guess is taken as typical values. Needs to be reconsidered
     typclValue = delwGuess
 
     # solving the system
-    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP, MakeEquationSystemSameFP, delwGuess, typclValue,
-                               vk, Simulation_Parameters.toleranceEHL, Simulation_Parameters.maxSolverItr, *argSameFP)
+    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
+                               MakeEquationSystemSameFP,
+                               delwGuess,
+                               typclValue,
+                               vk,
+                               Simulation_Parameters.toleranceEHL,
+                               Simulation_Parameters.maxSolverItr,
+                               *argSameFP)
 
     # getting new width by adding [\delta] w solution to the width from last time step
     w_k = np.copy(Fr_lstTmStp.w)
@@ -276,7 +318,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
 
     # Tip asymptote inversion
-    sgndDist_k[Fr_lstTmStp.EltRibbon] = -TipAsymInversion(w_k, Fr_lstTmStp, Material_properties, sim_parameters,
+    sgndDist_k[Fr_lstTmStp.EltRibbon] = -TipAsymInversion(w_k,
+                                                          Fr_lstTmStp,
+                                                          Material_properties,
+                                                          sim_parameters,
                                                           timeStep)
 
     # if tip inversion returns nan
@@ -286,7 +331,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     # SOLVE EIKONAL eq via Fast Marching Method starting from the element adjacent to the ribbon elements
     # (i.e. the tip elements of the last time step)
-    SolveFMM(sgndDist_k, Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
+    SolveFMM(sgndDist_k,
+             Fr_lstTmStp.EltRibbon,
+             Fr_lstTmStp.EltChannel,
+             Fr_lstTmStp.mesh)
 
     # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
     # todo: not satisfied with why this happens. need re-examining
@@ -298,7 +346,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
-    (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
+    (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k,
+                                                               Fr_lstTmStp.EltChannel,
+                                                               Fr_lstTmStp.mesh)
 
     # If the angle and length of the perpendicular are not correct
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
@@ -320,10 +370,17 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     InCrack_k[EltsTipNew] = 1
 
     # the velocity of the front for the current front position
+    # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
 
+
     # Calculate filling fraction of the tip cells for the current fracture position
-    FillFrac_k = VolumeIntegral(EltsTipNew, alpha_k, l_k, Fr_lstTmStp.mesh, 'A', Material_properties,
+    FillFrac_k = VolumeIntegral(EltsTipNew,
+                                alpha_k,
+                                l_k,
+                                Fr_lstTmStp.mesh,
+                                'A',
+                                Material_properties,
                                 Fr_lstTmStp.muPrime,
                                 Vel_k) / Fr_lstTmStp.mesh.EltArea
 
@@ -337,11 +394,16 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     # some of the list are redundant to calculate on each iteration
     # Evaluate the element lists for the trial fracture front
-    (EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
-                                                                                             EltsTipNew,
-                                                                                             FillFrac_k,
-                                                                                             sgndDist_k,
-                                                                                             Fr_lstTmStp.mesh)
+    (EltChannel_k,
+     EltTip_k,
+     EltCrack_k,
+     EltRibbon_k,
+     zrVertx_k,
+     CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
+                                 EltsTipNew,
+                                 FillFrac_k,
+                                 sgndDist_k,
+                                 Fr_lstTmStp.mesh)
 
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
@@ -352,7 +414,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     if stagnant.any():
         # if any tip cell with stagnant front
         # calculate stress intensity factor for stagnant cells
-        KIPrime = StressIntensityFactor(w_k, sgndDist_k, EltsTipNew, EltRibbon_k, stagnant, Fr_lstTmStp.mesh,
+        KIPrime = StressIntensityFactor(w_k,
+                                        sgndDist_k,
+                                        EltsTipNew,
+                                        EltRibbon_k,
+                                        stagnant,
+                                        Fr_lstTmStp.mesh,
                                         Fr_lstTmStp.Eprime)
 
         # todo: Find the right cause of failure
@@ -364,14 +431,26 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
         # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
         # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
-        wTip = VolumeIntegral(EltsTipNew, alpha_k, l_k, Fr_lstTmStp.mesh, sim_parameters.tipAsymptote,
+        wTip = VolumeIntegral(EltsTipNew,
+                              alpha_k,
+                              l_k,
+                              Fr_lstTmStp.mesh,
+                              sim_parameters.tipAsymptote,
                               Material_properties,
-                              Fr_lstTmStp.muPrime, Vel_k, stagnant, KIPrime) / Fr_lstTmStp.mesh.EltArea
+                              Fr_lstTmStp.muPrime,
+                              Vel_k,
+                              stagnant,
+                              KIPrime) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
-        wTip = VolumeIntegral(EltsTipNew, alpha_k, l_k, Fr_lstTmStp.mesh, sim_parameters.tipAsymptote,
+        wTip = VolumeIntegral(EltsTipNew,
+                              alpha_k,
+                              l_k,
+                              Fr_lstTmStp.mesh,
+                              sim_parameters.tipAsymptote,
                               Material_properties,
-                              Fr_lstTmStp.muPrime, Vel_k) / Fr_lstTmStp.mesh.EltArea
+                              Fr_lstTmStp.muPrime,
+                              Vel_k) / Fr_lstTmStp.mesh.EltArea
 
     # # check if the tip volume has gone into negative
     # # todo: !!! Hack: if the evaluated tip width is negative but greater than 1e-4 times the mean width, it is ignored
@@ -398,19 +477,44 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     wguess[EltsTipNew] = wTip
 
     # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
-    vk = velocity(wguess, EltCrack_k, Fr_lstTmStp.mesh, InCrack_k, Fr_lstTmStp.muPrime, C, Material_properties.SigmaO)
+    vk = velocity(wguess,
+                  EltCrack_k,
+                  Fr_lstTmStp.mesh,
+                  InCrack_k,
+                  Fr_lstTmStp.muPrime,
+                  C,
+                  Material_properties.SigmaO)
 
     # typical value for pressure
     typValue = np.copy(guess)
     typValue[Fr_lstTmStp.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
+    # todo too many arguments; properties class needs to be utilized
     arg = (
-        Fr_lstTmStp.EltChannel, EltsTipNew, Fr_lstTmStp.w, wTip, EltCrack_k, Fr_lstTmStp.mesh, timeStep, Qin, C,
-        Fr_lstTmStp.muPrime, Fluid_properties.density, InCrack_k, DLkOff, Fr_lstTmStp.SigmaO,
+        Fr_lstTmStp.EltChannel,
+        EltsTipNew,
+        Fr_lstTmStp.w,
+        wTip,
+        EltCrack_k,
+        Fr_lstTmStp.mesh,
+        timeStep,
+        Qin,
+        C,
+        Fr_lstTmStp.muPrime,
+        Fluid_properties.density,
+        InCrack_k,
+        DLkOff,
+        Fr_lstTmStp.SigmaO,
         Fluid_properties.turbulence)
 
     # sloving the system of equations for [\delta] w in the channel elements and pressure in the tip elements
-    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP, MakeEquationSystemExtendedFP,
-                               guess, typValue, vk, sim_parameters.toleranceEHL, sim_parameters.maxSolverItr, *arg)
+    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP,
+                               MakeEquationSystemExtendedFP,
+                               guess,
+                               typValue,
+                               vk,
+                               sim_parameters.toleranceEHL,
+                               sim_parameters.maxSolverItr,
+                               *arg)
 
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
@@ -474,15 +578,27 @@ def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties,
             if simulation_parameters.plotAnalytical:
                 Q0 = injection_parameters.injectionRate[1, 0] # injection rate at the time of injection
                 if simulation_parameters.analyticalSol == "M":
-                    (R, p, w, v) = M_vertex_solution_t_given(material_properties.Eprime, Q0, fluid_properties.muPrime,
-                                                         Fr_lstTmStp.mesh, Fr_advanced.time)
+                    (R, p, w, v) = M_vertex_solution_t_given(material_properties.Eprime,
+                                                             Q0,
+                                                             fluid_properties.muPrime,
+                                                             Fr_lstTmStp.mesh,
+                                                             Fr_advanced.time)
+
                 elif simulation_parameters.analyticalSol == "K":
-                    (R, p, w, v) = K_vertex_solution_t_given(material_properties.Kprime, material_properties.Eprime, Q0,
-                                                         Fr_lstTmStp.mesh, Fr_advanced.time)
-                fig = Fr_advanced.plot_fracture('complete', 'footPrint', analytical=R,
+                    (R, p, w, v) = K_vertex_solution_t_given(material_properties.Kprime,
+                                                             material_properties.Eprime,
+                                                             Q0,
+                                                             Fr_lstTmStp.mesh,
+                                                             Fr_advanced.time)
+
+                fig = Fr_advanced.plot_fracture('complete',
+                                                'footPrint',
+                                                analytical=R,
                                                 mat_Properties=material_properties)
             else:
-                fig = Fr_advanced.plot_fracture('complete', 'footPrint', mat_Properties = material_properties)
+                fig = Fr_advanced.plot_fracture('complete',
+                                                'footPrint',
+                                                mat_Properties = material_properties)
             plt.show()
 
         # save fracture to disk
@@ -493,21 +609,39 @@ def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties,
 
 
 def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
-
+    """
+    This function calculate the Reynolds number at the cell edges and check if any to the edge between the ribbon cells
+    and the tip cells are turbulent (i.e. the Reynolds number is greater than 2100).
+    
+    Arguments:
+        vel (ndarray-float):                    the array giving velocity of each edge of the cells in domain 
+        Fr (Fracture object):                   the fracture object to be checked
+        fluid (FluidProperties object):         fluid properties object 
+        return_ReyNumb (boolean, default False): if true, Reynolds number at all cell edges will be returned 
+    
+    Returns:
+        ndarray-float:      Reynolds number of all the cells in the domain; row-wise in the following order : 0--left,
+                            1--right, 2--bottom, 3--top
+        boolean             true if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds number
+                            is more than 2100)
+    """
+    # width at the adges by averaging
     wLftEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 0]]) / 2
     wRgtEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 1]]) / 2
     wBtmEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 2]]) / 2
     wTopEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 3]]) / 2
 
     Re = np.zeros((4, Fr.EltRibbon.size, ), dtype=np.float64)
-    Re[0, :] = 4 / 3 * fluid.density * wLftEdge * abs(vel[0, Fr.EltRibbon]) / fluid.viscosity
-    Re[1, :] = 4 / 3 * fluid.density * wRgtEdge * abs(vel[1, Fr.EltRibbon]) / fluid.viscosity
-    Re[2, :] = 4 / 3 * fluid.density * wBtmEdge * abs(vel[2, Fr.EltRibbon]) / fluid.viscosity
-    Re[3, :] = 4 / 3 * fluid.density * wTopEdge * abs(vel[3, Fr.EltRibbon]) / fluid.viscosity
+    Re[0, :] = 4 / 3 * fluid.density * wLftEdge * vel[0, Fr.EltRibbon] / fluid.viscosity
+    Re[1, :] = 4 / 3 * fluid.density * wRgtEdge * vel[1, Fr.EltRibbon] / fluid.viscosity
+    Re[2, :] = 4 / 3 * fluid.density * wBtmEdge * vel[2, Fr.EltRibbon] / fluid.viscosity
+    Re[3, :] = 4 / 3 * fluid.density * wTopEdge * vel[3, Fr.EltRibbon] / fluid.viscosity
 
     ReNum_Ribbon = []
+    # adding Reynolds number of the edges between the ribbon and tip cells to a list
     for i in range(0,Fr.EltRibbon.size):
         for j in range(0,4):
+            # if the current neighbor (j) of the ribbon cells is in the tip elements list
             if np.where(Fr.mesh.NeiElements[Fr.EltRibbon[i], j] == Fr.EltTip)[0].size>0:
                 ReNum_Ribbon = np.append(ReNum_Ribbon, Re[j, i])
 

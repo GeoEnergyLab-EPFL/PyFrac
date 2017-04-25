@@ -80,7 +80,15 @@ def SolveFMM(T, EltRibbon, EltChannel,mesh):
 
 
 def reconstruct_front(dist, EltChannel, mesh):
-    """Track the fracture front, l and alpha from the Distances calculated with FMM"""
+    """
+    Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
+    perpendicular.
+    
+    Arguments:
+        dist (ndarray-float): the signed distance of the cells from the fracture front
+        EltChannel (ndarray-int): list of Channel elements
+        mesh (CartesianMesh object): the mesh of the fracture
+    """
 
     # Elements that are not in channel
     EltRest = np.delete(range(mesh.NumberOfElts),np.intersect1d(range(mesh.NumberOfElts),EltChannel,None))

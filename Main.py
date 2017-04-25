@@ -28,7 +28,7 @@ from src.Properties import *
 from src.FractureFrontLoop import *
 
 # creating mesh
-Mesh = CartesianMesh(3, 3, 61, 61)
+Mesh = CartesianMesh(3, 3, 41, 41)
 
 # solid properties
 nu = 0.4
@@ -43,17 +43,28 @@ well_location = np.array([0., 0.])
 Injection = InjectionProperties(Q0, well_location, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(1.1e-3, Mesh, turbulence=True)
+Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 
 # simulation properties
-simulProp = SimulationParameters(tip_asymptote="U", output_time_period=1e-4, plot_figure=True,
-                                 save_to_disk=True, out_file_address=".\\Data\\TurbLamTough", plot_analytical=True)
+simulProp = SimulationParameters(tip_asymptote="U",
+                                 output_time_period=0.005,
+                                 plot_figure=True,
+                                 save_to_disk=False,
+                                 out_file_address=".\\Data\\TurbLamTough",
+                                 plot_analytical=True,
+                                 cfl_factor=0.4)
 
 
 # initializing fracture
-initRad = 0.5 # initial radius of fracture
+initRad = 0.8 # initial radius of fracture
 Fr = Fracture(Mesh, Fluid, Solid) # create fracture object
-Fr.initialize_radial_Fracture(initRad, 'radius', 'M', Solid, Fluid, Injection, simulProp) # initializing
+Fr.initialize_radial_Fracture(initRad,
+                              'radius',
+                              'M',
+                              Solid,
+                              Fluid,
+                              Injection,
+                              simulProp) # initializing
 
 
 # elasticity matrix

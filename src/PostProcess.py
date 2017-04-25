@@ -72,7 +72,6 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
     w_numrcl_centr = np.asarray([], dtype=np.float64)
     p_numrcl_centr = np.asarray([], dtype=np.float64)
     vol_numrcl = np.asarray([], dtype=np.float64)
-
     time_series = np.asarray([], dtype=np.float64)
 
     # initializing arrays for width profile of the cross section if enabled
@@ -128,11 +127,17 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
         if plot_analytical:
         # getting the analytical solution
             if regime == "M":
-                (R_a, p_a, w_a, v_a) = M_vertex_solution_t_given(solid.Eprime, injection.injectionRate[1, 0],
-                                                         fluid.muPrime, Fr.mesh, Fr.time)
+                (R_a, p_a, w_a, v_a) = M_vertex_solution_t_given(solid.Eprime,
+                                                                 injection.injectionRate[1, 0],
+                                                                 fluid.muPrime,
+                                                                 Fr.mesh,
+                                                                 Fr.time)
             elif regime == "K":
-                (R_a, p_a, w_a, v_a) = K_vertex_solution_t_given(solid.Kprime, solid.Eprime,
-                                                                 injection.injectionRate[1, 0],Fr.mesh, Fr.time)
+                (R_a, p_a, w_a, v_a) = K_vertex_solution_t_given(solid.Kprime,
+                                                                 solid.Eprime,
+                                                                 injection.injectionRate[1, 0],
+                                                                 Fr.mesh,
+                                                                 Fr.time)
             R_anltcl = np.append(R_anltcl, R_a)
             w_anltcl_centr = np.append(w_anltcl_centr, w_a[injection.source_location])
             p_anltcl_centr = np.append(p_anltcl_centr, p_a[injection.source_location])
