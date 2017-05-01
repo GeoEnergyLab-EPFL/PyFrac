@@ -88,6 +88,8 @@ def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
         print("Time step failed...")
         print("Reattempting with time step of " + repr(
             TimeStep * Simulation_Parameters.reAttemptFactor ** (i + 1)) + " sec")
+    Frac.plot_fracture("complete", "footPrint")
+    plt.show()
     raise SystemExit("Propagation not successful. Exiting...")
 
 
@@ -420,7 +422,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                         EltRibbon_k,
                                         stagnant,
                                         Fr_lstTmStp.mesh,
-                                        Fr_lstTmStp.Eprime)
+                                        Material_properties.Eprime)
 
         # todo: Find the right cause of failure
         # if the stress Intensity factor cannot be found. The most common reason is wiggles in the front resulting

@@ -173,7 +173,7 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
     KIPrime = np.zeros((EltTip.size,), float)
     for i in range(0, len(EltTip)):
         if stagnant[i]:
-            neighbors = np.asarray(Neighbors(EltTip[i], mesh.nx, mesh.ny))
+            neighbors = mesh.NeiElements[EltTip[i]]
             enclosing = np.append(neighbors, np.asarray(
                 [neighbors[2] - 1, neighbors[2] + 1, neighbors[3] - 1, neighbors[3] + 1]))  # eight enclosing cells
 

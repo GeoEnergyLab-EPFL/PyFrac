@@ -122,6 +122,7 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
     markedElts = []
     if mat_properties != None:
         markedElts = np.where(mat_properties.SigmaO != np.mean(mat_properties.SigmaO[Mesh.CenterElts]))
+        markedElts = np.append(markedElts, np.where(mat_properties.K1c != np.mean(mat_properties.K1c[Mesh.CenterElts])))
 
     # applying different colors for different types of elements
     colors = 100. * np.full(len(patches), 0.4)

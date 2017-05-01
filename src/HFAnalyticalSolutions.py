@@ -171,7 +171,8 @@ def K_vertex_solution_t_given(Kprime, Eprime, Q0, mesh, t):
     """
 
     R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
-    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5)
+    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5)* np.ones(
+        (mesh.NumberOfElts,), float)
 
     w = np.zeros((mesh.NumberOfElts,))
     rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center

@@ -317,7 +317,7 @@ class Fracture():
 
         # todo !!! Hack: tip elements are evaluated again with the front reconstructing function to avoid discrepancy
         (self.EltTip, self.l, self.alpha, CSt) = reconstruct_front(self.sgndDist, EltChannel, self.mesh)
-        #filling fraction list adjusted according to the tip cells given by the front reconstructing function
+        # filling fraction list adjusted according to the tip cells given by the front reconstructing function
         self.FillF = FillF[np.arange(EltTip.shape[0])[np.in1d(EltTip, self.EltTip)]]
 
         (self.EltChannel, self.EltRibbon, self.EltCrack) = (EltChannel, EltRibbon, EltCrack)
@@ -331,13 +331,13 @@ class Fracture():
         # with both the x and y axis positive will get 0(signifying the bottom left vertex) as the zero vertex.
         self.ZeroVertex = np.zeros((len(self.EltTip),), int)
         for i in range(0, len(self.EltTip)):
-            if self.mesh.CenterCoor[self.EltTip[i], 0] < 0 and self.mesh.CenterCoor[self.EltTip[i], 1] < 0:
+            if self.mesh.CenterCoor[self.EltTip[i], 0] <= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] <= 0:
                 self.ZeroVertex[i] = 2
-            elif self.mesh.CenterCoor[self.EltTip[i], 0] > 0 and self.mesh.CenterCoor[self.EltTip[i], 1] < 0:
+            elif self.mesh.CenterCoor[self.EltTip[i], 0] >= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] <= 0:
                 self.ZeroVertex[i] = 3
-            elif self.mesh.CenterCoor[self.EltTip[i], 0] < 0 and self.mesh.CenterCoor[self.EltTip[i], 1] > 0:
+            elif self.mesh.CenterCoor[self.EltTip[i], 0] <= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] >= 0:
                 self.ZeroVertex[i] = 1
-            elif self.mesh.CenterCoor[self.EltTip[i], 0] > 0 and self.mesh.CenterCoor[self.EltTip[i], 1] > 0:
+            elif self.mesh.CenterCoor[self.EltTip[i], 0] >= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] >= 0:
                 self.ZeroVertex[i] = 0
 
         # assigning nan for cells which are not in the fracture yet
