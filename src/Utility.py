@@ -118,7 +118,7 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
     p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.5)
 
     # todo: A proper mechanism to mark element with different material properties has to be looked into
-    # marking those elements that have sigmaO different than the sigmaO at the center
+    # marking those elements that have sigmaO or toughness different than the sigmaO or toughness at the center
     markedElts = []
     if mat_properties != None:
         markedElts = np.where(mat_properties.SigmaO != np.mean(mat_properties.SigmaO[Mesh.CenterElts]))
@@ -164,14 +164,18 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
 # ----------------------------------------------------------------------------------------------------------------------
 def plot_Reynolds_number(Fr, ReyNum, edge):
 
-    figr = Fr.plot_fracture("complete", "footPrint")
-    ax = figr.axes[0]
+    # figr = Fr.plot_fracture("complete", "footPrint")
+    # ax = figr.axes[0]
+    figr = plt.figure()
+    ax = figr.add_subplot(111)
     ReMesh = np.resize(ReyNum[edge, :], (Fr.mesh.ny, Fr.mesh.nx))
     x = np.linspace(-Fr.mesh.Lx, Fr.mesh.Lx, Fr.mesh.nx)
     y = np.linspace(-Fr.mesh.Ly, Fr.mesh.Ly, Fr.mesh.ny)
     xv, yv = np.meshgrid(x, y)
-    cax = ax.contour(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])
+    # cax = ax.contourf(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])
+    cax = ax.matshow(ReMesh)
     figr.colorbar(cax)
+    plt.title("Reynolds number")
     plt.show()
 
     return figr

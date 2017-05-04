@@ -320,6 +320,9 @@ class Fracture():
         # filling fraction list adjusted according to the tip cells given by the front reconstructing function
         self.FillF = FillF[np.arange(EltTip.shape[0])[np.in1d(EltTip, self.EltTip)]]
 
+        # check if initial radius is large enough to have exclusively channel elements
+        if EltChannel.size <= EltRibbon.size:
+            raise SystemExit("No channel elements. The initial radius is propably too small")
         (self.EltChannel, self.EltRibbon, self.EltCrack) = (EltChannel, EltRibbon, EltCrack)
 
         self.Ffront = np.concatenate((I, J), axis=1)

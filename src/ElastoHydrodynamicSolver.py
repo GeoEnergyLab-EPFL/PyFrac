@@ -90,7 +90,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
 
     # todo: can be evaluated at each cell edge
     rough = w[EltCrack]/dgrain
-    rough[np.where(rough < 15)[0]] = 15.
+    rough[np.where(rough < 3)[0]] = 3.
 
     # width on edges; evaluated by averaging the widths of adjacent cells
     wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2
@@ -211,10 +211,10 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     ffRgtEdge = np.zeros((EltCrack.size), dtype=np.float64)
     ffBtmEdge = np.zeros((EltCrack.size), dtype=np.float64)
     ffTopEdge = np.zeros((EltCrack.size), dtype=np.float64)
-    ffLftEdge[ReLftEdge_nonZero] = FF_YangJoseph(ReLftEdge[ReLftEdge_nonZero], rough[ReLftEdge_nonZero])
-    ffRgtEdge[ReRgtEdge_nonZero] = FF_YangJoseph(ReRgtEdge[ReRgtEdge_nonZero], rough[ReRgtEdge_nonZero])
-    ffBtmEdge[ReBtmEdge_nonZero] = FF_YangJoseph(ReBtmEdge[ReBtmEdge_nonZero], rough[ReBtmEdge_nonZero])
-    ffTopEdge[ReTopEdge_nonZero] = FF_YangJoseph(ReTopEdge[ReTopEdge_nonZero], rough[ReTopEdge_nonZero])
+    ffLftEdge[ReLftEdge_nonZero] = friction_factor_vector(ReLftEdge[ReLftEdge_nonZero], rough[ReLftEdge_nonZero])
+    ffRgtEdge[ReRgtEdge_nonZero] = friction_factor_vector(ReRgtEdge[ReRgtEdge_nonZero], rough[ReRgtEdge_nonZero])
+    ffBtmEdge[ReBtmEdge_nonZero] = friction_factor_vector(ReBtmEdge[ReBtmEdge_nonZero], rough[ReBtmEdge_nonZero])
+    ffTopEdge[ReTopEdge_nonZero] = friction_factor_vector(ReTopEdge[ReTopEdge_nonZero], rough[ReTopEdge_nonZero])
 
     # the conductivity matrix
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
@@ -262,7 +262,7 @@ def Velocity_Residual(v,*args):
     Re = 4/3 * rho * w * v / mu
 
     # friction factor using Yang-Joseph approximation
-    f = FF_YangJoseph_float(Re,rough)
+    f = friction_factor(Re,rough)
 
     return v-w*dp/(v*rho*f)
 
@@ -400,7 +400,8 @@ def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
 
 def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
     pf = np.zeros((Mesh.NumberOfElts,), dtype=np.float64)
-    pf[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]
+    # pf[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]
+    pf = np.dot(C, w) + sigma0
 
     dpdxLft = (pf[EltCrack] - pf[Mesh.NeiElements[EltCrack, 0]]) * InCrack[Mesh.NeiElements[EltCrack, 0]]
     dpdxRgt = (pf[Mesh.NeiElements[EltCrack, 1]] - pf[EltCrack]) * InCrack[Mesh.NeiElements[EltCrack, 1]]
