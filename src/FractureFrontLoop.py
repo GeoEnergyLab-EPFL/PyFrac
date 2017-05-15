@@ -363,7 +363,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     for i in range(0, len(EltsTipNew)):
         if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
             Fr_lstTmStp.plot_fracture('complete', 'footPrint')
-            f.write('Reached end of the grid. exiting....\n\n')
             raise SystemExit('Reached end of the grid. exiting....')
 
     # generate the InCrack array for the current front position

@@ -30,7 +30,7 @@ class MaterialProperties:
     def __init__(self, Eprime, Toughness, Cl, SigmaO, Mesh):  # add Mesh as input directly here.
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
-            print("Eprime  can not be an array as input ! - homogeneous medium only ")
+            raise SystemExit("Eprime  can not be an array as input ! - homogeneous medium only ")
         else:
             self.Eprime = Eprime
 
@@ -40,7 +40,7 @@ class MaterialProperties:
                 self.Kprime = (32 / math.pi) ** 0.5 * Toughness
             else:
                 # error
-                print('Error in the size of Toughness input ')
+                raise SystemExit('Error in the size of Toughness input ')
                 return
         else:
             self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
@@ -50,7 +50,7 @@ class MaterialProperties:
             if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.Cprime = 2. * Cl
             else:
-                print('Error in the size of Leak-Off coefficient input ')
+                raise SystemExit('Error in the size of Leak-Off coefficient input ')
                 return
         else:
             self.Cprime = 2. * Cl * np.ones((Mesh.NumberOfElts,), float)
@@ -59,7 +59,7 @@ class MaterialProperties:
             if SigmaO.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.SigmaO = SigmaO
             else:
-                print('Error in the size of Sigma input ')
+                raise SystemExit('Error in the size of Sigma input ')
                 return
         else:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
@@ -86,7 +86,7 @@ class FluidProperties:
     def __init__(self, viscosity, mesh, density=1000., rheology="Newtonian", turbulence=False):
 
         if isinstance(viscosity, np.ndarray):  # check if float or ndarray
-            print(' viscosity of the fluid is not an array. Note that its different from local viscosity (See local\n'
+            raise SystemExit(' viscosity of the fluid is not an array. Note that its different from local viscosity (See local\n'
                   ' viscosity variable in the fracture class')
             return
         else:
@@ -98,7 +98,7 @@ class FluidProperties:
             self.rheology = rheology
         else:
             # error
-            print('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
+            raise SystemExit('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
             return
 
         self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
@@ -108,7 +108,7 @@ class FluidProperties:
             self.turbulence = turbulence
         else:
             # error
-            print('Invalid turbulence flag. Can be either True or False')
+            raise SystemExit('Invalid turbulence flag. Can be either True or False')
 
 
 # --------------------------------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ class InjectionProperties:
 
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
-                print('Invalid injection rate. The list should have 2 rows (to specify time and corresponding '
+                raise SystemExit('Invalid injection rate. The list should have 2 rows (to specify time and corresponding '
                       'injection rate) for each entry')
             else:
                 self.injectionRate = rate
@@ -139,7 +139,7 @@ class InjectionProperties:
             self.source_coordinates = source_coordinates
         else:
             # error
-            print('Invalid source coordinates. Correct format: a numpy array with a single row and two columns to \n'
+            raise SystemExit('Invalid source coordinates. Correct format: a numpy array with a single row and two columns to \n'
                   'specify x and y coordinate of the source e.g. np.array([x_coordinate, y_coordinate])')
 
         self.source_location = Mesh.locate_element(source_coordinates[0], source_coordinates[1])
@@ -203,7 +203,7 @@ class SimulationParameters:
             self.tipAsymptote = tip_asymptote
         else:
             # error
-            print('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
+            raise SystemExit('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
             return
 
         self.maxFrontItr = maxfront_its

@@ -50,34 +50,34 @@ class CartesianMesh:
 
         # Check if odd to have origin at mid points of a single element
         if nx % 2 == 0:
-            print("Number of elements in x-direction are even\nUsing " + repr(nx+1) + " elements to have origin at a "
-                                                                                      "cell center")
+            print("Number of elements in x-direction are even. Using " + repr(nx+1) + " elements to have origin at a "
+                                                                                      "cell center...")
             self.nx = nx+1
         else:
             self.nx = nx
 
         if ny % 2 == 0:
-            print("Number of elements in y-direction are even\nUsing " + repr(ny+1) + " elements to have origin at a "
-                                                                                      "cell center")
+            print("Number of elements in y-direction are even. Using " + repr(ny+1) + " elements to have origin at a "
+                                                                                      "cell center...")
             self.ny = ny+1
         else:
             self.ny = ny
 
 
-        self.hx = 2. * Lx / (nx - 1)
-        self.hy = 2. * Ly / (ny - 1)
+        self.hx = 2. * Lx / (self.nx - 1)
+        self.hy = 2. * Ly / (self.ny - 1)
 
-        x = np.linspace(-Lx - self.hx / 2., Lx + self.hx / 2., nx + 1)
-        y = np.linspace(-Ly - self.hy / 2., Ly + self.hy / 2., ny + 1)
+        x = np.linspace(-Lx - self.hx / 2., Lx + self.hx / 2., self.nx + 1)
+        y = np.linspace(-Ly - self.hy / 2., Ly + self.hy / 2., self.ny + 1)
 
         xv, yv = np.meshgrid(x, y)  # coordinates of the vertex of each elements
 
-        a = np.resize(xv, ((nx + 1) * (ny + 1), 1))
-        b = np.resize(yv, ((nx + 1) * (ny + 1), 1))
+        a = np.resize(xv, ((self.nx + 1) * (self.ny + 1), 1))
+        b = np.resize(yv, ((self.nx + 1) * (self.ny + 1), 1))
 
         self.VertexCoor = np.reshape(np.stack((a, b), axis=-1), (len(a), 2))
 
-        self.NumberOfElts = nx * ny
+        self.NumberOfElts = self.nx * self.ny
         self.EltArea = self.hx * self.hy
 
         ### Connectivity array giving four vertices of an element in the following order
@@ -85,12 +85,12 @@ class CartesianMesh:
         #     0   -     1
         conn = np.empty([self.NumberOfElts, 4], dtype=int)  # to ensure an array of integers.
         k = 0
-        for j in range(0, ny):
-            for i in range(0, nx):
-                conn[k, 0] = (i + j * (nx + 1))
-                conn[k, 1] = (i + 1) + j * (nx + 1)
-                conn[k, 2] = i + 1 + (j + 1) * (nx + 1)
-                conn[k, 3] = i + (j + 1) * (nx + 1)
+        for j in range(0, self.ny):
+            for i in range(0, self.nx):
+                conn[k, 0] = (i + j * (self.nx + 1))
+                conn[k, 1] = (i + 1) + j * (self.nx + 1)
+                conn[k, 2] = i + 1 + (j + 1) * (self.nx + 1)
+                conn[k, 3] = i + (j + 1) * (self.nx + 1)
                 k = k + 1
 
         self.Connectivity = conn
