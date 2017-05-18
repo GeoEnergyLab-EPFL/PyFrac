@@ -187,7 +187,7 @@ class SimulationParameters:
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
-                 cfl_factor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=10, max_reattemps = 5,
+                 cfl_factor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=1000, max_reattemps = 5,
                  reattempt_factor = 0.8, output_time_period = np.inf, plot_figure = False, save_to_disk = False,
                  out_file_address = "None", plot_analytical = False, analytical_sol = "M"):
 

@@ -71,12 +71,10 @@ Fr.initialize_radial_Fracture(initRad,
 C = load_elasticity_matrix(Mesh, Solid.Eprime)
 
 # starting time stepping loop
-MaximumTimeSteps = 1000
 i = 0
-Tend = 1000.
-Fr_k = copy.deepcopy(Fr)
+Fr_k = Fr
 
-while (Fr.time < Tend) and (i < MaximumTimeSteps):
+while (Fr.time < simulProp.FinalTime) and (i < simulProp.maxTimeSteps):
 
     i = i + 1
 
