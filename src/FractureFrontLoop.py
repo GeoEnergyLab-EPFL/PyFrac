@@ -271,6 +271,17 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
     # regain original C (without filling fraction correction)
     C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)] = C_EltTip
 
+
+    # check if the width has gone into negative
+    # todo: !!! Hack: if the width is negative but greater than some factor times the mean width, it is ignored. This
+    #  usually happens when high stress is applied forcing small widths. This will not effect the results as its done
+    # in the ballooning of the fracture to get the guess width for the next iteration.
+    smallNgtvWTip = np.where(np.logical_and(w_k < 0, w_k > -1 * np.mean(w_k)))
+    if np.asarray(smallNgtvWTip).size > 0:
+        # warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+        w_k[smallNgtvWTip] = 0.01*abs(w_k[smallNgtvWTip])
+
+
     # check if the solution is valid
     if np.isnan(w_k).any() or (w_k < 0).any():
         exitstatus = 5

@@ -57,7 +57,14 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
     """
 
     # loading parameters
-    filename = address + "\\properties"
+
+    import sys
+    if "win" in sys.platform:
+        slash = "\\"
+    else:
+        slash = "/"
+
+    filename = address + slash + "properties"
     try:
         with open(filename, 'rb') as input:
             (solid, fluid, injection, simulProp) = pickle.load(input)
