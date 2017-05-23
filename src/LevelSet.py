@@ -9,21 +9,9 @@ See the LICENSE.TXT file for more details.
 
 # imports
 import numpy as np
-# from importlib.machinery import SourceFileLoader
+
 
 from src.Utility import Neighbors
-
-
-def Eikonal_Res(Tij, *args):
-    """quadratic Eikonal equation residual to be used for numerical root finder"""
-
-    (Tleft, Tright, Tbottom, Ttop, Fij, dx, dy) = args
-    return np.nanmax([(Tij - Tleft) / dx, 0]) ** 2 + np.nanmin([(Tright - Tij) / dx, 0]) ** 2 + np.nanmax(
-        [(Tij - Tbottom) / dy, 0]) ** 2 + \
-           np.nanmin([(Ttop - Tij) / dy, 0]) ** 2 - Fij ** 2
-
-
-# -----------------------------------------------------------------------------------------------------------------------
 
 
 def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
@@ -106,7 +94,7 @@ def reconstruct_front(dist, EltChannel, mesh):
 
         minx = min(dist[neighbors[0]], dist[neighbors[1]])
         miny = min(dist[neighbors[2]], dist[neighbors[3]])
-        # distance of the vertex (zero vertex, i.e. rotated) of the current cell from the front
+        # distance of the vertex (zero vertex, i.e. rotated distance) of the current cell from the front
         Pdis = -(minx + miny) / 2
 
         # if the vertex distance is positive, meaning the fracture has passed the vertex
@@ -123,9 +111,9 @@ def reconstruct_front(dist, EltChannel, mesh):
             # angle calculate with inverse of sine trigonometric function
             sinalpha = beta * (theta - delDist) / (mesh.hx * (1 + beta ** 2))
             a2 = np.arcsin(sinalpha)
-            # angle with tan
-            #                if minx<0 and miny<0:
-            #                a3       = np.arccos(abs(minx-miny)/(mesh.hx**2+mesh.hy**2)**0.5)-np.arctan(mesh.hy/mesh.hx)
+            # angle calculated with tan
+            # if minx<0 and miny<0:
+            # a3 = np.arccos(abs(minx-miny)/(mesh.hx**2+mesh.hy**2)**0.5)-np.arctan(mesh.hy/mesh.hx)
 
             # !!!Hack. this check of zero or 90 degree angle works better
             if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-8:
@@ -172,14 +160,14 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
         mesh (CartesianMesh object):    the mesh of the fracture
         
     Returns:
-        (ndarray-int):      new channel elements list
-        (ndarray-int):      new tip elements list
-        (ndarray-int):      new crack elements list
-        (ndarray-int):      new ribbon elements list
-        (ndarray-int):      list specifying the zero vertex of the tip cells. (can have value from 0 to 3, where
-                            0 signify bottom left, 1 signifying bottom right, 2 signifying top right and 3
-                            signifying top left vertex)
-        (ndarray-int):      specifies which region each element currently belongs to
+        (ndarray-int):                  new channel elements list
+        (ndarray-int):                  new tip elements list
+        (ndarray-int):                  new crack elements list
+        (ndarray-int):                  new ribbon elements list
+        (ndarray-int):                  list specifying the zero vertex of the tip cells. (can have value from 0 to 3,
+                                        where 0 signify bottom left, 1 signifying bottom right, 2 signifying top right
+                                        and 3 signifying top left vertex)
+        (ndarray-int):                  specifies which region each element currently belongs to
     """
 
     # new tip elements contain only the partially filled elements
@@ -250,3 +238,14 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew
 
     # -----------------------------------------------------------------------------------------------------------------------
+
+def Eikonal_Res(Tij, *args):
+    """quadratic Eikonal equation residual to be used by numerical root finder"""
+
+    (Tleft, Tright, Tbottom, Ttop, Fij, dx, dy) = args
+    return np.nanmax([(Tij - Tleft) / dx, 0]) ** 2 + np.nanmin([(Tright - Tij) / dx, 0]) ** 2 + np.nanmax(
+        [(Tij - Tbottom) / dy, 0]) ** 2 + \
+           np.nanmin([(Ttop - Tij) / dy, 0]) ** 2 - Fij ** 2
+
+
+# -----------------------------------------------------------------------------------------------------------------------
