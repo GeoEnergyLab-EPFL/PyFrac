@@ -27,11 +27,12 @@ errorMessages = ("Propagated not attempted",
                  )
 
 
-def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
+def advance_time_step(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
                       TimeStep):
     """
-    This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller time
-    steps. A system exit is raised after maximum allowed reattempts. 
+    This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
+    time steps. A system exit is raised after maximum allowed reattempts.
+    
     Arguments:
         Frac (Fracture object):                             fracture object from the last time step 
         C (ndarray-float):                                  the elasticity matrix 
@@ -62,7 +63,7 @@ def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
         # smaller time step to reattempt time stepping; equal to the given time step on first iteration
         smallerTimeStep = TimeStep * Simulation_Parameters.reAttemptFactor ** i
 
-        status, Fr = FractureFrontLoop(Frac,
+        status, Fr = attempt_time_step(Frac,
                                        C,
                                        Material_properties,
                                        Fluid_properties,
@@ -93,7 +94,7 @@ def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
     raise SystemExit("Propagation not successful. Exiting...")
 
 
-def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
+def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
                       TimeStep):
     """ Propagate fracture one time step. The function injects fluid into the fracture, first by keeping the same
     footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
@@ -133,8 +134,8 @@ def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation
     Qin = np.zeros((Frac.mesh.NumberOfElts), float)
     Qin[Injection_Parameters.source_location] = CurrentRate # current injection over the domain
 
-
-    f = open('log', 'a')
+    # todo : write log file
+    # f = open('log', 'a')
 
     print('Solving ElastoHydrodynamic equations with same footprint...')
     # width by injecting the fracture with the same foot print (balloon like inflation)
@@ -147,21 +148,23 @@ def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation
                                                Simulation_Parameters)
 
     if exitstatus != 1:
+        # failed
         return exitstatus, None
 
-    # Fracture front loop for new fracture front estimation
+
     print('Starting Fracture Front loop...')
 
     norm = 10.
     k = 0
     Fr_k = Frac
 
+    # Fracture front loop to find the correct front location
     while norm > Simulation_Parameters.tolFractFront:
         k = k + 1
         print('\nIteration ' + repr(k))
         Fr_kminus1 = copy.deepcopy(Fr_k)
 
-        # calculate new fracture with the width evaluated in the last fracture front iteration
+        # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
         (exitstatus, Fr_k) = injection_extended_footprint(w_k,
                                                           Frac,
                                                           C,
@@ -173,8 +176,11 @@ def FractureFrontLoop(Frac, C, Material_properties, Fluid_properties, Simulation
         if exitstatus != 1:
             return exitstatus, None
 
+        # the new fracture width (notably the new width in the ribbon cells).
         w_k = np.copy(Fr_k.w)
 
+        # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
+        # with the number of tip cells.
         norm = abs((sum(Fr_k.FillF) - sum(Fr_kminus1.FillF)) / len(Fr_k.FillF))
         print('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
@@ -247,10 +253,10 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
         Fr_lstTmStp.InCrack,
         DLkOff, mat_properties.SigmaO,
         Fluid_properties.density,
-        Fluid_properties.turbulence
-        )
+        Fluid_properties.turbulence,
+        mat_properties.grainSize)
 
-    # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function)
+    # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function documentation)
     # todo: guess is taken as typical values. Needs to be reconsidered
     typclValue = delwGuess
 
@@ -264,7 +270,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
                                Simulation_Parameters.maxSolverItr,
                                *argSameFP)
 
-    # getting new width by adding [\delta] w solution to the width from last time step
+    # getting new width by adding the change in width solution to the width from last time step
     w_k = np.copy(Fr_lstTmStp.w)
     w_k[Fr_lstTmStp.EltCrack] = w_k[Fr_lstTmStp.EltCrack] + sol
 
@@ -326,7 +332,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         Fracture object:            fracture after advancing time step. 
     """
     # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-    sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
+    sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with very high
     # float value. (algorithm requires inf)
     sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
 
@@ -342,8 +348,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         exitstatus = 7
         return exitstatus, None
 
-    # SOLVE EIKONAL eq via Fast Marching Method starting from the element adjacent to the ribbon elements
-    # (i.e. the tip elements of the last time step)
+    # SOLVE EIKONAL eq via Fast Marching Method.
     SolveFMM(sgndDist_k,
              Fr_lstTmStp.EltRibbon,
              Fr_lstTmStp.EltChannel,
@@ -404,7 +409,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         exitstatus = 9
         return exitstatus, None
 
-    # some of the list are redundant to calculate on each iteration
+    # todo: some of the list are redundant to calculate on each iteration
     # Evaluate the element lists for the trial fracture front
     (EltChannel_k,
      EltTip_k,
@@ -421,7 +426,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
 
     print('Solving the EHL system with the new trial footprint')
-    # tip cells whose distance from front has not changed.
+
+    # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-8
     if stagnant.any():
         # if any tip cell with stagnant front
@@ -500,6 +506,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     # typical value for pressure
     typValue = np.copy(guess)
     typValue[Fr_lstTmStp.EltChannel.size + np.arange(EltsTipNew.size)] = 1e5
+
     # todo too many arguments; properties class needs to be utilized
     arg = (
         Fr_lstTmStp.EltChannel,
@@ -516,9 +523,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         InCrack_k,
         DLkOff,
         Fr_lstTmStp.SigmaO,
-        Fluid_properties.turbulence)
+        Fluid_properties.turbulence,
+        Material_properties.grainSize
+        )
 
-    # sloving the system of equations for [\delta] w in the channel elements and pressure in the tip elements
+    # sloving the system of equations for the change in width in the channel elements and pressure in the tip elements
     (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP,
                                MakeEquationSystemExtendedFP,
                                guess,

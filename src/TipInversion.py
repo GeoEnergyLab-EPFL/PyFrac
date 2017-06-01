@@ -3,10 +3,11 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Tue Nov  1 15:22:00 2016.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
-See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights
+reserved. See the LICENSE.TXT file for more details.
 
-Tip inversion for different flow regimes. The functions take width opening and gives distance from tip calculated using the given propagation regime
+Tip inversion for different flow regimes. The functions take width opening and gives distance from tip calculated using
+the given propagation regime
 """
 
 # imports
@@ -82,6 +83,7 @@ def TipAsym_Universal_zero_Res(dist, *args):
 
 def TipAsym_MKTransition_Res(dist, *args):
     """Residual function for viscocity to toughness regime with transition, without leak off"""
+
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
     return wEltRibbon - (1 + 18 * 3 ** 0.5 * Eprime ** 2 * (
         dist - DistLstTSEltRibbon) / dt * muPrime * dist ** 0.5 / Kprime ** 3) ** (
@@ -91,7 +93,10 @@ def TipAsym_MKTransition_Res(dist, *args):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, ResFunc):
-    """ Find the valid bracket for the root evaluation function. Also returns list of ribbon cells that are not propagating"""
+    """ 
+    Find the valid bracket for the root evaluation function. Also returns list of ribbon cells that are not
+    propagating
+    """
 
     stagnant = np.where(
         Kprime[EltRibbon] * (-DistLstTS[EltRibbon]) ** 0.5 / (Eprime * w[EltRibbon]) > 1)  # propagation condition
@@ -155,6 +160,7 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None):
                                       frac.sgndDist, dt, ResFunc)
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
+        # todo: need to use the properties class
         TipAsmptargs = (w[frac.EltRibbon[moving[i]]], matProp.Kprime[frac.EltRibbon[moving[i]]], matProp.Eprime,
                         frac.muPrime[frac.EltRibbon[moving[i]]], matProp.Cprime[frac.EltRibbon[moving[i]]],
                         -frac.sgndDist[frac.EltRibbon[moving[i]]], dt)
@@ -169,7 +175,22 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None):
 # -----------------------------------------------------------------------------------------------------------------------
 
 def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Eprime):
-    """ See Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2017"""
+    """ 
+    This function evaluate the stress intensity factor. See Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2017
+    
+    Arguments:
+        w (ndarray-float):              fracture width
+        lvlSetData (ndarray-float):     the level set values, i.e. distance from the fracture front
+        EltTip (ndarray-int):           tip elements
+        EltRibbon (ndarray-int):        ribbon elements
+        stagnant (ndarray-boolean):     the stagnant tip cells
+        mesh (CartesianMesh object):    mesh
+        Eprime (float):                 the plain strain modulus
+        
+    Returns:
+        ndarray-float:                  the stress intensity factor of the stagnant cells. Zero is returned for the 
+                                        tip cells that are moving.
+    """
     KIPrime = np.zeros((EltTip.size,), float)
     for i in range(0, len(EltTip)):
         if stagnant[i]:

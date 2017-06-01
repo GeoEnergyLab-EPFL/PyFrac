@@ -35,7 +35,8 @@ nu = 0.4
 Eprime = 3.3e10 / (1 - nu ** 2)
 K_Ic = 0.005e6
 sigma0 = 0 * 1e6
-Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, Mesh)
+d_grain = 1e-5
+Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, d_grain, Mesh)
 
 # injection parameters
 Q0 = 0.09  # injection rate
@@ -43,16 +44,16 @@ well_location = np.array([0., 0.])
 Injection = InjectionProperties(Q0, well_location, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
+Fluid = FluidProperties(1.1e-3, Mesh, turbulence=True)
 
 # simulation properties
 simulProp = SimulationParameters(tip_asymptote="U",
                                  output_time_period=0.005,
                                  plot_figure=True,
                                  save_to_disk=False,
-                                 out_file_address=".\\Data\\TurbLamTough",
+                                 out_file_address=".\\Data\\Laminar", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
-                                 cfl_factor=0.4)
+                                 tmStp_prefactor=0.4)
 
 
 # initializing fracture
@@ -78,10 +79,10 @@ while (Fr.time < simulProp.FinalTime) and (i < simulProp.maxTimeSteps):
 
     i = i + 1
 
-    print('\n*********************\ntime = ' + repr(Fr.time))
+    print('\n-----------------------------------------------------\ntime = ' + repr(Fr.time))
 
-    TimeStep = simulProp.CFLfactor * Fr.mesh.hx / np.mean(Fr.v)
-    status, Fr_k = attempt_time_step(Fr_k, C, Solid, Fluid, simulProp, Injection, TimeStep)
+    TimeStep = simulProp.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
+    status, Fr_k = advance_time_step(Fr_k, C, Solid, Fluid, simulProp, Injection, TimeStep)
 
     Fr = copy.deepcopy(Fr_k)
 

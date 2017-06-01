@@ -27,7 +27,7 @@ class MaterialProperties:
     methods:
     """
 
-    def __init__(self, Eprime, Toughness, Cl, SigmaO, Mesh):  # add Mesh as input directly here.
+    def __init__(self, Eprime, Toughness, Cl, SigmaO, grain_size, Mesh):  # add Mesh as input directly here.
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
             raise SystemExit("Eprime  can not be an array as input ! - homogeneous medium only ")
@@ -63,6 +63,8 @@ class MaterialProperties:
                 return
         else:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
+
+        self.grainSize = grain_size
 
 
 # --------------------------------------------------------------------------------------------------------
@@ -187,14 +189,14 @@ class SimulationParameters:
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
-                 cfl_factor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=1000, max_reattemps = 5,
+                 tmStp_prefactor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=1000, max_reattemps = 5,
                  reattempt_factor = 0.8, output_time_period = np.inf, plot_figure = False, save_to_disk = False,
                  out_file_address = "None", plot_analytical = False, analytical_sol = "M"):
 
         self.maxTimeSteps = maximum_steps
         self.tolFractFront = toleranceFractureFront
         self.toleranceEHL = toleranceEHL
-        self.CFLfactor = cfl_factor
+        self.tmStpPrefactor = tmStp_prefactor
         self.FinalTime = final_time
 
         # todo: all the option structures can be put into one file

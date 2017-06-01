@@ -59,7 +59,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, vkm1, C, sigma0, dgrain=1e-6):
+def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, vkm1, C, sigma0, dgrain):
     """
     The function evaluate the finite difference matrix, i.e. the A matrix in the ElastoHydrodynamic equations ( see e.g.
     Dontsov and Peirce 2008). THe matrix is evaluated by taking turbulence into account. The friction factor for 
@@ -76,7 +76,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
                                         is used as the starting guess for the implicit solver.
         C (ndarray-float):              the elasticity matrix
         sigma0 (ndarrray-float):        the confining stress
-        dgrain (float, default 1e-6)
+        dgrain (float, default 1e-6)    the grain size. Used to get the relative roughness.
                 
     Returns:
         ndarray-float:                  the finite difference matrix
@@ -292,7 +292,7 @@ def findBracket(func,guess,*args):
 
 def MakeEquationSystemExtendedFP(solk, vkm1, *args):
     (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0,
-     turb) = args
+     turb, dgrain) = args
 
     Ccc = C[np.ix_(EltChannel, EltChannel)]
     Cct = C[np.ix_(EltChannel, EltsTipNew)]
@@ -307,7 +307,7 @@ def MakeEquationSystemExtendedFP(solk, vkm1, *args):
 
     if turb:
         (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent_implicit(wcNplusOne, EltCrack, muPrime/12, Mesh, InCrack,
-                                                                    rho, vkm1, C, sigma0)
+                                                                    rho, vkm1, C, sigma0, dgrain)
     else:
         FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne, EltCrack, muPrime, Mesh, InCrack)
         vk = vkm1
@@ -339,13 +339,13 @@ def MakeEquationSystemExtendedFP(solk, vkm1, *args):
 ######################################
 #
 def MakeEquationSystemSameFP(delwk, vkm1, *args):
-    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb) = args
+    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain) = args
     wnPlus1 = np.copy(w)
     wnPlus1[EltCrack] = wnPlus1[EltCrack] + delwk
 
     if turb:
         (con, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1, EltCrack, muPrime / 12, mesh, InCrack, rho, vkm1,
-                                                           C, sigma0)
+                                                           C, sigma0, dgrain)
     else:
         con = finiteDiff_operator_laminar(wnPlus1, EltCrack, muPrime, mesh, InCrack)
         vk = vkm1
