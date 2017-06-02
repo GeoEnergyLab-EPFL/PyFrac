@@ -23,12 +23,19 @@ class MaterialProperties:
         Kprime (ndarray-float)  : 4*(2/pi)**0.5 * K1c 
         Cprime (ndarray-float)  : 2 * Carter's leak off coefficient
         SigmaO (ndarray-float)  : in-situ stress field
-        
+        grainSize (float)       : the grain size of the rock; used to calculate the relative roughness
     methods:
     """
 
-    def __init__(self, Eprime, Toughness, Cl, SigmaO, grain_size, Mesh):  # add Mesh as input directly here.
-
+    def __init__(self, Eprime, Toughness, Cl, SigmaO, grain_size, Mesh):
+        """
+        Arguments:
+            Eprime (float)          : plain strain modulus
+            Toughness (float)       : Linear-Elastic Plane-Strain Fracture Toughness
+            Cl (float)              : Carter's leak off coefficient
+            SigmaO (ndarray-float)  : in-situ stress field
+            grainSize (float)       : the grain size of the rock; used to calculate the relative roughness
+        """
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
             raise SystemExit("Eprime  can not be an array as input ! - homogeneous medium only ")
         else:
@@ -127,6 +134,9 @@ class InjectionProperties:
     """
 
     def __init__(self, rate, source_coordinates, Mesh):  # add Mesh as input directly here to ensure consistency
+        """
+        The constructor of the InjectionProperties class. See documentation of the class.
+        """
 
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
@@ -159,7 +169,7 @@ class SimulationParameters:
             tolFractFront (float, default 1.e-3):   tolerance for the fracture front loop.
             toleranceEHL (float, default 1.e-5):    tolerance for the Elastohydrodynamic solver.
             maximumItrEHL (int, default 100):       maximum number of iterations for the Elastohydrodynamic solver.
-            CFLfactor (float, default 0.8):         factor for time-step adaptivity. 
+            tmStpPrefactor (float, default 0.8):    factor for time-step adaptivity. 
             FinalTime (float, default 1000):        time where the simulation ends.
             maxFrontItr (int, default 30):          maximum iterations to for the fracture front loop.
             tipAsymptote (string, default "U"):     propagation regime. Possible options:
@@ -185,14 +195,20 @@ class SimulationParameters:
                                                     fracture. Possible options:
                                                         "M" -- viscosity dominated
                                                         "K" -- toughness dominated
+            plot_evolution (boolean, default False):if True, the fracture footprint plots will be superimposed on the 
+                                                    previous footprint plots i.e. evolution of fracture with time will
+                                                    be shown
             
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
                  tmStp_prefactor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=1000, max_reattemps = 5,
                  reattempt_factor = 0.8, output_time_period = np.inf, plot_figure = False, save_to_disk = False,
-                 out_file_address = "None", plot_analytical = False, analytical_sol = "M", plot_evolution=True):
-
+                 out_file_folder = "None", plot_analytical = False, analytical_sol = "M", plot_evolution=True):
+        """
+        
+        The constructor of the SimulationParameters class. See documentation of the class.
+        """
         self.maxTimeSteps = maximum_steps
         self.tolFractFront = toleranceFractureFront
         self.toleranceEHL = toleranceEHL
@@ -229,7 +245,7 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if out_file_address == "None" and save_to_disk:
+        if out_file_folder == "None" and save_to_disk:
             # time stamp as the folder address
             from time import gmtime, strftime
             timeStamp = "runDate_"+ strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
@@ -245,10 +261,10 @@ class SimulationParameters:
             self.lastSavedFile = 0
         elif save_to_disk:
             import os
-            if not os.path.exists(out_file_address):
-                os.makedirs(out_file_address)
+            if not os.path.exists(out_file_folder):
+                os.makedirs(out_file_folder)
 
-            self.outFileAddress = out_file_address + slash
+            self.outFileAddress = out_file_folder + slash
             self.lastSavedFile = 0
 
 # ----------------------------------------------------------------------------------------------------------------------

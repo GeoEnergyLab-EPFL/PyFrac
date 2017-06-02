@@ -33,8 +33,13 @@ Mesh = CartesianMesh(3, 3, 41, 41)
 # solid properties
 nu = 0.4
 Eprime = 3.3e10 / (1 - nu ** 2)
-K_Ic = 0.005e6
-sigma0 = 0 * 1e6
+K_Ic = 1e6
+
+sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
+# high stressed layers
+# stressed_layer = np.where(abs(Mesh.CenterCoor[:,1]) > 1.5-Mesh.hx/2)[0]
+# sigma0[stressed_layer] = 7e6
+
 d_grain = 1e-5
 Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, d_grain, Mesh)
 
@@ -48,10 +53,10 @@ Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 
 # simulation properties
 simulProp = SimulationParameters(tip_asymptote="U",
-                                 output_time_period=0.005,
+                                 output_time_period=0.02,
                                  plot_figure=True,
-                                 save_to_disk=False,
-                                 out_file_address=".\\Data\\Laminar", # e.g. "./Data/Laminar" for linux or mac
+                                 save_to_disk=True,
+                                 out_file_folder=".\\Data\\Laminar", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
                                  tmStp_prefactor=0.4)
 
@@ -80,8 +85,6 @@ Fr_k = Fr
 while (Fr.time < simulProp.FinalTime) and (i < simulProp.maxTimeSteps):
 
     i = i + 1
-
-    print('\n--------------------------------\ntime = ' + repr(Fr.time))
 
     TimeStep = simulProp.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
     status, Fr_k = advance_time_step(Fr_k, C, Solid, Fluid, simulProp, Injection, TimeStep)

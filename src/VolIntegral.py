@@ -106,8 +106,9 @@ def Pdistance(x, y, slope, intercpt):
 
 
 def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
-    """Volume  of the triangle defined by perpendicular distance (dist) and em (em=1/sin(alpha)cos(alpha), where alpha is the angle of the perpendicular)
-    The regime variable identifies the propagation regime    
+    """
+    Volume  of the triangle defined by perpendicular distance (dist) and em (em=1/sin(alpha)cos(alpha), where alpha
+    is the angle of the perpendicular). The regime variable identifies the propagation regime    
     """
 
     if regime == 'A':
@@ -124,8 +125,7 @@ def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnan
 
     elif regime == 'Mt':
         return 256 / 273 / (15 * np.tan(np.pi / 8)) ** 0.25 * (
-                                                              Cbar * muPrime / Eprime) ** 0.25 * em * Vel ** 0.125 * dist ** (
-        21 / 8)
+                                    Cbar * muPrime / Eprime) ** 0.25 * em * Vel ** 0.125 * dist ** (21 / 8)
 
     elif regime == 'U':
         (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime)
@@ -136,8 +136,10 @@ def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnan
         1.7320508075688772 * Kprime ** 9 * (Kprime ** 6 - 1872. * dist * Eprime ** 4 * muPrime ** 2 * Vel ** 2) + (
         1. + (31.17691453623979 * (dist) ** 0.5 * Eprime ** 2 * muPrime * Vel) / Kprime ** 3) ** 0.3333333333333333 * (
         -1.7320508075688772 * Kprime ** 15 + 18. * (
-        dist) ** 0.5 * Eprime ** 2 * Kprime ** 12 * muPrime * Vel + 2868.2761373340604 * dist * Eprime ** 4 * Kprime ** 9 * muPrime ** 2 * Vel ** 2 - 24624. * dist ** 1.5 * Eprime ** 6 * Kprime ** 6 * muPrime ** 3 * Vel ** 3 + 464660.73424811783 * dist ** 2 * Eprime ** 8 * Kprime ** 3 * muPrime ** 4 * Vel ** 4 + 5.7316896e7 * dist ** 2.5 * Eprime ** 10 * muPrime ** 5 * Vel ** 5))) / (
-               Eprime ** 11 * muPrime ** 5 * Vel ** 5)
+        dist) ** 0.5 * Eprime ** 2 * Kprime ** 12 * muPrime * Vel + 2868.2761373340604 * dist * Eprime ** 4 *
+        Kprime ** 9 * muPrime ** 2 * Vel ** 2 - 24624. * dist ** 1.5 * Eprime ** 6 * Kprime ** 6 * muPrime ** 3 *
+        Vel ** 3 + 464660.73424811783 * dist ** 2 * Eprime ** 8 * Kprime ** 3 * muPrime ** 4 * Vel ** 4 + 5.7316896e7
+        * dist ** 2.5 * Eprime ** 10 * muPrime ** 5 * Vel ** 5))) / (Eprime ** 11 * muPrime ** 5 * Vel ** 5)
 
 
 def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
@@ -186,27 +188,34 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, stagn
     for i in range(0, len(l)):
 
         if abs(alpha[i]) < 1e-8:
+            # the angle inscribed by the perpendicular is zero
             if l[i] <= mesh.hx:
+                # the front is within the cell.
                 volume[i] = Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i],
                                  Vel[i], stagnant[i], KIPrime[i]) * mesh.hy
             else:
+                # the front has surpassed this cell.
                 volume[i] = (Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i],
                                   Vel[i], stagnant[i], KIPrime[i]) - Area(l[i] - mesh.hx, regime, Kprime[i],
                                   mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hy
 
         elif abs(alpha[i] - np.pi / 2) < 1e-8:
+            # the angle inscribed by the perpendicular is 90 degrees
             if l[i] <= mesh.hy:
+                # the front is within the cell.
                 volume[i] = Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
                                  KIPrime[i]) * mesh.hx
             else:
+                # the front has surpassed this cell.
                 volume[i] = (Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
                                   KIPrime[i]) - Area(l[i] - mesh.hy, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i],
                                                      Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hx
         else:
-            yIntrcpt = l[i] / np.cos(np.pi / 2 - alpha[i])
-            grad = -1 / np.tan(alpha[i])
-            m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))
+            yIntrcpt = l[i] / np.cos(np.pi / 2 - alpha[i]) # Y intercept of the front line
+            grad = -1 / np.tan(alpha[i]) # gradient of the front line
+            m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i])) # the m parameter (see e.g. A. Pierce 2015)
 
+            # volume of the triangle made by the front by intersecting the x and y directional lines of the cell
             TriVol = VolumeTriangle(l[i], m, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i],
                                     stagnant[i], KIPrime[i])
 
@@ -239,6 +248,10 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, stagn
 
 
 def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
+    """
+    This function finds the bracket to be used by the Unversal tip asymptote root finder.
+    """
+
     a = (1e5 * np.finfo(float).eps) * dist ** 0.5 * Kprime / Eprime  # lower bound on width
     b = 10000 * dist ** 0.5 * Kprime / Eprime
 
@@ -251,19 +264,8 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     while Res_a * Res_b > 0:
         mid = (a + 2 * mid) / 3  # weighted
         Res_a = TipAsym_UniversalW_zero_Res(mid, *TipAsmptargs)
-        #        a = mid
         cnt += 1
         if cnt >= 50:
-            #            x = np.linspace((1e5*np.finfo(float).eps)*dist**0.5*Kprime/Eprime ,maxbnd,100)
-            #            g0 = np.zeros((100,),)
-            #            sol = np.zeros((100,),)
-            #            for j in range(0,100):
-            #                sol[j]=TipAsym_Universal_zero_Res(x[j],*TipAsmptargs)
-            #
-            #                Vel = (x[j]+DistLstTS[EltRibbon[i]])/dt
-            #                Kh = Kprime[EltRibbon[i]]*x[j]**0.5/(Eprime*w[EltRibbon[i]])
-            #                Ch = 2*Cbar[EltRibbon[i]]*x[j]**0.5/(Vel**0.5*w[EltRibbon[i]])
-            #                g0[j] = f(Kh,0.9911799823*Ch,6*3**0.5)
             raise SystemExit('fracture width bracket cannot be found within 50 iterations')
 
     return (a, b)

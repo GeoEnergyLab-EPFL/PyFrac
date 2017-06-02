@@ -57,6 +57,7 @@ def advance_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
                                     
         Fracture object:            fracture after advancing time step. 
     """
+    print('\n--------------------------------\ntime = ' + repr(Frac.time))
     print("Attempting time step of " + repr(TimeStep) + " sec...")
     # loop for reattempting time stepping in case of failure.
     for i in range(0, Simulation_Parameters.maxReattempts):

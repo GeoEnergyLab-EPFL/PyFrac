@@ -25,8 +25,8 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
     according to the given regime can also be plotted along with the numerical solution read from the saved files.
     
     Argument:
-        address (string):                           address of the saved data files (e.g ".//Data//simulation" for
-                                                    windows system, ".\Data\simulation" for linux system).   
+        address (string):                           address of the saved data files (e.g ".\\Data\\simulation" for
+                                                    windows system, "./Data/simulation" for linux or mac system).   
         plot_analytical (boolean, default True):    if True, analytical solution specified by the argument 'regime' will
                                                     be plotted along with the numerical solution
         regime (string, default "M"):               the regime of the analytical solution to be plotted.
@@ -41,11 +41,11 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
                                                     figure will be made if not given.
         maxFiles (int, default 150):                maximum number of files to be read.
         loglog (boolean, default True):             if True, plots will be made on loglog scale.
-        plot_w_prfl (boolean, default False):       if true, width profile at the horizontal cross section (passing 
+        plot_w_prfl (boolean, default False):       if True, width profile at the horizontal cross section (passing 
                                                     through the center) will be plotted. Six plots, equally spaced in
                                                     time, will be plotted along with the analytical solution at the
                                                     time. 
-        plot_p_prfl (boolean, default False):       if true, pressure profile at the horizontal cross section (passing
+        plot_p_prfl (boolean, default False):       if True, pressure profile at the horizontal cross section (passing
                                                     through the center) will be plotted. Six plots, equally spaced in
                                                     time, will be plotted along with the analytical solution at the
                                                     time.
