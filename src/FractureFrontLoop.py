@@ -471,7 +471,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                               Vel_k) / Fr_lstTmStp.mesh.EltArea
 
     # # check if the tip volume has gone into negative
-    # # todo: !!! Hack: if the evaluated tip width is negative but greater than 1e-4 times the mean width, it is ignored
     # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
     # if np.asarray(smallNgtvWTip).size > 0:
     #     #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
@@ -522,7 +521,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         Fluid_properties.density,
         InCrack_k,
         DLkOff,
-        Fr_lstTmStp.SigmaO,
+        Material_properties.SigmaO,
         Fluid_properties.turbulence,
         Material_properties.grainSize
         )
@@ -615,10 +614,12 @@ def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties,
                 fig = Fr_advanced.plot_fracture('complete',
                                                 'footPrint',
                                                 analytical=R,
+                                                evol=simulation_parameters.plotEvolution,
                                                 mat_Properties=material_properties)
             else:
                 fig = Fr_advanced.plot_fracture('complete',
                                                 'footPrint',
+                                                evol=simulation_parameters.plotEvolution,
                                                 mat_Properties = material_properties)
             plt.show()
 

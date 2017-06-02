@@ -44,7 +44,7 @@ well_location = np.array([0., 0.])
 Injection = InjectionProperties(Q0, well_location, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(1.1e-3, Mesh, turbulence=True)
+Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 
 # simulation properties
 simulProp = SimulationParameters(tip_asymptote="U",
@@ -58,14 +58,16 @@ simulProp = SimulationParameters(tip_asymptote="U",
 
 # initializing fracture
 initRad = 0.8 # initial radius of fracture
-Fr = Fracture(Mesh, Fluid, Solid) # create fracture object
-Fr.initialize_radial_Fracture(initRad,
-                              'radius',
-                              'M',
-                              Solid,
-                              Fluid,
-                              Injection,
-                              simulProp) # initializing
+
+# creating fracture object
+Fr = Fracture(Mesh,
+              initRad,
+              'radius',
+              'M',
+              Solid,
+              Fluid,
+              Injection,
+              simulProp)
 
 
 # elasticity matrix
@@ -79,7 +81,7 @@ while (Fr.time < simulProp.FinalTime) and (i < simulProp.maxTimeSteps):
 
     i = i + 1
 
-    print('\n-----------------------------------------------------\ntime = ' + repr(Fr.time))
+    print('\n--------------------------------\ntime = ' + repr(Fr.time))
 
     TimeStep = simulProp.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
     status, Fr_k = advance_time_step(Fr_k, C, Solid, Fluid, simulProp, Injection, TimeStep)

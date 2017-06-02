@@ -11,7 +11,6 @@ from src.PostProcess import *
 
 fig_wdth, fig_radius, fig_pressure = plot_data(".\Data\LamCourse", loglog = False, plot_w_prfl=True, plot_p_prfl=True)
 fig_wdth, fig_radius, fig_pressure = plot_data(".\Data\LamFine", fig_w_cntr=fig_wdth, fig_r=fig_radius, loglog=False )
-fig_wdth, fig_radius, fig_pressure = plot_data(".\Data\TurbLam", fig_w_cntr=fig_wdth, fig_r=fig_radius, loglog=False,
-                                               plot_w_prfl=True, plot_p_prfl=True)
+
 plt.show()
 

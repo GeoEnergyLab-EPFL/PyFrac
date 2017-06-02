@@ -40,7 +40,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
     dx = Mesh.hx
     dy = Mesh.hy
 
-    # width at the cell edges evaluated by averaging
+    # width at the cell edges evaluated by averaging. Zero if the edge is outside fracture
     wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 0]]
     wRgtEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 1]]
     wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 2]]
@@ -62,15 +62,15 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
 def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, vkm1, C, sigma0, dgrain):
     """
     The function evaluate the finite difference matrix, i.e. the A matrix in the ElastoHydrodynamic equations ( see e.g.
-    Dontsov and Peirce 2008). THe matrix is evaluated by taking turbulence into account. The friction factor for 
-    turbulent flow is evaluated using the Yang-Joseph approximation.
+    Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into account. The full evolution of friction
+    factor as a function of Reynold's number and relative roughness is incorporated.
 
     Arguments:
         w (ndarray-float):              the width of the trial fracture. 
         EltCrack (ndarray-int):         the list of elements inside the fracture
         mu (ndarray-float):             the local viscosity of the injected fluid
         Mesh (CartesianMesh object):    the mesh
-        InCrack (ndarray-int):          An array specifying whether elements are inside the fracture or not with
+        InCrack (ndarray-int):          an array specifying whether elements are inside the fracture or not with
                                         1 or 0 respectively
         vkm1 (ndarray-float):           the velocity at cell edges from the previous iteration (if necessary). Here, it
                                         is used as the starting guess for the implicit solver.

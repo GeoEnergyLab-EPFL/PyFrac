@@ -68,54 +68,54 @@ class Fracture():
             
     """
 
-    def __init__(self, mesh, fluid, solid_Properties):
-        """ Constructor for the Fracture class
-            Arguments:
-                mesh (CartesianMesh):           A mesh describing the domain
-
-         """
-
-        self.mesh = mesh
-        (self.w, self.p, self.time) = (
-        np.zeros((mesh.NumberOfElts,), float), np.zeros((mesh.NumberOfElts,), float), 0.0)
-        
-        self.EltChannel = np.asarray([], dtype=np.int32)
-        self.EltRibbon = np.asarray([], dtype=np.int32)
-        self.EltCrack = np.asarray([], dtype=np.int32)
-
-        # lists for tip elements
-        self.ZeroVertex = np.asarray([], dtype=np.int8)
-        self.EltTip = np.asarray([], dtype=np.int32)
-        self.alpha = np.asarray([], dtype=np.float64)
-        self.FillF = np.asarray([], dtype=np.float64)
-        self.l = np.asarray([], dtype=np.float64)
-        self.v = np.asarray([], dtype=np.float64)
-
-        
-        self.CellStatus = np.asarray([], dtype=np.int8)
-        self.initRad = 0.0
-        self.initTime = 0.0
-        self.sgndDist = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
-        
-        (self.LeakedOff, self.Trrival) = (np.zeros((mesh.NumberOfElts,), dtype=np.float64), [])
-        self.InCrack = []
-        self.FractEvol = np.empty((1, 4), float)
-        self.exitstatus = 0
-        self.TimeStep = 0.0
-        self.Ffront = []
-
-        # local viscosity at grid point  (is needed by the current scheme, could be useful as a tangent value for NL
-        # viscosity or case of multiple fluids....
-        # becareful with copy there ! WE SHOULD DO A DEEP COPY HERE TO AVOID PROBLEMS !
-        self.muPrime = fluid.muPrime * (np.ones((mesh.NumberOfElts), float))
-        self.rho = fluid.density * (np.ones((mesh.NumberOfElts), float))
-        # normal stress.... ( should we try to avoid this one ? )
-        # becareful with copy there ! WE SHOULD DO A DEEP COPY HERE TO AVOID PROBLEMS !
-        self.SigmaO = solid_Properties.SigmaO
+    # def __init__(self, mesh, fluid, solid_Properties):
+    #     """ Constructor for the Fracture class
+    #         Arguments:
+    #             mesh (CartesianMesh):           A mesh describing the domain
+    #
+    #      """
+    #
+    #     self.mesh = mesh
+    #     (self.w, self.p, self.time) = (
+    #     np.zeros((mesh.NumberOfElts,), float), np.zeros((mesh.NumberOfElts,), float), 0.0)
+    #
+    #     self.EltChannel = np.asarray([], dtype=np.int32)
+    #     self.EltRibbon = np.asarray([], dtype=np.int32)
+    #     self.EltCrack = np.asarray([], dtype=np.int32)
+    #
+    #     # lists for tip elements
+    #     self.ZeroVertex = np.asarray([], dtype=np.int8)
+    #     self.EltTip = np.asarray([], dtype=np.int32)
+    #     self.alpha = np.asarray([], dtype=np.float64)
+    #     self.FillF = np.asarray([], dtype=np.float64)
+    #     self.l = np.asarray([], dtype=np.float64)
+    #     self.v = np.asarray([], dtype=np.float64)
+    #
+    #
+    #     self.CellStatus = np.asarray([], dtype=np.int8)
+    #     self.initRad = 0.0
+    #     self.initTime = 0.0
+    #     self.sgndDist = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
+    #
+    #     (self.LeakedOff, self.Trrival) = (np.zeros((mesh.NumberOfElts,), dtype=np.float64), [])
+    #     self.InCrack = []
+    #     self.FractEvol = np.empty((1, 4), float)
+    #     self.exitstatus = 0
+    #     self.TimeStep = 0.0
+    #     self.Ffront = []
+    #
+    #     # local viscosity at grid point  (is needed by the current scheme, could be useful as a tangent value for NL
+    #     # viscosity or case of multiple fluids....
+    #     # becareful with copy there ! WE SHOULD DO A DEEP COPY HERE TO AVOID PROBLEMS !
+    #     self.muPrime = fluid.muPrime * (np.ones((mesh.NumberOfElts), float))
+    #     self.rho = fluid.density * (np.ones((mesh.NumberOfElts), float))
+    #     # normal stress.... ( should we try to avoid this one ? )
+    #     # becareful with copy there ! WE SHOULD DO A DEEP COPY HERE TO AVOID PROBLEMS !
+    #     self.SigmaO = solid_Properties.SigmaO
 
     #############################################
 
-    def initialize_radial_Fracture(self, initValue, initType, regime, solid, fluid, injection, simulProp):
+    def __init__(self, Mesh, initValue, initType, regime, solid, fluid, injection, simulProp):
         """ Initialize the fracture according to the given initial value and the propagation regime. Either initial 
         radius or time can be given as the initial value. The function sets up the fracture front and other fracture
         parameters according to the given regime at the given time or radius.
@@ -130,8 +130,7 @@ class Fracture():
                                             M   -- indicating viscosity dominated regime, without leak off
                                             Mt  -- indicating viscosity dominated regime, with leak off
         """
-        # todo ensure to use the properties close to the inj. point, first rate etc.   ... for generalization
-
+        self.mesh = Mesh
         if initType == 'time':
             self.time = initValue
             if regime == 'K':
@@ -161,6 +160,7 @@ class Fracture():
             else:
                 print('regime ' + regime + ' not supported')
                 return
+            self.initTime = self.time
         else:
             print('initType ' + initType + ' not supported')
 
@@ -308,6 +308,9 @@ class Fracture():
         CellStatus[EltTip] = 2
         CellStatus[EltRibbon] = 3
 
+        # local viscosity
+        self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
+
         # assign 1 for all cells inside the fracture
         InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         InCrack[EltCrack] = 1
@@ -355,13 +358,21 @@ class Fracture():
                                                                                             self.Tarrival[
                                                                                             self.EltChannel]) ** 0.5
         # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
-        self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip, self.alpha, self.l,
-                                                                                     self.mesh, 'Lk', solid,
-                                                                                     self.muPrime, self.v)
+        self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip,
+                                                                                     self.alpha,
+                                                                                     self.l,
+                                                                                     self.mesh,
+                                                                                     'Lk',
+                                                                                     solid,
+                                                                                     self.muPrime,
+                                                                                     self.v)
+
+        # fracture evolution data
+        self.FractEvol = np.empty((1, 4), float)
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
-            fig = self.plot_fracture('complete', 'footPrint', mat_Properties=solid)
+            fig = self.plot_fracture('complete', 'footPrint', evol=simulProp.plotEvolution, mat_Properties=solid)
             plt.show()
 
         if simulProp.saveToDisk:
@@ -436,7 +447,7 @@ class Fracture():
         return fig
 
     ######################################
-    # todo: commenting print_fracture_trace function
+
     def print_fracture_trace(self, rAnalytical, evol, identify, mat_properties):
         """ Print fracture front and different regions of the fracture
             Arguments:
@@ -449,6 +460,8 @@ class Fracture():
         # list of points where fracture front is intersecting the grid lines. 
         intrsct1 = np.zeros((2, len(self.l)))
         intrsct2 = np.zeros((2, len(self.l)))
+
+        # todo: commenting print_fracture_trace function
 
         for i in range(0, len(self.l)):
             if self.alpha[i] != 0 and self.alpha[i] != math.pi / 2: # for angles greater than zero and less than 90 deg
@@ -527,6 +540,7 @@ class Fracture():
         tmp = np.transpose(intrsct1)
         tmp = np.hstack((tmp, np.transpose(intrsct2)))
         if evol:
+            # append the current fracture lines to the fracture evolution data
             self.FractEvol = np.vstack((self.FractEvol, tmp))
             fig = PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, self.FractEvol[:, 0:2],
                                   self.FractEvol[:, 2:4], rAnalytical, mat_properties, identify)

@@ -59,7 +59,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
                     InitlevelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
                 else:  # the angle is either 0 or 90 degrees
                     # vertical propagation direction.
-                    if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
+                    if NeigxMin > maxdist: #used to check if very large value (level set value for unevaluated elements)
                         InitlevelSet[neighbor] = NeigyMin + mesh.hy
                     # horizontal propagation direction.
                     if NeigyMin > maxdist:
@@ -69,7 +69,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
         NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
 
-# -----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def reconstruct_front(dist, EltChannel, mesh):
@@ -111,9 +111,6 @@ def reconstruct_front(dist, EltChannel, mesh):
             # angle calculate with inverse of sine trigonometric function
             sinalpha = beta * (theta - delDist) / (mesh.hx * (1 + beta ** 2))
             a2 = np.arcsin(sinalpha)
-            # angle calculated with tan
-            # if minx<0 and miny<0:
-            # a3 = np.arccos(abs(minx-miny)/(mesh.hx**2+mesh.hy**2)**0.5)-np.arctan(mesh.hy/mesh.hx)
 
             # !!!Hack. this check of zero or 90 degree angle works better
             if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-8:
