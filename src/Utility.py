@@ -155,8 +155,8 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
     plt.axis('equal')
 
     # maximize the plot window
-    mng = plt.get_current_fig_manager()
-    mng.window.showMaximized()
+    # mng = plt.get_current_fig_manager()
+    # mng.window.showMaximized()
 
     return fig
 
