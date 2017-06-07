@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
+import warnings
+
 
 # local import ....
 
@@ -68,53 +70,6 @@ class Fracture():
             
     """
 
-    # def __init__(self, mesh, fluid, solid_Properties):
-    #     """ Constructor for the Fracture class
-    #         Arguments:
-    #             mesh (CartesianMesh):           A mesh describing the domain
-    #
-    #      """
-    #
-    #     self.mesh = mesh
-    #     (self.w, self.p, self.time) = (
-    #     np.zeros((mesh.NumberOfElts,), float), np.zeros((mesh.NumberOfElts,), float), 0.0)
-    #
-    #     self.EltChannel = np.asarray([], dtype=np.int32)
-    #     self.EltRibbon = np.asarray([], dtype=np.int32)
-    #     self.EltCrack = np.asarray([], dtype=np.int32)
-    #
-    #     # lists for tip elements
-    #     self.ZeroVertex = np.asarray([], dtype=np.int8)
-    #     self.EltTip = np.asarray([], dtype=np.int32)
-    #     self.alpha = np.asarray([], dtype=np.float64)
-    #     self.FillF = np.asarray([], dtype=np.float64)
-    #     self.l = np.asarray([], dtype=np.float64)
-    #     self.v = np.asarray([], dtype=np.float64)
-    #
-    #
-    #     self.CellStatus = np.asarray([], dtype=np.int8)
-    #     self.initRad = 0.0
-    #     self.initTime = 0.0
-    #     self.sgndDist = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
-    #
-    #     (self.LeakedOff, self.Trrival) = (np.zeros((mesh.NumberOfElts,), dtype=np.float64), [])
-    #     self.InCrack = []
-    #     self.FractEvol = np.empty((1, 4), float)
-    #     self.exitstatus = 0
-    #     self.TimeStep = 0.0
-    #     self.Ffront = []
-    #
-    #     # local viscosity at grid point  (is needed by the current scheme, could be useful as a tangent value for NL
-    #     # viscosity or case of multiple fluids....
-    #     # becareful with copy there ! WE SHOULD DO A DEEP COPY HERE TO AVOID PROBLEMS !
-    #     self.muPrime = fluid.muPrime * (np.ones((mesh.NumberOfElts), float))
-    #     self.rho = fluid.density * (np.ones((mesh.NumberOfElts), float))
-    #     # normal stress.... ( should we try to avoid this one ? )
-    #     # becareful with copy there ! WE SHOULD DO A DEEP COPY HERE TO AVOID PROBLEMS !
-    #     self.SigmaO = solid_Properties.SigmaO
-
-    #############################################
-
     def __init__(self, Mesh, initValue, initType, regime, solid, fluid, injection, simulProp):
         """ Initialize the fracture according to the given initial value and the propagation regime. Either initial 
         radius or time can be given as the initial value. The function sets up the fracture front and other fracture
@@ -163,6 +118,8 @@ class Fracture():
             self.initTime = self.time
         else:
             print('initType ' + initType + ' not supported')
+
+        warnings.filterwarnings("ignore")
 
         # level set value at middle of the elements
         phiMid = np.empty([self.mesh.NumberOfElts, 1], dtype=float)
