@@ -56,8 +56,8 @@ simulProp = SimulationParameters(tip_asymptote="U",
                                  output_time_period=0.01,
                                  plot_figure=True,
                                  save_to_disk=False,
-                                 out_file_folder=".\\Data\\Laminar", # e.g. "./Data/Laminar" for linux or mac
-                                 plot_analytical=True,
+                                 out_file_folder="..\\Data\\StressContrast", # e.g. "./Data/Laminar" for linux or mac
+                                 plot_analytical=False,
                                  tmStp_prefactor=0.4,
                                  analytical_sol="K")
 
@@ -69,7 +69,7 @@ initRad = 0.8 # initial radius of fracture
 Fr = Fracture(Mesh,
               initRad,
               'radius',
-              'K',
+              'M',
               Solid,
               Fluid,
               Injection,
