@@ -16,6 +16,8 @@ else:
     slash = "/"
 if not '..' + slash + 'src' in sys.path:
     sys.path.append('.' + slash + 'src')
+if not '.' + slash + 'src' in sys.path:
+    sys.path.append('.' + slash + 'src')
 
 # imports
 import numpy as np
