@@ -89,7 +89,7 @@ class Fracture():
         if initType == 'time':
             self.time = initValue
             if regime == 'K':
-                (self.initRad, self.p, self.w, v) = K_vertex_solution_t_given(np.mean(solid.Kprime), solid.Eprime,
+                (self.initRad, self.p, self.w, v) = K_vertex_solution_t_given(solid.Kprime, solid.Eprime,
                                                                     injection.injectionRate[1,0], self.mesh, initValue)
             elif regime == 'M':
                 (self.initRad, self.p, self.w, v) = M_vertex_solution_t_given(solid.Eprime, injection.injectionRate[1,0],
@@ -103,7 +103,7 @@ class Fracture():
         elif initType == 'radius':
             self.initRad = initValue
             if regime == 'K':
-                (self.time, self.p, self.w, v) = K_vertex_solution_r_given(np.mean(solid.Kprime), solid.Eprime,
+                (self.time, self.p, self.w, v) = K_vertex_solution_r_given(solid.Kprime, solid.Eprime,
                                                                     injection.injectionRate[1,0], self.mesh, initValue)
             elif regime == 'M':
                 (self.time, self.p, self.w, v) = M_vertex_solution_R_given(solid.Eprime, injection.injectionRate[1,0],

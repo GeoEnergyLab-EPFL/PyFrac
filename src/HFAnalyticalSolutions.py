@@ -136,17 +136,18 @@ def K_vertex_solution_r_given(Kprime, Eprime, Q0, mesh, R):
         float:                  propagation velocity
     """
 
-    t = 2 ** 0.5 * Kprime * np.pi * R ** (5 / 2) / (3 * Eprime * Q0)
-    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5) * np.ones(
+    t = 2 ** 0.5 * Kprime[mesh.CenterElts][0] * np.pi * R ** (5 / 2) / (3 * Eprime * Q0)
+    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime[mesh.CenterElts][0] ** 6 / (Eprime * Q0 * t)) ** (1 / 5) * np.ones(
         (mesh.NumberOfElts,), float)
 
     w = np.zeros((mesh.NumberOfElts,))
     rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center
     actv = np.where(rad < R) # active cells (inside fracture)
-    w[actv] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime ** 4 * t / Eprime ** 4) ** 0.2 * (1 - (rad[actv] / R) ** 2) ** 0.5
+    w[actv] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime[mesh.CenterElts][0] ** 4 * t / Eprime ** 4) ** 0.2 * (
+                                                                                        1 - (rad[actv] / R) ** 2) ** 0.5
 
     # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent (not sure about that)
-    t1 = 2 ** 0.5 * Kprime * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
+    t1 = 2 ** 0.5 * Kprime[mesh.CenterElts][0] * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
     v = 0.01 * R / (t1 - t)
     return (t, p, w, v)
 
@@ -170,17 +171,18 @@ def K_vertex_solution_t_given(Kprime, Eprime, Q0, mesh, t):
         float:                  propagation velocity
     """
 
-    R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
-    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5)* np.ones(
+    R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime[mesh.CenterElts][0]) ** 0.4
+    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime[mesh.CenterElts][0] ** 6 / (Eprime * Q0 * t)) ** (1 / 5)* np.ones(
         (mesh.NumberOfElts,), float)
 
     w = np.zeros((mesh.NumberOfElts,))
     rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center
     actv = np.where(rad < R) # active cells (inside fracture)
-    w[actv] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime ** 4 * t / Eprime ** 4) ** 0.2 * (1 - (rad[actv] / R) ** 2) ** 0.5
+    w[actv] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime[mesh.CenterElts][0] ** 4 * t / Eprime ** 4) ** 0.2 * (
+                                                                                        1 - (rad[actv] / R) ** 2) ** 0.5
 
     # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent (not sure about that)
-    t1 = 2 ** 0.5 * Kprime * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
+    t1 = 2 ** 0.5 * Kprime[mesh.CenterElts][0] * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
     v = 0.01 * R / (t1 - t)
     return (R, p, w, v)
 

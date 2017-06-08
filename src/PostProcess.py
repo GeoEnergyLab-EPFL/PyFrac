@@ -140,7 +140,7 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
                                                                  Fr.mesh,
                                                                  Fr.time)
             elif regime == "K":
-                (R_a, p_a, w_a, v_a) = K_vertex_solution_t_given(solid.Kprime[injection.source_location],
+                (R_a, p_a, w_a, v_a) = K_vertex_solution_t_given(solid.Kprime,
                                                                  solid.Eprime,
                                                                  injection.injectionRate[1, 0],
                                                                  Fr.mesh,
