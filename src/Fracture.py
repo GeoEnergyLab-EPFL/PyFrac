@@ -60,10 +60,10 @@ class Fracture():
             FractEvol (ndarray-float):  array containing the coordinates of the individual fracture front lines;
                                         used for printing fracture evolution through time
             InCrack (ndarray-int):      array specifying whether the cell is inside or outside the fracture.
-            
-                                            
+            Front                       array of with x,y locations of the intersection of the fracture front with the background mesh edges
+            Volume                      real - fracture volume
+                                 
         functions:
-            initialize_radial_Fracture:   set initial conditions of a radial fracture to start simulation
             plot_fracture:               plot given variable of the fracture
             PrintFractureTrace:         plot current regions and front position of the fracture
 
@@ -308,7 +308,8 @@ class Fracture():
 
         # using Mtilde solution to initialize arrival time
         self.Tarrival[self.EltChannel] = (solid.Cprime[self.EltChannel] ** 2 * self.mesh.distCenter[self.EltChannel] ** 4 *
-                                          np.pi ** 4 / injection.injectionRate ** 2 / 4)
+                                          np.pi ** 4 / injection.injectionRate[1,0] ** 2 / 4)
+
         self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
         # calculate leaked off volume for the channel elements using Carter leak off (see e.g. Dontsov and Peirce, 2008)
         self.Leakedoff[self.EltChannel] = 2 * solid.Cprime[self.EltChannel] * self.mesh.EltArea * (self.time -
@@ -326,6 +327,9 @@ class Fracture():
 
         # fracture evolution data
         self.FractEvol = np.empty((1, 4), float)
+        self.process_fracture_front()
+
+        self.FractureVolume = np.sum(self.w)*(Mesh.EltArea)
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
@@ -361,7 +365,7 @@ class Fracture():
                                                     viscosity
                                                     footPrint
                 analytical (float):             radius of fracture footprint calculated analytically.
-                                                not plotted if not given.
+                                                not plotted if not given. (or Zero ?)
                 evol (boolean):                 fracture evolution plot flag. Set to true will print fracture
                                                 evolution with time.
                 identify (ndarray):             plot the cells in the provided list with cell number and different color
@@ -405,6 +409,98 @@ class Fracture():
 
     ######################################
 
+    def process_fracture_front(self):
+        """ process fracture front and different regions of the fracture
+            Arguments:
+                 
+        """
+        # list of points where fracture front is intersecting the grid lines. 
+        intrsct1 = np.zeros((2, len(self.l)))
+        intrsct2 = np.zeros((2, len(self.l)))
+
+        # todo: commenting print_fracture_trace function
+
+        for i in range(0, len(self.l)):
+            if self.alpha[i] != 0 and self.alpha[i] != math.pi / 2: # for angles greater than zero and less than 90 deg
+                # calculate intercept on y axis and gradient
+                yIntrcpt = self.l[i] / math.cos(math.pi / 2 - self.alpha[i])
+                grad = -1 / math.tan(self.alpha[i])
+
+                if Pdistance(0, self.mesh.hy, grad, yIntrcpt) <= 0:
+                    # one point on top horizontal line of the cell
+                    intrsct1[0, i] = 0
+                    intrsct1[1, i] = yIntrcpt
+                else:
+                    # one point on left vertical line of the cell
+                    intrsct1[0, i] = (self.mesh.hy - yIntrcpt) / grad
+                    intrsct1[1, i] = self.mesh.hy
+
+                if Pdistance(self.mesh.hx, 0, grad, yIntrcpt) <= 0:
+                    intrsct2[0, i] = -yIntrcpt / grad
+                    intrsct2[1, i] = 0
+                else:
+                    intrsct2[0, i] = self.mesh.hx
+                    intrsct2[1, i] = yIntrcpt + grad * self.mesh.hx
+
+            if self.alpha[i] == 0:
+                intrsct1[0, i] = self.l[i]
+                intrsct1[1, i] = self.mesh.hy
+                intrsct2[0, i] = self.l[i]
+                intrsct2[1, i] = 0
+
+            if self.alpha[i] == math.pi / 2:
+                intrsct1[0, i] = 0
+                intrsct1[1, i] = self.l[i]
+                intrsct2[0, i] = self.mesh.hx
+                intrsct2[1, i] = self.l[i]
+
+            if self.ZeroVertex[i] == 0:
+                intrsct1[0, i] = intrsct1[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct1[1, i] = intrsct1[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+                intrsct2[0, i] = intrsct2[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct2[1, i] = intrsct2[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+
+            if self.ZeroVertex[i] == 1:
+                intrsct1[0, i] = -intrsct1[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct1[1, i] = intrsct1[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+                intrsct2[0, i] = -intrsct2[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct2[1, i] = intrsct2[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+
+            if self.ZeroVertex[i] == 3:
+                intrsct1[0, i] = intrsct1[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct1[1, i] = -intrsct1[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+                intrsct2[0, i] = intrsct2[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct2[1, i] = -intrsct2[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+
+            if self.ZeroVertex[i] == 2:
+                intrsct1[0, i] = -intrsct1[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct1[1, i] = -intrsct1[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+                intrsct2[0, i] = -intrsct2[0, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
+                intrsct2[1, i] = -intrsct2[1, i] + self.mesh.VertexCoor[
+                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+
+        tmp = np.transpose(intrsct1)
+        tmp = np.hstack((tmp, np.transpose(intrsct2)))
+
+        self.Front=tmp
+
+
+    #-------------------------------------------------------------------------------------------------------------------
     def print_fracture_trace(self, rAnalytical, evol, identify, mat_properties):
         """ Print fracture front and different regions of the fracture
             Arguments:
@@ -414,7 +510,7 @@ class Fracture():
                 Mat_Properties :: solid material properties object (containing the sigma0 on each element)
 
         """
-        # list of points where fracture front is intersecting the grid lines. 
+        # list of points where fracture front is intersecting the grid lines.
         intrsct1 = np.zeros((2, len(self.l)))
         intrsct2 = np.zeros((2, len(self.l)))
 

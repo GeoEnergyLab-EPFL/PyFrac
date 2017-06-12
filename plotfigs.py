@@ -14,3 +14,4 @@ fig_wdth, fig_radius, fig_pressure = plot_data(".\Data\LamFine", fig_w_cntr=fig_
 
 plt.show()
 
+

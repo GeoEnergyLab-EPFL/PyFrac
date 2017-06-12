@@ -37,14 +37,14 @@ K_Ic = 1e6
 
 sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
 # high stressed layers
-# stressed_layer = np.where(abs(Mesh.CenterCoor[:,1]) > 1.5-Mesh.hx/2)[0]
-# sigma0[stressed_layer] = 7e6
+stressed_layer = np.where(abs(Mesh.CenterCoor[:,1]) > 1.5-Mesh.hx/2)[0]
+sigma0[stressed_layer] = 7e6
 
 d_grain = 1e-5
 Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, d_grain, Mesh)
 
 # injection parameters
-Q0 = 0.09  # injection rate
+Q0 = 0.001  # injection rate
 well_location = np.array([0., 0.])
 Injection = InjectionProperties(Q0, well_location, Mesh)
 
@@ -75,9 +75,10 @@ Fr = Fracture(Mesh,
               simulProp)
 
 
-# elasticity matrix
+# load elasticity matrix
 C = load_elasticity_matrix(Mesh, Solid.Eprime)
 
+simulProp.maxTimeSteps=20
 # starting time stepping loop
 i = 0
 Fr_k = Fr

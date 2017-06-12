@@ -546,9 +546,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     Fr_kplus1.w[EltsTipNew] = wTip
 
     # check if the new width is valid
-    if np.isnan(Fr_kplus1.w).any() or (Fr_kplus1.w < 0).any():
+    if np.isnan(Fr_kplus1.w).any()  :
         exitstatus = 5
         return exitstatus, None
+
+    if (Fr_kplus1.w < 0).any():  #todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
+        print(repr(np.where((Fr_kplus1.w < 0))))
+        print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
+#        exitstatus = 5
+#        return exitstatus, None
 
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
@@ -567,6 +573,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     Fr_kplus1.v = Vel_k[partlyFilledTip]
 
     Fr_kplus1.InCrack = InCrack_k
+
+    Fr_kplus1.process_fracture_front()
+    Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
 
     # # check if the tip has laminar flow, to be consistent with tip asymptote.
     # ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, Fluid_properties, return_ReyNumb=True)

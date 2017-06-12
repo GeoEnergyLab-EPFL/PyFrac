@@ -468,7 +468,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
         k = k + 1
 
         if k == maxitr:  # returns nan as solution if does not converge
-            print('Picard iteration not converged after ' + repr(maxitr) + ' iterations')
+            print('Picard iteration not converged after ' + repr(maxitr) + ' iterations, norm:' + repr(norm))
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             return solk, None
 

@@ -15,6 +15,10 @@ import pickle
 
 from src.VolIntegral import Pdistance
 
+import matplotlib
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
+
 
 def radius_level_set(xy, R):
     """
@@ -98,14 +102,10 @@ def PrintDomain(Elem, Matrix, mesh):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical, mat_properties, Identify):
+def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical, mat_properties, Identify,colormap=cm.jet,color='None'):
     """
     Plot fracture trace and different regions of fracture
     """
-
-    import matplotlib
-    from matplotlib.patches import Polygon
-    from matplotlib.collections import PatchCollection
 
     fig, ax = plt.subplots()
     ax.set_xlim([-Mesh.Lx, Mesh.Lx])
@@ -115,7 +115,8 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
     for i in range(Mesh.NumberOfElts):
         polygon = Polygon(np.reshape(Mesh.VertexCoor[Mesh.Connectivity[i], :], (4, 2)), True)
         patches.append(polygon)
-    p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.5, edgecolor="k")
+
+    p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color)
 
     # todo: A proper mechanism to mark element with different material properties has to be looked into
     # marking those elements that have sigmaO or toughness different than the sigmaO or toughness at the center
@@ -126,7 +127,7 @@ def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical
 
     # applying different colors for different types of elements
     colors = 100. * np.full(len(patches), 0.4)
-    colors[markedElts] = 50
+    colors[:] =  100. * (mat_properties.SigmaO) / (np.max(mat_properties.SigmaO))
     colors[EltTip] = 70.
     colors[EltChannel] = 10.
     colors[EltRibbon] = 90.

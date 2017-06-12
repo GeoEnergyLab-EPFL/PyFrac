@@ -240,7 +240,7 @@ class SimulationParameters:
         self.plotEvolution = plot_evolution
         # check operating system to get appropriate slash in the address
         import sys
-        if "win" in sys.platform:
+        if "wind" in sys.platform:
             slash = "\\"
         else:
             slash = "/"
