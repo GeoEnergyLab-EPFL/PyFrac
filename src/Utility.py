@@ -101,68 +101,6 @@ def PrintDomain(Elem, Matrix, mesh):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-def PlotMeshFractureTrace(Mesh, EltTip, EltChannel, EltRibbon, I, J, Ranalytical, mat_properties, Identify,colormap=cm.jet,color='None'):
-    """
-    Plot fracture trace and different regions of fracture
-    """
-
-    fig, ax = plt.subplots()
-    ax.set_xlim([-Mesh.Lx, Mesh.Lx])
-    ax.set_ylim([-Mesh.Ly, Mesh.Ly])
-
-    patches = []
-    for i in range(Mesh.NumberOfElts):
-        polygon = Polygon(np.reshape(Mesh.VertexCoor[Mesh.Connectivity[i], :], (4, 2)), True)
-        patches.append(polygon)
-
-    p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color)
-
-    # todo: A proper mechanism to mark element with different material properties has to be looked into
-    # marking those elements that have sigmaO or toughness different than the sigmaO or toughness at the center
-    markedElts = []
-    if mat_properties != None:
-        markedElts = np.where(mat_properties.SigmaO != np.mean(mat_properties.SigmaO[Mesh.CenterElts]))
-        markedElts = np.append(markedElts, np.where(mat_properties.K1c != np.mean(mat_properties.K1c[Mesh.CenterElts])))
-
-    # applying different colors for different types of elements
-    colors = 100. * np.full(len(patches), 0.4)
-    colors[:] =  100. * (mat_properties.SigmaO) / (np.max(mat_properties.SigmaO))
-    colors[EltTip] = 70.
-    colors[EltChannel] = 10.
-    colors[EltRibbon] = 90.
-    colors[Identify] = 0.
-
-    p.set_array(np.array(colors))
-    ax.add_collection(p)
-
-    # Plot the analytical solution
-    if Ranalytical>0.:
-        circle = plt.Circle((0, 0), radius=Ranalytical)
-        circle.set_ec('r')
-        circle.set_fill(False)
-        ax.add_patch(circle)
-
-    # print Element numbers on the plot for elements to be identified
-    for i in range(len(Identify)):
-        ax.text(Mesh.CenterCoor[Identify[i], 0] - Mesh.hx / 4, Mesh.CenterCoor[Identify[i], 1] - Mesh.hy / 4,
-                repr(Identify[i]), fontsize=10)
-
-    #todo !!!Hack: gets very large values sometime, needs to be resolved
-    for e in range(0, len(I)):
-        if max(abs(I[e, :] - J[e, :])) < 3 * (Mesh.hx ** 2 + Mesh.hy ** 2) ** 0.5: # if
-            plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '.-k')
-
-    plt.axis('equal')
-
-    # maximize the plot window
-    # mng = plt.get_current_fig_manager()
-    # mng.window.showMaximized()
-
-    return fig
-
-
-# ----------------------------------------------------------------------------------------------------------------------
 def plot_Reynolds_number(Fr, ReyNum, edge):
 
     # figr = Fr.plot_fracture("complete", "footPrint")

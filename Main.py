@@ -54,9 +54,9 @@ Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 # simulation properties
 simulProp = SimulationParameters(tip_asymptote="U",
                                  output_time_period=0.02,
-                                 plot_figure=True,
+                                 plot_figure=False,
                                  save_to_disk=True,
-                                 out_file_folder=".\\Data\\Laminar", # e.g. "./Data/Laminar" for linux or mac
+                                 out_file_folder=".\\Data\\Test", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
                                  tmStp_prefactor=0.4)
 

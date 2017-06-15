@@ -349,7 +349,7 @@ class Fracture():
 
     ###############################################################################
 
-    def plot_fracture(self, Elem_Identifier, Parameter_Identifier, analytical=0, evol=False, identify=[], mat_Properties=None):
+    def plot_fracture(self, Elem_Identifier, Parameter_Identifier, analytical=0, identify=[], mat_Properties=None):
         """
         Plots the given parameter of the specified  cells;
         
@@ -396,7 +396,7 @@ class Fracture():
         elif Parameter_Identifier == 'muPrime':
             values[Elts] = self.muPrime[Elts]
         elif Parameter_Identifier == 'footPrint':
-            fig = self.print_fracture_trace(analytical, evol, identify, mat_Properties)
+            fig = self.print_fracture_trace(analytical, identify, mat_Properties)
             return fig
         else:
             print('invalid parameter identifier')
@@ -497,113 +497,77 @@ class Fracture():
         tmp = np.transpose(intrsct1)
         tmp = np.hstack((tmp, np.transpose(intrsct2)))
 
-        self.Front=tmp
+        self.Ffront=tmp
 
 
     #-------------------------------------------------------------------------------------------------------------------
-    def print_fracture_trace(self, rAnalytical, evol, identify, mat_properties):
+    def print_fracture_trace(self, rAnalytical, identify, mat_properties, colormap=cm.jet, color='None'):
         """ Print fracture front and different regions of the fracture
             Arguments:
                 rAnalytical (float):    radius of fracture footprint calculated analytically
-                evol (boolean):         print fracture evolution flag (see plot_fracture function)
-                identify (ndarray):     list of cells to be identified (see plot_fracture function)
-                Mat_Properties :: solid material properties object (containing the sigma0 on each element)
+                identify (ndarray):     list of elements to be identified (see plot_fracture function)
+                Mat_Properties :        solid material properties object (containing the sigma0 on each element)
 
         """
-        # list of points where fracture front is intersecting the grid lines.
-        intrsct1 = np.zeros((2, len(self.l)))
-        intrsct2 = np.zeros((2, len(self.l)))
 
-        # todo: commenting print_fracture_trace function
 
-        for i in range(0, len(self.l)):
-            if self.alpha[i] != 0 and self.alpha[i] != math.pi / 2: # for angles greater than zero and less than 90 deg
-                # calculate intercept on y axis and gradient
-                yIntrcpt = self.l[i] / math.cos(math.pi / 2 - self.alpha[i])
-                grad = -1 / math.tan(self.alpha[i])
+        fig, ax = plt.subplots()
+        ax.set_xlim([-self.mesh.Lx, self.mesh.Lx])
+        ax.set_ylim([-self.mesh.Ly, self.mesh.Ly])
 
-                if Pdistance(0, self.mesh.hy, grad, yIntrcpt) <= 0:
-                    # one point on top horizontal line of the cell
-                    intrsct1[0, i] = 0
-                    intrsct1[1, i] = yIntrcpt
-                else:
-                    # one point on left vertical line of the cell
-                    intrsct1[0, i] = (self.mesh.hy - yIntrcpt) / grad
-                    intrsct1[1, i] = self.mesh.hy
+        patches = []
+        for i in range(self.mesh.NumberOfElts):
+            polygon = Polygon(np.reshape(self.mesh.VertexCoor[self.mesh.Connectivity[i], :], (4, 2)), True)
+            patches.append(polygon)
 
-                if Pdistance(self.mesh.hx, 0, grad, yIntrcpt) <= 0:
-                    intrsct2[0, i] = -yIntrcpt / grad
-                    intrsct2[1, i] = 0
-                else:
-                    intrsct2[0, i] = self.mesh.hx
-                    intrsct2[1, i] = yIntrcpt + grad * self.mesh.hx
+        p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color)
 
-            if self.alpha[i] == 0:
-                intrsct1[0, i] = self.l[i]
-                intrsct1[1, i] = self.mesh.hy
-                intrsct2[0, i] = self.l[i]
-                intrsct2[1, i] = 0
+        # todo: A proper mechanism to mark element with different material properties has to be looked into
+        # marking those elements that have sigmaO or toughness different than the sigmaO or toughness at the center
+        markedElts = []
 
-            if self.alpha[i] == math.pi / 2:
-                intrsct1[0, i] = 0
-                intrsct1[1, i] = self.l[i]
-                intrsct2[0, i] = self.mesh.hx
-                intrsct2[1, i] = self.l[i]
 
-            if self.ZeroVertex[i] == 0:
-                intrsct1[0, i] = intrsct1[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct1[1, i] = intrsct1[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
-                intrsct2[0, i] = intrsct2[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct2[1, i] = intrsct2[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+        # applying different colors for different types of elements
+        colors = 100. * np.full(len(patches), 0.4)
+        colors[self.EltTip] = 70.
+        colors[self.EltChannel] = 10.
+        colors[self.EltRibbon] = 90.
+        colors[identify] = 0.
 
-            if self.ZeroVertex[i] == 1:
-                intrsct1[0, i] = -intrsct1[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct1[1, i] = intrsct1[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
-                intrsct2[0, i] = -intrsct2[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct2[1, i] = intrsct2[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+        if mat_properties != None:
+            colors[:] = 100. * (mat_properties.SigmaO) / (np.max(mat_properties.SigmaO))
+            
+        p.set_array(np.array(colors))
+        ax.add_collection(p)
 
-            if self.ZeroVertex[i] == 3:
-                intrsct1[0, i] = intrsct1[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct1[1, i] = -intrsct1[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
-                intrsct2[0, i] = intrsct2[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct2[1, i] = -intrsct2[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+        # Plot the analytical solution
+        if rAnalytical > 0.:
+            circle = plt.Circle((0, 0), radius=rAnalytical)
+            circle.set_ec('r')
+            circle.set_fill(False)
+            ax.add_patch(circle)
 
-            if self.ZeroVertex[i] == 2:
-                intrsct1[0, i] = -intrsct1[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct1[1, i] = -intrsct1[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
-                intrsct2[0, i] = -intrsct2[0, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 0]
-                intrsct2[1, i] = -intrsct2[1, i] + self.mesh.VertexCoor[
-                    self.mesh.Connectivity[self.EltTip[i], self.ZeroVertex[i]], 1]
+        # print Element numbers on the plot for elements to be identified
+        for i in range(len(identify)):
+            ax.text(self.mesh.CenterCoor[identify[i], 0] - self.mesh.hx / 4, self.mesh.CenterCoor[identify[i], 1] - self.mesh.hy / 4,
+                    repr(identify[i]), fontsize=10)
 
-        tmp = np.transpose(intrsct1)
-        tmp = np.hstack((tmp, np.transpose(intrsct2)))
-        if evol:
-            # append the current fracture lines to the fracture evolution data
-            self.FractEvol = np.vstack((self.FractEvol, tmp))
-            fig = PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, self.FractEvol[:, 0:2],
-                                  self.FractEvol[:, 2:4], rAnalytical, mat_properties, identify)
-        else:
-            fig = PlotMeshFractureTrace(self.mesh, self.EltTip, self.EltChannel, self.EltRibbon, tmp[:, 0:2], tmp[:, 2:4],
-                                  rAnalytical, mat_properties, identify)
+        I = self.Ffront[:, 0:2]
+        J = self.Ffront[:, 2:4]
+        # todo !!!Hack: gets very large values sometime, needs to be resolved
+        for e in range(0, len(I)):
+            if max(abs(I[e, :] - J[e, :])) < 3 * (self.mesh.hx ** 2 + self.mesh.hy ** 2) ** 0.5:  # if
+                plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '.-k')
+
+        plt.axis('equal')
+
+        # maximize the plot window
+        # mng = plt.get_current_fig_manager()
+        # mng.window.showMaximized()
+
         return fig
 
-
-    #-------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 
     def SaveFracture(self, filename):
         with open(filename, 'wb') as output:
