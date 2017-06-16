@@ -18,8 +18,9 @@ from src.Properties import *
 from src.Utility import *
 
 
-def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig_w_cntr=None, plot_r=True, fig_r=None,
-              plot_p_cntr=False, fig_p_cntr=None, maxFiles=150, loglog=True, plot_w_prfl=False, plot_p_prfl=False):
+def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig_w_cntr=None, plot_r=True,
+                     fig_r=None, plot_p_cntr=False, fig_p_cntr=None, maxFiles=150, loglog=True, plot_w_prfl=False,
+                     plot_p_prfl=False):
     """
     This function reads the saved files in the given folder and plots the figures that are enabled. Analytical solutions
     according to the given regime can also be plotted along with the numerical solution read from the saved files.
@@ -64,7 +65,9 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
     else:
         slash = "/"
 
-    filename = address + slash + "properties"
+    if not slash in address[-2:]:
+        address = address + slash
+    filename = address + "properties"
     try:
         with open(filename, 'rb') as input:
             (solid, fluid, injection, simulProp) = pickle.load(input)
@@ -257,4 +260,5 @@ def plot_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig
     else:
         fig_p_prfl = None
 
+    plt.show()
     return fig_w_cntr, fig_r, fig_p_cntr

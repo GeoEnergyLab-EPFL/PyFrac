@@ -19,7 +19,7 @@ class MaterialProperties:
 
     instance variables:
         Eprime (float)          : plain strain modulus
-        K1c (ndarray-float)     : Linear-Elastic Plane-Strain Fracture Toughness for each cell
+        K1c (ndarray-float)     : Linear-Elastic Plane-Strain Toughness for each cell
         Kprime (ndarray-float)  : 4*(2/pi)**0.5 * K1c 
         Cprime (ndarray-float)  : 2 * Carter's leak off coefficient
         SigmaO (ndarray-float)  : in-situ stress field
@@ -202,9 +202,9 @@ class SimulationParameters:
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
-                 tmStp_prefactor=0.4, tip_asymptote='U', final_time=1000., maximum_steps=1000, max_reattemps = 5,
-                 reattempt_factor = 0.8, output_time_period = np.inf, plot_figure = False, save_to_disk = False,
-                 out_file_folder = "None", plot_analytical = False, analytical_sol = "M", plot_evolution=True):
+                 tmStp_prefactor=0.4, time_series=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
+                 max_reattemps = 5, reattempt_factor = 0.8, output_time_period = 1e-10, plot_figure = False,
+                 save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M"):
         """
         
         The constructor of the SimulationParameters class. See documentation of the class.
@@ -228,6 +228,11 @@ class SimulationParameters:
         self.maxSolverItr = max_itr_solver
         self.maxReattempts = max_reattemps
         self.reAttemptFactor = reattempt_factor
+        if isinstance(time_series, np.ndarray):
+            self.timeSeries = np.append(time_series, self.FinalTime)
+
+        else:
+            self.timeSeries = np.asarray([self.FinalTime], dtype=np.float64)
 
         # output parameters
         self.outputTimePeriod = output_time_period
@@ -237,10 +242,10 @@ class SimulationParameters:
             self.analyticalSol = analytical_sol
 
         self.saveToDisk = save_to_disk
-        self.plotEvolution = plot_evolution
+
         # check operating system to get appropriate slash in the address
         import sys
-        if "wind" in sys.platform:
+        if "win32" in sys.platform or "win64" in sys.platform:
             slash = "\\"
         else:
             slash = "/"

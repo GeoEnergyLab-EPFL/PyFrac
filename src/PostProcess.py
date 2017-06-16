@@ -10,7 +10,7 @@
 
 # adding src folder to the path
 import sys
-if "wind" in sys.platform:
+if "win32" in sys.platform or "win64" in sys.platform:
     slash = "\\"
 else:
     slash = "/"
@@ -34,7 +34,7 @@ from matplotlib.animation import FuncAnimation
 
 
 
-def animate_simulation_results(address, time_period= 0.0, colormap=cm.jet, edge_color = 'None', Interval=400,
+def animate_simulation_results(address, time_period= 0.0, time_series=None, colormap=cm.jet, edge_color = '0.5', Interval=400,
                                Repeat=None, maxFiles=1000 ):
     """
     This function plays an animation of the evolution of fracture with time. See the arguments list for options
@@ -52,17 +52,11 @@ def animate_simulation_results(address, time_period= 0.0, colormap=cm.jet, edge_
 
     """
 
-    if "win32" in sys.platform or "win64" in sys.platform:
-        slash = "\\"
-    else:
-        slash = "/"
-    if not '..' + slash + 'src' in sys.path:
-        sys.path.append('.' + slash + 'src')
-    if not '.' + slash + 'src' in sys.path:
-        sys.path.append('.' + slash + 'src')
+    if not slash in address[-2:]:
+        address = address + slash
 
     # read properties
-    filename = address + slash + "properties"
+    filename = address + "properties"
     try:
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
@@ -73,19 +67,32 @@ def animate_simulation_results(address, time_period= 0.0, colormap=cm.jet, edge_
     fileNo = 0
     fraclist = [];
     nxt_plt_t = 0.0
+    t_srs_indx = 0
+    t_srs_given = isinstance(time_series, np.ndarray)
+    if t_srs_given:
+        nxt_plt_t = time_series[t_srs_indx]
+
     while fileNo < maxFiles:
 
         # trying to load next file. exit loop if not found
         try:
-            ff = ReadFracture(address + slash + "file_" + repr(fileNo))
+            ff = ReadFracture(address + "file_" + repr(fileNo))
         except FileNotFoundError:
             break
         fileNo+=1
 
-        if ff.time >= nxt_plt_t:
+        if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
             fraclist.append(ff)
-            nxt_plt_t = ff.time + time_period
+
+            if t_srs_given:
+                if t_srs_indx < len(time_series) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = time_series[t_srs_indx]
+                if ff.time > max(time_series):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
 
     #todo mesh seperate from fracture
     Mesh = ff.mesh   # because Mesh is not stored in a separate file for now
@@ -100,7 +107,7 @@ def animate_simulation_results(address, time_period= 0.0, colormap=cm.jet, edge_
         polygon = Polygon(np.reshape(Mesh.VertexCoor[Mesh.Connectivity[i], :], (4, 2)), True)
         patches.append(polygon)
 
-    p = PatchCollection(patches, cmap=colormap, alpha=0.7, edgecolor=edge_color)
+    p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=edge_color)
 
     # applying different colors for different types of elements
     # todo needs to be done properly

@@ -333,7 +333,7 @@ class Fracture():
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
-            fig = self.plot_fracture('complete', 'footPrint', evol=simulProp.plotEvolution, mat_Properties=solid)
+            fig = self.plot_fracture('complete', 'footPrint', mat_Properties=solid)
             plt.show()
 
         if simulProp.saveToDisk:
@@ -501,7 +501,7 @@ class Fracture():
 
 
     #-------------------------------------------------------------------------------------------------------------------
-    def print_fracture_trace(self, rAnalytical, identify, mat_properties, colormap=cm.jet, color='None'):
+    def print_fracture_trace(self, rAnalytical, identify, mat_properties, colormap=cm.jet, color='0.5'):
         """ Print fracture front and different regions of the fracture
             Arguments:
                 rAnalytical (float):    radius of fracture footprint calculated analytically

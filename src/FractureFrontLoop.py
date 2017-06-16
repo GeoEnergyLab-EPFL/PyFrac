@@ -624,12 +624,10 @@ def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties,
                 fig = Fr_advanced.plot_fracture('complete',
                                                 'footPrint',
                                                 analytical=R,
-                                                evol=simulation_parameters.plotEvolution,
                                                 mat_Properties=material_properties)
             else:
                 fig = Fr_advanced.plot_fracture('complete',
                                                 'footPrint',
-                                                evol=simulation_parameters.plotEvolution,
                                                 mat_Properties = material_properties)
             plt.show()
 
