@@ -27,7 +27,7 @@ class Controller:
         tmSrs_indx = 0
         next_in_tmSrs = self.sim_prop.timeSeries[tmSrs_indx]
         if next_in_tmSrs < Fr_k.time:
-            raise SystemExit('The time given in time series is less than initial time.')
+            raise SystemExit('The minimum time required in the given time series is less than initial time.')
 
         while (Fr_k.time < self.sim_prop.FinalTime) and (i < self.sim_prop.maxTimeSteps):
             i = i + 1

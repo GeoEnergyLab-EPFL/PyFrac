@@ -228,9 +228,10 @@ class SimulationParameters:
         self.maxSolverItr = max_itr_solver
         self.maxReattempts = max_reattemps
         self.reAttemptFactor = reattempt_factor
-        if isinstance(time_series, np.ndarray):
-            self.timeSeries = np.append(time_series, self.FinalTime)
 
+        if isinstance(time_series, np.ndarray):
+            self.timeSeries = time_series
+            self.FinalTime = max(time_series)
         else:
             self.timeSeries = np.asarray([self.FinalTime], dtype=np.float64)
 

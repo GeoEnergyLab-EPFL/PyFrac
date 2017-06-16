@@ -122,10 +122,16 @@ def animate_simulation_results(address, time_period= 0.0, time_series=None, colo
 
     args = (fraclist, fileNo)
     # animate fracture
-    animation = FuncAnimation(fig, update, fargs=args, frames=len(fraclist), interval=Interval, repeat=Repeat)  # ,extra_args=['-vcodec', 'libxvid']
-    plt.show()
-    # animation.save(address + slash +'Footprint-evol.mp4', metadata={'copyright':'EPFL - GeoEnergy Lab'})
+    animation = FuncAnimation(fig,
+                              update,
+                              fargs=args,
+                              frames=len(fraclist),
+                              interval=Interval,
+                              repeat=Repeat,
+                              repeat_delay=1000)  # ,extra_args=['-vcodec', 'libxvid']
 
+    # animation.save(address + 'Footprint-evol.mp4', metadata={'copyright':'EPFL - GeoEnergy Lab'})
+    plt.show()
 
 def update(frame, *args):
     """
