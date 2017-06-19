@@ -85,6 +85,7 @@ class Fracture():
                                             M   -- indicating viscosity dominated regime, without leak off
                                             Mt  -- indicating viscosity dominated regime, with leak off
         """
+
         self.mesh = Mesh
         if initType == 'time':
             self.time = initValue
@@ -119,7 +120,7 @@ class Fracture():
         else:
             print('initType ' + initType + ' not supported')
 
-        warnings.filterwarnings("ignore")
+
 
         # level set value at middle of the elements
         phiMid = np.empty([self.mesh.NumberOfElts, 1], dtype=float)
@@ -535,7 +536,8 @@ class Fracture():
         colors[identify] = 0.
 
         if mat_properties != None:
-            colors[:] = 100. * (mat_properties.SigmaO) / (np.max(mat_properties.SigmaO))
+            colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
+            colors += -100. * (mat_properties.Kprime) / np.max(mat_properties.Kprime)
             
         p.set_array(np.array(colors))
         ax.add_collection(p)

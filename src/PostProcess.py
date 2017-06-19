@@ -34,7 +34,7 @@ from matplotlib.animation import FuncAnimation
 
 
 
-def animate_simulation_results(address, time_period= 0.0, time_series=None, colormap=cm.jet, edge_color = '0.5', Interval=400,
+def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, colormap=cm.jet, edge_color = '0.5', Interval=400,
                                Repeat=None, maxFiles=1000 ):
     """
     This function plays an animation of the evolution of fracture with time. See the arguments list for options
@@ -68,9 +68,9 @@ def animate_simulation_results(address, time_period= 0.0, time_series=None, colo
     fraclist = [];
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(time_series, np.ndarray)
+    t_srs_given = isinstance(sol_time_series, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = time_series[t_srs_indx]
+        nxt_plt_t = sol_time_series[t_srs_indx]
 
     while fileNo < maxFiles:
 
@@ -86,10 +86,10 @@ def animate_simulation_results(address, time_period= 0.0, time_series=None, colo
             fraclist.append(ff)
 
             if t_srs_given:
-                if t_srs_indx < len(time_series) - 1:
+                if t_srs_indx < len(sol_time_series) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = time_series[t_srs_indx]
-                if ff.time > max(time_series):
+                    nxt_plt_t = sol_time_series[t_srs_indx]
+                if ff.time > max(sol_time_series):
                     break
             else:
                 nxt_plt_t = ff.time + time_period

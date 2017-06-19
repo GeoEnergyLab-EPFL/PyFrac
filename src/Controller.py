@@ -25,7 +25,7 @@ class Controller:
         i = 0
         Fr_k = self.fracture
         tmSrs_indx = 0
-        next_in_tmSrs = self.sim_prop.timeSeries[tmSrs_indx]
+        next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
         if next_in_tmSrs < Fr_k.time:
             raise SystemExit('The minimum time required in the given time series is less than initial time.')
 
@@ -38,9 +38,9 @@ class Controller:
             # to get the solution at the times given in time series
             if Fr_k.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr_k.time
-                if tmSrs_indx < len(self.sim_prop.timeSeries)-1:
+                if tmSrs_indx < len(self.sim_prop.solTimeSeries)-1:
                     tmSrs_indx += 1
-                next_in_tmSrs = self.sim_prop.timeSeries[tmSrs_indx]
+                next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
 
 
             status, Fr_k = advance_time_step(Fr_k,

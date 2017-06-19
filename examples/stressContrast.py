@@ -31,7 +31,7 @@ from src.PostProcess import animate_simulation_results
 from src.PostProcessRadial import plot_radial_data
 
 # creating mesh
-Mesh = CartesianMesh(.1,.1,40,40)
+Mesh = CartesianMesh(.1,.1,41,41)
 
 # solid properties
 nu = 0.4
@@ -64,9 +64,9 @@ simulProp = SimulationParameters(tip_asymptote="U",
                                  out_file_folder=".\\Data\\stressContrast", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=False,
                                  tmStp_prefactor=0.8,
-                                 time_series=req_sol_time)
+                                 req_sol_at=req_sol_time)
 
-animate_simulation_results(simulProp.outFileAddress, time_series=simulProp.timeSeries)
+
 # initializing fracture
 initRad = 0.02 # initial radius of fracture
 
@@ -88,4 +88,4 @@ controller = Controller(Fr, Solid, Fluid, Injection, simulProp)
 controller.run()
 
 # plot fracture evolution
-animate_simulation_results(simulProp.outFileAddress,time_series=simulProp.timeSeries)
+animate_simulation_results(simulProp.outFileAddress, time_series=simulProp.solTimeSeries)

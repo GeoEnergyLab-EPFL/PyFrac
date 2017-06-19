@@ -16,7 +16,7 @@ notably for
 # imports
 import numpy as np
 from scipy import interpolate
-
+import warnings
 
 # ----------------------------------------------------
 def M_vertex_solution_R_given(Eprime, Q0, muPrime, Mesh, R):
@@ -58,9 +58,12 @@ def M_vertex_solution_R_given(Eprime, Q0, muPrime, Mesh, R):
     59675 * var1 ** 4) / 3888) + 0.102366 * var2 ** (2 / 3) * (1 / 3 + 13 / 3 * (-1 + 2 * rho[actv])) + 0.237267 * (
     (1 - rho[actv] ** 2) ** 0.5 - rho[actv] * np.arccos(rho[actv])))
 
+    warnings.filterwarnings("ignore")
+
     p[actv] = (0.0931746 * Eprime ** (2 / 3) * muPrime ** (1 / 3) * (
     -2.20161 + 8.81828 * (1 - rho[actv]) ** (1 / 3) - 0.0195787 * rho[actv] - 0.171565 * rho[actv] ** 2 - 0.103558 *
     rho[actv] ** 3 + (1 - rho[actv]) ** (1 / 3) * np.log(1 / rho[actv]))) / (t ** (1 / 3) * (1 - rho[actv]) ** (1 / 3))
+
     # todo !!! Hack: The velocity is evaluated with time taken by the fracture to advance by one percent (not sure)
     t1 = (2.24846 * (1.01 * R) ** (9 / 4) * muPrime ** (1 / 4)) / (Eprime ** (1 / 4) * Q0 ** (3 / 4))
     v = 0.01 * R / (t1 - t)
@@ -106,6 +109,7 @@ def M_vertex_solution_t_given(Eprime, Q0, muPrime, Mesh, t):
     59675 * var1 ** 4) / 3888) + 0.102366 * var2 ** (2 / 3) * (1 / 3 + 13 / 3 * (-1 + 2 * rho[actv])) + 0.237267 * (
     (1 - rho[actv] ** 2) ** 0.5 - rho[actv] * np.arccos(rho[actv])))
 
+    warnings.filterwarnings("ignore")
     p[actv] = (0.0931746 * Eprime ** (2 / 3) * muPrime ** (1 / 3) * (
     -2.20161 + 8.81828 * (1 - rho[actv]) ** (1 / 3) - 0.0195787 * rho[actv] - 0.171565 * rho[actv] ** 2 - 0.103558 *
     rho[actv] ** 3 + (1 - rho[actv]) ** (1 / 3) * np.log(1 / rho[actv]))) / (t ** (1 / 3) * (1 - rho[actv]) ** (1 / 3))

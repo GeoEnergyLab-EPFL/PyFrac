@@ -202,7 +202,7 @@ class SimulationParameters:
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
-                 tmStp_prefactor=0.4, time_series=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
+                 tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
                  max_reattemps = 5, reattempt_factor = 0.8, output_time_period = 1e-10, plot_figure = False,
                  save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M"):
         """
@@ -229,11 +229,11 @@ class SimulationParameters:
         self.maxReattempts = max_reattemps
         self.reAttemptFactor = reattempt_factor
 
-        if isinstance(time_series, np.ndarray):
-            self.timeSeries = time_series
-            self.FinalTime = max(time_series)
+        if isinstance(req_sol_at, np.ndarray):
+            self.solTimeSeries = req_sol_at
+            self.FinalTime = max(req_sol_at)
         else:
-            self.timeSeries = np.asarray([self.FinalTime], dtype=np.float64)
+            self.solTimeSeries = np.asarray([self.FinalTime], dtype=np.float64)
 
         # output parameters
         self.outputTimePeriod = output_time_period
