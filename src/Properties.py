@@ -266,6 +266,13 @@ class SimulationParameters:
             self.outFileAddress = address + slash
             self.lastSavedFile = 0
         elif save_to_disk:
+            if "\\" in out_file_folder:
+                if slash != "\\":
+                    raise SystemExit('Windows style slash in the given address on linux system.')
+            elif "/" in out_file_folder:
+                if slash != "/":
+                    raise SystemExit('linux style slash in the given address on windows system')
+
             import os
             if not os.path.exists(out_file_folder):
                 os.makedirs(out_file_folder)

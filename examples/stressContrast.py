@@ -88,4 +88,4 @@ controller = Controller(Fr, Solid, Fluid, Injection, simulProp)
 controller.run()
 
 # plot fracture evolution
-animate_simulation_results(simulProp.outFileAddress, time_series=simulProp.solTimeSeries)
+animate_simulation_results(simulProp.outFileAddress, sol_time_series=simulProp.solTimeSeries)
