@@ -41,7 +41,7 @@ Eprime = 3.3e10 / (1 - nu ** 2)
 K_Ic = 1e6
 sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
 d_grain = 1e-5
-Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, d_grain, Mesh)
+Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0)
 
 # injection parameters
 Q0 = 0.001  # injection rate

@@ -12,7 +12,6 @@ import numpy as np
 from src.CartesianMesh import *
 
 
-# todo !!! decide where to use system exit
 class MaterialProperties:
     """
     Class defining the solid Material properties
@@ -27,7 +26,7 @@ class MaterialProperties:
     methods:
     """
 
-    def __init__(self, Eprime, Toughness, Cl, SigmaO, grain_size, Mesh):
+    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0. ):
         """
         Arguments:
             Eprime (float)          : plain strain modulus

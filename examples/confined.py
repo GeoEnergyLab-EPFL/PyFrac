@@ -45,7 +45,7 @@ sigma0[stressed_layer] = 5e6
 K_Ic[stressed_layer] = 1.1e6
 
 d_grain = 1e-5
-Solid = MaterialProperties(Eprime, K_Ic, 0., sigma0, d_grain, Mesh)
+Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0)
 
 # injection parameters
 Q0 = 0.0023*1.e-6  # injection rate
