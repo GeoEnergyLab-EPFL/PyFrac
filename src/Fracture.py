@@ -20,8 +20,6 @@ import warnings
 
 from src.Utility import *
 from src.HFAnalyticalSolutions import *
-from src.ElastoHydrodynamicSolver import *
-from src.TipInversion import *
 from src.LevelSet import *
 from src.VolIntegral import *
 from src.Properties import *

@@ -8,13 +8,8 @@ See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
-# import numdifftools as nd
-import scipy.sparse.linalg as spla
-from scipy.linalg import cho_factor
-from scipy.linalg import cho_solve
 import matplotlib.pyplot as plt
 from scipy.optimize import brentq
-
 from src.Utility import *
 from src.FluidModel import *
 

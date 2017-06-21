@@ -21,10 +21,8 @@ Functions to calculate tip volumes, given the propagation regime
 
 # imports
 import numpy as np
-from importlib.machinery import SourceFileLoader
 import matplotlib.pyplot as plt
 from scipy.optimize import brentq
-
 from src.TipInversion import f
 
 
