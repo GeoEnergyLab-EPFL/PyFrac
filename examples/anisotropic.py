@@ -21,19 +21,15 @@ if not '.' + slash + 'src' in sys.path:
 
 # imports
 import numpy as np
-from src.CartesianMesh import *
-from src.Fracture import *
-from src.LevelSet import *
-from src.VolIntegral import *
-from src.Elasticity import *
+from src.CartesianMesh import CartesianMesh
+from src.Fracture import Fracture
 from src.Properties import *
-from src.FractureFrontLoop import *
-from src.Controller import *
+from src.Controller import Controller
 from src.PostProcess import animate_simulation_results
-from src.PostProcessRadial import plot_radial_data
+
 
 # creating mesh
-Mesh = CartesianMesh(3, 3, 41, 41)
+Mesh = CartesianMesh(200, 200, 41, 41)
 
 # solid properties
 nu = 0.4
@@ -41,7 +37,9 @@ Eprime = 3.3e10 / (1 - nu ** 2)
 K_Ic = 1e6
 sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
 d_grain = 1e-5
-Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0)
+def Kprime_function(alpha):
+    return (32 / math.pi) ** 0.5 * (1e6 + 0.4e6 * np.sin(alpha))
+Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0, Kprim_func=Kprime_function, anisotropic_flag=True)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -52,26 +50,27 @@ Injection = InjectionProperties(Q0, well_location, Mesh)
 Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 
 # simulation properties
-req_sol_time = np.linspace(0.25,3.25,13)
+req_sol_time = np.linspace(2300, 45000, 11)
 simulProp = SimulationParameters(tip_asymptote="U",
                                  output_time_period=0.002,
                                  plot_figure=False,
                                  save_to_disk=True,
-                                 out_file_folder=".\\Data\\radial", # e.g. "./Data/Laminar" for linux or mac
+                                 out_file_folder=".\\Data\\anisotropic", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
                                  tmStp_prefactor=0.4,
-                                 final_time= 3.25,
+                                 final_time=44000,
+                                 analytical_sol="K",
                                  req_sol_at=req_sol_time)
 
 
 # initializing fracture
-initRad = 0.6 # initial radius of fracture
+initRad = 50 # initial radius of fracture
 
 # creating fracture object
 Fr = Fracture(Mesh,
               initRad,
               'radius',
-              'M',
+              'K',
               Solid,
               Fluid,
               Injection,
@@ -86,10 +85,6 @@ controller.run()
 
 # plot results
 animate_simulation_results(simulProp.outFileAddress, sol_time_series=simulProp.solTimeSeries)
-fig_wdth, fig_radius, fig_pressure = plot_radial_data(simulProp.outFileAddress,
-                                                        regime="M",
-                                                        loglog=True,
-                                                        plot_w_prfl=True,
-                                                        plot_p_prfl=True)
+
 
 

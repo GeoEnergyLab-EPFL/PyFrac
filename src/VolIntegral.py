@@ -178,7 +178,10 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, stagn
         stagnant = np.zeros((alpha.size,), bool)
         KIPrime = np.zeros((alpha.size,), float)
 
-    Kprime = mat_prop.Kprime[EltTip]
+    if not mat_prop.KprimeFunc is None:
+        Kprime = toughness_at_tip(EltTip, mesh, mat_prop, alpha, l)
+    else:
+        Kprime = mat_prop.Kprime[EltTip]
     muPrimeTip = muPrime[EltTip]
     Cprime = mat_prop.Cprime[EltTip]
 
@@ -267,3 +270,12 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
             raise SystemExit('fracture width bracket cannot be found within 50 iterations')
 
     return (a, b)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def toughness_at_tip(elts, mesh, mat_prop, alpha, l):
+    if mat_prop.anisotropic:
+        return mat_prop.KprimeFunc(alpha)
+    else:
+        # todo
+        return

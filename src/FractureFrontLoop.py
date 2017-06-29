@@ -13,6 +13,7 @@ from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
 from src.HFAnalyticalSolutions import *
 import copy
+import warnings
 
 errorMessages = ("Propagated not attempted",
                  "Time step successful",
@@ -332,42 +333,71 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                     
         Fracture object:            fracture after advancing time step. 
     """
-    # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-    sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with very high
-    # float value. (algorithm requires inf)
-    sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
+    norm_lvlSet = 1
+    itr = 1
+    sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
+    Kprime = 1e6*np.ones((Fr_lstTmStp.EltRibbon.size,),dtype=np.float64)
 
-    # Tip asymptote inversion
-    sgndDist_k[Fr_lstTmStp.EltRibbon] = -TipAsymInversion(w_k,
-                                                          Fr_lstTmStp,
-                                                          Material_properties,
-                                                          sim_parameters,
-                                                          timeStep)
+    # toughness iteration loop
+    while itr < sim_parameters.maxToughnessItr:
 
-    # if tip inversion returns nan
-    if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
-        exitstatus = 7
-        return exitstatus, None
+        Kprime_m1 = np.copy(Kprime)
+        if not Material_properties.KprimeFunc is None:
+            Kprime = toughness_at_tip_ribbonCells(Fr_lstTmStp.EltRibbon,
+                                                  Fr_lstTmStp.mesh,
+                                                  Material_properties,
+                                                  sgndDist_k)
+        else:
+            Kprime = Material_properties.Kprime[Fr_lstTmStp.EltRibbon]
 
-    # SOLVE EIKONAL eq via Fast Marching Method.
-    SolveFMM(sgndDist_k,
-             Fr_lstTmStp.EltRibbon,
-             Fr_lstTmStp.EltChannel,
-             Fr_lstTmStp.mesh)
 
-    # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
-    # todo: not satisfied with why this happens. need re-examining
-    if max(sgndDist_k) == 1e10:
-        exitstatus = 2
-        return exitstatus, None
+        norm_toughness = np.linalg.norm(1 - abs(Kprime/Kprime_m1))
+        if norm_toughness < sim_parameters.toleranceToughness:
+            print("toughness iteration converged after " + repr(itr) + " iterations; exiting norm " +
+                  repr(norm_toughness))
+            break
 
-    print('Calculating the filling fraction of tip elements with the new fracture front location...')
+        # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
+        sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
+        # large float value. (algorithm requires inf)
+
+        # Tip asymptote inversion
+        sgndDist_k[Fr_lstTmStp.EltRibbon] = -TipAsymInversion(w_k,
+                                                              Fr_lstTmStp,
+                                                              Material_properties,
+                                                              sim_parameters,
+                                                              timeStep,
+                                                              Kprime_k=Kprime)
+
+        # if tip inversion returns nan
+        if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
+            exitstatus = 7
+            return exitstatus, None
+
+        # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
+        SolveFMM(sgndDist_k,
+                 Fr_lstTmStp.EltRibbon,
+                 Fr_lstTmStp.EltChannel,
+                 Fr_lstTmStp.mesh)
+
+        # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
+        # todo: not satisfied with why this happens. need re-examining
+        if max(sgndDist_k) == 1e10:
+            exitstatus = 2
+            return exitstatus, None
+
+        # do it only once if KprimeFunc
+        if Material_properties.KprimeFunc is None:
+            break
+
+        itr += 1
+
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
     (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k,
-                                                               Fr_lstTmStp.EltChannel,
-                                                               Fr_lstTmStp.mesh)
+                                                                Fr_lstTmStp.EltChannel,
+                                                                Fr_lstTmStp.mesh)
 
     # If the angle and length of the perpendicular are not correct
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
@@ -690,3 +720,84 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
         return Re, (ReNum_Ribbon > 2100.).any()
     else:
         return (ReNum_Ribbon > 2100.).any()
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def toughness_at_tip_ribbonCells(ribbon_elts, mesh, mat_prop, sgnd_dist):
+    """
+    This function gives the scalled toughness(Kprime) at the closest tip point from the cell centers of the ribbon cells.
+    Arguments:
+        ribbon_elts (ndarray-int): list of ribbon elements
+        mesh (CartesianMesh object): The cartesian mesh object
+        mat_prop (MaterialProperties object):    Material properties:
+        sgnd_dist (ndarray-float): level set data
+
+    Returns:
+        ndarray-float : Kprime at the closest tip point from the center of the given ribbon cells
+    """
+
+    dist = -sgnd_dist
+    alpha = np.zeros((ribbon_elts.size,), dtype=np.float64)
+
+    neighbors = mesh.NeiElements[ribbon_elts]
+    for i in range(0, len(ribbon_elts)):
+        if sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+            # north-east direction of propagation
+            alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 1]]) / mesh.hx)
+
+        elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+            # north-west direction of propagation
+            alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 0]]) / mesh.hx)
+
+        elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+            # south-west direction of propagation
+            alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 0]]) / mesh.hx)
+
+        elif sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+            # south-east direction of propagation
+            alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 1]]) / mesh.hx)
+
+        warnings.filterwarnings("ignore")
+        if abs(dist[mesh.NeiElements[ribbon_elts[i], 0]] / dist[mesh.NeiElements[ribbon_elts[i], 1]] - 1) < 1e-7:
+            # if the angle is 90 degrees
+            alpha[i] = np.pi / 2
+
+    if mat_prop.anisotropic:
+        return mat_prop.KprimeFunc(alpha)
+    else:
+
+        x = np.zeros((len(ribbon_elts),),)
+        y = np.zeros((len(ribbon_elts),), )
+
+        # evaluating the closest tip points
+        for i in range(0, len(ribbon_elts)):
+            if sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] + dist[ribbon_elts[i]] * np.cos(alpha)
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] + dist[ribbon_elts[i]] * np.sin(alpha)
+
+            elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] - dist[ribbon_elts[i]] * np.cos(alpha)
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] + dist[ribbon_elts[i]] * np.sin(alpha)
+
+            elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] - dist[ribbon_elts[i]] * np.cos(alpha)
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] - dist[ribbon_elts[i]] * np.sin(alpha)
+
+            elif sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] + dist[ribbon_elts[i]] * np.cos(alpha)
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] - dist[ribbon_elts[i]] * np.sin(alpha)
+
+            if abs(dist[mesh.NeiElements[ribbon_elts[i],0]]/dist[mesh.NeiElements[ribbon_elts[i],1]]-1) < 1e-7:
+                if sgnd_dist[neighbors[i,2]] < sgnd_dist[neighbors[i,3]]:
+                    x[i] = mesh.CenterCoor[ribbon_elts[i], 0]
+                    y[i] = mesh.CenterCoor[ribbon_elts[i], 1] + dist[ribbon_elts[i]]
+                elif sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+                    x[i] = mesh.CenterCoor[ribbon_elts[i], 0]
+                    y[i] = mesh.CenterCoor[ribbon_elts[i], 1] - dist[ribbon_elts[i]]
+
+        # returning the Kprime according to the given function
+        return mat_prop.Kprime_func(x, y)

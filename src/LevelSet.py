@@ -10,25 +10,26 @@ See the LICENSE.TXT file for more details.
 # local imports
 import numpy as np
 from src.Utility import Neighbors
-
+import warnings
 
 def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
     """
     solve Eikonal equation to get level set.
-    
+
     Arguments:
         InitlevelSet (ndarray-float):       level set with initial values in ribbon cells
         EltRibbon (ndarray-int):            ribbon elements
         EltChannel (ndarray-int):           channel elements
         mesh (CartesianMesh object):        mesh object
-    
+
     Returns:
         Does not return anything. The InitlevelSet is updated in place.
     """
 
-    Alive = np.copy(EltChannel)
+    # for Elements radialy outward from ribbon cells
+    Alive = np.copy(EltRibbon)
     NarrowBand = np.copy(EltRibbon)
-    FarAway = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltChannel, None))
+    FarAway = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltRibbon, None))
     # the maximum distance any point can have from another in the current mesh. This distance is used to detect the
     # cells that are not yet traversed, i.e. having infinity distance
     maxdist = 4 * (mesh.Lx ** 2 + mesh.Ly ** 2) ** 0.5
@@ -49,15 +50,16 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
                 NeigyMin = min(InitlevelSet[mesh.NeiElements[neighbor, 2]], InitlevelSet[mesh.NeiElements[neighbor, 3]])
                 beta = mesh.hx / mesh.hy
                 delT = NeigyMin - NeigxMin
-                theta = (mesh.hx ** 2 * (
-                1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5  # it goes to nan for fully horizontal or
-                # fully vertical perpendiculars on the front
+
+                warnings.filterwarnings("ignore")
+                theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5  # it goes to nan for fully
+                # horizontal or fully vertical perpendiculars on the front
 
                 if not np.isnan((NeigxMin + beta * NeigyMin + theta) / (1 + beta ** 2)):
                     InitlevelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
                 else:  # the angle is either 0 or 90 degrees
                     # vertical propagation direction.
-                    if NeigxMin > maxdist: #used to check if very large value (level set value for unevaluated elements)
+                    if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
                         InitlevelSet[neighbor] = NeigyMin + mesh.hy
                     # horizontal propagation direction.
                     if NeigyMin > maxdist:
@@ -66,7 +68,56 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
         Alive = np.append(Alive, Smallest)
         NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
+    # for elements radialy inward from ribbon cells. The sign of the level set values(tip asymptote) in the ribbon cells
+    # is inverted to run the fast marching algorithm. The sign is finally inverted back to assign the value in the level
+    # set to be returned.
 
+    RibbonInwardElts = np.copy(EltChannel)
+    for i in range(len(EltRibbon)):
+        RibbonInwardElts = np.delete(RibbonInwardElts, np.where(RibbonInwardElts == EltRibbon[i])[0])
+
+    positive_levelSet = 1e10 * np.ones((mesh.NumberOfElts,), np.float64)
+    positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
+    Alive = np.copy(EltRibbon)
+    NarrowBand = np.copy(EltRibbon)
+    FarAway = np.copy(RibbonInwardElts)
+
+    while NarrowBand.size > 0:
+
+        Smallest = int(NarrowBand[positive_levelSet[NarrowBand.astype(int)].argmin()])
+        neighbors = mesh.NeiElements[Smallest]
+
+        for neighbor in neighbors:
+            if not neighbor in Alive:
+
+                if neighbor in FarAway:
+                    NarrowBand = np.append(NarrowBand, neighbor)
+                    FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
+
+                NeigxMin = min(positive_levelSet[mesh.NeiElements[neighbor, 0]],
+                               positive_levelSet[mesh.NeiElements[neighbor, 1]])
+                NeigyMin = min(positive_levelSet[mesh.NeiElements[neighbor, 2]],
+                               positive_levelSet[mesh.NeiElements[neighbor, 3]])
+                beta = mesh.hx / mesh.hy
+                delT = NeigyMin - NeigxMin
+
+                theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5
+
+                if not np.isnan((NeigxMin + beta * NeigyMin + theta) / (1 + beta ** 2)):
+                    positive_levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
+                else:  # the angle is either 0 or 90 degrees
+                    # vertical propagation direction.
+                    if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
+                        positive_levelSet[neighbor] = NeigyMin + mesh.hy
+                    # horizontal propagation direction.
+                    if NeigyMin > maxdist:
+                        positive_levelSet[neighbor] = NeigxMin + mesh.hx
+
+        Alive = np.append(Alive, Smallest)
+        NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
+
+    # assigning adjusted value to the level set to be returned
+    InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -111,6 +162,7 @@ def reconstruct_front(dist, EltChannel, mesh):
             a2 = np.arcsin(sinalpha)
 
             # !!!Hack. this check of zero or 90 degree angle works better
+            warnings.filterwarnings("ignore")
             if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-8:
                 a2 = np.pi / 2
             elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 1e-8:
@@ -223,6 +275,16 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     eltsRibbon = np.unique(eltsRibbon)
     for i in range(0, len(eltsTip)):
         eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
+
+    # remove wrongfully marked ribbon cells is case of sharp angle
+    to_delete = np.asarray([])
+    for i in range(0, len(eltsRibbon)):
+        neighbors = mesh.NeiElements[eltsRibbon[i]]
+        enclosing = np.append(neighbors, np.asarray(
+            [neighbors[2] - 1, neighbors[2] + 1, neighbors[3] - 1, neighbors[3] + 1]))
+        if sum(np.in1d(enclosing, eltsRibbon)) < 2:
+            to_delete = np.append(to_delete, np.where(eltsRibbon == eltsRibbon[i])[0])
+    eltsRibbon = np.delete(eltsRibbon, to_delete)
 
     # Cells status list store the status of all the cells in the domain
     CellStatusNew = np.zeros((mesh.NumberOfElts), int)

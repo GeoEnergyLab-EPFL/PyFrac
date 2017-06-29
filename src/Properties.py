@@ -26,7 +26,7 @@ class MaterialProperties:
     methods:
     """
 
-    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0. ):
+    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0., Kprim_func=None, anisotropic_flag=False):
         """
         Arguments:
             Eprime (float)          : plain strain modulus
@@ -52,6 +52,8 @@ class MaterialProperties:
             self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
             self.Kprime = (32 / math.pi) ** 0.5 * Toughness * np.ones((Mesh.NumberOfElts,), float)
 
+        self.KprimeFunc = Kprim_func
+
         if isinstance(Cl, np.ndarray):  # check if float or ndarray
             if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.Cprime = 2. * Cl
@@ -71,7 +73,7 @@ class MaterialProperties:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
 
         self.grainSize = grain_size
-
+        self.anisotropic = anisotropic_flag
 
 # --------------------------------------------------------------------------------------------------------
 
@@ -197,13 +199,15 @@ class SimulationParameters:
             plot_evolution (boolean, default False):if True, the fracture footprint plots will be superimposed on the 
                                                     previous footprint plots i.e. evolution of fracture with time will
                                                     be shown
+            toleranceToughness (float):             tolerance for toughness iteration
             
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
                  tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
-                 max_reattemps = 5, reattempt_factor = 0.8, output_time_period = 1e-10, plot_figure = False,
-                 save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M"):
+                 max_reattemps=5, reattempt_factor=0.8, output_time_period=1e-10, plot_figure=False,
+                 save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M",
+                 tol_toughness=1e-3, max_toughnessItr=60):
         """
         
         The constructor of the SimulationParameters class. See documentation of the class.
@@ -242,6 +246,8 @@ class SimulationParameters:
             self.analyticalSol = analytical_sol
 
         self.saveToDisk = save_to_disk
+        self.toleranceToughness = tol_toughness
+        self.maxToughnessItr = max_toughnessItr
 
         # check operating system to get appropriate slash in the address
         import sys

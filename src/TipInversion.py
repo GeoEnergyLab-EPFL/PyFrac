@@ -99,15 +99,15 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
     """
 
     stagnant = np.where(
-        Kprime[EltRibbon] * (-DistLstTS[EltRibbon]) ** 0.5 / (Eprime * w[EltRibbon]) > 1)  # propagation condition
+        Kprime * (-DistLstTS[EltRibbon]) ** 0.5 / (Eprime * w[EltRibbon]) > 1)  # propagation condition
     moving = np.arange(EltRibbon.shape[0])[~np.in1d(EltRibbon, EltRibbon[stagnant])]
 
     a = -DistLstTS[EltRibbon[moving]] * (1 + 1e5 * np.finfo(float).eps)
-    b = 10 * (w[EltRibbon[moving]] / (Kprime[EltRibbon[moving]] / Eprime)) ** 2
+    b = 10 * (w[EltRibbon[moving]] / (Kprime[moving] / Eprime)) ** 2
 
     for i in range(0, len(moving)):
 
-        TipAsmptargs = (w[EltRibbon[moving[i]]], Kprime[EltRibbon[moving[i]]], Eprime, muPrime[EltRibbon[moving[i]]],
+        TipAsmptargs = (w[EltRibbon[moving[i]]], Kprime[moving[i]], Eprime, muPrime[EltRibbon[moving[i]]],
                         Cprime[EltRibbon[moving[i]]], -DistLstTS[EltRibbon[moving[i]]], dt)
         Res_a = ResFunc(a[i], *TipAsmptargs)
         Res_b = ResFunc(b[i], *TipAsmptargs)
@@ -127,7 +127,7 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None):
+def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
     """ 
     Evaluate distance from the front using tip assymptotics of the given regime, given the fracture width in the ribbon
     cells.
@@ -137,10 +137,15 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None):
         matProp (MaterialProperties object):    Material properties
         simParmtrs (SimulationParameters object): Simulation parameters
         dt (float):                             time step
-        
+        Kprime_k (ndarray-float):               Kprime for current iteration of toughness loop
     Returns:
         ndarray-float:                          distance (unsigned) from the front for the ribbon cells.
     """
+
+    if not Kprime_k == None:
+        Kprime = Kprime_k
+    else:
+        Kprime = matProp.Kprime
 
     if simParmtrs.tipAsymptote == 'U':
         ResFunc = TipAsym_Universal_zero_Res
@@ -154,14 +159,14 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None):
     elif simParmtrs.tipAsymptote == 'MK':
         ResFunc = TipAsym_MKTransition_Res
     elif simParmtrs.tipAsymptote == 'K':
-        return w[frac.EltRibbon] ** 2 * (matProp.Eprime / matProp.Kprime[[frac.EltRibbon]]) ** 2
+        return w[frac.EltRibbon] ** 2 * (matProp.Eprime / Kprime) ** 2
 
-    (moving, a, b) = FindBracket_dist(w, frac.EltRibbon, matProp.Kprime, matProp.Eprime, frac.muPrime, matProp.Cprime,
+    (moving, a, b) = FindBracket_dist(w, frac.EltRibbon, Kprime, matProp.Eprime, frac.muPrime, matProp.Cprime,
                                       frac.sgndDist, dt, ResFunc)
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
         # todo: need to use the properties class
-        TipAsmptargs = (w[frac.EltRibbon[moving[i]]], matProp.Kprime[frac.EltRibbon[moving[i]]], matProp.Eprime,
+        TipAsmptargs = (w[frac.EltRibbon[moving[i]]], Kprime[moving[i]], matProp.Eprime,
                         frac.muPrime[frac.EltRibbon[moving[i]]], matProp.Cprime[frac.EltRibbon[moving[i]]],
                         -frac.sgndDist[frac.EltRibbon[moving[i]]], dt)
         try:
