@@ -534,8 +534,10 @@ class Fracture():
         colors[identify] = 0.
 
         if mat_properties != None:
-            colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
-            colors += -100. * (mat_properties.Kprime) / np.max(mat_properties.Kprime)
+            if np.max(mat_properties.SigmaO) > 0:
+                colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
+            if np.max(mat_properties.Kprime) > 0:
+                colors += -100. * (mat_properties.Kprime) / np.max(mat_properties.Kprime)
             
         p.set_array(np.array(colors))
         ax.add_collection(p)

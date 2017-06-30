@@ -761,6 +761,9 @@ def toughness_at_tip_ribbonCells(ribbon_elts, mesh, mat_prop, sgnd_dist):
         if abs(dist[mesh.NeiElements[ribbon_elts[i], 0]] / dist[mesh.NeiElements[ribbon_elts[i], 1]] - 1) < 1e-7:
             # if the angle is 90 degrees
             alpha[i] = np.pi / 2
+        if abs(dist[mesh.NeiElements[ribbon_elts[i], 2]] / dist[mesh.NeiElements[ribbon_elts[i], 3]] - 1) < 1e-7:
+            # if the angle is 0 degrees
+            alpha[i] = 0
 
     if mat_prop.anisotropic:
         return mat_prop.KprimeFunc(alpha)
