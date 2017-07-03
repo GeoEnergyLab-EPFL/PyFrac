@@ -26,7 +26,7 @@ class MaterialProperties:
     methods:
     """
 
-    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0., Kprim_func=None, anisotropic_flag=False):
+    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0., Kprime_func=None, anisotropic_flag=False):
         """
         Arguments:
             Eprime (float)          : plain strain modulus
@@ -52,7 +52,7 @@ class MaterialProperties:
             self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
             self.Kprime = (32 / math.pi) ** 0.5 * Toughness * np.ones((Mesh.NumberOfElts,), float)
 
-        self.KprimeFunc = Kprim_func
+        self.KprimeFunc = Kprime_func
 
         if isinstance(Cl, np.ndarray):  # check if float or ndarray
             if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size

@@ -172,15 +172,13 @@ def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
                 Eprime ** 7 * muPrime ** 3 * Vel ** 3)
 
 
-def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, stagnant=[], KIPrime=[]):
+def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprime=None, stagnant=None, KIPrime=None):
     """Calculate Volume integrals of the grid cells according to the tip assymptote given by the variable regime"""
-    if len(stagnant) == 0:
+    if stagnant is None:
         stagnant = np.zeros((alpha.size,), bool)
         KIPrime = np.zeros((alpha.size,), float)
 
-    if not mat_prop.KprimeFunc is None:
-        Kprime = toughness_at_tip(EltTip, mesh, mat_prop, alpha, l)
-    else:
+    if Kprime is None:
         Kprime = mat_prop.Kprime[EltTip]
     muPrimeTip = muPrime[EltTip]
     Cprime = mat_prop.Cprime[EltTip]
@@ -277,5 +275,5 @@ def toughness_at_tip(elts, mesh, mat_prop, alpha, l):
     if mat_prop.anisotropic:
         return mat_prop.KprimeFunc(alpha)
     else:
-        # todo
+
         return

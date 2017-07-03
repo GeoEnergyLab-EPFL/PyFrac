@@ -343,7 +343,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
         Kprime_m1 = np.copy(Kprime)
         if not Material_properties.KprimeFunc is None:
-            Kprime = toughness_at_tip_ribbonCells(Fr_lstTmStp.EltRibbon,
+            Kprime = toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
                                                   Fr_lstTmStp.mesh,
                                                   Material_properties,
                                                   sgndDist_k)
@@ -353,7 +353,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
         norm_toughness = np.linalg.norm(1 - abs(Kprime/Kprime_m1))
         if norm_toughness < sim_parameters.toleranceToughness:
-            print("toughness iteration converged after " + repr(itr) + " iterations; exiting norm " +
+            print("toughness iteration converged after " + repr(itr-1) + " iterations; exiting norm " +
                   repr(norm_toughness))
             break
 
@@ -389,7 +389,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         # do it only once if KprimeFunc
         if Material_properties.KprimeFunc is None:
             break
-
+        print("toughness iteration " + repr(itr) + "norm " + repr(norm_toughness))
         itr += 1
 
 
@@ -458,6 +458,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     print('Solving the EHL system with the new trial footprint')
 
+    # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
+    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+    Kprime_tip = toughness_at_tip_zeroVertex(EltsTipNew,
+                                           Fr_lstTmStp.mesh,
+                                           Material_properties,
+                                           alpha_k,
+                                           l_k,
+                                           zrVrtx_newTip)
+
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-8
     if stagnant.any():
@@ -488,8 +497,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                               Material_properties,
                               Fr_lstTmStp.muPrime,
                               Vel_k,
-                              stagnant,
-                              KIPrime) / Fr_lstTmStp.mesh.EltArea
+                              Kprime=Kprime_tip,
+                              stagnant=stagnant,
+                              KIPrime=KIPrime
+                              ) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
         wTip = VolumeIntegral(EltsTipNew,
@@ -499,7 +510,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                               sim_parameters.tipAsymptote,
                               Material_properties,
                               Fr_lstTmStp.muPrime,
-                              Vel_k) / Fr_lstTmStp.mesh.EltArea
+                              Vel_k,
+                              Kprime=Kprime_tip) / Fr_lstTmStp.mesh.EltArea
 
     # # check if the tip volume has gone into negative
     # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
@@ -723,9 +735,11 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def toughness_at_tip_ribbonCells(ribbon_elts, mesh, mat_prop, sgnd_dist):
+def toughness_at_tip_CellCenter(ribbon_elts, mesh, mat_prop, sgnd_dist):
     """
     This function gives the scalled toughness(Kprime) at the closest tip point from the cell centers of the ribbon cells.
+    The function is different from the toughness_at_tip as it calculates the closest tip from cell centers and not from
+    the zero vertex.
     Arguments:
         ribbon_elts (ndarray-int): list of ribbon elements
         mesh (CartesianMesh object): The cartesian mesh object
@@ -738,22 +752,22 @@ def toughness_at_tip_ribbonCells(ribbon_elts, mesh, mat_prop, sgnd_dist):
 
     dist = -sgnd_dist
     alpha = np.zeros((ribbon_elts.size,), dtype=np.float64)
-
+    zero_vertex = find_zero_vertex(ribbon_elts, sgnd_dist, mesh)
     neighbors = mesh.NeiElements[ribbon_elts]
     for i in range(0, len(ribbon_elts)):
-        if sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+        if zero_vertex[i]==0:
             # north-east direction of propagation
             alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 1]]) / mesh.hx)
 
-        elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+        elif zero_vertex[i]==1:
             # north-west direction of propagation
             alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 0]]) / mesh.hx)
 
-        elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+        elif zero_vertex[i]==2:
             # south-west direction of propagation
             alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 0]]) / mesh.hx)
 
-        elif sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+        elif zero_vertex[i]==3:
             # south-east direction of propagation
             alpha[i] = np.arccos((dist[ribbon_elts[i]] - dist[mesh.NeiElements[ribbon_elts[i], 1]]) / mesh.hx)
 
@@ -774,25 +788,25 @@ def toughness_at_tip_ribbonCells(ribbon_elts, mesh, mat_prop, sgnd_dist):
 
         # evaluating the closest tip points
         for i in range(0, len(ribbon_elts)):
-            if sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+            if zero_vertex[i]==0:
 
-                x[i] = mesh.CenterCoor[ribbon_elts[i],0] + dist[ribbon_elts[i]] * np.cos(alpha)
-                y[i] = mesh.CenterCoor[ribbon_elts[i],1] + dist[ribbon_elts[i]] * np.sin(alpha)
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] + dist[ribbon_elts[i]] * np.cos(alpha[i])
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] + dist[ribbon_elts[i]] * np.sin(alpha[i])
 
-            elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] <= sgnd_dist[neighbors[i,3]]:
+            elif zero_vertex[i]==1:
 
-                x[i] = mesh.CenterCoor[ribbon_elts[i],0] - dist[ribbon_elts[i]] * np.cos(alpha)
-                y[i] = mesh.CenterCoor[ribbon_elts[i],1] + dist[ribbon_elts[i]] * np.sin(alpha)
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] - dist[ribbon_elts[i]] * np.cos(alpha[i])
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] + dist[ribbon_elts[i]] * np.sin(alpha[i])
 
-            elif sgnd_dist[neighbors[i,0]] > sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+            elif zero_vertex[i]==2:
 
-                x[i] = mesh.CenterCoor[ribbon_elts[i],0] - dist[ribbon_elts[i]] * np.cos(alpha)
-                y[i] = mesh.CenterCoor[ribbon_elts[i],1] - dist[ribbon_elts[i]] * np.sin(alpha)
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] - dist[ribbon_elts[i]] * np.cos(alpha[i])
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] - dist[ribbon_elts[i]] * np.sin(alpha[i])
 
-            elif sgnd_dist[neighbors[i,0]] <= sgnd_dist[neighbors[i,1]] and sgnd_dist[neighbors[i,2]] > sgnd_dist[neighbors[i,3]]:
+            elif zero_vertex[i]==3:
 
-                x[i] = mesh.CenterCoor[ribbon_elts[i],0] + dist[ribbon_elts[i]] * np.cos(alpha)
-                y[i] = mesh.CenterCoor[ribbon_elts[i],1] - dist[ribbon_elts[i]] * np.sin(alpha)
+                x[i] = mesh.CenterCoor[ribbon_elts[i],0] + dist[ribbon_elts[i]] * np.cos(alpha[i])
+                y[i] = mesh.CenterCoor[ribbon_elts[i],1] - dist[ribbon_elts[i]] * np.sin(alpha[i])
 
             if abs(dist[mesh.NeiElements[ribbon_elts[i],0]]/dist[mesh.NeiElements[ribbon_elts[i],1]]-1) < 1e-7:
                 if sgnd_dist[neighbors[i,2]] < sgnd_dist[neighbors[i,3]]:
@@ -803,4 +817,49 @@ def toughness_at_tip_ribbonCells(ribbon_elts, mesh, mat_prop, sgnd_dist):
                     y[i] = mesh.CenterCoor[ribbon_elts[i], 1] - dist[ribbon_elts[i]]
 
         # returning the Kprime according to the given function
-        return mat_prop.Kprime_func(x, y)
+        return mat_prop.KprimeFunc(x, y)
+
+#-----------------------------------------------------------------------------------------------------------------------
+def find_zero_vertex(Elts, level_set, mesh):
+
+    zero_vertex = np.zeros((len(Elts),),dtype=int)
+    for i in range(0, len(Elts)):
+        neighbors = mesh.NeiElements[Elts]
+
+        if level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 0
+        elif level_set[neighbors[i, 0]] > level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 1
+        elif level_set[neighbors[i, 0]] > level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] > level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 2
+        elif level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] > level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 3
+
+    return zero_vertex
+
+def toughness_at_tip_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
+
+    if mat_prop.anisotropic:
+        return mat_prop.KprimeFunc(alpha)
+    else:
+        x = np.zeros((len(elts),), )
+        y = np.zeros((len(elts),), )
+        for i in range(0, len(elts)):
+            if zero_vrtx[i] == 0:
+                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
+                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
+            elif zero_vrtx[i] == 1:
+                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
+                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
+            elif zero_vrtx[i] == 2:
+                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
+                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
+            elif zero_vrtx[i] == 3:
+                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
+                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
+
+        return mat_prop.KprimeFunc(x, y)

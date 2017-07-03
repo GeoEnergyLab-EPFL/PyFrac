@@ -137,7 +137,8 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
         matProp (MaterialProperties object):    Material properties
         simParmtrs (SimulationParameters object): Simulation parameters
         dt (float):                             time step
-        Kprime_k (ndarray-float):               Kprime for current iteration of toughness loop
+        Kprime_k (ndarray-float):               Kprime for current iteration of toughness loop. if not given, the Kprime
+                                                from the given material properties object will be used for calculation.
     Returns:
         ndarray-float:                          distance (unsigned) from the front for the ribbon cells.
     """
