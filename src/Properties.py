@@ -157,6 +157,28 @@ class InjectionProperties:
 
         self.source_location = Mesh.locate_element(source_coordinates[0], source_coordinates[1])
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+class LoadingProperties:
+    """
+        Class defining the mechanical loading properties
+
+        instance variables:
+            EltLoaded (ndarray-int):    Array of elements that are loaded.
+            displ_rate (float):         the rate at which the elements in the EltLoaded list are displaced due to the
+                                        applied mechanical loading
+
+    """
+
+    def __init__(self,  displ_rate, loaded_elts=None):
+        """
+        The constructor of the InjectionProperties class. See documentation of the class.
+        """
+
+        self.displRate = displ_rate
+
+        if isinstance(loaded_elts, np.ndarray):
+            self.EltLoaded = loaded_elts
 
 
 

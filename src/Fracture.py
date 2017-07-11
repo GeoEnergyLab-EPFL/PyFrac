@@ -528,17 +528,21 @@ class Fracture():
 
         # applying different colors for different types of elements
         colors = 100. * np.full(len(patches), 0.4)
+
+        if mat_properties != None:
+            if np.max(mat_properties.SigmaO) > 0:
+                colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
+            if not mat_properties.KprimeFunc is None:
+                Kprime = mat_properties.KprimeFunc(self.mesh.CenterCoor[:,0],self.mesh.CenterCoor[:,1])
+            else:
+                Kprime = mat_properties.Kprime
+            colors += -100. * (Kprime) / np.max(Kprime)
+
         colors[self.EltTip] = 70.
         colors[self.EltChannel] = 10.
         colors[self.EltRibbon] = 90.
         colors[identify] = 0.
 
-        if mat_properties != None:
-            if np.max(mat_properties.SigmaO) > 0:
-                colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
-            if np.max(mat_properties.Kprime) > 0:
-                colors += -100. * (mat_properties.Kprime) / np.max(mat_properties.Kprime)
-            
         p.set_array(np.array(colors))
         ax.add_collection(p)
 

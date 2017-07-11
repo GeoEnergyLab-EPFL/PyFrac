@@ -16,7 +16,7 @@ import numpy as np
 from scipy.optimize import brentq
 from src.Utility import *
 import matplotlib.pyplot as plt
-
+import warnings
 
 def TipAsym_viscStor_Res(dist, *args):
     """Residual function for viscocity dominate regime, without leak off"""
@@ -91,6 +91,33 @@ def TipAsym_MKTransition_Res(dist, *args):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_variable_Toughness_Res(dist, *args):
+
+    (wEltRibbon, Eprime, Kprime_func, alpha, zero_vertex, center_coord) = args
+
+    if zero_vertex == 0:
+
+        x = center_coord[0] + dist * np.cos(alpha)
+        y = center_coord[1] + dist * np.sin(alpha)
+
+    elif zero_vertex == 1:
+
+        x = center_coord[0] - dist * np.cos(alpha)
+        y = center_coord[1] + dist * np.sin(alpha)
+
+    elif zero_vertex == 2:
+
+        x = center_coord[0] - dist * np.cos(alpha)
+        y = center_coord[1] - dist * np.sin(alpha)
+
+    elif zero_vertex == 3:
+
+        x = center_coord[0] + dist * np.cos(alpha)
+        y = center_coord[1] - dist * np.sin(alpha)
+
+
+    return dist - wEltRibbon ** 2 * (Eprime / Kprime_func(x,y)) ** 2
 
 def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, ResFunc):
     """ 
@@ -222,3 +249,67 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
                 KIPrime[i] = w[closest] * Eprime / (-lvlSetData[closest]) ** 0.5
 
     return KIPrime
+
+def TipAsymInversion_hetrogenous_toughness(w, frac, mat_prop, level_set):
+
+    zero_vrtx = find_zero_vertex(frac.EltRibbon, level_set, frac.mesh)
+    dist = -level_set
+    alpha = np.zeros((frac.EltRibbon.size,), dtype=np.float64)
+    neighbors = frac.mesh.NeiElements[frac.EltRibbon]
+    for i in range(0, len(frac.EltRibbon)):
+        if zero_vrtx[i]==0:
+            # north-east direction of propagation
+            alpha[i] = np.arccos((dist[frac.EltRibbon[i]] - dist[frac.mesh.NeiElements[frac.EltRibbon[i], 1]]) / frac.mesh.hx)
+
+        elif zero_vrtx[i]==1:
+            # north-west direction of propagation
+            alpha[i] = np.arccos((dist[frac.EltRibbon[i]] - dist[frac.mesh.NeiElements[frac.EltRibbon[i], 0]]) / frac.mesh.hx)
+
+        elif zero_vrtx[i]==2:
+            # south-west direction of propagation
+            alpha[i] = np.arccos((dist[frac.EltRibbon[i]] - dist[frac.mesh.NeiElements[frac.EltRibbon[i], 0]]) / frac.mesh.hx)
+
+        elif zero_vrtx[i]==3:
+            # south-east direction of propagation
+            alpha[i] = np.arccos((dist[frac.EltRibbon[i]] - dist[frac.mesh.NeiElements[frac.EltRibbon[i], 1]]) / frac.mesh.hx)
+
+        warnings.filterwarnings("ignore")
+        if abs(dist[frac.mesh.NeiElements[frac.EltRibbon[i], 0]] / dist[frac.mesh.NeiElements[frac.EltRibbon[i], 1]] - 1) < 1e-7:
+            # if the angle is 90 degrees
+            alpha[i] = np.pi / 2
+        if abs(dist[frac.mesh.NeiElements[frac.EltRibbon[i], 2]] / dist[frac.mesh.NeiElements[frac.EltRibbon[i], 3]] - 1) < 1e-7:
+            # if the angle is 0 degrees
+            alpha[i] = 0
+
+    sol = np.zeros((len(frac.EltRibbon),),dtype=np.float64)
+    for i in range(0, len(frac.EltRibbon)):
+        TipAsmptargs = (w[frac.EltRibbon[i]], mat_prop.Eprime, mat_prop.KprimeFunc, alpha[i], zero_vrtx[i],
+                        frac.mesh.CenterCoor[frac.EltRibbon[i]])
+        try:
+            sol[i] = brentq(TipAsym_variable_Toughness_Res, 0, -3*frac.sgndDist[frac.EltRibbon[i]], TipAsmptargs)
+        except RuntimeError:
+            sol[i] = np.nan
+
+    return sol-sol*1e-10
+
+#-----------------------------------------------------------------------------------------------------------------------
+def find_zero_vertex(Elts, level_set, mesh):
+
+    zero_vertex = np.zeros((len(Elts),),dtype=int)
+    for i in range(0, len(Elts)):
+        neighbors = mesh.NeiElements[Elts]
+
+        if level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 0
+        elif level_set[neighbors[i, 0]] > level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 1
+        elif level_set[neighbors[i, 0]] > level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] > level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 2
+        elif level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] > level_set[
+                                                                                                neighbors[i, 3]]:
+            zero_vertex[i] = 3
+
+    return zero_vertex

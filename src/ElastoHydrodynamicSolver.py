@@ -333,6 +333,25 @@ def MakeEquationSystemExtendedFP(solk, vkm1, *args):
 
 ######################################
 #
+def MakeEquationSystem_DryCrack_Loaded(wLoadedElts, *args):
+
+    (EltCrack, EltLoaded, EltFree, C, dt, mesh, sigma0) = args
+
+    C_Crack_Free = C[np.ix_(EltCrack, EltFree)]
+    C_Crack_Loaded = C[np.ix_(EltCrack, EltLoaded)]
+
+    A = np.hstack((np.identity(EltCrack.size),C_Crack_Free))
+    S = sigma0[EltCrack] + np.dot(C_Crack_Loaded, wLoadedElts)
+    return (A, S)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+# def residual_DryCrack_Loaded(solk, InterItr, *args):
+#     (A, S, Inter_Itr) = MakeEquationSystem_DryCrack_Loaded(solk, InterItr, *args)
+#     return (np.dot(A, solk) - S, Inter_Itr)
+
+######################################
+#
 def MakeEquationSystemSameFP(delwk, vkm1, *args):
     (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain) = args
     wnPlus1 = np.copy(w)

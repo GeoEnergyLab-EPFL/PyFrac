@@ -334,40 +334,28 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         Fracture object:            fracture after advancing time step. 
     """
     norm_lvlSet = 1
-    itr = 1
+    itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
     Kprime = 1e6*np.ones((Fr_lstTmStp.EltRibbon.size,),dtype=np.float64)
-
+    Kprime_m1 = np.copy(Kprime)
+    l_m1 = sgndDist_k[Fr_lstTmStp.EltRibbon]
+    if Fr_lstTmStp.time > 35318:
+        print("here")
+        a = 1
     # toughness iteration loop
     while itr < sim_parameters.maxToughnessItr:
 
-        Kprime_m1 = np.copy(Kprime)
-        if not Material_properties.KprimeFunc is None:
-            Kprime = toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
-                                                  Fr_lstTmStp.mesh,
-                                                  Material_properties,
-                                                  sgndDist_k)
-        else:
-            Kprime = Material_properties.Kprime[Fr_lstTmStp.EltRibbon]
-
-
-        norm_toughness = np.linalg.norm(1 - abs(Kprime/Kprime_m1))
-        if norm_toughness < sim_parameters.toleranceToughness:
-            print("toughness iteration converged after " + repr(itr-1) + " iterations; exiting norm " +
-                  repr(norm_toughness))
-            break
+        sgndDist_km1 = np.copy(sgndDist_k)
+        l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
         sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
-        # large float value. (algorithm requires inf)
+                                                                        # large float value. (algorithm requires inf)
 
-        # Tip asymptote inversion
-        sgndDist_k[Fr_lstTmStp.EltRibbon] = -TipAsymInversion(w_k,
-                                                              Fr_lstTmStp,
-                                                              Material_properties,
-                                                              sim_parameters,
-                                                              timeStep,
-                                                              Kprime_k=Kprime)
+        sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion_hetrogenous_toughness(w_k,
+                                                                                     Fr_lstTmStp,
+                                                                                     Material_properties,
+                                                                                     sgndDist_km1)
 
         # if tip inversion returns nan
         if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
@@ -386,10 +374,16 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
             exitstatus = 2
             return exitstatus, None
 
+        norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
+        if norm < sim_parameters.toleranceToughness:
+            print("toughness iteration converged after " + repr(itr-1) + " iterations; exiting norm " +
+                  repr(norm))
+            break
+
         # do it only once if KprimeFunc
         if Material_properties.KprimeFunc is None:
             break
-        print("toughness iteration " + repr(itr) + "norm " + repr(norm_toughness))
+        print("toughness iteration " + repr(itr) + "norm " + repr(norm))
         itr += 1
 
 
@@ -468,7 +462,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                            zrVrtx_newTip)
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
-    stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-8
+    stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
     if stagnant.any():
         # if any tip cell with stagnant front
         # calculate stress intensity factor for stagnant cells
