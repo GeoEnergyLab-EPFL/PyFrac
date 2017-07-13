@@ -255,7 +255,7 @@ def TipAsymInversion_hetrogenous_toughness(w, frac, mat_prop, level_set):
     zero_vrtx = find_zero_vertex(frac.EltRibbon, level_set, frac.mesh)
     dist = -level_set
     alpha = np.zeros((frac.EltRibbon.size,), dtype=np.float64)
-    neighbors = frac.mesh.NeiElements[frac.EltRibbon]
+
     for i in range(0, len(frac.EltRibbon)):
         if zero_vrtx[i]==0:
             # north-east direction of propagation
@@ -283,10 +283,26 @@ def TipAsymInversion_hetrogenous_toughness(w, frac, mat_prop, level_set):
 
     sol = np.zeros((len(frac.EltRibbon),),dtype=np.float64)
     for i in range(0, len(frac.EltRibbon)):
+
         TipAsmptargs = (w[frac.EltRibbon[i]], mat_prop.Eprime, mat_prop.KprimeFunc, alpha[i], zero_vrtx[i],
-                        frac.mesh.CenterCoor[frac.EltRibbon[i]])
+               frac.mesh.CenterCoor[frac.EltRibbon[i]])
+        residual_zero = TipAsym_variable_Toughness_Res(0, *TipAsmptargs)
+
+        sample_lngths = np.linspace(4*(frac.mesh.hx**2 + frac.mesh.hy**2)**0.5 / 16,4*(frac.mesh.hx**2 + frac.mesh.hy**2)**0.5,16)
+        cnt = 0
+        res_prdct = 0
+        while res_prdct >= 0 and cnt < 16:
+            res_prdct = residual_zero * TipAsym_variable_Toughness_Res(sample_lngths[cnt], *TipAsmptargs)
+            cnt += 1
+
+        if cnt == 16:# and res_prdct >= 0:
+            sol[i] = np.nan
+            return sol
+        else:
+            upper_bracket = sample_lngths[cnt-1]
+
         try:
-            sol[i] = brentq(TipAsym_variable_Toughness_Res, 0, -3*frac.sgndDist[frac.EltRibbon[i]], TipAsmptargs)
+            sol[i] = brentq(TipAsym_variable_Toughness_Res, 0, upper_bracket, TipAsmptargs)
         except RuntimeError:
             sol[i] = np.nan
 

@@ -337,14 +337,41 @@ def MakeEquationSystem_DryCrack_Loaded(wLoadedElts, *args):
 
     (EltCrack, EltLoaded, EltFree, C, dt, mesh, sigma0) = args
 
-    C_Crack_Free = C[np.ix_(EltCrack, EltFree)]
-    C_Crack_Loaded = C[np.ix_(EltCrack, EltLoaded)]
+    C_Crack_Free = C[np.ix_(EltFree, EltFree)]
+    C_Crack_Loaded = -C[np.ix_(EltFree, EltLoaded)]
 
-    A = np.hstack((np.identity(EltCrack.size),C_Crack_Free))
-    S = sigma0[EltCrack] + np.dot(C_Crack_Loaded, wLoadedElts)
-    return (A, S)
+    return (C_Crack_Free, np.dot(C_Crack_Loaded,wLoadedElts))
+
 
 #-----------------------------------------------------------------------------------------------------------------------
+def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
+
+    C_Crack = C[np.ix_(EltCrack, EltCrack)]
+
+    A = np.hstack((C_Crack,-np.ones((EltCrack.size,1),dtype=np.float64)))
+    A = np.vstack((A,np.ones((1,EltCrack.size+1),dtype=np.float64)))
+    A[-1,-1] = 0
+
+    S = -np.dot(C_Crack,w[EltCrack])
+    S = np.append(S,Q * dt / ElemArea)
+
+    return A, S
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, EltTip, C, dt, Q, ElemArea):
+
+    Ccc = C[np.ix_(EltChannel, EltChannel)]
+    Cct = C[np.ix_(EltChannel, EltTip)]
+
+    A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
+    A = np.vstack((A,np.ones((1,EltChannel.size+1),dtype=np.float64)))
+    A[-1,-1] = 0
+
+    S = -np.dot(Ccc,w_lst_tmstp[EltChannel]) - np.dot(Cct,wTip)
+    S = np.append(S,Q * dt / ElemArea - (sum(wTip)-sum(w_lst_tmstp[EltTip])))
+
+    return A, S
 
 # def residual_DryCrack_Loaded(solk, InterItr, *args):
 #     (A, S, Inter_Itr) = MakeEquationSystem_DryCrack_Loaded(solk, InterItr, *args)

@@ -8,13 +8,14 @@ import copy
 class Controller:
 
     #todo add mesh as an argument
-    def __init__(self, Fracture=None, Solid_prop=None, Fluid_prop=None, Injection_prop=None, Sim_prop=None):
+    def __init__(self, Fracture=None, Solid_prop=None, Fluid_prop=None, Injection_prop=None, Sim_prop=None, Load_prop=None):
 
        self.fracture = Fracture
        self.solid_prop = Solid_prop
        self.fluid_prop = Fluid_prop
        self.injection_prop = Injection_prop
        self.sim_prop = Sim_prop
+       self.load_prop = Load_prop
 
     def run(self):
         # load elasticity matrix
@@ -42,14 +43,31 @@ class Controller:
                     tmSrs_indx += 1
                 next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
 
-
-            status, Fr_k = advance_time_step(Fr_k,
-                                             C,
-                                             self.solid_prop,
-                                             self.fluid_prop,
-                                             self.sim_prop,
-                                             self.injection_prop,
-                                             TimeStep)
+            if self.sim_prop.dryCrack_mechLoading:
+                status, Fr_k = advance_time_step(Fr_k,
+                                                 C,
+                                                 self.solid_prop,
+                                                 self.sim_prop,
+                                                 TimeStep,
+                                                 Loading_Parameters=self.load_prop
+                                                 )
+            elif self.sim_prop.viscousInjection:
+                status, Fr_k = advance_time_step(Fr_k,
+                                                 C,
+                                                 self.solid_prop,
+                                                 self.sim_prop,
+                                                 TimeStep,
+                                                 Fluid_properties=self.fluid_prop,
+                                                 Injection_Parameters=self.injection_prop,
+                                                 )
+            elif self.sim_prop.volumeControl:
+                status, Fr_k = advance_time_step(Fr_k,
+                                                 C,
+                                                 self.solid_prop,
+                                                 self.sim_prop,
+                                                 TimeStep,
+                                                 Injection_Parameters=self.injection_prop,
+                                                 )
 
             Fr = copy.deepcopy(Fr_k)
 

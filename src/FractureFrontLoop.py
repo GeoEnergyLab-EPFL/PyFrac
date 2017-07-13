@@ -12,6 +12,8 @@ from src.TipInversion import *
 from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
 from src.HFAnalyticalSolutions import *
+from src.TimeSteppingMechLoading import *
+from src.TimeSteppingVolumeControl import *
 import copy
 import warnings
 
@@ -24,12 +26,13 @@ errorMessages = ("Propagated not attempted",
                  "Did not converge after max iterations",
                  "Tip inversion is not correct",
                  "Ribbon element not found in the enclosure of the tip cell",
-                 "Filling fraction not correct"
+                 "Filling fraction not correct",
+                 "Toughness iteration did not converge"
                  )
 
 
-def advance_time_step(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
-                      TimeStep):
+def advance_time_step(Frac, C, Material_properties, Simulation_Parameters, TimeStep, Fluid_properties=None,
+                      Injection_Parameters=None, Loading_Parameters=None):
     """
     This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
     time steps. A system exit is raised after maximum allowed reattempts.
@@ -65,13 +68,32 @@ def advance_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
         # smaller time step to reattempt time stepping; equal to the given time step on first iteration
         smallerTimeStep = TimeStep * Simulation_Parameters.reAttemptFactor ** i
 
-        status, Fr = attempt_time_step(Frac,
-                                       C,
-                                       Material_properties,
-                                       Fluid_properties,
-                                       Simulation_Parameters,
-                                       Injection_Parameters,
-                                       smallerTimeStep)
+        if Simulation_Parameters.viscousInjection:
+            status, Fr = attempt_time_step(Frac,
+                                           C,
+                                           Material_properties,
+                                           Fluid_properties,
+                                           Simulation_Parameters,
+                                           Injection_Parameters,
+                                           smallerTimeStep)
+
+        elif Simulation_Parameters.dryCrack_mechLoading:
+            status, Fr = attempt_time_step_mechLoading(Frac,
+                                                      C,
+                                                      Material_properties,
+                                                      Simulation_Parameters,
+                                                      Loading_Parameters,
+                                                      smallerTimeStep,
+                                                      Frac.mesh)
+
+        elif Simulation_Parameters.volumeControl:
+            status, Fr = attempt_time_step_volumeControl(Frac,
+                                                         C,
+                                                         Material_properties,
+                                                         Simulation_Parameters,
+                                                         Injection_Parameters,
+                                                         smallerTimeStep,
+                                                         Frac.mesh)
         if status == 1:
             print(errorMessages[status])
 
@@ -386,6 +408,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         print("toughness iteration " + repr(itr) + "norm " + repr(norm))
         itr += 1
 
+    if itr == sim_parameters.maxToughnessItr:
+        exitstatus = 10
+        return exitstatus, None
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)

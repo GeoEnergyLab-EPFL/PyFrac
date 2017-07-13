@@ -229,7 +229,8 @@ class SimulationParameters:
                  tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
                  max_reattemps=5, reattempt_factor=0.8, output_time_period=1e-10, plot_figure=False,
                  save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M",
-                 tol_toughness=1e-3, max_toughnessItr=60):
+                 tol_toughness=1e-3, max_toughnessItr=60, mech_loading=False, volume_control=False,
+                 viscous_injection=True):
         """
         
         The constructor of the SimulationParameters class. See documentation of the class.
@@ -270,7 +271,11 @@ class SimulationParameters:
         self.saveToDisk = save_to_disk
         self.toleranceToughness = tol_toughness
         self.maxToughnessItr = max_toughnessItr
-
+        self.dryCrack_mechLoading = mech_loading
+        self.viscousInjection = viscous_injection
+        self.volumeControl = volume_control
+        if mech_loading or volume_control:
+            self.viscousInjection = False
         # check operating system to get appropriate slash in the address
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
