@@ -29,7 +29,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
     # for Elements radialy outward from ribbon cells
     Alive = np.copy(EltRibbon)
     NarrowBand = np.copy(EltRibbon)
-    FarAway = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltRibbon, None))
+    FarAway = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltChannel, None))
     # the maximum distance any point can have from another in the current mesh. This distance is used to detect the
     # cells that are not yet traversed, i.e. having infinity distance
     maxdist = 4 * (mesh.Lx ** 2 + mesh.Ly ** 2) ** 0.5

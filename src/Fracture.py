@@ -568,8 +568,10 @@ class Fracture():
         plt.axis('equal')
 
         # maximize the plot window
-        # mng = plt.get_current_fig_manager()
-        # mng.window.showMaximized()
+        import sys
+        if "win32" in sys.platform or "win64" in sys.platform:
+            mng = plt.get_current_fig_manager()
+            mng.window.showMaximized()
 
         return fig
 

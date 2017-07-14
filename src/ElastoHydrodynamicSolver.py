@@ -281,11 +281,32 @@ def findBracket(func,guess,*args):
     return a, b
 
 
+# -----------------------------------------------------------------------------------------------------------------------
+
+def MakeEquationSystem_viscousFluid_sameFP(delwk, vkm1, *args):
+    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain) = args
+    wnPlus1 = np.copy(w)
+    wnPlus1[EltCrack] = wnPlus1[EltCrack] + delwk
+
+    if turb:
+        (con, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1, EltCrack, muPrime / 12, mesh, InCrack, rho, vkm1,
+                                                           C, sigma0, dgrain)
+    else:
+        con = finiteDiff_operator_laminar(wnPlus1, EltCrack, muPrime, mesh, InCrack)
+        vk = vkm1
+    con = con[np.ix_(EltCrack, EltCrack)]
+    CCrack = C[np.ix_(EltCrack, EltCrack)]
+
+    A = np.identity(EltCrack.size) - dt * np.dot(con, CCrack)
+    S = dt * np.dot(con, np.dot(CCrack, w[EltCrack]) + sigma0[EltCrack]) + dt / mesh.EltArea * Q[EltCrack] - LeakOff[
+                                                                                                                 EltCrack] / mesh.EltArea
+    return (A, S, vk)
 
 
-######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
-def MakeEquationSystemExtendedFP(solk, vkm1, *args):
+def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
+
     (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0,
      turb, dgrain) = args
 
@@ -330,18 +351,37 @@ def MakeEquationSystemExtendedFP(solk, vkm1, *args):
 
     return (A, S, vk)
 
+#-----------------------------------------------------------------------------------------------------------------------
 
-######################################
-#
-def MakeEquationSystem_DryCrack_Loaded(wLoadedElts, *args):
+def MakeEquationSystem_mechLoading_sameFP(w_LoadedElts, EltCrack, EltLoaded, C):
 
-    (EltCrack, EltLoaded, EltFree, C, dt, mesh, sigma0) = args
+    C_Crack = C[np.ix_(EltCrack, EltCrack)]
 
-    C_Crack_Free = C[np.ix_(EltFree, EltFree)]
-    C_Crack_Loaded = -C[np.ix_(EltFree, EltLoaded)]
+    A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
+    A = np.vstack((A, np.zeros((1, EltCrack.size + 1), dtype=np.float64)))
+    A[-1, np.where(EltCrack == EltLoaded)[0]] = 1
 
-    return (C_Crack_Free, np.dot(C_Crack_Loaded,wLoadedElts))
+    S = np.zeros((EltCrack.size + 1), dtype=np.float64)
+    S[-1] = w_LoadedElts
 
+    return A, S
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def MakeEquationSystem_mechLoading_extendedFP(wTip, EltChannel, EltTip, C, EltLoaded, w_loaded):
+
+    Ccc = C[np.ix_(EltChannel, EltChannel)]
+    Cct = C[np.ix_(EltChannel, EltTip)]
+
+    A = np.hstack((Ccc, -np.ones((EltChannel.size, 1),dtype=np.float64)))
+    A = np.vstack((A,np.zeros((1,EltChannel.size+1),dtype=np.float64)))
+    A[-1, np.where(EltChannel == EltLoaded)[0]] = 1
+
+    S = - np.dot(Cct, wTip)
+    S = np.append(S, w_loaded)
+
+    return A, S
 
 #-----------------------------------------------------------------------------------------------------------------------
 def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
@@ -358,14 +398,13 @@ def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
     return A, S
 
 #-----------------------------------------------------------------------------------------------------------------------
-
 def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, EltTip, C, dt, Q, ElemArea):
 
     Ccc = C[np.ix_(EltChannel, EltChannel)]
     Cct = C[np.ix_(EltChannel, EltTip)]
 
     A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
-    A = np.vstack((A,np.ones((1,EltChannel.size+1),dtype=np.float64)))
+    A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
     A[-1,-1] = 0
 
     S = -np.dot(Ccc,w_lst_tmstp[EltChannel]) - np.dot(Cct,wTip)
@@ -373,40 +412,15 @@ def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, E
 
     return A, S
 
-# def residual_DryCrack_Loaded(solk, InterItr, *args):
-#     (A, S, Inter_Itr) = MakeEquationSystem_DryCrack_Loaded(solk, InterItr, *args)
-#     return (np.dot(A, solk) - S, Inter_Itr)
 
-######################################
-#
-def MakeEquationSystemSameFP(delwk, vkm1, *args):
-    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain) = args
-    wnPlus1 = np.copy(w)
-    wnPlus1[EltCrack] = wnPlus1[EltCrack] + delwk
-
-    if turb:
-        (con, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1, EltCrack, muPrime / 12, mesh, InCrack, rho, vkm1,
-                                                           C, sigma0, dgrain)
-    else:
-        con = finiteDiff_operator_laminar(wnPlus1, EltCrack, muPrime, mesh, InCrack)
-        vk = vkm1
-    con = con[np.ix_(EltCrack, EltCrack)]
-    CCrack = C[np.ix_(EltCrack, EltCrack)]
-
-    A = np.identity(EltCrack.size) - dt * np.dot(con, CCrack)
-    S = dt * np.dot(con, np.dot(CCrack, w[EltCrack]) + sigma0[EltCrack]) + dt / mesh.EltArea * Q[EltCrack] - LeakOff[
-                                                                                            EltCrack] / mesh.EltArea
-    return (A, S, vk)
-
-
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
 def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr, *args):
-    (A, S, vk) = MakeEquationSystemSameFP(solk, interItr, *args)
+    (A, S, vk) = MakeEquationSystem_viscousFluid_sameFP(solk, interItr, *args)
     return (np.dot(A, solk) - S, vk)
 
 
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
 def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
     (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
@@ -437,7 +451,7 @@ def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
     return vel_magnitude
 
 
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
 def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
     pf = np.zeros((Mesh.NumberOfElts,), dtype=np.float64)
@@ -452,13 +466,13 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
     return (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop)
 
 
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
 def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, interItr, *args):
-    (A, S, vk) = MakeEquationSystemExtendedFP(solk, interItr, *args)
+    (A, S, vk) = MakeEquationSystem_viscousFluid_extendedFP(solk, interItr, *args)
     return (np.dot(A, solk) - S, vk)
 
 
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
 def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0, PicardPerNewton = 100):
     """
@@ -517,7 +531,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
     return (solk, interItr)
 
 
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def Jacobian(Residual_function, x, interItr, TypValue, *args, central=False):

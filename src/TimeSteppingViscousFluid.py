@@ -17,108 +17,8 @@ from src.TimeSteppingVolumeControl import *
 import copy
 import warnings
 
-errorMessages = ("Propagated not attempted",
-                 "Time step successful",
-                 "Evaluated level set is not valid",
-                 "Front is not tracked correctly",
-                 "Evaluated tip volume is not valid",
-                 "Solution obtained from the elastohydrodynamic solver is not valid",
-                 "Did not converge after max iterations",
-                 "Tip inversion is not correct",
-                 "Ribbon element not found in the enclosure of the tip cell",
-                 "Filling fraction not correct",
-                 "Toughness iteration did not converge"
-                 )
 
-
-def advance_time_step(Frac, C, Material_properties, Simulation_Parameters, TimeStep, Fluid_properties=None,
-                      Injection_Parameters=None, Loading_Parameters=None):
-    """
-    This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
-    time steps. A system exit is raised after maximum allowed reattempts.
-    
-    Arguments:
-        Frac (Fracture object):                             fracture object from the last time step 
-        C (ndarray-float):                                  the elasticity matrix 
-        Material_properties (MaterialProperties object):    material properties
-        Fluid_properties (FluidProperties object):          fluid properties 
-        Simulation_Parameters (SimulationParameters object): simulation parameters
-        Injection_Parameters (InjectionProperties object):  injection properties
-        TimeStep (float):                                   time step to be attempted 
-    
-    Return:
-        int:   possible values:
-                                    0       -- not propagated
-                                    1       -- iteration successful
-                                    2       -- evaluated level set is not valid
-                                    3       -- front is not tracked correctly
-                                    4       -- evaluated tip volume is not valid
-                                    5       -- solution of elastohydrodynamic solver is not valid
-                                    6       -- did not converge after max iterations
-                                    7       -- tip inversion not successful
-                                    8       -- Ribbon element not found in the enclosure of a tip cell
-                                    9       -- Filling fraction not correct
-                                    
-        Fracture object:            fracture after advancing time step. 
-    """
-    print('\n--------------------------------\ntime = ' + repr(Frac.time))
-    print("Attempting time step of " + repr(TimeStep) + " sec...")
-    # loop for reattempting time stepping in case of failure.
-    for i in range(0, Simulation_Parameters.maxReattempts):
-        # smaller time step to reattempt time stepping; equal to the given time step on first iteration
-        smallerTimeStep = TimeStep * Simulation_Parameters.reAttemptFactor ** i
-
-        if Simulation_Parameters.viscousInjection:
-            status, Fr = attempt_time_step(Frac,
-                                           C,
-                                           Material_properties,
-                                           Fluid_properties,
-                                           Simulation_Parameters,
-                                           Injection_Parameters,
-                                           smallerTimeStep)
-
-        elif Simulation_Parameters.dryCrack_mechLoading:
-            status, Fr = attempt_time_step_mechLoading(Frac,
-                                                      C,
-                                                      Material_properties,
-                                                      Simulation_Parameters,
-                                                      Loading_Parameters,
-                                                      smallerTimeStep,
-                                                      Frac.mesh)
-
-        elif Simulation_Parameters.volumeControl:
-            status, Fr = attempt_time_step_volumeControl(Frac,
-                                                         C,
-                                                         Material_properties,
-                                                         Simulation_Parameters,
-                                                         Injection_Parameters,
-                                                         smallerTimeStep,
-                                                         Frac.mesh)
-        if status == 1:
-            print(errorMessages[status])
-
-            # output
-            if Simulation_Parameters.plotFigure or Simulation_Parameters.saveToDisk:
-                output(Frac,
-                       Fr,
-                       Simulation_Parameters,
-                       Material_properties,
-                       Injection_Parameters,
-                       Fluid_properties)
-
-            return status, Fr
-        else:
-            print(errorMessages[status])
-
-        print("Time step failed...")
-        print("Reattempting with time step of " + repr(
-            TimeStep * Simulation_Parameters.reAttemptFactor ** (i + 1)) + " sec")
-    Frac.plot_fracture("complete", "footPrint")
-    plt.show()
-    raise SystemExit("Propagation not successful. Exiting...")
-
-
-def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
+def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
                       TimeStep):
     """ Propagate fracture one time step. The function injects fluid into the fracture, first by keeping the same
     footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
@@ -145,6 +45,7 @@ def attempt_time_step(Frac, C, Material_properties, Fluid_properties, Simulation
                                     7       -- tip inversion not successful
                                     8       -- Ribbon element not found in the enclosure of a tip cell
                                     9       -- Filling fraction not correct
+                                    10      -- Toughness iteration did not converge
                                     
         Fracture object:            fracture after advancing time step. 
     """
@@ -286,7 +187,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
 
     # solving the system
     (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
-                               MakeEquationSystemSameFP,
+                               MakeEquationSystem_viscousFluid_sameFP,
                                delwGuess,
                                typclValue,
                                vk,
@@ -352,18 +253,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                     7       -- tip inversion not successful
                                     8       -- Ribbon element not found in the enclosure of a tip cell
                                     9       -- Filling fraction not correct
-                                    
+                                    10      -- Toughness iteration did not converge
+
         Fracture object:            fracture after advancing time step. 
     """
-    norm_lvlSet = 1
+
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    Kprime = 1e6*np.ones((Fr_lstTmStp.EltRibbon.size,),dtype=np.float64)
-    Kprime_m1 = np.copy(Kprime)
-    l_m1 = sgndDist_k[Fr_lstTmStp.EltRibbon]
-    if Fr_lstTmStp.time > 35318:
-        print("here")
-        a = 1
+
     # toughness iteration loop
     while itr < sim_parameters.maxToughnessItr:
 
@@ -590,7 +487,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     # sloving the system of equations for the change in width in the channel elements and pressure in the tip elements
     (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP,
-                               MakeEquationSystemExtendedFP,
+                               MakeEquationSystem_viscousFluid_extendedFP,
                                guess,
                                typValue,
                                vk,
@@ -647,57 +544,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     return exitstatus, Fr_kplus1
 
 #-----------------------------------------------------------------------------------------------------------------------
-
-
-def output(Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties, injection_parameters, fluid_properties):
-    """
-    This function plot the fracture footprint and/or save file to disk according to the given time period.
-    
-    Arguments:
-        Fr_lstTmStp (Fracture object):                      fracture from last time step
-        Fr_advanced (Fracture object):                      fracture after time step advancing
-        simulation_parameters (SimulationParameters object): simulation parameters 
-        material_properties (MaterialProperties object):    Material properties
-         
-    Returns: 
-    """
-    if (Fr_lstTmStp.time // simulation_parameters.outputTimePeriod !=
-                Fr_advanced.time // simulation_parameters.outputTimePeriod):
-        # plot fracture footprint
-        if simulation_parameters.plotFigure:
-            # if ploting analytical solution enabled
-            if simulation_parameters.plotAnalytical:
-                Q0 = injection_parameters.injectionRate[1, 0] # injection rate at the time of injection
-                if simulation_parameters.analyticalSol == "M":
-                    (R, p, w, v) = M_vertex_solution_t_given(material_properties.Eprime,
-                                                             Q0,
-                                                             fluid_properties.muPrime,
-                                                             Fr_lstTmStp.mesh,
-                                                             Fr_advanced.time)
-
-                elif simulation_parameters.analyticalSol == "K":
-                    (R, p, w, v) = K_vertex_solution_t_given(material_properties.Kprime,
-                                                             material_properties.Eprime,
-                                                             Q0,
-                                                             Fr_lstTmStp.mesh,
-                                                             Fr_advanced.time)
-
-                fig = Fr_advanced.plot_fracture('complete',
-                                                'footPrint',
-                                                analytical=R,
-                                                mat_Properties=material_properties)
-            else:
-                fig = Fr_advanced.plot_fracture('complete',
-                                                'footPrint',
-                                                mat_Properties = material_properties)
-            plt.show()
-
-        # save fracture to disk
-        if simulation_parameters.saveToDisk:
-            simulation_parameters.lastSavedFile += 1
-            Fr_advanced.SaveFracture(simulation_parameters.outFileAddress + "file_"
-                                     + repr(simulation_parameters.lastSavedFile))
-
 
 def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
     """

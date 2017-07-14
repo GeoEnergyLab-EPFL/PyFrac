@@ -276,6 +276,9 @@ class SimulationParameters:
         self.volumeControl = volume_control
         if mech_loading or volume_control:
             self.viscousInjection = False
+
+        if mech_loading:
+            self.plotAnalytical = False
         # check operating system to get appropriate slash in the address
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:

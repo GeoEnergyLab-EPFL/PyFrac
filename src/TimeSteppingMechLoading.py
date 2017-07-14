@@ -13,16 +13,17 @@ from src.LevelSet import *
 import copy
 from src.VolIntegral import *
 
-def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Parameters, Injection_Parameters, TimeStep,
-                                    Mesh):
-    """ Propagate fracture one time step assuming uniform pressure (inviscid fluid). The function injects fluid into the fracture, first by keeping the same
+
+def attempt_time_step_mechLoading(Frac, C, Material_properties, Simulation_Parameters, Loading_Properties, TimeStep, Mesh):
+    """ Propagate fracture one time step. The function injects fluid into the fracture, first by keeping the same
     footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
-    until the final footprint position convergences.
+    until convergence is achieved.
 
     Arguments:
         Frac (Fracture object):                             fracture object from the last time step
         C (ndarray-float):                                  the elasticity matrix
         Material_properties (MaterialProperties object):    material properties
+        Fluid_properties (FluidProperties object):          fluid properties
         Simulation_Parameters (SimulationParameters object): simulation parameters
         Injection_Parameters (InjectionProperties object):  injection properties
         TimeStep (float):                                   time step
@@ -39,22 +40,23 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
                                     7       -- tip inversion not successful
                                     8       -- Ribbon element not found in the enclosure of a tip cell
                                     9       -- Filling fraction not correct
-                                    10      -- Toughness iteration did not converge
 
-        Fracture object:            fracture after advancing the given time step.
+        Fracture object:            fracture after advancing time step.
     """
-    indxCurTime = max(np.where(Frac.time >= Injection_Parameters.injectionRate[0, :])[0])
-    Qin = Injection_Parameters.injectionRate[1, indxCurTime]  # current injection rate
+
+    exitstatus = 0  # exit code to be returned
+
 
     # todo : write log file
     # f = open('log', 'a')
 
-    print('Solving ElastoHydrodynamic equations for uniform pressure(inviscid fluid) with same footprint...')
+    print('Solving mechanical loading ElastoHydrodynamic equations with same footprint...')
     # width by injecting the fracture with the same foot print (balloon like inflation)
-    exitstatus, w_k = injection_same_footprint_volumeControl(Frac,
+    exitstatus, w_k = injection_same_footprint_mechLoading(Frac,
                                                             C,
                                                             TimeStep,
-                                                            Qin,
+                                                            Material_properties,
+                                                            Loading_Properties,
                                                             Mesh)
 
     if exitstatus != 1:
@@ -74,13 +76,14 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
         Fr_kminus1 = copy.deepcopy(Fr_k)
 
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
-        (exitstatus, Fr_k) = injection_extended_footprint_volumeControl(w_k,
-                                                              Frac,
-                                                              C,
-                                                              TimeStep,
-                                                              Qin,
-                                                              Material_properties,
-                                                              Simulation_Parameters)
+        (exitstatus, Fr_k) = injection_extended_footprint_mechLoading(w_k,
+                                                          Frac,
+                                                          C,
+                                                          TimeStep,
+                                                          Loading_Properties,
+                                                          Material_properties,
+                                                          Simulation_Parameters)
+
         if exitstatus != 1:
             return exitstatus, None
 
@@ -100,7 +103,7 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, mesh):
+def injection_same_footprint_mechLoading(Fr_lstTmStp, C, timeStep, mat_properties, loading_properties, mesh):
     """
     This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
     to be the same as in the fracture from the last time step.
@@ -128,18 +131,23 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, mesh):
             r = 0.1
         ac = (1 - r) / r
         C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
-                                                                                                             + ac * np.pi / 4.)
+                                                                                                    + ac * np.pi / 4.)
 
-    # index of current time in the time series (first row) of the injection rate array
+    EltFree = np.copy(Fr_lstTmStp.EltCrack)
+    for i in range(len(loading_properties.EltLoaded)):
+        EltFree = np.delete(EltFree, np.where(EltFree == loading_properties.EltLoaded[i])[0])
 
+    w_loadedElts = Fr_lstTmStp.w[loading_properties.EltLoaded] + timeStep * loading_properties.displRate
 
-
-    (A, b) = MakeEquationSystem_volumeControl_sameFP(Fr_lstTmStp.w, Fr_lstTmStp.EltCrack, C, timeStep, Q, mesh.EltArea)
+    (A, b) = MakeEquationSystem_mechLoading_sameFP(w_loadedElts,
+                                                  Fr_lstTmStp.EltCrack,
+                                                  loading_properties.EltLoaded,
+                                                  C)
     sol = np.linalg.solve(A, b)
 
     # getting new width by adding the change in width solution to the width from last time step
-    w_k = np.copy(Fr_lstTmStp.w)
-    w_k[Fr_lstTmStp.EltCrack] += sol[np.arange(Fr_lstTmStp.EltCrack.size)]
+    w_k = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
+    w_k[Fr_lstTmStp.EltCrack] = sol[np.arange(Fr_lstTmStp.EltCrack.size)]
 
 
     # regain original C (without filling fraction correction)
@@ -162,9 +170,9 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, mesh):
         exitstatus = 1
         return exitstatus, w_k
 
-#-----------------------------------------------------------------------------------------------------------------------
 
-def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_properties, sim_parameters):
+def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Loading_properties, Material_properties,
+                                             sim_parameters):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -196,12 +204,10 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
         Fracture object:            fracture after advancing time step.
     """
 
-    itr = 1
+    itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
 
     # toughness iteration loop
-
-    print("finding correct toughness: iteration ", end=" ")
     while itr < sim_parameters.maxToughnessItr:
 
         sgndDist_km1 = np.copy(sgndDist_k)
@@ -235,14 +241,14 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
         norm = np.linalg.norm(1 - abs(l_m1 / sgndDist_k[Fr_lstTmStp.EltRibbon]))
         if norm < sim_parameters.toleranceToughness:
-            print("converged...\ntoughness iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+            print("toughness iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                   repr(norm))
             break
 
-        # do it only once if KprimeFunc
+        # do it only once if KprimeFunc is not provided
         if Material_properties.KprimeFunc is None:
             break
-        print(repr(itr), end=", ")
+        print("toughness iteration " + repr(itr) + "norm " + repr(norm))
         itr += 1
 
     if itr == sim_parameters.maxToughnessItr:
@@ -367,25 +373,26 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                               Vel_k,
                               Kprime=Kprime_tip) / Fr_lstTmStp.mesh.EltArea
 
-    # # check if the tip volume has gone into negative
-    # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
-    # if np.asarray(smallNgtvWTip).size > 0:
-    #     #warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
-    #     wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
+    # check if the tip volume has gone into negative
+    smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
+    if np.asarray(smallNgtvWTip).size > 0:
+        #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+        wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
 
     if (wTip < 0).any():
         exitstatus = 4
         return exitstatus, None
 
-    A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
-                                                wTip,
-                                                Fr_lstTmStp.EltChannel,
-                                                EltsTipNew,
-                                                C,
-                                                timeStep,
-                                                Qin,
-                                                Fr_lstTmStp.mesh.EltArea)
+    w_loadedElts = Fr_lstTmStp.w[Loading_properties.EltLoaded] + timeStep * Loading_properties.displRate
+
+    A, b = MakeEquationSystem_mechLoading_extendedFP(
+                                                    wTip,
+                                                    Fr_lstTmStp.EltChannel,
+                                                    EltsTipNew,
+                                                    C,
+                                                    Loading_properties.EltLoaded,
+                                                    w_loadedElts)
 
     sol = np.linalg.solve(A, b)
 
@@ -394,7 +401,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
     Fr_kplus1.time += timeStep
 
-    Fr_kplus1.w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+    Fr_kplus1.w[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
     Fr_kplus1.w[EltsTipNew] = wTip
 
     # check if the new width is valid
@@ -430,7 +437,8 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     Fr_kplus1.process_fracture_front()
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
 
-
+    # if Fr_kplus1.time > 4200:
+    #     Fr_kplus1.plot_fracture("complete", "footPrint")
     exitstatus = 1
     return exitstatus, Fr_kplus1
 
