@@ -532,7 +532,7 @@ class Fracture():
         if mat_properties != None:
             if np.max(mat_properties.SigmaO) > 0:
                 colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
-            if not mat_properties.KprimeFunc is None:
+            if not mat_properties.KprimeFunc is None and not mat_properties.anisotropic:
                 Kprime = mat_properties.KprimeFunc(self.mesh.CenterCoor[:,0],self.mesh.CenterCoor[:,1])
             else:
                 Kprime = mat_properties.Kprime

@@ -265,6 +265,18 @@ def Velocity_Residual(v,*args):
 
 
 def findBracket(func,guess,*args):
+    """
+    This function can be used to find bracket for a root finding algorithm.
+
+    Arguments:
+        func (callable function): the function giving the residual for which zero is to be found
+        guess (float): starting guess
+        args (tupple): arguments passed to the function
+
+    Returns:
+         float : the lower bracket
+         float : the higher bracket
+    """
     a = np.finfo(float).eps * guess
     b = max(1000*guess,1)
     Res_a = func(a,*args)
@@ -283,23 +295,67 @@ def findBracket(func,guess,*args):
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def MakeEquationSystem_viscousFluid_sameFP(delwk, vkm1, *args):
+def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
+    """
+    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
+    with the same footprint as of the last time step. The viscosity of the injected fluid is taken into account by
+    calculating fluid fluxes using Poiseuille Law (see Peirce and Detounay 2008, CMAME for details).
+
+    Arguments:
+        delw_k (ndarray-float): the trial change in width for the current iteration of fracture front
+
+        args (tupple): arguments passed to the function
+            w (ndarray-float): fracture width from the last time step
+            EltCrack (ndarray-int): list of elements in the fracture
+            Q (float) fluid injection rate at the current time step
+            C (ndarray-float): the elasticity matrix
+            dt (float): the current time step
+            muPrime (ndarray-float): 12 time viscosity of the injected fluid
+            mesh (CartesianMesh object): the mesh
+            InCrack (ndarray-float): an array with one for all the elements in the fracture and zero for rest
+            LeakOff (ndarray-float): the leaked off fluid volume for each cell
+            sigma0 (ndarray-float): the confining stress
+            rho (float): density of the injected fluid
+            turb (boolean): turbulence will be taken into account if true
+            dgrain (float): the grain size of the rock. it will be used to calculate the fracture roughness
+
+        inter_iter (ndarray-float ): the data passed between iterations if any.
+
+    Returns:
+        ndarray-float : the A matrix (in the system Ax=b) to be solved by a linear system solver
+        ndarray-float : the b matrix (in the system Ax=b) to be solved by a linear system slover
+        ndarray-float : the velocity at cell edges
+    """
+
     (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain) = args
     wnPlus1 = np.copy(w)
-    wnPlus1[EltCrack] = wnPlus1[EltCrack] + delwk
+    wnPlus1[EltCrack] = wnPlus1[EltCrack] + delw_k
 
     if turb:
-        (con, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1, EltCrack, muPrime / 12, mesh, InCrack, rho, vkm1,
-                                                           C, sigma0, dgrain)
+        (con, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1,
+                                                           EltCrack,
+                                                           muPrime / 12,
+                                                           mesh,
+                                                           InCrack,
+                                                           rho,
+                                                           inter_iter,
+                                                           C,
+                                                           sigma0,
+                                                           dgrain)
     else:
-        con = finiteDiff_operator_laminar(wnPlus1, EltCrack, muPrime, mesh, InCrack)
-        vk = vkm1
+        con = finiteDiff_operator_laminar(wnPlus1,
+                                          EltCrack,
+                                          muPrime,
+                                          mesh,
+                                          InCrack)
+        vk = inter_iter
+
     con = con[np.ix_(EltCrack, EltCrack)]
     CCrack = C[np.ix_(EltCrack, EltCrack)]
 
     A = np.identity(EltCrack.size) - dt * np.dot(con, CCrack)
     S = dt * np.dot(con, np.dot(CCrack, w[EltCrack]) + sigma0[EltCrack]) + dt / mesh.EltArea * Q[EltCrack] - LeakOff[
-                                                                                                                 EltCrack] / mesh.EltArea
+                                                                                            EltCrack] / mesh.EltArea
     return (A, S, vk)
 
 
@@ -467,7 +523,7 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, interItr, *args):
+def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, *args, interItr=None):
     (A, S, vk) = MakeEquationSystem_viscousFluid_extendedFP(solk, interItr, *args)
     return (np.dot(A, solk) - S, vk)
 
@@ -505,7 +561,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
         if k % PicardPerNewton == 0 or tryNewton:
             (Fx, interItr) = Res_fun(solk, interItr, *args)
             if newton % 3 == 0:
-                Jac = Jacobian(Res_fun, solk, interItr, TypValue, *args)
+                Jac = Jacobian(Res_fun, solk, TypValue, interItr, *args)
             dx = np.linalg.solve(Jac, -Fx)
             solk = solkm1 + dx
             newton += 1
@@ -534,7 +590,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Jacobian(Residual_function, x, interItr, TypValue, *args, central=False):
+def Jacobian(Residual_function, x, TypValue, *args, central=False, interItr=None):
     (Fx, interItr) = Residual_function(x, interItr, *args)
     Jac = np.zeros((len(x), len(x)), dtype=np.float64)
     for i in range(0, len(x)):

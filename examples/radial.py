@@ -20,14 +20,11 @@ if not '.' + slash + 'src' in sys.path:
     sys.path.append('.' + slash + 'src')
 
 # imports
-import numpy as np
-from src.CartesianMesh import *
-from src.Fracture import *
-from src.LevelSet import *
-from src.VolIntegral import *
-from src.Elasticity import *
-from src.Properties import *
-from src.FractureFrontLoop import *
+
+# import numpy as np
+# from src.CartesianMesh import *
+# from src.Fracture import *
+# from src.Properties import *
 from src.Controller import *
 from src.PostProcess import animate_simulation_results
 from src.PostProcessRadial import plot_radial_data

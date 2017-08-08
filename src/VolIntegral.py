@@ -41,7 +41,7 @@ def TipAsym_UniversalW_zero_Res(w, *args):
 
 
 def TipAsym_UniversalW_delt_Res(w, *args):
-    """Residual for the General assymptote (not sure if its actual residual but zero will give the solution)"""
+    """The residual function zero of which will give the General asymptote """
 
     (dist, Kprime, Eprime, muPrime, Cbar, Vel) = args
 
@@ -60,18 +60,10 @@ def TipAsym_UniversalW_delt_Res(w, *args):
 
 
 def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
-    """Moments of the General tip assymptote to calculate the volume integral (see Donstov and Pierce, 2017)"""
+    """Moments of the General tip asymptote to calculate the volume integral (see Donstov and Pierce, 2017)"""
 
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cbar, Vel)
 
-    #    x = np.linspace(a,b,100)
-    #    sol = np.zeros((100,),)
-    #    for j in range(0,100):
-    #        sol[j]=TipAsym_UniversalW_delt_Res(x[j],*TipAsmptargs)
-    #
-    #    plt.plot(x,sol , 'r')
-    #    plt.pause(0.01)
-    #    plt.close("all")
     if stagnant:
         w = KIPrime * dist ** 0.5 / Eprime
     else:
@@ -90,8 +82,8 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
         delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
 
     M0 = 2 * w * dist / (3 + delt)
-
     M1 = 2 * w * dist ** 2 / (5 + delt)
+
     if np.isnan(M0) or np.isnan(M1):
         raise SystemExit('Moment(s) of assymptote are nan')
     return (M0, M1)
@@ -100,13 +92,13 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
 def Pdistance(x, y, slope, intercpt):
     """distance of a point from a line"""
 
-    return (slope * x - y + intercpt) / (slope ** 2 + 1) ** 0.5;
+    return (slope * x - y + intercpt) / (slope ** 2 + 1) ** 0.5
 
 
 def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
     """
     Volume  of the triangle defined by perpendicular distance (dist) and em (em=1/sin(alpha)cos(alpha), where alpha
-    is the angle of the perpendicular). The regime variable identifies the propagation regime    
+    is the angle of the perpendicular). The regime variable identifies the propagation regime.
     """
 
     if regime == 'A':
@@ -173,7 +165,7 @@ def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
 
 
 def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprime=None, stagnant=None, KIPrime=None):
-    """Calculate Volume integrals of the grid cells according to the tip assymptote given by the variable regime"""
+    """Calculate Volume integrals of the grid cells according to the tip asymptote given by the variable regime"""
     if stagnant is None:
         stagnant = np.zeros((alpha.size,), bool)
         KIPrime = np.zeros((alpha.size,), float)
@@ -225,8 +217,7 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprim
             else:
                 UpTriVol = 0
 
-            lRt = Pdistance(mesh.hx, 0, grad,
-                            yIntrcpt)  # distance of the front from the lower right vertex of the grid cell
+            lRt = Pdistance(mesh.hx, 0, grad, yIntrcpt)  # distance of the front from the lower right vertex of the grid cell
             if lRt > 0:  # right vertex of the triangle is wider than the grid cell width
                 RtTriVol = VolumeTriangle(lRt, m, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i],
                                           stagnant[i], KIPrime[i])
@@ -248,7 +239,7 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprim
 
 def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     """
-    This function finds the bracket to be used by the Unversal tip asymptote root finder.
+    This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
 
     a = (1e5 * np.finfo(float).eps) * dist ** 0.5 * Kprime / Eprime  # lower bound on width

@@ -74,6 +74,19 @@ class MaterialProperties:
 
         self.grainSize = grain_size
         self.anisotropic = anisotropic_flag
+        if anisotropic_flag:
+            try:
+                self.KprimeFunc(0)
+            except TypeError:
+                raise SystemExit('The Kprime function given is not correct for anisotropic case. It should take one'
+                                 ' argument, i.e. the angle and return a toughness value.')
+
+        if not Kprime_func is None and not self.anisotropic:
+            try:
+                self.KprimeFunc(0,0)
+            except TypeError:
+                raise SystemExit('The Kprime function given is not correct. It should take two arguments, '
+                           'i.e. the x and y coordinates of a point and return the toughness at this point.')
 
 # --------------------------------------------------------------------------------------------------------
 

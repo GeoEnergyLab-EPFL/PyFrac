@@ -213,10 +213,10 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
         sgndDist_km1 = np.copy(sgndDist_k)
         l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
-        # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
-        # large float value. (algorithm requires inf)
+        # Initializing the signed distance function with extremely large value. (algorithm requires inf)
+        sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
+        # Initialization of the signed distance in the ribbon elements by inverting the tip asymptotics
         sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion_hetrogenous_toughness(w_k,
                                                                                      Fr_lstTmStp,
                                                                                      Material_properties,
@@ -227,11 +227,24 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
             exitstatus = 7
             return exitstatus, None
 
+        # region expected to have the front after propagation. The signed distance of the cells only in this region will
+        # evaluated with the fast marching method to avoid unnecessary computation cost
+        front_region = \
+        np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # the search region outwards from the front position at last time step
+        pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+                                                                       Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # the search region inwards from the front position at last time step
+        ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+
         # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
         SolveFMM(sgndDist_k,
                  Fr_lstTmStp.EltRibbon,
                  Fr_lstTmStp.EltChannel,
-                 Fr_lstTmStp.mesh)
+                 Fr_lstTmStp.mesh,
+                 front_region[pstv_region],
+                 front_region[ngtv_region])
+
 
         # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
         # todo: not satisfied with why this happens. need re-examining
@@ -248,7 +261,8 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
         # do it only once if KprimeFunc is not provided
         if Material_properties.KprimeFunc is None:
             break
-        print("toughness iteration " + repr(itr) + "norm " + repr(norm))
+
+        print("iterating on toughness...")
         itr += 1
 
     if itr == sim_parameters.maxToughnessItr:

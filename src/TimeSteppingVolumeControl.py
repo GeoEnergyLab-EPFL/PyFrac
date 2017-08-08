@@ -200,8 +200,6 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
 
     # toughness iteration loop
-
-    print("finding correct toughness: iteration ", end=" ")
     while itr < sim_parameters.maxToughnessItr:
 
         sgndDist_km1 = np.copy(sgndDist_k)
@@ -221,11 +219,23 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
             exitstatus = 7
             return exitstatus, None
 
+        # region expected to have the front after propagation. The signed distance of the cells only in this region will
+        # evaluated with the fast marching method to avoid unnecessary computation cost
+        front_region = \
+        np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # the search region outwards from the front position at last time step
+        pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+                                                                       Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # the search region inwards from the front position at last time step
+        ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+
         # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
         SolveFMM(sgndDist_k,
                  Fr_lstTmStp.EltRibbon,
                  Fr_lstTmStp.EltChannel,
-                 Fr_lstTmStp.mesh)
+                 Fr_lstTmStp.mesh,
+                 front_region[pstv_region],
+                 front_region[ngtv_region])
 
         # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
         # todo: not satisfied with why this happens. need re-examining
@@ -239,10 +249,11 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                   repr(norm))
             break
 
-        # do it only once if KprimeFunc
+        # do it only once if KprimeFunc is not provided
         if Material_properties.KprimeFunc is None:
             break
-        print(repr(itr), end=", ")
+
+        print("iterating on toughness...")
         itr += 1
 
     if itr == sim_parameters.maxToughnessItr:

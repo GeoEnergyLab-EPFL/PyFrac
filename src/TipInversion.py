@@ -19,9 +19,10 @@ import matplotlib.pyplot as plt
 import warnings
 
 def TipAsym_viscStor_Res(dist, *args):
-    """Residual function for viscocity dominate regime, without leak off"""
+    """Residual function for viscosity dominate regime, without leak off"""
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
     return wEltRibbon - (18 * 3 ** 0.5 * (dist - DistLstTSEltRibbon) / dt * muPrime / Eprime) ** (1 / 3) * dist ** (
         2 / 3)
 
@@ -30,7 +31,9 @@ def TipAsym_viscStor_Res(dist, *args):
 
 def TipAsym_viscLeakOff_Res(dist, *args):
     """Residual function for viscosity dominated regime, with leak off"""
+
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
     return wEltRibbon - 4 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * ((
                                                         dist - DistLstTSEltRibbon) / dt) ** 0.125 * dist ** (5 / 8)
 
@@ -45,7 +48,7 @@ def f(K, Cb, C1):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_Universal_delt_Res(dist, *args):
-    """More precise function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce)"""
+    """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
@@ -82,9 +85,10 @@ def TipAsym_Universal_zero_Res(dist, *args):
 # -----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_MKTransition_Res(dist, *args):
-    """Residual function for viscocity to toughness regime with transition, without leak off"""
+    """Residual function for viscosity to toughness regime with transition, without leak off"""
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
     return wEltRibbon - (1 + 18 * 3 ** 0.5 * Eprime ** 2 * (
         dist - DistLstTSEltRibbon) / dt * muPrime * dist ** 0.5 / Kprime ** 3) ** (
                         1 / 3) * Kprime / Eprime * dist ** 0.5
@@ -94,7 +98,7 @@ def TipAsym_MKTransition_Res(dist, *args):
 
 def TipAsym_variable_Toughness_Res(dist, *args):
 
-    (wEltRibbon, Eprime, Kprime_func, alpha, zero_vertex, center_coord) = args
+    (wEltRibbon, Eprime, Kprime_func, anisotropic_flag, alpha, zero_vertex, center_coord) = args
 
     if zero_vertex == 0:
 
@@ -116,8 +120,12 @@ def TipAsym_variable_Toughness_Res(dist, *args):
         x = center_coord[0] + dist * np.cos(alpha)
         y = center_coord[1] - dist * np.sin(alpha)
 
+    if anisotropic_flag:
+        Kprime = Kprime_func(alpha)
+    else:
+        Kprime = Kprime_func(x,y)
 
-    return dist - wEltRibbon ** 2 * (Eprime / Kprime_func(x,y)) ** 2
+    return dist - wEltRibbon ** 2 * (Eprime / Kprime) ** 2
 
 def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, ResFunc):
     """ 
@@ -165,15 +173,15 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
         simParmtrs (SimulationParameters object): Simulation parameters
         dt (float):                             time step
         Kprime_k (ndarray-float):               Kprime for current iteration of toughness loop. if not given, the Kprime
-                                                from the given material properties object will be used for calculation.
+                                                from the given material properties object will be used.
     Returns:
-        ndarray-float:                          distance (unsigned) from the front for the ribbon cells.
+        ndarray-float:                          distance (unsigned) from the front to the ribbon cells.
     """
 
     if not Kprime_k == None:
         Kprime = Kprime_k
     else:
-        Kprime = matProp.Kprime
+        Kprime = matProp.Kprime[frac.EltRibbon]
 
     if simParmtrs.tipAsymptote == 'U':
         ResFunc = TipAsym_Universal_zero_Res
@@ -204,8 +212,8 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
 
     return dist
 
-
 # -----------------------------------------------------------------------------------------------------------------------
+
 
 def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Eprime):
     """ 
@@ -250,7 +258,23 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
 
     return KIPrime
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 def TipAsymInversion_hetrogenous_toughness(w, frac, mat_prop, level_set):
+    """
+    This function inverts the tip asymptote with the toughness value taken at the tip instead of taking at the ribbon
+    cell.
+
+    Argument:
+        w (ndarray-float):                      fracture width
+        frac (Fracture object):                 current fracture object
+        matProp (MaterialProperties object):    material properties
+        level_set (ndarray-float):              the level set values, i.e. signed distance from the fracture front
+
+    Returns:
+        ndarray-float:                          the inverted tip asymptote for the ribbon cells
+    """
 
     zero_vrtx = find_zero_vertex(frac.EltRibbon, level_set, frac.mesh)
     dist = -level_set
@@ -284,18 +308,30 @@ def TipAsymInversion_hetrogenous_toughness(w, frac, mat_prop, level_set):
     sol = np.zeros((len(frac.EltRibbon),),dtype=np.float64)
     for i in range(0, len(frac.EltRibbon)):
 
-        TipAsmptargs = (w[frac.EltRibbon[i]], mat_prop.Eprime, mat_prop.KprimeFunc, alpha[i], zero_vrtx[i],
-               frac.mesh.CenterCoor[frac.EltRibbon[i]])
+        TipAsmptargs = (w[frac.EltRibbon[i]],
+                        mat_prop.Eprime,
+                        mat_prop.KprimeFunc,
+                        mat_prop.anisotropic,
+                        alpha[i],
+                        zero_vrtx[i],
+                        frac.mesh.CenterCoor[frac.EltRibbon[i]])
+
+        # residual for zero distance; used as lower bracket
         residual_zero = TipAsym_variable_Toughness_Res(0, *TipAsmptargs)
 
-        sample_lngths = np.linspace(4*(frac.mesh.hx**2 + frac.mesh.hy**2)**0.5 / 16,4*(frac.mesh.hx**2 + frac.mesh.hy**2)**0.5,16)
+        # the lower bracket (0) and the upper bracker (4x the maximum possible length in a cell) is divided into 16
+        # equally distant points to sample the sign of the residual function. This is necessary to avoid missing a high
+        # resolution variation in toughness. This also means that the toughness variations below the upper_bracket/16 is
+        # not guaranteed to be caught.
+        sample_lngths = np.linspace(4*(frac.mesh.hx**2 + frac.mesh.hy**2)**0.5 /
+                                    16,4*(frac.mesh.hx**2 + frac.mesh.hy**2)**0.5,16)
         cnt = 0
         res_prdct = 0
         while res_prdct >= 0 and cnt < 16:
             res_prdct = residual_zero * TipAsym_variable_Toughness_Res(sample_lngths[cnt], *TipAsmptargs)
             cnt += 1
 
-        if cnt == 16:# and res_prdct >= 0:
+        if cnt == 16:
             sol[i] = np.nan
             return sol
         else:
@@ -309,7 +345,10 @@ def TipAsymInversion_hetrogenous_toughness(w, frac, mat_prop, level_set):
     return sol-sol*1e-10
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+
 def find_zero_vertex(Elts, level_set, mesh):
+    """ find the vertex opposite to the propagation direction from which the perpendicular on the front is drawn"""
 
     zero_vertex = np.zeros((len(Elts),),dtype=int)
     for i in range(0, len(Elts)):

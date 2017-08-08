@@ -36,10 +36,9 @@ nu = 0.4
 Eprime = 3.3e10 / (1 - nu ** 2)
 K_Ic = 1e6
 sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
-d_grain = 1e-5
 def Kprime_function(alpha):
     return (32 / math.pi) ** 0.5 * (1e6 + 0.4e6 * np.sin(alpha))
-Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0, Kprim_func=Kprime_function, anisotropic_flag=True)
+Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0, Kprime_func=Kprime_function, anisotropic_flag=True)
 
 # injection parameters
 Q0 = 0.001  # injection rate

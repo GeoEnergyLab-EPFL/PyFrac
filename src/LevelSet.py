@@ -12,7 +12,7 @@ import numpy as np
 from src.Utility import Neighbors
 import warnings
 
-def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
+def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
     """
     solve Eikonal equation to get level set.
 
@@ -29,7 +29,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
     # for Elements radialy outward from ribbon cells
     Alive = np.copy(EltRibbon)
     NarrowBand = np.copy(EltRibbon)
-    FarAway = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltChannel, None))
+    FarAway = np.copy(farAwayPstv)
     # the maximum distance any point can have from another in the current mesh. This distance is used to detect the
     # cells that are not yet traversed, i.e. having infinity distance
     maxdist = 4 * (mesh.Lx ** 2 + mesh.Ly ** 2) ** 0.5
@@ -80,7 +80,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh):
     positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
     Alive = np.copy(EltRibbon)
     NarrowBand = np.copy(EltRibbon)
-    FarAway = np.copy(RibbonInwardElts)
+    FarAway = np.copy(farAwayNgtv)
 
     while NarrowBand.size > 0:
 

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 class Controller:
 
-    errorMessages = ("Propagated not attempted",
+    errorMessages = ("Propagation not attempted",
                      "Time step successful",
                      "Evaluated level set is not valid",
                      "Front is not tracked correctly",
@@ -155,8 +155,7 @@ class Controller:
                 print(self.errorMessages[status])
 
             print("Time step failed...")
-            print("Reattempting with time step of " + repr(
-                TimeStep * self.sim_prop.reAttemptFactor ** (i + 1)) + " sec")
+            print("Reattempting with time step of " + repr(TimeStep * self.sim_prop.reAttemptFactor**(i + 1)) + " sec")
         Frac.plot_fracture("complete", "footPrint")
         plt.show()
         raise SystemExit("Propagation not successful. Exiting...")
