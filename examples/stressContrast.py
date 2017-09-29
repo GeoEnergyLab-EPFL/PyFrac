@@ -60,25 +60,41 @@ simulProp = SimulationParameters(tip_asymptote="U",
                                  req_sol_at=req_sol_time)
 
 
-# initializing fracture
-initRad = 0.02 # initial radius of fracture
+#initialization data tuple
+initRad = 0.02
+init_data = (initRad, 'radius', 'M')
+C = None
 
 # creating fracture object
 Fr = Fracture(Mesh,
-              initRad,
-              'radius',
-              'M',
+              # 'general',
+              'analytical',
               Solid,
               Fluid,
               Injection,
-              simulProp)
+              simulProp,
+              # general_init_data=init_data)
+              analyt_init_data=init_data)
+
+# # initializing fracture
+# initRad = 0.02 # initial radius of fracture
+#
+# # creating fracture object
+# Fr = Fracture(Mesh,
+#               initRad,
+#               'radius',
+#               'M',
+#               Solid,
+#               Fluid,
+#               Injection,
+#               simulProp)
 
 
-# create a Controller
-controller = Controller(Fr, Solid, Fluid, Injection, simulProp)
-
-# run the simulation
-controller.run()
+# # create a Controller
+# controller = Controller(Fr, Solid, Fluid, Injection, simulProp, C=C)
+#
+# # run the simulation
+# controller.run()
 
 # plot fracture evolution
 animate_simulation_results(simulProp.outFileAddress, sol_time_series=simulProp.solTimeSeries)

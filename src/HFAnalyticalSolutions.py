@@ -17,9 +17,10 @@ notably for
 import numpy as np
 from scipy import interpolate
 import warnings
+from scipy import special
 
 # ----------------------------------------------------
-def M_vertex_solution_R_given(Eprime, Q0, muPrime, Mesh, R):
+def M_vertex_solution_r_given(Eprime, Q0, muPrime, Mesh, R):
     """
     Analytical solution for Viscosity dominated (M vertex) fracture propagation, given fracture radius. The solution
     does not take leak off into account.
@@ -343,3 +344,32 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, t, h):
     v = 0.01 * sol_l / (t1 - t)
 
     return (sol_l, p, w, v, PKN)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh, b=None, t=None):
+
+    c = (KIc_min / KIc_max[mesh.CenterElts])**2
+
+    if b is None:
+        b = (Q0 * t * 3 * c * Eprime / (8 * KIc_max[mesh.CenterElts] * np.pi**0.5 ))**(2/5)
+
+    if t is None:
+        t_sol = 8 * KIc_max[mesh.CenterElts] * np.pi**0.5 * b**(5/2) / (3 * c * Eprime * Q0)
+
+    a = (KIc_max[mesh.CenterElts] / KIc_min)**2 * b
+    eccentricity = (1 - b ** 2 / a ** 2) ** 0.5
+
+    p = KIc_max * special.ellipe(eccentricity**2) / (np.pi * b)**0.5
+
+    w = np.zeros((mesh.NumberOfElts,))
+
+    rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
+    actv = np.where(rho > 0)[0]  # active cells (inside fracture)
+    w[actv] = 4 * b * p[mesh.CenterElts] / (Eprime * special.ellipe(eccentricity**2)) * (1 -
+                                (mesh.CenterCoor[actv, 0] / a) ** 2 - (mesh.CenterCoor[actv, 1] / b) ** 2) ** 0.5
+
+    if t is None:
+        return t_sol, a, w, p
+    else:
+        return b, a, w, p

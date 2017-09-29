@@ -112,15 +112,17 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
     # applying different colors for different types of elements
     # todo needs to be done properly
     colors = 100. * np.full(len(patches), 0.9)
-    colors += -100. * (Solid.SigmaO) / np.max(Solid.SigmaO)
-    colors += -100. * (Solid.Kprime) / np.max(Solid.Kprime)
+    if np.max(Solid.SigmaO) > 0:
+        colors += -100. * (Solid.SigmaO) / np.max(Solid.SigmaO)
+    if np.max(Solid.Kprime) > 0:
+        colors += -100. * (Solid.Kprime) / np.max(Solid.Kprime)
 
     p.set_array(np.array(colors))
     ax.add_collection(p)
 
 
 
-    args = (fraclist, fileNo)
+    args = (fraclist, fileNo, Solid, Fluid, Injection)
     # animate fracture
     animation = FuncAnimation(fig,
                               update,
@@ -140,7 +142,7 @@ def update(frame, *args):
     """
 
     # loading the fracture list
-    (fraclist, noFractures) = args
+    (fraclist, noFractures, Solid, Fluid, Injection) = args
 
     ffi = fraclist[frame]
 
@@ -150,6 +152,20 @@ def update(frame, *args):
     for e in range(0,len(I)):
         plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '-k')
 
+    # R, a, w, p = anisotropic_toughness_elliptical_solution(Solid.K1c,
+    #                                                        Solid.K1c_perp,
+    #                                                        Solid.Eprime,
+    #                                                        Injection.injectionRate[1, 0],
+    #                                                        ffi.mesh,
+    #                                                        t=ffi.time)
+    # from matplotlib.patches import Ellipse
+    # import matplotlib as mpl
+    # ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360., color='r')
+    # # ellipse.set_clip_box(ax.bbox)
+    # ellipse.set_fill(False)
+    # ellipse.set_ec('r')
+    # fig, ax = plt.subplots()
+    # ax.add_patch(ellipse)
     plt.title('Time ='+ "%.4f" % ffi.time+ ' sec.')
     plt.axis('equal')
 

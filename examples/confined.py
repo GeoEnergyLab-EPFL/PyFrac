@@ -39,20 +39,6 @@ sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
 stressed_layer = np.where(abs(Mesh.CenterCoor[:,1]) > 0.025)[0]
 sigma0[stressed_layer] = 5e6
 K_Ic[stressed_layer] = 1.1e6
-# def Kprime_function(x,y):
-#     if isinstance(x, float):
-#         Kprime = 0.5e6
-#         if abs(y) >  0.025:
-#             Kprime = 1.1e6
-#     else:
-#         Kprime = np.full((len(x),),0.5e6)
-#         for i in range(0, len(x)):
-#             if abs(y[i]) >  0.025:
-#                 Kprime[i] = 1.1e6
-#     return (32 / math.pi) ** 0.5 * Kprime
-
-
-d_grain = 1e-5
 Solid = MaterialProperties(Mesh, Eprime, K_Ic, SigmaO=sigma0)
 
 # injection parameters
@@ -68,28 +54,31 @@ req_sol_time = np.linspace(10.,530.,11)
 simulProp = SimulationParameters(tip_asymptote="U",
                                  plot_figure=False,
                                  save_to_disk=True,
-                                 out_file_folder=".\\Data\\Confined", # e.g. "./Data/Laminar" for linux or mac
+                                 out_file_folder=".\\Data\\Confined2", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=False,
                                  tmStp_prefactor=0.6,
                                  req_sol_at=req_sol_time)
 
 
-# initializing fracture
-initRad = 0.015 # initial radius of fracture
+
+#initialization data tuple
+initRad = 0.015
+init_data = (initRad, 'radius', 'M')
+C = None
 
 # creating fracture object
 Fr = Fracture(Mesh,
-              initRad,
-              'radius',
-              'M',
+              # 'general',
+              'analytical',
               Solid,
               Fluid,
               Injection,
-              simulProp)
-
+              simulProp,
+              # general_init_data=init_data)
+              analyt_init_data=init_data)
 
 # create a Controller
-controller = Controller(Fr, Solid, Fluid, Injection, simulProp)
+controller = Controller(Fr, Solid, Fluid, Injection, simulProp, C=C)
 
 # run the simulation
 controller.run()

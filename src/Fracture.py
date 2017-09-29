@@ -24,7 +24,7 @@ from src.LevelSet import *
 from src.VolIntegral import *
 from src.Properties import *
 from src.CartesianMesh import *
-
+from src.FractureInitilization import *
 
 # todo : merge the __init__ with the actual initialization
 
@@ -68,7 +68,8 @@ class Fracture():
             
     """
 
-    def __init__(self, Mesh, initValue, initType, regime, solid, fluid, injection, simulProp):
+    def __init__(self, Mesh, init_type, solid, fluid, injection, simulProp, analyt_init_data=None,
+                 general_init_data=None):
         """ Initialize the fracture according to the given initial value and the propagation regime. Either initial 
         radius or time can be given as the initial value. The function sets up the fracture front and other fracture
         parameters according to the given regime at the given time or radius.
@@ -85,223 +86,101 @@ class Fracture():
         """
 
         self.mesh = Mesh
-        if initType == 'time':
-            self.time = initValue
-            if regime == 'K':
-                (self.initRad, self.p, self.w, v) = K_vertex_solution_t_given(solid.Kprime, solid.Eprime,
-                                                                    injection.injectionRate[1,0], self.mesh, initValue)
-            elif regime == 'M':
-                (self.initRad, self.p, self.w, v) = M_vertex_solution_t_given(solid.Eprime, injection.injectionRate[1,0],
-                                                                                fluid.muPrime, self.mesh, initValue)
-            elif regime == 'Mt':
-                (self.initRad, self.p, self.w, v) = MT_vertex_solution_t_given(solid.Eprime, np.mean(solid.Cprime),
-                                                    injection.injectionRate[1,0], fluid.muPrime, self.mesh, initValue)
+        if init_type == 'analytical':
+
+            (initValue, initType, regime) = analyt_init_data
+
+            if initType == 'time':
+                self.time = initValue
+                if regime == 'K':
+                    (self.initRad, self.p, self.w, self.v) = K_vertex_solution_t_given(solid.Kprime,
+                                                                                  solid.Eprime,
+                                                                                  injection.injectionRate[1,0],
+                                                                                  self.mesh,
+                                                                                  initValue)
+                elif regime == 'M':
+                    (self.initRad, self.p, self.w, self.v) = M_vertex_solution_t_given(solid.Eprime,
+                                                                                  injection.injectionRate[1,0],
+                                                                                  fluid.muPrime,
+                                                                                  self.mesh,
+                                                                                  initValue)
+                elif regime == 'Mt':
+                    (self.initRad, self.p, self.w, self.v) = MT_vertex_solution_t_given(solid.Eprime,
+                                                                                   np.mean(solid.Cprime),
+                                                                                   injection.injectionRate[1,0],
+                                                                                   fluid.muPrime,
+                                                                                   self.mesh,
+                                                                                   initValue)
+                else:
+                    print('regime ' + regime + ' not supported')
+                    return
+            elif initType == 'radius':
+                self.initRad = initValue
+                if regime == 'K':
+                    (self.time, self.p, self.w, self.v) = K_vertex_solution_r_given(solid.Kprime,
+                                                                               solid.Eprime,
+                                                                               injection.injectionRate[1,0],
+                                                                               self.mesh,
+                                                                               initValue)
+                elif regime == 'M':
+                    (self.time, self.p, self.w, self.v) = M_vertex_solution_r_given(solid.Eprime,
+                                                                               injection.injectionRate[1,0],
+                                                                               fluid.muPrime,
+                                                                               self.mesh,
+                                                                               initValue)
+                elif regime == 'Mt':
+                    (self.time, self.p, self.w, self.v) = Mt_vertex_solution_r_given(solid.Eprime,
+                                                                                np.mean(solid.Cprime),
+                                                                                injection.injectionRate[1,0],
+                                                                                fluid.muPrime,
+                                                                                self.mesh,
+                                                                                initValue)
+                else:
+                    print('regime ' + regime + ' not supported')
+                    return
+                self.initTime = self.time
             else:
-                print('regime ' + regime + ' not supported')
-                return
-        elif initType == 'radius':
-            self.initRad = initValue
-            if regime == 'K':
-                (self.time, self.p, self.w, v) = K_vertex_solution_r_given(solid.Kprime, solid.Eprime,
-                                                                    injection.injectionRate[1,0], self.mesh, initValue)
-            elif regime == 'M':
-                (self.time, self.p, self.w, v) = M_vertex_solution_R_given(solid.Eprime, injection.injectionRate[1,0],
-                                                                    fluid.muPrime, self.mesh, initValue)
-            elif regime == 'Mt':
-                (self.time, self.p, self.w, v) = Mt_vertex_solution_r_given(solid.Eprime, np.mean(solid.Cprime),
-                                                                    injection.injectionRate[1,0],
-                                                                    fluid.muPrime, self.mesh, initValue)
-            else:
-                print('regime ' + regime + ' not supported')
-                return
-            self.initTime = self.time
-        else:
-            print('initType ' + initType + ' not supported')
+                raise SystemExit('initType ' + initType + ' not supported in fracture initialization')
 
+            surv_cells, channel_cells = get_circular_survey_cells(self.mesh, self.initRad)
+            surv_cells_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
+                                                                        surv_cells, 1] ** 2) ** 0.5
+            self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
+            self.CellStatus, self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,
+                                                                                    surv_cells,
+                                                                                    channel_cells,
+                                                                                    surv_cells_dist)
 
+        elif init_type == 'general':
+            (surv_cells, channel_cells, surv_cells_dist, w, p, C, volume, vel) = general_init_data
 
-        # level set value at middle of the elements
-        phiMid = np.empty([self.mesh.NumberOfElts, 1], dtype=float)
-        for e in range(0, self.mesh.NumberOfElts):
-            phiMid[e] = radius_level_set(self.mesh.CenterCoor[e], self.initRad)
-        # level set value at vertices of the element
-        phiVertices = np.empty([len(self.mesh.VertexCoor), 1], dtype=float)
-        for i in range(0, len(self.mesh.VertexCoor)):
-            phiVertices[i] = radius_level_set(self.mesh.VertexCoor[i], self.initRad)
-            # finding elements containing at least one vertices inside the fracture, i.e. with a value of the level <0
-            # avoiding loop on elements....
+            self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
+            self.CellStatus, self.l, self.alpha, self.FillF,self.sgndDist  = generate_footprint(self.mesh,
+                                                                                    surv_cells,
+                                                                                    channel_cells,
+                                                                                    surv_cells_dist)
 
-        # array of Length (number of elements) containig the sum of vertices with neg level set value)
-        psum = np.sum(phiVertices[self.mesh.Connectivity[:]] < 0, axis=1)
-        # indices of tip element which by definition have less than 4 but at least 1 vertices inside the level set
-        EltTip = (np.where(np.logical_and(psum > 0, psum < 4)))[0]
-        EltCrack = (np.where(psum > 0))[0]  # # indices of cracked element
-        EltChannel = (np.where(psum == 4))[0]  # indices of channel element / fully cracked
+            self.w, self.p = initial_width_pressure(self.mesh,
+                                                    self.EltCrack,
+                                                    self.EltTip,
+                                                    self.FillF,
+                                                    C,
+                                                    w,
+                                                    p,
+                                                    volume)
 
-        # find the ribbon elements: Channel Elements having at least
-        # on common vertices with a Tip element
+            # self.w = np.zeros((self.mesh.NumberOfElts,), )
+            # self.w[self.EltCrack] = w
+            #
+            # self.p = np.zeros((self.mesh.NumberOfElts, ), )
+            # self.p[self.EltCrack] = p
+
+            self.v = vel * np.ones((self.EltTip.size, ), )
+            if volume is None:
+                volume = np.sum(self.w) * (Mesh.EltArea)
+            self.time = volume/injection.injectionRate[1,0]
+
         #
-        # loop on ChannelElement, and on TipElement
-        testribbon = np.empty([len(EltChannel), 1], dtype=float)
-        for e in range(0, len(EltChannel)):
-            for i in range(0, len(EltTip)):
-                if (len(np.intersect1d(self.mesh.Connectivity[EltChannel[e]], self.mesh.Connectivity[EltTip[i]])) > 0):
-                    testribbon[e] = 1
-                    break
-                else:
-                    testribbon[e] = 0
-        EltRibbon = EltChannel[(np.reshape(testribbon, len(EltChannel)) == 1)]  # EltChannel is (N,) testribbon is (N,1)
-
-        # Get the initial Filling fraction as well as location of the intersection of the crack front with the edges
-        #                               of the mesh
-        # we loop over all the tip element  (partially fractured element)
-
-        EltArea = self.mesh.EltArea
-        # a vector containing the filling fraction of each Tip Elements     -> should be of all elements
-        FillF = np.empty([len(EltTip)], dtype=float)
-        # a vector containing the coordinantes of the intersection of the front with the edges of each Tip Element - I point
-        I = np.empty([len(EltTip), 2], dtype=float)
-        # a vector containing the coordinantes of the intersection of the front with the edges of each Tip Element - J point
-        J = np.empty([len(EltTip), 2], dtype=float)
-
-        for i in range(0, len(EltTip)):
-
-            ptsV = self.mesh.VertexCoor[self.mesh.Connectivity[EltTip[i]]]  #
-            # level set value at the vertices of this element
-            levelV = np.reshape(phiVertices[self.mesh.Connectivity[EltTip[i]]], 4)
-            s = np.argsort(levelV)  # sort the level set
-            furthestin = s[0]  # vertex the furthest inside the fracture
-            InsideFrac = 1 * (levelV < 0.)  # array of 0 and 1
-
-            if np.sum(InsideFrac) == 1:
-                # case 1 vertex in the fracture
-                Ve = np.where(InsideFrac == 1)[0]  # corresponding vertex indices in the reference element
-                x = np.sqrt(
-                    self.initRad ** 2 - (ptsV[Ve, 1][0]) ** 2)  # zero of the level set in x direction (same y as Ve)
-                y = np.sqrt(
-                    self.initRad ** 2 - (ptsV[Ve, 0][0]) ** 2)  # zero of the level set in y direction (same x as Ve)
-                # note the np.around(,8)  to avoid running into numerical precision issue
-                if (x < np.around(ptsV[0, 0], 8)) | (x > np.around(ptsV[1, 0], 8)):
-                    x = -x
-                if (y < np.around(ptsV[0, 1], 8)) | (y > np.around(ptsV[3, 1], 8)):
-                    y = -y
-
-                if (Ve == 0 | Ve == 2):
-                    # case it is 0 node or 2 node
-                    I[i] = np.array([x, ptsV[Ve, 1][0]])
-                    J[i] = np.array([ptsV[Ve, 0][0], y])
-                else:
-                    J[i] = np.array([x, ptsV[Ve, 1][0]])
-                    I[i] = np.array([ptsV[Ve, 0][0], y])
-
-                # the filling fraction is simple to compute - area of the triangle Ve-IJ - divided by EltArea
-                FillF[i] = 0.5 * np.linalg.norm(I[i] - ptsV[Ve]) * np.linalg.norm(J[i] - ptsV[Ve]) / EltArea
-
-            if np.sum(InsideFrac) == 2:
-                # case of 2 vertices inside the fracture (and 2 outside)
-                Ve = np.where(InsideFrac == 1)[0]
-                if (np.sum(Ve == np.array([0, 1])) == 2) | (np.sum(Ve == np.array([2, 3])) == 2):
-                    # case where the front is mostly horizontal i.e. [0-1] or [2,3]
-                    y1 = np.sqrt(self.initRad ** 2 - (ptsV[Ve[0], 0]) ** 2)
-                    y2 = np.sqrt(self.initRad ** 2 - (ptsV[Ve[1], 0]) ** 2)
-                    if (y1 < np.around(ptsV[0, 1], 8)) | (y1 > np.around(ptsV[3, 1], 8)):
-                        y1 = -y1
-                    if (y2 < np.around(ptsV[0, 1], 8)) | (y2 > np.around(ptsV[3, 1], 8)):
-                        y2 = -y2
-                    if (furthestin == 0) | (furthestin == 2):
-                        I[i] = np.array([(ptsV[Ve[0], 0]), y1])
-                        J[i] = np.array([(ptsV[Ve[1], 0]), y2])
-                        FillF[i] = 0.5 * (np.linalg.norm(I[i] - ptsV[Ve[0]]) + np.linalg.norm(J[i] - ptsV[Ve[1]])) \
-                                   * (np.linalg.norm(ptsV[Ve[0]] - ptsV[Ve[1]])) / EltArea
-                    else:
-                        J[i] = np.array([(ptsV[Ve[0], 0]), y1])
-                        I[i] = np.array([(ptsV[Ve[1], 0]), y2])
-                        FillF[i] = 0.5 * (np.linalg.norm(I[i] - ptsV[Ve[1]]) + np.linalg.norm(J[i] - ptsV[Ve[0]])) \
-                                   * (np.linalg.norm(ptsV[Ve[0]] - ptsV[Ve[1]])) / EltArea
-                else:
-                    # case where the front is mostly vertical i.e. [0-3] or [1,2]
-                    x1 = np.sqrt(self.initRad ** 2 - (ptsV[Ve[0], 1]) ** 2)
-                    x2 = np.sqrt(self.initRad ** 2 - (ptsV[Ve[1], 1]) ** 2)
-                    if (x1 < (np.around(ptsV[0, 0], 8))) | (x1 > (np.around(ptsV[1, 0], 8))):
-                        x1 = -x1
-                    if (x2 < np.around(ptsV[0, 0], 8)) | (x2 > np.around(ptsV[1, 0], 8)):
-                        x2 = -x2
-                    if (furthestin == 0) | (furthestin == 2):
-                        I[i] = np.array([x1, (ptsV[Ve[0], 1])])
-                        J[i] = np.array([x2, (ptsV[Ve[1], 1])])
-                        FillF[i] = 0.5 * (np.linalg.norm(I[i] - ptsV[Ve[0]]) + np.linalg.norm(J[i] - ptsV[Ve[1]])) \
-                                   * (np.linalg.norm(ptsV[Ve[0]] - ptsV[Ve[1]])) / EltArea
-                    else:
-                        J[i] = np.array([x1, (ptsV[Ve[0], 1])])
-                        I[i] = np.array([x2, (ptsV[Ve[1], 1])])
-                        FillF[i] = 0.5 * (np.linalg.norm(I[i] - ptsV[Ve[1]]) + np.linalg.norm(J[i] - ptsV[Ve[0]])) \
-                                   * (np.linalg.norm(ptsV[Ve[0]] - ptsV[Ve[1]])) / EltArea
-
-            if np.sum(InsideFrac) == 3:
-                # only one vertices outside the fracture
-                # we redo the same than for case 1 but Ve now corresponds to the only vertex outside the fracture
-                Ve = np.where(InsideFrac == 0)[0]
-                x = np.sqrt(self.initRad ** 2 - (ptsV[Ve, 1][0]) ** 2)
-                y = np.sqrt(self.initRad ** 2 - (ptsV[Ve, 0][0]) ** 2)
-                if (x < np.around(ptsV[0, 0], 8)) | (x > np.around(ptsV[1, 0], 8)):
-                    x = -x
-                if (y < np.around(ptsV[0, 1], 8)) | (y > np.around(ptsV[3, 1], 8)):
-                    y = -y
-                if (Ve == 0 | Ve == 2):
-                    # case it is
-                    J[i] = np.array([x, ptsV[Ve, 1][0]])
-                    I[i] = np.array([ptsV[Ve, 0][0], y])
-                else:
-                    I[i] = np.array([x, ptsV[Ve, 1][0]])
-                    J[i] = np.array([ptsV[Ve, 0][0], y])
-
-                FillF[i] = 1. - 0.5 * np.linalg.norm(I[i] - ptsV[Ve]) * np.linalg.norm(J[i] - ptsV[Ve]) / EltArea
-
-        # Type of each cell (1 for channel cells, 2 for tip cells, 3 for ribbon cells and 0 for rest)
-        CellStatus = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
-        CellStatus[:] = 0
-        CellStatus[EltChannel] = 1
-        CellStatus[EltTip] = 2
-        CellStatus[EltRibbon] = 3
-
-        # local viscosity
-        self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
-
-        # assign 1 for all cells inside the fracture
-        InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
-        InCrack[EltCrack] = 1
-
-        # initializing signed distance according to the initial radius
-        self.sgndDist = radius_level_set(self.mesh.CenterCoor, self.initRad)
-
-        # todo !!! Hack: tip elements are evaluated again with the front reconstructing function to avoid discrepancy
-        (self.EltTip, self.l, self.alpha, CSt) = reconstruct_front(self.sgndDist, EltChannel, self.mesh)
-        # filling fraction list adjusted according to the tip cells given by the front reconstructing function
-        self.FillF = FillF[np.arange(EltTip.shape[0])[np.in1d(EltTip, self.EltTip)]]
-
-        # check if initial radius is large enough to have exclusively channel elements
-        if EltChannel.size <= EltRibbon.size:
-            raise SystemExit("No channel elements. The initial radius is propably too small")
-        (self.EltChannel, self.EltRibbon, self.EltCrack) = (EltChannel, EltRibbon, EltCrack)
-
-        self.Ffront = np.concatenate((I, J), axis=1)
-        self.CellStatus = CellStatus
-        self.InCrack = InCrack
-        self.v = v * np.ones((len(self.l)), float) # uniform velocity for all the tip elements
-
-        # assigning ZeroVertex 0, 1, 2, or 3 according to the sign of the cell center coordinates. For example, cells
-        # with both the x and y axis positive will get 0(signifying the bottom left vertex) as the zero vertex.
-        self.ZeroVertex = np.zeros((len(self.EltTip),), int)
-        for i in range(0, len(self.EltTip)):
-            if self.mesh.CenterCoor[self.EltTip[i], 0] <= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] <= 0:
-                self.ZeroVertex[i] = 2
-            elif self.mesh.CenterCoor[self.EltTip[i], 0] >= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] <= 0:
-                self.ZeroVertex[i] = 3
-            elif self.mesh.CenterCoor[self.EltTip[i], 0] <= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] >= 0:
-                self.ZeroVertex[i] = 1
-            elif self.mesh.CenterCoor[self.EltTip[i], 0] >= 0 and self.mesh.CenterCoor[self.EltTip[i], 1] >= 0:
-                self.ZeroVertex[i] = 0
-
         # assigning nan for cells which are not in the fracture yet
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
 
@@ -314,21 +193,26 @@ class Fracture():
         self.Leakedoff[self.EltChannel] = 2 * solid.Cprime[self.EltChannel] * self.mesh.EltArea * (self.time -
                                                                                             self.Tarrival[
                                                                                             self.EltChannel]) ** 0.5
-        # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
-        self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip,
-                                                                                     self.alpha,
-                                                                                     self.l,
-                                                                                     self.mesh,
-                                                                                     'Lk',
-                                                                                     solid,
-                                                                                     self.muPrime,
-                                                                                     self.v)
+        # # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
+        # self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip,
+        #                                                                              self.alpha,
+        #                                                                              self.l,
+        #                                                                              self.mesh,
+        #                                                                              'Lk',
+        #                                                                              solid,
+        #                                                                              self.muPrime,
+        #                                                                              self.v)
 
         # fracture evolution data
-        self.FractEvol = np.empty((1, 4), float)
         self.process_fracture_front()
 
         self.FractureVolume = np.sum(self.w)*(Mesh.EltArea)
+
+        self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
+        self.InCrack[self.EltCrack] = 1
+
+        # local viscosity
+        self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
@@ -348,7 +232,7 @@ class Fracture():
 
     ###############################################################################
 
-    def plot_fracture(self, Elem_Identifier, Parameter_Identifier, analytical=0, identify=[], mat_Properties=None):
+    def plot_fracture(self, Elem_Identifier, Parameter_Identifier, analytical=None, identify=[], mat_Properties=None):
         """
         Plots the given parameter of the specified  cells;
         
@@ -547,11 +431,21 @@ class Fracture():
         ax.add_collection(p)
 
         # Plot the analytical solution
-        if rAnalytical > 0.:
-            circle = plt.Circle((0, 0), radius=rAnalytical)
-            circle.set_ec('r')
-            circle.set_fill(False)
-            ax.add_patch(circle)
+        if not rAnalytical is None:
+            if mat_properties.K1c_perp is None:
+                circle = plt.Circle((0, 0), radius=rAnalytical)
+                circle.set_ec('r')
+                circle.set_fill(False)
+                ax.add_patch(circle)
+            else:
+                from matplotlib.patches import Ellipse
+                import matplotlib as mpl
+                a = (mat_properties.K1c[0] / mat_properties.K1c_perp)**2 * rAnalytical
+                ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * rAnalytical, angle=360)
+                # ellipse.set_clip_box(ax.bbox)
+                ellipse.set_fill(False)
+                ellipse.set_ec('r')
+                ax.add_patch(ellipse)
 
         # print Element numbers on the plot for elements to be identified
         for i in range(len(identify)):

@@ -11,6 +11,7 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 from src.Utility import Neighbors
 import warnings
+from scipy.optimize import fsolve
 
 def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
     """
@@ -41,7 +42,6 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
 
         for neighbor in neighbors:
             if not neighbor in Alive:
-
                 if neighbor in FarAway:
                     NarrowBand = np.append(NarrowBand, neighbor)
                     FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
@@ -68,56 +68,75 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         Alive = np.append(Alive, Smallest)
         NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
+    if (InitlevelSet[farAwayPstv] == 1e10).any():
+        unevaluated = np.where(InitlevelSet[farAwayPstv] == 1e10)[0]
+        for i in range(len(unevaluated)):
+            neighbors = mesh.NeiElements[farAwayPstv[unevaluated[i]]]
+            Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
+            guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
+            InitlevelSet[farAwayPstv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
+            print("found unevaluated " +repr(unevaluated[i]))
+
     # for elements radialy inward from ribbon cells. The sign of the level set values(tip asymptote) in the ribbon cells
     # is inverted to run the fast marching algorithm. The sign is finally inverted back to assign the value in the level
     # set to be returned.
+    if len(farAwayNgtv)>0:
+        RibbonInwardElts = np.copy(EltChannel)
+        for i in range(len(EltRibbon)):
+            RibbonInwardElts = np.delete(RibbonInwardElts, np.where(RibbonInwardElts == EltRibbon[i])[0])
 
-    RibbonInwardElts = np.copy(EltChannel)
-    for i in range(len(EltRibbon)):
-        RibbonInwardElts = np.delete(RibbonInwardElts, np.where(RibbonInwardElts == EltRibbon[i])[0])
+        positive_levelSet = 1e10 * np.ones((mesh.NumberOfElts,), np.float64)
+        positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
+        Alive = np.copy(EltRibbon)
+        NarrowBand = np.copy(EltRibbon)
+        FarAway = np.copy(farAwayNgtv)
 
-    positive_levelSet = 1e10 * np.ones((mesh.NumberOfElts,), np.float64)
-    positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
-    Alive = np.copy(EltRibbon)
-    NarrowBand = np.copy(EltRibbon)
-    FarAway = np.copy(farAwayNgtv)
+        while NarrowBand.size > 0:
 
-    while NarrowBand.size > 0:
+            Smallest = int(NarrowBand[positive_levelSet[NarrowBand.astype(int)].argmin()])
+            neighbors = mesh.NeiElements[Smallest]
 
-        Smallest = int(NarrowBand[positive_levelSet[NarrowBand.astype(int)].argmin()])
-        neighbors = mesh.NeiElements[Smallest]
+            for neighbor in neighbors:
+                if not neighbor in Alive:
 
-        for neighbor in neighbors:
-            if not neighbor in Alive:
+                    if neighbor in FarAway:
+                        NarrowBand = np.append(NarrowBand, neighbor)
+                        FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
 
-                if neighbor in FarAway:
-                    NarrowBand = np.append(NarrowBand, neighbor)
-                    FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
+                    NeigxMin = min(positive_levelSet[mesh.NeiElements[neighbor, 0]],
+                                   positive_levelSet[mesh.NeiElements[neighbor, 1]])
+                    NeigyMin = min(positive_levelSet[mesh.NeiElements[neighbor, 2]],
+                                   positive_levelSet[mesh.NeiElements[neighbor, 3]])
+                    beta = mesh.hx / mesh.hy
+                    delT = NeigyMin - NeigxMin
 
-                NeigxMin = min(positive_levelSet[mesh.NeiElements[neighbor, 0]],
-                               positive_levelSet[mesh.NeiElements[neighbor, 1]])
-                NeigyMin = min(positive_levelSet[mesh.NeiElements[neighbor, 2]],
-                               positive_levelSet[mesh.NeiElements[neighbor, 3]])
-                beta = mesh.hx / mesh.hy
-                delT = NeigyMin - NeigxMin
+                    theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5
 
-                theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5
+                    if not np.isnan((NeigxMin + beta * NeigyMin + theta) / (1 + beta ** 2)):
+                        positive_levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
+                    else:  # the angle is either 0 or 90 degrees
+                        # vertical propagation direction.
+                        if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
+                            positive_levelSet[neighbor] = NeigyMin + mesh.hy
+                        # horizontal propagation direction.
+                        if NeigyMin > maxdist:
+                            positive_levelSet[neighbor] = NeigxMin + mesh.hx
 
-                if not np.isnan((NeigxMin + beta * NeigyMin + theta) / (1 + beta ** 2)):
-                    positive_levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
-                else:  # the angle is either 0 or 90 degrees
-                    # vertical propagation direction.
-                    if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
-                        positive_levelSet[neighbor] = NeigyMin + mesh.hy
-                    # horizontal propagation direction.
-                    if NeigyMin > maxdist:
-                        positive_levelSet[neighbor] = NeigxMin + mesh.hx
+            Alive = np.append(Alive, Smallest)
+            NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
-        Alive = np.append(Alive, Smallest)
-        NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
+        # assigning adjusted value to the level set to be returned
+        InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 
-    # assigning adjusted value to the level set to be returned
-    InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
+
+    if (abs(InitlevelSet[farAwayNgtv]) == 1e10).any():
+        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) == 1e10)[0]
+        for i in range(len(unevaluated)):
+            neighbors = mesh.NeiElements[farAwayNgtv[unevaluated[i]]]
+            Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
+            guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
+            InitlevelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
+            print("found unevaluated negative " + repr(unevaluated[i]))
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -133,7 +152,10 @@ def reconstruct_front(dist, EltChannel, mesh):
     """
 
     # Elements that are not in channel
-    EltRest = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltChannel, None))
+    EltRest = np.arange(mesh.NumberOfElts)
+    for i in range(len(EltChannel)):
+        EltRest = np.delete(EltRest, np.where(EltRest == EltChannel[i])[0])
+    # EltRest = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltChannel, None))
     ElmntTip = np.asarray([], int)
     l = np.asarray([])
     alpha = np.asarray([])
@@ -184,6 +206,10 @@ def reconstruct_front(dist, EltChannel, mesh):
             else:
                 alpha = np.append(alpha, np.nan)
 
+
+
+
+
     CellStatusNew = np.zeros((mesh.NumberOfElts), int)
     CellStatusNew[EltChannel] = 1
     CellStatusNew[ElmntTip] = 2
@@ -218,7 +244,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     """
 
     # new tip elements contain only the partially filled elements
-    eltsTip = EltsTipNew[np.where(FillFrac <= 0.999999)]
+    eltsTip = EltsTipNew[np.where(FillFrac <= 0.9999)]
 
     # Tip elements flag to avoid search on each iteration
     inTip = np.zeros((mesh.NumberOfElts,), bool)
@@ -276,6 +302,23 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     for i in range(0, len(eltsTip)):
         eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
 
+    # to_append = np.asarray([], dtype=np.int)
+    # for i in range(0, len(eltsRibbon)):
+    #     if mesh.NeiElements[eltsRibbon[i], 2] - 1 in eltsRibbon:
+    #         to_append = np.append(to_append,mesh.NeiElements[eltsRibbon[i], 0])
+    #     elif mesh.NeiElements[eltsRibbon[i], 2] + 1 in eltsRibbon:
+    #         to_append = np.append(to_append, mesh.NeiElements[eltsRibbon[i], 1])
+    #     # elif mesh.NeiElements[eltsRibbon[i], 3] - 1 in eltsRibbon:
+    #     #     to_append = np.append(to_append, mesh.NeiElements[eltsRibbon[i], 0])
+    #     # elif mesh.NeiElements[eltsRibbon[i], 3] + 1 in eltsRibbon:
+    #     #     to_append = np.append(to_append, mesh.NeiElements[eltsRibbon[i], 1])
+    #
+    # eltsRibbon = np.append(eltsRibbon, to_append)
+    #
+    # eltsRibbon = np.unique(eltsRibbon)
+    # for i in range(0, len(eltsTip)):
+    #     eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
+
     # remove wrongfully marked ribbon cells is case of sharp angle
     to_delete = np.asarray([])
     for i in range(0, len(eltsRibbon)):
@@ -285,6 +328,8 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
         if sum(np.in1d(enclosing, eltsRibbon)) < 2:
             to_delete = np.append(to_delete, np.where(eltsRibbon == eltsRibbon[i])[0])
     eltsRibbon = np.delete(eltsRibbon, to_delete)
+
+
 
     # Cells status list store the status of all the cells in the domain
     CellStatusNew = np.zeros((mesh.NumberOfElts), int)

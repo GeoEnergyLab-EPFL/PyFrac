@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
-
+import math
 from src.VolIntegral import Pdistance
 
 import matplotlib
@@ -144,3 +144,4 @@ def plot_as_matrix(data, mesh):
 def ReadFracture(filename):
     with open(filename, 'rb') as input:
         return pickle.load(input)
+

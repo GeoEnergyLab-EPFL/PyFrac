@@ -471,6 +471,23 @@ def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, E
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def MakeEquationSystem_volumeControl_extendedFP_width(wTip, EltChannel, EltTip, C, time, Q, ElemArea):
+
+    Ccc = C[np.ix_(EltChannel, EltChannel)]
+    Cct = C[np.ix_(EltChannel, EltTip)]
+
+    A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
+    A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
+    A[-1,-1] = 0
+
+    S = - np.dot(Cct,wTip)
+    S = np.append(S,Q * time / ElemArea - sum(wTip))
+
+    return A, S
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr, *args):
     (A, S, vk) = MakeEquationSystem_viscousFluid_sameFP(solk, interItr, *args)
     return (np.dot(A, solk) - S, vk)

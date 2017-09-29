@@ -60,7 +60,7 @@ def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=Tr
     # loading parameters
 
     import sys
-    if "win" in sys.platform:
+    if "win32" in sys.platform or "win64" in sys.platform:
         slash = "\\"
     else:
         slash = "/"

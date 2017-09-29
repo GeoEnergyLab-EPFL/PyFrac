@@ -26,7 +26,8 @@ class MaterialProperties:
     methods:
     """
 
-    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0., Kprime_func=None, anisotropic_flag=False):
+    def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0., Kprime_func=None,
+                 anisotropic_flag=False, Toughness_perp = None):
         """
         Arguments:
             Eprime (float)          : plain strain modulus
@@ -80,10 +81,13 @@ class MaterialProperties:
             except TypeError:
                 raise SystemExit('The Kprime function given is not correct for anisotropic case. It should take one'
                                  ' argument, i.e. the angle and return a toughness value.')
+            if Toughness_perp is None:
+                raise SystemExit('Two toughnesses in perpedicular directions should be provided.')
+        self.K1c_perp = Toughness_perp
 
         if not Kprime_func is None and not self.anisotropic:
             try:
-                self.KprimeFunc(0,0)
+                self.KprimeFunc(0.,0.)
             except TypeError:
                 raise SystemExit('The Kprime function given is not correct. It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
@@ -240,7 +244,7 @@ class SimulationParameters:
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
                  tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
-                 max_reattemps=5, reattempt_factor=0.8, output_time_period=1e-10, plot_figure=False,
+                 max_reattemps=8, reattempt_factor=0.8, output_time_period=1e-10, plot_figure=False,
                  save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M",
                  tol_toughness=1e-3, max_toughnessItr=60, mech_loading=False, volume_control=False,
                  viscous_injection=True):
@@ -251,7 +255,8 @@ class SimulationParameters:
         self.maxTimeSteps = maximum_steps
         self.tolFractFront = toleranceFractureFront
         self.toleranceEHL = toleranceEHL
-        self.tmStpPrefactor = tmStp_prefactor
+        self.tmStpPrefactor = 0.5*tmStp_prefactor
+        self.tmStpPrefactor_max = tmStp_prefactor
         self.FinalTime = final_time
 
         # todo: all the option structures can be put into one file
@@ -287,6 +292,7 @@ class SimulationParameters:
         self.dryCrack_mechLoading = mech_loading
         self.viscousInjection = viscous_injection
         self.volumeControl = volume_control
+        self.timeStep_limit = 3.
         if mech_loading or volume_control:
             self.viscousInjection = False
 

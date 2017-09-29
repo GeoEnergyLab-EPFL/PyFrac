@@ -164,16 +164,34 @@ def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
                 Eprime ** 7 * muPrime ** 3 * Vel ** 3)
 
 
-def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprime=None, stagnant=None, KIPrime=None):
+def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop=None, muPrime=None, Vel=None, Kprime=None, stagnant=None,
+                   KIPrime=None):
     """Calculate Volume integrals of the grid cells according to the tip asymptote given by the variable regime"""
+
     if stagnant is None:
         stagnant = np.zeros((alpha.size,), bool)
         KIPrime = np.zeros((alpha.size,), float)
 
-    if Kprime is None:
+    if Kprime is None and not mat_prop is None:
         Kprime = mat_prop.Kprime[EltTip]
+    if Kprime is None and mat_prop is None:
+        Kprime = np.zeros((alpha.size,), float)
+
+    if muPrime is None:
+        muPrime = np.zeros((mesh.NumberOfElts,), float)
+
+    if Vel is None:
+        Vel = np.zeros((alpha.size,), float)
+
+    if mat_prop is None:
+        Eprime = np.nan
+        Cprime = np.zeros((alpha.size,), float)
+    else:
+        Eprime = mat_prop.Eprime
+        Cprime = mat_prop.Cprime[EltTip]
+
     muPrimeTip = muPrime[EltTip]
-    Cprime = mat_prop.Cprime[EltTip]
+
 
     volume = np.zeros((len(l),), float)
     for i in range(0, len(l)):
@@ -182,24 +200,24 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprim
             # the angle inscribed by the perpendicular is zero
             if l[i] <= mesh.hx:
                 # the front is within the cell.
-                volume[i] = Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i],
+                volume[i] = Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i],
                                  Vel[i], stagnant[i], KIPrime[i]) * mesh.hy
             else:
                 # the front has surpassed this cell.
-                volume[i] = (Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i],
+                volume[i] = (Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i],
                                   Vel[i], stagnant[i], KIPrime[i]) - Area(l[i] - mesh.hx, regime, Kprime[i],
-                                  mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hy
+                                  Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hy
 
         elif abs(alpha[i] - np.pi / 2) < 1e-8:
             # the angle inscribed by the perpendicular is 90 degrees
             if l[i] <= mesh.hy:
                 # the front is within the cell.
-                volume[i] = Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
+                volume[i] = Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
                                  KIPrime[i]) * mesh.hx
             else:
                 # the front has surpassed this cell.
-                volume[i] = (Area(l[i], regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
-                                  KIPrime[i]) - Area(l[i] - mesh.hy, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i],
+                volume[i] = (Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
+                                  KIPrime[i]) - Area(l[i] - mesh.hy, regime, Kprime[i], Eprime, muPrimeTip[i],
                                                      Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hx
         else:
             yIntrcpt = l[i] / np.cos(np.pi / 2 - alpha[i]) # Y intercept of the front line
@@ -207,19 +225,19 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprim
             m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i])) # the m parameter (see e.g. A. Pierce 2015)
 
             # volume of the triangle made by the front by intersecting the x and y directional lines of the cell
-            TriVol = VolumeTriangle(l[i], m, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i],
+            TriVol = VolumeTriangle(l[i], m, regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i],
                                     stagnant[i], KIPrime[i])
 
             lUp = Pdistance(0, mesh.hy, grad, yIntrcpt)  # distance of the front from the upper left vertex of the grid cell
             if lUp > 0:  # upper vertex of the triangle is higher than the grid cell height
-                UpTriVol = VolumeTriangle(lUp, m, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i],
+                UpTriVol = VolumeTriangle(lUp, m, regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i],
                                           stagnant[i], KIPrime[i])
             else:
                 UpTriVol = 0
 
             lRt = Pdistance(mesh.hx, 0, grad, yIntrcpt)  # distance of the front from the lower right vertex of the grid cell
             if lRt > 0:  # right vertex of the triangle is wider than the grid cell width
-                RtTriVol = VolumeTriangle(lRt, m, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i], Cprime[i], Vel[i],
+                RtTriVol = VolumeTriangle(lRt, m, regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i],
                                           stagnant[i], KIPrime[i])
             else:
                 RtTriVol = 0
@@ -227,7 +245,7 @@ def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop, muPrime, Vel, Kprim
             IntrsctTriDist = Pdistance(mesh.hx, mesh.hy, grad,
                                        yIntrcpt)  # distance of the front from the upper right vertex of the grid cell
             if IntrsctTriDist > 0:  # front has passed the grid cell
-                IntrsctTri = VolumeTriangle(IntrsctTriDist, m, regime, Kprime[i], mat_prop.Eprime, muPrimeTip[i],
+                IntrsctTri = VolumeTriangle(IntrsctTriDist, m, regime, Kprime[i], Eprime, muPrimeTip[i],
                                             Cprime[i], Vel[i], stagnant[i], KIPrime[i])
             else:
                 IntrsctTri = 0

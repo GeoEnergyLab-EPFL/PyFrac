@@ -137,6 +137,8 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
         Kprime * (-DistLstTS[EltRibbon]) ** 0.5 / (Eprime * w[EltRibbon]) > 1)  # propagation condition
     moving = np.arange(EltRibbon.shape[0])[~np.in1d(EltRibbon, EltRibbon[stagnant])]
 
+    # moving = np.arange(EltRibbon.shape[0])
+
     a = -DistLstTS[EltRibbon[moving]] * (1 + 1e5 * np.finfo(float).eps)
     b = 10 * (w[EltRibbon[moving]] / (Kprime[moving] / Eprime)) ** 2
 
@@ -156,6 +158,7 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
             cnt += 1
             if cnt >= 30:  # Should assume not propagating. not set to check how frequently it happens.
                 raise SystemExit('Tip Inversion: front distance bracket cannot be found')
+
 
     return (moving, a, b)
 
