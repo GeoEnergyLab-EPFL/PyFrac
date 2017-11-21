@@ -6,8 +6,8 @@ Created by Haseeb Zia on Tue Nov  1 15:22:00 2016.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights
 reserved. See the LICENSE.TXT file for more details.
 
-Tip inversion for different flow regimes. The functions take width opening and gives distance from tip calculated using
-the given propagation regime
+Tip inversion for different flow regimes. These functions take width opening and gives distance from tip calculated
+using the given propagation regime.
 """
 
 # imports
@@ -17,6 +17,14 @@ from scipy.optimize import brentq
 from src.Utility import *
 import matplotlib.pyplot as plt
 import warnings
+
+beta_m = 2**(1/3) * 3**(5/6)
+beta_mtld = 4/(15**(1/4) * (2**0.5 - 1)**(1/4))
+cnst_mc = 3 * beta_mtld**4 / (4 * beta_m**3)
+cnst_m = beta_m**3 / 3
+Ki_c = 3000
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_viscStor_Res(dist, *args):
     """Residual function for viscosity dominate regime, without leak off"""
@@ -38,6 +46,30 @@ def TipAsym_viscLeakOff_Res(dist, *args):
                                                         dist - DistLstTSEltRibbon) / dt) ** 0.125 * dist ** (5 / 8)
 
 
+# -----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_MK_zrthOrder_Res(dist, *args):
+    """Residual function for viscosity to toughness regime with transition, without leak off"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    w_tld = Eprime * wEltRibbon / (Kprime * dist**0.5)
+    V = (dist - DistLstTSEltRibbon) / dt
+    return w_tld - (1 + beta_m**3 * Eprime**2 * V * dist**0.5 * muPrime / Kprime**3)**(1/3)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_MTildeK_zrthOrder_Res(dist, *args):
+    """Residual function for zeroth-order solution for K-M~ edge tip asymptote"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    w_tld = Eprime * wEltRibbon / (Kprime * dist ** 0.5)
+    V = (dist - DistLstTSEltRibbon) / dt
+    return w_tld - (1 + beta_mtld**4 * 2 * Cbar * Eprime**3 * dist**0.5 * V**0.5 * muPrime / Kprime**4)**(1/4)
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 def f(K, Cb, C1):
@@ -46,52 +78,47 @@ def f(K, Cb, C1):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-def TipAsym_Universal_delt_Res(dist, *args):
-    """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
-
-    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
-
-    Vel = (dist - DistLstTSEltRibbon) / dt
-    Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
-    Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
-    sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
-
-    g0 = f(Kh, 0.9911799823 * Ch, 10.392304845)
-    delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
-
-    C1 = 4 * (1 - 2 * delt) / (delt * (1 - delt)) * np.tan(math.pi * delt)
-    C2 = 16 * (1 - 3 * delt) / (3 * delt * (2 - 3 * delt)) * np.tan(3 * math.pi * delt / 2)
-    b = C2 / C1
-
-    return sh - f(Kh, Ch * b, C1)
+# todo: 1st order tip asymptote solutions
+# def TipAsym_Universal_1stOrder_Res(dist, *args):
+#     """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
+#
+#     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+#
+#     Vel = (dist - DistLstTSEltRibbon) / dt
+#     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
+#     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
+#     sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
+#
+#     g0 = f(Kh, 0.9911799823 * Ch, 10.392304845)
+#     delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
+#
+#     C1 = 4 * (1 - 2 * delt) / (delt * (1 - delt)) * np.tan(math.pi * delt)
+#     C2 = 16 * (1 - 3 * delt) / (3 * delt * (2 - 3 * delt)) * np.tan(3 * math.pi * delt / 2)
+#     b = C2 / C1
+#
+#     return sh - f(Kh, Ch * b, C1)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def TipAsym_Universal_zero_Res(dist, *args):
+def TipAsym_Universal_zrthOrder_Res(dist, *args):
     """Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)"""
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
+    if Cbar == 0:
+        return TipAsym_MK_zrthOrder_Res(dist, args)
+
     Vel = (dist - DistLstTSEltRibbon) / dt
+    Ki = 2 * Cbar * Eprime / (Vel**0.5 * Kprime)
+    if Ki > Ki_c:
+        return TipAsym_MTildeK_zrthOrder_Res(dist, args)
+
     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
-    g0 = f(Kh, 0.9911799823 * Ch, 6 * 3 ** 0.5)
+    g0 = f(Kh, cnst_mc * Ch, cnst_m)
     sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
 
     return sh - g0
-
-
-# -----------------------------------------------------------------------------------------------------------------------
-
-def TipAsym_MKTransition_Res(dist, *args):
-    """Residual function for viscosity to toughness regime with transition, without leak off"""
-
-    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
-
-    return wEltRibbon - (1 + 18 * 3 ** 0.5 * Eprime ** 2 * (
-        dist - DistLstTSEltRibbon) / dt * muPrime * dist ** 0.5 / Kprime ** 3) ** (
-                        1 / 3) * Kprime / Eprime * dist ** 0.5
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -127,17 +154,14 @@ def TipAsym_variable_Toughness_Res(dist, *args):
 
     return dist - wEltRibbon ** 2 * (Eprime / Kprime) ** 2
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, ResFunc):
     """ 
     Find the valid bracket for the root evaluation function. Also returns list of ribbon cells that are not
     propagating
     """
-
-    stagnant = np.where(
-        Kprime * (-DistLstTS[EltRibbon]) ** 0.5 / (Eprime * w[EltRibbon]) > 1)  # propagation condition
-    moving = np.arange(EltRibbon.shape[0])[~np.in1d(EltRibbon, EltRibbon[stagnant])]
-
-    # moving = np.arange(EltRibbon.shape[0])
 
     a = -DistLstTS[EltRibbon[moving]] * (1 + 1e5 * np.finfo(float).eps)
     b = 10 * (w[EltRibbon[moving]] / (Kprime[moving] / Eprime)) ** 2
@@ -160,7 +184,7 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
                 raise SystemExit('Tip Inversion: front distance bracket cannot be found')
 
 
-    return (moving, a, b)
+    return a, b
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -200,7 +224,11 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
     elif simParmtrs.tipAsymptote == 'K':
         return w[frac.EltRibbon] ** 2 * (matProp.Eprime / Kprime) ** 2
 
-    (moving, a, b) = FindBracket_dist(w, frac.EltRibbon, Kprime, matProp.Eprime, frac.muPrime, matProp.Cprime,
+    # checking propagation condition
+    stagnant = np.where(Kprime * (-frac.sgndDist[frac.EltRibbon]) ** 0.5 / (matProp.Eprime * w[frac.EltRibbon]) > 1)
+    moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
+
+    a, b = FindBracket_dist(w, frac.EltRibbon, Kprime, matProp.Eprime, frac.muPrime, matProp.Cprime,
                                       frac.sgndDist, dt, ResFunc)
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):

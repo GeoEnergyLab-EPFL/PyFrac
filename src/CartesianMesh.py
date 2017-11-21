@@ -111,8 +111,8 @@ class CartesianMesh:
 
         # the element(s) in the center (used for fluid injection)
         (minx, miny) = (min(abs(self.CenterCoor[:, 0])), min(abs(self.CenterCoor[:, 1])))
-        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) - minx < 1e-10),
-                                         np.where(abs(self.CenterCoor[:, 1]) - miny < 1e-10))
+        self.CenterElts = np.intersect1d(abs(1 - np.where(abs(self.CenterCoor[:, 0]) / minx)) < 1e-10,
+                                         abs(1 - np.where(abs(self.CenterCoor[:, 1]) / miny)) < 1e-10)
 
     def locate_element(self, x, y):
         e = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) - x < 1e-10),
@@ -121,3 +121,4 @@ class CartesianMesh:
         return e
 
 #############################################
+

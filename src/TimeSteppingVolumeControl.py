@@ -155,8 +155,10 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, mesh):
     #     # warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
     #     w_k[smallNgtvWTip] = 0.01 * abs(w_k[smallNgtvWTip])
 
+
+
     # check if the solution is valid
-    if np.isnan(w_k).any() or (w_k < 0).any():
+    if np.isnan(w_k).any():# or (w_k < 0).any():
         exitstatus = 5
         return exitstatus, None
     else:
@@ -336,8 +338,10 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     tipNeighb = Fr_lstTmStp.mesh.NeiElements[EltsTipNew, :]
     for i in range(0, len(EltsTipNew)):
         if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
-            Fr_lstTmStp.plot_fracture('complete', 'footPrint')
-            raise SystemExit('Reached end of the grid. exiting....')
+            exitstatus = 12
+            return exitstatus, None
+            # Fr_lstTmStp.plot_fracture('complete', 'footPrint')
+            # raise SystemExit('Reached end of the grid. exiting....')
 
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
@@ -484,8 +488,8 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
         exitstatus = 5
         return exitstatus, None
 
-    if (
-        Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
+    # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
+    if (Fr_kplus1.w < 0).any():
         print(repr(np.where((Fr_kplus1.w < 0))))
         print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
     # exitstatus = 5

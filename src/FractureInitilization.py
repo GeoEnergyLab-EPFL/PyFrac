@@ -113,7 +113,7 @@ def initial_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, 
     if w is None:
         w_to_return = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
     elif w.size != mesh.NumberOfElts and not w is None:
-        raise SystemExit("The given width should be an ndarray with the size equal to the size of the mesh")
+        raise SystemExit("The given width should be an ndarray with the size equal to the number of cells in mesh")
     else:
         w_to_return = w
 

@@ -49,40 +49,42 @@ Injection = InjectionProperties(Q0, well_location, Mesh)
 Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 
 # simulation properties
-req_sol_time = np.linspace(0.25,3.25,13)
+# req_sol_time = np.linspace(0.25,3.25,13)
+# req_sol_time = np.linspace(0.25,3.25,1300)
 simulProp = SimulationParameters(tip_asymptote="M",
                                  output_time_period=0.002,
-                                 plot_figure=False,
-                                 save_to_disk=True,
+                                 plot_figure=True,
+                                 save_to_disk=False,
                                  out_file_folder=".\\Data\\radial", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
-                                 tmStp_prefactor=0.4,
-                                 final_time= 3.25,
-                                 req_sol_at=req_sol_time)
+                                 tmStp_prefactor=0.4)
+                                 # final_time= 3.25,
+                                 # req_sol_at=req_sol_time)
 
 
 # initializing fracture
 initRad = 0.6 # initial radius of fracture
 
-from src.FractureInitilization import get_survey_cells
-surv_cells, channel_cells = get_survey_cells(Mesh, initRad)
-surv_cells_dist = initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
-                                            surv_cells, 1] ** 2) ** 0.5
-C = load_elasticity_matrix(Mesh, Eprime)
-v = 2.7475
-init_data = (surv_cells, channel_cells, surv_cells_dist, None, None, C, 9.489447e-5, v)
+# from src.FractureInitilization import get_survey_cells
+# surv_cells, channel_cells = get_survey_cells(Mesh, initRad)
+# surv_cells_dist = initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
+#                                             surv_cells, 1] ** 2) ** 0.5
+# C = load_elasticity_matrix(Mesh, Eprime)
+# v = 2.7475
+# init_data = (surv_cells, channel_cells, surv_cells_dist, None, None, C, 9.489447e-5, v)
 
-# #initialization data tuple
-# init_data = (initRad, 'radius', 'M')
+#initialization data tuple
+init_data = (initRad, 'radius', 'M')
+C = None
 
 # creating fracture object
 Fr = Fracture(Mesh,
-              'general',
+              'analytical',
               Solid,
               Fluid,
               Injection,
               simulProp,
-              general_init_data=init_data)
+              analyt_init_data=init_data)
 
 
 # create a Controller

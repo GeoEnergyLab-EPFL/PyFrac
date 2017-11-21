@@ -23,7 +23,8 @@ class Controller:
                      "Ribbon element not found in the enclosure of the tip cell",
                      "Filling fraction not correct",
                      "Toughness iteration did not converge",
-                     "projection could not be found"
+                     "projection could not be found",
+                     "Reached end of grid"
                      )
 
     #todo add mesh as an argument
@@ -48,35 +49,39 @@ class Controller:
 
         # starting time stepping loop
         i = 0
-        Fr_k = self.fracture
+        Fr = self.fracture
         tmSrs_indx = 0
         next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
-        if next_in_tmSrs < Fr_k.time:
+        if next_in_tmSrs < Fr.time:
             raise SystemExit('The minimum time required in the given time series or the end time'
                              ' is less than initial time.')
 
-        while (Fr_k.time < self.sim_prop.FinalTime) and (i < self.sim_prop.maxTimeSteps):
+        while (Fr.time < self.sim_prop.FinalTime) and (i < self.sim_prop.maxTimeSteps):
 
             # time step is calculated with the current propagation velocity
-            TimeStep = self.sim_prop.tmStpPrefactor * min(Fr_k.mesh.hx, Fr_k.mesh.hy) / np.max(Fr_k.v)
+            TimeStep = self.sim_prop.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
 
             # to get the solution at the times given in time series
-            if Fr_k.time + TimeStep > next_in_tmSrs:
-                TimeStep = next_in_tmSrs - Fr_k.time
+            if Fr.time + TimeStep > next_in_tmSrs:
+                TimeStep = next_in_tmSrs - Fr.time
                 if tmSrs_indx < len(self.sim_prop.solTimeSeries)-1:
                     tmSrs_indx += 1
                 next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
 
-            status, Fr_k = self.advance_time_step(Fr_k,
+            status, Fr_n_pls1 = self.advance_time_step(Fr,
                                                  self.C,
                                                  TimeStep)
 
             if status == 1:
-                # Fr = copy.deepcopy(Fr_k)
-                self.fr_queue[i%5] = copy.deepcopy(Fr_k)
+                Fr = copy.deepcopy(Fr_n_pls1)
+                self.fr_queue[i%5] = copy.deepcopy(Fr_n_pls1)
                 self.smallStep_cnt += 1
                 if self.smallStep_cnt%4 == 0:
                     self.sim_prop.tmStpPrefactor = self.sim_prop.tmStpPrefactor_max
+            elif status == 12:
+                self.C *= 1/2.
+                Fr = Fr.remesh(2., self.C, self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
+
             else:
                 print("Restarting with the last check point...")
                 self.sim_prop.tmStpPrefactor *= 0.8
@@ -84,7 +89,7 @@ class Controller:
                 if self.fr_queue[(i+1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
                     raise SystemExit("Simulation failed.")
                 else:
-                    Fr_k = copy.deepcopy(self.fr_queue[(i+1) % 5])
+                    Fr = copy.deepcopy(self.fr_queue[(i+1) % 5])
 
             i = i + 1
 
@@ -128,9 +133,9 @@ class Controller:
         """
         print('\n--------------------------------\ntime = ' + repr(Frac.time))
 
-        # if TimeStep > self.sim_prop.timeStep_limit:
-        #     TimeStep = self.sim_prop.timeStep_limit
-        #     self.sim_prop.timeStep_limit = TimeStep * 1.8
+        if TimeStep > self.sim_prop.timeStep_limit:
+            TimeStep = self.sim_prop.timeStep_limit
+            self.sim_prop.timeStep_limit = TimeStep * 1.8
 
         if TimeStep < 0:
             TimeStep = self.sim_prop.timeStep_limit*2
@@ -186,7 +191,8 @@ class Controller:
                 return status, Fr
             else:
                 print(self.errorMessages[status])
-
+                if status == 12:
+                    return status, Fr
             print("Time step failed...")
 
         return status, Fr

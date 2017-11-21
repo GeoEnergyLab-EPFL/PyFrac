@@ -185,10 +185,10 @@ def reconstruct_front(dist, EltChannel, mesh):
 
             # !!!Hack. this check of zero or 90 degree angle works better
             warnings.filterwarnings("ignore")
-            if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-8:
+            if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-6:
                 a2 = np.pi / 2
-            elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 1e-8:
-                a2 = 0
+            elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 1e-6:
+                a2 = 0.
 
             # checks to remove numerical noise in angle calculation
             if a2 >= 0 and a2 <= np.pi / 2:
@@ -204,7 +204,12 @@ def reconstruct_front(dist, EltChannel, mesh):
             elif a1 > np.pi / 2 and a1 < np.pi / 2 + 1e-6:
                 alpha = np.append(alpha, np.pi / 2)
             else:
-                alpha = np.append(alpha, np.nan)
+                if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 0.1:
+                    alpha = np.append(alpha, np.pi / 2)
+                elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 0.1:
+                    alpha = np.append(alpha, 0)
+                else:
+                    alpha = np.append(alpha, np.nan)
 
 
 

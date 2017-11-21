@@ -34,45 +34,18 @@ from src.FractureInitilization import *
 
 
 # creating mesh
-Mesh = CartesianMesh(202., 162., 101, 81)
+Mesh = CartesianMesh(2., 2., 40, 40)
 
 # solid properties
 nu = 0.4
 Eprime = 3.3e10 / (1 - nu ** 2)
 K1c_1 = 1.5e6
-K1c_2 = 3.0e6
 sigma0 = np.full((Mesh.NumberOfElts,), 0, dtype=np.float64)
-def Kprime_function(alpha):
-    K1c_1 = 1.5e6
-    K1c_2 = 3.0e6
-
-    # return 5.81e6 + (K1c_2-5.81e6) * np.sin(beta)
-
-    # return 4 * (2/np.pi)**0.5 * K1c_1 + 2*alpha/np.pi * (K1c_2-K1c_1)
-
-    beta = np.arctan((K1c_1 / K1c_2)**2 * np.tan(alpha))
-    return 4 * (2/np.pi)**0.5 * K1c_2 * (np.sin(beta)**2 + (K1c_1 / K1c_2)**4 * np.cos(beta)**2)**(0.25)
-
-    # const = np.cos(np.pi/4)+np.sin(np.pi/4)
-    # a = (K1c_2-K1c_1)/(const-1.)
-    # c = K1c_1-(K1c_2-K1c_1)/(const-1.)
-    # K1c = (np.cos(alpha)+np.sin(alpha))*a + c
-
-    # delta = 0.3
-    # k = 4
-    # K1c = K1c_2 * (1 + delta * np.cos(k * alpha))
-
-    # k = 20
-    # jump_at = np.pi/4. + np.pi/20.
-    # K1c = K1c_1 + (K1c_2-K1c_1) * 1/(1+np.e**(-2*k*(alpha-jump_at)))
-
-    # return 4 * (2/np.pi)**0.5 * K1c
-
-Solid = MaterialProperties(Mesh, Eprime, K1c_2, SigmaO=sigma0, anisotropic_flag=True, Kprime_func= Kprime_function, Toughness_perp=K1c_1)
+Solid = MaterialProperties(Mesh, Eprime, K1c_1, SigmaO=sigma0, anisotropic_flag=False)
 # Solid = MaterialProperties(Mesh, Eprime, K1c_2, SigmaO=sigma0, anisotropic_flag=False)
 
 # injection parameters
-Q0 = 0.09  # injection rate
+Q0 = 0.01  # injection rate
 well_location = np.array([0., 0.])
 Injection = InjectionProperties(Q0, well_location, Mesh)
 
@@ -82,13 +55,13 @@ Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 # simulation properties
 req_sol_time = np.linspace(250.,5400.,15)
 simulProp = SimulationParameters(tip_asymptote="U",
-                                 output_time_period=0.5,
+                                 output_time_period=0.01,
                                  plot_figure=False,
                                  save_to_disk=True,
-                                 out_file_folder="./Data/MtoK", # e.g. "./Data/Laminar" for linux or mac
+                                 out_file_folder=".\\Data\\remesh_test", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
                                  tmStp_prefactor=0.5,
-                                 final_time=100000.,
+                                 final_time=10000000,
                                  volume_control=False,
                                  analytical_sol="M",
                                  tol_toughness=0.002,
@@ -96,51 +69,25 @@ simulProp = SimulationParameters(tip_asymptote="U",
                                  # req_sol_at=req_sol_time)
 
 
-# # initializing fracture
-# b = 7.
-# t, a, w, p = anisotropic_toughness_elliptical_solution(K1c_2*np.ones((Mesh.NumberOfElts,),), K1c_1, Eprime, Q0, Mesh, b)
-# from src.FractureInitilization import get_circular_survey_cells
-# # surv_cells, channel_cells = get_circular_survey_cells(Mesh, b)
-# surv_cells, channel_cells = get_eliptical_survey_cells(Mesh, a, b)
-# surv_cells_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
-# for i in range(0, len(surv_cells)):
-#     surv_cells_dist[i] = Distance_ellipse(a, b, Mesh.CenterCoor[surv_cells[i], 0],
-#                                                    Mesh.CenterCoor[surv_cells[i], 1])
-# C = load_elasticity_matrix(Mesh, Eprime)
-# v = 0.5
-# init_data = (surv_cells, channel_cells, surv_cells_dist, w, p, C, None, v)
-
-# R = 10.
-# from src.FractureInitilization import get_circular_survey_cells
-# surv_cells, channel_cells = get_circular_survey_cells(Mesh, R)
-# surv_cells_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
-# for i in range(0, len(surv_cells)):
-#     surv_cells_dist[i] = R - (Mesh.CenterCoor[surv_cells[i], 0]**2 + Mesh.CenterCoor[surv_cells[i], 1]**2)**0.5
-# C = load_elasticity_matrix(Mesh, Eprime)
-# v = 0.5
-# init_data = (surv_cells, channel_cells, surv_cells_dist, None, None, C, Q0*t, v)
-
 #initialization data tuple
-initRad = 8
-init_data = (initRad, 'radius', 'K')
+initRad = 0.5
+init_data = (initRad, 'radius', 'M')
 C = None
 
-# creating fracture object
-Fr = Fracture(Mesh,
-              # 'general',
-              'analytical',
-              Solid,
-              Fluid,
-              Injection,
-              simulProp,
-              # general_init_data=init_data)
-              analyt_init_data=init_data)
-# Fr = ReadFracture('./Data/Ellipse5/file_22')
+# # creating fracture object
+# Fr = Fracture(Mesh,
+#               # 'general',
+#               'analytical',
+#               Solid,
+#               Fluid,
+#               Injection,
+#               simulProp,
+#               # general_init_data=init_data)
+#               analyt_init_data=init_data)
 
+Fr = ReadFracture('.\\Data\\remesh_test\\file_196')
+simulProp.lastSavedFile = 196
 
-# fig1 = Fr.plot_fracture("complete", "footPrint", identify=np.hstack((Fr.EltRibbon, Fr.EltTip)), mat_Properties=Solid)
-# fig1 = Fr.plot_fracture("complete", "width")
-# plt.show()
 # create a Controller
 controller = Controller(Fr, Solid, Fluid, Injection, simulProp, C=C)
 

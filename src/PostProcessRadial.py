@@ -7,6 +7,16 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
+import sys
+if "win32" in sys.platform or "win64" in sys.platform:
+    slash = "\\"
+else:
+    slash = "/"
+if not '..' + slash + 'src' in sys.path:
+    sys.path.append('.' + slash + 'src')
+if not '.' + slash + 'src' in sys.path:
+    sys.path.append('.' + slash + 'src')
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -19,7 +29,7 @@ from src.Utility import *
 
 
 def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=True, fig_w_cntr=None, plot_r=True,
-                     fig_r=None, plot_p_cntr=False, fig_p_cntr=None, maxFiles=150, loglog=True, plot_w_prfl=False,
+                     fig_r=None, plot_p_cntr=False, fig_p_cntr=None, maxFiles=500, loglog=True, plot_w_prfl=False,
                      plot_p_prfl=False):
     """
     This function reads the saved files in the given folder and plots the figures that are enabled. Analytical solutions
@@ -75,7 +85,7 @@ def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=Tr
         raise SystemExit("Properties file not found.")
 
     # loading the first fracture
-    Fr = ReadFracture(simulProp.outFileAddress + "file_" + repr(0))
+    Fr = ReadFracture(address + "file_" + repr(0))
 
     # initializing arrays
     R_numrcl = np.asarray([], dtype=np.float64)
@@ -117,7 +127,7 @@ def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=Tr
 
         # trying to load next file. exit loop if not found
         try:
-            Fr = ReadFracture(simulProp.outFileAddress + "file_" + repr(fileNo))
+            Fr = ReadFracture(address + "file_" + repr(fileNo))
         except FileNotFoundError:
             break
 
@@ -187,11 +197,11 @@ def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=Tr
             ax_w = fig_w_cntr.add_subplot(111)
         ax_w = fig_w_cntr.add_subplot(111)
         if loglog:
-            ax_w.loglog(time_series, w_numrcl_centr, 'o')
+            ax_w.loglog(time_series, w_numrcl_centr, '.')
             if plot_analytical:
                 ax_w.loglog(time_series, w_anltcl_centr)
         else:
-            ax_w.plot(time_series, w_numrcl_centr, 'o')
+            ax_w.plot(time_series, w_numrcl_centr, '.')
             if plot_analytical:
                 ax_w.plot(time_series, w_anltcl_centr)
         plt.ylabel('width at injection point (meters)')
@@ -207,11 +217,11 @@ def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=Tr
         if loglog:
             if plot_analytical:
                 ax_r.loglog(time_series, R_anltcl)
-            ax_r.loglog(time_series, R_numrcl, 'o')
+            ax_r.loglog(time_series, R_numrcl, '.')
         else:
             if plot_analytical:
                 ax_r.plot(time_series, R_anltcl)
-            ax_r.plot(time_series, R_numrcl, 'o')
+            ax_r.plot(time_series, R_numrcl, '.')
         plt.ylabel('fracture radius')
         plt.xlabel('time')
 
@@ -260,5 +270,141 @@ def plot_radial_data(address, plot_analytical=True, regime = "M", plot_w_cntr=Tr
     else:
         fig_p_prfl = None
 
-    plt.show()
+    # plt.show()
     return fig_w_cntr, fig_r, fig_p_cntr
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def plot_ellipse_data(address, fig_ab=None, fig_asp_rtio=None, sol_time_series=None, time_period=0., maxFiles=1500,
+                      loglog=True, plt_symbol='o', plt_anltcl=True, anltcl_sol='E', anltcl_clr='k', plt_tmk2=False):
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+    t_srs_given = isinstance(sol_time_series, np.ndarray)
+    if t_srs_given:
+        nxt_plt_t = sol_time_series[t_srs_indx]
+
+    a_numrcl = np.asarray([])
+    b_numrcl = np.asarray([])
+    a_anltcl = np.asarray([])
+    b_anltcl = np.asarray([])
+    time_srs = np.asarray([])
+    while fileNo < maxFiles:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "file_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+        fileNo+=1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+
+            # at_x_axis = np.where(ff.mesh.CenterCoor[ff.EltTip,1]==0)
+            time_srs = np.append(time_srs, ff.time)
+            tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[ff.EltTip, ff.ZeroVertex]]
+            a_numrcl = np.append(a_numrcl, max((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l))
+            b_numrcl = np.append(b_numrcl, min((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l))
+
+
+            if anltcl_sol=='E':
+                b, a, w, p = anisotropic_toughness_elliptical_solution(Solid.K1c,
+                                                                   Solid.K1c_perp,
+                                                                   Solid.Eprime,
+                                                                   Injection.injectionRate[1, 0],
+                                                                   ff.mesh,
+                                                                   t=ff.time)
+                a_anltcl = np.append(a_anltcl, a)
+                b_anltcl = np.append(b_anltcl, b)
+
+            elif anltcl_sol=='M':
+                R, p, w, v = M_vertex_solution_t_given(Solid.Eprime,
+                                                       Injection.injectionRate[1, 0],
+                                                       Fluid.muPrime,
+                                                       ff.mesh,
+                                                       ff.time)
+
+                a_anltcl = np.append(a_anltcl, R)
+                b_anltcl = np.append(b_anltcl, R)
+
+            elif anltcl_sol == "K":
+                R, p, w, v = K_vertex_solution_t_given(Solid.Kprime,
+                                                       Solid.Eprime,
+                                                       Injection.injectionRate[1, 0],
+                                                       ff.mesh,
+                                                       ff.time)
+                a_anltcl = np.append(a_anltcl, R)
+                b_anltcl = np.append(b_anltcl, R)
+
+            if t_srs_given:
+                if t_srs_indx < len(sol_time_series) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = sol_time_series[t_srs_indx]
+                if ff.time > max(sol_time_series):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+    tmk = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c_perp)**18)**0.5
+    tmk2 = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c[0])**18)**0.5
+    # ratio = tmk/tmk2
+    # lmk = Solid.Eprime**3 * Fluid.muPrime * Injection.injectionRate[1, 0] / ((32 / math.pi) ** 0.5* Solid.K1c[0])**4
+    # b_anltcl = b_anltcl/lmk
+    # b_numrcl = b_numrcl/lmk
+    # time_srs = time_srs/tmk2
+    print(repr(time_srs))
+    if fig_ab is None:
+        fig_ab = plt.figure()
+        ax = fig_ab.add_subplot(111)
+    ax = fig_ab.add_subplot(111)
+    if loglog:
+        if plt_anltcl:
+            ax.semilogx(time_srs, a_anltcl, anltcl_clr)
+            # ax.loglog(time_srs, a_anltcl, anltcl_clr)
+        ax.semilogx(time_srs, a_numrcl, plt_symbol)
+        # ax.loglog(time_srs, a_numrcl, plt_symbol)
+    else:
+        if plt_anltcl:
+            ax.plot(time_srs, a_anltcl, anltcl_clr)
+        ax.plot(time_srs, a_numrcl, plt_symbol)
+
+    # plt_symbol=plt_symbol[0]+'^'
+    if loglog:
+        if plt_anltcl:
+            ax.semilogx(time_srs, b_anltcl, anltcl_clr)
+            # ax.loglog(time_srs, b_anltcl, anltcl_clr)
+        ax.semilogx(time_srs, b_numrcl, plt_symbol)
+        # ax.loglog(time_srs, b_numrcl, plt_symbol)
+    else:
+        if plt_anltcl:
+            ax.plot(time_srs, b_anltcl, anltcl_clr)
+        ax.plot(time_srs, b_numrcl, plt_symbol)
+    # plt.ylabel('axis length')
+    # plt.xlabel('time')
+    if plt_tmk2:
+        ax.plot(tmk2/tmk, 0.1, 'k.')
+        ax.plot(7000*tmk2 / tmk, 0.1, 'k.')
+        ax.plot(7000, 0.1, 'k.')
+    if fig_asp_rtio is None:
+        fig_asp_rtio = plt.figure()
+        ax_asp_rtio = fig_asp_rtio.add_subplot(111)
+    ax_asp_rtio = fig_asp_rtio.add_subplot(111)
+    # ax_asp_rtio.plot(time_srs, a_anltcl / b_anltcl)
+    ax_asp_rtio.semilogx(time_srs, a_numrcl / b_numrcl, plt_symbol, ms=3)
+    # plt.ylabel('aspect ratio')
+    # plt.xlabel('time')
+    return fig_ab, fig_asp_rtio

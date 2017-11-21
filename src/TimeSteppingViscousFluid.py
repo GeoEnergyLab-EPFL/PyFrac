@@ -256,18 +256,21 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                     8       -- Ribbon element not found in the enclosure of a tip cell
                                     9       -- Filling fraction not correct
                                     10      -- Toughness iteration did not converge
+                                    11      -- Projection could not be found
+                                    12      -- Reached end of grid
 
         Fracture object:            fracture after advancing time step. 
     """
 
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    Kprime_k = toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
+    if Material_properties.anisotropic:
+        Kprime_k = toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
                                            Fr_lstTmStp.EltChannel,
                                            Fr_lstTmStp.mesh,
                                            Material_properties,
                                            sgndDist_k)
-    Kprime_km1 = 0 * np.copy(Kprime_k)
+        Kprime_km1 = 0 * np.copy(Kprime_k)
     # toughness iteration loop
     while itr < sim_parameters.maxToughnessItr:
 
@@ -281,12 +284,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                                                           Fr_lstTmStp.mesh,
                                                                           Material_properties,
                                                                           sgndDist_k)
+            if np.isnan(Kprime_k).any():
+                exitstatus = 11
+                return exitstatus, None
         else:
             Kprime_k = None
 
-        # if np.isnan(Kprime_k).any():
-        #     exitstatus = 11
-        #     return exitstatus, None
+
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
         sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
@@ -328,6 +332,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         #     exitstatus = 2
         #     return exitstatus, None
 
+        # do it only once if not anisotropic
+        if not Material_properties.anisotropic:
+            break
+
         # norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
         norm = np.linalg.norm(1 - abs(Kprime_k / Kprime_km1))
         if norm < sim_parameters.toleranceToughness:
@@ -335,9 +343,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                   repr(norm))
             break
 
-        # do it only once if KprimeFunc
-        if Material_properties.KprimeFunc is None:
-            break
+
 
         Kprime_km1 = np.copy(Kprime_k)
         print("iterating on toughness... norm " + repr(norm))
@@ -346,6 +352,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     # if itr == sim_parameters.maxToughnessItr:
     #     exitstatus = 10
     #     return exitstatus, None
+
+    regime_t = find_regime(w_k, Fr_lstTmStp, Material_properties, sim_parameters, timeStep, Kprime_k,
+                           -sgndDist_k[Fr_lstTmStp.EltRibbon])
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -363,8 +372,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     tipNeighb = Fr_lstTmStp.mesh.NeiElements[EltsTipNew, :]
     for i in range(0, len(EltsTipNew)):
         if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
-            Fr_lstTmStp.plot_fracture('complete', 'footPrint')
-            raise SystemExit('Reached end of the grid. exiting....')
+            exitstatus = 12
+            return exitstatus, None
+            # Fr_lstTmStp.plot_fracture('complete', 'footPrint')
+            # raise SystemExit('Reached end of the grid. exiting....')
 
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
@@ -570,6 +581,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     Fr_kplus1.process_fracture_front()
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
+    Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
 
     # # check if the tip has laminar flow, to be consistent with tip asymptote.
     # ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, Fluid_properties, return_ReyNumb=True)
@@ -1555,35 +1567,35 @@ def find_projection(elt_ribbon, elt_tip, zr_vrtx_tip, a_tip, b_tip, c_tip, x_lft
             dist_ribbon[top_in_ribbon] = abs(
                 abs(y_rgt[ninety_angle[i]]) - abs(mesh.CenterCoor[elt_ribbon[top_in_ribbon], 1]))
 
-    perp_on_line = np.empty((len(elt_tip), 2), dtype=np.float64)
-    for i in range(len(elt_ribbon)):
-
-        if zr_vrtx_tip[closest_tip_cell[i]] == 0:
-            perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] + dist_ribbon[i] * np.cos(alpha[i]),
-                                       mesh.CenterCoor[elt_ribbon[i], 1] + dist_ribbon[i] * np.sin(alpha[i])])
-        elif zr_vrtx_tip[closest_tip_cell[i]] == 1:
-            perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] - dist_ribbon[i] * np.cos(alpha[i]),
-                                       mesh.CenterCoor[elt_ribbon[i], 1] + dist_ribbon[i] * np.sin(alpha[i])])
-        elif zr_vrtx_tip[closest_tip_cell[i]] == 2:
-            perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] - dist_ribbon[i] * np.cos(alpha[i]),
-                                       mesh.CenterCoor[elt_ribbon[i], 1] - dist_ribbon[i] * np.sin(alpha[i])])
-        elif zr_vrtx_tip[closest_tip_cell[i]] == 3:
-            perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] + dist_ribbon[i] * np.cos(alpha[i]),
-                                       mesh.CenterCoor[elt_ribbon[i], 1] - dist_ribbon[i] * np.sin(alpha[i])])
-
-
-
-    plt.plot([x_lft, x_rgt], [y_lft, y_rgt])
-
-    for i in range(len(elt_ribbon)):
-        plt.plot([perp_on_line[i, 0], mesh.CenterCoor[elt_ribbon[i], 0]], [perp_on_line[i, 1], mesh.CenterCoor[elt_ribbon[i], 1]],'r')
-
-
-    plt.axis("equal")
-    axes = plt.gca()
-    axes.set_xlim([-30., 30.])
-    axes.set_ylim([-30., 30.])
-    plt.show()
+    # perp_on_line = np.empty((len(elt_tip), 2), dtype=np.float64)
+    # for i in range(len(elt_ribbon)):
+    #
+    #     if zr_vrtx_tip[closest_tip_cell[i]] == 0:
+    #         perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] + dist_ribbon[i] * np.cos(alpha[i]),
+    #                                    mesh.CenterCoor[elt_ribbon[i], 1] + dist_ribbon[i] * np.sin(alpha[i])])
+    #     elif zr_vrtx_tip[closest_tip_cell[i]] == 1:
+    #         perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] - dist_ribbon[i] * np.cos(alpha[i]),
+    #                                    mesh.CenterCoor[elt_ribbon[i], 1] + dist_ribbon[i] * np.sin(alpha[i])])
+    #     elif zr_vrtx_tip[closest_tip_cell[i]] == 2:
+    #         perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] - dist_ribbon[i] * np.cos(alpha[i]),
+    #                                    mesh.CenterCoor[elt_ribbon[i], 1] - dist_ribbon[i] * np.sin(alpha[i])])
+    #     elif zr_vrtx_tip[closest_tip_cell[i]] == 3:
+    #         perp_on_line[i] = np.array([mesh.CenterCoor[elt_ribbon[i], 0] + dist_ribbon[i] * np.cos(alpha[i]),
+    #                                    mesh.CenterCoor[elt_ribbon[i], 1] - dist_ribbon[i] * np.sin(alpha[i])])
+    #
+    #
+    #
+    # plt.plot([x_lft, x_rgt], [y_lft, y_rgt])
+    #
+    # for i in range(len(elt_ribbon)):
+    #     plt.plot([perp_on_line[i, 0], mesh.CenterCoor[elt_ribbon[i], 0]], [perp_on_line[i, 1], mesh.CenterCoor[elt_ribbon[i], 1]],'r')
+    #
+    #
+    # plt.axis("equal")
+    # axes = plt.gca()
+    # axes.set_xlim([-30., 30.])
+    # axes.set_ylim([-30., 30.])
+    # plt.show()
     if np.isnan(alpha).any():
         print("found nan")
     return alpha
@@ -1642,20 +1654,20 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
     # pnt_on_line = truncate(pnt_on_line, rnd)
     # pnt_on_line = np.vstack({tuple(row) for row in pnt_on_line})
 
-    for i in range(mesh.nx+1):
-        plt.plot([mesh.VertexCoor[i, 0], mesh.VertexCoor[i, 0]],
-                 [mesh.VertexCoor[0, 1],mesh.VertexCoor[-1, 1]],'k')
-    for i in range(mesh.ny+1):
-        plt.plot([mesh.VertexCoor[0, 0], mesh.VertexCoor[-1, 0]],
-                 [mesh.VertexCoor[i*(mesh.nx+1), 1],mesh.VertexCoor[i*(mesh.nx+1), 1]],'k')
-    for i in range(len(pnt_on_line)):
-        plt.plot(pnt_on_line[i, 0], pnt_on_line[i, 1],'x')
-
-    plt.axis("equal")
-    axes = plt.gca()
-    # axes.set_xlim([-30., 30.])
-    # axes.set_ylim([-30., 30.])
-    plt.show()
+    # for i in range(mesh.nx+1):
+    #     plt.plot([mesh.VertexCoor[i, 0], mesh.VertexCoor[i, 0]],
+    #              [mesh.VertexCoor[0, 1],mesh.VertexCoor[-1, 1]],'k')
+    # for i in range(mesh.ny+1):
+    #     plt.plot([mesh.VertexCoor[0, 0], mesh.VertexCoor[-1, 0]],
+    #              [mesh.VertexCoor[i*(mesh.nx+1), 1],mesh.VertexCoor[i*(mesh.nx+1), 1]],'k')
+    # for i in range(len(pnt_on_line)):
+    #     plt.plot(pnt_on_line[i, 0], pnt_on_line[i, 1],'x')
+    #
+    # plt.axis("equal")
+    # axes = plt.gca()
+    # # axes.set_xlim([-30., 30.])
+    # # axes.set_ylim([-30., 30.])
+    # plt.show()
 
 
 

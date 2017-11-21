@@ -243,7 +243,7 @@ class SimulationParameters:
     """
 
     def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
-                 tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=1000., maximum_steps=1000,
+                 tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=10000., maximum_steps=10000,
                  max_reattemps=8, reattempt_factor=0.8, output_time_period=1e-10, plot_figure=False,
                  save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M",
                  tol_toughness=1e-3, max_toughnessItr=60, mech_loading=False, volume_control=False,
@@ -255,7 +255,7 @@ class SimulationParameters:
         self.maxTimeSteps = maximum_steps
         self.tolFractFront = toleranceFractureFront
         self.toleranceEHL = toleranceEHL
-        self.tmStpPrefactor = 0.5*tmStp_prefactor
+        self.tmStpPrefactor = tmStp_prefactor
         self.tmStpPrefactor_max = tmStp_prefactor
         self.FinalTime = final_time
 
@@ -292,7 +292,7 @@ class SimulationParameters:
         self.dryCrack_mechLoading = mech_loading
         self.viscousInjection = viscous_injection
         self.volumeControl = volume_control
-        self.timeStep_limit = 3.
+        self.timeStep_limit = 4.
         if mech_loading or volume_control:
             self.viscousInjection = False
 

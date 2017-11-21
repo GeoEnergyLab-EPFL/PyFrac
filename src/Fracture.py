@@ -25,6 +25,8 @@ from src.VolIntegral import *
 from src.Properties import *
 from src.CartesianMesh import *
 from src.FractureInitilization import *
+from scipy.interpolate import interp2d
+from scipy.interpolate import griddata
 
 # todo : merge the __init__ with the actual initialization
 
@@ -68,7 +70,7 @@ class Fracture():
             
     """
 
-    def __init__(self, Mesh, init_type, solid, fluid, injection, simulProp, analyt_init_data=None,
+    def __init__(self, Mesh, init_type, solid=None, fluid=None, injection=None, simulProp=None, analyt_init_data=None,
                  general_init_data=None):
         """ Initialize the fracture according to the given initial value and the propagation regime. Either initial 
         radius or time can be given as the initial value. The function sets up the fracture front and other fracture
@@ -178,32 +180,36 @@ class Fracture():
             self.v = vel * np.ones((self.EltTip.size, ), )
             if volume is None:
                 volume = np.sum(self.w) * (Mesh.EltArea)
-            self.time = volume/injection.injectionRate[1,0]
 
-        #
-        # assigning nan for cells which are not in the fracture yet
-        self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
+            if injection !=None:
+                self.time = volume/injection.injectionRate[1,0]
 
-        # using Mtilde solution to initialize arrival time
-        self.Tarrival[self.EltChannel] = (solid.Cprime[self.EltChannel] ** 2 * self.mesh.distCenter[self.EltChannel] ** 4 *
-                                          np.pi ** 4 / injection.injectionRate[1,0] ** 2 / 4)
+        if solid != None:
+            #  assigning nan for cells which are not in the fracture yet
+            self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
 
-        self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
-        # calculate leaked off volume for the channel elements using Carter leak off (see e.g. Dontsov and Peirce, 2008)
-        self.Leakedoff[self.EltChannel] = 2 * solid.Cprime[self.EltChannel] * self.mesh.EltArea * (self.time -
-                                                                                            self.Tarrival[
-                                                                                            self.EltChannel]) ** 0.5
-        # # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
-        # self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip,
-        #                                                                              self.alpha,
-        #                                                                              self.l,
-        #                                                                              self.mesh,
-        #                                                                              'Lk',
-        #                                                                              solid,
-        #                                                                              self.muPrime,
-        #                                                                              self.v)
+            # using Mtilde solution to initialize arrival time
+            self.Tarrival[self.EltChannel] = (solid.Cprime[self.EltChannel] ** 2 * self.mesh.distCenter[self.EltChannel] ** 4 *
+                                              np.pi ** 4 / injection.injectionRate[1,0] ** 2 / 4)
 
-        # fracture evolution data
+            self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
+            # calculate leaked off volume for the channel elements using Carter leak off (see e.g. Dontsov and Peirce, 2008)
+            self.Leakedoff[self.EltChannel] = 2 * solid.Cprime[self.EltChannel] * self.mesh.EltArea * (self.time -
+                                                                                                self.Tarrival[
+                                                                                                self.EltChannel]) ** 0.5
+            # # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
+            # self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip,
+            #                                                                              self.alpha,
+            #                                                                              self.l,
+            #                                                                              self.mesh,
+            #                                                                              'Lk',
+            #                                                                              solid,
+            #                                                                              self.muPrime,
+            #                                                                              self.v)
+        else:
+            self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
+            self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
+
         self.process_fracture_front()
 
         self.FractureVolume = np.sum(self.w)*(Mesh.EltArea)
@@ -212,7 +218,11 @@ class Fracture():
         self.InCrack[self.EltCrack] = 1
 
         # local viscosity
-        self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
+        if fluid != None:
+            self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
+
+        # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
+        self.regime = np.vstack((np.ones((self.EltRibbon.size,), dtype=np.float64), self.EltRibbon))
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
@@ -336,6 +346,8 @@ class Fracture():
                 intrsct1[1, i] = self.l[i]
                 intrsct2[0, i] = self.mesh.hx
                 intrsct2[1, i] = self.l[i]
+
+
 
             if self.ZeroVertex[i] == 0:
                 intrsct1[0, i] = intrsct1[0, i] + self.mesh.VertexCoor[
@@ -474,3 +486,74 @@ class Fracture():
     def SaveFracture(self, filename):
         with open(filename, 'wb') as output:
             pickle.dump(self, output, -1)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+    def remesh(self, factor, C, material_prop, fluid_prop, inj_prop, sim_prop):
+
+        coarse_mesh = CartesianMesh(factor*self.mesh.Lx, factor*self.mesh.Ly, self.mesh.nx, self.mesh.ny)
+        SolveFMM(self.sgndDist,
+                 self.EltRibbon,
+                 self.EltChannel,
+                 self.mesh,
+                 [],
+                 self.EltChannel)
+
+        # sgndDist_func = interp2d(self.mesh.CenterCoor[self.EltChannel, 0],
+        #                          self.mesh.CenterCoor[self.EltChannel, 1],
+        #                          self.sgndDist[self.EltChannel],
+        #                          bounds_error=False,
+        #                          fill_value=1e10)
+        #
+        # # sgndDist_coarse = sgndDist_func(coarse_mesh.CenterCoor[:,0], coarse_mesh.CenterCoor[:,1]).diagonal()
+        # sgndDist_coarse = np.empty((coarse_mesh.NumberOfElts,),dtype=np.float64)
+        # for i in range(coarse_mesh.NumberOfElts):
+        #     sgndDist_coarse[i] = sgndDist_func(coarse_mesh.CenterCoor[i,0], coarse_mesh.CenterCoor[i,1])
+
+        sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel], self.sgndDist[self.EltChannel], coarse_mesh.CenterCoor, method='linear')
+
+        max_diag = (coarse_mesh.hx ** 2 + coarse_mesh.hy ** 2) ** 0.5
+        excluding_tip = np.where(sgndDist_coarse <= -max_diag)[0]
+        sgndDist_copy = np.copy(sgndDist_coarse)
+        sgndDist_coarse = np.full(sgndDist_coarse.shape, 1e10, dtype=np.float64)
+        sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
+
+        w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel], self.w[self.EltChannel],
+                                   coarse_mesh.CenterCoor, method='linear')
+        # w_func = interp2d(self.mesh.CenterCoor[:, 0],
+        #                     self.mesh.CenterCoor[:, 1],
+        #                     self.w,
+        #                     fill_value=0.)
+        #
+        # w_coarse = np.empty((coarse_mesh.NumberOfElts,), dtype=np.float64)
+        # for i in range(coarse_mesh.NumberOfElts):
+        #     w_coarse[i] = w_func(coarse_mesh.CenterCoor[i, 0], coarse_mesh.CenterCoor[i, 1])
+
+        w_coarse[np.isnan(w_coarse)]=0
+
+        #todo: Find
+        v_coarse = max(self.v)
+
+        init_data = (excluding_tip,
+                     excluding_tip,
+                     -sgndDist_coarse[excluding_tip],
+                     w_coarse,
+                     None,
+                     C,
+                     self.FractureVolume,
+                     v_coarse)
+
+        saveToDisk_cpy = sim_prop.saveToDisk
+        sim_prop.saveToDisk = False
+        Fr_coarse = Fracture(coarse_mesh,
+                      'general',
+                      solid=material_prop,
+                      fluid=fluid_prop,
+                      injection=inj_prop,
+                      simulProp=sim_prop,
+                      general_init_data=init_data)
+
+        Fr_coarse.time = self.time
+        sim_prop.saveToDisk = saveToDisk_cpy
+
+        return Fr_coarse

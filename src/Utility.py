@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
-import math
-from src.VolIntegral import Pdistance
+import copy
+from src.TipInversion import  TipAsymInversion
 
 import matplotlib
 from matplotlib.patches import Polygon
@@ -145,3 +145,39 @@ def ReadFracture(filename):
     with open(filename, 'rb') as input:
         return pickle.load(input)
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+def find_regime(w, Fr, Material_properties, sim_properties, timeStep, Kprime, asymptote_universal):
+
+    sim_parameters_tmp = copy.deepcopy(sim_properties)
+    sim_parameters_tmp.tipAsymptote = 'K'
+    asymptote_toughness = TipAsymInversion(w,
+                                               Fr,
+                                               Material_properties,
+                                               sim_parameters_tmp,
+                                               timeStep,
+                                               Kprime_k=Kprime)
+    sim_parameters_tmp.tipAsymptote = 'M'
+    asymptote_viscosity = TipAsymInversion(w,
+                                             Fr,
+                                             Material_properties,
+                                             sim_parameters_tmp,
+                                             timeStep)
+
+    # regime = np.full((asymptote_universal.size,), np.nan, dtype=np.float64)
+    # regime[np.where(abs(1. - asymptote_universal/asymptote_toughness) < 1.e-6)[0]] = 0.
+    # regime[np.where(abs(1. - asymptote_universal / asymptote_viscosity) < 1.e-6)[0]] = 1.
+    #
+    #
+    # tough_to_visc = np.where(asymptote_toughness < asymptote_universal)[0]
+    # regime[tough_to_visc] = (asymptote_universal[tough_to_visc] - asymptote_toughness[tough_to_visc] ) / (
+    #                         asymptote_toughness[tough_to_visc] - asymptote_viscosity[tough_to_visc])
+    # visc_to_tough = np.where(asymptote_viscosity < asymptote_universal)[0]
+    # regime[visc_to_tough] = 1. - abs((asymptote_universal[visc_to_tough] - asymptote_viscosity[visc_to_tough]) /
+    #                                  (asymptote_toughness[visc_to_tough] - asymptote_viscosity[visc_to_tough]))
+
+    regime = 1. - abs(asymptote_viscosity - asymptote_universal) / abs(asymptote_viscosity - asymptote_toughness)
+    # regime[np.where(regime < 0.)[0]] = 0.
+
+
+    return regime
