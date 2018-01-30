@@ -56,8 +56,8 @@ Fluid = FluidProperties(1.1e-3, Mesh, turbulence=False)
 req_sol_time = np.linspace(250.,5400.,15)
 simulProp = SimulationParameters(tip_asymptote="U",
                                  output_time_period=0.01,
-                                 plot_figure=False,
-                                 save_to_disk=True,
+                                 plot_figure=True,
+                                 save_to_disk=False,
                                  out_file_folder=".\\Data\\remesh_test", # e.g. "./Data/Laminar" for linux or mac
                                  plot_analytical=True,
                                  tmStp_prefactor=0.5,
@@ -74,19 +74,19 @@ initRad = 0.5
 init_data = (initRad, 'radius', 'M')
 C = None
 
-# # creating fracture object
-# Fr = Fracture(Mesh,
-#               # 'general',
-#               'analytical',
-#               Solid,
-#               Fluid,
-#               Injection,
-#               simulProp,
-#               # general_init_data=init_data)
-#               analyt_init_data=init_data)
+# creating fracture object
+Fr = Fracture(Mesh,
+              # 'general',
+              'analytical',
+              Solid,
+              Fluid,
+              Injection,
+              simulProp,
+              # general_init_data=init_data)
+              analyt_init_data=init_data)
 
-Fr = ReadFracture('.\\Data\\remesh_test\\file_196')
-simulProp.lastSavedFile = 196
+# Fr = ReadFracture('.\\Data\\remesh_test\\file_196')
+# simulProp.lastSavedFile = 196
 
 # create a Controller
 controller = Controller(Fr, Solid, Fluid, Injection, simulProp, C=C)

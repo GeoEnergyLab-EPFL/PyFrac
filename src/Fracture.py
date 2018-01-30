@@ -25,190 +25,207 @@ from src.VolIntegral import *
 from src.Properties import *
 from src.CartesianMesh import *
 from src.FractureInitilization import *
-from scipy.interpolate import interp2d
 from scipy.interpolate import griddata
 
-# todo : merge the __init__ with the actual initialization
 
 class Fracture():
     """ Class defining propagating fracture;
         
         Instance variables:
 
-            muPrime (ndarray-float):    12 viscosity (mu' parameter) for each cell in the domain
-            w (ndarray-float):          fracture opening (width)
-            p (ndarray-float):          fracture pressure
-            time (float):               time since the start of injection
-            EltChannel (ndarray-int):   list of cells currently in the channel region
-            EltCrack (ndarray-int):     list of cells currently in the crack region
-            EltRibbon (ndarray-int):    list of cells currently in the Ribbon region
-            EltTip (ndarray-int):       list of cells currently in the Tip region
-            v (ndarray-float):          propagation velocity for each cell in the tip cells
-            alpha (ndarray-float):      angle prescribed by perpendicular on the fracture front
-                                        (see Pierce 2015, Computation Methods Appl. Mech)
-            l (ndarray-float):          length of perpendicular on the fracture front
-                                        (see Pierce 2015, Computation Methods Appl. Mech)
-            ZeroVertex (ndarray-float): Vertex from which the perpendicular is drawn (can have value from 0 to 3, where
-                                        0 signify bottom left, 1 signifying bottom right, 2 signifying top right and 3
-                                        signifying top left vertex)
-            FillF (ndarray-float):      filling fraction of each tip cell
-            CellStatus (ndarray-int):   specifies which region each element currently belongs to
-            initRad (float):            starting radius
-            initTime (float):           starting time
-            sgndDist (ndarray-float):   signed minimun distance from fracture front of each cell in the domain
-            Q (ndarray-float):          injection rate into each cell of the domain
-            FractEvol (ndarray-float):  array containing the coordinates of the individual fracture front lines;
-                                        used for printing fracture evolution through time
-            InCrack (ndarray-int):      array specifying whether the cell is inside or outside the fracture.
-            Front                       array of with x,y locations of the intersection of the fracture front with the background mesh edges
-            Volume                      real - fracture volume
+            w (ndarray-float)           -- fracture opening (width)
+            p (ndarray-float)           -- fracture pressure
+            time (float)                -- time since the start of injection
+            EltChannel (ndarray-int)    -- list of cells currently in the channel region
+            EltCrack (ndarray-int)      -- list of cells currently in the crack region
+            EltRibbon (ndarray-int)     -- list of cells currently in the Ribbon region
+            EltTip (ndarray-int)        -- list of cells currently in the Tip region
+            v (ndarray-float)           -- propagation velocity for each cell in the tip cells
+            alpha (ndarray-float)       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,
+                                           Computation Methods Appl. Mech)
+            l (ndarray-float)           -- length of perpendicular on the fracture front
+                                           (see Pierce 2015, Computation Methods Appl. Mech)
+            ZeroVertex (ndarray-float)  -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,
+                                           where 0 signify bottom left, 1 signifying bottom right, 2 signifying top
+                                           right and 3 signifying top left vertex)
+            FillF (ndarray-float)       -- filling fraction of each tip cell
+            CellStatus (ndarray-int)    -- specifies which region each element currently belongs to
+            initRad (float)             -- starting radius
+            initTime (float)            -- starting time
+            sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain
+            Q (ndarray-float)           -- injection rate into each cell of the domain
+            FractEvol (ndarray-float)   -- array containing the coordinates of the individual fracture front lines;
+                                           used for printing fracture evolution through time
+            InCrack (ndarray-int)       -- array specifying whether the cell is inside or outside the fracture.
+            FractureVolume (float)      -- fracture volume
                                  
         functions:
-            plot_fracture:               plot given variable of the fracture
+            __init__                    Initialize the fracture according to the given initialization parameters.
+            plot_fracture               plot given variable of the fracture
             PrintFractureTrace:         plot current regions and front position of the fracture
 
             
     """
 
-    def __init__(self, Mesh, init_type, solid=None, fluid=None, injection=None, simulProp=None, analyt_init_data=None,
-                 general_init_data=None):
-        """ Initialize the fracture according to the given initial value and the propagation regime. Either initial 
-        radius or time can be given as the initial value. The function sets up the fracture front and other fracture
-        parameters according to the given regime at the given time or radius.
+    def __init__(self, Mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
+        """ Initialize the fracture according to the given initialization parameters.
             
-            Arguments:
-                initValue (float):      initial value
-                initType (string):      type of the initial variable provided. Possible values:
-                                            time    -- indicating the given value is initial time
-                                            radius  -- indicating the given value is initial radius
-                regime (string):        Possible values:
-                                            K   -- indicating toughness dominated regime, without leak off
-                                            M   -- indicating viscosity dominated regime, without leak off
-                                            Mt  -- indicating viscosity dominated regime, with leak off
+        Arguments:
+            Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
+            init_param (tuple)     -- a tuple with the initialization parameters. The number of parameters depends
+                                      on the initialization type given by the first element of the tuple.
+                                            In case the first element (init_param[0], see below for possible options) is
+                                            'PKN', the tuple should contain the following parameters in order:
+                                                2. given_type   -- the type of the given value (see below for possible
+                                                                   options).
+                                                3. given_value  -- the value at which the fracture is initialized.
+                                                4. -h           -- the height of the PKN fracture.
+
+                                            In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt' or 'E',
+                                            the tuple should contain the following parameters in order:
+                                                2. given_type   -- the type of the given value (see below for possible
+                                                                   options).
+                                                3. given_value  -- the value at which the fracture is initialized.
+
+                                            In case the first element (init_param[0]) is 'G', the tuple should
+                                            contain the following parameters in order:
+                                                2. surv_cells   -- list of the survey cells giving distance from the
+                                                                   fracture front.
+                                                3. inner_cells  -- the cells enclosed by the survey cells inside the
+                                                                   fracture.
+                                                4. surv_dist    -- the dist of the survey cells from the fracture front.
+                                                5. w            -- the array giving the width to be initialized for
+                                                                   each of the mesh cell. It can be 'None' if not
+                                                                   available.
+                                                6. p            -- the array giving the pressure to be initialized for
+                                                                   each of the mesh cell. It can be 'None' if not
+                                                                   available.
+                                                7. C            -- the elasticity influence matrix.
+                                                8. volume       -- total volume of the fracture. It can be 'None' if not
+                                                                   available.
+                                                9. vel          -- vel of the propagating front. Maximum of the given
+                                                                   velocity will be used to calculate the time step.
+
+                                            The fracture can be initialized according to the following regimes
+                                            (specified by the first element of the init_param tuple):
+                                                'M'     -- radial fracture in viscosity dominated regime
+                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                'K'     -- radial fracture in toughness dominated regime
+                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                'E'     -- elliptical fracture in toughness dominated regime
+                                                'PKN'   -- PKN fracture
+                                                'G'     -- flexible, general purpose initialization
+
+                                            given_type can be one of the following:
+                                                't'     -- time at which the fracture is to be initialized.
+                                                'l'     -- the length parameter. It will be treated as the fracture
+                                                           radius, the minor axis length and the fracture length for the
+                                                           cases of a radial fracture, an elliptical fracture and a PKN
+                                                           fracture respectively.
+
+            solid (MaterialProperties object)           -- the MaterialProperties object giving the material properties.
+            fluid (FluidProperties object)              -- the FluidProperties object giving the fluid properties.
+            injection (InjectionProperties object)      -- the InjectionProperties object giving the injection
+                                                           properties.
+            simulProp (SimulationParameters object)     -- the SimulationParameters object giving the numerical
+                                                           parameters to be used in the simulation.
         """
 
-        self.mesh = Mesh
-        if init_type == 'analytical':
+        # the parameter specifying the type of initialization
+        init_type = init_param[0]
 
-            (initValue, initType, regime) = analyt_init_data
-
-            if initType == 'time':
-                self.time = initValue
-                if regime == 'K':
-                    (self.initRad, self.p, self.w, self.v) = K_vertex_solution_t_given(solid.Kprime,
-                                                                                  solid.Eprime,
-                                                                                  injection.injectionRate[1,0],
-                                                                                  self.mesh,
-                                                                                  initValue)
-                elif regime == 'M':
-                    (self.initRad, self.p, self.w, self.v) = M_vertex_solution_t_given(solid.Eprime,
-                                                                                  injection.injectionRate[1,0],
-                                                                                  fluid.muPrime,
-                                                                                  self.mesh,
-                                                                                  initValue)
-                elif regime == 'Mt':
-                    (self.initRad, self.p, self.w, self.v) = MT_vertex_solution_t_given(solid.Eprime,
-                                                                                   np.mean(solid.Cprime),
-                                                                                   injection.injectionRate[1,0],
-                                                                                   fluid.muPrime,
-                                                                                   self.mesh,
-                                                                                   initValue)
-                else:
-                    print('regime ' + regime + ' not supported')
-                    return
-            elif initType == 'radius':
-                self.initRad = initValue
-                if regime == 'K':
-                    (self.time, self.p, self.w, self.v) = K_vertex_solution_r_given(solid.Kprime,
-                                                                               solid.Eprime,
-                                                                               injection.injectionRate[1,0],
-                                                                               self.mesh,
-                                                                               initValue)
-                elif regime == 'M':
-                    (self.time, self.p, self.w, self.v) = M_vertex_solution_r_given(solid.Eprime,
-                                                                               injection.injectionRate[1,0],
-                                                                               fluid.muPrime,
-                                                                               self.mesh,
-                                                                               initValue)
-                elif regime == 'Mt':
-                    (self.time, self.p, self.w, self.v) = Mt_vertex_solution_r_given(solid.Eprime,
-                                                                                np.mean(solid.Cprime),
-                                                                                injection.injectionRate[1,0],
-                                                                                fluid.muPrime,
-                                                                                self.mesh,
-                                                                                initValue)
-                else:
-                    print('regime ' + regime + ' not supported')
-                    return
-                self.initTime = self.time
+        if init_type is 'PKN':
+            (init_type, given_type, given_value, h) = init_param
+        elif init_type in ('M', 'Mt', 'K', 'Kt', 'E'): # radial fracture
+            if len(init_param) == 3:
+                (init_type, given_type, given_value) = init_param
+                h = None
             else:
-                raise SystemExit('initType ' + initType + ' not supported in fracture initialization')
+                raise ValueError("Three parameters are to be provided for initialization type " + repr(init_type) +
+                                ". See Fracture class initialization function documentation.")
+        elif init_type is 'G': # general purpose initialization
+            if len(init_param) == 9:
+                (init_type, surv_cells, inner_cells, surv_dist, w, p, C, volume, vel) = init_param
+            else:
+                raise ValueError("Nine parameters are to be provided for initialization type " + repr(init_type) +
+                                ". See Fracture class initialization function documentation.")
+        else:
+            raise ValueError("Given initialization type '" + init_type + "' is not correct. See Fracture class "
+                            "initialization function documentation for possible options.")
 
-            surv_cells, channel_cells = get_circular_survey_cells(self.mesh, self.initRad)
-            surv_cells_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
-                                                                        surv_cells, 1] ** 2) ** 0.5
-            self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
-            self.CellStatus, self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,
-                                                                                    surv_cells,
-                                                                                    channel_cells,
-                                                                                    surv_cells_dist)
 
-        elif init_type == 'general':
-            (surv_cells, channel_cells, surv_cells_dist, w, p, C, volume, vel) = general_init_data
+        self.mesh = Mesh
 
-            self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
-            self.CellStatus, self.l, self.alpha, self.FillF,self.sgndDist  = generate_footprint(self.mesh,
-                                                                                    surv_cells,
-                                                                                    channel_cells,
-                                                                                    surv_cells_dist)
+        if not init_type is 'G':
 
-            self.w, self.p = initial_width_pressure(self.mesh,
-                                                    self.EltCrack,
-                                                    self.EltTip,
-                                                    self.FillF,
-                                                    C,
-                                                    w,
-                                                    p,
-                                                    volume)
+            if given_type is 't':
+                length = None
+                time = given_value
+            elif given_type is 'l':
+                time = None
+                length = given_value
+            else:
+                raise ValueError("The initial value can only be of type time ('t') or length ('l')")
 
-            # self.w = np.zeros((self.mesh.NumberOfElts,), )
-            # self.w[self.EltCrack] = w
-            #
-            # self.p = np.zeros((self.mesh.NumberOfElts, ), )
-            # self.p[self.EltCrack] = p
+            # get analytical solution
+            self.time, self.initRad, self.p, self.w, vel, actvElts = HF_analytical_sol(init_type,
+                                                                      self.mesh,
+                                                                      solid.Eprime,
+                                                                      injection.injectionRate[1,0],
+                                                                      muPrime=fluid.muPrime,
+                                                                      Kprime=solid.Kprime[self.mesh.CenterElts][0],
+                                                                      Cprime=solid.Cprime[self.mesh.CenterElts][0],
+                                                                      length=length,
+                                                                      t=time,
+                                                                      KIc_min=solid.K1c_perp,
+                                                                      h=h)
 
-            self.v = vel * np.ones((self.EltTip.size, ), )
+            if init_type in ('M', 'Mt', 'K', 'Kt'):
+                # survey cells and their distances from the front
+                surv_cells, inner_cells = get_circular_survey_cells(self.mesh, self.initRad)
+                surv_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
+                                                                            surv_cells, 1] ** 2) ** 0.5
+            elif init_type is 'E':
+                a = (solid.Kprime[self.mesh.CenterElts]/((32 / np.pi) ** 0.5) / solid.K1c_perp) ** 2 * self.initRad
+                surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, a, self.initRad)
+                surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
+                # get minimum distance from center of the survey cells
+                for i in range(0, surv_cells.size):
+                     surv_dist[i] = Distance_ellipse(a, self.initRad, Mesh.CenterCoor[surv_cells[i], 0],
+                                                                    Mesh.CenterCoor[surv_cells[i], 1])
+            elif init_type is 'PKN':
+                raise SystemExit("PKN initialization is to be implemented")
+
+        self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
+        self.CellStatus, self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,
+                                                                                surv_cells,
+                                                                                inner_cells,
+                                                                                surv_dist)
+
+        if init_type is 'G':
+            self.w, self.p = get_width_pressure(self.mesh,
+                                                self.EltCrack,
+                                                self.EltTip,
+                                                self.FillF,
+                                                C,
+                                                w,
+                                                p,
+                                                volume)
+
+
             if volume is None:
                 volume = np.sum(self.w) * (Mesh.EltArea)
 
             if injection !=None:
                 self.time = volume/injection.injectionRate[1,0]
 
-        if solid != None:
-            #  assigning nan for cells which are not in the fracture yet
-            self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
+        self.v = vel * np.ones((self.EltTip.size,), )
+        # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
+        self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
+        self.Tarrival[self.EltCrack] = self.time
 
-            # using Mtilde solution to initialize arrival time
-            self.Tarrival[self.EltChannel] = (solid.Cprime[self.EltChannel] ** 2 * self.mesh.distCenter[self.EltChannel] ** 4 *
-                                              np.pi ** 4 / injection.injectionRate[1,0] ** 2 / 4)
-
-            self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
-            # calculate leaked off volume for the channel elements using Carter leak off (see e.g. Dontsov and Peirce, 2008)
-            self.Leakedoff[self.EltChannel] = 2 * solid.Cprime[self.EltChannel] * self.mesh.EltArea * (self.time -
-                                                                                                self.Tarrival[
-                                                                                                self.EltChannel]) ** 0.5
-            # # calculate leaked off volume for the tip cells by integrating Carter leak off expression (see Dontsov and Peirce, 2008)
-            # self.Leakedoff[self.EltTip] = 2 * solid.Cprime[self.EltTip] * VolumeIntegral(self.EltTip,
-            #                                                                              self.alpha,
-            #                                                                              self.l,
-            #                                                                              self.mesh,
-            #                                                                              'Lk',
-            #                                                                              solid,
-            #                                                                              self.muPrime,
-            #                                                                              self.v)
-        else:
-            self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
-            self.Leakedoff = np.zeros((self.mesh.NumberOfElts,), dtype=float)
+        self.LkOff_vol = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
+        self.efficiency = 1.
 
         self.process_fracture_front()
 
@@ -242,17 +259,18 @@ class Fracture():
 
     ###############################################################################
 
-    def plot_fracture(self, Elem_Identifier, Parameter_Identifier, analytical=None, identify=[], mat_Properties=None):
+    def plot_fracture(self, elts='complete', parameter='footPrint', analytical=None, identify=[],
+                      mat_Properties=None):
         """
-        Plots the given parameter of the specified  cells;
+        Plots the given parameter of the specified cells.
         
             Arguments:
-                Elem_Identifier(string):        elements to be printed; possible options:
+                elts(string):        elements to be printed; possible options:
                                                     complete
                                                     channel
                                                     crack
                                                     ribbon
-                Parameter_Identifier(string):   parameter to be ploted; possible options:
+                parameter(string):   parameter to be ploted; possible options:
                                                     width
                                                     pressure
                                                     viscosity
@@ -267,33 +285,31 @@ class Fracture():
                                                 drawn. This can be used for debugging.
         """
 
-        if Elem_Identifier == 'complete':
+        if elts == 'complete':
             Elts = np.arange(self.mesh.NumberOfElts)
-        elif Elem_Identifier == 'channel':
+        elif elts == 'channel':
             Elts = self.EltChannel
-        elif Elem_Identifier == 'crack':
+        elif elts == 'crack':
             Elts = self.EltCrack
-        elif Elem_Identifier == 'ribbon':
+        elif elts == 'ribbon':
             Elts = self.EltRibbon
-        elif Elem_Identifier == 'tip':
+        elif elts == 'tip':
             Elts = self.EltTip
         else:
-            print('invalid element identifier')
-            return
+            raise ValueError('Invalid element identifier!')
 
         values = np.zeros((self.mesh.NumberOfElts), float)
-        if Parameter_Identifier == 'width':
+        if parameter == 'width':
             values[Elts] = self.w[Elts]
-        elif Parameter_Identifier == 'pressure':
+        elif parameter == 'pressure':
             values[Elts] = self.p[Elts]
-        elif Parameter_Identifier == 'muPrime':
+        elif parameter == 'muPrime':
             values[Elts] = self.muPrime[Elts]
-        elif Parameter_Identifier == 'footPrint':
+        elif parameter == 'footPrint':
             fig = self.print_fracture_trace(analytical, identify, mat_Properties)
             return fig
         else:
-            print('invalid parameter identifier')
-            return None
+            raise ValueError('invalid parameter identifier')
 
         fig = plt.figure()
         ax = fig.gca(projection='3d')
@@ -432,7 +448,7 @@ class Fracture():
                 Kprime = mat_properties.KprimeFunc(self.mesh.CenterCoor[:,0],self.mesh.CenterCoor[:,1])
             else:
                 Kprime = mat_properties.Kprime
-            colors += -100. * (Kprime) / np.max(Kprime)
+            colors += -100. * (Kprime) / (np.max(Kprime) + 1e-15)
 
         colors[self.EltTip] = 70.
         colors[self.EltChannel] = 10.
@@ -499,17 +515,6 @@ class Fracture():
                  [],
                  self.EltChannel)
 
-        # sgndDist_func = interp2d(self.mesh.CenterCoor[self.EltChannel, 0],
-        #                          self.mesh.CenterCoor[self.EltChannel, 1],
-        #                          self.sgndDist[self.EltChannel],
-        #                          bounds_error=False,
-        #                          fill_value=1e10)
-        #
-        # # sgndDist_coarse = sgndDist_func(coarse_mesh.CenterCoor[:,0], coarse_mesh.CenterCoor[:,1]).diagonal()
-        # sgndDist_coarse = np.empty((coarse_mesh.NumberOfElts,),dtype=np.float64)
-        # for i in range(coarse_mesh.NumberOfElts):
-        #     sgndDist_coarse[i] = sgndDist_func(coarse_mesh.CenterCoor[i,0], coarse_mesh.CenterCoor[i,1])
-
         sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel], self.sgndDist[self.EltChannel], coarse_mesh.CenterCoor, method='linear')
 
         max_diag = (coarse_mesh.hx ** 2 + coarse_mesh.hy ** 2) ** 0.5
@@ -519,22 +524,15 @@ class Fracture():
         sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
 
         w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel], self.w[self.EltChannel],
-                                   coarse_mesh.CenterCoor, method='linear')
-        # w_func = interp2d(self.mesh.CenterCoor[:, 0],
-        #                     self.mesh.CenterCoor[:, 1],
-        #                     self.w,
-        #                     fill_value=0.)
-        #
-        # w_coarse = np.empty((coarse_mesh.NumberOfElts,), dtype=np.float64)
-        # for i in range(coarse_mesh.NumberOfElts):
-        #     w_coarse[i] = w_func(coarse_mesh.CenterCoor[i, 0], coarse_mesh.CenterCoor[i, 1])
+                                   coarse_mesh.CenterCoor, method='linear', fill_value=0.)
 
-        w_coarse[np.isnan(w_coarse)]=0
+        # w_coarse[np.isnan(w_coarse)]=0
 
-        #todo: Find
+        #todo: Find the velocity by merging tip cells. Asigning the maximum for now to calculate the correct time step
         v_coarse = max(self.v)
 
-        init_data = (excluding_tip,
+        init_data = ('G',
+                     excluding_tip,
                      excluding_tip,
                      -sgndDist_coarse[excluding_tip],
                      w_coarse,
@@ -546,14 +544,42 @@ class Fracture():
         saveToDisk_cpy = sim_prop.saveToDisk
         sim_prop.saveToDisk = False
         Fr_coarse = Fracture(coarse_mesh,
-                      'general',
-                      solid=material_prop,
-                      fluid=fluid_prop,
-                      injection=inj_prop,
-                      simulProp=sim_prop,
-                      general_init_data=init_data)
+                            init_data,
+                            solid=material_prop,
+                            fluid=fluid_prop,
+                            injection=inj_prop,
+                            simulProp=sim_prop)
+
+
+        Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                                            self.Tarrival[self.EltChannel],
+                                                            coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
+                                                            method='linear')
+
+        Fr_coarse.LkOff_vol[Fr_coarse.EltChannel] = 2 * material_prop.Cprime[Fr_coarse.EltChannel] * (
+                                Fr_coarse.time - Fr_coarse.Tarrival[Fr_coarse.EltChannel])**0.5 * coarse_mesh.EltArea
+        Fr_coarse.LkOff_vol[Fr_coarse.EltTip] = 2 * material_prop.Cprime[Fr_coarse.EltTip] * Integral_over_cell(
+                                                        Fr_coarse.EltTip,
+                                                        Fr_coarse.alpha,
+                                                        Fr_coarse.l,
+                                                        Fr_coarse.mesh,
+                                                        'Lk',
+                                                        frac=Fr_coarse,
+                                                        mat_prop=material_prop,
+                                                        Vel=Fr_coarse.v,
+                                                        dt=1.e20)
+        injected_vol = inj_prop.injectionRate[1, 0] * Fr_coarse.time
+        Fr_coarse.efficiency = (injected_vol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack])) / injected_vol
 
         Fr_coarse.time = self.time
         sim_prop.saveToDisk = saveToDisk_cpy
+
+        #############
+        # material_prop.CPrime = np.full((coarse_mesh.NumberOfElts,), 5e-7, dtype=np.float64)
+        # stressed_layer_1 = np.where(coarse_mesh.CenterCoor[:, 1] > 50)[0]
+        # stressed_layer_2 = np.where(coarse_mesh.CenterCoor[:, 1] < -50)[0]
+        # material_prop.CPrime[stressed_layer_1] = 1e-10
+        # material_prop.CPrime[stressed_layer_2] = 1e-10
+
 
         return Fr_coarse

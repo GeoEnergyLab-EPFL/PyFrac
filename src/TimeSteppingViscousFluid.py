@@ -102,6 +102,7 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
         if exitstatus != 1:
             return exitstatus, None
 
+
         # the new fracture width (notably the new width in the ribbon cells).
         w_k = np.copy(Fr_k.w)
 
@@ -152,21 +153,41 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
     # average injected fluid over footprint taken as [\delta] W guess for the iterative solver
     delwGuess = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size * np.ones((Fr_lstTmStp.EltCrack.size,), float)
 
-    # todo: leak off is assumed zero.
-    DLkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
-    # width of the guess. Evaluated to calculate the current velocity at the cell edges
-    wguess = np.copy(Fr_lstTmStp.w)
-    wguess[Fr_lstTmStp.EltCrack] = wguess[Fr_lstTmStp.EltCrack] + delwGuess
+    LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    # Calculate leak-off term for the tip cell
+    LkOff[Fr_lstTmStp.EltTip] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltTip] * Integral_over_cell(Fr_lstTmStp.EltTip,
+                                                                           Fr_lstTmStp.alpha,
+                                                                           Fr_lstTmStp.l,
+                                                                           Fr_lstTmStp.mesh,
+                                                                           'Lk',
+                                                                           mat_prop=mat_properties,
+                                                                           frac=Fr_lstTmStp,
+                                                                           Vel=Fr_lstTmStp.v,
+                                                                           dt=timeStep)
+
+    # Calculate leak-off term for the channel cell
+    t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
+    t_min_t0 = t_lst_min_t0 + timeStep
+
+    LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (t_min_t0 ** 0.5 -
+                                    t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
 
     # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
-    vk = velocity(wguess,
-                  Fr_lstTmStp.EltCrack,
-                  Fr_lstTmStp.mesh,
-                  Fr_lstTmStp.InCrack,
-                  Fr_lstTmStp.muPrime,
-                  C,
-                  mat_properties.SigmaO)
+    vk = np.zeros((4, Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    if Fluid_properties.turbulence:
+
+        wguess = np.copy(Fr_lstTmStp.w)
+        wguess[Fr_lstTmStp.EltCrack] = wguess[Fr_lstTmStp.EltCrack] + delwGuess
+
+        # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
+        vk = velocity(wguess,
+                      Fr_lstTmStp.EltCrack,
+                      Fr_lstTmStp.mesh,
+                      Fr_lstTmStp.InCrack,
+                      Fr_lstTmStp.muPrime,
+                      C,
+                      mat_properties.SigmaO)
 
     argSameFP = (
         Fr_lstTmStp.w,
@@ -177,7 +198,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
         Fr_lstTmStp.muPrime,
         Fr_lstTmStp.mesh,
         Fr_lstTmStp.InCrack,
-        DLkOff,
+        LkOff,
         mat_properties.SigmaO,
         Fluid_properties.density,
         Fluid_properties.turbulence,
@@ -300,8 +321,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                                                Fr_lstTmStp,
                                                                Material_properties,
                                                                sim_parameters,
-                                                               timeStep,
-                                                               Kprime_k=Kprime_k)
+                                                               timeStep)
 
 
         # if tip inversion returns nan
@@ -353,8 +373,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     #     exitstatus = 10
     #     return exitstatus, None
 
-    regime_t = find_regime(w_k, Fr_lstTmStp, Material_properties, sim_parameters, timeStep, Kprime_k,
-                           -sgndDist_k[Fr_lstTmStp.EltRibbon])
+    # regime_t = find_regime(w_k, Fr_lstTmStp, Material_properties, sim_parameters, timeStep, Kprime_k,
+    #                        -sgndDist_k[Fr_lstTmStp.EltRibbon])
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -388,14 +408,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
 
     # Calculate filling fraction of the tip cells for the current fracture position
-    FillFrac_k = VolumeIntegral(EltsTipNew,
+    FillFrac_k = Integral_over_cell(EltsTipNew,
                                 alpha_k,
                                 l_k,
                                 Fr_lstTmStp.mesh,
-                                'A',
-                                Material_properties,
-                                Fr_lstTmStp.muPrime,
-                                Vel_k) / Fr_lstTmStp.mesh.EltArea
+                                'A') / Fr_lstTmStp.mesh.EltArea
 
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-6 (up to 6 figures)
     FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-6)] = 1.0
@@ -454,27 +471,30 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
         # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
         # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
-        wTip = VolumeIntegral(EltsTipNew,
+
+        wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
                               sim_parameters.tipAsymptote,
-                              Material_properties,
-                              Fr_lstTmStp.muPrime,
-                              Vel_k,
+                              frac=Fr_lstTmStp,
+                              mat_prop=Material_properties,
+                              fluid_prop=Fluid_properties,
+                              Vel=Vel_k,
                               stagnant=stagnant,
-                              KIPrime=KIPrime
-                              ) / Fr_lstTmStp.mesh.EltArea
+                              KIPrime=KIPrime) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
-        wTip = VolumeIntegral(EltsTipNew,
+        wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
                               sim_parameters.tipAsymptote,
-                              Material_properties,
-                              Fr_lstTmStp.muPrime,
-                              Vel_k) / Fr_lstTmStp.mesh.EltArea
+                              frac=Fr_lstTmStp,
+                              mat_prop=Material_properties,
+                              fluid_prop=Fluid_properties,
+                              Vel=Vel_k,
+                              stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # # check if the tip volume has gone into negative
     # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
@@ -492,21 +512,38 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
                                                     * np.ones((Fr_lstTmStp.EltCrack.size,), float)
-    DLkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), float)  # leak off set to zero
 
-    # width of guess. Evaluated to calculate the current velocity at the cell edges
-    wguess = np.copy(Fr_lstTmStp.w)
-    wguess[Fr_lstTmStp.EltChannel] = wguess[Fr_lstTmStp.EltChannel] + guess[np.arange(Fr_lstTmStp.EltChannel.size)]
-    wguess[EltsTipNew] = wTip
+    LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    # Calculate leak-off term for the tip cell
+    LkOff[EltsTipNew] = 2 * Material_properties.Cprime[EltsTipNew] * Integral_over_cell(EltsTipNew,
+                                                                alpha_k,
+                                                                l_k,
+                                                                Fr_lstTmStp.mesh,
+                                                                'Lk',
+                                                                mat_prop=Material_properties,
+                                                                frac=Fr_lstTmStp,
+                                                                Vel=Vel_k,
+                                                                dt=timeStep)
+
+    #todo: no need to evaluate on each iteration. Need to decide. Evaluating here for now for better readability
+    LkOff[Fr_lstTmStp.EltChannel] = 2 * Material_properties.Cprime[Fr_lstTmStp.EltChannel] * ((Fr_lstTmStp.time +
+                    timeStep - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5 - (Fr_lstTmStp.time -
+                    Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5) * Fr_lstTmStp.mesh.EltArea
 
     # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
-    vk = velocity(wguess,
-                  EltCrack_k,
-                  Fr_lstTmStp.mesh,
-                  InCrack_k,
-                  Fr_lstTmStp.muPrime,
-                  C,
-                  Material_properties.SigmaO)
+    vk = np.zeros((4, Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    if Fluid_properties.turbulence:
+        wguess = np.copy(Fr_lstTmStp.w)
+        wguess[Fr_lstTmStp.EltChannel] = wguess[Fr_lstTmStp.EltChannel] + guess[np.arange(Fr_lstTmStp.EltChannel.size)]
+        wguess[EltsTipNew] = wTip
+
+        vk = velocity(wguess,
+                      EltCrack_k,
+                      Fr_lstTmStp.mesh,
+                      InCrack_k,
+                      Fr_lstTmStp.muPrime,
+                      C,
+                      Material_properties.SigmaO)
 
     # typical value for pressure
     typValue = np.copy(guess)
@@ -526,7 +563,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         Fr_lstTmStp.muPrime,
         Fluid_properties.density,
         InCrack_k,
-        DLkOff,
+        LkOff,
         Material_properties.SigmaO,
         Fluid_properties.turbulence,
         Material_properties.grainSize
@@ -542,11 +579,17 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                sim_parameters.maxSolverItr,
                                *arg)
 
+    # setting arrival time for fully traversed tip elements (new channel elements)
+    Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
+    new_channel = np.where(FillFrac_k>0.9999)[0]
+    t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
+    max_l = Fr_lstTmStp.mesh.hx * np.cos(alpha_k[new_channel]) + Fr_lstTmStp.mesh.hy * np.sin(alpha_k[new_channel])
+    t_leave = Fr_lstTmStp.time + timeStep - (l_k[new_channel] - max_l) / Vel_k[new_channel]
+    Tarrival_k[EltsTipNew[new_channel]] = (t_enter + t_leave)/2
+
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
-
     Fr_kplus1.time += timeStep
-
     Fr_kplus1.w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
     Fr_kplus1.w[EltsTipNew] = wTip
 
@@ -572,16 +615,32 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     Fr_kplus1.p[Fr_kplus1.EltCrack] = np.dot(C[np.ix_(Fr_kplus1.EltCrack, Fr_kplus1.EltCrack)],
                                              Fr_kplus1.w[Fr_kplus1.EltCrack])
     Fr_kplus1.sgndDist = sgndDist_k
-
     Fr_kplus1.alpha = alpha_k[partlyFilledTip]
     Fr_kplus1.l = l_k[partlyFilledTip]
     Fr_kplus1.v = Vel_k[partlyFilledTip]
-
     Fr_kplus1.InCrack = InCrack_k
-
     Fr_kplus1.process_fracture_front()
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
-    Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
+    Fr_kplus1.Tarrival = Tarrival_k
+
+    Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * Material_properties.Cprime[Fr_kplus1.EltChannel] * (
+                            Fr_kplus1.time - Fr_kplus1.Tarrival[Fr_kplus1.EltChannel])**0.5 * Fr_kplus1.mesh.EltArea
+    Fr_kplus1.LkOff_vol[Fr_kplus1.EltTip]= 2 * Material_properties.Cprime[Fr_kplus1.EltTip] * Integral_over_cell(
+                                                                Fr_kplus1.EltTip,
+                                                                Fr_kplus1.alpha,
+                                                                Fr_kplus1.l,
+                                                                Fr_kplus1.mesh,
+                                                                'Lk',
+                                                                mat_prop=Material_properties,
+                                                                frac=Fr_kplus1,
+                                                                Vel=Fr_kplus1.v,
+                                                                dt=1.e20)
+    injected_vol = sum(Qin) * Fr_kplus1.time
+    Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
+    # Fig = Fr_kplus1.plot_fracture('complete','footPrint')
+    # plot_as_matrix(Tarrival_k, Fr_kplus1.mesh)
+
+    # Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
 
     # # check if the tip has laminar flow, to be consistent with tip asymptote.
     # ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, Fluid_properties, return_ReyNumb=True)
@@ -670,7 +729,7 @@ def toughness_at_tip_CellCenter(ribbon_elts, channel_elts, mesh, mat_prop, sgnd_
     (elt_tip, l_tip, alpha_tip, CellStatus) = reconstruct_front(sgnd_dist,
                                                                channel_elts,
                                                                mesh)
-    FillFrac = VolumeIntegral(elt_tip,
+    FillFrac = Integral_over_cell(elt_tip,
                                 alpha_tip,
                                 l_tip,
                                 mesh,

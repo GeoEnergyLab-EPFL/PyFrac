@@ -14,30 +14,31 @@ from src.CartesianMesh import *
 
 class MaterialProperties:
     """
-    Class defining the solid Material properties
+    Class defining the Material properties of the solid
 
-    instance variables:
-        Eprime (float)          : plain strain modulus
-        K1c (ndarray-float)     : Linear-Elastic Plane-Strain Toughness for each cell
-        Kprime (ndarray-float)  : 4*(2/pi)**0.5 * K1c 
-        Cprime (ndarray-float)  : 2 * Carter's leak off coefficient
-        SigmaO (ndarray-float)  : in-situ stress field
-        grainSize (float)       : the grain size of the rock; used to calculate the relative roughness
-    methods:
+    Instance variables:
+        Eprime (float)       -- plain strain modulus
+        K1c (ndarray)        -- Linear-Elastic Plane-Strain Toughness for each cell
+        Kprime (ndarray)     -- 4*(2/pi)**0.5 * K1c
+        Cprime (ndarray)     -- 2 * Carter's leak off coefficient
+        SigmaO (ndarray)     -- in-situ stress field
+        grainSize (float)    -- the grain size of the rock; used to calculate the relative roughness
+    Methods:
     """
 
     def __init__(self, Mesh, Eprime, Toughness, Cl=0., SigmaO=0., grain_size=0., Kprime_func=None,
-                 anisotropic_flag=False, Toughness_perp = None):
+                 anisotropic_flag=False, Toughness_min = None):
         """
         Arguments:
-            Eprime (float)          : plain strain modulus
-            Toughness (float)       : Linear-Elastic Plane-Strain Fracture Toughness
-            Cl (float)              : Carter's leak off coefficient
-            SigmaO (ndarray-float)  : in-situ stress field
-            grainSize (float)       : the grain size of the rock; used to calculate the relative roughness
+            Eprime (float)      -- plain strain modulus
+            Toughness (float)   -- Linear-Elastic Plane-Strain Fracture Toughness
+            Cl (float)          -- Carter's leak off coefficient
+            SigmaO (ndarray)    -- in-situ stress field
+            grainSize (float)   -- the grain size of the rock; used to calculate the relative roughness
         """
+
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
-            raise SystemExit("Eprime  can not be an array as input ! - homogeneous medium only ")
+            raise ValueError("Eprime can not be an array as input! - homogeneous medium only ")
         else:
             self.Eprime = Eprime
 
@@ -47,7 +48,7 @@ class MaterialProperties:
                 self.Kprime = (32 / math.pi) ** 0.5 * Toughness
             else:
                 # error
-                raise SystemExit('Error in the size of Toughness input ')
+                raise ValueError('Error in the size of Toughness input!')
                 return
         else:
             self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
@@ -59,7 +60,7 @@ class MaterialProperties:
             if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.Cprime = 2. * Cl
             else:
-                raise SystemExit('Error in the size of Leak-Off coefficient input ')
+                raise ValueError('Error in the size of Leak-Off coefficient input!')
                 return
         else:
             self.Cprime = 2. * Cl * np.ones((Mesh.NumberOfElts,), float)
@@ -68,7 +69,7 @@ class MaterialProperties:
             if SigmaO.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.SigmaO = SigmaO
             else:
-                raise SystemExit('Error in the size of Sigma input ')
+                raise ValueError('Error in the size of Sigma input ')
                 return
         else:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
@@ -79,17 +80,17 @@ class MaterialProperties:
             try:
                 self.KprimeFunc(0)
             except TypeError:
-                raise SystemExit('The Kprime function given is not correct for anisotropic case. It should take one'
+                raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take one'
                                  ' argument, i.e. the angle and return a toughness value.')
-            if Toughness_perp is None:
-                raise SystemExit('Two toughnesses in perpedicular directions should be provided.')
-        self.K1c_perp = Toughness_perp
+            if Toughness_min is None:
+                raise SystemExit('Two toughnesses in the orthogonal directions should be provided.')
+        self.K1c_perp = Toughness_min
 
         if not Kprime_func is None and not self.anisotropic:
             try:
                 self.KprimeFunc(0.,0.)
             except TypeError:
-                raise SystemExit('The Kprime function given is not correct. It should take two arguments, '
+                raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
 
 # --------------------------------------------------------------------------------------------------------
@@ -98,22 +99,33 @@ class FluidProperties:
     """
        Class defining the fluid properties
 
-       instance variables:
-            viscosity (ndarray-float):      Viscosity of the fluid (note its different from local viscosity, see
-                                            fracture class for local viscosity) 
-            rheology (string):              string specifying rheology of the fluid. Possible options:
-                                                -- "Newtonian"
-                                                -- "non-Newtonian"
-            muPrime (float):                12 * viscosity (// plates viscosity factor)
-            density (float, default 1000):  density of the fluid
-            turbulence (bool, default False):turbulence flag. If true, turbulence will be taken into account
-       methods:
+       Instance variables:
+            viscosity (ndarray)     -- Viscosity of the fluid (note its different from local viscosity, see
+                                       fracture class for local viscosity)
+            rheology (string)       -- string specifying rheology of the fluid. Possible options:
+                                         - "Newtonian"
+                                         - "non-Newtonian"
+            muPrime (float)         -- 12 * viscosity (// plates viscosity factor)
+            density (float)         -- density of the fluid
+            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account
+       Methods:
        """
 
-    def __init__(self, viscosity, mesh, density=1000., rheology="Newtonian", turbulence=False):
+    def __init__(self, viscosity, density=1000., rheology="Newtonian", turbulence=False):
+        """
+        Constructor function.
 
+        Instance variables:
+            viscosity (ndarray)     -- viscosity of the fluid (note its different from local viscosity, see
+                                       fracture class for local viscosity)
+            density (float)         -- density of the fluid
+            rheology (string)       -- string specifying rheology of the fluid. Possible options:
+                                         - "Newtonian"
+                                         - "non-Newtonian"
+            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account
+        """
         if isinstance(viscosity, np.ndarray):  # check if float or ndarray
-            raise SystemExit(' viscosity of the fluid is not an array. Note that its different from local viscosity (See local\n'
+            raise ValueError(' viscosity of the fluid is not an array. Note that its different from local viscosity (See local\n'
                   ' viscosity variable in the fracture class')
             return
         else:
@@ -125,7 +137,7 @@ class FluidProperties:
             self.rheology = rheology
         else:
             # error
-            raise SystemExit('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
+            raise ValueError('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
             return
 
         self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
@@ -135,7 +147,7 @@ class FluidProperties:
             self.turbulence = turbulence
         else:
             # error
-            raise SystemExit('Invalid turbulence flag. Can be either True or False')
+            raise ValueError('Invalid turbulence flag. Can be either True or False')
 
 
 # --------------------------------------------------------------------------------------------------------
@@ -144,21 +156,29 @@ class InjectionProperties:
         Class defining the injection schedule
 
         instance variables:
-            injectionRate (ndarray-float):      Array specifying the time series (row 0) and the corresponding injection
-                                                rates (row 1).   
-            source_coordinates (ndarray-float): Array with a single row and two columns specifying the x and y coordinate
-                                                of the injection point coordinates.
-            source_location (ndarray-int):      The element(s) where the fluid is injected in the cartesian mesh.                             
+            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection
+                                            rates (row 1).
+            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate
+                                            of the injection point coordinates.
+            source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.
     """
 
     def __init__(self, rate, source_coordinates, Mesh):  # add Mesh as input directly here to ensure consistency
         """
-        The constructor of the InjectionProperties class. See documentation of the class.
+        The constructor of the InjectionProperties class.
+
+        Arguments:
+            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection
+                                            rates (row 1).
+            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate
+                                            of the injection point coordinates.
+            source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.
+
         """
 
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
-                raise SystemExit('Invalid injection rate. The list should have 2 rows (to specify time and corresponding '
+                raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and corresponding '
                       'injection rate) for each entry')
             else:
                 self.injectionRate = rate
@@ -169,8 +189,9 @@ class InjectionProperties:
             self.source_coordinates = source_coordinates
         else:
             # error
-            raise SystemExit('Invalid source coordinates. Correct format: a numpy array with a single row and two columns to \n'
-                  'specify x and y coordinate of the source e.g. np.array([x_coordinate, y_coordinate])')
+            raise ValueError('Invalid source coordinates. Correct format: a numpy array with a single row'
+                             ' and two columns to \n specify x and y coordinate of the source e.g.'
+                             ' np.array([x_coordinate, y_coordinate])')
 
         self.source_location = Mesh.locate_element(source_coordinates[0], source_coordinates[1])
 
@@ -180,22 +201,28 @@ class LoadingProperties:
     """
         Class defining the mechanical loading properties
 
-        instance variables:
-            EltLoaded (ndarray-int):    Array of elements that are loaded.
-            displ_rate (float):         the rate at which the elements in the EltLoaded list are displaced due to the
-                                        applied mechanical loading
-
+        Instance variables:
+            EltLoaded (ndarray)   -- array of elements that are loaded.
+            displ_rate (float):   -- the rate at which the elements in the EltLoaded list are displaced due to the
+                                     applied mechanical loading
     """
 
-    def __init__(self,  displ_rate, loaded_elts=None):
+    def __init__(self,  displ_rate=0., loaded_elts=None):
         """
-        The constructor of the InjectionProperties class. See documentation of the class.
+        The constructor of the InjectionProperties class.
+
+        Arguments:
+            EltLoaded (ndarray)   -- array of elements that are loaded.
+            displ_rate (float):   -- the rate at which the elements in the EltLoaded list are displaced due to the
+                                     applied mechanical loading
         """
 
         self.displRate = displ_rate
 
         if isinstance(loaded_elts, np.ndarray):
             self.EltLoaded = loaded_elts
+        else:
+            raise ValueError("The loaded elements should be given in the form an ndarray of integers.")
 
 
 
@@ -205,98 +232,106 @@ class SimulationParameters:
         Class defining the simulation parameters
 
         instance variables
-            maxTimeSteps (integer, default 10):     maximum number of time steps.
-            tolFractFront (float, default 1.e-3):   tolerance for the fracture front loop.
-            toleranceEHL (float, default 1.e-5):    tolerance for the Elastohydrodynamic solver.
-            maximumItrEHL (int, default 100):       maximum number of iterations for the Elastohydrodynamic solver.
-            tmStpPrefactor (float, default 0.8):    factor for time-step adaptivity. 
-            FinalTime (float, default 1000):        time where the simulation ends.
-            maxFrontItr (int, default 30):          maximum iterations to for the fracture front loop.
-            tipAsymptote (string, default "U"):     propagation regime. Possible options:
-                                                        regime -- K  toughness dominated regime, without leak off
-                                                        regime -- M  viscosity dominated regime, without leak off
-                                                        regime -- Mt viscosity dominated regime , with leak off
-                                                        regime -- U  Universal regime accommodating viscosity, toughness 
-                                                                     and leak off (see Donstov and Pierce, 2017)
-                                                        regime -- M-K transition regime
-            maxSolverItr (int, default 100):        maximum iterations for the EHL iterative solver (Picard-Newton
-                                                    hybrid) in this case.
-            maxReattempts (int, default 5):         maximum number of reattempts in case of failure of a time step. A
-                                                    smaller time step will be attempted the given number of times. 
-            reAttemptFactor (float, default 0.8):   the factor multiplied with the time step before reattempt.
-            outputTimePeriod (float, default inf):  the time period after which the output file is written or the
-                                                    figures are plotted. 
-            plotFigure (boolean, default False):    flag specifying to plot fracture trace after the given time period
-            saveToDisk (boolean, default False):    flag specifying to save fracture to dist after the given time period
-            out_file_address (string, default "None"): disk address of the files to be saved. If not given, a new
-                                                    ./Data/"tim stamp" folder will be automatically created.
-            plot_analytical (boolean, default False): flag specifying to plot the analytical solution
-            analyticalSol (String, default "M"):    the analytical solution of the radial fracture to be plotted on the
-                                                    fracture. Possible options:
-                                                        "M" -- viscosity dominated
-                                                        "K" -- toughness dominated
-            plot_evolution (boolean, default False):if True, the fracture footprint plots will be superimposed on the 
-                                                    previous footprint plots i.e. evolution of fracture with time will
-                                                    be shown
-            toleranceToughness (float):             tolerance for toughness iteration
+            maxTimeSteps (integer)      -- maximum number of time steps.
+            tolFractFront (float)       -- tolerance for the fracture front loop.
+            toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.
+            maximumItrEHL (int)         -- maximum number of iterations for the Elastohydrodynamic solver.
+            tmStpPrefactor (float)      -- factor for time-step adaptivity.
+            tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.
+            FinalTime (float)           -- time where the simulation ends.
+            maxFrontItr (int)           -- maximum iterations to for the fracture front loop.
+            tipAsymptote (string)       -- propagation regime. Possible options:
+                                                - K  (toughness dominated regime, without leak off)
+                                                - M  (viscosity dominated regime, without leak off)
+                                                - Mt (viscosity dominated regime , with leak off)
+                                                - U  (Universal regime accommodating viscosity, toughness
+                                                     and leak off (see Donstov and Pierce, 2017))
+                                                - MK (viscosity to toughness transition regime)
+            maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton
+                                           hybrid) in this case.
+            maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller
+                                           time step will be attempted the given number of times.
+            reAttemptFactor (float)     -- the factor multiplied with the time step before reattempt.
+            outputTimePeriod (float)    -- the time period after which the output file is written or the
+                                           figures are plotted.
+            plotFigure (boolean)        -- flag specifying to plot fracture trace after the given time period.
+            plotAnalytical (boolean)    -- if true, analytical solution will also be plotted along with the computed
+                                           solution.
+            analyticalSol (String)      -- the analytical solution of the radial fracture to be plotted on the
+                                           fracture. Possible options:
+                                                - "M" (viscosity dominated)
+                                                - "K" (toughness dominated)
+            saveToDisk (boolean)        -- flag specifying to save fracture to dist after the given time period.
+            out_file_address (string)   -- disk address of the files to be saved. If not given, a new
+                                           ./Data/"tim stamp" folder will be automatically created.
+
+            toleranceToughness (float)  -- tolerance for toughness iteration
+            solTimeSeries (ndarray)     -- time series where the solution is required. The time stepping would be
+                                           adjusted to get solution exactly at the given times.
             
     """
 
-    def __init__(self, toleranceFractureFront=1.0e-3, toleranceEHL=1.0e-5, maxfront_its=30, max_itr_solver=100,
-                 tmStp_prefactor=0.4, req_sol_at=None, tip_asymptote='U', final_time=10000., maximum_steps=10000,
-                 max_reattemps=8, reattempt_factor=0.8, output_time_period=1e-10, plot_figure=False,
-                 save_to_disk = False, out_file_folder = "None", plot_analytical = False, analytical_sol = "M",
-                 tol_toughness=1e-3, max_toughnessItr=60, mech_loading=False, volume_control=False,
-                 viscous_injection=True):
+    def __init__(self, address = None):
         """
-        
         The constructor of the SimulationParameters class. See documentation of the class.
+
+        Arguments:
+
         """
-        self.maxTimeSteps = maximum_steps
-        self.tolFractFront = toleranceFractureFront
-        self.toleranceEHL = toleranceEHL
-        self.tmStpPrefactor = tmStp_prefactor
-        self.tmStpPrefactor_max = tmStp_prefactor
-        self.FinalTime = final_time
+
+        if address is None:
+            import defSimParam as simParam
+        else:
+            import sys
+            sys.path.append(address)
+            import simParam
+            sys.path.remove(address)
+
+
+        self.maxTimeSteps = simParam.maximum_steps
+        self.tolFractFront = simParam.toleranceFractureFront
+        self.toleranceEHL = simParam.toleranceEHL
+        self.tmStpPrefactor = simParam.tmStp_prefactor
+        self.tmStpPrefactor_max = simParam.tmStp_prefactor
+        self.FinalTime = simParam.final_time
 
         # todo: all the option structures can be put into one file
-        tipAssymptOptions = ("K", "M", "Mt", "U", "M-K")
-        if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
-            self.tipAsymptote = tip_asymptote
+        tipAssymptOptions = ("K", "M", "Mt", "U", "MK")
+        if simParam.tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
+            self.tipAsymptote = simParam.tip_asymptote
         else:
             # error
-            raise SystemExit('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
-            return
+            raise ValueError('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
 
-        self.maxFrontItr = maxfront_its
-        self.maxSolverItr = max_itr_solver
-        self.maxReattempts = max_reattemps
-        self.reAttemptFactor = reattempt_factor
+        self.maxFrontItr = simParam.maxfront_its
+        self.maxSolverItr = simParam.max_itr_solver
+        self.maxReattempts = simParam.max_reattemps
+        self.reAttemptFactor = simParam.reattempt_factor
 
-        if isinstance(req_sol_at, np.ndarray):
-            self.solTimeSeries = req_sol_at
-            self.FinalTime = max(req_sol_at)
+        if isinstance(simParam.req_sol_at, np.ndarray):
+            self.solTimeSeries = simParam.req_sol_at
+            self.FinalTime = max(simParam.req_sol_at)
         else:
             self.solTimeSeries = np.asarray([self.FinalTime], dtype=np.float64)
 
         # output parameters
-        self.outputTimePeriod = output_time_period
-        self.plotFigure = plot_figure
-        if plot_figure:
-            self.plotAnalytical = plot_analytical
-            self.analyticalSol = analytical_sol
+        self.outputTimePeriod = simParam.output_time_period
+        self.plotFigure = simParam.plot_figure
+        if simParam.plot_figure:
+            self.plotAnalytical = simParam.plot_analytical
+            self.analyticalSol = simParam.analytical_sol
 
-        self.saveToDisk = save_to_disk
-        self.toleranceToughness = tol_toughness
-        self.maxToughnessItr = max_toughnessItr
-        self.dryCrack_mechLoading = mech_loading
-        self.viscousInjection = viscous_injection
-        self.volumeControl = volume_control
-        self.timeStep_limit = 4.
-        if mech_loading or volume_control:
+        self.saveToDisk = simParam.save_to_disk
+        self.toleranceToughness = simParam.tol_toughness
+        self.maxToughnessItr = simParam.max_toughnessItr
+        self.dryCrack_mechLoading = simParam.mech_loading
+        self.viscousInjection = simParam.viscous_injection
+        self.volumeControl = simParam.volume_control
+        self.timeStep_limit = np.inf
+        if simParam.mech_loading or simParam.volume_control:
             self.viscousInjection = False
 
-        if mech_loading:
+        if simParam.mech_loading:
             self.plotAnalytical = False
         # check operating system to get appropriate slash in the address
         import sys
@@ -305,7 +340,7 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if out_file_folder == "None" and save_to_disk:
+        if simParam.out_file_folder == "None" and simParam.save_to_disk:
             # time stamp as the folder address
             from time import gmtime, strftime
             timeStamp = "runDate_"+ strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
@@ -319,19 +354,19 @@ class SimulationParameters:
 
             self.outFileAddress = address + slash
             self.lastSavedFile = 0
-        elif save_to_disk:
-            if "\\" in out_file_folder:
+        elif simParam.save_to_disk:
+            if "\\" in simParam.out_file_folder:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')
-            elif "/" in out_file_folder:
+            elif "/" in simParam.out_file_folder:
                 if slash != "/":
                     raise SystemExit('linux style slash in the given address on windows system')
 
             import os
-            if not os.path.exists(out_file_folder):
-                os.makedirs(out_file_folder)
+            if not os.path.exists(simParam.out_file_folder):
+                os.makedirs(simParam.out_file_folder)
 
-            self.outFileAddress = out_file_folder + slash
+            self.outFileAddress = simParam.out_file_folder + slash
             self.lastSavedFile = 0
 
 # ----------------------------------------------------------------------------------------------------------------------

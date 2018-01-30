@@ -13,7 +13,7 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
 import copy
-from src.TipInversion import  TipAsymInversion
+from src.TipInversion import TipAsymInversion
 
 import matplotlib
 from matplotlib.patches import Polygon
@@ -126,19 +126,29 @@ def plot_Reynolds_number(Fr, ReyNum, edge):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_as_matrix(data, mesh):
-    figr = plt.figure()
-    ax = figr.add_subplot(111)
+def plot_as_matrix(data, mesh, fig=None):
+
+    if fig is None:
+        fig = plt.figure()
+    ax = fig.add_subplot(111)
+
     ReMesh = np.resize(data, (mesh.ny, mesh.nx))
-    x = np.linspace(-mesh.Lx, mesh.Lx, mesh.nx)
-    y = np.linspace(mesh.Ly, mesh.Ly, mesh.ny)
-    xv, yv = np.meshgrid(x, y)
-    # cax = ax.contourf(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])
+    # x = np.linspace(-mesh.Lx, mesh.Lx, mesh.nx)
+    # y = np.linspace(mesh.Ly, mesh.Ly, mesh.ny)
+
+    # delta_x = x[1] - x[0]
+    # extnt_x =  [x[0] - delta_x / 2, x[-1] + delta_x / 2]
+    # delta_y = y[1] - y[0]
+    # extnt_y = [y[0] - delta_y / 2, y[-1] + delta_y / 2]
+    #
+    # cax = ax.imshow(ReMesh, aspect='auto', interpolation='none',
+    #            extent=extnt_x + extnt_y, origin='lower')
+
     cax = ax.matshow(ReMesh)
-    figr.colorbar(cax)
+    fig.colorbar(cax)
     plt.show()
 
-    return figr
+    return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 def ReadFracture(filename):

@@ -14,7 +14,7 @@ using the given propagation regime.
 import math
 import numpy as np
 from scipy.optimize import brentq
-from src.Utility import *
+# from src.Utility import *
 import matplotlib.pyplot as plt
 import warnings
 
@@ -32,7 +32,7 @@ def TipAsym_viscStor_Res(dist, *args):
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
     return wEltRibbon - (18 * 3 ** 0.5 * (dist - DistLstTSEltRibbon) / dt * muPrime / Eprime) ** (1 / 3) * dist ** (
-        2 / 3)
+            2 / 3)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -42,8 +42,8 @@ def TipAsym_viscLeakOff_Res(dist, *args):
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
-    return wEltRibbon - 4 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * ((
-                                                        dist - DistLstTSEltRibbon) / dt) ** 0.125 * dist ** (5 / 8)
+    return wEltRibbon - 4 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * ((dist -
+            DistLstTSEltRibbon) / dt) ** 0.125 * dist ** (5 / 8)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -53,6 +53,12 @@ def TipAsym_MK_zrthOrder_Res(dist, *args):
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
+    if Kprime == 0:
+        return TipAsym_viscStor_Res(dist, *args)
+    if muPrime == 0:
+        # return toughness dominated asymptote
+        return wEltRibbon ** 2 * (Eprime / Kprime) ** 2
+
     w_tld = Eprime * wEltRibbon / (Kprime * dist**0.5)
     V = (dist - DistLstTSEltRibbon) / dt
     return w_tld - (1 + beta_m**3 * Eprime**2 * V * dist**0.5 * muPrime / Kprime**3)**(1/3)
@@ -61,13 +67,13 @@ def TipAsym_MK_zrthOrder_Res(dist, *args):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_MTildeK_zrthOrder_Res(dist, *args):
-    """Residual function for zeroth-order solution for K-M~ edge tip asymptote"""
+    """Residual function for zeroth-order solution for M~K edge tip asymptote"""
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
     w_tld = Eprime * wEltRibbon / (Kprime * dist ** 0.5)
     V = (dist - DistLstTSEltRibbon) / dt
-    return w_tld - (1 + beta_mtld**4 * 2 * Cbar * Eprime**3 * dist**0.5 * V**0.5 * muPrime / Kprime**4)**(1/4)
+    return -w_tld + (1 + beta_mtld**4 * 2 * Cbar * Eprime**3 * dist**0.5 * V**0.5 * muPrime / Kprime**4)**(1/4)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -103,15 +109,15 @@ def f(K, Cb, C1):
 
 def TipAsym_Universal_zrthOrder_Res(dist, *args):
     """Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)"""
-    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, Dist_LstTS, dt) = args
 
     if Cbar == 0:
-        return TipAsym_MK_zrthOrder_Res(dist, args)
+        return TipAsym_MK_zrthOrder_Res(dist, *args)
 
-    Vel = (dist - DistLstTSEltRibbon) / dt
+    Vel = (dist - Dist_LstTS) / dt
     Ki = 2 * Cbar * Eprime / (Vel**0.5 * Kprime)
     if Ki > Ki_c:
-        return TipAsym_MTildeK_zrthOrder_Res(dist, args)
+        return TipAsym_MTildeK_zrthOrder_Res(dist, *args)
 
     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
@@ -157,21 +163,36 @@ def TipAsym_variable_Toughness_Res(dist, *args):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, ResFunc):
+def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, ResFunc):
     """ 
-    Find the valid bracket for the root evaluation function. Also returns list of ribbon cells that are not
-    propagating
+    Find the valid bracket for the root evaluation function.
     """
 
-    a = -DistLstTS[EltRibbon[moving]] * (1 + 1e5 * np.finfo(float).eps)
-    b = 10 * (w[EltRibbon[moving]] / (Kprime[moving] / Eprime)) ** 2
+    a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
+    # b = 10 * (w / (Kprime / Eprime)) ** 2
+    b = np.full((len(w),), 3 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
+    # b[np.where(np.isinf(b))[0]] = 4 * (mesh.hx**2 + mesh.hy**2)**0.5
 
-    for i in range(0, len(moving)):
+    for i in range(0, len(w)):
 
-        TipAsmptargs = (w[EltRibbon[moving[i]]], Kprime[moving[i]], Eprime, muPrime[EltRibbon[moving[i]]],
-                        Cprime[EltRibbon[moving[i]]], -DistLstTS[EltRibbon[moving[i]]], dt)
+        TipAsmptargs = (w[i], Kprime[i], Eprime, muPrime[i], Cprime[i], -DistLstTS[i], dt)
         Res_a = ResFunc(a[i], *TipAsmptargs)
         Res_b = ResFunc(b[i], *TipAsmptargs)
+
+        # res_U = np.zeros((100,),)
+        # res_MtK = np.zeros((100,), )
+        # res_M = np.zeros((100,), )
+        # x=np.linspace(a[i], b[i], 100)
+        # for j in range(0,len(x)):
+        #     res_U[j] = TipAsym_Universal_zrthOrder_Res(x[j], *TipAsmptargs)
+        #     res_MtK[j] = TipAsym_MTildeK_zrthOrder_Res(x[j], *TipAsmptargs)
+        #     res_M[j] = TipAsym_viscStor_Res(x[j], *TipAsmptargs)
+        #
+        # plt.plot(x, res_U, 'b.-')
+        # plt.plot(x, res_MtK, 'r.-')
+        # plt.plot(x, res_M, 'g.-')
+        # plt.plot(x, np.zeros((100,),),'k')
+        # plt.show()
 
         cnt = 0
         mid = b[i]
@@ -181,8 +202,9 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
             a[i] = mid
             cnt += 1
             if cnt >= 30:  # Should assume not propagating. not set to check how frequently it happens.
-                raise SystemExit('Tip Inversion: front distance bracket cannot be found')
-
+                a[i] = np.nan
+                b[i] = np.nan
+                break
 
     return a, b
 
@@ -191,8 +213,9 @@ def FindBracket_dist(w, EltRibbon, Kprime, Eprime, muPrime, Cprime, DistLstTS, d
 
 def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
     """ 
-    Evaluate distance from the front using tip assymptotics of the given regime, given the fracture width in the ribbon
-    cells.
+    Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in
+    the ribbon cells.
+
     Arguments:
         w (ndarray-float):                      fracture width
         frac (Fracture object):                 current fracture object
@@ -202,40 +225,53 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
         Kprime_k (ndarray-float):               Kprime for current iteration of toughness loop. if not given, the Kprime
                                                 from the given material properties object will be used.
     Returns:
-        ndarray-float:                          distance (unsigned) from the front to the ribbon cells.
+        dist (ndarray-float):                   distance (unsigned) from the front to the ribbon cells.
     """
 
-    if not Kprime_k == None:
-        Kprime = Kprime_k
-    else:
+    if Kprime_k is None:
         Kprime = matProp.Kprime[frac.EltRibbon]
+    else:
+        Kprime = Kprime_k
 
     if simParmtrs.tipAsymptote == 'U':
-        ResFunc = TipAsym_Universal_zero_Res
-    # ResFunc = TipAsym_Universal_delt_Res
+        ResFunc = TipAsym_Universal_zrthOrder_Res
     elif simParmtrs.tipAsymptote == 'Kt':
-        return 0  # todo: to be implementd
+        raise ValueError("Tip inversion with Kt regime is yet to be implemented")
     elif simParmtrs.tipAsymptote == 'M':
         ResFunc = TipAsym_viscStor_Res
     elif simParmtrs.tipAsymptote == 'Mt':
         ResFunc = TipAsym_viscLeakOff_Res
     elif simParmtrs.tipAsymptote == 'MK':
-        ResFunc = TipAsym_MKTransition_Res
+        ResFunc = TipAsym_MK_zrthOrder_Res
     elif simParmtrs.tipAsymptote == 'K':
         return w[frac.EltRibbon] ** 2 * (matProp.Eprime / Kprime) ** 2
 
+
     # checking propagation condition
-    stagnant = np.where(Kprime * (-frac.sgndDist[frac.EltRibbon]) ** 0.5 / (matProp.Eprime * w[frac.EltRibbon]) > 1)
+    stagnant = np.where(Kprime * (-frac.sgndDist[frac.EltRibbon])**0.5 / (
+                                                            matProp.Eprime * w[frac.EltRibbon]) > 1)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 
-    a, b = FindBracket_dist(w, frac.EltRibbon, Kprime, matProp.Eprime, frac.muPrime, matProp.Cprime,
-                                      frac.sgndDist, dt, ResFunc)
+    a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
+                            Kprime[moving],
+                            matProp.Eprime,
+                            frac.muPrime[frac.EltRibbon[moving]],
+                            matProp.Cprime[frac.EltRibbon[moving]],
+                            frac.sgndDist[frac.EltRibbon[moving]],
+                            dt,
+                            frac.mesh,
+                            ResFunc)
+
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
-        # todo: need to use the properties class
-        TipAsmptargs = (w[frac.EltRibbon[moving[i]]], Kprime[moving[i]], matProp.Eprime,
-                        frac.muPrime[frac.EltRibbon[moving[i]]], matProp.Cprime[frac.EltRibbon[moving[i]]],
-                        -frac.sgndDist[frac.EltRibbon[moving[i]]], dt)
+
+        TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
+                        Kprime[moving[i]],
+                        matProp.Eprime,
+                        frac.muPrime[frac.EltRibbon[moving[i]]],
+                        matProp.Cprime[frac.EltRibbon[moving[i]]],
+                        -frac.sgndDist[frac.EltRibbon[moving[i]]],
+                        dt)
         try:
             dist[moving[i]] = brentq(ResFunc, a[i], b[i], TipAsmptargs)
         except RuntimeError:

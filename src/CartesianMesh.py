@@ -10,44 +10,48 @@ See the LICENSE.TXT file for more details.
 # import
 import numpy as np
 from src.Utility import Neighbors
+import sys
 
 
 
 class CartesianMesh:
     """ Class defining a Cartesian Mesh.
 
-        instance variables:
-            Lx,Ly           -- length in x and y directions respectively
-            nx,ny           -- number of elements in x and y directions respectively
-            hx,hy           -- grid spacing in x and y directions respectively            
-            VertexCoor      -- [x,y] Coordinates of the vertices
-            NumberOfElts    -- total number of elements in the mesh
-            EltArea         -- Area of each element
-            Connectivity    -- Connectivity array giving four vertices of an element in the following order
-                                3         2
-                                0         1
-            CenterCoor      -- [x,y] coordinates of the center of the elements
-            NeiElements     -- Giving four neigbouring elements with the following order: [left,right,bottom,up]
-            CenterElts      -- the element(s) in the center (used primerily for fluid injection)
+        Instance variables:
+            Lx,Ly (float)           -- length of the domain in x and y directions respectively. The rectangular domain
+                                       have a total length of 2xLx in the x direction and 2xLy in the y direction if
+                                       both the positive and negative halves are included.
+            nx,ny (int)             -- number of elements in x and y directions respectively
+            hx,hy (float)           -- grid spacing in x and y directions respectively
+            VertexCoor  (ndarray)   -- [x,y] Coordinates of the vertices
+            CenterCoor  (ndarray)   -- [x,y] coordinates of the center of the elements
+            NumberOfElts (int)      -- total number of elements in the mesh
+            EltArea (float)         -- area of each element
+            Connectivity (ndarray)  -- connectivity array giving four vertices of an element in the following order
+                                        3         2
+                                        0         1
+            NeiElements (ndarray)   -- Giving four neighbouring elements with the following order:[left,right,bottom,up]
+            distCenter (ndarray)    -- the distance of the cells from the center
+            CenterElts (ndarray)    -- the element(s) in the center (the cell with the injection point)
             
-        methods:
+        Methods:
             __init__()      -- create a uniform Cartesian mesh centered  [-Lx,Lx]*[-Ly,Ly]
-            remesh()        -- remesh the grid uniformly with a given factor to grid spacing 
+            remesh()        -- remesh the grid uniformly by increasing the domain lengths with the given factor in both
+                               x and y directions
     """
 
     def __init__(self, Lx, Ly, nx, ny):
         """ 
-        Constructor
-        create a uniform Cartesian mesh centered  [-Lx,Lx]*[-Ly,Ly]
-        input:
-            nx,ny -- number of elt in x and y directions respectively
-            Lx,Ly -- lengths in x and y directions respectively
+        Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx,Lx]*[-Ly,Ly]
+        Arguments:
+            nx,ny (int)     -- number of elements in x and y directions respectively
+            Lx,Ly (float)   -- lengths in x and y directions respectively
         """
 
         self.Lx = Lx
         self.Ly = Ly
 
-        # Check if odd to have origin at mid points of a single element
+        # Check if the number of cells is odd to see if the origin would be at the mid point of a single cell
         if nx % 2 == 0:
             print("Number of elements in x-direction are even. Using " + repr(nx+1) + " elements to have origin at a "
                                                                                       "cell center...")
@@ -79,10 +83,10 @@ class CartesianMesh:
         self.NumberOfElts = self.nx * self.ny
         self.EltArea = self.hx * self.hy
 
-        ### Connectivity array giving four vertices of an element in the following order
+        # Connectivity array giving four vertices of an element in the following order
         #     3         2
         #     0   -     1
-        conn = np.empty([self.NumberOfElts, 4], dtype=int)  # to ensure an array of integers.
+        conn = np.empty([self.NumberOfElts, 4], dtype=int)
         k = 0
         for j in range(0, self.ny):
             for i in range(0, self.nx):
@@ -109,16 +113,27 @@ class CartesianMesh:
             Nei[i, :] = np.asarray(Neighbors(i, self.nx, self.ny))
         self.NeiElements = Nei
 
-        # the element(s) in the center (used for fluid injection)
+        # the element in the center (used for fluid injection)
         (minx, miny) = (min(abs(self.CenterCoor[:, 0])), min(abs(self.CenterCoor[:, 1])))
-        self.CenterElts = np.intersect1d(abs(1 - np.where(abs(self.CenterCoor[:, 0]) / minx)) < 1e-10,
-                                         abs(1 - np.where(abs(self.CenterCoor[:, 1]) / miny)) < 1e-10)
+        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < 4*sys.float_info.epsilon),
+                                         np.where(abs(self.CenterCoor[:, 1]) < 4*sys.float_info.epsilon))
 
     def locate_element(self, x, y):
-        e = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) - x < 1e-10),
-                           np.where(abs(self.CenterCoor[:, 1]) - y < 1e-10))
-        # todo: form mesh according to the injection point
-        return e
+        """
+        This function gives the cell containing the given coordinates
+        Arguments:
+            x (float)  -- the x coordinate of the given point
+            y (float)  -- the y coordinate of the given point
+
+        Returns:
+            elt (int)  -- the element containing the given coordinates
+        """
+        elt = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) <= self.hx/2.+sys.float_info.epsilon)[0],
+                           np.where(abs(self.CenterCoor[:, 1] - y) <= self.hy/2.+sys.float_info.epsilon)[0])
+        if elt.size>1:
+            print("two found")
+            return elt[0]
+        return elt
 
 #############################################
 

@@ -354,7 +354,7 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
     CCrack = C[np.ix_(EltCrack, EltCrack)]
 
     A = np.identity(EltCrack.size) - dt * np.dot(con, CCrack)
-    S = dt * np.dot(con, np.dot(CCrack, w[EltCrack]) + sigma0[EltCrack]) + dt / mesh.EltArea * Q[EltCrack] - LeakOff[
+    S = dt * np.dot(con, np.dot(CCrack, w[EltCrack]) + sigma0[EltCrack]) + dt * Q[EltCrack] / mesh.EltArea - LeakOff[
                                                                                             EltCrack] / mesh.EltArea
     return (A, S, vk)
 
@@ -398,12 +398,9 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     A[np.ix_(Tip, Tip)] = -dt * condTT
 
     S[Channel] = dt * np.dot(condCC, np.dot(Ccc, wLastTS[EltChannel]) + np.dot(Cct, wTip) + sigma0[
-        EltChannel]) + dt / Mesh.hx / Mesh.hy * Q[EltChannel] \
-                 - LeakOff[EltChannel] / Mesh.hx / Mesh.hy
-    S[Tip] = -(wTip - wLastTS[EltsTipNew]) + dt * np.dot(condTC,
-                                                         np.dot(Ccc, wLastTS[EltChannel]) + np.dot(Cct, wTip) + sigma0[
-                                                             EltChannel]) \
-             - LeakOff[EltsTipNew] / Mesh.hx / Mesh.hy
+        EltChannel]) + dt * Q[EltChannel] / Mesh.EltArea - LeakOff[EltChannel] / Mesh.EltArea
+    S[Tip] = -(wTip - wLastTS[EltsTipNew]) + dt * np.dot(condTC, np.dot(Ccc, wLastTS[EltChannel]) + np.dot(Cct, wTip)
+                                                         + sigma0[EltChannel]) - LeakOff[EltsTipNew] / Mesh.EltArea
 
     return (A, S, vk)
 
@@ -590,7 +587,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
 
         normlist[k] = norm
 
-        # todo !!! Hack: Consider coverged if norm grows and last norm is greater than 1e-4
+        # todo !!! Hack: Consider coverged if norm grows and last norm is less than 1e-4
         if norm > normlist[k - 1] and normlist[k - 1] < 1e-4:
             break
         k = k + 1

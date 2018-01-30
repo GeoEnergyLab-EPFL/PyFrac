@@ -67,9 +67,8 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
     if stagnant:
         w = KIPrime * dist ** 0.5 / Eprime
     else:
-        (a, b) = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel)
-        w = brentq(TipAsym_UniversalW_zero_Res, a, b,
-                   TipAsmptargs)  # root finding between the upper and lower bounds on width
+        a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel)
+        w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
         if w < -1e-15:
             w = abs(w)
 
@@ -85,7 +84,8 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
     M1 = 2 * w * dist ** 2 / (5 + delt)
 
     if np.isnan(M0) or np.isnan(M1):
-        raise SystemExit('Moment(s) of assymptote are nan')
+       M0, M1 = np.nan, np.nan
+
     return (M0, M1)
 
 
@@ -95,11 +95,13 @@ def Pdistance(x, y, slope, intercpt):
     return (slope * x - y + intercpt) / (slope ** 2 + 1) ** 0.5
 
 
-def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
+def VolumeTriangle(dist, *param):
     """
     Volume  of the triangle defined by perpendicular distance (dist) and em (em=1/sin(alpha)cos(alpha), where alpha
     is the angle of the perpendicular). The regime variable identifies the propagation regime.
     """
+
+    regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, em, t_lstTS, dt = param
 
     if regime == 'A':
         return dist ** 2 * em / 2
@@ -111,13 +113,27 @@ def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnan
         return 0.7081526678 * (Vel * muPrime / Eprime) ** (1 / 3) * em * dist ** (8 / 3)
 
     elif regime == 'Lk':
-        return 2 / 5 * Vel ** -0.5 * dist ** (5 / 2) * em
+        t = t_lstTS + dt
+        t_e = t - dist / Vel
+        if (t - t_e - dt) < 0:
+            prop_time = 0
+        else:
+            prop_time = t - t_e - dt
+
+        # intgrl_0_t = -2 / 15 * (t - t_e) ** (3 / 2) * Vel * (-5 * dist + 2 * (t - t_e) * Vel) * em
+        intgrl_0_t = 4 / 15 * em * (t - t_e) ** (5 / 2) * Vel**2
+        intgrl_0_tm1 = 4 / 15 * em * prop_time ** (5 / 2) * Vel**2
+
+        return intgrl_0_t - intgrl_0_tm1
 
     elif regime == 'Mt':
         return 256 / 273 / (15 * np.tan(np.pi / 8)) ** 0.25 * (
                                     Cbar * muPrime / Eprime) ** 0.25 * em * Vel ** 0.125 * dist ** (21 / 8)
 
     elif regime == 'U':
+        if Cbar == 0 and Kprime == 0: # if fully viscosity dominated
+            return 0.7081526678 * (Vel * muPrime / Eprime) ** (1 / 3) * em * dist ** (8 / 3)
+
         (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime)
         return em * (dist * M0 - M1)
 
@@ -132,9 +148,12 @@ def VolumeTriangle(dist, em, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnan
         * dist ** 2.5 * Eprime ** 10 * muPrime ** 5 * Vel ** 5))) / (Eprime ** 11 * muPrime ** 5 * Vel ** 5)
 
 
-def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
+def Area(dist, *param):
     """Gives Area under the tip depending on the regime identifier ;  
     used in case of 0 or 90 degree angle; can be used for 1d case"""
+
+    regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, em, t_lstTS, dt = param
+
     if regime == 'A':
         return dist
 
@@ -145,13 +164,28 @@ def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
         return 1.8884071141 * (Vel * muPrime / Eprime) ** (1 / 3) * dist ** (5 / 3)
 
     elif regime == 'Lk':
-        return 2 / 3 * Vel ** -0.5 * dist ** 1.5
+        t = t_lstTS + dt
+        t_e = t - dist/Vel
+        #todo: t_e for stagnant tip cells
+        if (t - t_e - dt)<0:
+            prop_time = 0
+        else:
+            prop_time = t - t_e - dt
+
+        intgrl_0_t = 2/3 * (t - t_e)**(3/2) * Vel
+        intgrl_0_tm1 = 2/3 * prop_time ** (3 / 2) * Vel
+
+        return intgrl_0_t - intgrl_0_tm1
+
+        # return 2 / 3 * Vel ** -0.5 * dist ** 1.5
 
     elif regime == 'Mt':
         return 32 / 13 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * Vel ** 0.125 * dist ** (
         13 / 8)
 
     elif regime == 'U':
+        if Cbar == 0 and Kprime == 0:  # if fully viscosity dominated
+            return 1.8884071141 * (Vel * muPrime / Eprime) ** (1 / 3) * dist ** (5 / 3)
         (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime)
         return M0
 
@@ -164,89 +198,96 @@ def Area(dist, regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
                 Eprime ** 7 * muPrime ** 3 * Vel ** 3)
 
 
-def VolumeIntegral(EltTip, alpha, l, mesh, regime, mat_prop=None, muPrime=None, Vel=None, Kprime=None, stagnant=None,
-                   KIPrime=None):
+def Integral_over_cell(EltTip, alpha, l, mesh, regime, frac=None, mat_prop=None, fluid_prop=None, Vel=None, Kprime=None,
+                       stagnant=None, KIPrime=None, dt=None):
     """Calculate Volume integrals of the grid cells according to the tip asymptote given by the variable regime"""
 
+    dummy = np.full((alpha.size,),None)
+
     if stagnant is None:
-        stagnant = np.zeros((alpha.size,), bool)
-        KIPrime = np.zeros((alpha.size,), float)
+        stagnant = dummy
+    if KIPrime is None:
+        KIPrime = dummy
 
     if Kprime is None and not mat_prop is None:
         Kprime = mat_prop.Kprime[EltTip]
     if Kprime is None and mat_prop is None:
-        Kprime = np.zeros((alpha.size,), float)
-
-    if muPrime is None:
-        muPrime = np.zeros((mesh.NumberOfElts,), float)
+        Kprime = dummy
 
     if Vel is None:
-        Vel = np.zeros((alpha.size,), float)
+        Vel = dummy
 
     if mat_prop is None:
-        Eprime = np.nan
-        Cprime = np.zeros((alpha.size,), float)
+        Eprime = None
+        Cprime = dummy
     else:
         Eprime = mat_prop.Eprime
         Cprime = mat_prop.Cprime[EltTip]
 
-    muPrimeTip = muPrime[EltTip]
+    if not fluid_prop is None:
+        muPrimeTip = np.full((alpha.size,),fluid_prop.muPrime,dtype=np.float64)
+    else:
+        muPrimeTip = dummy
+
+    if not frac is None:
+        t_lstTS = frac.time
+    else:
+        t_lstTS = None
 
 
     volume = np.zeros((len(l),), float)
     for i in range(0, len(l)):
 
+        m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
+        # packing parameters to pass
+        param_pack = (regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
+                      m, t_lstTS, dt)
+
         if abs(alpha[i]) < 1e-8:
             # the angle inscribed by the perpendicular is zero
             if l[i] <= mesh.hx:
                 # the front is within the cell.
-                volume[i] = Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i],
-                                 Vel[i], stagnant[i], KIPrime[i]) * mesh.hy
+                volume[i] = Area(l[i], *param_pack) * mesh.hy
             else:
                 # the front has surpassed this cell.
-                volume[i] = (Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i],
-                                  Vel[i], stagnant[i], KIPrime[i]) - Area(l[i] - mesh.hx, regime, Kprime[i],
-                                  Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hy
+                volume[i] = (Area(l[i], *param_pack) - Area(l[i] - mesh.hx, *param_pack)) * mesh.hy
 
         elif abs(alpha[i] - np.pi / 2) < 1e-8:
             # the angle inscribed by the perpendicular is 90 degrees
             if l[i] <= mesh.hy:
                 # the front is within the cell.
-                volume[i] = Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
-                                 KIPrime[i]) * mesh.hx
+                volume[i] = Area(l[i], *param_pack) * mesh.hx
             else:
                 # the front has surpassed this cell.
-                volume[i] = (Area(l[i], regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i],
-                                  KIPrime[i]) - Area(l[i] - mesh.hy, regime, Kprime[i], Eprime, muPrimeTip[i],
-                                                     Cprime[i], Vel[i], stagnant[i], KIPrime[i])) * mesh.hx
+                volume[i] = (Area(l[i], *param_pack) - Area(l[i] - mesh.hy, *param_pack)) * mesh.hx
         else:
             yIntrcpt = l[i] / np.cos(np.pi / 2 - alpha[i]) # Y intercept of the front line
             grad = -1 / np.tan(alpha[i]) # gradient of the front line
-            m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i])) # the m parameter (see e.g. A. Pierce 2015)
 
             # volume of the triangle made by the front by intersecting the x and y directional lines of the cell
-            TriVol = VolumeTriangle(l[i], m, regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i],
-                                    stagnant[i], KIPrime[i])
+            TriVol = VolumeTriangle(l[i], *param_pack)
 
-            lUp = Pdistance(0, mesh.hy, grad, yIntrcpt)  # distance of the front from the upper left vertex of the grid cell
+            # distance of the front from the upper left vertex of the grid cell
+            lUp = Pdistance(0, mesh.hy, grad, yIntrcpt)
+
             if lUp > 0:  # upper vertex of the triangle is higher than the grid cell height
-                UpTriVol = VolumeTriangle(lUp, m, regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i],
-                                          stagnant[i], KIPrime[i])
+                UpTriVol = VolumeTriangle(lUp, *param_pack)
             else:
                 UpTriVol = 0
 
-            lRt = Pdistance(mesh.hx, 0, grad, yIntrcpt)  # distance of the front from the lower right vertex of the grid cell
+            # distance of the front from the lower right vertex of the grid cell
+            lRt = Pdistance(mesh.hx, 0, grad, yIntrcpt)
+
             if lRt > 0:  # right vertex of the triangle is wider than the grid cell width
-                RtTriVol = VolumeTriangle(lRt, m, regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i],
-                                          stagnant[i], KIPrime[i])
+                RtTriVol = VolumeTriangle(lRt, *param_pack)
             else:
                 RtTriVol = 0
 
-            IntrsctTriDist = Pdistance(mesh.hx, mesh.hy, grad,
-                                       yIntrcpt)  # distance of the front from the upper right vertex of the grid cell
+            # distance of the front from the upper right vertex of the grid cell
+            IntrsctTriDist = Pdistance(mesh.hx, mesh.hy, grad, yIntrcpt)
+
             if IntrsctTriDist > 0:  # front has passed the grid cell
-                IntrsctTri = VolumeTriangle(IntrsctTriDist, m, regime, Kprime[i], Eprime, muPrimeTip[i],
-                                            Cprime[i], Vel[i], stagnant[i], KIPrime[i])
+                IntrsctTri = VolumeTriangle(IntrsctTriDist, *param_pack)
             else:
                 IntrsctTri = 0
 
@@ -260,12 +301,28 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
 
-    a = (1e5 * np.finfo(float).eps) * dist ** 0.5 * Kprime / Eprime  # lower bound on width
-    b = 10000 * dist ** 0.5 * Kprime / Eprime
+    a = 0.01 * dist ** 0.5 * Kprime / Eprime  # lower bound on width
+    b = 10 * dist ** 0.5 * Kprime / Eprime
 
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cprime, Vel)
     Res_a = TipAsym_UniversalW_zero_Res(a, *TipAsmptargs)
     Res_b = TipAsym_UniversalW_zero_Res(b, *TipAsmptargs)
+
+
+    # res_U = np.zeros((100,),)
+    # x=np.linspace(a, b, 100)
+    # for j in range(0,len(x)):
+    #     res_U[j] = TipAsym_UniversalW_zero_Res(x[j], *TipAsmptargs)
+    # plt.plot(x, res_U, 'b.-')
+    # plt.plot(x, np.zeros((100,),),'k')
+    # plt.show()
+
+
+    if a == 0:
+        a = 10 * np.finfo(float).eps
+    if b == 0:
+        b = 10.
+
 
     cnt = 0
     mid = b
@@ -274,9 +331,10 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
         Res_a = TipAsym_UniversalW_zero_Res(mid, *TipAsmptargs)
         cnt += 1
         if cnt >= 50:
-            raise SystemExit('fracture width bracket cannot be found within 50 iterations')
+            a = np.nan
+            b = np.nan
 
-    return (a, b)
+    return a, b
 
 #-----------------------------------------------------------------------------------------------------------------------
 

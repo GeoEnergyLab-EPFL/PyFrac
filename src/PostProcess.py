@@ -91,8 +91,8 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
             else:
                 nxt_plt_t = ff.time + time_period
 
-    #todo mesh seperate from fracture
-    Mesh = ff.mesh   # because Mesh is not stored in a separate file for now
+    #todo decide weather mesh should be kept seperate from fracture
+    Mesh = ff.mesh
 
     fig, ax = plt.subplots()
     ax.set_xlim([-Mesh.Lx, Mesh.Lx])
@@ -169,7 +169,7 @@ def update(frame, *args):
 
 
 def plot_simulation_results(address, fig = None, time_period= 0.0, sol_time_series=None, maxFiles=2000,
-        plot_analytical=False, analytical_sol='M', plt_color='k', analytical_color = 'b', plt_mesh=False,
+        plot_analytical=False, analytical_sol='M', plt_color='b', analytical_color = 'k', plt_mesh=False,
         mesh_clr_map=cm.jet, mesh_edge_color='0.5', plt_regime=False, clr_bar=False, ln_style='-'):
     if not slash in address[-2:]:
         address = address + slash
@@ -200,7 +200,7 @@ def plot_simulation_results(address, fig = None, time_period= 0.0, sol_time_seri
         except FileNotFoundError:
             break
         fileNo+=1
-        print(repr(fileNo)+' '+repr(ff.time))
+        # print(repr(fileNo)+' '+repr(ff.time))
 
         if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
@@ -224,9 +224,9 @@ def plot_simulation_results(address, fig = None, time_period= 0.0, sol_time_seri
 
 
     for ffi in fraclist:
-        # tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
-        # (32 / math.pi) ** 0.5 * Solid.K1c_perp) ** 18) ** 0.5
-        print(repr(ffi.time))
+        tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
+        (32 / math.pi) ** 0.5 * Solid.K1c_perp) ** 18) ** 0.5
+        print(repr(tmk))
         I = ffi.Ffront[:, 0:2]
         J = ffi.Ffront[:, 2:4]
 
@@ -497,6 +497,11 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
         time_srs = np.array([], dtype=np.float64)
         if plt_pressure:
             p_anltcl = np.array([], dtype=np.float64)
+
+        fig_err = plt.figure()
+        ax_err = fig_err.add_subplot(111)
+        w_err = np.array([], dtype=np.float64)
+        p_err = np.array([], dtype=np.float64)
     while fileNo < maxFiles:
 
         # trying to load next file. exit loop if not found
@@ -545,6 +550,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
             if plt_analytical:
                 w_anltcl = np.append(w_anltcl, w[ff.mesh.CenterElts])
                 time_srs = np.append(time_srs, ff.time)
+                w_err = np.append(w_err, 1. - w[ff.mesh.CenterElts]/ff.w[ff.mesh.CenterElts])
 
             if plt_pressure:
                 if isinstance(ff.p, np.ndarray):
@@ -562,6 +568,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                     else:
                         p_aa = p
                     p_anltcl = np.append(p_anltcl, p_aa)
+                    p_err = np.append(p_err, (p_aa - p_num)/p_aa)
 
             if t_srs_given:
                 if t_srs_indx < len(sol_time_series) - 1:
@@ -586,5 +593,8 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
     # ax_w.plot(7000 * tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000, 1e-4, 'k.')
     # print(repr(time_srs))
+
+        ax_err.plot(time_srs, abs(w_err), 'b.')
+        ax_err.plot(time_srs, abs(p_err), 'r.')
 
     return fig_w, fig_p

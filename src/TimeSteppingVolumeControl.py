@@ -356,7 +356,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
         print('negative velocity')
 
     # Calculate filling fraction of the tip cells for the current fracture position
-    FillFrac_k = VolumeIntegral(EltsTipNew,
+    FillFrac_k = Integral_over_cell(EltsTipNew,
                                 alpha_k,
                                 l_k,
                                 Fr_lstTmStp.mesh,
@@ -420,28 +420,26 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
         # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
         # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
-        wTip = VolumeIntegral(EltsTipNew,
+        wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
                               sim_parameters.tipAsymptote,
-                              Material_properties,
-                              Fr_lstTmStp.muPrime,
-                              Vel_k,
+                              mat_prop=Material_properties,
+                              Vel=Vel_k,
                               Kprime=Kprime_tip,
                               stagnant=stagnant,
                               KIPrime=KIPrime
                               ) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
-        wTip = VolumeIntegral(EltsTipNew,
+        wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
                               sim_parameters.tipAsymptote,
-                              Material_properties,
-                              Fr_lstTmStp.muPrime,
-                              Vel_k,
+                              mat_prop=Material_properties,
+                              Vel=Vel_k,
                               Kprime=Kprime_tip) / Fr_lstTmStp.mesh.EltArea
 
     # # check if the tip volume has gone into negative

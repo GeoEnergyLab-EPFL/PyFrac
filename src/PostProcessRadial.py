@@ -359,8 +359,8 @@ def plot_ellipse_data(address, fig_ab=None, fig_asp_rtio=None, sol_time_series=N
             else:
                 nxt_plt_t = ff.time + time_period
 
-    tmk = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c_perp)**18)**0.5
-    tmk2 = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c[0])**18)**0.5
+    # tmk = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c_perp)**18)**0.5
+    # tmk2 = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c[0])**18)**0.5
     # ratio = tmk/tmk2
     # lmk = Solid.Eprime**3 * Fluid.muPrime * Injection.injectionRate[1, 0] / ((32 / math.pi) ** 0.5* Solid.K1c[0])**4
     # b_anltcl = b_anltcl/lmk
@@ -404,7 +404,95 @@ def plot_ellipse_data(address, fig_ab=None, fig_asp_rtio=None, sol_time_series=N
         ax_asp_rtio = fig_asp_rtio.add_subplot(111)
     ax_asp_rtio = fig_asp_rtio.add_subplot(111)
     # ax_asp_rtio.plot(time_srs, a_anltcl / b_anltcl)
-    ax_asp_rtio.semilogx(time_srs, a_numrcl / b_numrcl, plt_symbol, ms=3)
+    # ax_asp_rtio.semilogx(time_srs, 4/(a_numrcl / b_numrcl), plt_symbol, ms=3)
+    ax_asp_rtio.semilogx(time_srs, (a_anltcl - a_numrcl)/a_anltcl, plt_symbol)
+    plt_symbol='b.'
+    ax_asp_rtio.semilogx(time_srs, (b_anltcl - b_numrcl)/a_anltcl, plt_symbol)
+
     # plt.ylabel('aspect ratio')
     # plt.xlabel('time')
     return fig_ab, fig_asp_rtio
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_leak_off(address, fig_lkOff=None, fig_efficiency=None, sol_time_series=None, time_period=0., maxFiles=1500,
+                      loglog=True, plt_symbol='o'):
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+    t_srs_given = isinstance(sol_time_series, np.ndarray)
+    if t_srs_given:
+        nxt_plt_t = sol_time_series[t_srs_indx]
+
+    time_srs = np.asarray([])
+    lk_off = np.asarray([])
+    efficiency = np.asarray([])
+    while fileNo < maxFiles:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "file_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+        fileNo+=1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+
+            # at_x_axis = np.where(ff.mesh.CenterCoor[ff.EltTip,1]==0)
+            time_srs = np.append(time_srs, ff.time)
+            lk_off = np.append(lk_off, sum(ff.LkOff_vol))
+            efficiency = np.append(efficiency, ff.efficiency)
+
+
+            if t_srs_given:
+                if t_srs_indx < len(sol_time_series) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = sol_time_series[t_srs_indx]
+                if ff.time > max(sol_time_series):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+    # tmk = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c_perp)**18)**0.5
+    # tmk2 = (Solid.Eprime**13 * Fluid.muPrime**5 * Injection.injectionRate[1, 0]**3 / ((32 / math.pi) ** 0.5* Solid.K1c[0])**18)**0.5
+    # ratio = tmk/tmk2
+    # lmk = Solid.Eprime**3 * Fluid.muPrime * Injection.injectionRate[1, 0] / ((32 / math.pi) ** 0.5* Solid.K1c[0])**4
+    # time_srs = time_srs/tmk2
+
+    if fig_lkOff is None:
+        fig_lkOff = plt.figure()
+        ax_lkOff = fig_lkOff.add_subplot(111)
+    ax_lkOff = fig_lkOff.add_subplot(111)
+    if loglog:
+        ax_lkOff.semilogx(time_srs, lk_off, plt_symbol)
+        # ax.loglog(time_srs, a_numrcl, plt_symbol)
+    else:
+        ax_lkOff.plot(time_srs, lk_off, plt_symbol)
+
+    plt.ylabel('leaked off volume')
+    plt.xlabel('time')
+
+    if fig_efficiency is None:
+        fig_efficiency = plt.figure()
+        ax_efficiency = fig_efficiency.add_subplot(111)
+    ax_efficiency = fig_efficiency.add_subplot(111)
+    if loglog:
+        ax_efficiency.semilogx(time_srs, efficiency, plt_symbol)
+    plt.ylabel('fracture efficiency')
+    plt.xlabel('time')
+    return fig_lkOff, fig_efficiency

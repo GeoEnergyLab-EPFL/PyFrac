@@ -293,7 +293,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
     InCrack_k[EltsTipNew] = 1
 
     # the velocity of the front for the current front position
-    # todo: not accurate on the first iteration. needed to be checked
+    # todo: not accurate on the first iteration. needs to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
 
     # Calculate filling fraction of the tip cells for the current fracture position
@@ -363,7 +363,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
 
         # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
         # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
-        wTip = VolumeIntegral(EltsTipNew,
+        wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
@@ -377,7 +377,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
                               ) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
-        wTip = VolumeIntegral(EltsTipNew,
+        wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,

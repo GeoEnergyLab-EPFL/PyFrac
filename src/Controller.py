@@ -1,5 +1,5 @@
 
-from src.Fracture import Fracture
+# from src.Fracture import Fracture
 from src.Properties import *
 from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
@@ -27,7 +27,7 @@ class Controller:
                      "Reached end of grid"
                      )
 
-    #todo add mesh as an argument
+
     def __init__(self, Fracture=None, Solid_prop=None, Fluid_prop=None, Injection_prop=None, Sim_prop=None,
                  Load_prop=None, C=None):
 
@@ -220,27 +220,33 @@ class Controller:
             if simulation_parameters.plotFigure:
                 # if ploting analytical solution enabled
                 if simulation_parameters.plotAnalytical:
-                    Q0 = injection_parameters.injectionRate[1, 0]  # injection rate at the time of injection
-                    if simulation_parameters.analyticalSol == "M":
-                        (R, p, w, v) = M_vertex_solution_t_given(material_properties.Eprime,
-                                                                 Q0,
-                                                                 fluid_properties.muPrime,
-                                                                 Fr_lstTmStp.mesh,
-                                                                 Fr_advanced.time)
+                    Q0 = injection_parameters.injectionRate[1, 0]  # injection rate at the start of injection
+                    if simulation_parameters.analyticalSol in ('M', 'Mt', 'K', 'Kt'): #radial fracture
+                        t, R, p, w, v, actvElts = HF_analytical_sol(simulation_parameters.analyticalSol,
+                                                                    Fr_lstTmStp.mesh,
+                                                                    material_properties.Eprime,
+                                                                    Q0,
+                                                                    muPrime=fluid_properties.muPrime,
+                                                                    Kprime=material_properties.Kprime[
+                                                                        Fr_lstTmStp.mesh.CenterElts],
+                                                                    Cprime=material_properties.Cprime[
+                                                                        Fr_lstTmStp.mesh.CenterElts],
+                                                                    t=Fr_advanced.time)
 
-                    elif simulation_parameters.analyticalSol == "K":
-                        (R, p, w, v) = K_vertex_solution_t_given(material_properties.Kprime,
-                                                                 material_properties.Eprime,
-                                                                 Q0,
-                                                                 Fr_lstTmStp.mesh,
-                                                                 Fr_advanced.time)
-                    elif simulation_parameters.analyticalSol == "E":
-                        R, a, w, p = anisotropic_toughness_elliptical_solution(material_properties.K1c,
-                                                                 material_properties.K1c_perp,
-                                                                 material_properties.Eprime,
-                                                                 Q0,
-                                                                 Fr_lstTmStp.mesh,
-                                                                 t=Fr_advanced.time)
+                    elif simulation_parameters.analyticalSol is 'E':
+                        t, R, p, w, v, actvElts = HF_analytical_sol(simulation_parameters.analyticalSol,
+                                                                    Fr_lstTmStp.mesh,
+                                                                    material_properties.Eprime,
+                                                                    Q0,
+                                                                    muPrime=fluid_properties.muPrime,
+                                                                    Kprime=material_properties.Kprime[
+                                                                        Fr_lstTmStp.mesh.CenterElts],
+                                                                    Cprime=material_properties.Cprime[
+                                                                        Fr_lstTmStp.mesh.CenterElts],
+                                                                    t=Fr_advanced.time,
+                                                                    KIc_min=material_properties.K1c_perp)
+                    elif simulation_parameters.analyticalSol == 'PKN':
+                        print("PKN is to be implemented.")
 
                     fig = Fr_advanced.plot_fracture('complete',
                                                     'footPrint',
