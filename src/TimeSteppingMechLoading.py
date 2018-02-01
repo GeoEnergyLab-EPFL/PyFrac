@@ -284,7 +284,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
     tipNeighb = Fr_lstTmStp.mesh.NeiElements[EltsTipNew, :]
     for i in range(0, len(EltsTipNew)):
         if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
-            Fr_lstTmStp.plot_fracture('complete', 'footPrint')
+            Fr_lstTmStp.plot_fracture()
             raise SystemExit('Reached end of the grid. exiting....')
 
     # generate the InCrack array for the current front position

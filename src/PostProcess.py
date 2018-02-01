@@ -25,14 +25,14 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
-from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 import matplotlib.colors as mcolors
 
 
 
 
-def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, colormap=cm.jet, edge_color = '0.5', Interval=400,
-                               Repeat=None, maxFiles=1000 ):
+def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, Interval=400, Repeat=None,
+                               maxFiles=1000, save=False):
     """
     This function plays an animation of the evolution of fracture with time. See the arguments list for options
 
@@ -59,10 +59,18 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
+    except AttributeError:
+        #todo: get the serialised anisotropic function
+        # import marshal
+        # code = marshal.loads(Solid.KpFunString)
+        import __main__
+        setattr(__main__, 'Kprime_function', None)
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
 
     fileNo = 0
-    fraclist = [];
+    fraclist = []
     nxt_plt_t = 0.0
     t_srs_indx = 0
     t_srs_given = isinstance(sol_time_series, np.ndarray)
@@ -91,46 +99,26 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
             else:
                 nxt_plt_t = ff.time + time_period
 
-    #todo decide weather mesh should be kept seperate from fracture
-    Mesh = ff.mesh
 
-    fig, ax = plt.subplots()
-    ax.set_xlim([-Mesh.Lx, Mesh.Lx])
-    ax.set_ylim([-Mesh.Ly, Mesh.Ly])
-
-    # make grid cells
-    patches = []
-    for i in range(Mesh.NumberOfElts):
-        polygon = Polygon(np.reshape(Mesh.VertexCoor[Mesh.Connectivity[i], :], (4, 2)), True)
-        patches.append(polygon)
-
-    p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=edge_color)
-
-    # applying different colors for different types of elements
-    # todo needs to be done properly
-    colors = 100. * np.full(len(patches), 0.9)
-    if np.max(Solid.SigmaO) > 0:
-        colors += -100. * (Solid.SigmaO) / np.max(Solid.SigmaO)
-    if np.max(Solid.Kprime) > 0:
-        colors += -100. * (Solid.Kprime) / np.max(Solid.Kprime)
-
-    p.set_array(np.array(colors))
-    ax.add_collection(p)
-
-
+    fig = fraclist[-1].plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp)
 
     args = (fraclist, fileNo, Solid, Fluid, Injection)
     # animate fracture
-    animation = FuncAnimation(fig,
+    movie = animation.FuncAnimation(fig,
                               update,
                               fargs=args,
                               frames=len(fraclist),
                               interval=Interval,
                               repeat=Repeat,
-                              repeat_delay=1000)  # ,extra_args=['-vcodec', 'libxvid']
+                              repeat_delay=1000)
+    if save:
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(metadata={'copyright':'EPFL - GeoEnergy Lab'})
+        movie.save(address + 'Footprint-evol.mp4', writer=writer)
+    else:
+        plt.show()
 
-    # animation.save(address + 'Footprint-evol.mp4', metadata={'copyright':'EPFL - GeoEnergy Lab'})
-    plt.show()
+#-----------------------------------------------------------------------------------------------------------------------
 
 def update(frame, *args):
     """
@@ -149,207 +137,14 @@ def update(frame, *args):
     for e in range(0,len(I)):
         plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '-k')
 
-    # R, a, w, p = anisotropic_toughness_elliptical_solution(Solid.K1c,
-    #                                                        Solid.K1c_perp,
-    #                                                        Solid.Eprime,
-    #                                                        Injection.injectionRate[1, 0],
-    #                                                        ffi.mesh,
-    #                                                        t=ffi.time)
-    # from matplotlib.patches import Ellipse
-    # import matplotlib as mpl
-    # ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360., color='r')
-    # # ellipse.set_clip_box(ax.bbox)
-    # ellipse.set_fill(False)
-    # ellipse.set_ec('r')
-    # fig, ax = plt.subplots()
-    # ax.add_patch(ellipse)
     plt.title('Time ='+ "%.4f" % ffi.time+ ' sec.')
     plt.axis('equal')
 
-
-
-def plot_simulation_results(address, fig = None, time_period= 0.0, sol_time_series=None, maxFiles=2000,
-        plot_analytical=False, analytical_sol='M', plt_color='b', analytical_color = 'k', plt_mesh=False,
-        mesh_clr_map=cm.jet, mesh_edge_color='0.5', plt_regime=False, clr_bar=False, ln_style='-'):
-    if not slash in address[-2:]:
-        address = address + slash
-
-    # read properties
-    filename = address + "properties"
-    try:
-        with open(filename, 'rb') as input:
-            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
-    except FileNotFoundError:
-        raise SystemExit("Data not found. The address might be incorrect")
-
-
-    #todo: do not make a fracture list. Plot as you read to save memory
-    fileNo = 0
-    fraclist = [];
-    nxt_plt_t = 0.0
-    t_srs_indx = 0
-    t_srs_given = isinstance(sol_time_series, np.ndarray)
-    if t_srs_given:
-        nxt_plt_t = sol_time_series[t_srs_indx]
-
-    while fileNo < maxFiles:
-
-        # trying to load next file. exit loop if not found
-        try:
-            ff = ReadFracture(address + "file_" + repr(fileNo))
-        except FileNotFoundError:
-            break
-        fileNo+=1
-        # print(repr(fileNo)+' '+repr(ff.time))
-
-        if ff.time - nxt_plt_t > -1e-8:
-            # if the current fracture time has advanced the output time period
-            fraclist.append(ff)
-
-            if t_srs_given:
-                if t_srs_indx < len(sol_time_series) - 1:
-                    t_srs_indx += 1
-                    nxt_plt_t = sol_time_series[t_srs_indx]
-                if ff.time > max(sol_time_series):
-                    break
-            else:
-                nxt_plt_t = ff.time + time_period
-
-    #todo mesh seperate from fracture
-    Mesh = ff.mesh   # because Mesh is not stored in a separate file for now
-
-    if fig is None:
-        fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-
-    for ffi in fraclist:
-        tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
-        (32 / math.pi) ** 0.5 * Solid.K1c_perp) ** 18) ** 0.5
-        print(repr(tmk))
-        I = ffi.Ffront[:, 0:2]
-        J = ffi.Ffront[:, 2:4]
-
-        for e in range(0, len(I)):
-            ax.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), color=plt_color, ls=ln_style)
-
-        if plot_analytical:
-            if analytical_sol == 'E':
-                R, a, w, p = anisotropic_toughness_elliptical_solution(Solid.K1c,
-                                                                       Solid.K1c_perp,
-                                                                       Solid.Eprime,
-                                                                       Injection.injectionRate[1, 0],
-                                                                       ffi.mesh,
-                                                                       t=ffi.time)
-                from matplotlib.patches import Ellipse
-                import matplotlib as mpl
-                ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360., color=analytical_color)
-                # ellipse.set_clip_box(ax.bbox)
-                ellipse.set_fill(False)
-                ellipse.set_ec(analytical_color)
-                ax.add_patch(ellipse)
-
-            elif analytical_sol == 'M':
-                R, p, w, v = M_vertex_solution_t_given(Solid.Eprime,
-                                                       Injection.injectionRate[1, 0],
-                                                       Fluid.muPrime,
-                                                       ffi.mesh,
-                                                       ffi.time)
-                circle = plt.Circle((0, 0), radius=R)
-                circle.set_ec(analytical_color)
-                circle.set_fill(False)
-                ax.add_patch(circle)
-
-            elif analytical_sol == "K":
-                R, p, w, v = K_vertex_solution_t_given(Solid.Kprime,
-                                                       Solid.Eprime,
-                                                       Injection.injectionRate[1, 0],
-                                                       ffi.mesh,
-                                                       ffi.time)
-                circle = plt.Circle((0, 0), radius=R)
-                circle.set_ec(analytical_color)
-                circle.set_fill(False)
-                ax.add_patch(circle)
-    if plt_mesh:
-        ax.set_xlim([-Mesh.Lx, Mesh.Lx])
-        ax.set_ylim([-Mesh.Ly, Mesh.Ly])
-
-        # make grid cells
-        patches = []
-        for i in range(Mesh.NumberOfElts):
-            polygon = Polygon(np.reshape(Mesh.VertexCoor[Mesh.Connectivity[i], :], (4, 2)), True)
-            patches.append(polygon)
-
-        p = PatchCollection(patches, cmap=mesh_clr_map, alpha=0.65, edgecolor=mesh_edge_color)
-
-        # applying different colors for different types of elements
-        # todo needs to be done properly
-        colors = 100. * np.full(len(patches), 0.9)
-        if np.max(Solid.SigmaO) > 0:
-            colors += -100. * (Solid.SigmaO) / np.max(Solid.SigmaO)
-        if np.max(Solid.Kprime) > 0:
-            colors += -100. * (Solid.Kprime) / np.max(Solid.Kprime)
-
-        p.set_array(np.array(colors))
-        ax.add_collection(p)
-
-    if plt_regime:
-
-        for ffi in fraclist:
-            ribbon_elts = ffi.regime[1,:].astype(int)
-            patches = []
-            for i in range(ribbon_elts.size):
-                polygon = Polygon(np.reshape(ffi.mesh.VertexCoor[ffi.mesh.Connectivity[ribbon_elts[i]], :], (4, 2)), True)
-                patches.append(polygon)
-
-            p = PatchCollection(patches, cmap=mesh_clr_map)
-
-            c = mcolors.ColorConverter().to_rgb
-            rvb = make_colormap(
-                [c('red'), c('violet'), 0.33, c('violet'), c('blue'), 0.66, c('blue')])
-
-            # s = ffi.sgndDist[ffi.EltRibbon]
-            # eta = s/(Solid.)
-
-            # applying colors for regime
-            regime = ffi.regime[0,:]
-            regime[np.where(regime<0)[0]]=0
-            colors = regime
-            p.set_array(np.array(colors))
-            # p.set_cmap(rvb)
-            p.set_clim(0., 1.)
-            ax.add_collection(p)
-        sm = plt.cm.ScalarMappable(cmap=mesh_clr_map, norm=plt.Normalize(vmin=0, vmax=1))
-        # fake up the array of the scalar mappable.
-        sm._A = []
-        if clr_bar:
-            plt.colorbar(sm)
-
-    # plt.axis('equal')
-    return fig
-
-
-def make_colormap(seq):
-    """Return a LinearSegmentedColormap
-    seq: a sequence of floats and RGB-tuples. The floats should be increasing
-    and in the interval (0,1).
-    """
-    seq = [(None,) * 3, 0.0] + list(seq) + [1.0, (None,) * 3]
-    cdict = {'red': [], 'green': [], 'blue': []}
-    for i, item in enumerate(seq):
-        if isinstance(item, float):
-            r1, g1, b1 = seq[i - 1]
-            r2, g2, b2 = seq[i + 1]
-            cdict['red'].append([item, r1, r2])
-            cdict['green'].append([item, g1, g2])
-            cdict['blue'].append([item, b1, b2])
-    return mcolors.LinearSegmentedColormap('CustomMap', cdict)
-
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_profile(address, fig_w_a=None, fig_w_b=None, fig_p_a=None, fig_p_b=None, plt_pressure=False,
-                 time_period=0.0, sol_time_series=None, maxFiles=1000, plt_analytical=False, analytical_sol='M',
-                 plt_color='k', analytical_color='b'):
+
+def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None, plt_pressure=False,
+                 time_period=0.0, sol_t_srs=None, analytical_sol='n', plt_color='k.', analytical_color='b'):
 
     if not slash in address[-2:]:
         address = address + slash
@@ -361,31 +156,39 @@ def plot_profile(address, fig_w_a=None, fig_w_b=None, fig_p_a=None, fig_p_b=None
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
+    except AttributeError:
+        #todo: get the serialised anisotropic function
+        # import marshal
+        # code = marshal.loads(Solid.KpFunString)
+        import __main__
+        setattr(__main__, 'Kprime_function', None)
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(sol_time_series, np.ndarray)
+    t_srs_given = isinstance(sol_t_srs, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = sol_time_series[t_srs_indx]
+        nxt_plt_t = sol_t_srs[t_srs_indx]
 
-    if fig_w_a is None:
-        fig_w_a = plt.figure()
-    ax_w_a = fig_w_a.add_subplot(111)
+    if fig_w_x is None:
+        fig_w_x = plt.figure()
+    ax_w_x = fig_w_x.add_subplot(111)
 
-    if fig_w_b is None:
-        fig_w_b = plt.figure()
-    ax_w_b = fig_w_b.add_subplot(111)
+    if fig_w_y is None:
+        fig_w_y = plt.figure()
+    ax_w_y = fig_w_y.add_subplot(111)
 
     if plt_pressure:
-        if fig_p_a is None:
-            fig_p_a = plt.figure()
-        ax_p_a = fig_p_a.add_subplot(111)
-        if fig_p_b is None:
-            fig_p_b = plt.figure()
-        ax_p_b = fig_p_b.add_subplot(111)
+        if fig_p_x is None:
+            fig_p_x = plt.figure()
+        ax_p_x = fig_p_x.add_subplot(111)
+        if fig_p_y is None:
+            fig_p_y = plt.figure()
+        ax_p_y = fig_p_y.add_subplot(111)
 
-    while fileNo < maxFiles:
+    while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
         try:
@@ -396,74 +199,81 @@ def plot_profile(address, fig_w_a=None, fig_w_b=None, fig_p_a=None, fig_p_b=None
 
         if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
-            tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
-            (32 / math.pi) ** 0.5 * Solid.K1c_perp) ** 18) ** 0.5
-            print(repr(ff.time/tmk))
-            if plt_analytical:
-                if analytical_sol == 'E':
-                    R, a, w, p = anisotropic_toughness_elliptical_solution(Solid.K1c,
-                                                                           Solid.K1c_perp,
-                                                                           Solid.Eprime,
-                                                                           Injection.injectionRate[1, 0],
-                                                                           ff.mesh,
-                                                                           t=ff.time)
 
-                elif analytical_sol == 'M':
-                    R, p, w, v = M_vertex_solution_t_given(Solid.Eprime,
-                                                           Injection.injectionRate[1, 0],
-                                                           Fluid.muPrime,
-                                                           ff.mesh,
-                                                           ff.time)
-                    # w[ff.mesh.CenterElts] = np.nan
-                    # (minx, miny) = (min(abs(ff.mesh.CenterCoor[:, 0])), min(abs(ff.mesh.CenterCoor[:, 1])))
-                    CenterElts = np.intersect1d(np.where(abs(ff.mesh.CenterCoor[:, 0]) < 1e-15)[0],
-                                                np.where(abs(ff.mesh.CenterCoor[:, 1]) < 1e-15)[0])
-                    # p[CenterElts] = np.nan
-                    # p[np.where(p==0)[0]] = np.nan
+            if not analytical_sol is 'n':
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
+                                                                ff.mesh,
+                                                                Solid.Eprime,
+                                                                Injection.injectionRate[1, 0],
+                                                                muPrime=Fluid.muPrime,
+                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
+                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
+                                                                t=ff.time,
+                                                                KIc_min=Solid.K1c_perp)
+                elif analytical_sol == 'PKN':
+                    print("PKN is to be implemented.")
+                else:
+                    raise ValueError("Provided analytical solution is not supported")
 
-                elif analytical_sol == "K":
-                    R, p, w, v = K_vertex_solution_t_given(Solid.Kprime,
-                                                           Solid.Eprime,
-                                                           Injection.injectionRate[1, 0],
-                                                           ff.mesh,
-                                                           ff.time)
-
-            hrzntl = np.where(abs(ff.mesh.CenterCoor[:, 1]) < 1e-8)[0]
+            # cells on x and y axes
+            hrzntl = np.where(abs(ff.mesh.CenterCoor[:, 1]) < 1e-10)[0]
             x = ff.mesh.CenterCoor[hrzntl, 0]
-            vrtcl = np.where(abs(ff.mesh.CenterCoor[:, 0]) < 1e-8)[0]
+            vrtcl = np.where(abs(ff.mesh.CenterCoor[:, 0]) < 1e-10)[0]
             y = ff.mesh.CenterCoor[vrtcl, 1]
 
-            ax_w_a.plot(x, ff.w[hrzntl],plt_color)
-            ax_w_b.plot(y, ff.w[vrtcl], plt_color)
-            if plt_analytical:
-                ax_w_a.plot(x, w[hrzntl],analytical_color)
-                ax_w_b.plot(y, w[vrtcl], analytical_color)
+            line_wx_num, = ax_w_x.plot(x, ff.w[hrzntl],plt_color)
+            line_wy_num, = ax_w_y.plot(y, ff.w[vrtcl], plt_color)
+            if not analytical_sol is 'n':
+                line_wx_anl, = ax_w_x.plot(x, w[hrzntl],analytical_color)
+                line_wy_anl, = ax_w_y.plot(y, w[vrtcl], analytical_color)
+
+            ax_w_x.set_ylabel('width')
+            ax_w_x.set_xlabel('meters')
+            ax_w_x.set_title('Width profile along x-axis')
+
+            ax_w_y.set_ylabel('width')
+            ax_w_y.set_xlabel('meters')
+            ax_w_y.set_title('Width profile along y-axis')
 
             if plt_pressure:
-                # ff.p[np.where(ff.p == 0)[0]] = np.nan
-                ax_p_a.plot(x, ff.p[hrzntl], plt_color)
-                ax_p_b.plot(y, ff.p[vrtcl], plt_color)
-                if plt_analytical:
+                line_px_num, = ax_p_x.plot(x, ff.p[hrzntl], plt_color)
+                line_py_num, = ax_p_y.plot(y, ff.p[vrtcl], plt_color)
+                if not analytical_sol is 'n':
                     np.delete(hrzntl, np.where(ff.p[hrzntl]!=0.)[0], 0)
-                    ax_p_a.plot(x, p[hrzntl], analytical_color)
-                    ax_p_b.plot(y, p[vrtcl], analytical_color)
+                    line_px_anl, = ax_p_x.plot(x, p[hrzntl], analytical_color)
+                    line_py_anl, = ax_p_y.plot(y, p[vrtcl], analytical_color)
+
+                ax_p_x.set_ylabel('pressure')
+                ax_p_x.set_xlabel('meters')
+                ax_p_x.set_title('Pressure profile along x-axis')
+
+                ax_p_y.set_ylabel('pressure')
+                ax_p_y.set_xlabel('meters')
+                ax_p_y.set_title('Pressure profile along y-axis')
 
             if t_srs_given:
-                if t_srs_indx < len(sol_time_series) - 1:
+                if t_srs_indx < len(sol_t_srs) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_time_series[t_srs_indx]
-                if ff.time > max(sol_time_series):
+                    nxt_plt_t = sol_t_srs[t_srs_indx]
+                if ff.time > max(sol_t_srs):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
 
-    return fig_w_a, fig_w_b, fig_p_a, fig_p_b
+    if not analytical_sol is 'n':
+        ax_w_x.legend((line_wx_num, line_wx_anl),('numerical','analytical'))
+        ax_w_y.legend((line_wy_num, line_wy_anl), ('numerical', 'analytical'))
+        if plt_pressure:
+            ax_p_x.legend((line_px_num, line_px_anl), ('numerical', 'analytical'))
+            ax_p_y.legend((line_py_num, line_py_anl), ('numerical', 'analytical'))
+
+    return fig_w_x, fig_w_y, fig_p_x, fig_p_y
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False, time_period=0.0, sol_time_series=None,
-                maxFiles=1000, plt_analytical=False, analytical_sol='M', plt_color='r.', analytical_color='b',
-                loglog=False, plt_dimensionless=False):
+def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False, time_period=0.0, sol_t_srs=None,
+                analytical_sol='n', plt_color='r.', analytical_color='b', loglog=False, plt_dimensionless=False):
 
     if not slash in address[-2:]:
         address = address + slash
@@ -475,13 +285,21 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
+    except AttributeError:
+        #todo: get the serialised anisotropic function
+        # import marshal
+        # code = marshal.loads(Solid.KpFunString)
+        import __main__
+        setattr(__main__, 'Kprime_function', None)
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(sol_time_series, np.ndarray)
+    t_srs_given = isinstance(sol_t_srs, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = sol_time_series[t_srs_indx]
+        nxt_plt_t = sol_t_srs[t_srs_indx]
 
     if fig_w is None:
         fig_w = plt.figure()
@@ -492,7 +310,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
             fig_p = plt.figure()
         ax_p = fig_p.add_subplot(111)
 
-    if plt_analytical:
+    if not analytical_sol is 'n':
         w_anltcl = np.array([], dtype=np.float64)
         time_srs = np.array([], dtype=np.float64)
         if plt_pressure:
@@ -502,7 +320,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
         ax_err = fig_err.add_subplot(111)
         w_err = np.array([], dtype=np.float64)
         p_err = np.array([], dtype=np.float64)
-    while fileNo < maxFiles:
+    while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
         try:
@@ -514,27 +332,22 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
         if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
 
-            if plt_analytical:
-                if analytical_sol == 'E':
-                    R, a, w, p = anisotropic_toughness_elliptical_solution(Solid.K1c,
-                                                                           Solid.K1c_perp,
-                                                                           Solid.Eprime,
-                                                                           Injection.injectionRate[1, 0],
-                                                                           ff.mesh,
-                                                                           t=ff.time)
+            if not analytical_sol is 'n':
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
+                                                                ff.mesh,
+                                                                Solid.Eprime,
+                                                                Injection.injectionRate[1, 0],
+                                                                muPrime=Fluid.muPrime,
+                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
+                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
+                                                                t=ff.time,
+                                                                KIc_min=Solid.K1c_perp)
+                elif analytical_sol == 'PKN':
+                    print("PKN is to be implemented.")
+                else:
+                    raise ValueError("Provided analytical solution is not supported")
 
-                elif analytical_sol == 'M':
-                    R, p, w, v = M_vertex_solution_t_given(Solid.Eprime,
-                                                           Injection.injectionRate[1, 0],
-                                                           Fluid.muPrime,
-                                                           ff.mesh,
-                                                           ff.time)
-                elif analytical_sol == "K":
-                    R, p, w, v = K_vertex_solution_t_given(Solid.Kprime,
-                                                                     Solid.Eprime,
-                                                                     Injection.injectionRate[1, 0],
-                                                                     ff.mesh,
-                                                                     ff.time)
             if plt_dimensionless:
                 tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
                     (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
@@ -542,15 +355,21 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                 (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
             else:
                 tmk = 1.
+
             if loglog:
                 # ax_w.semilogx(ff.time, ff.w[ff.mesh.CenterElts], plt_color)
                 ax_w.loglog(ff.time/tmk, ff.w[ff.mesh.CenterElts], plt_color)
             else:
                 ax_w.plot(ff.time/tmk, ff.w[ff.mesh.CenterElts],plt_color)
-            if plt_analytical:
+            ax_w.set_ylabel('width')
+            ax_w.set_xlabel('time')
+            ax_w.set_title('Width at injection point')
+
+            if not analytical_sol is 'n':
                 w_anltcl = np.append(w_anltcl, w[ff.mesh.CenterElts])
                 time_srs = np.append(time_srs, ff.time)
                 w_err = np.append(w_err, 1. - w[ff.mesh.CenterElts]/ff.w[ff.mesh.CenterElts])
+
 
             if plt_pressure:
                 if isinstance(ff.p, np.ndarray):
@@ -562,7 +381,9 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                     ax_p.loglog(ff.time/tmk, p_num, plt_color)
                 else:
                     ax_p.plot(ff.time/tmk, p_num, plt_color)
-                if plt_analytical:
+
+
+                if not analytical_sol is 'n':
                     if isinstance(p, np.ndarray):
                         p_aa = p[ff.mesh.CenterElts]
                     else:
@@ -571,30 +392,325 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                     p_err = np.append(p_err, (p_aa - p_num)/p_aa)
 
             if t_srs_given:
-                if t_srs_indx < len(sol_time_series) - 1:
+                if t_srs_indx < len(sol_t_srs) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_time_series[t_srs_indx]
-                if ff.time > max(sol_time_series):
+                    nxt_plt_t = sol_t_srs[t_srs_indx]
+                if ff.time > max(sol_t_srs):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
 
-    if plt_analytical:
+    if not analytical_sol is 'n':
         if loglog:
-            ax_w.semilogx(time_srs/tmk, w_anltcl, analytical_color)
+            ax_w.semilogx(time_srs/tmk, w_anltcl, analytical_color, label='analytical')
         else:
-            ax_w.plot(time_srs/tmk, w_anltcl, analytical_color)
+            ax_w.plot(time_srs/tmk, w_anltcl, analytical_color, label='analytical')
+        ax_w.legend()
+
         if plt_pressure:
             if loglog:
-                ax_p.semilogx(time_srs/tmk, p_anltcl, analytical_color)
+                ax_p.semilogx(time_srs/tmk, p_anltcl, analytical_color, label='analytical')
             else:
-                ax_p.plot(time_srs/tmk, p_anltcl, analytical_color)
+                ax_p.plot(time_srs/tmk, p_anltcl, analytical_color, label='analytical')
+            ax_p.set_ylabel('pressure')
+            ax_p.set_xlabel('time')
+            ax_p.set_title('Pressure at injection point')
+            ax_p.legend()
     # ax_w.plot(tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000 * tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000, 1e-4, 'k.')
     # print(repr(time_srs))
 
-        ax_err.plot(time_srs, abs(w_err), 'b.')
-        ax_err.plot(time_srs, abs(p_err), 'r.')
+        ax_err.plot(time_srs, abs(w_err), 'b.', label='error on width')
+        if plt_pressure:
+            ax_err.plot(time_srs, abs(p_err), 'r.', label='error on pressure')
+        ax_err.set_ylabel('error')
+        ax_err.set_xlabel('time')
+        ax_err.set_title('relative error')
+        ax_err.legend()
 
     return fig_w, fig_p
+
+
+def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytical_sol='n',
+                            plt_color='k', analytical_color='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
+    """
+    This function plots the footprints of the fractures saved in the given folder.
+
+    Arguments:
+        address (string)                -- the folder address containing the saved files
+        fig (figure)                    -- figure to superimpose. A new figure will be created if not provided.
+        time_period (float)             -- time period between two successive fracture plots.
+        sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        analytical_sol (string)         -- the following options can be provided
+                                                'M'     -- radial fracture in viscosity dominated regime
+                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                'K'     -- radial fracture in toughness dominated regime
+                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                'E'     -- elliptical fracture in toughness dominated regime
+                                                'PKN'   -- PKN fracture
+        plt_color (string)              -- the color(matplotlib colors) of the fracture lines.
+        analytical_color (string)       -- the color(matplotlib colors) of the analytical solution lines.
+        plt_mesh (boolean)              -- if true, mesh will also be plotted.
+        plt_regime (boolean)            -- if true, regime evaluated at the ribbon cells will be ploted (see Zia and
+                                           Lecampion 2018)
+        Sim_prop (SimulationParameters) -- if provided, the simulation properties file read will be overriden by these
+                                           parameters.
+
+    Returns:
+        fig (figure)                    -- a figure to superimpose.
+
+    """
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+    except AttributeError:
+        #todo: get the serialised anisotropic function
+        # import marshal
+        # code = marshal.loads(Solid.KpFunString)
+        import __main__
+        setattr(__main__, 'Kprime_function', None)
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+
+    t_srs_given = isinstance(sol_t_srs, np.ndarray) #time series is given
+    if t_srs_given:
+        nxt_plt_t = sol_t_srs[t_srs_indx]
+
+    # new figure if not provided
+    if fig is None:
+        fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    while fileNo < 5000:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "file_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+        fileNo+=1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+            I = ff.Ffront[:, 0:2]
+            J = ff.Ffront[:, 2:4]
+
+            for e in range(0, len(I)):
+                ax.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), color=plt_color)
+
+            # plot analytical solution
+            if not analytical_sol is 'n':
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
+                                                                ff.mesh,
+                                                                Solid.Eprime,
+                                                                Injection.injectionRate[1, 0],
+                                                                muPrime=Fluid.muPrime,
+                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
+                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
+                                                                t=ff.time,
+                                                                KIc_min=Solid.K1c_perp)
+                elif analytical_sol == 'PKN':
+                    print("PKN is to be implemented.")
+                else:
+                    raise ValueError("Provided analytical solution is not supported")
+
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt'):
+                    circle = plt.Circle((0, 0), radius=R)
+                    circle.set_ec(analytical_color)
+                    circle.set_fill(False)
+                    ax.add_patch(circle)
+                elif analytical_sol == 'E':
+                    from matplotlib.patches import Ellipse
+                    import matplotlib as mpl
+                    a = (Solid.K1c[0] / Solid.K1c_perp) ** 2 * R
+                    ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360.,
+                                                  color=analytical_color)
+                    ellipse.set_fill(False)
+                    ellipse.set_ec(analytical_color)
+                    ax.add_patch(ellipse)
+
+            # plot regime if enabled
+            if plt_regime:
+                ribbon_elts = ff.regime[1, :].astype(int)
+                patches = []
+                for i in range(ribbon_elts.size):
+                    polygon = Polygon(np.reshape(ff.mesh.VertexCoor[ff.mesh.Connectivity[ribbon_elts[i]], :], (4, 2)),
+                                      True)
+                    patches.append(polygon)
+
+                p = PatchCollection(patches)
+
+                # applying colors for regime
+                regime = ff.regime[0, :]
+                regime[np.where(regime < 0)[0]] = 0
+                colors = regime
+                p.set_array(np.array(colors))
+
+                p.set_clim(0., 1.)
+                ax.add_collection(p)
+
+            if t_srs_given:
+                if t_srs_indx < len(sol_t_srs) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = sol_t_srs[t_srs_indx]
+                if ff.time > max(sol_t_srs):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+    if fileNo >= 5000:
+        raise SystemExit("too many files.")
+
+    if plt_mesh:
+        if not Sim_prop is None:
+            SimulProp = Sim_prop
+        ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0.,
+                loglog=True, plt_symbol='o', analytical_sol='E', anltcl_clr='k'):
+    if not slash in address[-2:]:
+        address = address + slash
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+    except AttributeError:
+        # todo: get the serialised anisotropic function
+        # import marshal
+        # code = marshal.loads(Solid.KpFunString)
+        import __main__
+        setattr(__main__, 'Kprime_function', None)
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+    t_srs_given = isinstance(sol_t_srs, np.ndarray)
+    if t_srs_given:
+        nxt_plt_t = sol_t_srs[t_srs_indx]
+
+    r_numrcl = np.asarray([])
+    r_anltcl = np.asarray([])
+    time_srs = np.asarray([])
+
+    while fileNo < 5000:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "file_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+        fileNo += 1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+
+            time_srs = np.append(time_srs, ff.time)
+            tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[ff.EltTip, ff.ZeroVertex]]
+            if r_type is 'mean':
+                r_numrcl = np.append(r_numrcl, np.mean((tipVrtxCoord[:, 0]**2 + tipVrtxCoord[:, 1] ** 2)**0.5 + ff.l))
+            elif r_type is 'max':
+                r_numrcl = np.append(r_numrcl, max((tipVrtxCoord[:, 0]**2 + tipVrtxCoord[:, 1] ** 2)**0.5 + ff.l))
+            elif r_type is 'min':
+                r_numrcl = np.append(r_numrcl, min((tipVrtxCoord[:, 0]**2 + tipVrtxCoord[:, 1] ** 2)**0.5 + ff.l))
+
+            if not analytical_sol is 'n':
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
+                                                                ff.mesh,
+                                                                Solid.Eprime,
+                                                                Injection.injectionRate[1, 0],
+                                                                muPrime=Fluid.muPrime,
+                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
+                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
+                                                                t=ff.time,
+                                                                KIc_min=Solid.K1c_perp)
+                elif analytical_sol == 'PKN':
+                    print("PKN is to be implemented.")
+                else:
+                    raise ValueError("Provided analytical solution is not supported")
+
+                r_anltcl = np.append(r_anltcl, R)
+
+            if t_srs_given:
+                if t_srs_indx < len(sol_t_srs) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = sol_t_srs[t_srs_indx]
+                if ff.time > max(sol_t_srs):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+    if fig_r is None:
+        fig_r = plt.figure()
+        ax = fig_r.add_subplot(111)
+    ax = fig_r.add_subplot(111)
+    if loglog:
+        if not analytical_sol is 'n':
+            # ax.semilogx(time_srs, r_anltcl, anltcl_clr)
+            ax.loglog(time_srs, r_anltcl, anltcl_clr, label='radius analytical')
+        # ax.semilogx(time_srs, r_numrcl, plt_symbol)
+        ax.loglog(time_srs, r_numrcl, plt_symbol, label='radius numerical')
+    else:
+        if not analytical_sol is 'n':
+            ax.plot(time_srs, r_anltcl, anltcl_clr, label='radius analytical')
+        ax.plot(time_srs, r_numrcl, plt_symbol, label='radius numerical')
+
+    plt.ylabel('radius')
+    plt.xlabel('time')
+    plt.title('Distance from injection point')
+    plt.legend()
+
+    return fig_r
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plt_simulation_results(address, sol_t_srs=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
+                           radius=True,  profile=True):
+
+    if footprint:
+        plot_footprint(address=address,
+                                sol_t_srs=sol_t_srs,
+                                time_period=time_period,
+                                analytical_sol=analytical_sol)
+    if inj_pnt:
+        plot_at_injection_point(address=address,
+                                sol_t_srs=sol_t_srs,
+                                time_period=time_period,
+                                analytical_sol=analytical_sol)
+    if radius:
+        plot_radius(address=address,
+                                sol_t_srs=sol_t_srs,
+                                time_period=time_period,
+                                analytical_sol = analytical_sol)
+    if profile:
+        plot_profile(address=address,
+                                sol_t_srs=sol_t_srs,
+                                time_period=time_period,
+                                analytical_sol=analytical_sol)
+

@@ -58,6 +58,11 @@ class Fracture():
                                            used for printing fracture evolution through time
             InCrack (ndarray-int)       -- array specifying whether the cell is inside or outside the fracture.
             FractureVolume (float)      -- fracture volume
+            muPrime (ndarray)           -- local viscosity parameter
+            Ffront (ndarray)            -- a list containing the intersection of the front and grid lines for the tip
+                                           cells.
+            regime (ndarray)            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
+                                           and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
                                  
         functions:
             __init__                    Initialize the fracture according to the given initialization parameters.
@@ -201,7 +206,7 @@ class Fracture():
                                                                                 surv_cells,
                                                                                 inner_cells,
                                                                                 surv_dist)
-
+        # for general purpose initialization
         if init_type is 'G':
             self.w, self.p = get_width_pressure(self.mesh,
                                                 self.EltCrack,
@@ -218,12 +223,14 @@ class Fracture():
 
             if injection !=None:
                 self.time = volume/injection.injectionRate[1,0]
+            else:
+                # set time to zero if mechanical loading is creating the fracture
+                self.time = 0
 
         self.v = vel * np.ones((self.EltTip.size,), )
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
         self.Tarrival[self.EltCrack] = self.time
-
         self.LkOff_vol = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
         self.efficiency = 1.
 
@@ -239,11 +246,11 @@ class Fracture():
             self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
 
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
-        self.regime = np.vstack((np.ones((self.EltRibbon.size,), dtype=np.float64), self.EltRibbon))
+        self.regime = np.vstack((np.full((self.EltRibbon.size,), np.nan, dtype=np.float64), self.EltRibbon))
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:
-            fig = self.plot_fracture('complete', 'footPrint', mat_Properties=solid)
+            fig = self.plot_fracture(mat_properties=solid, sim_properties=simulProp)
             plt.show()
 
         if simulProp.saveToDisk:
@@ -257,32 +264,35 @@ class Fracture():
         from time import gmtime, strftime
         f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n\n')
 
-    ###############################################################################
+#-----------------------------------------------------------------------------------------------------------------------
 
-    def plot_fracture(self, elts='complete', parameter='footPrint', analytical=None, identify=[],
-                      mat_Properties=None):
+
+    def plot_fracture(self, parameter='footPrint', elts='complete', analytical=None, identify=[], mat_properties=None,
+                      sim_properties=None, fig=None):
         """
         Plots the given parameter of the specified cells.
         
-            Arguments:
-                elts(string):        elements to be printed; possible options:
-                                                    complete
-                                                    channel
-                                                    crack
-                                                    ribbon
-                parameter(string):   parameter to be ploted; possible options:
-                                                    width
-                                                    pressure
-                                                    viscosity
-                                                    footPrint
-                analytical (float):             radius of fracture footprint calculated analytically.
-                                                not plotted if not given. (or Zero ?)
-                evol (boolean):                 fracture evolution plot flag. Set to true will print fracture
-                                                evolution with time.
-                identify (ndarray):             plot the cells in the provided list with cell number and different color
-                                                to identify. This option can be used in debugging.
-                perpendicular (bool):           if true, perpendicular from the zero vertex on the fracture fron will be
-                                                drawn. This can be used for debugging.
+        Arguments:
+            elts(string)            -- elements to be printed; possible options:
+                                                complete
+                                                channel
+                                                crack
+                                                ribbon
+            parameter(string)       -- parameter to be ploted; possible options:
+                                                width
+                                                pressure
+                                                viscosity
+                                                footPrint
+                                                mesh
+            analytical (float)      -- radius of fracture footprint calculated analytically. Not plotter if None.
+            identify (ndarray):     -- plot the cells in the provided list with cell number and different color
+                                       to identify. This option can be used in debugging.
+            mat_properties (MaterialProperties)   -- material properties to colorcode the grid according to the given
+                                       parameter in the simulation properties. Can be None.
+            sim_properties (SimulationParameters) -- Simulation paramters to define various plotting parameters. Can be
+                                       None
+            fig (figure)            -- figure object to superimpose the image
+
         """
 
         if elts == 'complete':
@@ -306,22 +316,48 @@ class Fracture():
         elif parameter == 'muPrime':
             values[Elts] = self.muPrime[Elts]
         elif parameter == 'footPrint':
-            fig = self.print_fracture_trace(analytical, identify, mat_Properties)
+            fig = self.print_fracture_trace(rAnalytical=analytical,
+                                            identify=identify,
+                                            mat_properties=mat_properties,
+                                            sim_prop=sim_properties,
+                                            fig=fig)
+            return fig
+        elif parameter == 'mesh':
+            fig = self.print_fracture_trace(rAnalytical=analytical,
+                                            identify=identify,
+                                            mat_properties=mat_properties,
+                                            sim_prop=sim_properties,
+                                            fig=fig,
+                                            mesh_only=True)
             return fig
         else:
-            raise ValueError('invalid parameter identifier')
+            raise ValueError('Invalid parameter identifier!')
 
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-        ax.plot_trisurf(self.mesh.CenterCoor[:, 0], self.mesh.CenterCoor[:, 1], values, cmap=cm.jet, linewidth=0.2)
+        #todo: not working properly
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.gca(projection='3d')
+        else:
+            ax = fig.gca(projection='3d')
+
+        ax.plot_trisurf(self.mesh.CenterCoor[:, 0],
+                        self.mesh.CenterCoor[:, 1],
+                        values,
+                        cmap=cm.jet,
+                        linewidth=0.2)
         return fig
 
-    ######################################
+#-----------------------------------------------------------------------------------------------------------------------
 
     def process_fracture_front(self):
-        """ process fracture front and different regions of the fracture
-            Arguments:
-                 
+        """
+        process fracture front and different regions of the fracture. This function adds the start and endpoints of the
+        front lines in each of the tip cell to the Ffront variable of the Fracture class.
+
+        Arguments:
+
+        Returns:
+
         """
         # list of points where fracture front is intersecting the grid lines. 
         intrsct1 = np.zeros((2, len(self.l)))
@@ -410,22 +446,40 @@ class Fracture():
 
         self.Ffront=tmp
 
+#-----------------------------------------------------------------------------------------------------------------------
 
-    #-------------------------------------------------------------------------------------------------------------------
-    def print_fracture_trace(self, rAnalytical, identify, mat_properties, colormap=cm.jet, color='0.5'):
-        """ Print fracture front and different regions of the fracture
-            Arguments:
-                rAnalytical (float):    radius of fracture footprint calculated analytically
-                identify (ndarray):     list of elements to be identified (see plot_fracture function)
-                Mat_Properties :        solid material properties object (containing the sigma0 on each element)
 
+    def print_fracture_trace(self, rAnalytical, identify, mat_properties, sim_prop=None, colormap=cm.viridis,
+                             color='0.5', fig=None, mesh_only=False):
+        """
+        Print fracture front footprint and other parameters.
+
+        Arguments:
+            rAnalytical (float)     -- radius of fracture footprint calculated analytically.
+            identify (ndarray)      -- list of elements to be identified (see plot_fracture function).
+            mat_Properties          -- solid material properties object (containing the material properties which
+                                       can be specified to color code the cells).
+            sim_prop                -- the SimulationParameters object specifying different parameters to plot.
+            colormap                -- colormap to be used to color code the grid cells.
+            color                   -- color of the grid lines (default is grey).
+            fig                     -- matplotlib figure object to superimpose the image.
+            mesh_only (boolean)     -- if True, onle mesh will be plotted.
+
+        Returns:
+            fig                     -- matplotlib figure object.
         """
 
 
-        fig, ax = plt.subplots()
+        if fig is None:
+            fig, ax = plt.subplots()
+        else:
+            ax = fig.add_subplot(111)
+
+        # set the four corners of the rectangular mesh
         ax.set_xlim([-self.mesh.Lx, self.mesh.Lx])
         ax.set_ylim([-self.mesh.Ly, self.mesh.Ly])
 
+        # add rectangle for each cell
         patches = []
         for i in range(self.mesh.NumberOfElts):
             polygon = Polygon(np.reshape(self.mesh.VertexCoor[self.mesh.Connectivity[i], :], (4, 2)), True)
@@ -433,61 +487,108 @@ class Fracture():
 
         p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color)
 
-        # todo: A proper mechanism to mark element with different material properties has to be looked into
-        # marking those elements that have sigmaO or toughness different than the sigmaO or toughness at the center
-        markedElts = []
 
+        # applying color according to the prescribed parameter
+        colors = np.full(len(patches), 0.5)
 
-        # applying different colors for different types of elements
-        colors = 100. * np.full(len(patches), 0.4)
-
-        if mat_properties != None:
-            if np.max(mat_properties.SigmaO) > 0:
-                colors += -100. * (mat_properties.SigmaO) / np.max(mat_properties.SigmaO)
-            if not mat_properties.KprimeFunc is None and not mat_properties.anisotropic:
-                Kprime = mat_properties.KprimeFunc(self.mesh.CenterCoor[:,0],self.mesh.CenterCoor[:,1])
-            else:
-                Kprime = mat_properties.Kprime
-            colors += -100. * (Kprime) / (np.max(Kprime) + 1e-15)
-
-        colors[self.EltTip] = 70.
-        colors[self.EltChannel] = 10.
-        colors[self.EltRibbon] = 90.
-        colors[identify] = 0.
+        if not sim_prop is None:
+            if sim_prop.bckColor == 'sigma0':
+                max_bck = max(mat_properties.SigmaO)
+                min_bck = min(mat_properties.SigmaO)
+                if max_bck - min_bck > 0:
+                    plt_clrBar = True
+                    colors = (mat_properties.SigmaO - min_bck) / (max_bck - min_bck)
+                else:
+                    plt_clrBar = False
+                label = "confining stress"
+            elif sim_prop.bckColor == 'Kprime':
+                max_bck = max(mat_properties.Kprime)
+                min_bck = min(mat_properties.Kprime)
+                if max_bck - min_bck > 0:
+                    plt_clrBar = True
+                    colors = (mat_properties.Kprime - min_bck) / (max_bck - min_bck)
+                else:
+                    plt_clrBar = False
+                label = "toughness (K')"
+            elif sim_prop.bckColor == 'Cprime':
+                max_bck = max(mat_properties.Cprime)
+                min_bck = min(mat_properties.Cprime)
+                if max_bck - min_bck > 0:
+                    plt_clrBar = True
+                    colors = (mat_properties.Cprime - min_bck) / (max_bck - min_bck)
+                else:
+                    plt_clrBar = False
+                label = "leak off coefficient (C')"
+            elif not sim_prop.bckColor is None:
+                raise ValueError("Back ground color identifier not supported!")
 
         p.set_array(np.array(colors))
         ax.add_collection(p)
 
+        # mark type of elements
+        if (not sim_prop is None) and sim_prop.plotEltType and not mesh_only:
+            for i in self.EltTip:
+                coord = self.mesh.CenterCoor[i]
+                circle = plt.Circle((coord[0], coord[1]),
+                                    radius=1/4 * min(self.mesh.hy,self.mesh.hy),
+                                    fc='#E52C54')
+                ax.add_patch(circle)
+
+            for i in self.EltChannel:
+                coord = self.mesh.CenterCoor[i]
+                circle = plt.Circle((coord[0], coord[1]),
+                                    radius=1/4 * min(self.mesh.hy,self.mesh.hy),
+                                    fc='#D16A4E')
+                ax.add_patch(circle)
+
+            for i in self.EltRibbon:
+                coord = self.mesh.CenterCoor[i]
+                circle = plt.Circle((coord[0], coord[1]),
+                                    radius=1/4 * min(self.mesh.hy,self.mesh.hy),
+                                    fc='#07E81C')
+                ax.add_patch(circle)
+
+
         # Plot the analytical solution
-        if not rAnalytical is None:
-            if mat_properties.K1c_perp is None:
+        if not (sim_prop is None) and sim_prop.plotAnalytical and (not rAnalytical is None) and not mesh_only:
+
+            if sim_prop.analyticalSol in ('M', 'Mt', 'K', 'Kt'):
                 circle = plt.Circle((0, 0), radius=rAnalytical)
                 circle.set_ec('r')
                 circle.set_fill(False)
                 ax.add_patch(circle)
-            else:
+            elif sim_prop.analyticalSol is 'E' and (not mat_properties.K1c_perp is None):
                 from matplotlib.patches import Ellipse
                 import matplotlib as mpl
                 a = (mat_properties.K1c[0] / mat_properties.K1c_perp)**2 * rAnalytical
                 ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * rAnalytical, angle=360)
-                # ellipse.set_clip_box(ax.bbox)
                 ellipse.set_fill(False)
                 ellipse.set_ec('r')
                 ax.add_patch(ellipse)
+            elif sim_prop.analyticalSol is 'PKN':
+                print("PKN is to be implemented.")
 
         # print Element numbers on the plot for elements to be identified
         for i in range(len(identify)):
             ax.text(self.mesh.CenterCoor[identify[i], 0] - self.mesh.hx / 4, self.mesh.CenterCoor[identify[i], 1] - self.mesh.hy / 4,
                     repr(identify[i]), fontsize=10)
 
-        I = self.Ffront[:, 0:2]
-        J = self.Ffront[:, 2:4]
-        # todo !!!Hack: gets very large values sometime, needs to be resolved
-        for e in range(0, len(I)):
-            if max(abs(I[e, :] - J[e, :])) < 3 * (self.mesh.hx ** 2 + self.mesh.hy ** 2) ** 0.5:  # if
-                plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '.-k')
+        # print the front lines
+        if not mesh_only:
+            I = self.Ffront[:, 0:2]
+            J = self.Ffront[:, 2:4]
+            # todo !!!Hack: gets very large values sometime, needs to be resolved
+            for e in range(0, len(I)):
+                if max(abs(I[e, :] - J[e, :])) < 3 * (self.mesh.hx ** 2 + self.mesh.hy ** 2) ** 0.5:  # if
+                    plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '-k')
 
         plt.axis('equal')
+
+        if plt_clrBar and (not sim_prop.bckColor is None):
+            sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=min_bck, vmax=max_bck))
+            sm._A = []
+            clr_bar = plt.colorbar(sm,alpha=0.65)
+            clr_bar.set_label(label)
 
         # maximize the plot window
         import sys

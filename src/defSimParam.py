@@ -26,6 +26,8 @@ save_to_disk = False
 out_file_folder = "None"
 plot_analytical = False
 analytical_sol = "M"
+bck_color = None
+plot_eltType = False
 output_time_period=1e-10
 
 # type of solver
@@ -35,3 +37,4 @@ viscous_injection=True
 
 # miscellaneous
 tip_asymptote='U'
+save_regime = True

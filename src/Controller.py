@@ -221,19 +221,7 @@ class Controller:
                 # if ploting analytical solution enabled
                 if simulation_parameters.plotAnalytical:
                     Q0 = injection_parameters.injectionRate[1, 0]  # injection rate at the start of injection
-                    if simulation_parameters.analyticalSol in ('M', 'Mt', 'K', 'Kt'): #radial fracture
-                        t, R, p, w, v, actvElts = HF_analytical_sol(simulation_parameters.analyticalSol,
-                                                                    Fr_lstTmStp.mesh,
-                                                                    material_properties.Eprime,
-                                                                    Q0,
-                                                                    muPrime=fluid_properties.muPrime,
-                                                                    Kprime=material_properties.Kprime[
-                                                                        Fr_lstTmStp.mesh.CenterElts],
-                                                                    Cprime=material_properties.Cprime[
-                                                                        Fr_lstTmStp.mesh.CenterElts],
-                                                                    t=Fr_advanced.time)
-
-                    elif simulation_parameters.analyticalSol is 'E':
+                    if simulation_parameters.analyticalSol in ('M', 'Mt', 'K', 'Kt', 'E'): #radial fracture
                         t, R, p, w, v, actvElts = HF_analytical_sol(simulation_parameters.analyticalSol,
                                                                     Fr_lstTmStp.mesh,
                                                                     material_properties.Eprime,
@@ -248,17 +236,14 @@ class Controller:
                     elif simulation_parameters.analyticalSol == 'PKN':
                         print("PKN is to be implemented.")
 
-                    fig = Fr_advanced.plot_fracture('complete',
-                                                    'footPrint',
-                                                    analytical=R,
-                                                    mat_Properties=material_properties)
+                    Fr_advanced.plot_fracture(analytical=R,
+                                                mat_properties=material_properties,
+                                                sim_properties=simulation_parameters)
                 else:
-                    fig = Fr_advanced.plot_fracture('complete',
-                                                    'footPrint',
-                                                    mat_Properties=material_properties)
+                    Fr_advanced.plot_fracture(mat_properties=material_properties,
+                                                sim_properties=simulation_parameters)
                 plt.show()
-            # Fr_advanced.plot_fracture('complete','width')
-            # plt.show()
+
             # save fracture to disk
             if simulation_parameters.saveToDisk:
                 simulation_parameters.lastSavedFile += 1

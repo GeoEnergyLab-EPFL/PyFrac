@@ -115,8 +115,11 @@ class CartesianMesh:
 
         # the element in the center (used for fluid injection)
         (minx, miny) = (min(abs(self.CenterCoor[:, 0])), min(abs(self.CenterCoor[:, 1])))
-        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < 4*sys.float_info.epsilon),
-                                         np.where(abs(self.CenterCoor[:, 1]) < 4*sys.float_info.epsilon))
+        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < 100*sys.float_info.epsilon),
+                                         np.where(abs(self.CenterCoor[:, 1]) < 100*sys.float_info.epsilon))
+        if self.CenterElts.size <1:
+            #todo
+            raise ValueError("Mesh with no center element. To be looked into")
 
     def locate_element(self, x, y):
         """

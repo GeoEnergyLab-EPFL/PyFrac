@@ -12,7 +12,7 @@ from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
 import copy
 from src.VolIntegral import *
-from src.TimeSteppingViscousFluid import toughness_at_tip_CellCenter
+from src.anisotropy import toughness_at_tip_CellCenter
 
 def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Parameters, Injection_Parameters, TimeStep,
                                     Mesh):
@@ -276,9 +276,6 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                  front_region[pstv_region],
                  front_region[ngtv_region])
 
-        # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-        # K[front_region] = sgndDist_k[front_region]
-        # plot_as_matrix(K, Fr_lstTmStp.mesh)
 
         # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
         # todo: not satisfied with why this happens. need re-examining

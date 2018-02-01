@@ -9,6 +9,7 @@
 import math
 import numpy as np
 
+
 from src.CartesianMesh import *
 
 
@@ -55,6 +56,11 @@ class MaterialProperties:
             self.Kprime = (32 / math.pi) ** 0.5 * Toughness * np.ones((Mesh.NumberOfElts,), float)
 
         self.KprimeFunc = Kprime_func
+        if not Kprime_func is None:
+            #todo: serialize and dump Kprime function
+            # import marshal
+            # self.KpFunString = marshal.dumps(Kprime_func.func_code)
+            pass
 
         if isinstance(Cl, np.ndarray):  # check if float or ndarray
             if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
@@ -268,6 +274,10 @@ class SimulationParameters:
             toleranceToughness (float)  -- tolerance for toughness iteration
             solTimeSeries (ndarray)     -- time series where the solution is required. The time stepping would be
                                            adjusted to get solution exactly at the given times.
+            plotEltType (boolean)       -- if True, the type of element (tip, ribbon or channel) will be depicted with
+                                            color coded dots
+            saveRegime (boolean)        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
+                                           saved.
             
     """
 
@@ -317,22 +327,29 @@ class SimulationParameters:
         # output parameters
         self.outputTimePeriod = simParam.output_time_period
         self.plotFigure = simParam.plot_figure
-        if simParam.plot_figure:
-            self.plotAnalytical = simParam.plot_analytical
-            self.analyticalSol = simParam.analytical_sol
-
+        self.plotAnalytical = simParam.plot_analytical
+        self.analyticalSol = simParam.analytical_sol
         self.saveToDisk = simParam.save_to_disk
+
+        # toughness anisotropy
         self.toleranceToughness = simParam.tol_toughness
         self.maxToughnessItr = simParam.max_toughnessItr
+
         self.dryCrack_mechLoading = simParam.mech_loading
         self.viscousInjection = simParam.viscous_injection
         self.volumeControl = simParam.volume_control
         self.timeStep_limit = np.inf
+
         if simParam.mech_loading or simParam.volume_control:
             self.viscousInjection = False
 
         if simParam.mech_loading:
             self.plotAnalytical = False
+
+        self.bckColor = simParam.bck_color
+        self.plotEltType = simParam.plot_eltType
+        self.saveRegime = simParam.save_regime
+
         # check operating system to get appropriate slash in the address
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
