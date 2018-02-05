@@ -13,9 +13,76 @@ from src.LevelSet import reconstruct_front
 from src.VolIntegral import Integral_over_cell
 
 
-def find_projection(elt_ribbon, elt_tip, zr_vrtx_tip, a_tip, b_tip, c_tip, x_lft, y_lft, x_rgt, y_rgt, neig_lft,
-                    neig_rgt, mesh):
+def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
+    """
+    This function finds the projection of the ribbon cell centers on to the fracture front. It is returned as the angle
+    inscribed by the perpendiculars drawn on the front from the ribbon cell centers
 
+    Arguments:
+        ribbon_elts (ndarray-int)               -- list of ribbon elements
+        mesh (CartesianMesh object)             -- The cartesian mesh object
+        mat_prop (MaterialProperties object)    -- Material properties:
+        sgnd_dist (ndarray-float)               -- level set data
+
+    Returns:
+        alpha (ndarray-float)                   -- the angle inscribed by the perpendiculars drawn on the front from
+                                                   the ribbon cell centers.
+    """
+
+    # reconstruct front to get tip cells from the given level set
+    (elt_tip, l_tip, alpha_tip, CellStatus) = reconstruct_front(sgnd_dist,
+                                                                channel_elts,
+                                                                mesh)
+    # get the filling fraction to find partially filled tip cells
+    FillFrac = Integral_over_cell(elt_tip,
+                                  alpha_tip,
+                                  l_tip,
+                                  mesh,
+                                  'A') / mesh.EltArea
+
+    # taking partially filled as the current tip
+    partly_filled = np.where(FillFrac < 0.999999)[0]
+    elt_tip = elt_tip[partly_filled]
+    l_tip = l_tip[partly_filled]
+    alpha_tip = alpha_tip[partly_filled]
+
+    zero_vertex_tip = find_zero_vertex(elt_tip, sgnd_dist, mesh)
+    # construct the polygon
+    smthed_tip, a, b, c, pnt_lft, pnt_rgt, neig_lft, neig_rgt = construct_polygon(elt_tip,
+                                                                                  l_tip,
+                                                                                  alpha_tip,
+                                                                                  mesh,
+                                                                                  zero_vertex_tip)
+    if np.isnan(smthed_tip).any():
+        # if cannot be found
+        return np.nan
+
+    zr_vrtx_smthed_tip = find_zero_vertex(smthed_tip, sgnd_dist, mesh)
+    alpha = find_angle(ribbon_elts,
+                            smthed_tip,
+                            zr_vrtx_smthed_tip,
+                            a,
+                            b,
+                            c,
+                            pnt_lft[:, 0],
+                            pnt_lft[:, 1],
+                            pnt_rgt[:, 0],
+                            pnt_rgt[:, 1],
+                            neig_lft,
+                            neig_rgt,
+                            mesh)
+
+    return alpha
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def find_angle(elt_ribbon, elt_tip, zr_vrtx_tip, a_tip, b_tip, c_tip, x_lft, y_lft, x_rgt, y_rgt, neig_lft,
+                    neig_rgt, mesh):
+    """
+    This function calculates the angle inscribed by the perpendiculars on the given polygon. The polygon is provided
+    in the form of equations of edges of the polygon (with the form ax+by+c=0) and the left and right points of the
+    front line in the given tip elements.
+    """
 
     closest_tip_cell = np.zeros((len(elt_ribbon),), dtype=np.int)
     dist_ribbon = np.zeros((len(elt_ribbon),), dtype=np.float64)
@@ -146,6 +213,11 @@ def find_projection(elt_ribbon, elt_tip, zr_vrtx_tip, a_tip, b_tip, c_tip, x_lft
 
 
 def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
+    """
+    This function construct a polygon from the given non-continous front. The polygon is constructed by joining the
+    intersection of the perpendiculars drawn on the front with the front lines. The points closest to each other are
+    joined and the intersection of the grid lines with these lines are taken as the vertices of the polygon.
+    """
 
     slope = np.empty((len(elt_tip),), dtype=np.float64)
     pnt_on_line = np.empty((len(elt_tip), 2), dtype=np.float64) # point where the perpendicular drawn on the front
@@ -385,6 +457,19 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
 
 
 def find_zero_vertex(Elts, level_set, mesh):
+    """
+    This function finds the zero-vertex (the vertex opposite to the propagation direction) from where the perpendicular
+    is drawn on the front.
+
+    Arguments:
+        Elts (ndarray)              -- the given elements for which the zero-vertex is to be found.
+        level_set (ndarray)         -- the level set data (distance from front of the elements of the grid).
+        mesh (ndarray)              -- the mesh given by CartesianMesh object.
+
+    Returns:
+        zero_vertex (ndarray)       -- the zero vertex list
+    """
+
     zero_vertex = np.zeros((len(Elts),), dtype=int)
     for i in range(0, len(Elts)):
         neighbors = mesh.NeiElements[Elts]
@@ -405,68 +490,14 @@ def find_zero_vertex(Elts, level_set, mesh):
     return zero_vertex
 
 
-def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
-    """
-    This function gives the scaled toughness(Kprime) at the closest tip point from the cell centers of the ribbon cells.
-    The function is different from the toughness_at_tip as it calculates the closest tip from cell centers and not from
-    the zero vertex.
-    Arguments:
-        ribbon_elts (ndarray-int): list of ribbon elements
-        mesh (CartesianMesh object): The cartesian mesh object
-        mat_prop (MaterialProperties object):    Material properties:
-        sgnd_dist (ndarray-float): level set data
 
-    Returns:
-        ndarray-float : Kprime at the closest tip point from the center of the given ribbon cells
-    """
-
-    # reconstruct front to get tip cells from the given level set
-    (elt_tip, l_tip, alpha_tip, CellStatus) = reconstruct_front(sgnd_dist,
-                                                                channel_elts,
-                                                                mesh)
-    # get the filling fraction to find partially filled tip cells
-    FillFrac = Integral_over_cell(elt_tip,
-                                  alpha_tip,
-                                  l_tip,
-                                  mesh,
-                                  'A') / mesh.EltArea
-
-    # taking partially filled as the current tip
-    partly_filled = np.where(FillFrac < 0.999999)[0]
-    elt_tip = elt_tip[partly_filled]
-    l_tip = l_tip[partly_filled]
-    alpha_tip = alpha_tip[partly_filled]
-
-    zero_vertex_tip = find_zero_vertex(elt_tip, sgnd_dist, mesh)
-    # construct the polygon
-    smthed_tip, a, b, c, pnt_lft, pnt_rgt, neig_lft, neig_rgt = construct_polygon(elt_tip,
-                                                                                  l_tip,
-                                                                                  alpha_tip,
-                                                                                  mesh,
-                                                                                  zero_vertex_tip)
-    if np.isnan(smthed_tip).any():
-        # if cannot be found
-        return np.nan
-
-    zr_vrtx_smthed_tip = find_zero_vertex(smthed_tip, sgnd_dist, mesh)
-    alpha = find_projection(ribbon_elts,
-                            smthed_tip,
-                            zr_vrtx_smthed_tip,
-                            a,
-                            b,
-                            c,
-                            pnt_lft[:, 0],
-                            pnt_lft[:, 1],
-                            pnt_rgt[:, 0],
-                            pnt_rgt[:, 1],
-                            neig_lft,
-                            neig_rgt,
-                            mesh)
-
-    return alpha
 
 
 def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=None, mesh=None):
+    """
+    This function returns the toughness given the angle inscribed from the cell centers on the front. both the cases
+    of heterogenous or anisotropic toughness are taken care off.
+    """
 
     if mat_prop.anisotropic:
         return mat_prop.KprimeFunc(alpha)
@@ -525,6 +556,10 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
 
 
 def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
+    """
+    This function returns the toughness given the angle inscribed from the zero-vertex on the front. both the cases
+    of heterogenous or anisotropic toughness are taken care off.
+    """
 
     if mat_prop.KprimeFunc is None:
         return mat_prop.Kprime[elts]
@@ -549,3 +584,5 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
                 y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
 
         return mat_prop.KprimeFunc(x, y)
+
+#-----------------------------------------------------------------------------------------------------------------------

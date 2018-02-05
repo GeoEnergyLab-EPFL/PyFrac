@@ -362,6 +362,41 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
+    """
+    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
+    with the extended footprint (treating the channel and the extended tip elements distinctly; see description of the
+    ILSA algorithm) as of the last time step.
+
+    Arguments:
+        sol_k (ndarray-float)               -- the trial change in width and pressure for the current iteration of
+                                               fracture front
+        vkm1 (ndarray-float)                -- the velosity from the last iteration.
+
+        args (tupple): arguments passed to the function
+            EltChannel (ndarray-int)        -- list of channel elements
+            EltsTipNew (ndarray-int)        -- list of new tip elements. This list also contains the elements that has
+                                               been fully traversed.
+            wLastTS (ndarray-float)         -- fracture width from the last time step
+            wTip (ndarray-float)            -- fracture width in the tip elements
+            EltCrack (ndarray-int)          -- list of elements in the fracture
+            Mesh (CartesianMesh object):    -- the mesh
+            dt (float)                      -- the current time step
+            Q (float)                       -- fluid injection rate at the current time step
+            C (ndarray-float)               -- the elasticity matrix
+            muPrime (ndarray-float)         -- 12 time viscosity of the injected fluid
+            rho (float)                     -- density of the injected fluid
+            InCrack (ndarray-float)         -- an array with one for all the elements in the fracture and zero for rest
+            LeakOff (ndarray-float)         -- the leaked off fluid volume for each cell
+            sigma0 (ndarray-float)          -- the confining stress
+            turb (boolean)                  -- turbulence will be taken into account if true
+            dgrain (float)                  -- the grain size of the rock. it will be used to calculate the fracture
+                                               roughness.
+
+    Returns:
+        A (ndarray-float)       -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        S (ndarray-float)       -- the b matrix (in the system Ax=b) to be solved by a linear system slover.
+        vk (ndarray-float)      -- the velocity at cell edges.
+    """
 
     (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0,
      turb, dgrain) = args
@@ -378,10 +413,22 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     wcNplusOne[EltsTipNew] = wTip
 
     if turb:
-        (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent_implicit(wcNplusOne, EltCrack, muPrime/12, Mesh, InCrack,
-                                                                    rho, vkm1, C, sigma0, dgrain)
+        (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
+                                                                    EltCrack,
+                                                                    muPrime/12,
+                                                                    Mesh,
+                                                                    InCrack,
+                                                                    rho,
+                                                                    vkm1,
+                                                                    C,
+                                                                    sigma0,
+                                                                    dgrain)
     else:
-        FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne, EltCrack, muPrime, Mesh, InCrack)
+        FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
+                                                   EltCrack,
+                                                   muPrime,
+                                                   Mesh,
+                                                   InCrack)
         vk = vkm1
 
     condCC = FinDiffOprtr[np.ix_(EltChannel, EltChannel)]
@@ -406,7 +453,12 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def MakeEquationSystem_mechLoading_sameFP(w_LoadedElts, EltCrack, EltLoaded, C):
+    """
+    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
+    so that the given width is imposed on the loaded elements (see Zia and Lecampion 2018).
+    """
 
     C_Crack = C[np.ix_(EltCrack, EltCrack)]
 
@@ -423,6 +475,11 @@ def MakeEquationSystem_mechLoading_sameFP(w_LoadedElts, EltCrack, EltLoaded, C):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def MakeEquationSystem_mechLoading_extendedFP(wTip, EltChannel, EltTip, C, EltLoaded, w_loaded):
+    """
+    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
+    with the extended footprint (treating the channel and the extended tip elements distinctly). The given width is
+    imposed on the given loaded elements (see Zia and Lecampion 2018)
+    """
 
     Ccc = C[np.ix_(EltChannel, EltChannel)]
     Cct = C[np.ix_(EltChannel, EltTip)]
@@ -438,7 +495,10 @@ def MakeEquationSystem_mechLoading_extendedFP(wTip, EltChannel, EltTip, C, EltLo
 
 #-----------------------------------------------------------------------------------------------------------------------
 def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
-
+    """
+    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
+    so that the volume of the fracture is equal to the fluid injected into the fracture (see Zia and Lecampion 2018)
+    """
     C_Crack = C[np.ix_(EltCrack, EltCrack)]
 
     A = np.hstack((C_Crack,-np.ones((EltCrack.size,1),dtype=np.float64)))
@@ -452,7 +512,11 @@ def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
 
 #-----------------------------------------------------------------------------------------------------------------------
 def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, EltTip, C, dt, Q, ElemArea):
-
+    """
+    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
+    with the extended footprint (treating the channel and the extended tip elements distinctly). The the volume of the
+    fracture is imposed to be equal to the fluid injected into the fracture (see Zia and Lecampion 2018).
+    """
     Ccc = C[np.ix_(EltChannel, EltChannel)]
     Cct = C[np.ix_(EltChannel, EltTip)]
 
@@ -468,31 +532,48 @@ def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, E
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def MakeEquationSystem_volumeControl_extendedFP_width(wTip, EltChannel, EltTip, C, time, Q, ElemArea):
-
-    Ccc = C[np.ix_(EltChannel, EltChannel)]
-    Cct = C[np.ix_(EltChannel, EltTip)]
-
-    A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
-    A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
-    A[-1,-1] = 0
-
-    S = - np.dot(Cct,wTip)
-    S = np.append(S,Q * time / ElemArea - sum(wTip))
-
-    return A, S
+# def MakeEquationSystem_volumeControl_extendedFP_width(wTip, EltChannel, EltTip, C, time, Q, ElemArea):
+#
+#     Ccc = C[np.ix_(EltChannel, EltChannel)]
+#     Cct = C[np.ix_(EltChannel, EltTip)]
+#
+#     A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
+#     A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
+#     A[-1,-1] = 0
+#
+#     S = - np.dot(Cct,wTip)
+#     S = np.append(S,Q * time / ElemArea - sum(wTip))
+#
+#     return A, S
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr, *args):
+    """
+    This function gives the residual of the solution of the current iteration for the viscous fluid, same footprint
+    case.
+    """
     (A, S, vk) = MakeEquationSystem_viscousFluid_sameFP(solk, interItr, *args)
     return (np.dot(A, solk) - S, vk)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, *args, interItr=None):
+    """
+    This function gives the residual of the solution of the current iteration for the viscous fluid, extended footprint
+    case.
+    """
+    (A, S, vk) = MakeEquationSystem_viscousFluid_extendedFP(solk, interItr, *args)
+    return (np.dot(A, solk) - S, vk)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
+    """
+    This function gives the velocity at the cell edges evaluated using the Poiseuille flow assumption.
+    """
     (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
 
     # velocity at the edges in the following order (x-left edge, x-right edge, y-bottom edge, y-top edge, y-left edge,
@@ -524,6 +605,10 @@ def velocity(w, EltCrack, Mesh, InCrack, muPrime, C, sigma0):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
+    """
+    This function gives the pressure gradient at the cell edges evaluated with the pressure calculated from the
+    elasticity relation for the given fracture width.
+    """
     pf = np.zeros((Mesh.NumberOfElts,), dtype=np.float64)
     # pf[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]
     pf = np.dot(C, w) + sigma0
@@ -537,28 +622,27 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def Elastohydrodynamic_ResidualFun_ExtendedFP(solk, *args, interItr=None):
-    (A, S, vk) = MakeEquationSystem_viscousFluid_extendedFP(solk, interItr, *args)
-    return (np.dot(A, solk) - S, vk)
 
-
-#-----------------------------------------------------------------------------------------------------------------------
 
 def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0, PicardPerNewton = 100):
     """
     Mixed Picard Newton solver for nonlinear systems.
-        
-    :param Res_fun: The function calculating the residual
-    :param sys_fun: The function giving the system A,b for the Picard solver to solve the linear system of the form Ax=b
-    :param guess:   The initial guess
-    :param TypValue:Typical value of the variable to estimate the Epsilon to calculate Jacobian
-    :param interItr:Initial value of the variable(s) exchanged between the iterations, if any 
-    :param relax:   The relaxation factor
-    :param Tol:     Tolerance
-    :param maxitr:  Maximum number of iterations
-    :param args:    arguments given to the residual and systems functions
-    :param PicardPerNewton: For hybrid Picard/Newton solution. Number of picard iterations for every Newton iteration.
-    :return:        solution
+    Arguments:
+        Res_fun (function)      -- The function calculating the residual.
+        sys_fun (function)      -- The function giving the system A,b for the Picard solver to solve the linear system
+                                   of the form Ax=b.
+        guess (ndarray)         -- The initial guess.
+        TypValue (ndarray)      -- Typical value of the variable to estimate the Epsilon to calculate Jacobian.
+        interItr (ndarray)      -- Initial value of the variable(s) exchanged between the iterations, if any.
+        relax (float)           -- The relaxation factor.
+        Tol (float)             -- Tolerance.
+        maxitr (int):           -- Maximum number of iterations.
+        args (tuple)            -- arguments given to the residual and systems functions.
+        PicardPerNewton (int)   -- For hybrid Picard/Newton solution. Number of picard iterations for every Newton
+                                   iteration.
+    Returns:
+            solk (ndarray)      -- solution at the end of iteration.
+            interItr            -- any data passed between iterations.
     """
     solk = guess
     k = 1
@@ -605,6 +689,10 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
 
 
 def Jacobian(Residual_function, x, TypValue, *args, central=False, interItr=None):
+    """
+    This function returns the Jacobian of the given function.
+    """
+    
     (Fx, interItr) = Residual_function(x, interItr, *args)
     Jac = np.zeros((len(x), len(x)), dtype=np.float64)
     for i in range(0, len(x)):
