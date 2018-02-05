@@ -144,8 +144,41 @@ def update(frame, *args):
 
 
 def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None, plt_pressure=False,
-                 time_period=0.0, sol_t_srs=None, analytical_sol='n', plt_color='k.', analytical_color='b'):
+                 time_period=0.0, sol_t_srs=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b'):
+    """
+    This function plots the width and pressure at the injection point of the fracture.
 
+    Arguments:
+        address (string)                -- the folder address containing the saved files
+        fig_w_x (figure)                -- figure for fracture width at x-axis to superimpose. A new figure will be
+                                           created if not provided.
+        fig_w_y (figure)                -- figure for fracture width at y-axis to superimpose. A new figure will be
+                                           created if not provided.
+        fig_p_x (figure)                -- figure for fracture pressure at x-axis to superimpose. A new figure will be
+                                           created if not provided.
+        fig_p_y (figure)                -- figure for fracture pressure at y-axis to superimpose. A new figure will be
+                                           created if not provided.
+        plt_pressure (boolean)          -- if True, pressure will also be plotted.
+        time_period (float)             -- time period between two successive fracture plots.
+        sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        analytical_sol (string)         -- the following options can be provided
+                                                'M'     -- radial fracture in viscosity dominated regime
+                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                'K'     -- radial fracture in toughness dominated regime
+                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                'E'     -- elliptical fracture in toughness dominated regime
+                                                'PKN'   -- PKN fracture
+        plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                           continous line with data points marked with dots )
+        anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                           continous line with data points marked with dots )
+
+    Returns:
+        fig_w_x (figure)                -- figure for fracture width at x-axis to superimpose.
+        fig_w_y (figure)                -- figure for fracture width at y-axis to superimpose.
+        fig_p_x (figure)                -- figure for fracture pressure at x-axis to superimpose.
+        fig_p_y (figure)                -- figure for fracture pressure at y-axis to superimpose.
+    """
     if not slash in address[-2:]:
         address = address + slash
 
@@ -222,11 +255,11 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
             vrtcl = np.where(abs(ff.mesh.CenterCoor[:, 0]) < 1e-10)[0]
             y = ff.mesh.CenterCoor[vrtcl, 1]
 
-            line_wx_num, = ax_w_x.plot(x, ff.w[hrzntl],plt_color)
-            line_wy_num, = ax_w_y.plot(y, ff.w[vrtcl], plt_color)
+            line_wx_num, = ax_w_x.plot(x, ff.w[hrzntl],plt_symbol)
+            line_wy_num, = ax_w_y.plot(y, ff.w[vrtcl], plt_symbol)
             if not analytical_sol is 'n':
-                line_wx_anl, = ax_w_x.plot(x, w[hrzntl],analytical_color)
-                line_wy_anl, = ax_w_y.plot(y, w[vrtcl], analytical_color)
+                line_wx_anl, = ax_w_x.plot(x, w[hrzntl],anltcl_lnStyle)
+                line_wy_anl, = ax_w_y.plot(y, w[vrtcl], anltcl_lnStyle)
 
             ax_w_x.set_ylabel('width')
             ax_w_x.set_xlabel('meters')
@@ -237,12 +270,12 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
             ax_w_y.set_title('Width profile along y-axis')
 
             if plt_pressure:
-                line_px_num, = ax_p_x.plot(x, ff.p[hrzntl], plt_color)
-                line_py_num, = ax_p_y.plot(y, ff.p[vrtcl], plt_color)
+                line_px_num, = ax_p_x.plot(x, ff.p[hrzntl], plt_symbol)
+                line_py_num, = ax_p_y.plot(y, ff.p[vrtcl], plt_symbol)
                 if not analytical_sol is 'n':
                     np.delete(hrzntl, np.where(ff.p[hrzntl]!=0.)[0], 0)
-                    line_px_anl, = ax_p_x.plot(x, p[hrzntl], analytical_color)
-                    line_py_anl, = ax_p_y.plot(y, p[vrtcl], analytical_color)
+                    line_px_anl, = ax_p_x.plot(x, p[hrzntl], anltcl_lnStyle)
+                    line_py_anl, = ax_p_y.plot(y, p[vrtcl], anltcl_lnStyle)
 
                 ax_p_x.set_ylabel('pressure')
                 ax_p_x.set_xlabel('meters')
@@ -272,9 +305,41 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False, time_period=0.0, sol_t_srs=None,
-                analytical_sol='n', plt_color='r.', analytical_color='b', loglog=False, plt_dimensionless=False):
+def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, sol_t_srs=None,
+                analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=False, plt_t_dimensionless=False):
+    """
+        This function plots the width and pressure at the injection point of the fracture.
 
+        Arguments:
+            address (string)                -- the folder address containing the saved files
+            fig_w (figure)                  -- figure for fracture width to superimpose. A new figure will be created
+                                               if not provided.
+            fig_p (figure)                  -- figure for pressure to superimpose. A new figure will be created if not
+                                               provided.
+            plt_pressure (boolean)          -- if True, pressure will also be plotted.
+            time_period (float)             -- time period between two successive fracture plots.
+            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            analytical_sol (string)         -- the following options can be provided
+                                                    'M'     -- radial fracture in viscosity dominated regime
+                                                    'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                    'K'     -- radial fracture in toughness dominated regime
+                                                    'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                    'E'     -- elliptical fracture in toughness dominated regime
+                                                    'PKN'   -- PKN fracture
+            plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+            anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+            loglog (True)                   -- if True, plots will be loglog.
+            plt_dimensionless (True)        -- if True, time will be scaled with the viscosity to toughness transition
+                                               time.
+
+        Returns:
+            fig_w (figure)                    -- width figure to superimpose.
+            fig_p (figure)                    -- pressure figure to superimpose.
+    """
+
+    # add slash at the end if not present
     if not slash in address[-2:]:
         address = address + slash
 
@@ -348,7 +413,8 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                 else:
                     raise ValueError("Provided analytical solution is not supported")
 
-            if plt_dimensionless:
+            if plt_t_dimensionless:
+                # viscosity to toughness transition time
                 tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
                     (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
                 tmk2 = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
@@ -357,10 +423,10 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                 tmk = 1.
 
             if loglog:
-                # ax_w.semilogx(ff.time, ff.w[ff.mesh.CenterElts], plt_color)
-                ax_w.loglog(ff.time/tmk, ff.w[ff.mesh.CenterElts], plt_color)
+                # ax_w.semilogx(ff.time, ff.w[ff.mesh.CenterElts], plt_symbol)
+                ax_w.loglog(ff.time/tmk, ff.w[ff.mesh.CenterElts], plt_symbol)
             else:
-                ax_w.plot(ff.time/tmk, ff.w[ff.mesh.CenterElts],plt_color)
+                ax_w.plot(ff.time/tmk, ff.w[ff.mesh.CenterElts],plt_symbol)
             ax_w.set_ylabel('width')
             ax_w.set_xlabel('time')
             ax_w.set_title('Width at injection point')
@@ -377,10 +443,10 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
                 else:
                     p_num = ff.p
                 if loglog:
-                    # ax_p.semilogx(ff.time, p_num, plt_color)
-                    ax_p.loglog(ff.time/tmk, p_num, plt_color)
+                    # ax_p.semilogx(ff.time, p_num, plt_symbol)
+                    ax_p.loglog(ff.time/tmk, p_num, plt_symbol)
                 else:
-                    ax_p.plot(ff.time/tmk, p_num, plt_color)
+                    ax_p.plot(ff.time/tmk, p_num, plt_symbol)
 
 
                 if not analytical_sol is 'n':
@@ -402,20 +468,24 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
 
     if not analytical_sol is 'n':
         if loglog:
-            ax_w.semilogx(time_srs/tmk, w_anltcl, analytical_color, label='analytical')
+            ax_w.semilogx(time_srs/tmk, w_anltcl, anltcl_lnStyle, label='analytical')
         else:
-            ax_w.plot(time_srs/tmk, w_anltcl, analytical_color, label='analytical')
+            ax_w.plot(time_srs/tmk, w_anltcl, anltcl_lnStyle, label='analytical')
         ax_w.legend()
 
         if plt_pressure:
-            if loglog:
-                ax_p.semilogx(time_srs/tmk, p_anltcl, analytical_color, label='analytical')
+            if analytical_sol in ('M', 'Mt'):
+                print("Singularity at injection point for pressure. Analytical solution not plotted")
             else:
-                ax_p.plot(time_srs/tmk, p_anltcl, analytical_color, label='analytical')
+                if loglog:
+                    ax_p.semilogx(time_srs/tmk, p_anltcl, anltcl_lnStyle, label='analytical')
+                else:
+                    ax_p.plot(time_srs/tmk, p_anltcl, anltcl_lnStyle, label='analytical')
             ax_p.set_ylabel('pressure')
             ax_p.set_xlabel('time')
             ax_p.set_title('Pressure at injection point')
             ax_p.legend()
+
     # ax_w.plot(tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000 * tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000, 1e-4, 'k.')
@@ -433,7 +503,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=False,
 
 
 def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytical_sol='n',
-                            plt_color='k', analytical_color='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
+                            plt_color='k', anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -449,13 +519,15 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
                                                 'Kt'    -- radial fracture in toughness dominated regime with leak-off
                                                 'E'     -- elliptical fracture in toughness dominated regime
                                                 'PKN'   -- PKN fracture
-        plt_color (string)              -- the color(matplotlib colors) of the fracture lines.
-        analytical_color (string)       -- the color(matplotlib colors) of the analytical solution lines.
+        plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+        anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
         plt_mesh (boolean)              -- if true, mesh will also be plotted.
         plt_regime (boolean)            -- if true, regime evaluated at the ribbon cells will be ploted (see Zia and
                                            Lecampion 2018)
-        Sim_prop (SimulationParameters) -- if provided, the simulation properties file read will be overriden by these
-                                           parameters.
+        Sim_prop (SimulationParameters) -- if provided, the simulation properties read for file will be overriden by
+                                           these parameters.
 
     Returns:
         fig (figure)                    -- a figure to superimpose.
@@ -531,7 +603,7 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 
                 if analytical_sol in ('M', 'Mt', 'K', 'Kt'):
                     circle = plt.Circle((0, 0), radius=R)
-                    circle.set_ec(analytical_color)
+                    circle.set_ec(anltcl_lnStyle)
                     circle.set_fill(False)
                     ax.add_patch(circle)
                 elif analytical_sol == 'E':
@@ -539,9 +611,9 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
                     import matplotlib as mpl
                     a = (Solid.K1c[0] / Solid.K1c_perp) ** 2 * R
                     ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360.,
-                                                  color=analytical_color)
+                                                  color=anltcl_lnStyle)
                     ellipse.set_fill(False)
-                    ellipse.set_ec(analytical_color)
+                    ellipse.set_ec(anltcl_lnStyle)
                     ax.add_patch(ellipse)
 
             # plot regime if enabled
@@ -585,8 +657,40 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0.,
-                loglog=True, plt_symbol='o', analytical_sol='E', anltcl_clr='k'):
+def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='o',
+                analytical_sol='E', anltcl_lnStyle='k'):
+    """
+        This function plots the footprints of the fractures saved in the given folder.
+
+        Arguments:
+            address (string)                -- the folder address containing the saved files
+            r_type (string)                 -- specifies the radius to plot. Possible options:
+                                                    'max'   -- plots the distance of the furthest point on the fracture
+                                                               front from the injection point.
+                                                    'mmean' -- plots the mean distance of the points on the fracture
+                                                               front from the injection point.
+                                                    'min'   -- plots the distance of the closest point on the fracture
+                                                               front from the injection point.
+            fig_r (figure)                  -- figure to superimpose. A new figure will be created if not provided.
+            time_period (float)             -- time period between two successive fracture plots.
+            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            analytical_sol (string)         -- the following options can be provided
+                                                    'M'     -- radial fracture in viscosity dominated regime
+                                                    'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                    'K'     -- radial fracture in toughness dominated regime
+                                                    'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                    'E'     -- elliptical fracture in toughness dominated regime
+                                                    'PKN'   -- PKN fracture
+            plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+            anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+
+        Returns:
+            fig_r (figure)                    -- a figure to superimpose.
+
+        """
+
     if not slash in address[-2:]:
         address = address + slash
 
@@ -637,6 +741,8 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
                 r_numrcl = np.append(r_numrcl, max((tipVrtxCoord[:, 0]**2 + tipVrtxCoord[:, 1] ** 2)**0.5 + ff.l))
             elif r_type is 'min':
                 r_numrcl = np.append(r_numrcl, min((tipVrtxCoord[:, 0]**2 + tipVrtxCoord[:, 1] ** 2)**0.5 + ff.l))
+            else:
+                raise ValueError("Radius type not supported!")
 
             if not analytical_sol is 'n':
                 if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
@@ -671,18 +777,18 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
     ax = fig_r.add_subplot(111)
     if loglog:
         if not analytical_sol is 'n':
-            # ax.semilogx(time_srs, r_anltcl, anltcl_clr)
-            ax.loglog(time_srs, r_anltcl, anltcl_clr, label='radius analytical')
+            # ax.semilogx(time_srs, r_anltcl, anltcl_lnStyle)
+            ax.loglog(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
         # ax.semilogx(time_srs, r_numrcl, plt_symbol)
         ax.loglog(time_srs, r_numrcl, plt_symbol, label='radius numerical')
     else:
         if not analytical_sol is 'n':
-            ax.plot(time_srs, r_anltcl, anltcl_clr, label='radius analytical')
+            ax.plot(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
         ax.plot(time_srs, r_numrcl, plt_symbol, label='radius numerical')
 
     plt.ylabel('radius')
     plt.xlabel('time')
-    plt.title('Distance from injection point')
+    plt.title(r_type + ' distance from injection point')
     plt.legend()
 
     return fig_r
@@ -690,8 +796,31 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plt_simulation_results(address, sol_t_srs=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
+def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
                            radius=True,  profile=True):
+    """
+    This function plot the simulation results from the given folder
+    Arguments:
+            address (string)                -- the folder address containing the saved files
+            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            time_period (float)             -- time period between two successive fracture plots.
+            analytical_sol (string)         -- the following options can be provided
+                                                    'M'     -- radial fracture in viscosity dominated regime
+                                                    'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                    'K'     -- radial fracture in toughness dominated regime
+                                                    'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                    'E'     -- elliptical fracture in toughness dominated regime
+                                                    'PKN'   -- PKN fracture
+            footprint (boolean)             -- if True, fracture footprints will be plotted.
+            inj_pnt (boolean)               -- if True, fracture fracture width and pressure at the injection points
+                                               will be plotted.
+            radius (boolean)                -- if True, mean distance of the fracture front from the injection point
+                                               will be plotted.
+            profile (boolean)               -- if True, width profile at the x and y axes will be plotted.
+
+        Returns:
+
+    """
 
     if footprint:
         plot_footprint(address=address,

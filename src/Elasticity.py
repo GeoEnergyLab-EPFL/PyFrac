@@ -77,7 +77,8 @@ def load_elasticity_matrix(Mesh, EPrime):
     """
     The function loads the elasticity matrix(see e.g. Dontsov and Peirce 2008) from the saved file. If the loaded matrix
     is not compatible with respect to the current mesh or plain strain modulus, the compatible matrix is computed and
-    saved in a file. If the file is not found, the elasticity matrix is computed and saved in a file with the name 'CMatrix'.
+    saved in a file. If the file is not found, the elasticity matrix is computed and saved in a file with the name
+    'CMatrix'.
     
     Arguments:
         Mesh (object CartesianMesh) : a mesh object describing the domain 

@@ -179,21 +179,6 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
         Res_a = ResFunc(a[i], *TipAsmptargs)
         Res_b = ResFunc(b[i], *TipAsmptargs)
 
-        # res_U = np.zeros((100,),)
-        # res_MtK = np.zeros((100,), )
-        # res_M = np.zeros((100,), )
-        # x=np.linspace(a[i], b[i], 100)
-        # for j in range(0,len(x)):
-        #     res_U[j] = TipAsym_Universal_zrthOrder_Res(x[j], *TipAsmptargs)
-        #     res_MtK[j] = TipAsym_MTildeK_zrthOrder_Res(x[j], *TipAsmptargs)
-        #     res_M[j] = TipAsym_viscStor_Res(x[j], *TipAsmptargs)
-        #
-        # plt.plot(x, res_U, 'b.-')
-        # plt.plot(x, res_MtK, 'r.-')
-        # plt.plot(x, res_M, 'g.-')
-        # plt.plot(x, np.zeros((100,),),'k')
-        # plt.show()
-
         cnt = 0
         mid = b[i]
         while Res_a * Res_b > 0:

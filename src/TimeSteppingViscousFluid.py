@@ -14,14 +14,13 @@ from src.LevelSet import *
 from src.HFAnalyticalSolutions import *
 from src.TimeSteppingMechLoading import *
 from src.TimeSteppingVolumeControl import *
-from src.anisotropy import toughness_at_tip_CellCenter
 from scipy.optimize import least_squares
 import copy
 import warnings
 import sys
 
-def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters, Injection_Parameters,
-                      TimeStep):
+def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters,
+                                   Injection_Parameters, TimeStep):
     """ Propagate fracture one time step. The function injects fluid into the fracture, first by keeping the same
     footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
     until convergence is achieved.
@@ -286,26 +285,37 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    if Material_properties.anisotropic:
-        Kprime_k = toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
-                                           Fr_lstTmStp.EltChannel,
-                                           Fr_lstTmStp.mesh,
-                                           Material_properties,
-                                           sgndDist_k)
+    if not Material_properties.KprimeFunc is None:
+        alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                 Fr_lstTmStp.EltChannel,
+                                                 Fr_lstTmStp.mesh,
+                                                 sgndDist_k)
+        Kprime_k = get_toughness_from_cellCenter(alpha_ribbon,
+                                                sgndDist_k,
+                                                Fr_lstTmStp.EltRibbon,
+                                                Material_properties,
+                                                Fr_lstTmStp.mesh)
+    # Kprime from last iteration; starts with zero
         Kprime_km1 = 0 * np.copy(Kprime_k)
+
     # toughness iteration loop
     while itr < sim_parameters.maxToughnessItr:
 
         sgndDist_km1 = np.copy(sgndDist_k)
         l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
-        #todo: Only done for anistropic. Has to be done for heterogenous toughness
-        if Material_properties.anisotropic:
-            Kprime_k = 0.7 * Kprime_k + 0.3 * toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
-                                                                          Fr_lstTmStp.EltChannel,
-                                                                          Fr_lstTmStp.mesh,
-                                                                          Material_properties,
-                                                                          sgndDist_k)
+        if not Material_properties.KprimeFunc is None:
+            alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                  Fr_lstTmStp.EltChannel,
+                                                  Fr_lstTmStp.mesh,
+                                                  sgndDist_k)
+            # under relaxing toughnesss
+            Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
+                                                            sgndDist_k,
+                                                            Fr_lstTmStp.EltRibbon,
+                                                            Material_properties,
+                                                            Fr_lstTmStp.mesh)
+
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
                 return exitstatus, None
@@ -322,7 +332,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                                                Fr_lstTmStp,
                                                                Material_properties,
                                                                sim_parameters,
-                                                               timeStep)
+                                                               timeStep,
+                                                               Kprime_k=Kprime_k)
 
 
         # if tip inversion returns nan
@@ -363,8 +374,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
             print("toughness iteration converged after " + repr(itr-1) + " iterations; exiting norm " +
                   repr(norm))
             break
-
-
 
         Kprime_km1 = np.copy(Kprime_k)
         print("iterating on toughness... norm " + repr(norm))
@@ -443,13 +452,16 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    # zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-    # Kprime_tip = toughness_at_tip_zeroVertex(EltsTipNew,
-    #                                        Fr_lstTmStp.mesh,
-    #                                        Material_properties,
-    #                                        alpha_k,
-    #                                        l_k,
-    #                                        zrVrtx_newTip)
+    if not Material_properties.KprimeFunc is None:
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        Kprime_tip = get_toughness_from_zeroVertex(EltsTipNew,
+                                                   Fr_lstTmStp.mesh,
+                                                   Material_properties,
+                                                   alpha_k,
+                                                   l_k,
+                                                   zrVrtx_newTip)
+    else:
+        Kprime_tip = None
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
@@ -496,6 +508,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                               mat_prop=Material_properties,
                               fluid_prop=Fluid_properties,
                               Vel=Vel_k,
+                              Kprime=Kprime_tip,
                               stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # # check if the tip volume has gone into negative

@@ -12,7 +12,7 @@ from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
 import copy
 from src.VolIntegral import *
-from src.anisotropy import toughness_at_tip_CellCenter
+from src.anisotropy import projection_from_ribbon, get_toughness_from_cellCenter, get_toughness_from_zeroVertex
 
 def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Parameters, Injection_Parameters, TimeStep,
                                     Mesh):
@@ -201,12 +201,19 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
     itr = 1
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    Kprime_k = toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
+    if not Material_properties.KprimeFunc is None:
+        alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                  Fr_lstTmStp.EltChannel,
                                                  Fr_lstTmStp.mesh,
-                                                 Material_properties,
                                                  sgndDist_k)
+        Kprime_k = get_toughness_from_cellCenter(alpha_ribbon,
+                                                sgndDist_k,
+                                                Fr_lstTmStp.EltRibbon,
+                                                Material_properties,
+                                                Fr_lstTmStp.mesh)
+    # Kprime from last iteration; starts with zero
     Kprime_km1 = 0*np.copy(Kprime_k)
+
     # toughness iteration loop
     while itr < sim_parameters.maxToughnessItr:
 
@@ -215,12 +222,20 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
 
 
-        if Material_properties.anisotropic:
-            Kprime_k = 0.3 * Kprime_k + 0.7 * toughness_at_tip_CellCenter(Fr_lstTmStp.EltRibbon,
-                                                   Fr_lstTmStp.EltChannel,
-                                                   Fr_lstTmStp.mesh,
-                                                   Material_properties,
-                                                   sgndDist_k)
+        if not Material_properties.KprimeFunc is None:
+            alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                  Fr_lstTmStp.EltChannel,
+                                                  Fr_lstTmStp.mesh,
+                                                  sgndDist_k)
+            # under relaxing toughnesss
+            Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
+                                                            sgndDist_k,
+                                                            Fr_lstTmStp.EltRibbon,
+                                                            Material_properties,
+                                                            Fr_lstTmStp.mesh)
+            if np.isnan(Kprime_k).any():
+                exitstatus = 11
+                return exitstatus, None
         else:
             Kprime_k = None
 
@@ -239,23 +254,12 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                                                                timeStep,
                                                                Kprime_k=Kprime_k)
 
-        # # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        # sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
-        # # large float value. (algorithm requires inf)
-
-
-
-        # sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion_hetrogenous_toughness(w_k,
-        #                                                                              Fr_lstTmStp,
-        #                                                                              Material_properties,
-        #                                                                              sgndDist_km1)
-
         # if tip inversion returns nan
         if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
             exitstatus = 7
-            print("The angle is not correct. Trying to use angle from last time step...")
-            sgndDist_k = sgndDist_km1
-            break
+            # print("The angle is not correct. Trying to use angle from last time step...")
+            # sgndDist_k = sgndDist_km1
+            # break
             return exitstatus, None
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
@@ -283,6 +287,10 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
             exitstatus = 2
             return exitstatus, None
 
+        # do it only once if KprimeFunc is not provided
+        if Material_properties.KprimeFunc is None:
+            break
+
         # norm = np.linalg.norm(1 - abs(l_m1 / sgndDist_k[Fr_lstTmStp.EltRibbon]))
         norm = np.linalg.norm(1 - abs(Kprime_k / Kprime_km1))/Kprime_k.size**0.5
         if norm < sim_parameters.toleranceToughness:
@@ -290,10 +298,6 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                   repr(norm))
             break
 
-        # do it only once if KprimeFunc is not provided
-        # if Material_properties.KprimeFunc is None:
-        # if itr > 5:
-        # break
         Kprime_km1 = np.copy(Kprime_k)
         print("iterating on toughness... norm "+repr(norm))
         itr += 1
@@ -302,28 +306,11 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     #     exitstatus = 10
     #     return exitstatus, None
 
-    # plt.show()
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
     (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k,
                                                                Fr_lstTmStp.EltChannel,
                                                                Fr_lstTmStp.mesh)
-
-
-    # if np.isnan(alpha_k).any():
-    #     is_nan = np.where(np.isnan(alpha_k))[0]
-    #     for i in is_nan:
-    #         enclosing = Fr_lstTmStp.mesh.NeiElements[EltsTipNew[i]]
-    #         enclosing = np.array([enclosing[0],enclosing[2]-1,enclosing[3]-1,enclosing[2],enclosing[3],enclosing[2]+1,enclosing[3]+1,enclosing[1]])
-    #         for j in range(5):
-    #             lft_in_tip = np.where(EltsTipNew == enclosing[j])[0]
-    #             if lft_in_tip.size>0 and not np.isnan(alpha_k[lft_in_tip]):
-    #                 break
-    #         for j in range(7,2,-1):
-    #             rgt_in_tip = np.where(EltsTipNew == enclosing[j])[0]
-    #             if rgt_in_tip.size>0 and not np.isnan(alpha_k[rgt_in_tip]):
-    #                 break
-    #         alpha_k[i] = (alpha_k[rgt_in_tip]+alpha_k[lft_in_tip])/2
 
     # If the angle and length of the perpendicular are not correct
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
@@ -387,13 +374,16 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-    Kprime_tip = toughness_at_tip_zeroVertex(EltsTipNew,
-                                             Fr_lstTmStp.mesh,
-                                             Material_properties,
-                                             alpha_k,
-                                             l_k,
-                                             zrVrtx_newTip)
+    if not Material_properties.KprimeFunc is None:
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        Kprime_tip = get_toughness_from_zeroVertex(EltsTipNew,
+                                                 Fr_lstTmStp.mesh,
+                                                 Material_properties,
+                                                 alpha_k,
+                                                 l_k,
+                                                 zrVrtx_newTip)
+    else:
+        Kprime_tip = None
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
@@ -459,14 +449,6 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                                                 Qin,
                                                 Fr_lstTmStp.mesh.EltArea)
 
-    # A, b = MakeEquationSystem_volumeControl_extendedFP_width(wTip,
-    #                                                          Fr_lstTmStp.EltChannel,
-    #                                                          EltsTipNew,
-    #                                                          C,
-    #                                                          Fr_lstTmStp.time + timeStep,
-    #                                                          Qin,
-    #                                                          Fr_lstTmStp.mesh.EltArea)
-
     sol = np.linalg.solve(A, b)
 
     # the fracture to be returned for k plus 1 iteration
@@ -515,31 +497,4 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     exitstatus = 1
     return exitstatus, Fr_kplus1
 
-
 #-----------------------------------------------------------------------------------------------------------------------
-
-def toughness_at_tip_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
-
-    if mat_prop.KprimeFunc is None:
-        return mat_prop.Kprime[elts]
-
-    if mat_prop.anisotropic:
-        return mat_prop.KprimeFunc(alpha)
-    else:
-        x = np.zeros((len(elts),), )
-        y = np.zeros((len(elts),), )
-        for i in range(0, len(elts)):
-            if zero_vrtx[i] == 0:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 1:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 2:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 3:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
-
-        return mat_prop.KprimeFunc(x, y)

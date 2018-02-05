@@ -12,6 +12,7 @@ from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
 import copy
 from src.VolIntegral import *
+from src.anisotropy import projection_from_ribbon, get_toughness_from_cellCenter, get_toughness_from_zeroVertex
 
 
 def attempt_time_step_mechLoading(Frac, C, Material_properties, Simulation_Parameters, Loading_Properties, TimeStep, Mesh):
@@ -206,21 +207,52 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
 
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-
+    if not Material_properties.KprimeFunc is None:
+        alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                 Fr_lstTmStp.EltChannel,
+                                                 Fr_lstTmStp.mesh,
+                                                 sgndDist_k)
+        Kprime_k = get_toughness_from_cellCenter(alpha_ribbon,
+                                                sgndDist_k,
+                                                Fr_lstTmStp.EltRibbon,
+                                                Material_properties,
+                                                Fr_lstTmStp.mesh)
+    # Kprime from last iteration; starts with zero
+    Kprime_km1 = 0 * np.copy(Kprime_k)
     # toughness iteration loop
     while itr < sim_parameters.maxToughnessItr:
 
         sgndDist_km1 = np.copy(sgndDist_k)
         l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
+        if not Material_properties.KprimeFunc is None:
+            alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                  Fr_lstTmStp.EltChannel,
+                                                  Fr_lstTmStp.mesh,
+                                                  sgndDist_k)
+            # under relaxing toughnesss
+            Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
+                                                                            sgndDist_k,
+                                                                            Fr_lstTmStp.EltRibbon,
+                                                                            Material_properties,
+                                                                            Fr_lstTmStp.mesh)
+
+            if np.isnan(Kprime_k).any():
+                exitstatus = 11
+                return exitstatus, None
+        else:
+            Kprime_k = None
+
         # Initializing the signed distance function with extremely large value. (algorithm requires inf)
         sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
         # Initialization of the signed distance in the ribbon elements by inverting the tip asymptotics
-        sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion_hetrogenous_toughness(w_k,
-                                                                                     Fr_lstTmStp,
-                                                                                     Material_properties,
-                                                                                     sgndDist_km1)
+        sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion(w_k,
+                                                               Fr_lstTmStp,
+                                                               Material_properties,
+                                                               sim_parameters,
+                                                               timeStep,
+                                                               Kprime_k=Kprime_k)
 
         # if tip inversion returns nan
         if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
@@ -252,17 +284,19 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
             exitstatus = 2
             return exitstatus, None
 
-        norm = np.linalg.norm(1 - abs(l_m1 / sgndDist_k[Fr_lstTmStp.EltRibbon]))
+        # do it only once if KprimeFunc is not provided
+        if Material_properties.KprimeFunc is None:
+            break
+
+        # norm = np.linalg.norm(1 - abs(l_m1 / sgndDist_k[Fr_lstTmStp.EltRibbon]))
+        norm = np.linalg.norm(1 - abs(Kprime_k / Kprime_km1))
         if norm < sim_parameters.toleranceToughness:
             print("toughness iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                   repr(norm))
             break
 
-        # do it only once if KprimeFunc is not provided
-        if Material_properties.KprimeFunc is None:
-            break
-
-        print("iterating on toughness...")
+        Kprime_km1 = np.copy(Kprime_k)
+        print("iterating on toughness... norm " + repr(norm))
         itr += 1
 
     if itr == sim_parameters.maxToughnessItr:
@@ -333,13 +367,16 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
     print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-    Kprime_tip = toughness_at_tip_zeroVertex(EltsTipNew,
-                                             Fr_lstTmStp.mesh,
-                                             Material_properties,
-                                             alpha_k,
-                                             l_k,
-                                             zrVrtx_newTip)
+    if not Material_properties.KprimeFunc is None:
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        Kprime_tip = get_toughness_from_zeroVertex(EltsTipNew,
+                                                 Fr_lstTmStp.mesh,
+                                                 Material_properties,
+                                                 alpha_k,
+                                                 l_k,
+                                                 zrVrtx_newTip)
+    else:
+        Kprime_tip = None
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
@@ -456,28 +493,4 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
     exitstatus = 1
     return exitstatus, Fr_kplus1
 
-
 #-----------------------------------------------------------------------------------------------------------------------
-
-def toughness_at_tip_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
-
-    if mat_prop.anisotropic:
-        return mat_prop.KprimeFunc(alpha)
-    else:
-        x = np.zeros((len(elts),), )
-        y = np.zeros((len(elts),), )
-        for i in range(0, len(elts)):
-            if zero_vrtx[i] == 0:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 1:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 2:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 3:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
-
-        return mat_prop.KprimeFunc(x, y)
