@@ -70,8 +70,8 @@ def elasticity_matrix_all_mesh(Mesh, Ep):
 
     return A
 
+#-----------------------------------------------------------------------------------------------------------------------
 
-#################################
 
 def load_elasticity_matrix(Mesh, EPrime):
     """
@@ -103,6 +103,7 @@ def load_elasticity_matrix(Mesh, EPrime):
             Elast = (C, Mesh, EPrime)
             with open('CMatrix', 'wb') as output:
                 pickle.dump(Elast, output, -1)
+            print("Done!")
             return C
     except FileNotFoundError:
         # if 'CMatrix' file is not found
@@ -111,4 +112,5 @@ def load_elasticity_matrix(Mesh, EPrime):
         Elast = (C, Mesh, EPrime)
         with open('CMatrix', 'wb') as output:
             pickle.dump(Elast, output, -1)
+        print("Done!")
         return C

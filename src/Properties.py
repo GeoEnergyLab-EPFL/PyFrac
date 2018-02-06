@@ -169,17 +169,16 @@ class InjectionProperties:
             source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.
     """
 
-    def __init__(self, rate, source_coordinates, Mesh):  # add Mesh as input directly here to ensure consistency
+    def __init__(self, rate, Mesh, source_coordinates=None ):
         """
         The constructor of the InjectionProperties class.
 
         Arguments:
             injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection
                                             rates (row 1).
+            Mesh (CartesianMesh)         -- the CartesianMesh object defining mesh.
             source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate
                                             of the injection point coordinates.
-            source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.
-
         """
 
         if isinstance(rate, np.ndarray):
@@ -191,14 +190,16 @@ class InjectionProperties:
         else:
             self.injectionRate = np.asarray([[0], [rate]])
 
-        if len(source_coordinates) == 2:
-            self.source_coordinates = source_coordinates
-        else:
-            # error
-            raise ValueError('Invalid source coordinates. Correct format: a numpy array with a single row'
-                             ' and two columns to \n specify x and y coordinate of the source e.g.'
-                             ' np.array([x_coordinate, y_coordinate])')
-
+        if not source_coordinates is None:
+            raise ValueError("Variable source location not yet supported!")
+            # if len(source_coordinates) == 2:
+            #     self.source_coordinates = source_coordinates
+            # else:
+            #     # error
+            #     raise ValueError('Invalid source coordinates. Correct format: a numpy array with a single row'
+            #                      ' and two columns to \n specify x and y coordinate of the source e.g.'
+            #                      ' np.array([x_coordinate, y_coordinate])')
+        source_coordinates = [0., 0.]
         self.source_location = Mesh.locate_element(source_coordinates[0], source_coordinates[1])
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -290,65 +291,68 @@ class SimulationParameters:
         """
 
         if address is None:
-            import defSimParam as simParam
+            import default_SimParam as simul_param
         else:
             import sys
             sys.path.append(address)
-            import simParam
+            import simul_param
             sys.path.remove(address)
 
 
-        self.maxTimeSteps = simParam.maximum_steps
-        self.tolFractFront = simParam.toleranceFractureFront
-        self.toleranceEHL = simParam.toleranceEHL
-        self.tmStpPrefactor = simParam.tmStp_prefactor
-        self.tmStpPrefactor_max = simParam.tmStp_prefactor
-        self.FinalTime = simParam.final_time
+        self.maxTimeSteps = simul_param.maximum_steps
+        self.tolFractFront = simul_param.toleranceFractureFront
+        self.toleranceEHL = simul_param.toleranceEHL
+        self.tmStpPrefactor = simul_param.tmStp_prefactor
+        self.tmStpPrefactor_max = simul_param.tmStp_prefactor
+        self.FinalTime = simul_param.final_time
 
         # todo: all the option structures can be put into one file
         tipAssymptOptions = ("K", "M", "Mt", "U", "MK")
-        if simParam.tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
-            self.tipAsymptote = simParam.tip_asymptote
+        if simul_param.tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
+            self.tipAsymptote = simul_param.tip_asymptote
         else:
             # error
             raise ValueError('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
 
-        self.maxFrontItr = simParam.maxfront_its
-        self.maxSolverItr = simParam.max_itr_solver
-        self.maxReattempts = simParam.max_reattemps
-        self.reAttemptFactor = simParam.reattempt_factor
-
-        if isinstance(simParam.req_sol_at, np.ndarray):
-            self.solTimeSeries = simParam.req_sol_at
-            self.FinalTime = max(simParam.req_sol_at)
-        else:
-            self.solTimeSeries = np.asarray([self.FinalTime], dtype=np.float64)
+        self.maxFrontItr = simul_param.maxfront_its
+        self.maxSolverItr = simul_param.max_itr_solver
+        self.maxReattempts = simul_param.max_reattemps
+        self.reAttemptFactor = simul_param.reattempt_factor
 
         # output parameters
-        self.outputTimePeriod = simParam.output_time_period
-        self.plotFigure = simParam.plot_figure
-        self.plotAnalytical = simParam.plot_analytical
-        self.analyticalSol = simParam.analytical_sol
-        self.saveToDisk = simParam.save_to_disk
+        if isinstance(simul_param.req_sol_at, np.ndarray):
+            self.solTimeSeries = simul_param.req_sol_at
+            self.FinalTime = max(simul_param.req_sol_at)
+        else:
+            # self.solTimeSeries = np.asarray([self.FinalTime], dtype=np.float64)
+            self.solTimeSeries = simul_param.req_sol_at
+        self.outputTimePeriod = simul_param.output_time_period
+        self.plotFigure = simul_param.plot_figure
+        self.plotAnalytical = simul_param.plot_analytical
+        self.analyticalSol = simul_param.analytical_sol
+        self.saveToDisk = simul_param.save_to_disk
 
         # toughness anisotropy
-        self.toleranceToughness = simParam.tol_toughness
-        self.maxToughnessItr = simParam.max_toughnessItr
+        self.toleranceToughness = simul_param.tol_toughness
+        self.maxToughnessItr = simul_param.max_toughnessItr
 
-        self.dryCrack_mechLoading = simParam.mech_loading
-        self.viscousInjection = simParam.viscous_injection
-        self.volumeControl = simParam.volume_control
-        self.timeStep_limit = np.inf
+        self.dryCrack_mechLoading = simul_param.mech_loading
+        self.viscousInjection = simul_param.viscous_injection
+        self.volumeControl = simul_param.volume_control
+        self.timeStepLimit = simul_param.timeStep_limit
+        self.tmStpFactLimit = simul_param.tmStp_fact_limit
+        self.verbosity = simul_param.verbosity
 
-        if simParam.mech_loading or simParam.volume_control:
+        if simul_param.mech_loading or simul_param.volume_control:
             self.viscousInjection = False
 
-        if simParam.mech_loading:
+        if simul_param.mech_loading:
             self.plotAnalytical = False
 
-        self.bckColor = simParam.bck_color
-        self.plotEltType = simParam.plot_eltType
-        self.saveRegime = simParam.save_regime
+        self.bckColor = simul_param.bck_color
+        self.plotEltType = simul_param.plot_eltType
+        self.saveRegime = simul_param.save_regime
+        self.remeshFactor = simul_param.remesh_factor
 
         # check operating system to get appropriate slash in the address
         import sys
@@ -357,7 +361,7 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if simParam.out_file_folder == "None" and simParam.save_to_disk:
+        if simul_param.out_file_folder == "None" and simul_param.save_to_disk:
             # time stamp as the folder address
             from time import gmtime, strftime
             timeStamp = "runDate_"+ strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
@@ -371,19 +375,19 @@ class SimulationParameters:
 
             self.outFileAddress = address + slash
             self.lastSavedFile = 0
-        elif simParam.save_to_disk:
-            if "\\" in simParam.out_file_folder:
+        elif simul_param.save_to_disk:
+            if "\\" in simul_param.out_file_folder:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')
-            elif "/" in simParam.out_file_folder:
+            elif "/" in simul_param.out_file_folder:
                 if slash != "/":
                     raise SystemExit('linux style slash in the given address on windows system')
 
             import os
-            if not os.path.exists(simParam.out_file_folder):
-                os.makedirs(simParam.out_file_folder)
+            if not os.path.exists(simul_param.out_file_folder):
+                os.makedirs(simul_param.out_file_folder)
 
-            self.outFileAddress = simParam.out_file_folder + slash
+            self.outFileAddress = simul_param.out_file_folder + slash
             self.lastSavedFile = 0
 
 # ----------------------------------------------------------------------------------------------------------------------

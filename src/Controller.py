@@ -12,19 +12,19 @@ import matplotlib.pyplot as plt
 
 class Controller:
 
-    errorMessages = ("Propagation not attempted",
-                     "Time step successful",
-                     "Evaluated level set is not valid",
-                     "Front is not tracked correctly",
-                     "Evaluated tip volume is not valid",
-                     "Solution obtained from the elastohydrodynamic solver is not valid",
-                     "Did not converge after max iterations",
-                     "Tip inversion is not correct",
-                     "Ribbon element not found in the enclosure of the tip cell",
-                     "Filling fraction not correct",
-                     "Toughness iteration did not converge",
-                     "projection could not be found",
-                     "Reached end of grid"
+    errorMessages = ("Propagation not attempted!",
+                     "Time step successful!",
+                     "Evaluated level set is not valid!",
+                     "Front is not tracked correctly!",
+                     "Evaluated tip volume is not valid!",
+                     "Solution obtained from the elastohydrodynamic solver is not valid!",
+                     "Did not converge after max iterations!",
+                     "Tip inversion is not correct!",
+                     "Ribbon element not found in the enclosure of the tip cell!",
+                     "Filling fraction not correct!",
+                     "Toughness iteration did not converge!",
+                     "projection could not be found!",
+                     "Reached end of grid!"
                      )
 
 
@@ -42,6 +42,10 @@ class Controller:
        self.smallStep_cnt = 0
 
     def run(self):
+        """
+        This function runs the simulation according to the given parameters.
+        """
+
         # load elasticity matrix
         if self.C is None:
             self.C = load_elasticity_matrix(self.fracture.mesh, self.solid_prop.Eprime)
@@ -56,7 +60,8 @@ class Controller:
             raise SystemExit('The minimum time required in the given time series or the end time'
                              ' is less than initial time.')
 
-        while (Fr.time < self.sim_prop.FinalTime) and (i < self.sim_prop.maxTimeSteps):
+        print("Starting time = " + repr(Fr.time))
+        while (Fr.time < 2**np.log2(self.sim_prop.FinalTime)) and (i < self.sim_prop.maxTimeSteps):
 
             # time step is calculated with the current propagation velocity
             TimeStep = self.sim_prop.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
@@ -79,8 +84,15 @@ class Controller:
                 if self.smallStep_cnt%4 == 0:
                     self.sim_prop.tmStpPrefactor = self.sim_prop.tmStpPrefactor_max
             elif status == 12:
-                self.C *= 1/2.
-                Fr = Fr.remesh(2., self.C, self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
+                self.C *= 1/self.sim_prop.remeshFactor
+                print("Remeshing...")
+                Fr = Fr.remesh(self.sim_prop.remeshFactor,
+                               self.C,
+                               self.solid_prop,
+                               self.fluid_prop,
+                               self.injection_prop,
+                               self.sim_prop)
+                print("Done!")
 
             else:
                 print("Restarting with the last check point...")
@@ -128,17 +140,20 @@ class Controller:
                                         8       -- Ribbon element not found in the enclosure of a tip cell
                                         9       -- Filling fraction not correct
                                         10      -- Toughness iteration did not converge
+                                        11      -- projection could not be found
+                                        12      -- Reached end of grid
 
             Fracture object:            fracture after advancing time step.
         """
-        print('\n--------------------------------\ntime = ' + repr(Frac.time))
 
-        if TimeStep > self.sim_prop.timeStep_limit:
-            TimeStep = self.sim_prop.timeStep_limit
-            self.sim_prop.timeStep_limit = TimeStep * 1.8
+        # checking if the time step is above the limit
+        if TimeStep > self.sim_prop.timeStepLimit:
+            TimeStep = self.sim_prop.timeStepLimit
+            self.sim_prop.timeStepLimit = TimeStep * self.sim_prop.tmStpFactLimit
 
-        if TimeStep < 0:
-            TimeStep = self.sim_prop.timeStep_limit*2
+        # in case of fracture not propagating
+        if TimeStep <= 0:
+            TimeStep = self.sim_prop.timeStepLimit*2
 
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
@@ -148,7 +163,9 @@ class Controller:
             if i > self.sim_prop.maxReattempts/2-1:
                 smallerTimeStep = TimeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
 
-            print("Attempting time step of " + repr(smallerTimeStep) + " sec...")
+            print('\nEvaluating solution at time = ' + repr(Frac.time+smallerTimeStep) + " ...")
+            if self.sim_prop.verbosity > 1:
+                print("Attempting time step of " + repr(smallerTimeStep) + " sec...")
 
             if self.sim_prop.viscousInjection:
                 status, Fr = attempt_time_step_viscousFluid(Frac,
@@ -193,7 +210,8 @@ class Controller:
                 print(self.errorMessages[status])
                 if status == 12:
                     return status, Fr
-            print("Time step failed...")
+            if self.sim_prop.verbosity > 1:
+                print("Time step failed...")
 
         return status, Fr
 
@@ -214,10 +232,12 @@ class Controller:
 
         Returns:
         """
-        if (Fr_lstTmStp.time // simulation_parameters.outputTimePeriod !=
-                    Fr_advanced.time // simulation_parameters.outputTimePeriod):
+        if not simulation_parameters.outputTimePeriod is None and (Fr_lstTmStp.time //
+            simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod) or (
+            Fr_advanced.time in simulation_parameters.solTimeSeries and simulation_parameters.outputTimePeriod is None):
             # plot fracture footprint
             if simulation_parameters.plotFigure:
+                print("Plotting solution at " + repr(Fr_advanced.time) + "...")
                 # if ploting analytical solution enabled
                 if simulation_parameters.plotAnalytical:
                     Q0 = injection_parameters.injectionRate[1, 0]  # injection rate at the start of injection
@@ -243,9 +263,12 @@ class Controller:
                     Fr_advanced.plot_fracture(mat_properties=material_properties,
                                                 sim_properties=simulation_parameters)
                 plt.show()
+                print("Done! ")
 
             # save fracture to disk
             if simulation_parameters.saveToDisk:
+                print("Saving solution at " + repr(Fr_advanced.time) + "...")
                 simulation_parameters.lastSavedFile += 1
-                Fr_advanced.SaveFracture(simulation_parameters.outFileAddress + "file_"
+                Fr_advanced.SaveFracture(simulation_parameters.outFileAddress + "fracture_"
                                          + repr(simulation_parameters.lastSavedFile))
+                print("Done! ")

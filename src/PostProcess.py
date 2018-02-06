@@ -22,11 +22,10 @@ from src.Fracture import *
 from src.Properties import *
 
 import matplotlib.pyplot as plt
-from matplotlib import cm
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import matplotlib.animation as animation
-import matplotlib.colors as mcolors
+
 
 
 
@@ -81,7 +80,7 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
 
         # trying to load next file. exit loop if not found
         try:
-            ff = ReadFracture(address + "file_" + repr(fileNo))
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
         fileNo+=1
@@ -225,18 +224,19 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
 
         # trying to load next file. exit loop if not found
         try:
-            ff = ReadFracture(address + "file_" + repr(fileNo))
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
         fileNo += 1
 
         if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
-
             if not analytical_sol is 'n':
+                from src.CartesianMesh import CartesianMesh
+                mesh_refined = CartesianMesh(ff.mesh.Lx, ff.mesh.Ly, 201, 201)
                 if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
                     t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
-                                                                ff.mesh,
+                                                                mesh_refined,
                                                                 Solid.Eprime,
                                                                 Injection.injectionRate[1, 0],
                                                                 muPrime=Fluid.muPrime,
@@ -244,6 +244,10 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
                                                                 Cprime=Solid.Cprime[ff.mesh.CenterElts],
                                                                 t=ff.time,
                                                                 KIc_min=Solid.K1c_perp)
+                    hrzntl_rfnd = np.where(abs(mesh_refined.CenterCoor[:, 1]) < 1e-10)[0]
+                    x_refined = mesh_refined.CenterCoor[hrzntl_rfnd, 0]
+                    vrtcl_rfnd = np.where(abs(mesh_refined.CenterCoor[:, 0]) < 1e-10)[0]
+                    y_refined = mesh_refined.CenterCoor[vrtcl_rfnd, 1]
                 elif analytical_sol == 'PKN':
                     print("PKN is to be implemented.")
                 else:
@@ -258,8 +262,8 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
             line_wx_num, = ax_w_x.plot(x, ff.w[hrzntl],plt_symbol)
             line_wy_num, = ax_w_y.plot(y, ff.w[vrtcl], plt_symbol)
             if not analytical_sol is 'n':
-                line_wx_anl, = ax_w_x.plot(x, w[hrzntl],anltcl_lnStyle)
-                line_wy_anl, = ax_w_y.plot(y, w[vrtcl], anltcl_lnStyle)
+                line_wx_anl, = ax_w_x.plot(x_refined, w[hrzntl_rfnd],anltcl_lnStyle)
+                line_wy_anl, = ax_w_y.plot(y_refined, w[vrtcl_rfnd], anltcl_lnStyle)
 
             ax_w_x.set_ylabel('width')
             ax_w_x.set_xlabel('meters')
@@ -273,9 +277,9 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
                 line_px_num, = ax_p_x.plot(x, ff.p[hrzntl], plt_symbol)
                 line_py_num, = ax_p_y.plot(y, ff.p[vrtcl], plt_symbol)
                 if not analytical_sol is 'n':
-                    np.delete(hrzntl, np.where(ff.p[hrzntl]!=0.)[0], 0)
-                    line_px_anl, = ax_p_x.plot(x, p[hrzntl], anltcl_lnStyle)
-                    line_py_anl, = ax_p_y.plot(y, p[vrtcl], anltcl_lnStyle)
+                    # np.delete(hrzntl, np.where(ff.p[hrzntl]!=0.)[0], 0)
+                    line_px_anl, = ax_p_x.plot(x_refined, p[hrzntl_rfnd], anltcl_lnStyle)
+                    line_py_anl, = ax_p_y.plot(y_refined, p[vrtcl_rfnd], anltcl_lnStyle)
 
                 ax_p_x.set_ylabel('pressure')
                 ax_p_x.set_xlabel('meters')
@@ -306,7 +310,7 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
 
 #-----------------------------------------------------------------------------------------------------------------------
 def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, sol_t_srs=None,
-                analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=False, plt_t_dimensionless=False):
+                analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True, plt_t_dimensionless=False):
     """
         This function plots the width and pressure at the injection point of the fracture.
 
@@ -389,7 +393,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
 
         # trying to load next file. exit loop if not found
         try:
-            ff = ReadFracture(address + "file_" + repr(fileNo))
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
         fileNo += 1
@@ -491,12 +495,12 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
     # ax_w.plot(7000, 1e-4, 'k.')
     # print(repr(time_srs))
 
-        ax_err.plot(time_srs, abs(w_err), 'b.', label='error on width')
-        if plt_pressure:
-            ax_err.plot(time_srs, abs(p_err), 'r.', label='error on pressure')
+        ax_err.semilogx(time_srs, abs(w_err), 'b.', label='error on width')
+        if plt_pressure and not analytical_sol in ('M', 'Mt'):
+            ax_err.semilogx(time_srs, abs(p_err), 'r.', label='error on pressure')
         ax_err.set_ylabel('error')
         ax_err.set_xlabel('time')
-        ax_err.set_title('relative error')
+        ax_err.set_title('Relative error')
         ax_err.legend()
 
     return fig_w, fig_p
@@ -571,7 +575,7 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 
         # trying to load next file. exit loop if not found
         try:
-            ff = ReadFracture(address + "file_" + repr(fileNo))
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
         fileNo+=1
@@ -718,14 +722,23 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
         nxt_plt_t = sol_t_srs[t_srs_indx]
 
     r_numrcl = np.asarray([])
-    r_anltcl = np.asarray([])
     time_srs = np.asarray([])
+
+    if not analytical_sol is 'n':
+        r_anltcl = np.asarray([])
+        err = np.asarray([])
+        fig_err = plt.figure()
+        ax_err = fig_err.add_subplot(111)
+        w_err = np.array([], dtype=np.float64)
+        p_err = np.array([], dtype=np.float64)
+
+
 
     while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
         try:
-            ff = ReadFracture(address + "file_" + repr(fileNo))
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
         fileNo += 1
@@ -761,6 +774,7 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
                     raise ValueError("Provided analytical solution is not supported")
 
                 r_anltcl = np.append(r_anltcl, R)
+                err = np.append(err, abs(R - r_numrcl[-1])/R)
 
             if t_srs_given:
                 if t_srs_indx < len(sol_t_srs) - 1:
@@ -786,12 +800,18 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
             ax.plot(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
         ax.plot(time_srs, r_numrcl, plt_symbol, label='radius numerical')
 
-    plt.ylabel('radius')
-    plt.xlabel('time')
-    plt.title(r_type + ' distance from injection point')
-    plt.legend()
+    ax.set_ylabel('radius')
+    ax.set_xlabel('time')
+    ax.set_title(r_type + ' distance from injection point')
+    ax.legend()
 
-    return fig_r
+    ax_err.semilogx(time_srs, err, 'b.', label='error on radius')
+    ax_err.set_ylabel('error')
+    ax_err.set_xlabel('time')
+    ax_err.set_title('Relative error on radius')
+    ax_err.legend()
+
+    return fig_r, fig_err
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -842,4 +862,4 @@ def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_
                                 sol_t_srs=sol_t_srs,
                                 time_period=time_period,
                                 analytical_sol=analytical_sol)
-
+    plt.show()

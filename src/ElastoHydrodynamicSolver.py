@@ -664,8 +664,14 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
             solk = solkm1 + dx
             newton += 1
         else:
-            (A, b, interItr) = sys_fun(solk, interItr, *args)
-            solk = (1 - relax) * solkm1 + relax * np.linalg.solve(A, b)
+            try:
+                (A, b, interItr) = sys_fun(solk, interItr, *args)
+                solk = (1 - relax) * solkm1 + relax * np.linalg.solve(A, b)
+            except np.linalg.linalg.LinAlgError:
+                print('singlular matrix!')
+                solk = np.full((len(solk),), np.nan, dtype=np.float64)
+                return solk, None
+
 
         norm = np.linalg.norm(abs(solk - solkm1)) / np.linalg.norm(abs(solkm1))
 
@@ -681,7 +687,6 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             return solk, None
 
-    print('Successful: iterations = ' + repr(k) + ', exiting norm = ' + repr(norm))
     return (solk, interItr)
 
 
@@ -692,7 +697,7 @@ def Jacobian(Residual_function, x, TypValue, *args, central=False, interItr=None
     """
     This function returns the Jacobian of the given function.
     """
-    
+
     (Fx, interItr) = Residual_function(x, interItr, *args)
     Jac = np.zeros((len(x), len(x)), dtype=np.float64)
     for i in range(0, len(x)):
