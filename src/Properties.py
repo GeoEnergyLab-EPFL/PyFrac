@@ -117,7 +117,7 @@ class FluidProperties:
        Methods:
        """
 
-    def __init__(self, viscosity, density=1000., rheology="Newtonian", turbulence=False):
+    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False):
         """
         Constructor function.
 
@@ -130,23 +130,26 @@ class FluidProperties:
                                          - "non-Newtonian"
             turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account
         """
-        if isinstance(viscosity, np.ndarray):  # check if float or ndarray
-            raise ValueError(' viscosity of the fluid is not an array. Note that its different from local viscosity (See local\n'
-                  ' viscosity variable in the fracture class')
-            return
-        else:
+        if viscosity is None:
             # uniform viscosity
+            self.viscosity = None
+            self.muPrime = None
+        elif isinstance(viscosity, np.ndarray):  # check if float or ndarray
+            raise ValueError('Viscosity of the fluid can not be an array!. Note that'
+                             ' its different from local viscosity')
+        else:
             self.viscosity = viscosity
+            self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
 
         rheologyOptions = ("Newtonian", "non-Newtonian")
         if rheology in rheologyOptions:  # check if rheology match to any rheology option
-            self.rheology = rheology
-        else:
-            # error
+            if rheology is "Newtonian":
+                self.rheology = rheology
+            elif rheology is "non-Newtonian":
+                raise ValueError("Non-Newtonian rheology not yet supported")
+        else:# error
             raise ValueError('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
-            return
 
-        self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
         self.density = density
 
         if isinstance(turbulence, bool):
@@ -239,14 +242,44 @@ class SimulationParameters:
         Class defining the simulation parameters
 
         instance variables
-            maxTimeSteps (integer)      -- maximum number of time steps.
             tolFractFront (float)       -- tolerance for the fracture front loop.
             toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.
+            toleranceToughness (float)  -- tolerance for toughness iteration
+            maxFrontItr (int)           -- maximum iterations to for the fracture front loop.
+            maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton
+                                           hybrid) in this case.
             maximumItrEHL (int)         -- maximum number of iterations for the Elastohydrodynamic solver.
+            maxToughnessItr (int)       -- maximum toughness loop iterations.
             tmStpPrefactor (float)      -- factor for time-step adaptivity.
+            maxTimeSteps (integer)      -- maximum number of time steps.
             tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.
             FinalTime (float)           -- time where the simulation ends.
-            maxFrontItr (int)           -- maximum iterations to for the fracture front loop.
+            timeStepLimit (float)       -- limit above which time step will not exceed.
+            tmStpFactLimit (float)      -- limit on to what factor the time step can increase between two successive
+                                           time steps.
+            maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller
+                                           time step will be attempted the given number of times.
+            reAttemptFactor (float)     -- the factor by which time step is reduced on reattempts.
+            plotFigure (boolean)        -- flag specifying to plot fracture trace after the given time period.
+            saveToDisk (boolean)        -- flag specifying to save fracture to dist after the given time period.
+            plotAnalytical (boolean)    -- if true, analytical solution will also be plotted along with the computed
+                                           solution.
+            analyticalSol (String)      -- the analytical solution of the radial fracture to be plotted on the
+                                           fracture. Possible options:
+                                                - K  (toughness dominated regime, without leak off)
+                                                - Kt (toughness dominated regime , with leak off)
+                                                - M  (viscosity dominated regime, without leak off)
+                                                - Mt (viscosity dominated regime , with leak off)
+                                                - E  (elliptical, toughness dominated without leak off)
+            bckColor (String)           -- the string specifying the parameter according to which the background of the
+                                           domain is color coded. Possible options
+                                                - sigma0 (confining stress)
+                                                - Kprime (fracture toughness)
+                                                - Cprime (leak-off coefficient)
+            plotEltType (boolean)       -- if True, the type of element will be spedified with color coded dots(channel,
+                                           ribbon or tip).
+            utputTimePeriod (float)    -- the time period after which the output file is written or the
+                                           figures are plotted.
             tipAsymptote (string)       -- propagation regime. Possible options:
                                                 - K  (toughness dominated regime, without leak off)
                                                 - M  (viscosity dominated regime, without leak off)
@@ -254,31 +287,21 @@ class SimulationParameters:
                                                 - U  (Universal regime accommodating viscosity, toughness
                                                      and leak off (see Donstov and Pierce, 2017))
                                                 - MK (viscosity to toughness transition regime)
-            maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton
-                                           hybrid) in this case.
-            maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller
-                                           time step will be attempted the given number of times.
-            reAttemptFactor (float)     -- the factor multiplied with the time step before reattempt.
-            outputTimePeriod (float)    -- the time period after which the output file is written or the
-                                           figures are plotted.
-            plotFigure (boolean)        -- flag specifying to plot fracture trace after the given time period.
-            plotAnalytical (boolean)    -- if true, analytical solution will also be plotted along with the computed
-                                           solution.
-            analyticalSol (String)      -- the analytical solution of the radial fracture to be plotted on the
-                                           fracture. Possible options:
-                                                - "M" (viscosity dominated)
-                                                - "K" (toughness dominated)
-            saveToDisk (boolean)        -- flag specifying to save fracture to dist after the given time period.
-            out_file_address (string)   -- disk address of the files to be saved. If not given, a new
-                                           ./Data/"tim stamp" folder will be automatically created.
-
-            toleranceToughness (float)  -- tolerance for toughness iteration
-            solTimeSeries (ndarray)     -- time series where the solution is required. The time stepping would be
-                                           adjusted to get solution exactly at the given times.
-            plotEltType (boolean)       -- if True, the type of element (tip, ribbon or channel) will be depicted with
-                                            color coded dots
             saveRegime (boolean)        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
                                            saved.
+            verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently
+                                           two levels 1 and 2 are supported).
+            remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.
+
+        private variables:
+            __out_file_address (string) -- disk address of the files to be saved. If not given, a new
+                                           ./Data/"tim stamp" folder will be automatically created.
+            __solTimeSeries (ndarray)   -- time series where the solution is required. The time stepping would be
+                                           adjusted to get solution exactly at the given times.
+            __dryCrack_mechLoading(bool)-- if True, the mechanical loading solver will be used.
+            __viscousInjection (bool)   -- if True, the the solver will also take the fluid viscosity into account.
+            __volumeControl (bool)      -- if True, the the volume control solver will be used.
+
             
     """
 
@@ -289,6 +312,15 @@ class SimulationParameters:
         Arguments:
 
         """
+        import sys
+        if "win32" in sys.platform or "win64" in sys.platform:
+            slash = "\\"
+        else:
+            slash = "/"
+        if not '..' + slash + 'src' in sys.path:
+            sys.path.append('..' + slash + 'src')
+        if not '.' + slash + 'src' in sys.path:
+            sys.path.append('.' + slash + 'src')
 
         if address is None:
             import default_SimParam as simul_param
@@ -299,61 +331,92 @@ class SimulationParameters:
             sys.path.remove(address)
 
 
-        self.maxTimeSteps = simul_param.maximum_steps
+        # tolerances
         self.tolFractFront = simul_param.toleranceFractureFront
         self.toleranceEHL = simul_param.toleranceEHL
+        self.toleranceToughness = simul_param.tol_toughness
+
+        # max iterations
+        self.maxFrontItr = simul_param.maxfront_its
+        self.maxSolverItr = simul_param.max_itr_solver
+        self.maxToughnessItr = simul_param.max_toughnessItr
+
+        # time and time stepping
+        self.maxTimeSteps = simul_param.maximum_steps
         self.tmStpPrefactor = simul_param.tmStp_prefactor
         self.tmStpPrefactor_max = simul_param.tmStp_prefactor
         self.FinalTime = simul_param.final_time
+        self.set_solTimeSeries(simul_param.req_sol_at)
+        self.timeStepLimit = simul_param.timeStep_limit
+        self.tmStpFactLimit = simul_param.tmStp_fact_limit
 
-        # todo: all the option structures can be put into one file
-        tipAssymptOptions = ("K", "M", "Mt", "U", "MK")
-        if simul_param.tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
-            self.tipAsymptote = simul_param.tip_asymptote
-        else:
-            # error
-            raise ValueError('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
-
-        self.maxFrontItr = simul_param.maxfront_its
-        self.maxSolverItr = simul_param.max_itr_solver
+        # time step re-attempt
         self.maxReattempts = simul_param.max_reattemps
         self.reAttemptFactor = simul_param.reattempt_factor
 
         # output parameters
-        if isinstance(simul_param.req_sol_at, np.ndarray):
-            self.solTimeSeries = simul_param.req_sol_at
-            self.FinalTime = max(simul_param.req_sol_at)
-        else:
-            # self.solTimeSeries = np.asarray([self.FinalTime], dtype=np.float64)
-            self.solTimeSeries = simul_param.req_sol_at
         self.outputTimePeriod = simul_param.output_time_period
         self.plotFigure = simul_param.plot_figure
         self.plotAnalytical = simul_param.plot_analytical
         self.analyticalSol = simul_param.analytical_sol
         self.saveToDisk = simul_param.save_to_disk
-
-        # toughness anisotropy
-        self.toleranceToughness = simul_param.tol_toughness
-        self.maxToughnessItr = simul_param.max_toughnessItr
-
-        self.dryCrack_mechLoading = simul_param.mech_loading
-        self.viscousInjection = simul_param.viscous_injection
-        self.volumeControl = simul_param.volume_control
-        self.timeStepLimit = simul_param.timeStep_limit
-        self.tmStpFactLimit = simul_param.tmStp_fact_limit
-        self.verbosity = simul_param.verbosity
-
-        if simul_param.mech_loading or simul_param.volume_control:
-            self.viscousInjection = False
-
-        if simul_param.mech_loading:
-            self.plotAnalytical = False
-
+        self.set_outFileAddress(simul_param.out_file_folder)
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
+
+        # solver type
+        self.set_dryCrack_mechLoading(simul_param.mech_loading)
+        self.set_viscousInjection(simul_param.viscous_injection)
+        self.set_volumeControl(simul_param.volume_control)
+
+        # miscellaneous
+        self.verbosity = simul_param.verbosity
+        self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.remeshFactor = simul_param.remesh_factor
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+    # setter and getter functions
+
+    def set_tipAsymptote(self, tip_asymptote):
+        tipAssymptOptions = ("K", "M", "Mt", "U", "MK")
+        if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
+            self.__tipAsymptote = tip_asymptote
+        else: # error
+            raise ValueError('Invalid tip asymptote. Possible options: ' + repr(tipAssymptOptions))
+
+    def get_tipAsymptote(self):
+        return self.__tipAsymptote
+
+    def set_viscousInjection(self, visc_injection):
+        self.__viscousInjection = visc_injection
+        if visc_injection:
+            self.__volumeControl = False
+            self.__dryCrack_mechLoading = False
+
+    def get_viscousInjection(self):
+        return self.__viscousInjection
+
+    def set_volumeControl(self, vol_control):
+        self.__volumeControl = vol_control
+        if vol_control:
+            self.__viscousInjection = False
+            self.__dryCrack_mechLoading = False
+
+    def get_volumeControl(self):
+        return self.__volumeControl
+
+    def set_dryCrack_mechLoading(self, mech_loading):
+        self.__dryCrack_mechLoading = mech_loading
+        if mech_loading:
+            self.__viscousInjection = False
+            self.__volumeControl = False
+
+    def get_dryCrack_mechLoading(self):
+        return self.__dryCrack_mechLoading
+
+    def set_outFileAddress(self, out_file_folder):
         # check operating system to get appropriate slash in the address
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
@@ -361,10 +424,10 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if simul_param.out_file_folder == "None" and simul_param.save_to_disk:
+        if out_file_folder is None:
             # time stamp as the folder address
             from time import gmtime, strftime
-            timeStamp = "runDate_"+ strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
+            timeStamp = "runDate_" + strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
 
             # output folder address
             address = "." + slash + "Data" + slash + timeStamp
@@ -373,21 +436,34 @@ class SimulationParameters:
             if not os.path.exists(address):
                 os.makedirs(address)
 
-            self.outFileAddress = address + slash
+            self.__outFileAddress = address + slash
             self.lastSavedFile = 0
-        elif simul_param.save_to_disk:
-            if "\\" in simul_param.out_file_folder:
+        else:
+            if "\\" in out_file_folder:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')
-            elif "/" in simul_param.out_file_folder:
+            elif "/" in out_file_folder:
                 if slash != "/":
-                    raise SystemExit('linux style slash in the given address on windows system')
+                    raise SystemExit('linux style slash in the given address on windows system!')
 
             import os
-            if not os.path.exists(simul_param.out_file_folder):
-                os.makedirs(simul_param.out_file_folder)
+            if not os.path.exists(out_file_folder):
+                os.makedirs(out_file_folder)
 
-            self.outFileAddress = simul_param.out_file_folder + slash
+            self.__outFileAddress = out_file_folder + slash
             self.lastSavedFile = 0
 
-# ----------------------------------------------------------------------------------------------------------------------
+    def get_outFileAddress(self):
+        return self.__outFileAddress
+
+    def set_solTimeSeries(self, sol_t_srs):
+        if isinstance(sol_t_srs, np.ndarray):
+            self.__solTimeSeries = sol_t_srs
+            self.FinalTime = max(sol_t_srs)
+        elif sol_t_srs is None:
+            self.__solTimeSeries = None
+        else:
+            raise ValueError("The given solution time series is not a numpy array!")
+
+    def get_solTimeSeries(self):
+        return self.__solTimeSeries

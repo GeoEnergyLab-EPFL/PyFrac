@@ -16,8 +16,6 @@ else:
     slash = "/"
 
 # imports
-import numpy as np
-from src.CartesianMesh import *
 from src.Fracture import *
 from src.Properties import *
 
@@ -495,12 +493,12 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
     # ax_w.plot(7000, 1e-4, 'k.')
     # print(repr(time_srs))
 
-        ax_err.semilogx(time_srs, abs(w_err), 'b.', label='error on width')
+        ax_err.semilogx(time_srs, abs(w_err), 'bo-', label='error on width')
         if plt_pressure and not analytical_sol in ('M', 'Mt'):
-            ax_err.semilogx(time_srs, abs(p_err), 'r.', label='error on pressure')
+            ax_err.semilogx(time_srs, abs(p_err), 'ro-', label='error on pressure')
         ax_err.set_ylabel('error')
         ax_err.set_xlabel('time')
-        ax_err.set_title('Relative error')
+        ax_err.set_title('Relative error at injection point')
         ax_err.legend()
 
     return fig_w, fig_p
@@ -805,7 +803,7 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
     ax.set_title(r_type + ' distance from injection point')
     ax.legend()
 
-    ax_err.semilogx(time_srs, err, 'b.', label='error on radius')
+    ax_err.semilogx(time_srs, err, 'bo-', label='error on radius')
     ax_err.set_ylabel('error')
     ax_err.set_xlabel('time')
     ax_err.set_title('Relative error on radius')

@@ -412,7 +412,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
-                              sim_parameters.tipAsymptote,
+                              sim_parameters.get_tipAsymptote(),
                               mat_prop=Material_properties,
                               Vel=Vel_k,
                               Kprime=Kprime_tip,
@@ -425,7 +425,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                               alpha_k,
                               l_k,
                               Fr_lstTmStp.mesh,
-                              sim_parameters.tipAsymptote,
+                              sim_parameters.get_tipAsymptote(),
                               mat_prop=Material_properties,
                               Vel=Vel_k,
                               Kprime=Kprime_tip) / Fr_lstTmStp.mesh.EltArea

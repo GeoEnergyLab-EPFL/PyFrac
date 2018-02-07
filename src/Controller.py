@@ -55,7 +55,7 @@ class Controller:
         i = 0
         Fr = self.fracture
         tmSrs_indx = 0
-        next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
+        next_in_tmSrs = (self.sim_prop).get_solTimeSeries()[tmSrs_indx]
         if next_in_tmSrs < Fr.time:
             raise SystemExit('The minimum time required in the given time series or the end time'
                              ' is less than initial time.')
@@ -69,9 +69,9 @@ class Controller:
             # to get the solution at the times given in time series
             if Fr.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr.time
-                if tmSrs_indx < len(self.sim_prop.solTimeSeries)-1:
+                if tmSrs_indx < len(self.sim_prop.get_solTimeSeries())-1:
                     tmSrs_indx += 1
-                next_in_tmSrs = self.sim_prop.solTimeSeries[tmSrs_indx]
+                next_in_tmSrs = self.sim_prop.get_solTimeSeries()[tmSrs_indx]
 
             status, Fr_n_pls1 = self.advance_time_step(Fr,
                                                  self.C,
@@ -167,7 +167,7 @@ class Controller:
             if self.sim_prop.verbosity > 1:
                 print("Attempting time step of " + repr(smallerTimeStep) + " sec...")
 
-            if self.sim_prop.viscousInjection:
+            if self.sim_prop.get_viscousInjection():
                 status, Fr = attempt_time_step_viscousFluid(Frac,
                                                             C,
                                                             self.solid_prop,
@@ -176,7 +176,7 @@ class Controller:
                                                             self.injection_prop,
                                                             smallerTimeStep)
 
-            elif self.sim_prop.dryCrack_mechLoading:
+            elif self.sim_prop.get_dryCrack_mechLoading():
                 status, Fr = attempt_time_step_mechLoading(Frac,
                                                            C,
                                                            self.solid_prop,
@@ -185,7 +185,7 @@ class Controller:
                                                            smallerTimeStep,
                                                            Frac.mesh)
 
-            elif self.sim_prop.volumeControl:
+            elif self.sim_prop.get_volumeControl():
                 status, Fr = attempt_time_step_volumeControl(Frac,
                                                              C,
                                                              self.solid_prop,
@@ -232,9 +232,14 @@ class Controller:
 
         Returns:
         """
-        if not simulation_parameters.outputTimePeriod is None and (Fr_lstTmStp.time //
-            simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod) or (
-            Fr_advanced.time in simulation_parameters.solTimeSeries and simulation_parameters.outputTimePeriod is None):
+        # output time period exceeded after this time step
+        out_TP_exceeded = not simulation_parameters.outputTimePeriod is None and (Fr_lstTmStp.time //
+            simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod)
+
+        # current time in the time series given at which the solution is to be evaluated
+        in_req_TS = Fr_advanced.time in simulation_parameters.get_solTimeSeries()
+
+        if  out_TP_exceeded or in_req_TS:
             # plot fracture footprint
             if simulation_parameters.plotFigure:
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
@@ -269,6 +274,6 @@ class Controller:
             if simulation_parameters.saveToDisk:
                 print("Saving solution at " + repr(Fr_advanced.time) + "...")
                 simulation_parameters.lastSavedFile += 1
-                Fr_advanced.SaveFracture(simulation_parameters.outFileAddress + "fracture_"
+                Fr_advanced.SaveFracture(simulation_parameters.get_outFileAddress() + "fracture_"
                                          + repr(simulation_parameters.lastSavedFile))
                 print("Done! ")

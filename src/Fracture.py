@@ -254,18 +254,18 @@ class Fracture():
             plt.show()
 
         if simulProp.saveToDisk:
-            self.SaveFracture(simulProp.outFileAddress + "fracture_" + repr(0))
+            self.SaveFracture(simulProp.get_outFileAddress() + "fracture_" + repr(0))
             prop = (solid, fluid, injection, simulProp)
-            with open(simulProp.outFileAddress + "properties", 'wb') as output:
+            with open(simulProp.get_outFileAddress() + "properties", 'wb') as output:
                 pickle.dump(prop, output, -1)
 
         if simulProp.timeStepLimit is None:
             # setting time step limit according to the initial velocity
             simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
                                                             self.v) * simulProp.tmStpFactLimit
-        if simulProp.solTimeSeries is None:
-            simulProp.solTimeSeries = 2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
-                                                      np.log2(simulProp.FinalTime), 10)
+        if simulProp.get_solTimeSeries() is None:
+            simulProp.set_solTimeSeries(2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
+                                                      np.log2(simulProp.FinalTime), 10))
 
         # todo change it to data file?
         f = open('log', 'w+')

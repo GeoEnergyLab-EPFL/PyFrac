@@ -218,17 +218,17 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
     else:
         Kprime = Kprime_k
 
-    if simParmtrs.tipAsymptote == 'U':
+    if simParmtrs.get_tipAsymptote() == 'U':
         ResFunc = TipAsym_Universal_zrthOrder_Res
-    elif simParmtrs.tipAsymptote == 'Kt':
+    elif simParmtrs.get_tipAsymptote() == 'Kt':
         raise ValueError("Tip inversion with Kt regime is yet to be implemented")
-    elif simParmtrs.tipAsymptote == 'M':
+    elif simParmtrs.get_tipAsymptote() == 'M':
         ResFunc = TipAsym_viscStor_Res
-    elif simParmtrs.tipAsymptote == 'Mt':
+    elif simParmtrs.get_tipAsymptote() == 'Mt':
         ResFunc = TipAsym_viscLeakOff_Res
-    elif simParmtrs.tipAsymptote == 'MK':
+    elif simParmtrs.get_tipAsymptote() == 'MK':
         ResFunc = TipAsym_MK_zrthOrder_Res
-    elif simParmtrs.tipAsymptote == 'K':
+    elif simParmtrs.get_tipAsymptote() == 'K':
         return w[frac.EltRibbon] ** 2 * (matProp.Eprime / Kprime) ** 2
 
 

@@ -10,11 +10,11 @@ maxfront_its = 30                       # maximum iterations for the fracture fr
 max_itr_solver = 100                    # maximum iterations for the elastohydrodynamic solver
 max_toughnessItr = 60                   # maximum toughness iterations
 
-# time and time steping
-tmStp_prefactor = 0.4                   # time step prefactor(pf) to calculate the time step (dt = pf*min(dx, dy)/max(v)
+# time and time stepping
+tmStp_prefactor = 0.8                   # time step prefactor(pf) to calculate the time step (dt = pf*min(dx, dy)/max(v)
 req_sol_at = None                       # times at which the solution is required
 final_time = 1000                       # time to stop the propagation
-maximum_steps = 1000                    # maximum time steps
+maximum_steps = 2000                    # maximum time steps
 timeStep_limit = None                   # limit for the time step
 tmStp_fact_limit = 2.0                  # limit on to what factor the time step can increase between two successive
                                         # time steps
@@ -24,11 +24,11 @@ max_reattemps = 8                       # maximum reattempts in case of time ste
 reattempt_factor = 0.8                  # the factor by which time step is reduced on reattempts
 
 # output
-plot_figure = False                     # if True, figure will be plotted after the given time period
+plot_figure = True                     # if True, figure will be plotted after the given time period
 save_to_disk = False                    # if True, fracture will be saved after the given time period
 out_file_folder = "None"                # the address to save the output data
 plot_analytical = False                 # if True, analytical solution will also be plotted
-analytical_sol = "M"                    # the analytical solution to be ploted
+analytical_sol = None                   # the analytical solution to be ploted
 bck_color = None                        # the parameter according to which background is color coded (see class doc.)
 plot_eltType = False                    # plot the element type with color coded dots (channel, ribbon or tip)
 output_time_period=None                 # the time period after which the output is generated

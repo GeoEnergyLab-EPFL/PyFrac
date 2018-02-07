@@ -10,14 +10,9 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
 import pickle
 import copy
 from src.TipInversion import TipAsymInversion
-
-import matplotlib
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
 
 
 def radius_level_set(xy, R):
@@ -93,9 +88,6 @@ def PrintDomain(Matrix, mesh, Elem = None):
     if Elem == None:
         Elem = np.arange(mesh.NumberOfElts)
 
-    # if len(Matrix.shape)==1:
-    #     Matrix = np.reshape(Matrix, (mesh.ny, mesh.nx))
-
     tmp = np.zeros((mesh.NumberOfElts,))
     tmp[Elem] = Matrix
     fig = plt.figure()
@@ -108,8 +100,7 @@ def PrintDomain(Matrix, mesh, Elem = None):
 # ----------------------------------------------------------------------------------------------------------------------
 def plot_Reynolds_number(Fr, ReyNum, edge):
 
-    # figr = Fr.plot_fracture("complete", "footPrint")
-    # ax = figr.axes[0]
+
     figr = plt.figure()
     ax = figr.add_subplot(111)
     ReMesh = np.resize(ReyNum[edge, :], (Fr.mesh.ny, Fr.mesh.nx))
@@ -133,17 +124,6 @@ def plot_as_matrix(data, mesh, fig=None):
     ax = fig.add_subplot(111)
 
     ReMesh = np.resize(data, (mesh.ny, mesh.nx))
-    # x = np.linspace(-mesh.Lx, mesh.Lx, mesh.nx)
-    # y = np.linspace(mesh.Ly, mesh.Ly, mesh.ny)
-
-    # delta_x = x[1] - x[0]
-    # extnt_x =  [x[0] - delta_x / 2, x[-1] + delta_x / 2]
-    # delta_y = y[1] - y[0]
-    # extnt_y = [y[0] - delta_y / 2, y[-1] + delta_y / 2]
-    #
-    # cax = ax.imshow(ReMesh, aspect='auto', interpolation='none',
-    #            extent=extnt_x + extnt_y, origin='lower')
-
     cax = ax.matshow(ReMesh)
     fig.colorbar(cax)
     plt.show()
@@ -174,20 +154,7 @@ def find_regime(w, Fr, Material_properties, sim_properties, timeStep, Kprime, as
                                              sim_parameters_tmp,
                                              timeStep)
 
-    # regime = np.full((asymptote_universal.size,), np.nan, dtype=np.float64)
-    # regime[np.where(abs(1. - asymptote_universal/asymptote_toughness) < 1.e-6)[0]] = 0.
-    # regime[np.where(abs(1. - asymptote_universal / asymptote_viscosity) < 1.e-6)[0]] = 1.
-    #
-    #
-    # tough_to_visc = np.where(asymptote_toughness < asymptote_universal)[0]
-    # regime[tough_to_visc] = (asymptote_universal[tough_to_visc] - asymptote_toughness[tough_to_visc] ) / (
-    #                         asymptote_toughness[tough_to_visc] - asymptote_viscosity[tough_to_visc])
-    # visc_to_tough = np.where(asymptote_viscosity < asymptote_universal)[0]
-    # regime[visc_to_tough] = 1. - abs((asymptote_universal[visc_to_tough] - asymptote_viscosity[visc_to_tough]) /
-    #                                  (asymptote_toughness[visc_to_tough] - asymptote_viscosity[visc_to_tough]))
-
     regime = 1. - abs(asymptote_viscosity - asymptote_universal) / abs(asymptote_viscosity - asymptote_toughness)
     # regime[np.where(regime < 0.)[0]] = 0.
-
 
     return regime
