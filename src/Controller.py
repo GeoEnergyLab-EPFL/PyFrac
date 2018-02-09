@@ -47,8 +47,11 @@ class Controller:
        self.sim_prop = Sim_prop
        self.load_prop = Load_prop
        self.C = C
-       self.fr_queue = [None, None, None, None, None] # queue of last five time steps
+       self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.smallStep_cnt = 0
+       self.remeshings = 0
+       self.TotalTimeSteps = 0
+       self.failedTimeSteps = 0
 
     def run(self):
         """
@@ -88,16 +91,20 @@ class Controller:
             elif Fr.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr.time
 
-            status, Fr_n_pls1 = self.advance_time_step(Fr,
+            status, Fr_n_pls1, reattempts = self.advance_time_step(Fr,
                                                  self.C,
                                                  TimeStep)
+
+            self.failedTimeSteps += reattempts
+            self.TotalTimeSteps += reattempts
+            self.TotalTimeSteps += 1
 
             if status == 1:
                 Fr = copy.deepcopy(Fr_n_pls1)
                 self.fr_queue[i%5] = copy.deepcopy(Fr_n_pls1)
                 self.smallStep_cnt += 1
                 if self.smallStep_cnt%4 == 0:
-                    # set the prefactor to the original value after four time steps after the 5 time steps back jump
+                    # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
                     self.sim_prop.tmStpPrefactor = self.sim_prop.tmStpPrefactor_max
 
             elif status == 12:
@@ -175,6 +182,7 @@ class Controller:
         if TimeStep <= 0:
             TimeStep = self.sim_prop.timeStepLimit*2
 
+        reattemps = 0
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
             # smaller time step to reattempt time stepping; equal to the given time step on first iteration
@@ -225,15 +233,15 @@ class Controller:
                            self.injection_prop,
                            self.fluid_prop)
 
-                return status, Fr
+                return status, Fr, reattemps
             else:
                 print(self.errorMessages[status])
                 if status == 12:
-                    return status, Fr
+                    return status, Fr, reattemps
             if self.sim_prop.verbosity > 1:
                 print("Time step failed...")
-
-        return status, Fr
+            reattemps += 1
+        return status, Fr, reattemps
 
 
 

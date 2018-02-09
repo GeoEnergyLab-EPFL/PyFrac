@@ -672,11 +672,12 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
             SimulProp = Sim_prop
         ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
 
+    ax.set_title("Fracture footprint")
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='o',
+def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='.',
                 analytical_sol='n', anltcl_lnStyle='k', plt_error=True, add_labels=True):
     """
         This function plots the footprints of the fractures saved in the given folder.
@@ -739,18 +740,16 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
 
     r_numrcl = np.asarray([])
     time_srs = np.asarray([])
+    fig_err = None
 
     if not analytical_sol is 'n':
         r_anltcl = np.asarray([])
         if plt_error:
-            w_err = np.array([], dtype=np.float64)
-            p_err = np.array([], dtype=np.float64)
             err = np.asarray([])
             fig_err = plt.figure()
             ax_err = fig_err.add_subplot(111)
     elif analytical_sol is 'n':
         plt_error = False
-        fig_err = None
     else:
         raise ValueError("Analytical solution type not supported")
 
@@ -846,6 +845,155 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+
+def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='.',
+                analytical_sol='n', anltcl_lnStyle='k', plt_efficiency=True, add_labels=True):
+    """
+        This function plots the footprints of the fractures saved in the given folder.
+
+        Arguments:
+            address (string)                -- the folder address containing the saved files
+            fig_lk (figure)                 -- leaked off volume figure to superimpose. A new figure will be created if
+                                               not provided.
+            fig_eff (figure)                -- fracturing efficiency figure to superimpose. A new figure will be
+                                               created if not provided.
+            time_period (float)             -- time period between two successive fracture plots.
+            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            analytical_sol (string)         -- the following options can be provided
+                                                    'M'     -- radial fracture in viscosity dominated regime
+                                                    'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                    'K'     -- radial fracture in toughness dominated regime
+                                                    'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                    'E'     -- elliptical fracture in toughness dominated regime
+                                                    'PKN'   -- PKN fracture
+            plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+            anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+            plt_efficiency (bool)           -- if True, fracturing efficiency would be plotted
+
+        Returns:
+            fig_lk (figure)                    -- a figure to superimpose leaked off volume.
+            fig_eff (figure)                   -- a figure to superimpose fracturing efficiency.
+        """
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+    except AttributeError:
+        # todo: get the serialised anisotropic function
+        # import marshal
+        # code = marshal.loads(Solid.KpFunString)
+        import __main__
+        setattr(__main__, 'Kprime_function', None)
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+    t_srs_given = isinstance(sol_t_srs, np.ndarray)
+    if t_srs_given:
+        nxt_plt_t = sol_t_srs[t_srs_indx]
+
+    lk_numrcl = np.asarray([])
+    efficiency = np.asarray([])
+    time_srs = np.asarray([])
+
+    if not analytical_sol is 'n':
+        lk_anltcl = np.asarray([])
+
+    # loop to load fracture files
+    while fileNo < 5000:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+        fileNo += 1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+
+            time_srs = np.append(time_srs, ff.time)
+
+            if analytical_sol is not 'n':
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
+                                                                ff.mesh,
+                                                                Solid.Eprime,
+                                                                Injection.injectionRate[1, 0],
+                                                                muPrime=Fluid.muPrime,
+                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
+                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
+                                                                t=ff.time,
+                                                                KIc_min=Solid.K1c_perp)
+
+                    leaked_off_anltcl = Injection.injectionRate[1, 0] * t - sum(w) * ff.mesh.EltArea
+                    lk_anltcl = np.append(lk_anltcl, leaked_off_anltcl)
+                elif analytical_sol == 'PKN':
+                    print("PKN is to be implemented.")
+                else:
+                    raise ValueError("Provided analytical solution is not supported")
+
+            leaked_off = sum(ff.LkOff_vol[ff.EltCrack])
+            lk_numrcl = np.append(lk_numrcl, leaked_off)
+            efficiency = np.append(efficiency, ff.efficiency)
+
+            if t_srs_given:
+                if t_srs_indx < len(sol_t_srs) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = sol_t_srs[t_srs_indx]
+                if ff.time > max(sol_t_srs):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+    if fig_lk is None:
+        fig_lk = plt.figure()
+        ax_lk = fig_lk.add_subplot(111)
+    ax_lk = fig_lk.add_subplot(111)
+
+    if loglog:
+        if not analytical_sol is 'n':
+            # ax_lk.semilogx(time_srs, r_anltcl, anltcl_lnStyle)
+            ax_lk.loglog(time_srs, lk_anltcl, anltcl_lnStyle, label='leaked off analytical')
+        # ax_lk.semilogx(time_srs, r_numrcl, plt_symbol)
+        ax_lk.loglog(time_srs, lk_numrcl, plt_symbol, label='leaked off numerical')
+    else:
+        if not analytical_sol is 'n':
+            ax_lk.plot(time_srs, lk_anltcl, anltcl_lnStyle, label='radius analytical')
+        ax_lk.plot(time_srs, lk_numrcl, plt_symbol, label='radius numerical')
+    if add_labels:
+        ax_lk.set_ylabel('leaked off volume (m^3)')
+        ax_lk.set_xlabel('time')
+        ax_lk.set_title(' Leaked off volume')
+        ax_lk.legend()
+
+    if plt_efficiency:
+        if fig_eff is None:
+            fig_eff = plt.figure()
+            ax_eff = fig_eff.add_subplot(111)
+        ax_eff = fig_eff.add_subplot(111)
+
+        ax_eff.semilogx(time_srs, efficiency, plt_symbol, label='hydraulic fracturing efficiency numerical')
+        if add_labels:
+            ax_eff.set_ylabel('efficiency')
+            ax_eff.set_xlabel('time')
+            ax_eff.set_title('Hydraulic fracturing efficiency')
+            ax_eff.legend()
+
+    return fig_lk, fig_eff
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
                            radius=True,  profile=True):

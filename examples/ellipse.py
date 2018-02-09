@@ -14,7 +14,7 @@ from src.Controller import *
 from src.PostProcess import *
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 60, 60)
+Mesh = CartesianMesh(8., 4., 61, 61)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -23,12 +23,13 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 K1c_1 = 1.e6                        # fracture toughness along x-axis
 K1c_2 = 1.5e6                       # fracture toughness along y-axis
 
+# the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
 def Kprime_function(alpha):
     K1c_1 = 1.e6                    # fracture toughness along x-axis
     K1c_2 = 1.5e6                   # fracture toughness along y-axis
 
     beta = np.arctan((K1c_1 / K1c_2)**2 * np.tan(alpha))
-    return 4 * (2/np.pi)**0.5 * K1c_2 * (np.sin(beta)**2 + (K1c_1 / K1c_2)**4 * np.cos(beta)**2) ** (0.25)
+    return 4 * (2/np.pi)**0.5 * K1c_2 * (np.sin(beta)**2 + (K1c_1 / K1c_2)**4 * np.cos(beta)**2)**0.25
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
@@ -82,7 +83,7 @@ controller.run()
 
 # plotting footprint
 plot_footprint(simulProp.get_outFileAddress(),
-                        sol_t_srs=simulProp.get_solTimeSeries(),
+                        time_period= 15,
                         analytical_sol='E')
 
 # plotting length along minor axis

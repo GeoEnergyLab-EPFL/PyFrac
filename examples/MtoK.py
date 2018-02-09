@@ -13,7 +13,7 @@ from src.Controller import *
 from src.PostProcess import *
 
 # creating mesh
-Mesh = CartesianMesh(2., 2., 40, 40)
+Mesh = CartesianMesh(2., 2., 41, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -44,56 +44,56 @@ simulProp.saveRegime = True             # enable saving the regime
 initRad = 0.5
 init_param = ("M", "length", initRad)
 
-# # creating fracture object
-# Fr = Fracture(Mesh,
-#               init_param,
-#               Solid,
-#               Fluid,
-#               Injection,
-#               simulProp)
-#
-#
-# # create a Controller
-# controller = Controller(Fr,
-#                         Solid,
-#                         Fluid,
-#                         Injection,
-#                         simulProp)
+# creating fracture object
+Fr = Fracture(Mesh,
+              init_param,
+              Solid,
+              Fluid,
+              Injection,
+              simulProp)
+
+
+# create a Controller
+controller = Controller(Fr,
+                        Solid,
+                        Fluid,
+                        Injection,
+                        simulProp)
 
 # run the simulation
 # controller.run()
 
-# plot results
 # plotting footprint
-# plot_footprint(simulProp.get_outFileAddress(),
-#                         sol_t_srs=simulProp.get_solTimeSeries(),
-#                         analytical_sol='K')
-
-# # plotting radius
-# Fig_r, Fig_err = plot_radius(simulProp.get_outFileAddress(),
-#                             analytical_sol='M',
-#                             plt_error=False)
-# plot_radius(simulProp.get_outFileAddress(),
-#                             fig_r=Fig_r,
-#                             analytical_sol='K',
-#                             anltcl_lnStyle='g',
-#                             add_labels=False,
-#                             plt_error=False)
-#
-# # plotting width at center
-# Fig_w, Fig_p = plot_at_injection_point(simulProp.get_outFileAddress(),
-#                             plt_pressure=False,
-#                             analytical_sol='M',
-#                             plt_error=False)
-# plot_at_injection_point(simulProp.get_outFileAddress(),
-#                             fig_w=Fig_w,
-#                             plt_pressure=False,
-#                             analytical_sol='K',
-#                             anltcl_lnStyle='g',
-#                             plt_error=False)
-
 plot_footprint(simulProp.get_outFileAddress(),
                         sol_t_srs=simulProp.get_solTimeSeries(),
+                        analytical_sol='K')
+
+# plotting radius
+Fig_r, Fig_err = plot_radius(simulProp.get_outFileAddress(),
+                            analytical_sol='M',
+                            plt_error=False)
+plot_radius(simulProp.get_outFileAddress(),
+                            fig_r=Fig_r,
+                            analytical_sol='K',
+                            anltcl_lnStyle='g',
+                            add_labels=False,
+                            plt_error=False)
+
+# plotting width at center
+Fig_w, Fig_p = plot_at_injection_point(simulProp.get_outFileAddress(),
+                            plt_pressure=False,
+                            analytical_sol='M',
+                            plt_error=False)
+plot_at_injection_point(simulProp.get_outFileAddress(),
+                            fig_w=Fig_w,
+                            plt_pressure=False,
+                            analytical_sol='K',
+                            anltcl_lnStyle='g',
+                            plt_error=False)
+
+# plotting regime
+plot_footprint(simulProp.get_outFileAddress(),
+                        sol_t_srs=1.1*simulProp.get_solTimeSeries(),
                         plt_mesh=False,
                         plt_regime=True)
 plt.show()

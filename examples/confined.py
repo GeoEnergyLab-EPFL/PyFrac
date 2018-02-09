@@ -8,7 +8,7 @@ See the LICENSE.TXT file for more details.
 """
 
 # imports
-from src.Fracture import Fracture
+from src.Fracture import *
 from src.Controller import *
 from src.PostProcess import plot_footprint
 
