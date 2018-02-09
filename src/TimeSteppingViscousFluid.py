@@ -469,7 +469,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
-    if stagnant.any() and not sim_parameters.tipAsymptote is 'U':
+    if stagnant.any() and not sim_parameters.get_tipAsymptote() is 'U':
         print("Stagnant front is only supported with universal tip asymptote")
         stagnant = np.full((EltsTipNew.size, ), False, dtype=bool)
 

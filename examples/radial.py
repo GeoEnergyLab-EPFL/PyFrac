@@ -7,18 +7,6 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
-
-# adding src folder to the path
-# import sys
-# if "win32" in sys.platform or "win64" in sys.platform:
-#     slash = "\\"
-# else:
-#     slash = "/"
-# if not '..' + slash + 'src' in sys.path:
-#     sys.path.append('..' + slash + 'src')
-# if not '.' + slash + 'src' in sys.path:
-#     sys.path.append('.' + slash + 'src')
-
 # imports
 from src.Fracture import *
 from src.Controller import *
@@ -56,7 +44,7 @@ simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with th
 
 # initializing fracture
 initRad = 10.
-init_param = ("K", "l", initRad)
+init_param = ("K", "length", initRad)
 
 # creating fracture object
 Fr = Fracture(Mesh,

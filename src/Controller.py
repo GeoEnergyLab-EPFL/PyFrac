@@ -1,5 +1,12 @@
+#
+# This file is part of PyFrac.
+#
+# Created by Haseeb Zia on 11.05.17.
+# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.  All rights
+# reserved. See the LICENSE.TXT file for more details.
+#
 
-# from src.Fracture import Fracture
+# local imports
 from src.Properties import *
 from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
@@ -11,7 +18,9 @@ import copy
 import matplotlib.pyplot as plt
 
 class Controller:
+    """
 
+    """
     errorMessages = ("Propagation not attempted!",
                      "Time step successful!",
                      "Evaluated level set is not valid!",
@@ -38,7 +47,7 @@ class Controller:
        self.sim_prop = Sim_prop
        self.load_prop = Load_prop
        self.C = C
-       self.fr_queue = [None, None, None, None, None]
+       self.fr_queue = [None, None, None, None, None] # queue of last five time steps
        self.smallStep_cnt = 0
 
     def run(self):
@@ -55,23 +64,29 @@ class Controller:
         i = 0
         Fr = self.fracture
         tmSrs_indx = 0
-        next_in_tmSrs = (self.sim_prop).get_solTimeSeries()[tmSrs_indx]
+        if not (self.sim_prop).get_solTimeSeries() is None:
+            next_in_tmSrs = (self.sim_prop).get_solTimeSeries()[tmSrs_indx]
+        else:
+            next_in_tmSrs = self.sim_prop.FinalTime
+
         if next_in_tmSrs < Fr.time:
             raise SystemExit('The minimum time required in the given time series or the end time'
                              ' is less than initial time.')
 
         print("Starting time = " + repr(Fr.time))
-        while (Fr.time < 2**np.log2(self.sim_prop.FinalTime)) and (i < self.sim_prop.maxTimeSteps):
+        while Fr.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
 
             # time step is calculated with the current propagation velocity
             TimeStep = self.sim_prop.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
 
             # to get the solution at the times given in time series
-            if Fr.time + TimeStep > next_in_tmSrs:
+            if not self.sim_prop.get_solTimeSeries() is None and Fr.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr.time
                 if tmSrs_indx < len(self.sim_prop.get_solTimeSeries())-1:
                     tmSrs_indx += 1
                 next_in_tmSrs = self.sim_prop.get_solTimeSeries()[tmSrs_indx]
+            elif Fr.time + TimeStep > next_in_tmSrs:
+                TimeStep = next_in_tmSrs - Fr.time
 
             status, Fr_n_pls1 = self.advance_time_step(Fr,
                                                  self.C,
@@ -82,7 +97,9 @@ class Controller:
                 self.fr_queue[i%5] = copy.deepcopy(Fr_n_pls1)
                 self.smallStep_cnt += 1
                 if self.smallStep_cnt%4 == 0:
+                    # set the prefactor to the original value after four time steps after the 5 time steps back jump
                     self.sim_prop.tmStpPrefactor = self.sim_prop.tmStpPrefactor_max
+
             elif status == 12:
                 self.C *= 1/self.sim_prop.remeshFactor
                 print("Remeshing...")
@@ -93,6 +110,9 @@ class Controller:
                                self.injection_prop,
                                self.sim_prop)
                 print("Done!")
+                f = open('log', 'w+')
+                f.write("domain Remeshed.")
+                f.close()
 
             else:
                 print("Restarting with the last check point...")
@@ -178,12 +198,12 @@ class Controller:
 
             elif self.sim_prop.get_dryCrack_mechLoading():
                 status, Fr = attempt_time_step_mechLoading(Frac,
-                                                           C,
-                                                           self.solid_prop,
-                                                           self.sim_prop,
-                                                           self.load_prop,
-                                                           smallerTimeStep,
-                                                           Frac.mesh)
+                                                            C,
+                                                            self.solid_prop,
+                                                            self.sim_prop,
+                                                            self.load_prop,
+                                                            smallerTimeStep,
+                                                            Frac.mesh)
 
             elif self.sim_prop.get_volumeControl():
                 status, Fr = attempt_time_step_volumeControl(Frac,
@@ -237,7 +257,8 @@ class Controller:
             simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod)
 
         # current time in the time series given at which the solution is to be evaluated
-        in_req_TS = Fr_advanced.time in simulation_parameters.get_solTimeSeries()
+        in_req_TS = (not simulation_parameters.get_solTimeSeries() is None) and \
+                    Fr_advanced.time in simulation_parameters.get_solTimeSeries()
 
         if  out_TP_exceeded or in_req_TS:
             # plot fracture footprint

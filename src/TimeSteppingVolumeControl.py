@@ -6,7 +6,7 @@
 # reserved. See the LICENSE.TXT file for more details.
 #
 
-import numpy as np
+
 from src.TipInversion import *
 from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
@@ -65,8 +65,8 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
     if Simulation_Parameters.verbosity > 1:
         print('Starting Fracture Front loop...')
 
-    norm = 10.
-    k = 0
+    norm = 1e10 # higher than tolerance for first iteration
+    k = 0       # zeroth iteration
     Fr_k = Frac
 
     # Fracture front loop to find the correct front location

@@ -3,12 +3,12 @@
 # tolerances
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver
 toleranceEHL = 1.0e-5                   # tolerance for the elastohydrodynamic system solver
-tol_toughness = 1e-3                    # tolerance for the toughness iteration
+tol_toughness = 2.5e-3                    # tolerance for the toughness iteration
 
 # max iterations
 maxfront_its = 30                       # maximum iterations for the fracture front
 max_itr_solver = 100                    # maximum iterations for the elastohydrodynamic solver
-max_toughnessItr = 60                   # maximum toughness iterations
+max_toughnessItr = 20                   # maximum toughness iterations
 
 # time and time stepping
 tmStp_prefactor = 0.8                   # time step prefactor(pf) to calculate the time step (dt = pf*min(dx, dy)/max(v)

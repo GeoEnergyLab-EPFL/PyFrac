@@ -308,7 +308,8 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
 
 #-----------------------------------------------------------------------------------------------------------------------
 def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, sol_t_srs=None,
-                analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True, plt_t_dimensionless=False):
+                analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True, plt_t_dimensionless=False,
+                plt_error=True, add_labels=True):
     """
         This function plots the width and pressure at the injection point of the fracture.
 
@@ -383,10 +384,11 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
         if plt_pressure:
             p_anltcl = np.array([], dtype=np.float64)
 
-        fig_err = plt.figure()
-        ax_err = fig_err.add_subplot(111)
-        w_err = np.array([], dtype=np.float64)
-        p_err = np.array([], dtype=np.float64)
+        if plt_error:
+            fig_err = plt.figure()
+            ax_err = fig_err.add_subplot(111)
+            w_err = np.array([], dtype=np.float64)
+            p_err = np.array([], dtype=np.float64)
     while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
@@ -429,14 +431,16 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
                 ax_w.loglog(ff.time/tmk, ff.w[ff.mesh.CenterElts], plt_symbol)
             else:
                 ax_w.plot(ff.time/tmk, ff.w[ff.mesh.CenterElts],plt_symbol)
-            ax_w.set_ylabel('width')
-            ax_w.set_xlabel('time')
-            ax_w.set_title('Width at injection point')
+            if add_labels:
+                ax_w.set_ylabel('width')
+                ax_w.set_xlabel('time')
+                ax_w.set_title('Width at injection point')
 
             if not analytical_sol is 'n':
                 w_anltcl = np.append(w_anltcl, w[ff.mesh.CenterElts])
                 time_srs = np.append(time_srs, ff.time)
-                w_err = np.append(w_err, 1. - w[ff.mesh.CenterElts]/ff.w[ff.mesh.CenterElts])
+                if plt_error:
+                    w_err = np.append(w_err, 1. - w[ff.mesh.CenterElts]/ff.w[ff.mesh.CenterElts])
 
 
             if plt_pressure:
@@ -457,7 +461,8 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
                     else:
                         p_aa = p
                     p_anltcl = np.append(p_anltcl, p_aa)
-                    p_err = np.append(p_err, (p_aa - p_num)/p_aa)
+                    if plt_error:
+                        p_err = np.append(p_err, (p_aa - p_num)/p_aa)
 
             if t_srs_given:
                 if t_srs_indx < len(sol_t_srs) - 1:
@@ -473,7 +478,8 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
             ax_w.semilogx(time_srs/tmk, w_anltcl, anltcl_lnStyle, label='analytical')
         else:
             ax_w.plot(time_srs/tmk, w_anltcl, anltcl_lnStyle, label='analytical')
-        ax_w.legend()
+        if add_labels:
+            ax_w.legend()
 
         if plt_pressure:
             if analytical_sol in ('M', 'Mt'):
@@ -483,23 +489,25 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
                     ax_p.semilogx(time_srs/tmk, p_anltcl, anltcl_lnStyle, label='analytical')
                 else:
                     ax_p.plot(time_srs/tmk, p_anltcl, anltcl_lnStyle, label='analytical')
-            ax_p.set_ylabel('pressure')
-            ax_p.set_xlabel('time')
-            ax_p.set_title('Pressure at injection point')
-            ax_p.legend()
+            if add_labels:
+                ax_p.set_ylabel('pressure')
+                ax_p.set_xlabel('time')
+                ax_p.set_title('Pressure at injection point')
+                ax_p.legend()
 
     # ax_w.plot(tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000 * tmk2 / tmk, 1e-4, 'k.')
     # ax_w.plot(7000, 1e-4, 'k.')
     # print(repr(time_srs))
-
-        ax_err.semilogx(time_srs, abs(w_err), 'bo-', label='error on width')
-        if plt_pressure and not analytical_sol in ('M', 'Mt'):
-            ax_err.semilogx(time_srs, abs(p_err), 'ro-', label='error on pressure')
-        ax_err.set_ylabel('error')
-        ax_err.set_xlabel('time')
-        ax_err.set_title('Relative error at injection point')
-        ax_err.legend()
+        if plt_error:
+            ax_err.semilogx(time_srs, abs(w_err), 'bo-', label='error on width')
+            if plt_pressure and not analytical_sol in ('M', 'Mt'):
+                ax_err.semilogx(time_srs, abs(p_err), 'ro-', label='error on pressure')
+            if add_labels:
+                ax_err.set_ylabel('error')
+                ax_err.set_xlabel('time')
+                ax_err.set_title('Relative error at injection point')
+                ax_err.legend()
 
     return fig_w, fig_p
 
@@ -631,7 +639,8 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 
                 # applying colors for regime
                 regime = ff.regime[0, :]
-                regime[np.where(regime < 0)[0]] = 0
+                regime[np.where(regime > 1)[0]] = np.nan
+                regime[np.where(regime < 0)[0]] = np.nan
                 colors = regime
                 p.set_array(np.array(colors))
 
@@ -647,6 +656,14 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
             else:
                 nxt_plt_t = ff.time + time_period
 
+    if plt_regime:
+        sm = plt.cm.ScalarMappable(norm=plt.Normalize(vmin=0, vmax=1))
+        # fake up the array of the scalar mappable.
+        sm._A = []
+        clr_bar = plt.colorbar(sm)
+        clr_bar.set_label("regime")
+        plt.axis('equal')
+
     if fileNo >= 5000:
         raise SystemExit("too many files.")
 
@@ -660,7 +677,7 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 #-----------------------------------------------------------------------------------------------------------------------
 
 def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='o',
-                analytical_sol='E', anltcl_lnStyle='k'):
+                analytical_sol='n', anltcl_lnStyle='k', plt_error=True, add_labels=True):
     """
         This function plots the footprints of the fractures saved in the given folder.
 
@@ -687,6 +704,7 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
                                                continous line with data points marked with dots )
             anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
                                                continous line with data points marked with dots )
+            plt_error (bool)                -- if True, error between numerical and analytical would be plotted
 
         Returns:
             fig_r (figure)                    -- a figure to superimpose.
@@ -724,11 +742,17 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
 
     if not analytical_sol is 'n':
         r_anltcl = np.asarray([])
-        err = np.asarray([])
-        fig_err = plt.figure()
-        ax_err = fig_err.add_subplot(111)
-        w_err = np.array([], dtype=np.float64)
-        p_err = np.array([], dtype=np.float64)
+        if plt_error:
+            w_err = np.array([], dtype=np.float64)
+            p_err = np.array([], dtype=np.float64)
+            err = np.asarray([])
+            fig_err = plt.figure()
+            ax_err = fig_err.add_subplot(111)
+    elif analytical_sol is 'n':
+        plt_error = False
+        fig_err = None
+    else:
+        raise ValueError("Analytical solution type not supported")
 
 
 
@@ -771,8 +795,15 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
                 else:
                     raise ValueError("Provided analytical solution is not supported")
 
-                r_anltcl = np.append(r_anltcl, R)
-                err = np.append(err, abs(R - r_numrcl[-1])/R)
+
+                if r_type is 'max' and analytical_sol is 'E':
+                    R = (Solid.K1c[ff.mesh.CenterElts] / Solid.K1c_perp)**2 * R
+                    r_anltcl = np.append(r_anltcl, R)
+                else:
+                    r_anltcl = np.append(r_anltcl, R)
+
+                if plt_error:
+                    err = np.append(err, abs(R - r_numrcl[-1]) / R)
 
             if t_srs_given:
                 if t_srs_indx < len(sol_t_srs) - 1:
@@ -797,17 +828,19 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
         if not analytical_sol is 'n':
             ax.plot(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
         ax.plot(time_srs, r_numrcl, plt_symbol, label='radius numerical')
+    if add_labels:
+        ax.set_ylabel('radius')
+        ax.set_xlabel('time')
+        ax.set_title(r_type + ' distance from injection point')
+        ax.legend()
 
-    ax.set_ylabel('radius')
-    ax.set_xlabel('time')
-    ax.set_title(r_type + ' distance from injection point')
-    ax.legend()
-
-    ax_err.semilogx(time_srs, err, 'bo-', label='error on radius')
-    ax_err.set_ylabel('error')
-    ax_err.set_xlabel('time')
-    ax_err.set_title('Relative error on radius')
-    ax_err.legend()
+    if plt_error:
+        ax_err.semilogx(time_srs, err, 'bo-', label='error on radius')
+        if add_labels:
+            ax_err.set_ylabel('error')
+            ax_err.set_xlabel('time')
+            ax_err.set_title('Relative error on radius')
+            ax_err.legend()
 
     return fig_r, fig_err
 

@@ -383,7 +383,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
         Eprime (float)         -- plain strain modulus.
         Q0 (float)             -- injection rate.
         muPrime (float)        -- 12*viscosity.
-        Kprime (float)         -- the fracture toughness along the minor axis.
+        Kprime (float)         -- the fracture toughness (K') along the minor axis.
         Cprime (float)         -- 2*C, where C is the Carter's leak off coefficient.
         length (float)         -- the given length dimension (fracture length in the case of PKN, length of the minor
                                   axis in the case of elliptical fracture and the fracture radius in all of the rest).

@@ -140,21 +140,22 @@ def ReadFracture(filename):
 def find_regime(w, Fr, Material_properties, sim_properties, timeStep, Kprime, asymptote_universal):
 
     sim_parameters_tmp = copy.deepcopy(sim_properties)
-    sim_parameters_tmp.tipAsymptote = 'K'
+    sim_parameters_tmp.set_tipAsymptote('K')
     asymptote_toughness = TipAsymInversion(w,
-                                               Fr,
-                                               Material_properties,
-                                               sim_parameters_tmp,
-                                               timeStep,
-                                               Kprime_k=Kprime)
-    sim_parameters_tmp.tipAsymptote = 'M'
+                                           Fr,
+                                           Material_properties,
+                                           sim_parameters_tmp,
+                                           timeStep,
+                                           Kprime_k=Kprime)
+    sim_parameters_tmp.set_tipAsymptote('M')
     asymptote_viscosity = TipAsymInversion(w,
-                                             Fr,
-                                             Material_properties,
-                                             sim_parameters_tmp,
-                                             timeStep)
+                                         Fr,
+                                         Material_properties,
+                                         sim_parameters_tmp,
+                                         timeStep)
 
     regime = 1. - abs(asymptote_viscosity - asymptote_universal) / abs(asymptote_viscosity - asymptote_toughness)
-    # regime[np.where(regime < 0.)[0]] = 0.
+    regime[np.where(regime < 0.)[0]] = 0.
+    regime[np.where(regime > 1.)[0]] = 1.
 
     return regime

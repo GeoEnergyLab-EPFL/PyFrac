@@ -8,13 +8,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # imports
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-import pickle
-import warnings
-
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
 
 # local import ....
 
@@ -122,8 +117,8 @@ class Fracture():
                                                 'G'     -- flexible, general purpose initialization
 
                                             given_type can be one of the following:
-                                                't'     -- time at which the fracture is to be initialized.
-                                                'l'     -- the length parameter. It will be treated as the fracture
+                                                'time'  -- time at which the fracture is to be initialized.
+                                                'length'-- the length parameter. It will be treated as the fracture
                                                            radius, the minor axis length and the fracture length for the
                                                            cases of a radial fracture, an elliptical fracture and a PKN
                                                            fracture respectively.
@@ -163,14 +158,14 @@ class Fracture():
 
         if not init_type is 'G':
 
-            if given_type is 't':
+            if given_type is 'time':
                 length = None
                 time = given_value
-            elif given_type is 'l':
+            elif given_type is 'length':
                 time = None
                 length = given_value
             else:
-                raise ValueError("The initial value can only be of type time ('t') or length ('l')")
+                raise ValueError("The initial value can only be of type time ('time') or length ('length')")
 
             # get analytical solution
             self.time, self.initRad, self.p, self.w, vel, actvElts = HF_analytical_sol(init_type,
@@ -263,15 +258,15 @@ class Fracture():
             # setting time step limit according to the initial velocity
             simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
                                                             self.v) * simulProp.tmStpFactLimit
-        if simulProp.get_solTimeSeries() is None:
+        if simulProp.get_solTimeSeries() is None and simulProp.outputTimePeriod is None:
             simulProp.set_solTimeSeries(2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
-                                                      np.log2(simulProp.FinalTime), 10))
+                                                      np.log2(simulProp.FinalTime), 15))
 
         # todo change it to data file?
         f = open('log', 'w+')
         from time import gmtime, strftime
         f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n\n')
-
+        f.close()
 #-----------------------------------------------------------------------------------------------------------------------
 
 
