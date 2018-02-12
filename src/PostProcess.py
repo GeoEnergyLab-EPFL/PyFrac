@@ -61,7 +61,7 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
         # import marshal
         # code = marshal.loads(Solid.KpFunString)
         import __main__
-        setattr(__main__, 'Kprime_function', None)
+        setattr(__main__, 'Kprime_func', None)
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
@@ -191,7 +191,7 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
         # import marshal
         # code = marshal.loads(Solid.KpFunString)
         import __main__
-        setattr(__main__, 'Kprime_function', None)
+        setattr(__main__, 'Kprime_func', None)
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
@@ -358,7 +358,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
         # import marshal
         # code = marshal.loads(Solid.KpFunString)
         import __main__
-        setattr(__main__, 'Kprime_function', None)
+        setattr(__main__, 'Kprime_func', None)
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
@@ -559,7 +559,7 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
         # import marshal
         # code = marshal.loads(Solid.KpFunString)
         import __main__
-        setattr(__main__, 'Kprime_function', None)
+        setattr(__main__, 'Kprime_func', None)
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
@@ -727,7 +727,9 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
         # import marshal
         # code = marshal.loads(Solid.KpFunString)
         import __main__
-        setattr(__main__, 'Kprime_function', None)
+        setattr(__main__, 'Kprime_func', None)
+        setattr(__main__, 'SigmaO_func', None)
+        setattr(__main__, 'Cl_func', None)
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 
@@ -892,7 +894,7 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
         # import marshal
         # code = marshal.loads(Solid.KpFunString)
         import __main__
-        setattr(__main__, 'Kprime_function', None)
+        setattr(__main__, 'Kprime_func', None)
         with open(filename, 'rb') as input:
             (Solid, Fluid, Injection, SimulProp) = pickle.load(input)
 

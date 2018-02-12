@@ -14,17 +14,16 @@ from src.Controller import *
 from src.PostProcess import *
 
 # creating mesh
-Mesh = CartesianMesh(8., 4., 61, 61)
+Mesh = CartesianMesh(8., 4., 41, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K1c_1 = 1.e6                        # fracture toughness along x-axis
 K1c_2 = 1.5e6                       # fracture toughness along y-axis
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
-def Kprime_function(alpha):
+def Kprime_func(alpha):
     K1c_1 = 1.e6                    # fracture toughness along x-axis
     K1c_2 = 1.5e6                   # fracture toughness along y-axis
 
@@ -35,8 +34,7 @@ Solid = MaterialProperties(Mesh,
                            Eprime,
                            K1c_2,
                            anisotropic_flag=True,
-                           Kprime_func= Kprime_function,
-                           Toughness_min=K1c_1)
+                           Kprime_func= Kprime_func)
 
 
 # injection parameters
@@ -59,7 +57,7 @@ simulProp.tolFractFront = 2.5e-3        # increase tolerance for the anisotropic
 
 
 # initializing fracture
-minor_axis = 2.
+minor_axis = 2.0
 init_param = ("E", "length", minor_axis)
 
 # creating fracture object

@@ -70,12 +70,13 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
 
     if (InitlevelSet[farAwayPstv] == 1e10).any():
         unevaluated = np.where(InitlevelSet[farAwayPstv] == 1e10)[0]
+        print("cannot find level set for the cell(s): " + repr(unevaluated))
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayPstv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
             guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
             InitlevelSet[farAwayPstv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
-            print("found unevaluated " +repr(unevaluated[i]))
+
 
     # for elements radialy inward from ribbon cells. The sign of the level set values(tip asymptote) in the ribbon cells
     # is inverted to run the fast marching algorithm. The sign is finally inverted back to assign the value in the level
@@ -131,12 +132,12 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
 
     if (abs(InitlevelSet[farAwayNgtv]) == 1e10).any():
         unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) == 1e10)[0]
+        print("cannot find level set for the cell(s): " + repr(unevaluated))
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayNgtv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
             guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
             InitlevelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
-            print("found unevaluated negative " + repr(unevaluated[i]))
 # ----------------------------------------------------------------------------------------------------------------------
 
 

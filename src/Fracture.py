@@ -10,6 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # imports
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
+from mpl_toolkits.mplot3d import Axes3D
 
 # local import ....
 
@@ -256,8 +257,12 @@ class Fracture():
 
         if simulProp.timeStepLimit is None:
             # setting time step limit according to the initial velocity
-            simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
+            if max(self.v) <= 0:
+                simulProp.timeStepLimit = self.time * 0.1
+            else:
+                simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
                                                             self.v) * simulProp.tmStpFactLimit
+
         if simulProp.get_solTimeSeries() is None and simulProp.outputTimePeriod is None:
             simulProp.set_solTimeSeries(2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
                                                       np.log2(simulProp.FinalTime), 15))
@@ -336,7 +341,6 @@ class Fracture():
         else:
             raise ValueError('Invalid parameter identifier!')
 
-        #todo: not working properly
         if fig is None:
             fig = plt.figure()
             ax = fig.gca(projection='3d')
@@ -610,6 +614,22 @@ class Fracture():
 #-----------------------------------------------------------------------------------------------------------------------
 
     def remesh(self, factor, C, material_prop, fluid_prop, inj_prop, sim_prop):
+        """
+        This function compresses the fracture by the given factor once it has reached the end of the mesh. The
+        elasticity matrix, the properties objects are also re-adjusted according to the new mesh.
+
+        Arguments:
+            factor (float)      -- the factor by which the domain is to be compressed. For example, a factor of 2 will
+                                   merge the adjacent four cells to a single cell.
+            C (ndarray)         -- the elasticity matrix to be re-evaluated for the new mesh.
+            material_prop       -- the material properties to be re-evaluated for the new mesh.
+            fluid_prop          -- the fluid properties to be re-evaluated for the new mesh.
+            inj_prop            -- the injection properties to be re-evaluated for the new mesh.
+            sim_prop            -- the simulation properties.
+
+        Returns:
+            Fr_coarse           -- the new fracture after remeshing.
+        """
 
         coarse_mesh = CartesianMesh(factor*self.mesh.Lx, factor*self.mesh.Ly, self.mesh.nx, self.mesh.ny)
         SolveFMM(self.sgndDist,
@@ -645,8 +665,15 @@ class Fracture():
                      self.FractureVolume,
                      v_coarse)
 
-        saveToDisk_cpy = sim_prop.saveToDisk
+        # to avoid plotting and saving of the remeshed fracture
+        saveToDisk_cpy = copy.copy(sim_prop.saveToDisk)
+        plotFigure_cpy = copy.copy(sim_prop.plotFigure)
         sim_prop.saveToDisk = False
+        sim_prop.plotFigure = False
+
+        # re-meshing of the material properties
+        material_prop.remesh(coarse_mesh)
+
         Fr_coarse = Fracture(coarse_mesh,
                             init_data,
                             solid=material_prop,
@@ -676,14 +703,13 @@ class Fracture():
         Fr_coarse.efficiency = (injected_vol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack])) / injected_vol
 
         Fr_coarse.time = self.time
-        sim_prop.saveToDisk = saveToDisk_cpy
+        sim_prop.saveToDisk = copy.copy(saveToDisk_cpy)
+        sim_prop.plotFigure = copy.copy(plotFigure_cpy)
 
-        #############
-        # material_prop.CPrime = np.full((coarse_mesh.NumberOfElts,), 5e-7, dtype=np.float64)
-        # stressed_layer_1 = np.where(coarse_mesh.CenterCoor[:, 1] > 50)[0]
-        # stressed_layer_2 = np.where(coarse_mesh.CenterCoor[:, 1] < -50)[0]
-        # material_prop.CPrime[stressed_layer_1] = 1e-10
-        # material_prop.CPrime[stressed_layer_2] = 1e-10
-
+        # update the saved properties
+        if sim_prop.saveToDisk:
+            prop = (material_prop, fluid_prop, inj_prop, sim_prop)
+            with open(sim_prop.get_outFileAddress() + "properties", 'wb') as output:
+                pickle.dump(prop, output, -1)
 
         return Fr_coarse

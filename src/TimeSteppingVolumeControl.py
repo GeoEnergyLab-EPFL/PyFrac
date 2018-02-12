@@ -230,6 +230,9 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                                                   Fr_lstTmStp.EltChannel,
                                                   Fr_lstTmStp.mesh,
                                                   sgndDist_k)
+            if np.isnan(alpha_ribbon).any():
+                exitstatus = 11
+                return exitstatus, None
             # under relaxing toughnesss
             Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
                                                             sgndDist_k,

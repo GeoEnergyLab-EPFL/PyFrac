@@ -20,16 +20,19 @@ nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 K_Ic = np.full((Mesh.NumberOfElts,), 2e6, dtype=np.float64)
-sigma0 = np.full((Mesh.NumberOfElts,), 1e6, dtype=np.float64)
 
-# high stressed layers
-stressed_layer = np.where(abs(Mesh.CenterCoor[:,1]) > 2)[0]
-sigma0[stressed_layer] = 4.5e6
+def sigmaO_func(x, y):
+    """ The function providing the confining stress"""
+
+    if abs(y) > 2:
+        return 4.5e6
+    else:
+        return 1e6
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K_Ic,
-                           SigmaO=sigma0)
+                           SigmaO_func=sigmaO_func)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -73,6 +76,6 @@ controller.run()
 
 # plot results
 plot_footprint(simulProp.get_outFileAddress(),
-               time_period=0.2)
+               time_period=1.0)
 
 plt.show()

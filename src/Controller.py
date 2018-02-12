@@ -49,6 +49,7 @@ class Controller:
        self.C = C
        self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.smallStep_cnt = 0
+
        self.remeshings = 0
        self.TotalTimeSteps = 0
        self.failedTimeSteps = 0
@@ -63,10 +64,11 @@ class Controller:
             self.C = load_elasticity_matrix(self.fracture.mesh, self.solid_prop.Eprime)
 
 
-        # starting time stepping loop
+
         i = 0
         Fr = self.fracture
         tmSrs_indx = 0
+        # the next time where the solution is required to be evaluated
         if not (self.sim_prop).get_solTimeSeries() is None:
             next_in_tmSrs = (self.sim_prop).get_solTimeSeries()[tmSrs_indx]
         else:
@@ -77,6 +79,7 @@ class Controller:
                              ' is less than initial time.')
 
         print("Starting time = " + repr(Fr.time))
+        # starting time stepping loop
         while Fr.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
 
             # time step is calculated with the current propagation velocity
@@ -91,6 +94,7 @@ class Controller:
             elif Fr.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr.time
 
+            # advancing time step
             status, Fr_n_pls1, reattempts = self.advance_time_step(Fr,
                                                  self.C,
                                                  TimeStep)
@@ -99,7 +103,9 @@ class Controller:
             self.TotalTimeSteps += reattempts
             self.TotalTimeSteps += 1
 
+            # saving the last five steps to restart if required
             if status == 1:
+                print("successful!")
                 Fr = copy.deepcopy(Fr_n_pls1)
                 self.fr_queue[i%5] = copy.deepcopy(Fr_n_pls1)
                 self.smallStep_cnt += 1
@@ -107,6 +113,7 @@ class Controller:
                     # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
                     self.sim_prop.tmStpPrefactor = self.sim_prop.tmStpPrefactor_max
 
+            # remeshing required
             elif status == 12:
                 self.C *= 1/self.sim_prop.remeshFactor
                 print("Remeshing...")
@@ -116,9 +123,10 @@ class Controller:
                                self.fluid_prop,
                                self.injection_prop,
                                self.sim_prop)
+                self.remeshings += 1
                 print("Done!")
-                f = open('log', 'w+')
-                f.write("domain Remeshed.")
+                f = open('log', 'a')
+                f.writelines("domain Remeshed.")
                 f.close()
 
             else:
@@ -132,9 +140,8 @@ class Controller:
 
             i = i + 1
 
-        print("\n\n-----Simulation successfully finished------")
         print("Final time = " + repr(Fr.time))
-
+        print("\n\n-----Simulation successfully finished------")
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -181,6 +188,7 @@ class Controller:
         # in case of fracture not propagating
         if TimeStep <= 0:
             TimeStep = self.sim_prop.timeStepLimit*2
+            self.sim_prop.timeStepLimit *= 1.5
 
         reattemps = 0
         # loop for reattempting time stepping in case of failure.
@@ -222,7 +230,8 @@ class Controller:
                                                              smallerTimeStep,
                                                              Frac.mesh)
             if status == 1:
-                print(self.errorMessages[status])
+                if self.sim_prop.verbosity > 1:
+                    print(self.errorMessages[status])
 
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
@@ -243,9 +252,8 @@ class Controller:
             reattemps += 1
         return status, Fr, reattemps
 
+#-----------------------------------------------------------------------------------------------------------------------
 
-
-    #-------------------------------------------------------------------------------------------------------------------
 
     def output(self, Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties, injection_parameters,
                fluid_properties):

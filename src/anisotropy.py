@@ -550,7 +550,11 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
                     y[i] = mesh.CenterCoor[elts[i], 1]
 
         # returning the Kprime according to the given function
-        return mat_prop.KprimeFunc(x, y)
+        Kprime = np.empty((len(elts), ), dtype=np.float64)
+        for i in range(len(elts)):
+            Kprime[i] = mat_prop.KprimeFunc(x[i], y[i])
+
+        return Kprime
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -583,6 +587,10 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
                 x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
                 y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
 
-        return mat_prop.KprimeFunc(x, y)
+        # returning the Kprime according to the given function
+        Kprime = np.empty((len(elts),), dtype=np.float64)
+        for i in range(len(elts)):
+            Kprime[i] = mat_prop.KprimeFunc(x[i], y[i])
 
+        return Kprime
 #-----------------------------------------------------------------------------------------------------------------------
