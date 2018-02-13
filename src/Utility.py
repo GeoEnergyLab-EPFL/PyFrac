@@ -10,7 +10,7 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-import pickle
+import dill
 import copy
 from src.TipInversion import TipAsymInversion
 
@@ -133,7 +133,7 @@ def plot_as_matrix(data, mesh, fig=None):
 #-----------------------------------------------------------------------------------------------------------------------
 def ReadFracture(filename):
     with open(filename, 'rb') as input:
-        return pickle.load(input)
+        return dill.load(input)
 
 #-----------------------------------------------------------------------------------------------------------------------
 

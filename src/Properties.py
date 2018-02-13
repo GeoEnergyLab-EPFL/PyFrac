@@ -100,24 +100,24 @@ class MaterialProperties:
         if (Kprime_func is not None) or (SigmaO_func is not None) or (Cl_func is not None):
             self.remesh(Mesh)
 
-        # serializing and saving functions to be loaded with properties files
-        if Kprime_func is not None:
-            # todo: serialize and dump Kprime function
-            # import marshal
-            # self.KpFunString = marshal.dumps(Kprime_func.func_code)
-            pass
-
-        if SigmaO_func is not None:
-            # todo: serialize and dump SigmaO function
-            # import marshal
-            # self.KpFunString = marshal.dumps(Kprime_func.func_code)
-            pass
-
-        if Cl_func is not None:
-            # todo: serialize and dump Kprime function
-            # import marshal
-            # self.KpFunString = marshal.dumps(Kprime_func.func_code)
-            pass
+        # # serializing and saving functions to be loaded with properties files
+        # if Kprime_func is not None:
+        #     # todo: serialize and dump Kprime function
+        #     # import marshal
+        #     # self.KpFunString = marshal.dumps(Kprime_func.func_code)
+        #     pass
+        #
+        # if SigmaO_func is not None:
+        #     # todo: serialize and dump SigmaO function
+        #     # import marshal
+        #     # self.SgOFunString = marshal.dumps(SigmaO_func.func_code)
+        #     pass
+        #
+        # if Cl_func is not None:
+        #     # todo: serialize and dump Kprime function
+        #     # import marshal
+        #     # self.KpFunString = marshal.dumps(Kprime_func.func_code)
+        #     pass
 
 # ----------------------------------------------------------------------------------------------------------------------
     def remesh(self, mesh):

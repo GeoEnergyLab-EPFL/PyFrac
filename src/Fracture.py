@@ -11,6 +11,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 from mpl_toolkits.mplot3d import Axes3D
+import dill
 
 # local import ....
 
@@ -253,7 +254,7 @@ class Fracture():
             self.SaveFracture(simulProp.get_outFileAddress() + "fracture_" + repr(0))
             prop = (solid, fluid, injection, simulProp)
             with open(simulProp.get_outFileAddress() + "properties", 'wb') as output:
-                pickle.dump(prop, output, -1)
+                dill.dump(prop, output, -1)
 
         if simulProp.timeStepLimit is None:
             # setting time step limit according to the initial velocity
@@ -609,7 +610,7 @@ class Fracture():
 
     def SaveFracture(self, filename):
         with open(filename, 'wb') as output:
-            pickle.dump(self, output, -1)
+            dill.dump(self, output, -1)
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -710,6 +711,6 @@ class Fracture():
         if sim_prop.saveToDisk:
             prop = (material_prop, fluid_prop, inj_prop, sim_prop)
             with open(sim_prop.get_outFileAddress() + "properties", 'wb') as output:
-                pickle.dump(prop, output, -1)
+                dill.dump(prop, output, -1)
 
         return Fr_coarse
