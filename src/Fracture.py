@@ -598,11 +598,11 @@ class Fracture():
             clr_bar = plt.colorbar(sm,alpha=0.65)
             clr_bar.set_label(label)
 
-        # maximize the plot window
-        import sys
-        if "win32" in sys.platform or "win64" in sys.platform:
-            mng = plt.get_current_fig_manager()
-            mng.window.showMaximized()
+        # # maximize the plot window
+        # import sys
+        # if "win32" in sys.platform or "win64" in sys.platform:
+        #     mng = plt.get_current_fig_manager()
+        #     mng.window.showMaximized()
 
         return fig
 

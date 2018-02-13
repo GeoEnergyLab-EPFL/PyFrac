@@ -20,7 +20,6 @@ Mesh = CartesianMesh(8., 4., 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K1c_2 = 1.5e6                       # fracture toughness along y-axis
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
 def Kprime_func(alpha):
@@ -32,7 +31,6 @@ def Kprime_func(alpha):
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           K1c_2,
                            anisotropic_flag=True,
                            Kprime_func= Kprime_func)
 
@@ -54,6 +52,7 @@ simulProp.set_volumeControl(True)       # to set up the solver in volume control
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.outputTimePeriod = 1e-10      # save after every time step
 simulProp.tolFractFront = 2.5e-3        # increase tolerance for the anisotropic case
+simulProp.verbosity = 2
 
 
 # initializing fracture
@@ -81,7 +80,7 @@ controller.run()
 
 # plotting footprint
 plot_footprint(simulProp.get_outFileAddress(),
-                        time_period= 15,
+                        time_period=15,
                         analytical_sol='E')
 
 # plotting length along minor axis

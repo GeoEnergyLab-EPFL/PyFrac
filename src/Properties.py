@@ -135,7 +135,13 @@ class MaterialProperties:
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.Kprime[i] = self.KprimeFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
-                self.K1c[i] = self.Kprime[i] / ((32 / math.pi) ** 0.5 )
+                self.K1c[i] = self.Kprime[i] / ((32 / math.pi) ** 0.5)
+        elif self.KprimeFunc is not None and self.anisotropic:
+            self.Kprime = np.empty((mesh.NumberOfElts,), dtype=np.float64)
+            self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
+            for i in range(mesh.NumberOfElts):
+                self.Kprime[i] = self.KprimeFunc(np.pi/2)
+                self.K1c[i] = self.Kprime[i] / ((32 / math.pi) ** 0.5)
 
         if self.SigmaOFunc is not None:
             self.SigmaO = np.empty((mesh.NumberOfElts,), dtype=np.float64)
