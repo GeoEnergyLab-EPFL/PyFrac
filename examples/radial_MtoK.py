@@ -61,7 +61,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-# controller.run()
+controller.run()
 
 # plotting footprint
 plot_footprint(simulProp.get_outFileAddress(),

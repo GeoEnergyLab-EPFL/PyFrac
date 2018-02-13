@@ -500,7 +500,7 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
     """
 
     if mat_prop.anisotropic:
-        return mat_prop.KprimeFunc(alpha)
+        return mat_prop.K1cFunc(alpha)
     else:
         dist = -sgnd_dist
         x = np.zeros((len(elts),), )
@@ -550,11 +550,11 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
                     y[i] = mesh.CenterCoor[elts[i], 1]
 
         # returning the Kprime according to the given function
-        Kprime = np.empty((len(elts), ), dtype=np.float64)
+        K1c = np.empty((len(elts), ), dtype=np.float64)
         for i in range(len(elts)):
-            Kprime[i] = mat_prop.KprimeFunc(x[i], y[i])
+            K1c[i] = mat_prop.K1cFunc(x[i], y[i])
 
-        return Kprime
+        return K1c
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -565,11 +565,11 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
     of heterogenous or anisotropic toughness are taken care off.
     """
 
-    if mat_prop.KprimeFunc is None:
-        return mat_prop.Kprime[elts]
+    if mat_prop.K1cFunc is None:
+        return mat_prop.K1c[elts]
 
     if mat_prop.anisotropic:
-        return mat_prop.KprimeFunc(alpha)
+        return mat_prop.K1c(alpha)
     else:
         x = np.zeros((len(elts),), )
         y = np.zeros((len(elts),), )
@@ -588,9 +588,9 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
                 y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
 
         # returning the Kprime according to the given function
-        Kprime = np.empty((len(elts),), dtype=np.float64)
+        K1c = np.empty((len(elts),), dtype=np.float64)
         for i in range(len(elts)):
-            Kprime[i] = mat_prop.KprimeFunc(x[i], y[i])
+            K1c[i] = mat_prop.K1cFunc(x[i], y[i])
 
-        return Kprime
+        return K1c
 #-----------------------------------------------------------------------------------------------------------------------

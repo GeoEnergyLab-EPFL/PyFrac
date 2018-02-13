@@ -27,7 +27,7 @@ class MaterialProperties:
     Methods:
     """
 
-    def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., Kprime_func=None,
+    def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
                  anisotropic_flag=False, SigmaO_func = None, Cl_func = None):
         """
         Arguments:
@@ -68,7 +68,7 @@ class MaterialProperties:
             if SigmaO.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.SigmaO = SigmaO
             else:
-                raise ValueError('Error in the size of Sigma input ')
+                raise ValueError('Error in the size of Sigma input!')
                 return
         else:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
@@ -77,52 +77,33 @@ class MaterialProperties:
         self.anisotropic = anisotropic_flag
         if anisotropic_flag:
             try:
-                self.K1c_perp = Kprime_func(0) / ((32 / math.pi) ** 0.5 )
+                self.K1c_perp = K1c_func(0)
             except TypeError:
                 raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take one'
                                  ' argument, i.e. the angle and return a toughness value.')
         else:
             self.K1c_perp = None
 
-        self.KprimeFunc = Kprime_func
-        self.SigmaOFunc = SigmaO_func
-        self.ClFunc = Cl_func
-
-        if Kprime_func is not None and not self.anisotropic:
+        if K1c_func is not None and not self.anisotropic:
             try:
-                self.KprimeFunc(0.,0.)
+                K1c_func(0.,0.)
             except TypeError:
                 raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
 
+        self.K1cFunc = K1c_func
+        self.SigmaOFunc = SigmaO_func
+        self.ClFunc = Cl_func
 
         # overriding with the values evaluated by the given functions
-        if (Kprime_func is not None) or (SigmaO_func is not None) or (Cl_func is not None):
+        if (K1c_func is not None) or (SigmaO_func is not None) or (Cl_func is not None):
             self.remesh(Mesh)
 
-        # # serializing and saving functions to be loaded with properties files
-        # if Kprime_func is not None:
-        #     # todo: serialize and dump Kprime function
-        #     # import marshal
-        #     # self.KpFunString = marshal.dumps(Kprime_func.func_code)
-        #     pass
-        #
-        # if SigmaO_func is not None:
-        #     # todo: serialize and dump SigmaO function
-        #     # import marshal
-        #     # self.SgOFunString = marshal.dumps(SigmaO_func.func_code)
-        #     pass
-        #
-        # if Cl_func is not None:
-        #     # todo: serialize and dump Kprime function
-        #     # import marshal
-        #     # self.KpFunString = marshal.dumps(Kprime_func.func_code)
-        #     pass
 
 # ----------------------------------------------------------------------------------------------------------------------
     def remesh(self, mesh):
         """
-        This function evaluate the toughness, confining stress and leak off coefficient for the remeshed domain
+        This function evaluate the toughness, confining stress and leak off coefficient according to the given mesh
 
         Arguments:
             mesh (CartesianMesh)        -- the CartesianMesh object describing the new mesh
@@ -130,18 +111,18 @@ class MaterialProperties:
         Returns:
         """
 
-        if self.KprimeFunc is not None and not self.anisotropic:
+        if self.K1cFunc is not None and not self.anisotropic:
             self.Kprime = np.empty((mesh.NumberOfElts, ), dtype=np.float64)
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
-                self.Kprime[i] = self.KprimeFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
-                self.K1c[i] = self.Kprime[i] / ((32 / math.pi) ** 0.5)
-        elif self.KprimeFunc is not None and self.anisotropic:
+                self.K1c[i] = self.K1cFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+            self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
+        elif self.K1cFunc is not None and self.anisotropic:
             self.Kprime = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
-                self.Kprime[i] = self.KprimeFunc(np.pi/2)
-                self.K1c[i] = self.Kprime[i] / ((32 / math.pi) ** 0.5)
+                self.K1c[i] = self.K1cFunc(np.pi/2)
+            self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
 
         if self.SigmaOFunc is not None:
             self.SigmaO = np.empty((mesh.NumberOfElts,), dtype=np.float64)
@@ -149,9 +130,11 @@ class MaterialProperties:
                 self.SigmaO[i] = self.SigmaOFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
 
         if self.ClFunc is not None:
+            self.Cl = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             self.Cprime = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
-                self.Cprime[i] = self.ClFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+                self.Cl[i] = self.ClFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+            self.Cprime = 2 * self.Cl
 
 #-----------------------------------------------------------------------------------------------------------------------
 

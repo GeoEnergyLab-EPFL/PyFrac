@@ -214,7 +214,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
                                                  Fr_lstTmStp.EltChannel,
                                                  Fr_lstTmStp.mesh,
                                                  sgndDist_k)
-        Kprime_k = get_toughness_from_cellCenter(alpha_ribbon,
+        Kprime_k = (32 / math.pi) ** 0.5 * get_toughness_from_cellCenter(alpha_ribbon,
                                                 sgndDist_k,
                                                 Fr_lstTmStp.EltRibbon,
                                                 Material_properties,
@@ -237,7 +237,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
                                                                             sgndDist_k,
                                                                             Fr_lstTmStp.EltRibbon,
                                                                             Material_properties,
-                                                                            Fr_lstTmStp.mesh)
+                                                                            Fr_lstTmStp.mesh)* (32 / math.pi) ** 0.5
 
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
@@ -373,7 +373,7 @@ def injection_extended_footprint_mechLoading(w_k, Fr_lstTmStp, C, timeStep, Load
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
     if not Material_properties.KprimeFunc is None:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-        Kprime_tip = get_toughness_from_zeroVertex(EltsTipNew,
+        Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                  Fr_lstTmStp.mesh,
                                                  Material_properties,
                                                  alpha_k,

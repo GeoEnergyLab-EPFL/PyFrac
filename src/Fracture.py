@@ -509,24 +509,24 @@ class Fracture():
                 else:
                     plt_clrBar = False
                 label = "confining stress"
-            elif sim_prop.bckColor == 'Kprime':
-                max_bck = max(mat_properties.Kprime)
-                min_bck = min(mat_properties.Kprime)
+            elif sim_prop.bckColor == 'K1c':
+                max_bck = max(mat_properties.K1c)
+                min_bck = min(mat_properties.K1c)
                 if max_bck - min_bck > 0:
                     plt_clrBar = True
-                    colors = (mat_properties.Kprime - min_bck) / (max_bck - min_bck)
+                    colors = (mat_properties.K1c - min_bck) / (max_bck - min_bck)
                 else:
                     plt_clrBar = False
-                label = "toughness (K')"
-            elif sim_prop.bckColor == 'Cprime':
-                max_bck = max(mat_properties.Cprime)
-                min_bck = min(mat_properties.Cprime)
+                label = "fracture toughness (K)"
+            elif sim_prop.bckColor == 'Cl':
+                max_bck = max(mat_properties.Cl)
+                min_bck = min(mat_properties.Cl)
                 if max_bck - min_bck > 0:
                     plt_clrBar = True
-                    colors = (mat_properties.Cprime - min_bck) / (max_bck - min_bck)
+                    colors = (mat_properties.Cl - min_bck) / (max_bck - min_bck)
                 else:
                     plt_clrBar = False
-                label = "leak off coefficient (C')"
+                label = "Carter leak off coefficient (C)"
             elif not sim_prop.bckColor is None:
                 raise ValueError("Back ground color identifier not supported!")
 

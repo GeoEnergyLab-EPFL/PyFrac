@@ -51,7 +51,7 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
     filename = address + "properties"
     try:
         with open(filename, 'rb') as input:
-            (Solid, Fluid, Injection, SimulProp) = dill.loads(input)
+            (Solid, Fluid, Injection, SimulProp) = dill.load(input)
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
 
@@ -173,7 +173,7 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
     filename = address + "properties"
     try:
         with open(filename, 'rb') as input:
-            (Solid, Fluid, Injection, SimulProp) = dill.loads(input)
+            (Solid, Fluid, Injection, SimulProp) = dill.load(input)
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
 

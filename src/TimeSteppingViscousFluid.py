@@ -288,12 +288,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    if not Material_properties.KprimeFunc is None:
+    if not Material_properties.K1cFunc is None:
         alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                  Fr_lstTmStp.EltChannel,
                                                  Fr_lstTmStp.mesh,
                                                  sgndDist_k)
-        Kprime_k = get_toughness_from_cellCenter(alpha_ribbon,
+        Kprime_k = (32 / math.pi) ** 0.5 * get_toughness_from_cellCenter(alpha_ribbon,
                                                 sgndDist_k,
                                                 Fr_lstTmStp.EltRibbon,
                                                 Material_properties,
@@ -307,17 +307,20 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         sgndDist_km1 = np.copy(sgndDist_k)
         l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
-        if not Material_properties.KprimeFunc is None:
+        if not Material_properties.K1cFunc is None:
             alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                   Fr_lstTmStp.EltChannel,
                                                   Fr_lstTmStp.mesh,
                                                   sgndDist_k)
+            if np.isnan(alpha_ribbon).any():
+                exitstatus = 11
+                return exitstatus, None
             # under relaxing toughnesss
             Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
                                                             sgndDist_k,
                                                             Fr_lstTmStp.EltRibbon,
                                                             Material_properties,
-                                                            Fr_lstTmStp.mesh)
+                                                            Fr_lstTmStp.mesh) * (32 / math.pi) ** 0.5
 
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
@@ -456,9 +459,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if not Material_properties.KprimeFunc is None:
+    if not Material_properties.K1cFunc is None:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-        Kprime_tip = get_toughness_from_zeroVertex(EltsTipNew,
+        Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                    Fr_lstTmStp.mesh,
                                                    Material_properties,
                                                    alpha_k,
@@ -475,11 +478,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
 
     if stagnant.any():
-        # if not sim_parameters.tipAsymptote is 'U':
-        #     print("Stagnant front found, which is not supported for '" + sim_parameters.tipAsymptote + "'"
-        #                                                                                 " type tip asymptote!")
-        # if any tip cell with stagnant front
-        # calculate stress intensity factor for stagnant cells
+        # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
         KIPrime = StressIntensityFactor(w_k,
                                         sgndDist_k,
                                         EltsTipNew,
