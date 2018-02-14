@@ -23,6 +23,11 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import matplotlib.animation as animation
+import matplotlib.path as mpath
+import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
+from matplotlib.collections import PatchCollection
+import mpl_toolkits.mplot3d.art3d as art3d
 import dill
 
 
@@ -993,3 +998,198 @@ def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_
                                 time_period=time_period,
                                 analytical_sol=analytical_sol)
     plt.show()
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analytical_sol='n',
+                            plt_color='-', anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
+    """
+    This function plots the footprints of the fractures saved in the given folder.
+
+    Arguments:
+        address (string)                -- the folder address containing the saved files
+        fig (figure)                    -- figure to superimpose. A new figure will be created if not provided.
+        time_period (float)             -- time period between two successive fracture plots.
+        sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        analytical_sol (string)         -- the following options can be provided
+                                                'M'     -- radial fracture in viscosity dominated regime
+                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                'K'     -- radial fracture in toughness dominated regime
+                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                'E'     -- elliptical fracture in toughness dominated regime
+                                                'PKN'   -- PKN fracture
+        plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+        anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+        plt_mesh (boolean)              -- if true, mesh will also be plotted.
+        plt_regime (boolean)            -- if true, regime evaluated at the ribbon cells will be ploted (see Zia and
+                                           Lecampion 2018)
+        Sim_prop (SimulationParameters) -- if provided, the simulation properties read for file will be overriden by
+                                           these parameters.
+
+    Returns:
+        fig (figure)                    -- a figure to superimpose.
+
+    """
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = dill.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+
+    t_srs_given = isinstance(sol_t_srs, np.ndarray) #time series is given
+    if t_srs_given:
+        nxt_plt_t = sol_t_srs[t_srs_indx]
+
+    # new figure if not provided
+    if fig is None:
+        fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
+    # ax.set_xlim([-15, 15])
+    # ax.set_ylim([-4, 4])
+    # ax.axis('equal')
+    ax.set_frame_on(False)
+    # ax = fig.add_subplot(1, 1, 1)
+
+    while fileNo < 5000:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+        fileNo+=1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+            I = ff.Ffront[:, 0:2]
+            J = ff.Ffront[:, 2:4]
+
+            patches = []
+            for e in range(0, len(I)):
+                Path = mpath.Path
+                path_data = [
+                    (Path.MOVETO, [I[e, 0], I[e, 1]]),
+                    (Path.LINETO, [J[e, 0], J[e, 1]])]
+
+                codes, verts = zip(*path_data)
+                path = mpath.Path(verts, codes)
+                patch = mpatches.PathPatch(path, lw=1)
+                ax.add_patch(patch)
+                art3d.pathpatch_2d_to_3d(patch)
+                # patches.append(patch)
+                # ax.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), color=plt_color)
+            
+            # collection = PatchCollection(patches)
+            # ax.add_collection(collection)
+
+            
+            # plot analytical solution
+            if not analytical_sol is 'n':
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
+                                                                ff.mesh,
+                                                                Solid.Eprime,
+                                                                Injection.injectionRate[1, 0],
+                                                                muPrime=Fluid.muPrime,
+                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
+                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
+                                                                t=ff.time,
+                                                                KIc_min=Solid.K1c_perp)
+                elif analytical_sol == 'PKN':
+                    print("PKN is to be implemented.")
+                else:
+                    raise ValueError("Provided analytical solution is not supported")
+
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt'):
+                    circle = plt.Circle((0, 0), radius=R)
+                    circle.set_ec(anltcl_lnStyle)
+                    circle.set_fill(False)
+                    ax.add_patch(circle)
+                elif analytical_sol == 'E':
+                    from matplotlib.patches import Ellipse
+                    import matplotlib as mpl
+                    a = (Solid.K1c[0] / Solid.K1c_perp) ** 2 * R
+                    ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360.,
+                                                  color=anltcl_lnStyle)
+                    ellipse.set_fill(False)
+                    ellipse.set_ec(anltcl_lnStyle)
+                    ax.add_patch(ellipse)
+
+            # plot regime if enabled
+            if plt_regime:
+                ribbon_elts = ff.regime[1, :].astype(int)
+                patches = []
+                for i in range(ribbon_elts.size):
+                    polygon = Polygon(np.reshape(ff.mesh.VertexCoor[ff.mesh.Connectivity[ribbon_elts[i]], :], (4, 2)),
+                                      True)
+                    patches.append(polygon)
+
+                p = PatchCollection(patches)
+
+                # applying colors for regime
+                regime = ff.regime[0, :]
+                regime[np.where(regime > 1)[0]] = np.nan
+                regime[np.where(regime < 0)[0]] = np.nan
+                colors = regime
+                p.set_array(np.array(colors))
+
+                p.set_clim(0., 1.)
+                ax.add_collection(p)
+
+            if t_srs_given:
+                if t_srs_indx < len(sol_t_srs) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = sol_t_srs[t_srs_indx]
+                if ff.time > max(sol_t_srs):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+            fig = ff.plot_fracture(parameter='width', fig=fig)
+            ax.set_zlim([min(ff.w) - min(ff.w) * 0.25, max(ff.w) + max(ff.w) * 0.25])
+
+    if plt_regime:
+        sm = plt.cm.ScalarMappable(norm=plt.Normalize(vmin=0, vmax=1))
+        # fake up the array of the scalar mappable.
+        sm._A = []
+        clr_bar = plt.colorbar(sm)
+        clr_bar.set_label("regime")
+        plt.axis('equal')
+
+    if fileNo >= 5000:
+        raise SystemExit("too many files.")
+
+    if plt_mesh:
+        if not Sim_prop is None:
+            SimulProp = Sim_prop
+        ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
+
+    # ax.set_xlim([-ff.mesh.Lx, ff.mesh.Lx])
+    # ax.set_ylim([-ff.mesh.Ly, ff.mesh.Ly])
+
+    ax.axis('equal')
+    # ax.grid(False)
+    ax.set_frame_on(False)
+    ax.grid(False)
+    ax.set_axis_off()
+    # ax.set_xbound(-ff.mesh.Lx*1.2,ff.mesh.Lx*1.2)
+    ax.set_zlim([min(ff.w)-min(ff.w)*0.25, max(ff.w)+max(ff.w)*0.25])
+    # ax.set_xticks(np.linspace(-ff.mesh.Lx*1.2,ff.mesh.Lx*1.2,5))
+    # ax.set_yticks(np.linspace(-ff.mesh.Ly, ff.mesh.Ly, 5))
+
+    ax.set_title("Fracture evolution")
+    return fig

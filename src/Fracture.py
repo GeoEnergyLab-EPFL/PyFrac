@@ -268,11 +268,6 @@ class Fracture():
             simulProp.set_solTimeSeries(2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
                                                       np.log2(simulProp.FinalTime), 15))
 
-        # todo change it to data file?
-        f = open('log', 'w+')
-        from time import gmtime, strftime
-        f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n\n')
-        f.close()
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -348,11 +343,12 @@ class Fracture():
         else:
             ax = fig.gca(projection='3d')
 
-        ax.plot_trisurf(self.mesh.CenterCoor[:, 0],
-                        self.mesh.CenterCoor[:, 1],
-                        values,
-                        cmap=cm.jet,
-                        linewidth=0.2)
+        ax.plot_trisurf(self.mesh.CenterCoor[Elts, 0],
+                        self.mesh.CenterCoor[Elts, 1],
+                        values[Elts],
+                        cmap=cm.plasma,
+                        linewidth=0.2,
+                        alpha=0.3)
         return fig
 
 #-----------------------------------------------------------------------------------------------------------------------

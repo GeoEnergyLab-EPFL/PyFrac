@@ -14,7 +14,7 @@ from src.Controller import *
 from src.PostProcess import *
 
 # creating mesh
-Mesh = CartesianMesh(8., 4., 41, 41)
+Mesh = CartesianMesh(8., 4., 100, 100)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -22,9 +22,9 @@ youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
-def Kprime_func(alpha):
+def K1c_func(alpha):
     K1c_1 = 1.e6                    # fracture toughness along x-axis
-    K1c_2 = 1.5e6                   # fracture toughness along y-axis
+    K1c_2 = 2.0e6                   # fracture toughness along y-axis
 
     beta = np.arctan((K1c_1 / K1c_2)**2 * np.tan(alpha))
     return 4 * (2/np.pi)**0.5 * K1c_2 * (np.sin(beta)**2 + (K1c_1 / K1c_2)**4 * np.cos(beta)**2)**0.25
@@ -32,8 +32,7 @@ def Kprime_func(alpha):
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            anisotropic_flag=True,
-                           Kprime_func= Kprime_func)
-
+                           K1c_func= K1c_func)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -51,12 +50,13 @@ simulProp.set_outFileAddress(".\\Data\\ellipse") # the disk address where the fi
 simulProp.set_volumeControl(True)       # to set up the solver in volume control mode (inviscid fluid)
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.outputTimePeriod = 1e-10      # save after every time step
-simulProp.tolFractFront = 2.5e-3        # increase tolerance for the anisotropic case
-simulProp.verbosity = 2
+simulProp.tolFractFront = 2e-3          # increase tolerance for the anisotropic case
+simulProp.maxToughnessItr = 5
+simulProp.remeshFactor = 1.5
 
 
 # initializing fracture
-minor_axis = 2.0
+minor_axis = 1.5
 init_param = ("E", "length", minor_axis)
 
 # creating fracture object

@@ -466,21 +466,8 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if out_file_folder is None:
-            # time stamp as the folder address
-            from time import gmtime, strftime
-            timeStamp = "runDate_" + strftime("%Y-%m-%d_time_%Hh-%Mm-%Ss", gmtime())
+        if out_file_folder is not 'None':
 
-            # output folder address
-            address = "." + slash + "Data" + slash + timeStamp
-            # check if folder exists
-            import os
-            if not os.path.exists(address):
-                os.makedirs(address)
-
-            self.__outFileAddress = address + slash
-            self.lastSavedFile = 0
-        else:
             if "\\" in out_file_folder:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')

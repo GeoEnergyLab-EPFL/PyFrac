@@ -58,12 +58,15 @@ class Controller:
         """
         This function runs the simulation according to the given parameters.
         """
+        # todo change it to data file?
+        f = open('log', 'w+')
+        from time import gmtime, strftime
+        f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n\n')
+        f.close()
 
         # load elasticity matrix
         if self.C is None:
             self.C = load_elasticity_matrix(self.fracture.mesh, self.solid_prop.Eprime)
-
-
 
         i = 0
         Fr = self.fracture
@@ -125,8 +128,10 @@ class Controller:
                                self.sim_prop)
                 self.remeshings += 1
                 print("Done!")
+
+                # saving to log file
                 f = open('log', 'a')
-                f.writelines("domain Remeshed.")
+                f.writelines("\nRemeshed at " + repr(Fr.time))
                 f.close()
 
             else:
@@ -140,7 +145,13 @@ class Controller:
 
             i = i + 1
 
-        print("Final time = " + repr(Fr.time))
+        f = open('log', 'a')
+        f.writelines("\nnumber of time steps = " + repr(self.TotalTimeSteps))
+        f.writelines("\nfailed time steps = " + repr(self.failedTimeSteps))
+        f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
+        f.close()
+
+        print("\nFinal time = " + repr(Fr.time))
         print("\n\n-----Simulation successfully finished------")
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -244,11 +255,18 @@ class Controller:
 
                 return status, Fr, reattemps
             else:
-                print(self.errorMessages[status])
+
                 if status == 12:
                     return status, Fr, reattemps
             if self.sim_prop.verbosity > 1:
+                print(self.errorMessages[status])
                 print("Time step failed...")
+
+            f = open('log', 'a')
+            f.writelines("\n" + self.errorMessages[status])
+            f.writelines("\nTime step failed at = " + repr(Frac.time + smallerTimeStep))
+            f.close()
+
             reattemps += 1
         return status, Fr, reattemps
 
