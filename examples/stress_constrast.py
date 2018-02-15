@@ -10,10 +10,10 @@ See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import animate_simulation_results
+from src.PostProcess import *
 
 # creating mesh
-Mesh = CartesianMesh(12, 4, 51, 35)
+Mesh = CartesianMesh(12, 12, 51, 51)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -23,10 +23,13 @@ K_Ic = np.full((Mesh.NumberOfElts,), 2e6, dtype=np.float64)
 
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
-    if abs(y) > 2:
-        return 4.5e6
+
+    if y > 5:
+        return 4.e6
+    elif y < -2.5:
+        return 0.5e6
     else:
-        return 1e6
+        return 1.5e6
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
@@ -44,14 +47,14 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 simulProp = SimulationParameters()
 simulProp.plotFigure = False            # to disable plotting of figures while the simulation runs
 simulProp.saveToDisk = True             # to enable saving the results (to hard disk)
-simulProp.set_outFileAddress(".\\Data\\confined") # the disk address where the files are saved
-simulProp.outputTimePeriod = 0.1
-simulProp.bckColor = 'sigma0'
-simulProp.FinalTime = 27.
+simulProp.set_outFileAddress(".\\Data\\stress_contrast") # the disk address where the files are saved
+simulProp.outputTimePeriod = 0.1        # the time after which the file is saved
+simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
+simulProp.FinalTime = 150.              # the time to stop the simulation
 
 
 # initializing fracture
-initRad = 1.7
+initRad = 2.0
 init_param = ('M', "length", initRad)
 
 # creating fracture object
