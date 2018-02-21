@@ -10,7 +10,7 @@ See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import animate_simulation_results
+from src.PostProcess import *
 
 # creating mesh
 Mesh = CartesianMesh(12, 4, 51, 35)
@@ -76,5 +76,7 @@ controller.run()
 # plot results
 animate_simulation_results(simulProp.get_outFileAddress(),
                time_period=1.0)
-
+plot_footprint_3d(simulProp.get_outFileAddress(),
+               time_period=5.0,
+               plt_mesh=True)
 plt.show()

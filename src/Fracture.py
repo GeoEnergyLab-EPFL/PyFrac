@@ -272,7 +272,7 @@ class Fracture():
 
 
     def plot_fracture(self, parameter='footPrint', elts='complete', analytical=None, identify=[], mat_properties=None,
-                      sim_properties=None, fig=None):
+                      sim_properties=None, fig=None, alpha=1.0):
         """
         Plots the given parameter of the specified cells.
         
@@ -348,7 +348,7 @@ class Fracture():
                         values[Elts],
                         cmap=cm.plasma,
                         linewidth=0.2,
-                        alpha=0.3)
+                        alpha=alpha)
         return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -588,11 +588,12 @@ class Fracture():
 
         plt.axis('equal')
 
-        if not sim_prop.bckColor is None:
-            sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=min_bck, vmax=max_bck))
-            sm._A = []
-            clr_bar = plt.colorbar(sm,alpha=0.65)
-            clr_bar.set_label(label)
+        if sim_prop is not None:
+            if sim_prop.bckColor is not None:
+                sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=min_bck, vmax=max_bck))
+                sm._A = []
+                clr_bar = plt.colorbar(sm,alpha=0.65)
+                clr_bar.set_label(label)
 
         # # maximize the plot window
         # import sys

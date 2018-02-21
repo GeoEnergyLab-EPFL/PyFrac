@@ -19,7 +19,7 @@ Mesh = CartesianMesh(5, 5, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu**2)   # plain strain modulus
-K1c = 5e5/(32 / math.pi)**0.5
+K1c = 5e5 / (32 / math.pi)**0.5
 Cl = np.full((Mesh.NumberOfElts,), 0.5e-6, dtype=np.float64)
 
 Solid = MaterialProperties(Mesh,
@@ -32,7 +32,7 @@ Q0 = 0.01  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-viscosity = 0.001/12
+viscosity = 0.001 / 12
 Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
@@ -71,7 +71,7 @@ controller.run()
 Fig_lk, Fig_eff = plot_leakOff(simulProp.get_outFileAddress())
 t = 2**np.linspace(np.log2(0.5),np.log2(1e7),30)
 # solution taken from matlab code provided by Dontsov EV (2016)
-eff_analytical = np.asarray([0.9923 ,0.9904, 0.9880, 0.9850, 0.9812, 0.9765, 0.9708, 0.9636, 0.9547, 0.9438, 0.9305,
+eff_analytical = np.asarray([0.9923, 0.9904, 0.9880, 0.9850, 0.9812, 0.9765, 0.9708, 0.9636, 0.9547, 0.9438, 0.9305,
                              0.9142, 0.8944, 0.8706, 0.8423, 0.8089, 0.7700, 0.7256, 0.6757, 0.6209, 0.5622, 0.5011,
                              0.4393, 0.3789, 0.3215, 0.2688, 0.2218, 0.1809, 0.1461, 0.1171])
 ax_eff = Fig_eff.add_subplot(111)

@@ -79,5 +79,7 @@ controller.run()
 # plot results
 animate_simulation_results(simulProp.get_outFileAddress(),
                time_period=1.0)
-
+plot_footprint_3d(simulProp.get_outFileAddress(),
+                time_period=25.0,
+                plt_mesh=True)
 plt.show()

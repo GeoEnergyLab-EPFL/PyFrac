@@ -212,7 +212,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
     typclValue = delwGuess
 
     # solving the system
-    (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
+    sol, vel = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
                                MakeEquationSystem_viscousFluid_sameFP,
                                delwGuess,
                                typclValue,
@@ -650,9 +650,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
     Fr_kplus1.Tarrival = Tarrival_k
 
+    # setting leak off
     Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * Material_properties.Cprime[Fr_kplus1.EltChannel] * (
                             Fr_kplus1.time - Fr_kplus1.Tarrival[Fr_kplus1.EltChannel])**0.5 * Fr_kplus1.mesh.EltArea
-    Fr_kplus1.LkOff_vol[Fr_kplus1.EltTip]= 2 * Material_properties.Cprime[Fr_kplus1.EltTip] * Integral_over_cell(
+    Fr_kplus1.LkOff_vol[Fr_kplus1.EltTip] = 2 * Material_properties.Cprime[Fr_kplus1.EltTip] * Integral_over_cell(
                                                                 Fr_kplus1.EltTip,
                                                                 Fr_kplus1.alpha,
                                                                 Fr_kplus1.l,

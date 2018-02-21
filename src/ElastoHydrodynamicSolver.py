@@ -299,7 +299,8 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the same footprint as of the last time step. The viscosity of the injected fluid is taken into account by
-    calculating fluid fluxes using Poiseuille Law (see Peirce and Detounay 2008, CMAME for details).
+    calculating fluid fluxes using Poiseuille Law (see Peirce and Detounay 2008, CMAME for details) or turbulent rough,
+    friction factor based calculation.
 
     Arguments:
         delw_k (ndarray-float): the trial change in width for the current iteration of fracture front
@@ -687,7 +688,8 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             return solk, None
 
-    return (solk, interItr)
+    perf_data = (k)
+    return solk, interItr
 
 
 #-----------------------------------------------------------------------------------------------------------------------

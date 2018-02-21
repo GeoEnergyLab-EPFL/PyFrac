@@ -47,15 +47,15 @@ initRad = np.pi
 surv_cells, inner_cells = get_circular_survey_cells(Mesh, initRad)
 surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells,0])+2.5 - abs(Mesh.CenterCoor[surv_cells,1])
 C = load_elasticity_matrix(Mesh, Eprime)
-init_param = ('G',          # type of initialization
-              surv_cells,   # the given survey cells
-              inner_cells,  # the cell enclosed by the fracture
-              surv_cells_dist, # the distance of the survey cells from the front
-              None,         # the given width
-              50,           # the pressure (uniform in this case)
-              C,            # the elasticity matrix
-              None,         # the volume of the fracture
-              0)            # the velocity of the propagating front (stationary in this case)
+init_param = ('G',              # type of initialization
+              surv_cells,       # the given survey cells
+              inner_cells,      # the cell enclosed by the fracture
+              surv_cells_dist,  # the distance of the survey cells from the front
+              None,             # the given width
+              50,               # the pressure (uniform in this case)
+              C,                # the elasticity matrix
+              None,             # the volume of the fracture
+              0)                # the velocity of the propagating front (stationary in this case)
 
 
 # creating fracture object
@@ -83,5 +83,9 @@ plot_footprint(simulProp.get_outFileAddress(),
 plot_radius(simulProp.get_outFileAddress(),
                 r_type='min',
                 analytical_sol='K')
+plot_footprint_3d(simulProp.get_outFileAddress(),
+                  time_period=10.,
+                  txt_size=0.5,
+                  plt_mesh=True)
 plt.show()
 

@@ -21,17 +21,17 @@ from src.Properties import *
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
 import matplotlib.animation as animation
 import matplotlib.path as mpath
-import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 from matplotlib.collections import PatchCollection
 import mpl_toolkits.mplot3d.art3d as art3d
+from matplotlib.text import TextPath
+from matplotlib.transforms import Affine2D
 import dill
+import os
 
-
-def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, Interval=400, Repeat=None,
+def animate_simulation_results(address=None, time_period= 0.0, sol_time_series=None, Interval=400, Repeat=None,
                                maxFiles=1000, save=False):
     """
     This function plays an animation of the evolution of fracture with time. See the arguments list for options
@@ -49,8 +49,15 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
 
     """
 
-    if not slash in address[-2:]:
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
+    if address[-1] is not slash:
         address = address + slash
+
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
 
     # read properties
     filename = address + "properties"
@@ -76,6 +83,13 @@ def animate_simulation_results(address, time_period= 0.0, sol_time_series=None, 
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
         fileNo+=1
 
         if ff.time - nxt_plt_t > -1e-8:
@@ -135,8 +149,8 @@ def update(frame, *args):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None, plt_pressure=False,
-                 time_period=0.0, sol_t_srs=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b'):
+def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None, plt_pressure=False,
+                 time_period=0.0, plot_at_times=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b'):
     """
     This function plots the width and pressure at the injection point of the fracture.
 
@@ -152,7 +166,7 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
                                            created if not provided.
         plt_pressure (boolean)          -- if True, pressure will also be plotted.
         time_period (float)             -- time period between two successive fracture plots.
-        sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
         analytical_sol (string)         -- the following options can be provided
                                                 'M'     -- radial fracture in viscosity dominated regime
                                                 'Mt'    -- radial fracture in viscosity dominated regime with leak-off
@@ -171,8 +185,14 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
         fig_p_x (figure)                -- figure for fracture pressure at x-axis to superimpose.
         fig_p_y (figure)                -- figure for fracture pressure at y-axis to superimpose.
     """
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
     if not slash in address[-2:]:
         address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
 
     # read properties
     filename = address + "properties"
@@ -185,9 +205,9 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(sol_t_srs, np.ndarray)
+    t_srs_given = isinstance(plot_at_times, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = sol_t_srs[t_srs_indx]
+        nxt_plt_t = plot_at_times[t_srs_indx]
 
     if fig_w_x is None:
         fig_w_x = plt.figure()
@@ -205,6 +225,10 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
             fig_p_y = plt.figure()
         ax_p_y = fig_p_y.add_subplot(111)
 
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
+
     while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
@@ -212,6 +236,13 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
         fileNo += 1
 
         if ff.time - nxt_plt_t > -1e-8:
@@ -275,10 +306,10 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
                 ax_p_y.set_title('Pressure profile along y-axis')
 
             if t_srs_given:
-                if t_srs_indx < len(sol_t_srs) - 1:
+                if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_t_srs[t_srs_indx]
-                if ff.time > max(sol_t_srs):
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -294,7 +325,7 @@ def plot_profile(address, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, sol_t_srs=None,
+def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, plot_at_times=None,
                 analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True, plt_t_dimensionless=False,
                 plt_error=True, add_labels=True):
     """
@@ -308,7 +339,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
                                                provided.
             plt_pressure (boolean)          -- if True, pressure will also be plotted.
             time_period (float)             -- time period between two successive fracture plots.
-            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
             analytical_sol (string)         -- the following options can be provided
                                                     'M'     -- radial fracture in viscosity dominated regime
                                                     'Mt'    -- radial fracture in viscosity dominated regime with leak-off
@@ -329,9 +360,15 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
             fig_p (figure)                    -- pressure figure to superimpose.
     """
 
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
     # add slash at the end if not present
     if not slash in address[-2:]:
         address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
 
     # read properties
     filename = address + "properties"
@@ -345,9 +382,9 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(sol_t_srs, np.ndarray)
+    t_srs_given = isinstance(plot_at_times, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = sol_t_srs[t_srs_indx]
+        nxt_plt_t = plot_at_times[t_srs_indx]
 
     if fig_w is None:
         fig_w = plt.figure()
@@ -369,6 +406,11 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
             ax_err = fig_err.add_subplot(111)
             w_err = np.array([], dtype=np.float64)
             p_err = np.array([], dtype=np.float64)
+
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
+
     while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
@@ -376,6 +418,13 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
         fileNo += 1
 
         if ff.time - nxt_plt_t > -1e-8:
@@ -445,10 +494,10 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
                         p_err = np.append(p_err, (p_aa - p_num)/p_aa)
 
             if t_srs_given:
-                if t_srs_indx < len(sol_t_srs) - 1:
+                if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_t_srs[t_srs_indx]
-                if ff.time > max(sol_t_srs):
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -492,7 +541,7 @@ def plot_at_injection_point(address, fig_w=None, fig_p=None, plt_pressure=True, 
     return fig_w, fig_p
 
 
-def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytical_sol='n',
+def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, analytical_sol='n',
                             plt_color='k', anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
     """
     This function plots the footprints of the fractures saved in the given folder.
@@ -501,7 +550,7 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
         address (string)                -- the folder address containing the saved files
         fig (figure)                    -- figure to superimpose. A new figure will be created if not provided.
         time_period (float)             -- time period between two successive fracture plots.
-        sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
         analytical_sol (string)         -- the following options can be provided
                                                 'M'     -- radial fracture in viscosity dominated regime
                                                 'Mt'    -- radial fracture in viscosity dominated regime with leak-off
@@ -524,8 +573,17 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 
     """
 
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
     if not slash in address[-2:]:
         address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
 
     # read properties
     filename = address + "properties"
@@ -540,14 +598,18 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
     nxt_plt_t = 0.0
     t_srs_indx = 0
 
-    t_srs_given = isinstance(sol_t_srs, np.ndarray) #time series is given
+    t_srs_given = isinstance(plot_at_times, np.ndarray) #time series is given
     if t_srs_given:
-        nxt_plt_t = sol_t_srs[t_srs_indx]
+        nxt_plt_t = plot_at_times[t_srs_indx]
 
     # new figure if not provided
     if fig is None:
         fig = plt.figure()
     ax = fig.add_subplot(111)
+
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
 
     while fileNo < 5000:
 
@@ -556,6 +618,13 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
         fileNo+=1
 
         if ff.time - nxt_plt_t > -1e-8:
@@ -620,10 +689,10 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
                 ax.add_collection(p)
 
             if t_srs_given:
-                if t_srs_indx < len(sol_t_srs) - 1:
+                if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_t_srs[t_srs_indx]
-                if ff.time > max(sol_t_srs):
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -649,7 +718,7 @@ def plot_footprint(address, fig=None, time_period=0.0, sol_t_srs=None, analytica
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='.',
+def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, time_period=0., loglog=True, plt_symbol='.',
                 analytical_sol='n', anltcl_lnStyle='k', plt_error=True, add_labels=True):
     """
         This function plots the footprints of the fractures saved in the given folder.
@@ -665,7 +734,7 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
                                                                front from the injection point.
             fig_r (figure)                  -- figure to superimpose. A new figure will be created if not provided.
             time_period (float)             -- time period between two successive fracture plots.
-            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
             analytical_sol (string)         -- the following options can be provided
                                                     'M'     -- radial fracture in viscosity dominated regime
                                                     'Mt'    -- radial fracture in viscosity dominated regime with leak-off
@@ -684,8 +753,14 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
 
         """
 
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
     if not slash in address[-2:]:
         address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
 
     # read properties
     filename = address + "properties"
@@ -698,9 +773,9 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(sol_t_srs, np.ndarray)
+    t_srs_given = isinstance(plot_at_times, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = sol_t_srs[t_srs_indx]
+        nxt_plt_t = plot_at_times[t_srs_indx]
 
     r_numrcl = np.asarray([])
     time_srs = np.asarray([])
@@ -717,7 +792,9 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
     else:
         raise ValueError("Analytical solution type not supported")
 
-
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
 
     while fileNo < 5000:
 
@@ -726,6 +803,13 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
         fileNo += 1
 
         if ff.time - nxt_plt_t > -1e-8:
@@ -769,10 +853,10 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
                     err = np.append(err, abs(R - r_numrcl[-1]) / R)
 
             if t_srs_given:
-                if t_srs_indx < len(sol_t_srs) - 1:
+                if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_t_srs[t_srs_indx]
-                if ff.time > max(sol_t_srs):
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -810,7 +894,7 @@ def plot_radius(address, r_type='mean', fig_r=None, sol_t_srs=None, time_period=
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period=0., loglog=True, plt_symbol='.',
+def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, time_period=0., loglog=True, plt_symbol='.',
                 analytical_sol='n', anltcl_lnStyle='k', plt_efficiency=True, add_labels=True):
     """
         This function plots the footprints of the fractures saved in the given folder.
@@ -822,7 +906,7 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
             fig_eff (figure)                -- fracturing efficiency figure to superimpose. A new figure will be
                                                created if not provided.
             time_period (float)             -- time period between two successive fracture plots.
-            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
             analytical_sol (string)         -- the following options can be provided
                                                     'M'     -- radial fracture in viscosity dominated regime
                                                     'Mt'    -- radial fracture in viscosity dominated regime with leak-off
@@ -841,8 +925,14 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
             fig_eff (figure)                   -- a figure to superimpose fracturing efficiency.
         """
 
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
     if not slash in address[-2:]:
         address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
 
     # read properties
     filename = address + "properties"
@@ -855,9 +945,9 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
-    t_srs_given = isinstance(sol_t_srs, np.ndarray)
+    t_srs_given = isinstance(plot_at_times, np.ndarray)
     if t_srs_given:
-        nxt_plt_t = sol_t_srs[t_srs_indx]
+        nxt_plt_t = plot_at_times[t_srs_indx]
 
     lk_numrcl = np.asarray([])
     efficiency = np.asarray([])
@@ -865,6 +955,10 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
 
     if not analytical_sol is 'n':
         lk_anltcl = np.asarray([])
+
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
 
     # loop to load fracture files
     while fileNo < 5000:
@@ -874,6 +968,13 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
         fileNo += 1
 
         if ff.time - nxt_plt_t > -1e-8:
@@ -905,10 +1006,10 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
             efficiency = np.append(efficiency, ff.efficiency)
 
             if t_srs_given:
-                if t_srs_indx < len(sol_t_srs) - 1:
+                if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_t_srs[t_srs_indx]
-                if ff.time > max(sol_t_srs):
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -951,13 +1052,13 @@ def plot_leakOff(address, fig_lk=None, fig_eff=None, sol_t_srs=None, time_period
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
+def plot_simulation_results(address=None, plot_at_times=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
                            radius=True,  profile=True):
     """
     This function plot the simulation results from the given folder
     Arguments:
             address (string)                -- the folder address containing the saved files
-            sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+            plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
             time_period (float)             -- time period between two successive fracture plots.
             analytical_sol (string)         -- the following options can be provided
                                                     'M'     -- radial fracture in viscosity dominated regime
@@ -979,22 +1080,22 @@ def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_
 
     if footprint:
         plot_footprint(address=address,
-                                sol_t_srs=sol_t_srs,
+                                plot_at_times=plot_at_times,
                                 time_period=time_period,
                                 analytical_sol=analytical_sol)
     if inj_pnt:
         plot_at_injection_point(address=address,
-                                sol_t_srs=sol_t_srs,
+                                plot_at_times=plot_at_times,
                                 time_period=time_period,
                                 analytical_sol=analytical_sol)
     if radius:
         plot_radius(address=address,
-                                sol_t_srs=sol_t_srs,
+                                plot_at_times=plot_at_times,
                                 time_period=time_period,
                                 analytical_sol = analytical_sol)
     if profile:
         plot_profile(address=address,
-                                sol_t_srs=sol_t_srs,
+                                plot_at_times=plot_at_times,
                                 time_period=time_period,
                                 analytical_sol=analytical_sol)
     plt.show()
@@ -1002,8 +1103,8 @@ def plot_simulation_results(address, sol_t_srs=None, time_period=0., analytical_
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analytical_sol='n',
-                            plt_color='-', anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
+def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_time=True, txt_size=None,
+                      plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=False):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -1011,7 +1112,7 @@ def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analyt
         address (string)                -- the folder address containing the saved files
         fig (figure)                    -- figure to superimpose. A new figure will be created if not provided.
         time_period (float)             -- time period between two successive fracture plots.
-        sol_t_srs (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
         analytical_sol (string)         -- the following options can be provided
                                                 'M'     -- radial fracture in viscosity dominated regime
                                                 'Mt'    -- radial fracture in viscosity dominated regime with leak-off
@@ -1034,8 +1135,14 @@ def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analyt
 
     """
 
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
     if not slash in address[-2:]:
         address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
 
     # read properties
     filename = address + "properties"
@@ -1050,20 +1157,21 @@ def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analyt
     nxt_plt_t = 0.0
     t_srs_indx = 0
 
-    t_srs_given = isinstance(sol_t_srs, np.ndarray) #time series is given
+    t_srs_given = isinstance(plot_at_times, np.ndarray) #time series is given
     if t_srs_given:
-        nxt_plt_t = sol_t_srs[t_srs_indx]
+        nxt_plt_t = plot_at_times[t_srs_indx]
 
     # new figure if not provided
     if fig is None:
         fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection='3d')
-    # ax.set_xlim([-15, 15])
-    # ax.set_ylim([-4, 4])
-    # ax.axis('equal')
     ax.set_frame_on(False)
-    # ax = fig.add_subplot(1, 1, 1)
 
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
+
+    printed_fronts = 0
     while fileNo < 5000:
 
         # trying to load next file. exit loop if not found
@@ -1071,14 +1179,22 @@ def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analyt
             ff = ReadFracture(address + "fracture_" + repr(fileNo))
         except FileNotFoundError:
             break
-        fileNo+=1
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if stats[-2] < prev_modified_at:
+            break
+        prev_modified_at = stats[-2]
+
+        fileNo += 1
 
         if ff.time - nxt_plt_t > -1e-8:
+
             # if the current fracture time has advanced the output time period
             I = ff.Ffront[:, 0:2]
             J = ff.Ffront[:, 2:4]
 
-            patches = []
+            # draw front lines
             for e in range(0, len(I)):
                 Path = mpath.Path
                 path_data = [
@@ -1090,106 +1206,166 @@ def plot_footprint_3d(address, fig=None, time_period=0.0, sol_t_srs=None, analyt
                 patch = mpatches.PathPatch(path, lw=1)
                 ax.add_patch(patch)
                 art3d.pathpatch_2d_to_3d(patch)
-                # patches.append(patch)
-                # ax.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), color=plt_color)
-            
-            # collection = PatchCollection(patches)
-            # ax.add_collection(collection)
-
-            
-            # plot analytical solution
-            if not analytical_sol is 'n':
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
-                    t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
-                                                                ff.mesh,
-                                                                Solid.Eprime,
-                                                                Injection.injectionRate[1, 0],
-                                                                muPrime=Fluid.muPrime,
-                                                                Kprime=Solid.Kprime[ff.mesh.CenterElts],
-                                                                Cprime=Solid.Cprime[ff.mesh.CenterElts],
-                                                                t=ff.time,
-                                                                KIc_min=Solid.K1c_perp)
-                elif analytical_sol == 'PKN':
-                    print("PKN is to be implemented.")
-                else:
-                    raise ValueError("Provided analytical solution is not supported")
-
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt'):
-                    circle = plt.Circle((0, 0), radius=R)
-                    circle.set_ec(anltcl_lnStyle)
-                    circle.set_fill(False)
-                    ax.add_patch(circle)
-                elif analytical_sol == 'E':
-                    from matplotlib.patches import Ellipse
-                    import matplotlib as mpl
-                    a = (Solid.K1c[0] / Solid.K1c_perp) ** 2 * R
-                    ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * R, angle=360.,
-                                                  color=anltcl_lnStyle)
-                    ellipse.set_fill(False)
-                    ellipse.set_ec(anltcl_lnStyle)
-                    ax.add_patch(ellipse)
-
-            # plot regime if enabled
-            if plt_regime:
-                ribbon_elts = ff.regime[1, :].astype(int)
-                patches = []
-                for i in range(ribbon_elts.size):
-                    polygon = Polygon(np.reshape(ff.mesh.VertexCoor[ff.mesh.Connectivity[ribbon_elts[i]], :], (4, 2)),
-                                      True)
-                    patches.append(polygon)
-
-                p = PatchCollection(patches)
-
-                # applying colors for regime
-                regime = ff.regime[0, :]
-                regime[np.where(regime > 1)[0]] = np.nan
-                regime[np.where(regime < 0)[0]] = np.nan
-                colors = regime
-                p.set_array(np.array(colors))
-
-                p.set_clim(0., 1.)
-                ax.add_collection(p)
 
             if t_srs_given:
-                if t_srs_indx < len(sol_t_srs) - 1:
+                if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
-                    nxt_plt_t = sol_t_srs[t_srs_indx]
-                if ff.time > max(sol_t_srs):
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
 
-            fig = ff.plot_fracture(parameter='width', fig=fig)
+            printed_fronts += 1
+
+            # plot width
+            fig = ff.plot_fracture(parameter='width', elts='crack', fig=fig, alpha= 0.3)
             ax.set_zlim([min(ff.w) - min(ff.w) * 0.25, max(ff.w) + max(ff.w) * 0.25])
 
-    if plt_regime:
-        sm = plt.cm.ScalarMappable(norm=plt.Normalize(vmin=0, vmax=1))
-        # fake up the array of the scalar mappable.
-        sm._A = []
-        clr_bar = plt.colorbar(sm)
-        clr_bar.set_label("regime")
-        plt.axis('equal')
+            # print time close to the front edge
+            if plt_time:
+                tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[ff.EltTip, ff.ZeroVertex]]
+                if printed_fronts % 2 == 0:
+                    r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
+                else:
+                    r_indx = np.argmin((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
+                x_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 0]
+                y_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 1]
+                if txt_size is None:
+                    txt_size = max(ff.mesh.hx, ff.mesh.hx)
+                text3d(ax,
+                       (x_coor, y_coor, 0),
+                       "%.2f sec" % ff.time,
+                       zdir="z",
+                       size=txt_size,
+                       usetex=True,
+                       ec="none",
+                       fc="k")
 
-    if fileNo >= 5000:
-        raise SystemExit("too many files.")
+    if not plt_grid:
+        ax.grid(False)
 
+    # print the grid. If grid is not printed, lines are drawn to show the length scale of the fracture
+    if not plt_axis:
+        ax.set_axis_off()
+
+        max_x = max(I[:, 0])
+        max_y = max(I[:, 1])
+        min_x = min(I[:, 0])
+        min_y = min(I[:, 1])
+        Path = mpath.Path
+        path_data = [
+            (Path.MOVETO, [min_x, min_y - 2 * ff.mesh.hy]),
+            (Path.LINETO, [max_x, min_y - 2 * ff.mesh.hy]),
+            (Path.MOVETO, [min_x, min_y - 2.5 * ff.mesh.hy]),
+            (Path.LINETO, [min_x, min_y - 1.5 * ff.mesh.hy]),
+            (Path.MOVETO, [max_x, min_y - 2.5 * ff.mesh.hy]),
+            (Path.LINETO, [max_x, min_y - 1.5 * ff.mesh.hy]),
+            (Path.MOVETO, [max_x + ff.mesh.hx, min_y - ff.mesh.hy]),
+            (Path.LINETO, [max_x + ff.mesh.hx, max_y]),
+            (Path.MOVETO, [max_x + 1.5 * ff.mesh.hx, min_y - ff.mesh.hy]),
+            (Path.LINETO, [max_x + 0.5 * ff.mesh.hx, min_y - ff.mesh.hy]),
+            (Path.MOVETO, [max_x + 1.5 * ff.mesh.hx, max_y]),
+            (Path.LINETO, [max_x + 0.5 * ff.mesh.hx, max_y]),
+        ]
+
+        codes, verts = zip(*path_data)
+        path = mpath.Path(verts, codes)
+        patch = mpatches.PathPatch(path, lw=1, facecolor='none')
+        ax.add_patch(patch)
+        art3d.pathpatch_2d_to_3d(patch)
+        if txt_size is None:
+            txt_size = max(ff.mesh.hx, ff.mesh.hx)
+        y_len = max_y - min_y + ff.mesh.hy
+        text3d(ax,
+               (max_x + 2 * ff.mesh.hx, (max_y + min_y) / 2, 0),
+               "%.2f meters" % y_len,
+               zdir="z",
+               size=txt_size,
+               usetex=True,
+               ec="none",
+               fc="k")
+        x_len = max_x - min_x + ff.mesh.hy
+        text3d(ax,
+               ((max_x + min_x) / 2, min_y - 4 * ff.mesh.hy, 0),
+               "%.2f meters" % x_len,
+               zdir="z",
+               size=txt_size,
+               usetex=True,
+               ec="none",
+               fc="k")
+    else:
+        # ax.set_xbound(-ff.mesh.Lx*1.2,ff.mesh.Lx*1.2)
+        ax.set_xticks(np.linspace(-ff.mesh.Lx*1.2,ff.mesh.Lx*1.2,5))
+        ax.set_yticks(np.linspace(-ff.mesh.Ly, ff.mesh.Ly, 5))
+
+    # plot mesh with the color superimposed according to the given parameter
     if plt_mesh:
-        if not Sim_prop is None:
-            SimulProp = Sim_prop
-        ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
+        if SimulProp is not None:
+            if SimulProp.bckColor == 'sigma0':
+                max_bck = max(Solid.SigmaO)
+                min_bck = min(Solid.SigmaO)
+                if max_bck - min_bck > 0:
+                    colors = (Solid.SigmaO - min_bck) / (max_bck - min_bck)
+            elif SimulProp.bckColor == 'K1c':
+                max_bck = max(Solid.K1c)
+                min_bck = min(Solid.K1c)
+                if max_bck - min_bck > 0:
+                    colors = (Solid.K1c - min_bck) / (max_bck - min_bck)
+            elif SimulProp.bckColor == 'Cl':
+                max_bck = max(Solid.Cl)
+                min_bck = min(Solid.Cl)
+                if max_bck - min_bck > 0:
+                    colors = (Solid.Cl - min_bck) / (max_bck - min_bck)
+            elif not SimulProp.bckColor is None:
+                raise ValueError("Back ground color identifier not supported!")
 
-    # ax.set_xlim([-ff.mesh.Lx, ff.mesh.Lx])
-    # ax.set_ylim([-ff.mesh.Ly, ff.mesh.Ly])
+
+        # add rectangle for each cell
+        for i in range(ff.mesh.NumberOfElts):
+            if plt_bckColor:
+                face_color = (0, colors[i], 0, 0.2)
+            else:
+                face_color = (0, 0.0, 0, 0.2)
+            cell = mpatches.Rectangle((ff.mesh.CenterCoor[i, 0],
+                                       ff.mesh.CenterCoor[i, 1]),
+                                      ff.mesh.hx,
+                                      ff.mesh.hy,
+                                      ec=(0, 0, 0, 0.05),
+                                      fc=face_color)
+            ax.add_patch(cell)
+            art3d.pathpatch_2d_to_3d(cell)
 
     ax.axis('equal')
-    # ax.grid(False)
     ax.set_frame_on(False)
-    ax.grid(False)
-    ax.set_axis_off()
-    # ax.set_xbound(-ff.mesh.Lx*1.2,ff.mesh.Lx*1.2)
     ax.set_zlim([min(ff.w)-min(ff.w)*0.25, max(ff.w)+max(ff.w)*0.25])
-    # ax.set_xticks(np.linspace(-ff.mesh.Lx*1.2,ff.mesh.Lx*1.2,5))
-    # ax.set_yticks(np.linspace(-ff.mesh.Ly, ff.mesh.Ly, 5))
-
     ax.set_title("Fracture evolution")
     return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def text3d(ax, xyz, s, zdir="z", size=None, angle=0, usetex=False, **kwargs):
+    '''
+    Plots the string 's' on the axes 'ax', with position 'xyz', size 'size',
+    and rotation angle 'angle'.  'zdir' gives the axis which is to be treated
+    as the third dimension.  usetex is a boolean indicating whether the string
+    should be interpreted as latex or not.  Any additional keyword arguments
+    are passed on to transform_path.
+
+    Note: zdir affects the interpretation of xyz.
+    '''
+    x, y, z = xyz
+    if zdir == "y":
+        xy1, z1 = (x, z), y
+    elif zdir == "y":
+        xy1, z1 = (y, z), x
+    else:
+        xy1, z1 = (x, y), z
+
+    text_path = TextPath((0, 0), s, size=size, usetex=usetex)
+    trans = Affine2D().rotate(angle).translate(xy1[0], xy1[1])
+
+    p1 = mpatches.PathPatch(trans.transform_path(text_path), **kwargs)
+    ax.add_patch(p1)
+    art3d.pathpatch_2d_to_3d(p1, z=z1, zdir=zdir)

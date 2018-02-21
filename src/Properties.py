@@ -397,7 +397,7 @@ class SimulationParameters:
         self.plotFigure = simul_param.plot_figure
         self.plotAnalytical = simul_param.plot_analytical
         self.analyticalSol = simul_param.analytical_sol
-        self.saveToDisk = simul_param.save_to_disk
+        self.set_saveToDisk(simul_param.save_to_disk)
         self.set_outFileAddress(simul_param.out_file_folder)
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
@@ -454,11 +454,16 @@ class SimulationParameters:
     def get_dryCrack_mechLoading(self):
         return self.__dryCrack_mechLoading
 
+    def set_saveToDisk(self, save_to_disk):
+        self.__saveToDist = save_to_disk
+        if save_to_disk:
+            self.set_outFileAddress("None")
+
+    def get_saveToDisk(self):
+        return self.__saveToDist
+
     def set_outFileAddress(self, out_file_folder):
         # check operating system to get appropriate slash in the address
-
-        if self.saveToDisk is None or self.saveToDisk is False:
-            self.saveToDisk = True
 
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
@@ -467,7 +472,7 @@ class SimulationParameters:
             slash = "/"
 
         if out_file_folder is not 'None':
-
+            self.saveToDisk = True
             if "\\" in out_file_folder:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')
@@ -475,12 +480,26 @@ class SimulationParameters:
                 if slash != "/":
                     raise SystemExit('linux style slash in the given address on windows system!')
 
+            if out_file_folder[-1] is slash:
+                out_file_folder = out_file_folder[:-1]
+
             import os
             if not os.path.exists(out_file_folder):
                 os.makedirs(out_file_folder)
 
             self.__outFileAddress = out_file_folder + slash
             self.lastSavedFile = 0
+
+        elif self.get_saveToDisk:
+            out_file_folder = "." + slash + "_simulation_data_PyFrac"
+
+            import os
+            if not os.path.exists(out_file_folder):
+                os.makedirs(out_file_folder)
+
+            self.__outFileAddress = out_file_folder + slash
+            self.lastSavedFile = 0
+
 
     def get_outFileAddress(self):
         return self.__outFileAddress
