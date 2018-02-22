@@ -477,7 +477,7 @@ class Fracture():
         if fig is None:
             fig, ax = plt.subplots()
         else:
-            ax = fig.add_subplot(111)
+            ax = fig.get_axes()[0]
 
         # set the four corners of the rectangular mesh
         ax.set_xlim([-self.mesh.Lx, self.mesh.Lx])

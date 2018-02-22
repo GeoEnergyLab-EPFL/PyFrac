@@ -35,11 +35,9 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.plotFigure = False            # disable plotting of figure during the simulation
-simulProp.saveToDisk = True             # enabling saving to storage
 simulProp.FinalTime = 50                # the time at which the simulation stops
 simulProp.outputTimePeriod = 0.01       # the time period after which the fracture is saved
-simulProp.set_outFileAddress(".\\Data\\star") # the address of the output folder
+# simulProp.set_outFileAddress(".\\Data\\star") # the address of the output folder
 
 
 # initializing fracture

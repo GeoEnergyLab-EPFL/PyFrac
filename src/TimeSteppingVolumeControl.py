@@ -49,21 +49,26 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
 
     # todo : write log file
     # f = open('log', 'a')
-    if Simulation_Parameters.verbosity > 1:
-        print('Solving ElastoHydrodynamic equations for uniform pressure(inviscid fluid) with same footprint...')
-    # width by injecting the fracture with the same foot print (balloon like inflation)
-    exitstatus, w_k = injection_same_footprint_volumeControl(Frac,
-                                                            C,
-                                                            TimeStep,
-                                                            Qin,
-                                                            Mesh)
 
-    if exitstatus != 1:
-        # failed
-        return exitstatus, None
+    if Simulation_Parameters.explicitFront:
+        w_k = np.copy(Frac.w)
+    else:
+        if Simulation_Parameters.verbosity > 1:
+            print('Solving ElastoHydrodynamic equations for uniform pressure(inviscid fluid) with same footprint...')
+        # width by injecting the fracture with the same foot print (balloon like inflation)
+        exitstatus, w_k = injection_same_footprint_volumeControl(Frac,
+                                                                C,
+                                                                TimeStep,
+                                                                Qin,
+                                                                Mesh)
 
-    if Simulation_Parameters.verbosity > 1:
-        print('Starting Fracture Front loop...')
+        if exitstatus != 1:
+            # failed
+            return exitstatus, None
+
+
+        if Simulation_Parameters.verbosity > 1:
+            print('Starting Fracture Front loop...')
 
     norm = 1e10 # higher than tolerance for first iteration
     k = 0       # zeroth iteration
@@ -86,6 +91,9 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
                                                               Simulation_Parameters)
         if exitstatus != 1:
             return exitstatus, None
+
+        if Simulation_Parameters.explicitFront:
+            break
 
         # the new fracture width (notably the new width in the ribbon cells).
         w_k = np.copy(Fr_k.w)

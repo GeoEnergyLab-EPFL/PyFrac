@@ -35,13 +35,12 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e7               # the time at which the simulation stops
-simulProp.plotFigure = False            # to disable plotting of figures while the simulation runs
-simulProp.saveToDisk = True             # to enable saving the results (to hard disk)
-simulProp.set_outFileAddress(".\\Data\\MtoK") # the disk address where the files are saved
 simulProp.saveRegime = True             # enable saving the regime
+# simulProp.set_outFileAddress(".\\Data\\MtoK") # the disk address where the files are saved
+
 
 # initializing fracture
-initRad = 0.5
+initRad = 1.5
 init_param = ("M", "length", initRad)
 
 # creating fracture object
@@ -65,7 +64,7 @@ controller.run()
 
 # plotting footprint
 plot_footprint(simulProp.get_outFileAddress(),
-                        sol_t_srs=simulProp.get_solTimeSeries(),
+                        plot_at_times=simulProp.get_solTimeSeries(),
                         analytical_sol='K')
 
 # plotting radius
@@ -93,7 +92,7 @@ plot_at_injection_point(simulProp.get_outFileAddress(),
 
 # plotting regime
 plot_footprint(simulProp.get_outFileAddress(),
-                        sol_t_srs=1.1*simulProp.get_solTimeSeries(),
+                        plot_at_times=1.1*simulProp.get_solTimeSeries(),
                         plt_mesh=False,
                         plt_regime=True)
 plt.show()

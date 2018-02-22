@@ -23,13 +23,12 @@ K_Ic = np.full((Mesh.NumberOfElts,), 2e6, dtype=np.float64)
 
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
-
     if y > 5:
         return 4.e6
     elif y < -2.5:
-        return 0.5e6
+        return 0.8e6
     else:
-        return 1.5e6
+        return 1.2e6
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
@@ -45,12 +44,10 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.plotFigure = False            # to disable plotting of figures while the simulation runs
-simulProp.saveToDisk = True             # to enable saving the results (to hard disk)
-simulProp.set_outFileAddress(".\\Data\\stress_contrast") # the disk address where the files are saved
-simulProp.outputTimePeriod = 0.1        # the time after which the file is saved
+simulProp.outputTimePeriod = 0.1        # Setting it small so the file is saved after every time step
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
-simulProp.FinalTime = 150.              # the time to stop the simulation
+simulProp.FinalTime = 200.              # the time to stop the simulation
+# simulProp.set_outFileAddress(".\\Data\\stress_contrast") # the disk address where the files are saved
 
 
 # initializing fracture
@@ -75,11 +72,14 @@ controller = Controller(Fr,
 
 # run the simulation
 controller.run()
-
+#
 # plot results
 animate_simulation_results(simulProp.get_outFileAddress(),
-               time_period=1.0)
+                    time_period=5.0)
 plot_footprint_3d(simulProp.get_outFileAddress(),
-                time_period=25.0,
-                plt_mesh=True)
+                    time_period=40.0,
+                    plt_mesh=True,  # plot the mesh on the plan containing the fracture
+                    txt_size=1.,    # the size of the text displaying the time and the length of the fracture
+                    alternate=False)# to disable printing time alternatively between the furtherst and the closest
+                                    #  front point for better visibility
 plt.show()

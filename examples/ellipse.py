@@ -44,16 +44,13 @@ Fluid = FluidProperties()
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 100               # the time at which the simulation stops
-simulProp.plotFigure = False            # to disable plotting of figures while the simulation runs
-simulProp.saveToDisk = True             # to enable saving the results (to hard disk)
-simulProp.set_outFileAddress(".\\Data\\ellipse") # the disk address where the files are saved
 simulProp.set_volumeControl(True)       # to set up the solver in volume control mode (inviscid fluid)
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.outputTimePeriod = 1e-10      # save after every time step
 simulProp.tolFractFront = 2e-3          # increase tolerance for the anisotropic case
-simulProp.maxToughnessItr = 5
-simulProp.remeshFactor = 1.5
-
+simulProp.maxToughnessItr = 5           # set maximum iterations to 5 for faster simulation
+simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
+# simulProp.set_outFileAddress(".\\Data\\ellipse") # the disk address where the files are saved
 
 # initializing fracture
 minor_axis = 1.5

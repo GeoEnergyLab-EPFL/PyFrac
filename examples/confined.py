@@ -42,12 +42,12 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.plotFigure = False            # to disable plotting of figures while the simulation runs
-simulProp.saveToDisk = True             # to enable saving the results (to hard disk)
-simulProp.set_outFileAddress(".\\Data\\confined") # the disk address where the files are saved
-simulProp.outputTimePeriod = 0.1
-simulProp.bckColor = 'sigma0'
-simulProp.FinalTime = 27.
+simulProp.FinalTime = 27.           # the time at which the simulation stops
+simulProp.outputTimePeriod = 0.1    # the time after which the next fracture file is saved
+simulProp.bckColor = 'sigma0'       # the parameter according to which the mesh is color coded
+# simulProp.set_outFileAddress(".\\Data\\confined") # the disk address where the files are saved
+
+
 
 
 # initializing fracture

@@ -24,8 +24,8 @@ max_reattemps = 8                       # maximum reattempts in case of time ste
 reattempt_factor = 0.8                  # the factor by which time step is reduced on reattempts
 
 # output
-plot_figure = True                     # if True, figure will be plotted after the given time period
-save_to_disk = False                    # if True, fracture will be saved after the given time period
+plot_figure = False                     # if True, figure will be plotted after the given time period
+save_to_disk = True                     # if True, fracture will be saved after the given time period
 out_file_folder = "None"                # the address to save the output data
 plot_analytical = False                 # if True, analytical solution will also be plotted
 analytical_sol = None                   # the analytical solution to be ploted
@@ -43,3 +43,4 @@ tip_asymptote = 'U'                     # the tip_asymptote to be used (see clas
 save_regime = True                      # if True, the the regime of the ribbon cells will also be saved
 verbosity = 1                           # the level of details about the ongoing simulation to be plotted
 remesh_factor = 2.                      # the factor by which the mesh is compressed
+explicit_front = False

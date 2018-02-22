@@ -62,23 +62,27 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
 
     # todo : write log file
     # f = open('log', 'a')
-    if Simulation_Parameters.verbosity > 1:
-        print('Solving ElastoHydrodynamic equations with same footprint...')
-    # width by injecting the fracture with the same foot print (balloon like inflation)
-    exitstatus, w_k = injection_same_footprint(Frac,
-                                               C,
-                                               TimeStep,
-                                               Qin,
-                                               Material_properties,
-                                               Fluid_properties,
-                                               Simulation_Parameters)
 
-    if exitstatus != 1:
-        # failed
-        return exitstatus, None
+    if Simulation_Parameters.explicitFront:
+        w_k = np.copy(Frac.w)
+    else:
+        if Simulation_Parameters.verbosity > 1:
+            print('Solving ElastoHydrodynamic equations with same footprint...')
+        # width by injecting the fracture with the same foot print (balloon like inflation)
+        exitstatus, w_k = injection_same_footprint(Frac,
+                                                   C,
+                                                   TimeStep,
+                                                   Qin,
+                                                   Material_properties,
+                                                   Fluid_properties,
+                                                   Simulation_Parameters)
 
-    if Simulation_Parameters.verbosity > 1:
-        print('Starting Fracture Front loop...')
+        if exitstatus != 1:
+            # failed
+            return exitstatus, None
+
+        if Simulation_Parameters.verbosity > 1:
+            print('Starting Fracture Front loop...')
 
     norm = 10.
     k = 0
@@ -89,7 +93,7 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
         k = k + 1
         if Simulation_Parameters.verbosity > 1:
             print('\nIteration ' + repr(k))
-        Fr_kminus1 = copy.deepcopy(Fr_k)
+        fill_frac_last = np.copy(Fr_k.FillF)
 
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
         (exitstatus, Fr_k) = injection_extended_footprint(w_k,
@@ -103,13 +107,15 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
         if exitstatus != 1:
             return exitstatus, None
 
+        if Simulation_Parameters.explicitFront:
+            break
 
         # the new fracture width (notably the new width in the ribbon cells).
         w_k = np.copy(Fr_k.w)
 
         # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
         # with the number of tip cells.
-        norm = abs((sum(Fr_k.FillF) - sum(Fr_kminus1.FillF)) / len(Fr_k.FillF))
+        norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
         if Simulation_Parameters.verbosity > 1:
             print('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
@@ -537,7 +543,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     # pguess = Fr_lstTmStp.p[EltsTipNew]
 
     guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                    * np.ones((Fr_lstTmStp.EltCrack.size,), float)
+                                                    * np.ones((Fr_lstTmStp.EltChannel.size,), float)
 
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
     if sum(Material_properties.Cprime[EltsTipNew]) > 0:
@@ -678,6 +684,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     return exitstatus, Fr_kplus1
 
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
     """

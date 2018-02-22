@@ -10,7 +10,7 @@ See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import plot_simulation_results
+from src.PostProcess import *
 
 # creating mesh
 Mesh = CartesianMesh(30, 30, 41, 41)
@@ -35,11 +35,10 @@ Fluid = FluidProperties()
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e9               # the time at which the simulation stops
-simulProp.plotFigure = False            # to disable plotting of figures while the simulation runs
-simulProp.saveToDisk = True             # to enable saving the results (to hard disk)
-simulProp.set_outFileAddress(".\\Data\\radial") # the disk address where the files are saved
 simulProp.set_volumeControl(True)       # to set up the solver in volume control mode (inviscid fluid)
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
+# simulProp.set_outFileAddress(".\\Data\\radial") # the disk address where the files are saved
+
 
 
 # initializing fracture
@@ -67,6 +66,5 @@ controller.run()
 
 # plot results
 plot_simulation_results(simulProp.get_outFileAddress(),         # the address where the results are stored
-                        sol_t_srs=simulProp.get_solTimeSeries(),# the time series at which the solution is plotted
+                        plot_at_times=simulProp.get_solTimeSeries(),# the time series at which the solution is plotted
                         analytical_sol='K')                     # analytical solution for reference
-

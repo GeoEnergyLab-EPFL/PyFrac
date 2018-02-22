@@ -330,6 +330,8 @@ class SimulationParameters:
             verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently
                                            two levels 1 and 2 are supported).
             remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.
+            explicitFront (bool)        -- if True, the front position will be evaluated explicitly (no fracture front
+                                           loop).
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -397,8 +399,8 @@ class SimulationParameters:
         self.plotFigure = simul_param.plot_figure
         self.plotAnalytical = simul_param.plot_analytical
         self.analyticalSol = simul_param.analytical_sol
-        self.set_saveToDisk(simul_param.save_to_disk)
         self.set_outFileAddress(simul_param.out_file_folder)
+        self.saveToDisk = simul_param.save_to_disk
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
 
@@ -412,6 +414,7 @@ class SimulationParameters:
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.remeshFactor = simul_param.remesh_factor
+        self.explicitFront = simul_param.explicit_front
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -454,14 +457,6 @@ class SimulationParameters:
     def get_dryCrack_mechLoading(self):
         return self.__dryCrack_mechLoading
 
-    def set_saveToDisk(self, save_to_disk):
-        self.__saveToDist = save_to_disk
-        if save_to_disk:
-            self.set_outFileAddress("None")
-
-    def get_saveToDisk(self):
-        return self.__saveToDist
-
     def set_outFileAddress(self, out_file_folder):
         # check operating system to get appropriate slash in the address
 
@@ -490,7 +485,7 @@ class SimulationParameters:
             self.__outFileAddress = out_file_folder + slash
             self.lastSavedFile = 0
 
-        elif self.get_saveToDisk:
+        else:
             out_file_folder = "." + slash + "_simulation_data_PyFrac"
 
             import os

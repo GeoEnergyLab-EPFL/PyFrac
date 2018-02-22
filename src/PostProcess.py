@@ -48,6 +48,7 @@ def animate_simulation_results(address=None, time_period= 0.0, sol_time_series=N
         maxFiles (int):                 the maximum no. of files to be loaded
 
     """
+    print("Animating the fracture evolution...")
 
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
@@ -185,6 +186,9 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
         fig_p_x (figure)                -- figure for fracture pressure at x-axis to superimpose.
         fig_p_y (figure)                -- figure for fracture pressure at y-axis to superimpose.
     """
+
+    print("Plotting fracture profile...")
+
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
 
@@ -211,19 +215,27 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
 
     if fig_w_x is None:
         fig_w_x = plt.figure()
-    ax_w_x = fig_w_x.add_subplot(111)
+        ax_w_x = fig_w_x.add_subplot(111)
+    else:
+        ax_w_x = fig_w_x.get_axes()[0]
 
     if fig_w_y is None:
         fig_w_y = plt.figure()
-    ax_w_y = fig_w_y.add_subplot(111)
+        ax_w_y = fig_w_y.add_subplot(111)
+    else:
+        ax_w_y = fig_w_y.get_axes()[0]
 
     if plt_pressure:
         if fig_p_x is None:
             fig_p_x = plt.figure()
-        ax_p_x = fig_p_x.add_subplot(111)
+            ax_p_x = fig_p_x.add_subplot(111)
+        else:
+            ax_p_x = fig_p_x.get_axes()[0]
         if fig_p_y is None:
             fig_p_y = plt.figure()
-        ax_p_y = fig_p_y.add_subplot(111)
+            ax_p_y = fig_p_y.add_subplot(111)
+        else:
+            ax_p_y = fig_p_y.get_axes()[0]
 
     # time at wich the first fracture file was modified
     stats = os.stat(address + "fracture_0")
@@ -244,6 +256,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
         prev_modified_at = stats[-2]
 
         fileNo += 1
+        plotted_fractures = 0
 
         if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
@@ -314,7 +327,9 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
             else:
                 nxt_plt_t = ff.time + time_period
 
-    if not analytical_sol is 'n':
+            plotted_fractures += 1
+
+    if not analytical_sol is 'n' and plotted_fractures > 0:
         ax_w_x.legend((line_wx_num, line_wx_anl),('numerical','analytical'))
         ax_w_y.legend((line_wy_num, line_wy_anl), ('numerical', 'analytical'))
         if plt_pressure:
@@ -360,6 +375,8 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
             fig_p (figure)                    -- pressure figure to superimpose.
     """
 
+    print("Ploting solution at the injection point...")
+
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
 
@@ -388,12 +405,15 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
 
     if fig_w is None:
         fig_w = plt.figure()
-    ax_w = fig_w.add_subplot(111)
-
+        ax_w = fig_w.add_subplot(111)
+    else:
+        ax_w = fig_w.get_axes()[0]
     if plt_pressure:
         if fig_p is None:
             fig_p = plt.figure()
-        ax_p = fig_p.add_subplot(111)
+            ax_p = fig_p.add_subplot(111)
+        else:
+            ax_p = fig_p.get_axes()[0]
 
     if not analytical_sol is 'n':
         w_anltcl = np.array([], dtype=np.float64)
@@ -406,6 +426,15 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
             ax_err = fig_err.add_subplot(111)
             w_err = np.array([], dtype=np.float64)
             p_err = np.array([], dtype=np.float64)
+
+    if plt_t_dimensionless:
+        # viscosity to toughness transition time
+        tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
+                (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
+        tmk2 = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
+                (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
+    else:
+        tmk = 1.
 
     # time at wich the first fracture file was modified
     stats = os.stat(address + "fracture_0")
@@ -446,15 +475,6 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
                 else:
                     raise ValueError("Provided analytical solution is not supported")
 
-            if plt_t_dimensionless:
-                # viscosity to toughness transition time
-                tmk = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
-                    (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
-                tmk2 = (Solid.Eprime ** 13 * Fluid.muPrime ** 5 * Injection.injectionRate[1, 0] ** 3 / (
-                (32 / math.pi) ** 0.5 * Solid.K1c[0]) ** 18) ** 0.5
-            else:
-                tmk = 1.
-
             if loglog:
                 # ax_w.semilogx(ff.time, ff.w[ff.mesh.CenterElts], plt_symbol)
                 ax_w.loglog(ff.time/tmk, ff.w[ff.mesh.CenterElts], plt_symbol)
@@ -470,7 +490,6 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
                 time_srs = np.append(time_srs, ff.time)
                 if plt_error:
                     w_err = np.append(w_err, 1. - w[ff.mesh.CenterElts]/ff.w[ff.mesh.CenterElts])
-
 
             if plt_pressure:
                 if isinstance(ff.p, np.ndarray):
@@ -573,6 +592,8 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
 
     """
 
+    print("Ploting footprint of the fracture...")
+
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
 
@@ -605,13 +626,18 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
     # new figure if not provided
     if fig is None:
         fig = plt.figure()
-    ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
 
     # time at wich the first fracture file was modified
     stats = os.stat(address + "fracture_0")
     prev_modified_at = stats[-2]
-
+    ff = None
     while fileNo < 5000:
+
+        # saving last fracture in case the loaded file is to be discarded (possibly its from an old simulation)
+        ff_last = copy.deepcopy(ff)
 
         # trying to load next file. exit loop if not found
         try:
@@ -622,6 +648,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
         stats = os.stat(address + "fracture_" + repr(fileNo))
         # if the next file was modified before the last one, it means it is from some older simulation
         if stats[-2] < prev_modified_at:
+            ff = ff_last
             break
         prev_modified_at = stats[-2]
 
@@ -709,7 +736,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
         raise SystemExit("too many files.")
 
     if plt_mesh:
-        if not Sim_prop is None:
+        if Sim_prop is not None:
             SimulProp = Sim_prop
         ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
 
@@ -751,7 +778,9 @@ def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, tim
         Returns:
             fig_r (figure)                    -- a figure to superimpose.
 
-        """
+    """
+
+    print("Plotting radius of the fracture...")
 
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
@@ -864,7 +893,9 @@ def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, tim
     if fig_r is None:
         fig_r = plt.figure()
         ax = fig_r.add_subplot(111)
-    ax = fig_r.add_subplot(111)
+    else:
+        ax = fig_r.get_axes()[0]
+
     if loglog:
         if not analytical_sol is 'n':
             # ax.semilogx(time_srs, r_anltcl, anltcl_lnStyle)
@@ -924,6 +955,7 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
             fig_lk (figure)                    -- a figure to superimpose leaked off volume.
             fig_eff (figure)                   -- a figure to superimpose fracturing efficiency.
         """
+    print("Plotting leak off from the fracture...")
 
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
@@ -1017,7 +1049,8 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
     if fig_lk is None:
         fig_lk = plt.figure()
         ax_lk = fig_lk.add_subplot(111)
-    ax_lk = fig_lk.add_subplot(111)
+    else:
+        ax_lk = fig_lk.get_axes()[0]
 
     if loglog:
         if not analytical_sol is 'n':
@@ -1039,7 +1072,8 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
         if fig_eff is None:
             fig_eff = plt.figure()
             ax_eff = fig_eff.add_subplot(111)
-        ax_eff = fig_eff.add_subplot(111)
+        else:
+            ax_eff = fig_eff.get_axes()[0]
 
         ax_eff.semilogx(time_srs, efficiency, plt_symbol, label='hydraulic fracturing efficiency numerical')
         if add_labels:
@@ -1104,7 +1138,7 @@ def plot_simulation_results(address=None, plot_at_times=None, time_period=0., an
 
 
 def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_time=True, txt_size=None,
-                      plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=False):
+                      plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=False, alternate=False):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -1135,6 +1169,8 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
 
     """
 
+    print("Plotting the fracture evolution...")
+
     if address is None:
         address = "." + slash + "_simulation_data_PyFrac"
 
@@ -1164,7 +1200,9 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
     # new figure if not provided
     if fig is None:
         fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection='3d')
+        ax = fig.add_subplot(1, 1, 1, projection='3d')
+    else:
+        ax = fig.get_axes()[0]
     ax.set_frame_on(False)
 
     # time at wich the first fracture file was modified
@@ -1172,7 +1210,11 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
     prev_modified_at = stats[-2]
 
     printed_fronts = 0
+    ff = None
     while fileNo < 5000:
+
+        # saving last fracture in case the loaded file is to be discarded (possibly its from an old simulation)
+        ff_last = copy.deepcopy(ff)
 
         # trying to load next file. exit loop if not found
         try:
@@ -1183,6 +1225,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
         stats = os.stat(address + "fracture_" + repr(fileNo))
         # if the next file was modified before the last one, it means it is from some older simulation
         if stats[-2] < prev_modified_at:
+            ff = ff_last
             break
         prev_modified_at = stats[-2]
 
@@ -1227,12 +1270,15 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                 tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[ff.EltTip, ff.ZeroVertex]]
                 if printed_fronts % 2 == 0:
                     r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
-                else:
+                elif alternate:
                     r_indx = np.argmin((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
+                else:
+                    r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
                 x_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 0]
                 y_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 1]
                 if txt_size is None:
                     txt_size = max(ff.mesh.hx, ff.mesh.hx)
+                print("Plotting at time " + repr(ff.time) + "...")
                 text3d(ax,
                        (x_coor, y_coor, 0),
                        "%.2f sec" % ff.time,
