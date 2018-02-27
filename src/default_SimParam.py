@@ -43,4 +43,4 @@ tip_asymptote = 'U'                     # the tip_asymptote to be used (see clas
 save_regime = True                      # if True, the the regime of the ribbon cells will also be saved
 verbosity = 1                           # the level of details about the ongoing simulation to be plotted
 remesh_factor = 2.                      # the factor by which the mesh is compressed
-explicit_front = False
+front_advancing = 'implicit'            # possible options include 'implicit', 'explicit' and 'semi-implicit'.

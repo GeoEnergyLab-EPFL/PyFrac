@@ -33,7 +33,8 @@ class Controller:
                      "Filling fraction not correct!",
                      "Toughness iteration did not converge!",
                      "projection could not be found!",
-                     "Reached end of grid!"
+                     "Reached end of grid!",
+                     "Leak off can't be evaluated!"
                      )
 
 
@@ -238,8 +239,7 @@ class Controller:
                                                              self.solid_prop,
                                                              self.sim_prop,
                                                              self.injection_prop,
-                                                             smallerTimeStep,
-                                                             Frac.mesh)
+                                                             smallerTimeStep)
             if status == 1:
                 if self.sim_prop.verbosity > 1:
                     print(self.errorMessages[status])

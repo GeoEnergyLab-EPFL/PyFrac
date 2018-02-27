@@ -18,10 +18,14 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
     solve Eikonal equation to get level set.
 
     Arguments:
-        InitlevelSet (ndarray-float):       level set with initial values in ribbon cells
-        EltRibbon (ndarray-int):            ribbon elements
-        EltChannel (ndarray-int):           channel elements
-        mesh (CartesianMesh object):        mesh object
+        InitlevelSet (ndarray-float)        -- level set to be evaluated and updated.
+        EltRibbon (ndarray-int):            -- cells with given distance from the front.
+        EltChannel (ndarray-int):           -- cells enclosed by the given cells
+        mesh (CartesianMesh object):        -- mesh object
+        farAwayNgtv (ndarray-float):        -- the cells inwards from ribbon cells for which the distance from front
+                                               is to be evaluated
+        farAwayPstv (ndarray-float):        -- the cells outwards from ribbon cells for which the distance from front
+                                               is to be evaluated
 
     Returns:
         Does not return anything. The InitlevelSet is updated in place.
@@ -68,9 +72,10 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         Alive = np.append(Alive, Smallest)
         NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
-    if (InitlevelSet[farAwayPstv] == 1e10).any():
-        unevaluated = np.where(InitlevelSet[farAwayPstv] == 1e10)[0]
-        print("cannot find level set for the cell(s): " + repr(unevaluated))
+    if (InitlevelSet[farAwayPstv] >= 1e10).any():
+        unevaluated = np.where(InitlevelSet[farAwayPstv] >= 1e10)[0]
+        print("cannot find level set for the cell(s) explicitly: " + repr(unevaluated) + "\n solving with root"
+                                                                                         " finding algorithm...")
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayPstv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
@@ -130,9 +135,10 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 
 
-    if (abs(InitlevelSet[farAwayNgtv]) == 1e10).any():
-        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) == 1e10)[0]
-        print("cannot find level set for the cell(s): " + repr(unevaluated))
+    if (abs(InitlevelSet[farAwayNgtv]) >= 1e10).any():
+        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) >= 1e10)[0]
+        print("cannot find level set for the cell(s) explicitly: " + repr(unevaluated) + "\n solving with root"
+                                                                                         " finding algorithm...")
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayNgtv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
@@ -303,10 +309,24 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
         if drctx > 0 and drcty > 0:
             zeroVrtx[i] = 2
 
-    # Remove repetitions in the ribbon cells
+    for i in range(0,len(eltsTip)):
+        eltsRibbon = np.delete(eltsRibbon,np.where(eltsRibbon==eltsTip[i]))
+
+        # !!! to be checked if necessary or not
+        if (mesh.NeiElements[eltsTip[i],0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
+            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 0])
+        if (mesh.NeiElements[eltsTip[i],1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
+            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 1])
+        if (mesh.NeiElements[eltsTip[i], 0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
+            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 0])
+        if (mesh.NeiElements[eltsTip[i], 1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
+            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 1])
+
     eltsRibbon = np.unique(eltsRibbon)
-    for i in range(0, len(eltsTip)):
-        eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
+    # # Remove repetitions in the ribbon cells
+    # eltsRibbon = np.unique(eltsRibbon)
+    # for i in range(0, len(eltsTip)):
+    #     eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
 
     # to_append = np.asarray([], dtype=np.int)
     # for i in range(0, len(eltsRibbon)):
@@ -325,15 +345,15 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     # for i in range(0, len(eltsTip)):
     #     eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
 
-    # remove wrongfully marked ribbon cells is case of sharp angle
-    to_delete = np.asarray([])
-    for i in range(0, len(eltsRibbon)):
-        neighbors = mesh.NeiElements[eltsRibbon[i]]
-        enclosing = np.append(neighbors, np.asarray(
-            [neighbors[2] - 1, neighbors[2] + 1, neighbors[3] - 1, neighbors[3] + 1]))
-        if sum(np.in1d(enclosing, eltsRibbon)) < 2:
-            to_delete = np.append(to_delete, np.where(eltsRibbon == eltsRibbon[i])[0])
-    eltsRibbon = np.delete(eltsRibbon, to_delete)
+    # # remove wrongfully marked ribbon cells is case of sharp angle
+    # to_delete = np.asarray([])
+    # for i in range(0, len(eltsRibbon)):
+    #     neighbors = mesh.NeiElements[eltsRibbon[i]]
+    #     enclosing = np.append(neighbors, np.asarray(
+    #         [neighbors[2] - 1, neighbors[2] + 1, neighbors[3] - 1, neighbors[3] + 1]))
+    #     if sum(np.in1d(enclosing, eltsRibbon)) < 2:
+    #         to_delete = np.append(to_delete, np.where(eltsRibbon == eltsRibbon[i])[0])
+    # eltsRibbon = np.delete(eltsRibbon, to_delete)
 
 
 

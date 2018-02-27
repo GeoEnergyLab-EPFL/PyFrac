@@ -330,8 +330,10 @@ class SimulationParameters:
             verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently
                                            two levels 1 and 2 are supported).
             remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.
-            explicitFront (bool)        -- if True, the front position will be evaluated explicitly (no fracture front
-                                           loop).
+            frontAdvancing (string)     -- The type of front advancing to be done. Possible options are:
+                                                -- explicit
+                                                -- semi-implicit
+                                                -- implicit
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -414,7 +416,7 @@ class SimulationParameters:
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.remeshFactor = simul_param.remesh_factor
-        self.explicitFront = simul_param.explicit_front
+        self.frontAdvancing = simul_param.front_advancing
 
 # ----------------------------------------------------------------------------------------------------------------------
 

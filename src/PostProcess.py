@@ -603,9 +603,6 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
     if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
         plot_at_times = np.array([plot_at_times])
 
-    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
-        plot_at_times = np.array([plot_at_times])
-
     # read properties
     filename = address + "properties"
     try:
@@ -614,6 +611,10 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
 
+    if plot_at_times is None and time_period == 0.0 and Sim_prop is None:
+        plot_at_times = SimulProp.get_solTimeSeries()
+    elif plot_at_times is None and time_period == 0.0 and Sim_prop is not None:
+        plot_at_times = Sim_prop.get_solTimeSeries()
 
     fileNo = 0
     nxt_plt_t = 0.0
@@ -1138,7 +1139,8 @@ def plot_simulation_results(address=None, plot_at_times=None, time_period=0., an
 
 
 def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_time=True, txt_size=None,
-                      plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=False, alternate=False):
+                      plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=True, alternate=False,
+                      plt_clr_bar=True):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -1250,20 +1252,11 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                 ax.add_patch(patch)
                 art3d.pathpatch_2d_to_3d(patch)
 
-            if t_srs_given:
-                if t_srs_indx < len(plot_at_times) - 1:
-                    t_srs_indx += 1
-                    nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
-                    break
-            else:
-                nxt_plt_t = ff.time + time_period
-
             printed_fronts += 1
 
             # plot width
             fig = ff.plot_fracture(parameter='width', elts='crack', fig=fig, alpha= 0.3)
-            ax.set_zlim([min(ff.w) - min(ff.w) * 0.25, max(ff.w) + max(ff.w) * 0.25])
+            # ax.set_zlim([min(ff.w) - min(ff.w) * 0.25, max(ff.w) + max(ff.w) * 0.25])
 
             # print time close to the front edge
             if plt_time:
@@ -1274,19 +1267,28 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                     r_indx = np.argmin((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
                 else:
                     r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
-                x_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 0]
-                y_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 1]
+                x_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 0] + 0.75 * ff.mesh.hx
+                y_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 1] + 0.75 * ff.mesh.hy
                 if txt_size is None:
                     txt_size = max(ff.mesh.hx, ff.mesh.hx)
                 print("Plotting at time " + repr(ff.time) + "...")
                 text3d(ax,
                        (x_coor, y_coor, 0),
-                       "%.2f sec" % ff.time,
+                       "%.2f$s$" % ff.time,
                        zdir="z",
                        size=txt_size,
                        usetex=True,
                        ec="none",
                        fc="k")
+
+            if t_srs_given:
+                if t_srs_indx < len(plot_at_times) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
 
     if not plt_grid:
         ax.grid(False)
@@ -1307,12 +1309,12 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
             (Path.LINETO, [min_x, min_y - 1.5 * ff.mesh.hy]),
             (Path.MOVETO, [max_x, min_y - 2.5 * ff.mesh.hy]),
             (Path.LINETO, [max_x, min_y - 1.5 * ff.mesh.hy]),
-            (Path.MOVETO, [max_x + ff.mesh.hx, min_y - ff.mesh.hy]),
-            (Path.LINETO, [max_x + ff.mesh.hx, max_y]),
-            (Path.MOVETO, [max_x + 1.5 * ff.mesh.hx, min_y - ff.mesh.hy]),
-            (Path.LINETO, [max_x + 0.5 * ff.mesh.hx, min_y - ff.mesh.hy]),
-            (Path.MOVETO, [max_x + 1.5 * ff.mesh.hx, max_y]),
-            (Path.LINETO, [max_x + 0.5 * ff.mesh.hx, max_y]),
+            (Path.MOVETO, [min_x - 2.5 * ff.mesh.hx, min_y - ff.mesh.hy]),
+            (Path.LINETO, [min_x - 2.5 * ff.mesh.hx, max_y]),
+            (Path.MOVETO, [min_x - 3. * ff.mesh.hx, min_y - ff.mesh.hy]),
+            (Path.LINETO, [min_x - 2. * ff.mesh.hx, min_y - ff.mesh.hy]),
+            (Path.MOVETO, [min_x - 3. * ff.mesh.hx, max_y]),
+            (Path.LINETO, [min_x - 2. * ff.mesh.hx, max_y]),
         ]
 
         codes, verts = zip(*path_data)
@@ -1324,8 +1326,8 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
             txt_size = max(ff.mesh.hx, ff.mesh.hx)
         y_len = max_y - min_y + ff.mesh.hy
         text3d(ax,
-               (max_x + 2 * ff.mesh.hx, (max_y + min_y) / 2, 0),
-               "%.2f meters" % y_len,
+               (min_x - 2.5 * ff.mesh.hx - 5 * txt_size, (max_y + min_y) / 2, 0),
+               "%.2f$m$" % y_len,
                zdir="z",
                size=txt_size,
                usetex=True,
@@ -1333,8 +1335,8 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                fc="k")
         x_len = max_x - min_x + ff.mesh.hy
         text3d(ax,
-               ((max_x + min_x) / 2, min_y - 4 * ff.mesh.hy, 0),
-               "%.2f meters" % x_len,
+               ((max_x + min_x) / 2, min_y - 2 * ff.mesh.hy - 2 * txt_size, 0),
+               "%.2f$m$" % x_len,
                zdir="z",
                size=txt_size,
                usetex=True,
@@ -1347,22 +1349,26 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
 
     # plot mesh with the color superimposed according to the given parameter
     if plt_mesh:
+        print("Plotting mesh...")
         if SimulProp is not None:
             if SimulProp.bckColor == 'sigma0':
-                max_bck = max(Solid.SigmaO)
-                min_bck = min(Solid.SigmaO)
+                max_bck = max(Solid.SigmaO) / 1e6
+                min_bck = min(Solid.SigmaO) / 1e6
                 if max_bck - min_bck > 0:
-                    colors = (Solid.SigmaO - min_bck) / (max_bck - min_bck)
+                    colors = (Solid.SigmaO / 1e6 - min_bck) / (max_bck - min_bck)
+                    parameter = "confining stress ($MPa$)"
             elif SimulProp.bckColor == 'K1c':
-                max_bck = max(Solid.K1c)
-                min_bck = min(Solid.K1c)
+                max_bck = max(Solid.K1c)/ 1e6
+                min_bck = min(Solid.K1c)/ 1e6
                 if max_bck - min_bck > 0:
-                    colors = (Solid.K1c - min_bck) / (max_bck - min_bck)
+                    colors = (Solid.K1c/ 1e6 - min_bck) / (max_bck - min_bck)
+                    parameter = "fracture toughness ($Mpa\sqrt{m})"
             elif SimulProp.bckColor == 'Cl':
                 max_bck = max(Solid.Cl)
                 min_bck = min(Solid.Cl)
                 if max_bck - min_bck > 0:
                     colors = (Solid.Cl - min_bck) / (max_bck - min_bck)
+                    parameter = "Carter's Leak off"
             elif not SimulProp.bckColor is None:
                 raise ValueError("Back ground color identifier not supported!")
 
@@ -1382,10 +1388,61 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
             ax.add_patch(cell)
             art3d.pathpatch_2d_to_3d(cell)
 
+    if plt_clr_bar and plt_bckColor and plt_mesh:
+        print("Making colorbar...")
+        clr_range = np.linspace(0, 1., 11)
+        y = np.linspace(min_y, max_y, 11)
+        dy = y[1] - y[0]
+        for i in range(11):
+            face_color = (0, clr_range[i], 0, 0.2)
+            cell = mpatches.Rectangle((ff.mesh.Lx + 4 * ff.mesh.hx,
+                                      y[i]),
+                                      2 * dy,
+                                      dy,
+                                      ec=(0, 0, 0, 0.05),
+                                      fc=face_color)
+            ax.add_patch(cell)
+            art3d.pathpatch_2d_to_3d(cell)
+
+        text3d(ax,
+               (ff.mesh.Lx + 4 * ff.mesh.hx, y[9] + 3 * dy, 0),
+               parameter,
+               zdir="z",
+               size=txt_size,
+               usetex=True,
+               ec="none",
+               fc="k")
+        y = [y[0], y[5], y[10]]
+        values = np.linspace(min_bck, max_bck, 11)
+        values = [values[0], values[5], values[10]]
+        for i in range(3):
+            text3d(ax,
+                   (ff.mesh.Lx + 4 * ff.mesh.hx + 2 * dy, y[i] + dy/2, 0),
+                   "%.2f" % values[i],
+                   zdir="z",
+                   size=txt_size,
+                   usetex=True,
+                   ec="none",
+                   fc="k")
+
+    # mark width at the injection point
+    w_inj = ff.w[ff.mesh.CenterElts] * 1e3
+    text3d(ax,
+           (0, 0, ff.w[ff.mesh.CenterElts]),
+           "%.2f$mm$" %w_inj,
+           zdir="z",
+           size=txt_size,
+           # angle=np.pi / 2,
+           usetex=True,
+           ec="none",
+           fc="k")
+
     ax.axis('equal')
     ax.set_frame_on(False)
     ax.set_zlim([min(ff.w)-min(ff.w)*0.25, max(ff.w)+max(ff.w)*0.25])
     ax.set_title("Fracture evolution")
+    scale = 1.1
+    zoom_factory(ax, base_scale=scale)
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1415,3 +1472,37 @@ def text3d(ax, xyz, s, zdir="z", size=None, angle=0, usetex=False, **kwargs):
     p1 = mpatches.PathPatch(trans.transform_path(text_path), **kwargs)
     ax.add_patch(p1)
     art3d.pathpatch_2d_to_3d(p1, z=z1, zdir=zdir)
+
+
+def zoom_factory(ax,base_scale = 2.):
+    def zoom_fun(event):
+        # get the current x and y limits
+        cur_xlim = ax.get_xlim()
+        cur_ylim = ax.get_ylim()
+        cur_xrange = (cur_xlim[1] - cur_xlim[0])*.5
+        cur_yrange = (cur_ylim[1] - cur_ylim[0])*.5
+        xdata = event.xdata # get event x location
+        ydata = event.ydata # get event y location
+        if event.button == 'up':
+            # deal with zoom in
+            scale_factor = 1/base_scale
+        elif event.button == 'down':
+            # deal with zoom out
+            scale_factor = base_scale
+        else:
+            # deal with something that should never happen
+            scale_factor = 1
+            # printevent.button
+        # set new limits
+        ax.set_xlim([xdata - cur_xrange*scale_factor,
+                     xdata + cur_xrange*scale_factor])
+        ax.set_ylim([ydata - cur_yrange*scale_factor,
+                     ydata + cur_yrange*scale_factor])
+        plt.draw() # force re-draw
+
+    fig = ax.get_figure() # get the figure of interest
+    # attach the call back
+    fig.canvas.mpl_connect('scroll_event',zoom_fun)
+
+    #return the function
+    return zoom_fun

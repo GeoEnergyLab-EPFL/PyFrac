@@ -169,6 +169,7 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
     """
 
     a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
+    a[np.where(a<=np.finfo(float).eps * np.finfo(float).eps)[0]]= np.finfo(float).eps
     # b = 10 * (w / (Kprime / Eprime)) ** 2
     b = np.full((len(w),), 3 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
     # b[np.where(np.isinf(b))[0]] = 4 * (mesh.hx**2 + mesh.hy**2)**0.5
@@ -261,7 +262,8 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
             dist[moving[i]] = brentq(ResFunc, a[i], b[i], TipAsmptargs)
         except RuntimeError:
             dist[moving[i]] = np.nan
-
+        except ValueError:
+            dist[moving[i]] = np.nan
     return dist
 
 # -----------------------------------------------------------------------------------------------------------------------

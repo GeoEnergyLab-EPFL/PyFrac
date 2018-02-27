@@ -302,7 +302,7 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     """
 
     a = 0.01 * dist ** 0.5 * Kprime / Eprime  # lower bound on width
-    b = 10 * dist ** 0.5 * Kprime / Eprime
+    b = 100 * dist ** 0.5 * Kprime / Eprime
 
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cprime, Vel)
     Res_a = TipAsym_UniversalW_zero_Res(a, *TipAsmptargs)

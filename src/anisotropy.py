@@ -569,7 +569,7 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
         return mat_prop.K1c[elts]
 
     if mat_prop.anisotropic:
-        return mat_prop.K1c(alpha)
+        return mat_prop.K1cFunc(alpha)
     else:
         x = np.zeros((len(elts),), )
         y = np.zeros((len(elts),), )

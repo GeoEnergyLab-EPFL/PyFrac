@@ -224,7 +224,12 @@ class Fracture():
                 # set time to zero if mechanical loading is creating the fracture
                 self.time = 0
 
-        self.v = vel * np.ones((self.EltTip.size,), )
+        if vel is not None:
+            self.v = vel * np.ones((self.EltTip.size, ), )
+        else:
+            self.v = vel
+        self.sgndDist_last = None
+        self.timeStep_last = None
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
         self.Tarrival[self.EltCrack] = self.time
@@ -630,6 +635,8 @@ class Fracture():
         """
 
         coarse_mesh = CartesianMesh(factor*self.mesh.Lx, factor*self.mesh.Ly, self.mesh.nx, self.mesh.ny)
+
+        # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,
                  self.EltRibbon,
                  self.EltChannel,
@@ -637,22 +644,42 @@ class Fracture():
                  [],
                  self.EltChannel)
 
-        sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel], self.sgndDist[self.EltChannel], coarse_mesh.CenterCoor, method='linear')
+        sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                   self.sgndDist[self.EltChannel],
+                                   coarse_mesh.CenterCoor,
+                                   method='linear',
+                                   fill_value=1e10)
 
+        # avoid adding tip cells from the fine mesh to get into the channel cells of the coarse mesh
         max_diag = (coarse_mesh.hx ** 2 + coarse_mesh.hy ** 2) ** 0.5
         excluding_tip = np.where(sgndDist_coarse <= -max_diag)[0]
         sgndDist_copy = np.copy(sgndDist_coarse)
         sgndDist_coarse = np.full(sgndDist_coarse.shape, 1e10, dtype=np.float64)
         sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
 
-        w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel], self.w[self.EltChannel],
-                                   coarse_mesh.CenterCoor, method='linear', fill_value=0.)
+        w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                            self.w[self.EltChannel],
+                            coarse_mesh.CenterCoor,
+                            method='linear',
+                            fill_value=0.)
 
         # w_coarse[np.isnan(w_coarse)]=0
 
-        #todo: Find the velocity by merging tip cells. Asigning the maximum for now to calculate the correct time step
-        v_coarse = max(self.v)
+        # interpolate last level set by first advancing to the end of the grid and then interpolating
+        SolveFMM(self.sgndDist_last,
+                 self.EltRibbon,
+                 self.EltChannel,
+                 self.mesh,
+                 [],
+                 self.EltChannel)
 
+        sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                   self.sgndDist_last[self.EltChannel],
+                                   coarse_mesh.CenterCoor,
+                                   method='linear',
+                                   fill_value=1e10)
+
+        # making the initialization paramenters tuple
         init_data = ('G',
                      excluding_tip,
                      excluding_tip,
@@ -661,7 +688,7 @@ class Fracture():
                      None,
                      C,
                      self.FractureVolume,
-                     v_coarse)
+                     np.nan)
 
         # to avoid plotting and saving of the remeshed fracture
         saveToDisk_cpy = copy.copy(sim_prop.saveToDisk)
@@ -679,6 +706,32 @@ class Fracture():
                             injection=inj_prop,
                             simulProp=sim_prop)
 
+        # evaluate current level set on the coarse mesh
+        EltRibbon = np.delete(Fr_coarse.EltRibbon,np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
+        EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
+        cells_outside = np.arange(coarse_mesh.NumberOfElts)
+        cells_outside = np.delete(cells_outside, EltChannel)
+        SolveFMM(sgndDist_copy,
+                 EltRibbon,
+                 EltChannel,
+                 coarse_mesh,
+                 cells_outside,
+                 [])
+
+        # evaluate last level set on the coarse mesh to evaluate velocity of the tip
+        EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
+        EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
+        cells_outside = np.arange(coarse_mesh.NumberOfElts)
+        cells_outside = np.delete(cells_outside, EltChannel)
+        SolveFMM(sgndDist_last_coarse,
+                 EltRibbon,
+                 EltChannel,
+                 coarse_mesh,
+                 cells_outside,
+                 [])
+
+        Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
+                        sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
 
         Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
                                                             self.Tarrival[self.EltChannel],

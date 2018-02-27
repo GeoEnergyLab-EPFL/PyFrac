@@ -47,11 +47,8 @@ simulProp.outputTimePeriod = 0.1    # the time after which the next fracture fil
 simulProp.bckColor = 'sigma0'       # the parameter according to which the mesh is color coded
 # simulProp.set_outFileAddress(".\\Data\\confined") # the disk address where the files are saved
 
-
-
-
 # initializing fracture
-initRad = 1.7
+initRad = 1.5
 init_param = ('M', "length", initRad)
 
 # creating fracture object
@@ -76,7 +73,9 @@ controller.run()
 # plot results
 animate_simulation_results(simulProp.get_outFileAddress(),
                time_period=1.0)
+
+plot_at = np.linspace(1, 27, 4)
 plot_footprint_3d(simulProp.get_outFileAddress(),
-               time_period=5.0,
-               plt_mesh=True)
+                    plot_at_times =plot_at,
+                    txt_size=0.6)
 plt.show()
