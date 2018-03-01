@@ -32,8 +32,7 @@ def Kernel_ZZ(ax, ay, x, y, Ep):
     np.sqrt(amx ** 2 + bmy ** 2) / (amx * bmy) + np.sqrt(apx ** 2 + bmy ** 2) / (apx * bmy) +
     np.sqrt(amx ** 2 + bpy ** 2) / (amx * bpy) + np.sqrt(apx ** 2 + bpy ** 2) / (apx * bpy))
 
-
-#################################
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def elasticity_matrix_all_mesh(Mesh, Ep):
@@ -55,22 +54,56 @@ def elasticity_matrix_all_mesh(Mesh, Ep):
 
     for i in range(0, Ne):
         for j in range(0, Ne):
-            x = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[j, 0]
-            y = Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[j, 1]
-            amx = a - x
-            apx = a + x
-            bmy = b - y
-            bpy = b + y
+            x = float(Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[j, 0])
+            y = float(Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[j, 1])
+            amx = float(a - x)
+            apx = float(a + x)
+            bmy = float(b - y)
+            bpy = float(b + y)
             # !!! Reconsider: Tried avoiding excessive function calls by embedding kernel here. No performance
             # improvement was observed.
-            A[i, j] = (Ep / (8 * (np.pi))) * (
-            np.sqrt(amx ** 2 + bmy ** 2) / (amx * bmy) + np.sqrt(apx ** 2 + bmy ** 2) / (apx * bmy) +
-            np.sqrt(amx ** 2 + bpy ** 2) / (amx * bpy) + np.sqrt(apx ** 2 + bpy ** 2) / (apx * bpy))
+            A[i, j] = (Ep / (8. * (np.pi))) * (
+            np.sqrt(amx ** 2. + bmy ** 2.) / (amx * bmy) + np.sqrt(apx ** 2. + bmy ** 2.) / (apx * bmy) +
+            np.sqrt(amx ** 2. + bpy ** 2.) / (amx * bpy) + np.sqrt(apx ** 2. + bpy ** 2.) / (apx * bpy))
             # A[i,j]=KernelZZ(a,b,x,y,Ep);
 
     return A
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+def elasticity_matrix_all_mesh_vectorized(Mesh, Ep):
+    """
+    Evaluate the elasticity matrix for the whole mesh
+    Arguments:
+        Mesh (object CartesianMesh):    a mesh object describing the domain
+        Ep (float):                     plain strain modulus
+
+    Returns:
+        ndarray-float:                  the elasticity martix
+    """
+
+    a = Mesh.hx / 2.
+    b = Mesh.hy / 2.
+    Ne = Mesh.NumberOfElts
+
+    A = np.empty([Ne, Ne], dtype=float)
+    x = np.empty([Ne, Ne], dtype=float)
+    y = np.empty([Ne, Ne], dtype=float)
+
+    for i in range(0, Ne):
+        x[i] = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
+    for i in range(0, Ne):
+        y[i] = Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[:, 1]
+
+    A = (Ep / (8. * (np.pi))) * (
+        np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(np.square(a + x) + np.square(b - y)
+        ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
+        np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
+
+    return A
+
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def load_elasticity_matrix(Mesh, EPrime):
@@ -99,7 +132,7 @@ def load_elasticity_matrix(Mesh, EPrime):
             print(
                 'The loaded matrix is not correct with respect to the current mesh or the current plain strain modulus.'
                 '\nMaking global matrix...')
-            C = elasticity_matrix_all_mesh(Mesh, EPrime)
+            C = elasticity_matrix_all_mesh_vectorized(Mesh, EPrime)
             Elast = (C, Mesh, EPrime)
             with open('CMatrix', 'wb') as output:
                 pickle.dump(Elast, output, -1)
@@ -108,7 +141,7 @@ def load_elasticity_matrix(Mesh, EPrime):
     except FileNotFoundError:
         # if 'CMatrix' file is not found
         print('file not found\nBuilding the global elasticity matrix...')
-        C = elasticity_matrix_all_mesh(Mesh, EPrime)
+        C = elasticity_matrix_all_mesh_vectorized(Mesh, EPrime)
         Elast = (C, Mesh, EPrime)
         with open('CMatrix', 'wb') as output:
             pickle.dump(Elast, output, -1)

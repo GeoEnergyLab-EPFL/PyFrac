@@ -336,6 +336,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
             ax_p_x.legend((line_px_num, line_px_anl), ('numerical', 'analytical'))
             ax_p_y.legend((line_py_num, line_py_anl), ('numerical', 'analytical'))
 
+    plt.show()
     return fig_w_x, fig_w_y, fig_p_x, fig_p_y
 
 
@@ -557,6 +558,7 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
                 ax_err.set_title('Relative error at injection point')
                 ax_err.legend()
 
+    plt.show()
     return fig_w, fig_p
 
 
@@ -611,10 +613,11 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
     except FileNotFoundError:
         raise SystemExit("Data not found. The address might be incorrect")
 
-    if plot_at_times is None and time_period == 0.0 and Sim_prop is None:
+    if plot_at_times is None and time_period == 0.0 and Sim_prop is None and SimulProp.get_solTimeSeries() is not None:
         plot_at_times = SimulProp.get_solTimeSeries()
     elif plot_at_times is None and time_period == 0.0 and Sim_prop is not None:
         plot_at_times = Sim_prop.get_solTimeSeries()
+
 
     fileNo = 0
     nxt_plt_t = 0.0
@@ -742,6 +745,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
         ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
 
     ax.set_title("Fracture footprint")
+    plt.show()
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -921,6 +925,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, tim
             ax_err.set_title('Relative error on radius')
             ax_err.legend()
 
+    plt.show()
     return fig_r, fig_err
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1083,6 +1088,7 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
             ax_eff.set_title('Hydraulic fracturing efficiency')
             ax_eff.legend()
 
+    plt.show()
     return fig_lk, fig_eff
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1443,6 +1449,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
     ax.set_title("Fracture evolution")
     scale = 1.1
     zoom_factory(ax, base_scale=scale)
+    plt.show()
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------

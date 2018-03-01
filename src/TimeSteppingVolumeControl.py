@@ -521,6 +521,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     Fr_kplus1.p[EltCrack_k] = sol[-1]
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
+    Fr_kplus1.timeStep_last = timeStep
 
     Fr_kplus1.alpha = alpha_k[partlyFilledTip]
     Fr_kplus1.l = l_k[partlyFilledTip]

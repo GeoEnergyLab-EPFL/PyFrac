@@ -136,13 +136,13 @@ class Controller:
                 f.close()
 
             else:
-                print("Restarting with the last check point...")
                 self.sim_prop.tmStpPrefactor *= 0.8
                 self.smallStep_cnt = 0
                 if self.fr_queue[(i+1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
                     raise SystemExit("Simulation failed.")
                 else:
                     Fr = copy.deepcopy(self.fr_queue[(i+1) % 5])
+                    print("Restarting with the last check point...")
 
             i = i + 1
 
