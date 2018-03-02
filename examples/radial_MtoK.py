@@ -36,7 +36,6 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e7               # the time at which the simulation stops
 simulProp.saveRegime = True             # enable saving the regime
-# simulProp.set_outFileAddress(".\\Data\\MtoK") # the disk address where the files are saved
 
 
 # initializing fracture
@@ -64,8 +63,9 @@ controller.run()
 
 # plotting footprint
 plot_footprint(simulProp.get_outFileAddress(),
-                        plot_at_times=simulProp.get_solTimeSeries(),
-                        analytical_sol='K')
+                            plot_at_times=simulProp.get_solTimeSeries(),
+                            analytical_sol='K')
+plt.show()
 
 # plotting radius
 Fig_r, Fig_err = plot_radius(simulProp.get_outFileAddress(),
@@ -77,6 +77,7 @@ plot_radius(simulProp.get_outFileAddress(),
                             anltcl_lnStyle='g',
                             add_labels=False,
                             plt_error=False)
+plt.show()
 
 # plotting width at center
 Fig_w, Fig_p = plot_at_injection_point(simulProp.get_outFileAddress(),
@@ -89,10 +90,11 @@ plot_at_injection_point(simulProp.get_outFileAddress(),
                             analytical_sol='K',
                             anltcl_lnStyle='g',
                             plt_error=False)
+plt.show()
 
 # plotting regime
 plot_footprint(simulProp.get_outFileAddress(),
-                        plot_at_times=1.1*simulProp.get_solTimeSeries(),
-                        plt_mesh=False,
-                        plt_regime=True)
+                            plot_at_times=1.1*simulProp.get_solTimeSeries(),
+                            plt_mesh=False,
+                            plt_regime=True)
 plt.show()

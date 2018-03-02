@@ -336,7 +336,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
             ax_p_x.legend((line_px_num, line_px_anl), ('numerical', 'analytical'))
             ax_p_y.legend((line_py_num, line_py_anl), ('numerical', 'analytical'))
 
-    plt.show()
+
     return fig_w_x, fig_w_y, fig_p_x, fig_p_y
 
 
@@ -558,7 +558,7 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
                 ax_err.set_title('Relative error at injection point')
                 ax_err.legend()
 
-    plt.show()
+
     return fig_w, fig_p
 
 
@@ -745,7 +745,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
         ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
 
     ax.set_title("Fracture footprint")
-    plt.show()
+
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -925,7 +925,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, tim
             ax_err.set_title('Relative error on radius')
             ax_err.legend()
 
-    plt.show()
+
     return fig_r, fig_err
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1088,7 +1088,7 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
             ax_eff.set_title('Hydraulic fracturing efficiency')
             ax_eff.legend()
 
-    plt.show()
+
     return fig_lk, fig_eff
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1139,14 +1139,14 @@ def plot_simulation_results(address=None, plot_at_times=None, time_period=0., an
                                 plot_at_times=plot_at_times,
                                 time_period=time_period,
                                 analytical_sol=analytical_sol)
-    plt.show()
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_time=True, txt_size=None,
                       plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=True, alternate=False,
-                      plt_clr_bar=True):
+                      plt_clr_bar=True, disp_precision=3):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -1155,22 +1155,17 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
         fig (figure)                    -- figure to superimpose. A new figure will be created if not provided.
         time_period (float)             -- time period between two successive fracture plots.
         plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
-        analytical_sol (string)         -- the following options can be provided
-                                                'M'     -- radial fracture in viscosity dominated regime
-                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
-                                                'K'     -- radial fracture in toughness dominated regime
-                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
-                                                'E'     -- elliptical fracture in toughness dominated regime
-                                                'PKN'   -- PKN fracture
-        plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
-                                               continous line with data points marked with dots )
-        anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
-                                               continous line with data points marked with dots )
-        plt_mesh (boolean)              -- if true, mesh will also be plotted.
-        plt_regime (boolean)            -- if true, regime evaluated at the ribbon cells will be ploted (see Zia and
-                                           Lecampion 2018)
-        Sim_prop (SimulationParameters) -- if provided, the simulation properties read for file will be overriden by
-                                           these parameters.
+        plt_time (bool)                 -- if True, time will be displayed close to each of the front.
+        txt_size (float)                -- the size of text to display time, lengths etc.
+        plt_axis (bool)                 -- if True, axis will be plotted.
+        plt_grid (bool)                 -- if True, grid will also be plotted.
+        plt_mesh (bool)                 -- if True, mesh will be plotted on the plain containing the fracture.
+        plt_bckColor (bool)             -- if True, the mesh will be color coded according to the parameter specified
+                                           in the loaded parameter properties object from the given address.
+        alternate (bool)                -- if True, the time will be displayed alternatively at the furthest and closest
+                                           points of the front from the injection point.
+        plt_clr_bar (bool)              -- if True, the color bar will generated.
+        disp_precision (int)            -- the precision upto which the time, length etc. are displayed
 
     Returns:
         fig (figure)                    -- a figure to superimpose.
@@ -1278,9 +1273,10 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                 if txt_size is None:
                     txt_size = max(ff.mesh.hx, ff.mesh.hx)
                 print("Plotting at time " + repr(ff.time) + "...")
+                t = to_precision(ff.time, disp_precision)
                 text3d(ax,
                        (x_coor, y_coor, 0),
-                       "%.2f$s$" % ff.time,
+                       t + "$sec$",
                        zdir="z",
                        size=txt_size,
                        usetex=True,
@@ -1330,19 +1326,19 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
         art3d.pathpatch_2d_to_3d(patch)
         if txt_size is None:
             txt_size = max(ff.mesh.hx, ff.mesh.hx)
-        y_len = max_y - min_y + ff.mesh.hy
+        y_len = to_precision(max_y - min_y + ff.mesh.hy, disp_precision)
         text3d(ax,
                (min_x - 2.5 * ff.mesh.hx - 5 * txt_size, (max_y + min_y) / 2, 0),
-               "%.2f$m$" % y_len,
+               y_len + "$m$",
                zdir="z",
                size=txt_size,
                usetex=True,
                ec="none",
                fc="k")
-        x_len = max_x - min_x + ff.mesh.hy
+        x_len = to_precision(max_x - min_x + ff.mesh.hy, disp_precision)
         text3d(ax,
                ((max_x + min_x) / 2, min_y - 2 * ff.mesh.hy - 2 * txt_size, 0),
-               "%.2f$m$" % x_len,
+               x_len + "$m$",
                zdir="z",
                size=txt_size,
                usetex=True,
@@ -1377,7 +1373,9 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                     parameter = "Carter's Leak off"
             elif not SimulProp.bckColor is None:
                 raise ValueError("Back ground color identifier not supported!")
-
+            else:
+                colors = np.full((ff.mesh.NumberOfElts, ), 0.5)
+                plt_mesh = False
 
         # add rectangle for each cell
         for i in range(ff.mesh.NumberOfElts):
@@ -1386,7 +1384,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
             else:
                 face_color = (0, 0.0, 0, 0.2)
             cell = mpatches.Rectangle((ff.mesh.CenterCoor[i, 0],
-                                       ff.mesh.CenterCoor[i, 1]),
+                                      ff.mesh.CenterCoor[i, 1]),
                                       ff.mesh.hx,
                                       ff.mesh.hy,
                                       ec=(0, 0, 0, 0.05),
@@ -1431,11 +1429,12 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                    ec="none",
                    fc="k")
 
-    # mark width at the injection point
-    w_inj = ff.w[ff.mesh.CenterElts] * 1e3
+    # mark maximum width for scale
+    w_max = to_precision(max(ff.w) * 1e3, disp_precision)
+    w_max_indx = np.argmax(ff.w)
     text3d(ax,
-           (0, 0, ff.w[ff.mesh.CenterElts]),
-           "%.2f$mm$" %w_inj,
+           (ff.mesh.CenterCoor[w_max_indx,0], ff.mesh.CenterCoor[w_max_indx,1], max(ff.w)),
+           w_max + "$mm$",
            zdir="z",
            size=txt_size,
            # angle=np.pi / 2,
@@ -1449,7 +1448,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
     ax.set_title("Fracture evolution")
     scale = 1.1
     zoom_factory(ax, base_scale=scale)
-    plt.show()
+
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1513,3 +1512,66 @@ def zoom_factory(ax,base_scale = 2.):
 
     #return the function
     return zoom_fun
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def to_precision(x,p):
+    """
+    returns a string representation of x formatted with a precision of p
+
+    Based on the webkit javascript implementation taken from here:
+    https://code.google.com/p/webkit-mirror/source/browse/JavaScriptCore/kjs/number_object.cpp
+    """
+
+    x = float(x)
+
+    if x == 0.:
+        return "0." + "0"*(p-1)
+
+    out = []
+
+    if x < 0:
+        out.append("-")
+        x = -x
+
+    e = int(math.log10(x))
+    tens = math.pow(10, e - p + 1)
+    n = math.floor(x/tens)
+
+    if n < math.pow(10, p - 1):
+        e = e -1
+        tens = math.pow(10, e - p+1)
+        n = math.floor(x / tens)
+
+    if abs((n + 1.) * tens - x) <= abs(n * tens -x):
+        n = n + 1
+
+    if n >= math.pow(10,p):
+        n = n / 10.
+        e = e + 1
+
+    m = "%.*g" % (p, n)
+
+    if e < -2 or e >= p:
+        out.append(m[0])
+        if p > 1:
+            out.append(".")
+            out.extend(m[1:p])
+        out.append('e')
+        if e > 0:
+            out.append("+")
+        out.append(str(e))
+    elif e == (p -1):
+        out.append(m)
+    elif e >= 0:
+        out.append(m[:e+1])
+        if e+1 < len(m):
+            out.append(".")
+            out.extend(m[e+1:])
+    else:
+        out.append("0.")
+        out.extend(["0"]*-(e+1))
+        out.append(m)
+
+    return "".join(out)

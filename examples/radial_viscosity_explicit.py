@@ -36,13 +36,13 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.frontAdvancing = 'explicit'
-simulProp.outputTimePeriod = 0.1
-simulProp.tmStpPrefactor = 0.5
+simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
+simulProp.outputTimePeriod = 1e-4        # to save after every time step
+simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
 # simulProp.set_outFileAddress(".\\Data\\radial") # the disk address where the files are saved
 
 # initializing fracture
-initRad = 0.1
+initRad = 0.2
 init_param = ("M", "length", initRad)
 
 # creating fracture object
@@ -69,13 +69,17 @@ controller.run()
 plot_footprint(simulProp.get_outFileAddress(),         # the address where the results are stored
                         plot_at_times=10**np.linspace(-2,5,15),# the time series at which the solution is plotted
                         analytical_sol='M')            # analytical solution for reference
+plt.show()
 plot_radius(simulProp.get_outFileAddress(),
                         r_type='mean',
                         analytical_sol='M')
+plt.show()
 plot_at_injection_point(simulProp.get_outFileAddress(),
                         plt_pressure=False,
                         analytical_sol='M')
+plt.show()
 plot_profile(simulProp.get_outFileAddress(),
                         plot_at_times=10**np.linspace(-2,5,10),
                         analytical_sol='M')
+plt.show()
 

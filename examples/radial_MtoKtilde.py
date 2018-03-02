@@ -19,7 +19,7 @@ Mesh = CartesianMesh(5, 5, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu**2)   # plain strain modulus
-K1c = 5e5 / (32 / math.pi)**0.5
+K1c = 5e5 / (32 / math.pi)**0.5     # K' = 5e5
 Cl = np.full((Mesh.NumberOfElts,), 0.5e-6, dtype=np.float64)
 
 Solid = MaterialProperties(Mesh,
@@ -32,13 +32,13 @@ Q0 = 0.01  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-viscosity = 0.001 / 12
+viscosity = 0.001 / 12  # mu' =0.001
 Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e7               # the time at which the simulation stops
-simulProp.outputTimePeriod = 1.         # the time after the output is generated (saving or plotting)
+simulProp.outputTimePeriod = 1e-3       # the time after the output is generated (saving or plotting)
 # simulProp.set_outFileAddress(".\\Data\\leakOff") # the disk address where the files are saved
 
 
@@ -75,7 +75,7 @@ eff_analytical = np.asarray([0.9923, 0.9904, 0.9880, 0.9850, 0.9812, 0.9765, 0.9
 ax_eff = Fig_eff.get_axes()[0]
 ax_eff.semilogx(t, eff_analytical, 'r-', label='hydraulic fracturing efficiency (Dontsov EV, 2016)')
 ax_eff.legend()
-
+plt.show()
 
 Fig_r, Fig_err = plot_radius(simulProp.get_outFileAddress(),
                              r_type='mean')

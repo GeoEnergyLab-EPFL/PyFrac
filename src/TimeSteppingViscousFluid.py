@@ -1056,8 +1056,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         exitstatus = 5
         return exitstatus, None
 
-    if (
-            Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
+    if (Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
         # print(repr(np.where((Fr_kplus1.w < 0))))
         # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
         exitstatus = 5

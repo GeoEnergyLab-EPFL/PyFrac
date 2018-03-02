@@ -99,17 +99,15 @@ class Controller:
                 TimeStep = next_in_tmSrs - Fr.time
 
             # advancing time step
-            status, Fr_n_pls1, reattempts = self.advance_time_step(Fr,
+            status, Fr_n_pls1 = self.advance_time_step(Fr,
                                                  self.C,
                                                  TimeStep)
 
-            self.failedTimeSteps += reattempts
-            self.TotalTimeSteps += reattempts
             self.TotalTimeSteps += 1
 
             # saving the last five steps to restart if required
             if status == 1:
-                print("successful!")
+                print("Time step successful!")
                 Fr = copy.deepcopy(Fr_n_pls1)
                 self.fr_queue[i%5] = copy.deepcopy(Fr_n_pls1)
                 self.smallStep_cnt += 1
@@ -144,16 +142,25 @@ class Controller:
                     Fr = copy.deepcopy(self.fr_queue[(i+1) % 5])
                     print("Restarting with the last check point...")
 
+                    self.failedTimeSteps += 1
+                    self.TotalTimeSteps += 1
+
+                    f = open('log', 'a')
+                    f.writelines("\n" + self.errorMessages[status])
+                    f.writelines("\nTime step failed at = " + repr(self.fr_queue[i % 5].time))
+                    f.close()
+
             i = i + 1
 
         f = open('log', 'a')
-        f.writelines("\nnumber of time steps = " + repr(self.TotalTimeSteps))
+        f.writelines("\n\nnumber of time steps = " + repr(self.TotalTimeSteps))
         f.writelines("\nfailed time steps = " + repr(self.failedTimeSteps))
         f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
         f.close()
 
         print("\nFinal time = " + repr(Fr.time))
         print("\n\n-----Simulation successfully finished------")
+        print("See log file for details\n\n")
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -202,7 +209,6 @@ class Controller:
             TimeStep = self.sim_prop.timeStepLimit*2
             self.sim_prop.timeStepLimit *= 1.5
 
-        reattemps = 0
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
             # smaller time step to reattempt time stepping; equal to the given time step on first iteration
@@ -253,22 +259,16 @@ class Controller:
                            self.injection_prop,
                            self.fluid_prop)
 
-                return status, Fr, reattemps
+                return status, Fr
             else:
 
                 if status == 12:
-                    return status, Fr, reattemps
+                    return status, Fr
             if self.sim_prop.verbosity > 1:
                 print(self.errorMessages[status])
                 print("Time step failed...")
 
-            f = open('log', 'a')
-            f.writelines("\n" + self.errorMessages[status])
-            f.writelines("\nTime step failed at = " + repr(Frac.time + smallerTimeStep))
-            f.close()
-
-            reattemps += 1
-        return status, Fr, reattemps
+        return status, Fr
 
 #-----------------------------------------------------------------------------------------------------------------------
 

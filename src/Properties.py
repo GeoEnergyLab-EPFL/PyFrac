@@ -21,9 +21,20 @@ class MaterialProperties:
         Eprime (float)       -- plain strain modulus
         K1c (ndarray)        -- Linear-Elastic Plane-Strain Toughness for each cell
         Kprime (ndarray)     -- 4*(2/pi)**0.5 * K1c
+        Cl (float)           -- Carter's leak off coefficient
         Cprime (ndarray)     -- 2 * Carter's leak off coefficient
         SigmaO (ndarray)     -- in-situ stress field
-        grainSize (float)    -- the grain size of the rock; used to calculate the relative roughness
+        grainSize (float)    -- the grain size of the rock; used to calculate the relative roughness.
+        anisotropic (bool)   -- if True, the toughness is considered anisotropic.
+        K1cFunc (function)   -- the function giving the toughness on the domain. It takes one argument (angle) in
+                                case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
+                                toughness. The function is also used to get the toughness if the domain is remeshed.
+        SigmaOFunc (function)-- the function giving the in-situ stress on the domain. It should takes two arguments
+                                (x, y) to give the stress on these coordinates. It is also used to get the
+                                stress if the domain is remeshed.
+        ClFunc (function)    -- the function giving the in Carter's leak off coefficient on the domain. It should
+                                takes two arguments (x, y) to give the coefficient on these coordinates. It is also
+                                used to get the leak off coefficient if the domain is remeshed.
     Methods:
     """
 
@@ -31,11 +42,23 @@ class MaterialProperties:
                  anisotropic_flag=False, SigmaO_func = None, Cl_func = None):
         """
         Arguments:
-            Eprime (float)      -- plain strain modulus
-            Toughness (float)   -- Linear-Elastic Plane-Strain Fracture Toughness
-            Cl (float)          -- Carter's leak off coefficient
-            SigmaO (ndarray)    -- in-situ stress field
-            grainSize (float)   -- the grain size of the rock; used to calculate the relative roughness
+            Eprime (float)          -- plain strain modulus.
+            Toughness (float)       -- Linear-Elastic Plane-Strain Fracture Toughness.
+            Cl (float)              -- Carter's leak off coefficient.
+            SigmaO (ndarray)        -- in-situ stress field.
+            grainSize (float)       -- the grain size of the rock; used to calculate the relative roughness.
+            anisotropic (bool)      -- flag to specify if the fracture toughness is anisotropic.
+            K1c_perp (float)        -- the fracture toughness in the direction of x-axis.
+            anisotropic_flag(bool)  -- if True, the toughness is considered anisotropic.
+            K1c_func (function)     -- the function giving the toughness on the domain. It takes one argument (angle) in
+                                       case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
+                                       toughness. The function is also used to get the toughness if the domain is remeshed.
+            SigmaO_func (function)  -- the function giving the in situ stress on the domain. It should takes two
+                                       arguments (x, y) to give the stress on these coordinates. It is also used to get
+                                       the stress if the domain is remeshed.
+            Cl_func (function)      -- the function giving the in Carter's leak off coefficient on the domain. It
+                                       should takes two arguments (x, y) to give the coefficient on these coordinates.
+                                       It is also used to get the leak off coefficient if the domain is remeshed.
         """
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
@@ -57,11 +80,13 @@ class MaterialProperties:
 
         if isinstance(Cl, np.ndarray):  # check if float or ndarray
             if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.Cl = Cl
                 self.Cprime = 2. * Cl
             else:
                 raise ValueError('Error in the size of Leak-Off coefficient input!')
                 return
         else:
+            self.Cl = Cl
             self.Cprime = 2. * Cl * np.ones((Mesh.NumberOfElts,), float)
 
         if isinstance(SigmaO, np.ndarray):  # check if float or ndarray

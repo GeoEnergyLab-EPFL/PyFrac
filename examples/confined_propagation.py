@@ -19,7 +19,7 @@ Mesh = CartesianMesh(12, 4, 51, 35)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = np.full((Mesh.NumberOfElts,), 2e6, dtype=np.float64)
+K_Ic = 2e6                          # fracture toughness of the material
 
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
@@ -45,7 +45,6 @@ simulProp = SimulationParameters()
 simulProp.FinalTime = 27.           # the time at which the simulation stops
 simulProp.outputTimePeriod = 0.1    # the time after which the next fracture file is saved
 simulProp.bckColor = 'sigma0'       # the parameter according to which the mesh is color coded
-# simulProp.set_outFileAddress(".\\Data\\confined") # the disk address where the files are saved
 
 # initializing fracture
 initRad = 1.5
