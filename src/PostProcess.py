@@ -660,6 +660,8 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
 
         if ff.time - nxt_plt_t > -1e-8:
             # if the current fracture time has advanced the output time period
+            print("Plotting at " + repr(ff.time) + ' s')
+
             I = ff.Ffront[:, 0:2]
             J = ff.Ffront[:, 2:4]
 
@@ -750,8 +752,9 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, time_period=0., loglog=True, plt_symbol='.',
-                analytical_sol='n', anltcl_lnStyle='k', plt_error=True, add_labels=True):
+def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_times=None, time_period=0., loglog=True,
+                plt_symbol='.', analytical_sol='n', anltcl_lnStyle='k', plt_error=True, error_lnStyle='bo-',
+                add_labels=True):
     """
         This function plots the footprints of the fractures saved in the given folder.
 
@@ -813,14 +816,20 @@ def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, tim
 
     r_numrcl = np.asarray([])
     time_srs = np.asarray([])
-    fig_err = None
+
+    if plt_error:
+        if fig_err is None:
+            fig_err = plt.figure()
+            ax_err = fig_err.add_subplot(111)
+        else:
+            ax_err = fig_err.get_axes()[0]
+    else:
+        fig_err = None
 
     if not analytical_sol is 'n':
         r_anltcl = np.asarray([])
         if plt_error:
             err = np.asarray([])
-            fig_err = plt.figure()
-            ax_err = fig_err.add_subplot(111)
     elif analytical_sol is 'n':
         plt_error = False
     else:
@@ -918,7 +927,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, plot_at_times=None, tim
         ax.legend()
 
     if plt_error:
-        ax_err.semilogx(time_srs, err, 'bo-', label='error on radius')
+        ax_err.semilogx(time_srs, err, error_lnStyle, label='error on radius')
         if add_labels:
             ax_err.set_ylabel('error')
             ax_err.set_xlabel('time')

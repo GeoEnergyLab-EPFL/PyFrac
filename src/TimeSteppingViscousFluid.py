@@ -6,6 +6,11 @@
 # See the LICENSE.TXT file for more details. 
 #
 
+
+import copy
+import sys
+
+# local imports
 from src.VolIntegral import *
 from src.Utility import *
 from src.TipInversion import *
@@ -14,13 +19,11 @@ from src.LevelSet import *
 from src.HFAnalyticalSolutions import *
 from src.TimeSteppingMechLoading import *
 from src.TimeSteppingVolumeControl import *
-from scipy.optimize import least_squares
-import copy
-import warnings
-import sys
+from src.Properties import IterationProperties
+
 
 def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters,
-                                   Injection_Parameters, TimeStep):
+                                   Injection_Parameters, TimeStep, PerfNode=None):
     """ Propagate fracture one time step. The function injects fluid into the fracture, first by keeping the same
     footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
     until convergence is achieved.
@@ -64,34 +67,75 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
     # f = open('log', 'a')
 
     if Simulation_Parameters.frontAdvancing == 'explicit':
+
+        # make a new performance collection node to collect data about the explicit time step advancement
+        if PerfNode is not None:
+            PerfNode_explFront = IterationProperties(itr_type="explicit front")
+            PerfNode_explFront.subIterations = [[], [], []]
+        else:
+            PerfNode_explFront = None
+
         exitstatus, Fr_k = time_step_explicit_front(Frac,
                                                       C,
                                                       TimeStep,
                                                       Qin,
                                                       Material_properties,
                                                       Fluid_properties,
-                                                      Simulation_Parameters)
+                                                      Simulation_Parameters,
+                                                      PerfNode_explFront)
+
+        if PerfNode_explFront is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(np.nan)
+            PerfNode.subIterations[0].append(PerfNode_explFront)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
+            else:
+                PerfNode.status = 'successful'
 
         return exitstatus, Fr_k
 
     elif Simulation_Parameters.frontAdvancing == 'semi-implicit':
         if Simulation_Parameters.verbosity > 1:
             print('Advancing front with velocity from last time-step...')
+
+        if PerfNode is not None:
+            PerfNode_explFront = IterationProperties(itr_type="explicit front")
+            PerfNode_explFront.subIterations = [[], [], []]
+        else:
+            PerfNode_explFront = None
+
         exitstatus, Fr_k = time_step_explicit_front(Frac,
                                                     C,
                                                     TimeStep,
                                                     Qin,
                                                     Material_properties,
                                                     Fluid_properties,
-                                                    Simulation_Parameters)
-        if exitstatus != 1:
-            # failed
-            return exitstatus, None
-        w_k = np.copy(Fr_k.w)
+                                                    Simulation_Parameters,
+                                                    PerfNode_explFront)
+
+        if PerfNode_explFront is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(np.nan)
+            PerfNode.subIterations[0].append(PerfNode_explFront)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
+
+        if exitstatus == 1:
+            w_k = np.copy(Fr_k.w)
 
     elif Simulation_Parameters.frontAdvancing == 'implicit':
         if Simulation_Parameters.verbosity > 1:
             print('Solving ElastoHydrodynamic equations with same footprint...')
+
+        if PerfNode is not None:
+            PerfNode_sameFP = IterationProperties(itr_type="same footprint injection")
+            PerfNode_sameFP.subIterations = []
+        else:
+            PerfNode_sameFP = None
+
         # width by injecting the fracture with the same foot print (balloon like inflation)
         exitstatus, w_k = injection_same_footprint(Frac,
                                                    C,
@@ -99,7 +143,15 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
                                                    Qin,
                                                    Material_properties,
                                                    Fluid_properties,
-                                                   Simulation_Parameters)
+                                                   Simulation_Parameters,
+                                                   PerfNode_sameFP)
+        if PerfNode_sameFP is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(np.nan)
+            PerfNode.subIterations[1].append(PerfNode_sameFP)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
     else:
         raise ValueError("Provided front advancing type not supported")
 
@@ -121,6 +173,12 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
             print('\nIteration ' + repr(k))
         fill_frac_last = np.copy(Fr_k.FillF)
 
+        if PerfNode is not None:
+            PerfNode_extendedFP = IterationProperties(itr_type="extended footprint injection")
+            PerfNode_extendedFP.subIterations = [[], [], []]
+        else:
+            PerfNode_extendedFP = None
+
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
         (exitstatus, Fr_k) = injection_extended_footprint(w_k,
                                                           Frac,
@@ -129,7 +187,9 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
                                                           Qin,
                                                           Material_properties,
                                                           Fluid_properties,
-                                                          Simulation_Parameters)
+                                                          Simulation_Parameters,
+                                                          PerfNode_extendedFP)
+
         if exitstatus != 1:
             return exitstatus, None
 
@@ -139,21 +199,38 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
         # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
         # with the number of tip cells.
         norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+
+        if PerfNode_extendedFP is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(norm)
+            PerfNode.subIterations[2].append(PerfNode_extendedFP)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
+
         if Simulation_Parameters.verbosity > 1:
             print('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
         if k == Simulation_Parameters.maxFrontItr:
             exitstatus = 6
+            if PerfNode_extendedFP is not None:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
             return exitstatus, None
 
     if Simulation_Parameters.verbosity > 1:
         print("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
+
+    if PerfNode is not None:
+        PerfNode.status = 'successful'
+
     return exitstatus, Fr_k
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Fluid_properties, Simulation_Parameters):
+def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Fluid_properties, Simulation_Parameters,
+                             performance_node=None):
     """
     This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
     to be the same as in the fracture from the last time step.
@@ -242,6 +319,11 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
     # todo: guess is taken as typical values. Needs to be reconsidered
     typclValue = delwGuess
 
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_Picard = IterationProperties(itr_type="Picard iterations")
+        PerfNode_Picard.subIterations = [[]]
+
     # solving the system
     sol, vel = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
                                MakeEquationSystem_viscousFluid_sameFP,
@@ -282,7 +364,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
 # -----------------------------------------------------------------------------------------------------------------------
 
 def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_properties, Fluid_properties,
-                                 sim_parameters):
+                                 sim_parameters, performance_node=None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -495,12 +577,17 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     else:
         Kprime_tip = None
 
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_wTip = IterationProperties(itr_type="tip volume")
+    else:
+        PerfNode_wTip = None
+
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
     if stagnant.any() and not sim_parameters.get_tipAsymptote() is 'U':
         print("Stagnant front is only supported with universal tip asymptote")
         stagnant = np.full((EltsTipNew.size, ), False, dtype=bool)
-
 
     if stagnant.any():
         # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
@@ -547,11 +634,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                               Kprime=Kprime_tip,
                               stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
-    # # check if the tip volume has gone into negative
-    # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
-    # if np.asarray(smallNgtvWTip).size > 0:
-    #     #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
-    #     wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
+    # check if the tip volume has gone into negative
+    smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
+    if np.asarray(smallNgtvWTip).size > 0:
+        #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+        wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
 
     if (wTip < 0).any() or sum(wTip)==0.:
@@ -651,10 +738,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         return exitstatus, None
 
     if (Fr_kplus1.w < 0).any():  #todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
-        # print(repr(np.where((Fr_kplus1.w < 0))))
-        # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
-        exitstatus = 5
-        return exitstatus, None
+        print(repr(np.where((Fr_kplus1.w < 0))))
+        print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
+        Fr_kplus1.w[np.where(Fr_kplus1.w < 1e-10)[0]] = 1e-10
+        # exitstatus = 5
+        # return exitstatus, None
 
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
@@ -761,8 +849,8 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
         return (ReNum_Ribbon > 2100.).any()
 
 
-def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties, Fluid_properties,
-                                 sim_parameters):
+def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties, Fluid_properties, sim_parameters,
+                             performance_node=None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -860,6 +948,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         exitstatus = 9
         return exitstatus, None
 
+    if Fr_lstTmStp.time + timeStep > 70:
+        print()
     # todo: some of the list are redundant to calculate on each iteration
     # Evaluate the element lists for the trial fracture front
     (EltChannel_k,
@@ -895,6 +985,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
 
+    # create a performance node for the root finding to get tip volume
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_wTip = IterationProperties(itr_type="tip volume")
+    else:
+        PerfNode_wTip = None
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = Vel_k < 1e-14
@@ -947,11 +1043,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
                                   Kprime=Kprime_tip,
                                   stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
-    # # check if the tip volume has gone into negative
-    # smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
-    # if np.asarray(smallNgtvWTip).size > 0:
-    #     #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
-    #     wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
+    # check if the tip volume has gone into negative
+    smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
+    if np.asarray(smallNgtvWTip).size > 0:
+        #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+        wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
     if (wTip < 0).any() or sum(wTip) == 0.:
         exitstatus = 4
@@ -1057,10 +1153,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         return exitstatus, None
 
     if (Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
-        # print(repr(np.where((Fr_kplus1.w < 0))))
-        # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
-        exitstatus = 5
-        return exitstatus, None
+        print(repr(np.where((Fr_kplus1.w < 0))))
+        print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
+        Fr_kplus1.w[np.where(Fr_kplus1.w <= 1e-10)[0]] = 1e-10
+        # exitstatus = 5
+        # return exitstatus, None
 
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k

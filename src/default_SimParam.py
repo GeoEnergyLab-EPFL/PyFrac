@@ -3,7 +3,7 @@
 # tolerances
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver
 toleranceEHL = 1.0e-5                   # tolerance for the elastohydrodynamic system solver
-tol_toughness = 2.5e-3                    # tolerance for the toughness iteration
+tol_toughness = 2.5e-3                  # tolerance for the toughness iteration
 
 # max iterations
 maxfront_its = 30                       # maximum iterations for the fracture front
@@ -44,3 +44,5 @@ save_regime = True                      # if True, the the regime of the ribbon 
 verbosity = 1                           # the level of details about the ongoing simulation to be plotted
 remesh_factor = 2.                      # the factor by which the mesh is compressed
 front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'.
+collect_perf_data = False               # if True, performance data will be collected in the form of a tree
+

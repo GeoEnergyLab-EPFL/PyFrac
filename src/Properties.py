@@ -359,6 +359,7 @@ class SimulationParameters:
                                                 -- explicit
                                                 -- semi-implicit
                                                 -- implicit
+            collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -442,6 +443,7 @@ class SimulationParameters:
         self.saveRegime = simul_param.save_regime
         self.remeshFactor = simul_param.remesh_factor
         self.frontAdvancing = simul_param.front_advancing
+        self.collectPerfData = simul_param.collect_perf_data
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -537,3 +539,19 @@ class SimulationParameters:
 
     def get_solTimeSeries(self):
         return self.__solTimeSeries
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class IterationProperties:
+    """
+    This class store performance data in the form of a tree
+    """
+
+    def __init__(self, itr_type="not initialized"):
+        self.iterations = 0
+        self.normList = []
+        self.itrType = itr_type
+        self.status = None
+        self.failure_cause = None
+        self.subIterations = []

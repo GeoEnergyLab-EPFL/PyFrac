@@ -74,7 +74,7 @@ def elasticity_matrix_all_mesh(Mesh, Ep):
 
 def elasticity_matrix_all_mesh_vectorized(Mesh, Ep):
     """
-    Evaluate the elasticity matrix for the whole mesh
+    Evaluate the elasticity matrix for the whole mesh. The memory requirement for the vectorized function is quite high.
     Arguments:
         Mesh (object CartesianMesh):    a mesh object describing the domain
         Ep (float):                     plain strain modulus

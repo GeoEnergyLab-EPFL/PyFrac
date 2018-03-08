@@ -679,8 +679,8 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
         normlist[k] = norm
 
         # todo !!! Hack: Consider coverged if norm grows and last norm is less than 1e-4
-        if norm > normlist[k - 1] and normlist[k - 1] < 1e-4:
-            break
+        # if norm > normlist[k - 1] and normlist[k - 1] < 1e-4:
+        #     break
         k = k + 1
 
         if k == maxitr:  # returns nan as solution if does not converge
@@ -688,7 +688,6 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             return solk, None
 
-    perf_data = (k)
     return solk, interItr
 
 

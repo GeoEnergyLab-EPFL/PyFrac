@@ -312,15 +312,15 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     for i in range(0,len(eltsTip)):
         eltsRibbon = np.delete(eltsRibbon,np.where(eltsRibbon==eltsTip[i]))
 
-        # !!! to be checked if necessary or not
-        if (mesh.NeiElements[eltsTip[i],0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
-            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 0])
-        if (mesh.NeiElements[eltsTip[i],1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
-            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 1])
-        if (mesh.NeiElements[eltsTip[i], 0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
-            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 0])
-        if (mesh.NeiElements[eltsTip[i], 1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
-            eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 1])
+        # # !!! to be checked if necessary or not
+        # if (mesh.NeiElements[eltsTip[i],0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
+        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 0])
+        # if (mesh.NeiElements[eltsTip[i],1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
+        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 1])
+        # if (mesh.NeiElements[eltsTip[i], 0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
+        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 0])
+        # if (mesh.NeiElements[eltsTip[i], 1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
+        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 1])
 
     eltsRibbon = np.unique(eltsRibbon)
     # # Remove repetitions in the ribbon cells

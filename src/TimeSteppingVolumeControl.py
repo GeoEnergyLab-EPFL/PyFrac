@@ -13,9 +13,10 @@ from src.LevelSet import *
 import copy
 from src.VolIntegral import *
 from src.anisotropy import projection_from_ribbon, get_toughness_from_cellCenter, get_toughness_from_zeroVertex
+from src.Properties import IterationProperties
 
 def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Parameters, Injection_Parameters,
-                                    TimeStep):
+                                    TimeStep, PerfNode=None):
     """ Propagate fracture one time step assuming uniform pressure (inviscid fluid). The function injects fluid into the fracture, first by keeping the same
     footprint. This gives the first trial value of the width. The ElastoHydronamic system is then solved iteratively
     until the final footprint position convergences.
@@ -51,12 +52,31 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
     # f = open('log', 'a')
 
     if Simulation_Parameters.frontAdvancing == 'explicit':
+
+        # make a new performance collection node to collect data about the explicit time step advancement
+        if PerfNode is not None:
+            PerfNode_explFront = IterationProperties(itr_type="explicit front")
+            PerfNode_explFront.subIterations = [[], [], []]
+        else:
+            PerfNode_explFront = None
+
         exitstatus, Fr_k = time_step_explicit_front_volumeControl(Frac,
                                                     C,
                                                     TimeStep,
                                                     Qin,
                                                     Material_properties,
-                                                    Simulation_Parameters)
+                                                    Simulation_Parameters,
+                                                    PerfNode_explFront)
+
+        if PerfNode_explFront is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(np.nan)
+            PerfNode.subIterations[0].append(PerfNode_explFront)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
+            else:
+                PerfNode.status = 'successful'
 
         return exitstatus, Fr_k
 
@@ -64,25 +84,56 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
         if Simulation_Parameters.verbosity > 1:
             print('Advancing front with velocity from last time-step...')
 
+        if PerfNode is not None:
+            PerfNode_explFront = IterationProperties(itr_type="explicit front")
+            PerfNode_explFront.subIterations = [[], [], []]
+        else:
+            PerfNode_explFront = None
+
         exitstatus, Fr_k = time_step_explicit_front_volumeControl(Frac,
                                                                   C,
                                                                   TimeStep,
                                                                   Qin,
                                                                   Material_properties,
-                                                                  Simulation_Parameters)
-        if exitstatus != 1:
-            # failed
-            return exitstatus, None
-        w_k = np.copy(Fr_k.w)
+                                                                  Simulation_Parameters,
+                                                                  PerfNode_explFront)
+
+
+        if PerfNode_explFront is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(np.nan)
+            PerfNode.subIterations[0].append(PerfNode_explFront)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
+
+        if exitstatus == 1:
+            w_k = np.copy(Fr_k.w)
 
     elif Simulation_Parameters.frontAdvancing == 'implicit':
         if Simulation_Parameters.verbosity > 1:
             print('Solving ElastoHydrodynamic equations with same footprint...')
+
+        if PerfNode is not None:
+            PerfNode_sameFP = IterationProperties(itr_type="same footprint injection")
+            PerfNode_sameFP.subIterations = []
+        else:
+            PerfNode_sameFP = None
+
         # width by injecting the fracture with the same foot print (balloon like inflation)
         exitstatus, w_k = injection_same_footprint_volumeControl(Frac,
                                                                     C,
                                                                     TimeStep,
-                                                                    Qin)
+                                                                    Qin,
+                                                                    PerfNode_sameFP)
+
+        if PerfNode_sameFP is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(np.nan)
+            PerfNode.subIterations[1].append(PerfNode_sameFP)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
     else:
         raise ValueError("Provided front advancing type not supported")
 
@@ -105,6 +156,12 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
             print('\nIteration ' + repr(k))
         Fr_kminus1 = copy.deepcopy(Fr_k)
 
+        if PerfNode is not None:
+            PerfNode_extendedFP = IterationProperties(itr_type="extended footprint injection")
+            PerfNode_extendedFP.subIterations = [[], [], []]
+        else:
+            PerfNode_extendedFP = None
+
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
         (exitstatus, Fr_k) = injection_extended_footprint_volumeControl(w_k,
                                                               Frac,
@@ -112,7 +169,17 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
                                                               TimeStep,
                                                               Qin,
                                                               Material_properties,
-                                                              Simulation_Parameters)
+                                                              Simulation_Parameters,
+                                                              PerfNode_extendedFP)
+
+        if PerfNode_extendedFP is not None:
+            PerfNode.iterations += 1
+            PerfNode.normList.append(norm)
+            PerfNode.subIterations[2].append(PerfNode_extendedFP)
+            if exitstatus != 1:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
+
         if exitstatus != 1:
             return exitstatus, None
 
@@ -127,16 +194,22 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
 
         if k == Simulation_Parameters.maxFrontItr:
             exitstatus = 6
+            if PerfNode_extendedFP is not None:
+                PerfNode.status = 'failed'
+                PerfNode.failure_cause = exitstatus
             return exitstatus, None
 
     if Simulation_Parameters.verbosity > 1:
         print("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
 
+    if PerfNode is not None:
+        PerfNode.status = 'successful'
+
     return exitstatus, Fr_k
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q):
+def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, performance_node=None):
     """
     This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
     to be the same as in the fracture from the last time step.
@@ -165,6 +238,11 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q):
         ac = (1 - r) / r
         C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
                                                                                             + ac * np.pi / 4.)
+
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
+        PerfNode_linSolve.subIterations = [[]]
 
     (A, b) = MakeEquationSystem_volumeControl_sameFP(Fr_lstTmStp.w,
                                                      Fr_lstTmStp.EltCrack,
@@ -203,7 +281,8 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_properties, sim_parameters):
+def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_properties, sim_parameters,
+                                               performance_node=None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -422,6 +501,12 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     else:
         Kprime_tip = None
 
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_wTip = IterationProperties(itr_type="tip volume")
+    else:
+        PerfNode_wTip = None
+
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
     if stagnant.any():
@@ -539,7 +624,8 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Material_properties, sim_parameters):
+def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Material_properties, sim_parameters,
+                                           performance_node=None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -672,6 +758,12 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
 
+    # create a performance node for the root finding to get tip volume
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_wTip = IterationProperties(itr_type="tip volume")
+    else:
+        PerfNode_wTip = None
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = Vel_k < 1e-14

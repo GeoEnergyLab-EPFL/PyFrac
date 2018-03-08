@@ -16,6 +16,7 @@ from src.TimeSteppingMechLoading import attempt_time_step_mechLoading
 
 import copy
 import matplotlib.pyplot as plt
+import dill
 
 class Controller:
     """
@@ -50,6 +51,7 @@ class Controller:
        self.C = C
        self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.smallStep_cnt = 0
+       self.perfData = []
 
        self.remeshings = 0
        self.TotalTimeSteps = 0
@@ -98,10 +100,19 @@ class Controller:
             elif Fr.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr.time
 
+            if self.sim_prop.collectPerfData:
+                tmStp_perf = IterationProperties(itr_type="time step")
+            else:
+                tmStp_perf = None
+
             # advancing time step
             status, Fr_n_pls1 = self.advance_time_step(Fr,
                                                  self.C,
-                                                 TimeStep)
+                                                 TimeStep,
+                                                 tmStp_perf)
+
+            if self.sim_prop.collectPerfData:
+                self.perfData.append(tmStp_perf)
 
             self.TotalTimeSteps += 1
 
@@ -158,6 +169,10 @@ class Controller:
         f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
         f.close()
 
+        if self.sim_prop.collectPerfData:
+            with open(self.sim_prop.get_outFileAddress() + "perf_data.dat", 'wb') as output:
+                dill.dump(self.perfData, output, -1)
+
         print("\nFinal time = " + repr(Fr.time))
         print("\n\n-----Simulation successfully finished------")
         print("See log file for details\n\n")
@@ -165,7 +180,7 @@ class Controller:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def advance_time_step(self, Frac, C, TimeStep):
+    def advance_time_step(self, Frac, C, TimeStep, PerfNode=None):
         """
         This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
         time steps. A system exit is raised after maximum allowed reattempts.
@@ -221,6 +236,12 @@ class Controller:
             if self.sim_prop.verbosity > 1:
                 print("Attempting time step of " + repr(smallerTimeStep) + " sec...")
 
+            if PerfNode is not None:
+                PerfNode_TmStpAtmpt = IterationProperties(itr_type="time step attempt")
+                PerfNode_TmStpAtmpt.subIterations = [[], [], []]
+            else:
+                PerfNode_TmStpAtmpt = None
+
             if self.sim_prop.get_viscousInjection():
                 status, Fr = attempt_time_step_viscousFluid(Frac,
                                                             C,
@@ -228,7 +249,8 @@ class Controller:
                                                             self.fluid_prop,
                                                             self.sim_prop,
                                                             self.injection_prop,
-                                                            smallerTimeStep)
+                                                            smallerTimeStep,
+                                                            PerfNode_TmStpAtmpt)
 
             elif self.sim_prop.get_dryCrack_mechLoading():
                 status, Fr = attempt_time_step_mechLoading(Frac,
@@ -237,7 +259,9 @@ class Controller:
                                                             self.sim_prop,
                                                             self.load_prop,
                                                             smallerTimeStep,
-                                                            Frac.mesh)
+                                                            Frac.mesh,
+                                                            PerfNode_TmStpAtmpt,
+                                                           )
 
             elif self.sim_prop.get_volumeControl():
                 status, Fr = attempt_time_step_volumeControl(Frac,
@@ -245,7 +269,14 @@ class Controller:
                                                              self.solid_prop,
                                                              self.sim_prop,
                                                              self.injection_prop,
-                                                             smallerTimeStep)
+                                                             smallerTimeStep,
+                                                            PerfNode_TmStpAtmpt)
+
+            if PerfNode_TmStpAtmpt is not None:
+                PerfNode.iterations += 1
+                PerfNode.normList.append(status)
+                PerfNode.subIterations.append(PerfNode_TmStpAtmpt)
+
             if status == 1:
                 if self.sim_prop.verbosity > 1:
                     print(self.errorMessages[status])
