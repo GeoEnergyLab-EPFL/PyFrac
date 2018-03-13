@@ -151,7 +151,8 @@ def update(frame, *args):
 
 
 def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None, plt_pressure=False,
-                 time_period=0.0, plot_at_times=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b'):
+                 time_period=0.0, plot_at_times=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b',
+                 multpl_sim=False):
     """
     This function plots the width and pressure at the injection point of the fracture.
 
@@ -250,10 +251,14 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
             break
 
         stats = os.stat(address + "fracture_" + repr(fileNo))
+
         # if the next file was modified before the last one, it means it is from some older simulation
-        if stats[-2] < prev_modified_at:
-            break
-        prev_modified_at = stats[-2]
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
 
         fileNo += 1
         plotted_fractures = 0
@@ -343,7 +348,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
 #-----------------------------------------------------------------------------------------------------------------------
 def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, plot_at_times=None,
                 analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True, plt_t_dimensionless=False,
-                plt_error=True, add_labels=True):
+                plt_error=True, add_labels=True, multpl_sim=False):
     """
         This function plots the width and pressure at the injection point of the fracture.
 
@@ -451,9 +456,12 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
 
         stats = os.stat(address + "fracture_" + repr(fileNo))
         # if the next file was modified before the last one, it means it is from some older simulation
-        if stats[-2] < prev_modified_at:
-            break
-        prev_modified_at = stats[-2]
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
 
         fileNo += 1
 
@@ -562,8 +570,8 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
     return fig_w, fig_p
 
 
-def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, analytical_sol='n',
-                            plt_color='k', anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None):
+def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, analytical_sol='n', plt_color='k',
+                   anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None, multpl_sim = False):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -618,13 +626,14 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
     elif plot_at_times is None and time_period == 0.0 and Sim_prop is not None:
         plot_at_times = Sim_prop.get_solTimeSeries()
 
-
     fileNo = 0
     nxt_plt_t = 0.0
     t_srs_indx = 0
 
     t_srs_given = isinstance(plot_at_times, np.ndarray) #time series is given
     if t_srs_given:
+        if len(plot_at_times) == 0:
+            return fig
         nxt_plt_t = plot_at_times[t_srs_indx]
 
     # new figure if not provided
@@ -633,6 +642,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
         ax = fig.add_subplot(111)
     else:
         ax = fig.get_axes()[0]
+
 
     # time at wich the first fracture file was modified
     stats = os.stat(address + "fracture_0")
@@ -650,15 +660,19 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
             break
 
         stats = os.stat(address + "fracture_" + repr(fileNo))
+
         # if the next file was modified before the last one, it means it is from some older simulation
-        if stats[-2] < prev_modified_at:
-            ff = ff_last
-            break
-        prev_modified_at = stats[-2]
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                ff = ff_last
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
 
         fileNo+=1
 
-        if ff.time - nxt_plt_t > -1e-8:
+        if ff.time - nxt_plt_t == 0:
             # if the current fracture time has advanced the output time period
             print("Plotting at " + repr(ff.time) + ' s')
 
@@ -666,7 +680,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
             J = ff.Ffront[:, 2:4]
 
             for e in range(0, len(I)):
-                ax.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), color=plt_color)
+                ax.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), color=plt_color, linewidth=0.5)
 
             # plot analytical solution
             if not analytical_sol is 'n':
@@ -747,14 +761,97 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
         ff.plot_fracture(parameter='mesh', mat_properties=Solid, sim_properties=SimulProp, fig=fig)
 
     ax.set_title("Fracture footprint")
+    ax.set_xlabel("meters")
+    ax.set_ylabel("meters")
 
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def save_footprint_evol_to_image_files(data_address=None, images_folder='.', plot_at_times=None, analytical_sol='n',
+                                       anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None,
+                                       multpl_sim = False, plt_time=True, alternate=False, disp_precision=3,
+                                       txt_size=None, save_video=True, video_name='movie.avi'):
+
+    if not slash in data_address[-2:]:
+        data_address = data_address + slash
+
+    if not slash in images_folder[-2:]:
+        images_folder = images_folder + slash
+
+    files = os.listdir(data_address)
+    itr = 0
+    while "fracture_" + repr(itr) in files:
+        itr += 1
+
+    index = 0
+    time_plotted = np.asarray([])
+    x_txt = np.asarray([])
+    y_txt = np.asarray([])
+    for i in range(itr):
+        fracture = data_address + "fracture_" + repr(i)
+        ff = ReadFracture(fracture)
+        fig = plot_footprint(data_address,
+                             plot_at_times=ff.time,
+                             plt_color='b',
+                             plt_mesh=plt_mesh,
+                             plt_regime=plt_regime,
+                             Sim_prop=Sim_prop,
+                             multpl_sim = multpl_sim)
+
+        fig = plot_footprint(data_address,
+                             fig=fig,
+                             plot_at_times=plot_at_times[0:index],
+                             analytical_sol=analytical_sol,
+                             anltcl_lnStyle=anltcl_lnStyle,
+                             plt_regime=plt_regime,
+                             Sim_prop=Sim_prop,
+                             multpl_sim=multpl_sim,
+                             plt_mesh=False)
+
+        ax = fig.get_axes()[0]
+        time = to_precision(ff.time, 3)
+        ax.set_title(time + 's.')
+
+        if ff.time == plot_at_times[index]:
+            index += 1
+            # if the current fracture time has advanced the output time period
+            if plt_time:
+                tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[ff.EltTip, ff.ZeroVertex]]
+                if index % 2 == 0:
+                    r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
+                elif alternate:
+                    r_indx = np.argmin((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
+                else:
+                    r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + ff.l)
+                x_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 0] + 0.75 * ff.mesh.hx
+                y_coor = ff.mesh.CenterCoor[ff.EltTip[r_indx], 1] + 0.75 * ff.mesh.hy
+                if txt_size is None:
+                    txt_size = max(ff.mesh.hx, ff.mesh.hx)
+                print("Plotting at time " + repr(ff.time) + "...")
+                t = to_precision(ff.time, disp_precision) + 's'
+                x_txt = np.append(x_txt, x_coor)
+                y_txt = np.append(y_txt, y_coor)
+                time_plotted = np.append(time_plotted,t)
+
+        for a in range(len(x_txt)):
+            ax.text(x_txt[a], y_txt[a], time_plotted[a])
+
+
+        ax.set_ylim(-170e-3, 50e-3,)
+        fig.savefig(images_folder + str(i).zfill(4) +'.png', dpi=300)
+        plt.close(fig)
+
+    if save_video:
+        print("Saving video...")
+        if '.avi' not in video_name:
+            video_name = video_name + '.avi'
+        save_images_to_video(images_folder, video_name=video_name)
+
+
 def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_times=None, time_period=0., loglog=True,
                 plt_symbol='.', analytical_sol='n', anltcl_lnStyle='k', plt_error=True, error_lnStyle='bo-',
-                add_labels=True):
+                add_labels=True, multpl_sim=False):
     """
         This function plots the footprints of the fractures saved in the given folder.
 
@@ -849,9 +946,12 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
 
         stats = os.stat(address + "fracture_" + repr(fileNo))
         # if the next file was modified before the last one, it means it is from some older simulation
-        if stats[-2] < prev_modified_at:
-            break
-        prev_modified_at = stats[-2]
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
 
         fileNo += 1
 
@@ -941,7 +1041,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
 
 
 def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, time_period=0., loglog=True, plt_symbol='.',
-                analytical_sol='n', anltcl_lnStyle='k', plt_efficiency=True, add_labels=True):
+                analytical_sol='n', anltcl_lnStyle='k', plt_efficiency=True, add_labels=True, multpl_sim=False):
     """
         This function plots the footprints of the fractures saved in the given folder.
 
@@ -1018,9 +1118,12 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
 
         stats = os.stat(address + "fracture_" + repr(fileNo))
         # if the next file was modified before the last one, it means it is from some older simulation
-        if stats[-2] < prev_modified_at:
-            break
-        prev_modified_at = stats[-2]
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
 
         fileNo += 1
 
@@ -1102,8 +1205,8 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_simulation_results(address=None, plot_at_times=None, time_period=0., analytical_sol='n', footprint=True, inj_pnt=True,
-                           radius=True,  profile=True):
+def plot_simulation_results(address=None, plot_at_times=None, time_period=0., analytical_sol='n', footprint=True,
+                            inj_pnt=True, radius=True,  profile=True):
     """
     This function plot the simulation results from the given folder
     Arguments:
@@ -1155,7 +1258,7 @@ def plot_simulation_results(address=None, plot_at_times=None, time_period=0., an
 
 def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_time=True, txt_size=None,
                       plt_axis=False, plt_grid=False, plt_mesh=True, plt_bckColor=True, alternate=False,
-                      plt_clr_bar=True, disp_precision=3):
+                      plt_clr_bar=True, disp_precision=3, multpl_sim=False):
     """
     This function plots the footprints of the fractures saved in the given folder.
 
@@ -1236,10 +1339,12 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
 
         stats = os.stat(address + "fracture_" + repr(fileNo))
         # if the next file was modified before the last one, it means it is from some older simulation
-        if stats[-2] < prev_modified_at:
-            ff = ff_last
-            break
-        prev_modified_at = stats[-2]
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
 
         fileNo += 1
 
@@ -1285,7 +1390,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                 t = to_precision(ff.time, disp_precision)
                 text3d(ax,
                        (x_coor, y_coor, 0),
-                       t + "$sec$",
+                       t + "$s$",
                        zdir="z",
                        size=txt_size,
                        usetex=True,
@@ -1457,6 +1562,121 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
     ax.set_title("Fracture evolution")
     scale = 1.1
     zoom_factory(ax, base_scale=scale)
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def plot_fracture_volume(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_symbol='o-',
+                         multpl_sim = False):
+    """
+    This function plots the fracture volume saved in the given folder.
+
+    Arguments:
+        address (string)                -- the folder address containing the saved files
+        fig (figure)                    -- figure to superimpose. A new figure will be created if not provided.
+        time_period (float)             -- time period between two successive fracture plots.
+        plot_at_times (ndarray)         -- if provided, the fracture footprints will be plotted at the given times.
+        plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+        multpl_sim (bool)               -- if True, the check to plot only the most recent simulation data in the folder
+                                           is turned off.
+
+    Returns:
+        fig (figure)                    -- a figure to superimpose.
+
+    """
+
+    print("Ploting volume of the fracture...")
+
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = dill.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+
+    # if plot_at_times is None and time_period == 0.0 and SimulProp.get_solTimeSeries() is not None:
+    #     plot_at_times = SimulProp.get_solTimeSeries()
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+
+    t_srs_given = isinstance(plot_at_times, np.ndarray) #time series is given
+    if t_srs_given:
+        nxt_plt_t = plot_at_times[t_srs_indx]
+
+    # new figure if not provided
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    frac_volume = []
+    time_series = []
+
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
+    ff = None
+
+    while fileNo < 5000:
+
+        # saving last fracture in case the loaded file is to be discarded (possibly its from an old simulation)
+        ff_last = copy.deepcopy(ff)
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                ff = ff_last
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
+
+        fileNo+=1
+
+        if ff.time - nxt_plt_t > -1e-8:
+            # if the current fracture time has advanced the output time period
+            time_series.append(ff.time)
+            frac_volume.append(ff.FractureVolume)
+
+            if t_srs_given:
+                if t_srs_indx < len(plot_at_times) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+    if fileNo >= 5000:
+        raise SystemExit("too many files.")
+
+    ax.plot(time_series, frac_volume, plt_symbol)
+    ax.set_xlabel("time (s)")
+    ax.set_ylabel("fracture volume (m^3)")
+    ax.set_title("Fracture Volume")
 
     return fig
 
