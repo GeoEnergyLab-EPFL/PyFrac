@@ -53,28 +53,28 @@ simulProp.frontAdvancing = 'explicit'
 simulProp.set_outFileAddress('.\\Data\\Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 
-# # initializing fracture
-# initRad = 0.014
-# init_param = ('M', "length", initRad)
-#
-# # creating fracture object
-# Fr = Fracture(Mesh,
-#               init_param,
-#               Solid,
-#               Fluid,
-#               Injection,
-#               simulProp)
-#
-#
-# # create a Controller
-# controller = Controller(Fr,
-#                         Solid,
-#                         Fluid,
-#                         Injection,
-#                         simulProp)
-#
-# # run the simulation
-# controller.run()
+# initializing fracture
+initRad = 0.014
+init_param = ('M', "length", initRad)
+
+# creating fracture object
+Fr = Fracture(Mesh,
+              init_param,
+              Solid,
+              Fluid,
+              Injection,
+              simulProp)
+
+
+# create a Controller
+controller = Controller(Fr,
+                        Solid,
+                        Fluid,
+                        Injection,
+                        simulProp)
+
+# run the simulation
+controller.run()
 
 # loading the experiment data file
 import csv
