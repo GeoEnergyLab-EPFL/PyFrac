@@ -8,6 +8,7 @@
 
 import math
 import numpy as np
+import time
 
 
 from src.CartesianMesh import *
@@ -552,6 +553,10 @@ class IterationProperties:
         self.iterations = 0
         self.normList = []
         self.itrType = itr_type
+        self.time = None
+        self.CpuTime_start = time.time()
+        self.CpuTime_end = None
         self.status = None
         self.failure_cause = None
         self.subIterations = []
+
