@@ -20,6 +20,7 @@ from src.HFAnalyticalSolutions import *
 from src.TimeSteppingMechLoading import *
 from src.TimeSteppingVolumeControl import *
 from src.Properties import IterationProperties
+import time
 
 
 def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_properties, Simulation_Parameters,
@@ -85,14 +86,15 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
                                                       PerfNode_explFront)
 
         if PerfNode_explFront is not None:
+            PerfNode_explFront.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(np.nan)
             PerfNode.subIterations[0].append(PerfNode_explFront)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
             else:
-                PerfNode.status = 'successful'
+                PerfNode.time = Fr_k.time
 
         return exitstatus, Fr_k
 
@@ -116,11 +118,12 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
                                                     PerfNode_explFront)
 
         if PerfNode_explFront is not None:
+            PerfNode_explFront.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(np.nan)
             PerfNode.subIterations[0].append(PerfNode_explFront)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
 
         if exitstatus == 1:
@@ -146,11 +149,12 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
                                                    Simulation_Parameters,
                                                    PerfNode_sameFP)
         if PerfNode_sameFP is not None:
+            PerfNode_sameFP.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(np.nan)
             PerfNode.subIterations[1].append(PerfNode_sameFP)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
     else:
         raise ValueError("Provided front advancing type not supported")
@@ -190,23 +194,27 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
                                                           Simulation_Parameters,
                                                           PerfNode_extendedFP)
 
-        if exitstatus != 1:
-            return exitstatus, None
+        if exitstatus == 1:
+            # the new fracture width (notably the new width in the ribbon cells).
+            w_k = np.copy(Fr_k.w)
 
-        # the new fracture width (notably the new width in the ribbon cells).
-        w_k = np.copy(Fr_k.w)
-
-        # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
-        # with the number of tip cells.
-        norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+            # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
+            # with the number of tip cells.
+            norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+        else:
+            norm = np.nan
 
         if PerfNode_extendedFP is not None:
+            PerfNode_extendedFP.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(norm)
             PerfNode.subIterations[2].append(PerfNode_extendedFP)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
+
+        if exitstatus != 1:
+            return exitstatus, None
 
         if Simulation_Parameters.verbosity > 1:
             print('Norm of subsequent filling fraction estimates = ' + repr(norm))
@@ -214,7 +222,7 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
         if k == Simulation_Parameters.maxFrontItr:
             exitstatus = 6
             if PerfNode_extendedFP is not None:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
             return exitstatus, None
 
@@ -222,7 +230,7 @@ def attempt_time_step_viscousFluid(Frac, C, Material_properties, Fluid_propertie
         print("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
 
     if PerfNode is not None:
-        PerfNode.status = 'successful'
+        PerfNode.time = Fr_k.time
 
     return exitstatus, Fr_k
 
@@ -258,7 +266,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
             r = 0.1
         ac = (1 - r) / r
         C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
-                                                                                                    + ac * np.pi / 4.)
+                                                                                            + ac * np.pi / 4.)
 
     # average injected fluid over footprint taken as [\delta] W guess for the iterative solver
     delwGuess = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size * np.ones((Fr_lstTmStp.EltCrack.size,), float)
@@ -321,8 +329,10 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
 
     if performance_node is not None:
         performance_node.iterations += 1
-        PerfNode_Picard = IterationProperties(itr_type="Picard iterations")
-        PerfNode_Picard.subIterations = [[]]
+        PerfNode_Picard = IterationProperties(itr_type="Picard iteration")
+        PerfNode_Picard.subIterations = []
+    else:
+        PerfNode_Picard = None
 
     # solving the system
     sol, vel = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
@@ -332,7 +342,12 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, Flui
                                vk,
                                Simulation_Parameters.toleranceEHL,
                                Simulation_Parameters.maxSolverItr,
-                               *argSameFP)
+                               *argSameFP,
+                               perf_node=PerfNode_Picard)
+
+    if PerfNode_Picard is not None:
+        PerfNode_Picard.CpuTime_end = time.time()
+        performance_node.subIterations.append(PerfNode_Picard)
 
     # getting new width by adding the change in width solution to the width from last time step
     w_k = np.copy(Fr_lstTmStp.w)
@@ -708,6 +723,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         Material_properties.grainSize
         )
 
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_Picard = IterationProperties(itr_type="Picard iteration")
+        PerfNode_Picard.subIterations = []
+    else:
+        PerfNode_Picard = None
+
     # sloving the system of equations for the change in width in the channel elements and pressure in the tip elements
     (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP,
                                MakeEquationSystem_viscousFluid_extendedFP,
@@ -716,7 +738,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                vk,
                                sim_parameters.toleranceEHL,
                                sim_parameters.maxSolverItr,
-                               *arg)
+                               *arg,
+                               perf_node=PerfNode_Picard)
+
+    if PerfNode_Picard is not None:
+        PerfNode_Picard.CpuTime_end = time.time()
+        performance_node.subIterations[2].append(PerfNode_Picard)
 
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
@@ -738,6 +765,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         return exitstatus, None
 
     if (Fr_kplus1.w < 0).any():  #todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
+        print("found negative width, ignoring...")
         print(repr(np.where((Fr_kplus1.w < 0))))
         print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
         Fr_kplus1.w[np.where(Fr_kplus1.w < 1e-10)[0]] = 1e-10
@@ -1122,6 +1150,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         Fluid_properties.turbulence,
         Material_properties.grainSize
     )
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_Picard = IterationProperties(itr_type="Picard iteration")
+        PerfNode_Picard.subIterations = []
+    else:
+        PerfNode_Picard = None
 
     # sloving the system of equations for the change in width in the channel elements and pressure in the tip elements
     (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP,
@@ -1131,7 +1165,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
                                vk,
                                sim_parameters.toleranceEHL,
                                sim_parameters.maxSolverItr,
-                               *arg)
+                               *arg,
+                               perf_node=PerfNode_Picard)
+
+    if PerfNode_Picard is not None:
+        PerfNode_Picard.CpuTime_end = time.time()
+        performance_node.subIterations[2].append(PerfNode_Picard)
 
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
