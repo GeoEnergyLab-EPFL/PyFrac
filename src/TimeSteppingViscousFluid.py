@@ -766,8 +766,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     if (Fr_kplus1.w < 0).any():  #todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
         print("found negative width, ignoring...")
-        print(repr(np.where((Fr_kplus1.w < 0))))
-        print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
+        # print(repr(np.where((Fr_kplus1.w < 0))))
+        # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
         Fr_kplus1.w[np.where(Fr_kplus1.w < 1e-10)[0]] = 1e-10
         # exitstatus = 5
         # return exitstatus, None
@@ -1192,8 +1192,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         return exitstatus, None
 
     if (Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
-        print(repr(np.where((Fr_kplus1.w < 0))))
-        print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
+        print("found negative width. Ignoring...")
+        # print(repr(np.where((Fr_kplus1.w < 0))))
+        # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
         Fr_kplus1.w[np.where(Fr_kplus1.w <= 1e-10)[0]] = 1e-10
         # exitstatus = 5
         # return exitstatus, None

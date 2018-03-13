@@ -180,6 +180,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
                                            continous line with data points marked with dots )
         anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
                                            continous line with data points marked with dots )
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
 
     Returns:
         fig_w_x (figure)                -- figure for fracture width at x-axis to superimpose.
@@ -375,6 +376,9 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
             loglog (True)                   -- if True, plots will be loglog.
             plt_dimensionless (True)        -- if True, time will be scaled with the viscosity to toughness transition
                                                time.
+            plt_error (bool)                -- if True, error will also plotted.
+            add_labels (bool)               -- if True, labels will be added to the plots.
+            multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
 
         Returns:
             fig_w (figure)                    -- width figure to superimpose.
@@ -596,6 +600,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
                                            Lecampion 2018)
         Sim_prop (SimulationParameters) -- if provided, the simulation properties read for file will be overriden by
                                            these parameters.
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
 
     Returns:
         fig (figure)                    -- a figure to superimpose.
@@ -772,6 +777,39 @@ def save_footprint_evol_to_image_files(data_address=None, images_folder='.', plo
                                        anltcl_lnStyle='b', plt_mesh=True, plt_regime=False, Sim_prop=None,
                                        multpl_sim = False, plt_time=True, alternate=False, disp_precision=3,
                                        txt_size=None, save_video=True, video_name='movie.avi'):
+    """
+    his function plots the footprints of the fractures saved in the given folder.
+
+    Arguments:
+        data_address (string)           -- the folder address containing the saved data files.
+        plot_at_times (ndarray)         -- if provided, the footprints of the given times will persist on the plot after
+                                           the front passes through them.
+        analytical_sol (string)         -- the following options can be provided
+                                                'M'     -- radial fracture in viscosity dominated regime
+                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                                'K'     -- radial fracture in toughness dominated regime
+                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                                'E'     -- elliptical fracture in toughness dominated regime
+                                                'PKN'   -- PKN fracture
+        anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                               continous line with data points marked with dots )
+        plt_mesh (boolean)              -- if true, mesh will also be plotted.
+        plt_regime (boolean)            -- if true, regime evaluated at the ribbon cells will be ploted (see Zia and
+                                           Lecampion 2018)
+        Sim_prop (SimulationParameters) -- if provided, the simulation properties read for file will be overriden by
+                                           these parameters.
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
+        plt_time (bool)                 -- if True, the time will be printed close to the persistent footprints
+        alternate (bool)                -- if True, the time will be printed close to the maximum and minimum distance
+                                            from the injection point alternatively. if False, the time will be printed
+                                            always at the furthest point from the injection point for a given footprint.
+        disp_precision (int)            -- the number of digits printed for time.
+        txt_size (float)                -- the size of the txt displaying the time
+        save_video (bool)               -- if True, a video will be made from the saved images and saved in the current
+                                           directory.
+        video_name (string)             -- the name of the video file
+
+    """
 
     if not slash in data_address[-2:]:
         data_address = data_address + slash
@@ -879,6 +917,10 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
             anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
                                                continous line with data points marked with dots )
             plt_error (bool)                -- if True, error between numerical and analytical would be plotted
+            error_lnStyle (string)          -- the line style of the error plot.
+            add_labels (bool)               -- if True, labels will be added to the plots.
+            multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
+
 
         Returns:
             fig_r (figure)                    -- a figure to superimpose.
@@ -1063,8 +1105,10 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
             plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
                                                continous line with data points marked with dots )
             anltcl_lnStyle (string)         -- the line style of the analytical solution lines (e.g. '.k-' for a black
-                                               continous line with data points marked with dots )
-            plt_efficiency (bool)           -- if True, fracturing efficiency would be plotted
+                                               continous line with data points marked with dots).
+            plt_efficiency (bool)           -- if True, fracturing efficiency would be plotted.
+            add_labels (bool)               -- if True, labels will be added to the plots.
+            multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
 
         Returns:
             fig_lk (figure)                    -- a figure to superimpose leaked off volume.
@@ -1278,6 +1322,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                                            points of the front from the injection point.
         plt_clr_bar (bool)              -- if True, the color bar will generated.
         disp_precision (int)            -- the precision upto which the time, length etc. are displayed
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
 
     Returns:
         fig (figure)                    -- a figure to superimpose.
