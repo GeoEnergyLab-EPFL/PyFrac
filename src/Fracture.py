@@ -494,7 +494,7 @@ class Fracture():
             polygon = Polygon(np.reshape(self.mesh.VertexCoor[self.mesh.Connectivity[i], :], (4, 2)), True)
             patches.append(polygon)
 
-        p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color)
+        p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color, linewidth=0.5)
 
 
         # applying color according to the prescribed parameter
@@ -502,23 +502,23 @@ class Fracture():
 
         if not sim_prop is None:
             if sim_prop.bckColor == 'sigma0':
-                max_bck = max(mat_properties.SigmaO)
-                min_bck = min(mat_properties.SigmaO)
+                max_bck = max(mat_properties.SigmaO) / 1e6
+                min_bck = min(mat_properties.SigmaO) / 1e6
                 if max_bck - min_bck > 0:
                     plt_clrBar = True
-                    colors = (mat_properties.SigmaO - min_bck) / (max_bck - min_bck)
+                    colors = (mat_properties.SigmaO / 1e6 - min_bck) / (max_bck - min_bck)
                 else:
                     plt_clrBar = False
-                label = "confining stress"
+                label = "confining stress (MPa)"
             elif sim_prop.bckColor == 'K1c':
-                max_bck = max(mat_properties.K1c)
-                min_bck = min(mat_properties.K1c)
+                max_bck = max(mat_properties.K1c) / 1e6
+                min_bck = min(mat_properties.K1c) / 1e6
                 if max_bck - min_bck > 0:
                     plt_clrBar = True
-                    colors = (mat_properties.K1c - min_bck) / (max_bck - min_bck)
+                    colors = (mat_properties.K1c / 1e6 - min_bck) / (max_bck - min_bck)
                 else:
                     plt_clrBar = False
-                label = "fracture toughness (K)"
+                label = "fracture toughness (Mpa m^(1/2))"
             elif sim_prop.bckColor == 'Cl':
                 max_bck = max(mat_properties.Cl)
                 min_bck = min(mat_properties.Cl)
@@ -579,8 +579,8 @@ class Fracture():
 
         # print Element numbers on the plot for elements to be identified
         for i in range(len(identify)):
-            ax.text(self.mesh.CenterCoor[identify[i], 0] - self.mesh.hx / 4, self.mesh.CenterCoor[identify[i], 1] - self.mesh.hy / 4,
-                    repr(identify[i]), fontsize=10)
+            ax.text(self.mesh.CenterCoor[identify[i], 0] - self.mesh.hx / 4, self.mesh.CenterCoor[identify[i], 1] -
+                    self.mesh.hy / 4, repr(identify[i]), fontsize=10)
 
         # print the front lines
         if not mesh_only:
@@ -600,11 +600,14 @@ class Fracture():
                 clr_bar = plt.colorbar(sm,alpha=0.65)
                 clr_bar.set_label(label)
 
-        # # maximize the plot window
-        # import sys
-        # if "win32" in sys.platform or "win64" in sys.platform:
-        #     mng = plt.get_current_fig_manager()
-        #     mng.window.showMaximized()
+        # maximize the plot window
+        import sys
+        if "win32" in sys.platform or "win64" in sys.platform:
+            mng = plt.get_current_fig_manager()
+            mng.window.showMaximized()
+
+        ax.set_xlabel("meters")
+        ax.set_ylabel("meters")
 
         return fig
 
