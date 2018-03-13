@@ -89,10 +89,10 @@ class Controller:
         while Fr.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
 
             # time step is calculated with the current propagation velocity
-            TimeStep = self.sim_prop.tmStpPrefactor * min(Fr.mesh.hx, Fr.mesh.hy) / np.max(Fr.v)
+            TimeStep = get_time_step(Fr, self.sim_prop.tmStpPrefactor)
 
             # to get the solution at the times given in time series
-            if not self.sim_prop.get_solTimeSeries() is None and Fr.time + TimeStep > next_in_tmSrs:
+            if self.sim_prop.get_solTimeSeries() is not None and Fr.time + TimeStep > next_in_tmSrs:
                 TimeStep = next_in_tmSrs - Fr.time
                 if tmSrs_indx < len(self.sim_prop.get_solTimeSeries())-1:
                     tmSrs_indx += 1
@@ -112,6 +112,11 @@ class Controller:
                                                  tmStp_perf)
 
             if self.sim_prop.collectPerfData:
+                tmStp_perf.CpuTime_end = time.time()
+                if status == 1 :
+                    tmStp_perf.status = 'successful'
+                else:
+                    tmStp_perf.status = 'failed'
                 self.perfData.append(tmStp_perf)
 
             self.TotalTimeSteps += 1
@@ -273,9 +278,13 @@ class Controller:
                                                             PerfNode_TmStpAtmpt)
 
             if PerfNode_TmStpAtmpt is not None:
+                PerfNode_TmStpAtmpt.CpuTime_end = time.time()
                 PerfNode.iterations += 1
-                PerfNode.normList.append(status)
                 PerfNode.subIterations.append(PerfNode_TmStpAtmpt)
+                if status == 1:
+                    PerfNode_TmStpAtmpt.status = 'successful'
+                else:
+                    PerfNode_TmStpAtmpt.status = 'failed'
 
             if status == 1:
                 if self.sim_prop.verbosity > 1:
@@ -363,3 +372,34 @@ class Controller:
                 Fr_advanced.SaveFracture(simulation_parameters.get_outFileAddress() + "fracture_"
                                          + repr(simulation_parameters.lastSavedFile))
                 print("Done! ")
+
+def get_time_step(Frac, pre_factor):
+    """
+    This function calculate the appropriate time step.
+
+    Arguments:
+        Frac (Fracture)     -- fracture from the last time step
+        pre_factor (float)  -- the pre-factor to be multiplied to the time step evaluated with the maximum propagation
+                               velocity from the last time step.
+
+    Returns:
+        time_step (float)   -- the appropriate time step
+    """
+
+    tipVrtxCoord = Frac.mesh.VertexCoor[Frac.mesh.Connectivity[Frac.EltTip, Frac.ZeroVertex]]
+
+    # the distance of tip from the injection point in each of the tip cell
+    dist_Inj_pnt = (tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + Frac.l
+
+    # the time step evaluated by restricting the fracture to propagate not more than 7 percent of the current maximum
+    # length
+    TimeStep_1 = min(0.07 * dist_Inj_pnt / Frac.v)
+
+    # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step. e.g., if
+    # the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the cell width in either
+    # x or y direction depending on which is smaller.
+    TimeStep_2 = pre_factor * min(Frac.mesh.hx, Frac.mesh.hy) / np.max(Frac.v)
+
+    time_step = min(TimeStep_1, TimeStep_2)
+    
+    return time_step
