@@ -625,7 +625,8 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0, PicardPerNewton = 100):
+def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0, PicardPerNewton = 100,
+                  perf_node=None):
     """
     Mixed Picard Newton solver for nonlinear systems.
     Arguments:
@@ -648,7 +649,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
     solk = guess
     k = 1
     norm = 1
-    normlist = np.ones((maxitr,), float)
+    normlist = []
 
     tryNewton = False
 
@@ -676,7 +677,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
 
         norm = np.linalg.norm(abs(solk - solkm1)) / np.linalg.norm(abs(solkm1))
 
-        normlist[k] = norm
+        normlist.append(norm)
 
         # todo !!! Hack: Consider coverged if norm grows and last norm is less than 1e-4
         # if norm > normlist[k - 1] and normlist[k - 1] < 1e-4:
@@ -687,6 +688,10 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
             print('Picard iteration not converged after ' + repr(maxitr) + ' iterations, norm:' + repr(norm))
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             return solk, None
+
+        if perf_node is not None:
+            perf_node.iterations = k - 1
+            perf_node.normList = normlist
 
     return solk, interItr
 
