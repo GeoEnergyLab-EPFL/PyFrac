@@ -7,7 +7,7 @@ tol_toughness = 2.5e-3                  # tolerance for the toughness iteration
 
 # max iterations
 maxfront_its = 30                       # maximum iterations for the fracture front
-max_itr_solver = 100                    # maximum iterations for the elastohydrodynamic solver
+max_itr_solver = 50                     # maximum iterations for the elastohydrodynamic solver
 max_toughnessItr = 20                   # maximum toughness iterations
 
 # time and time stepping
