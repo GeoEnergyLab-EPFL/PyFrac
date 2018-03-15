@@ -51,6 +51,7 @@ class Controller:
        self.C = C
        self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.smallStep_cnt = 0
+       self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
        self.perfData = []
 
        self.remeshings = 0
@@ -129,7 +130,7 @@ class Controller:
                 self.smallStep_cnt += 1
                 if self.smallStep_cnt%4 == 0:
                     # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
-                    self.sim_prop.tmStpPrefactor = self.sim_prop.tmStpPrefactor_max
+                    self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_max
 
             # remeshing required
             elif status == 12:
@@ -222,7 +223,8 @@ class Controller:
         # checking if the time step is above the limit
         if TimeStep > self.sim_prop.timeStepLimit:
             TimeStep = self.sim_prop.timeStepLimit
-            self.sim_prop.timeStepLimit = TimeStep * self.sim_prop.tmStpFactLimit
+
+        self.sim_prop.timeStepLimit = max(TimeStep * self.sim_prop.tmStpFactLimit, self.sim_prop.timeStepLimit)
 
         # in case of fracture not propagating
         if TimeStep <= 0:
@@ -393,7 +395,7 @@ def get_time_step(Frac, pre_factor):
 
     # the time step evaluated by restricting the fracture to propagate not more than 7 percent of the current maximum
     # length
-    TimeStep_1 = min(0.07 * dist_Inj_pnt / Frac.v)
+    TimeStep_1 = min(abs(0.071 * dist_Inj_pnt / Frac.v))
 
     # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step. e.g., if
     # the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the cell width in either
@@ -401,5 +403,5 @@ def get_time_step(Frac, pre_factor):
     TimeStep_2 = pre_factor * min(Frac.mesh.hx, Frac.mesh.hy) / np.max(Frac.v)
 
     time_step = min(TimeStep_1, TimeStep_2)
-    
+
     return time_step

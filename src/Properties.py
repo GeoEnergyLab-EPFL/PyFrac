@@ -413,7 +413,6 @@ class SimulationParameters:
         # time and time stepping
         self.maxTimeSteps = simul_param.maximum_steps
         self.tmStpPrefactor = simul_param.tmStp_prefactor
-        self.tmStpPrefactor_max = simul_param.tmStp_prefactor
         self.FinalTime = simul_param.final_time
         self.set_solTimeSeries(simul_param.req_sol_at)
         self.timeStepLimit = simul_param.timeStep_limit

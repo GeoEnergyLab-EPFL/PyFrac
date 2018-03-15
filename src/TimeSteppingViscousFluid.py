@@ -477,7 +477,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5)[0]
+        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 * (
+                                            Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5)[0]
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx**2 +
                                                                   Fr_lstTmStp.mesh.hy**2)**0.5)[0]
@@ -523,6 +524,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                                                 Fr_lstTmStp.EltChannel,
                                                                 Fr_lstTmStp.mesh)
 
+    if not np.in1d(EltsTipNew, front_region).any():
+        raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
+                         " level set.")
+
     # If the angle and length of the perpendicular are not correct
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
     if nan.any() or (l_k < 0).any() or (alpha_k < 0).any() or (alpha_k > np.pi / 2).any():
@@ -545,7 +550,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-
 
     # Calculate filling fraction of the tip cells for the current fracture position
     FillFrac_k = Integral_over_cell(EltsTipNew,
@@ -922,7 +926,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
                                                                                  Fr_lstTmStp.v)
 
     front_region = \
-        np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 *(
+                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                    Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -942,6 +947,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
     (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k,
                                                                Fr_lstTmStp.EltChannel,
                                                                Fr_lstTmStp.mesh)
+
+    if not np.in1d(EltsTipNew, front_region).any():
+        raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
+                         " level set.")
 
     # If the angle and length of the perpendicular are not correct
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
@@ -1293,8 +1302,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        front_region = \
-        np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        front_region =  np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 * (
+                                            Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+
+        if not np.in1d(Fr_kplus1.EltTip, front_region).any():
+            raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
+                             " level set.")
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                        Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
