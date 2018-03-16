@@ -88,15 +88,12 @@ def elasticity_matrix_all_mesh_vectorized(Mesh, Ep):
     Ne = Mesh.NumberOfElts
 
     A = np.empty([Ne, Ne], dtype=float)
-    x = np.empty([Ne, Ne], dtype=float)
-    y = np.empty([Ne, Ne], dtype=float)
 
     for i in range(0, Ne):
-        x[i] = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
-    for i in range(0, Ne):
-        y[i] = Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[:, 1]
+        x = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
+        y = Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[:, 1]
 
-    A = (Ep / (8. * (np.pi))) * (
+        A[i] = (Ep / (8. * (np.pi))) * (
         np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(np.square(a + x) + np.square(b - y)
         ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
         np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))

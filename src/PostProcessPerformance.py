@@ -224,8 +224,11 @@ def plot_reattempts(address=None, fig=None, plt_lnStyle='.', alpha=1):
         raise SystemExit("Data not found. The address might be incorrect")
 
     attempts = []
+    time = []
     for i in perf_data:
+        tm_Stp_attmpt = i.subIterations[-1]
         attempts.append(i.iterations)
+        time.append(tm_Stp_attmpt.time)
 
     if fig is None:
         fig = plt.figure()
@@ -233,7 +236,7 @@ def plot_reattempts(address=None, fig=None, plt_lnStyle='.', alpha=1):
     else:
         ax = fig.get_axes()[0]
 
-    ax.plot(attempts, plt_lnStyle, alpha=alpha)
+    ax.plot(time, attempts, plt_lnStyle, alpha=alpha)
     ax.set_ylabel('number of re-attempts')
     ax.set_xlabel('time step number')
     ax.set_title('Re-attempts for each time step')
