@@ -395,12 +395,15 @@ def get_time_step(Frac, pre_factor):
 
     # the time step evaluated by restricting the fracture to propagate not more than 7 percent of the current maximum
     # length
-    TimeStep_1 = min(abs(0.1 * pre_factor * dist_Inj_pnt / Frac.v))
+    TimeStep_1 = min(abs(0.10 * pre_factor * dist_Inj_pnt / Frac.v))
 
     # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step. e.g., if
     # the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the cell width in either
     # x or y direction depending on which is smaller.
     TimeStep_2 = pre_factor * min(Frac.mesh.hx, Frac.mesh.hy) / np.max(Frac.v)
+
+    if TimeStep_1 < TimeStep_2:
+        print("Limiting time step according to the fracture length extension")
 
     time_step = min(TimeStep_1, TimeStep_2)
 

@@ -385,6 +385,6 @@ def plot_time_steps(address=None, fig=None, plt_lnStyle='.', alpha=1):
     ax.plot(times, plt_lnStyle, alpha=alpha)
     ax.set_ylabel('time')
     ax.set_xlabel('time step number')
-    ax.set_title('Re-attempts for each time step')
+    ax.set_title('Time at which the solution is evaluated')
 
     return fig

@@ -7,10 +7,11 @@
 #
 
 
+import copy
+import time
 from src.TipInversion import *
 from src.ElastoHydrodynamicSolver import *
 from src.LevelSet import *
-import copy
 from src.VolIntegral import *
 from src.anisotropy import projection_from_ribbon, get_toughness_from_cellCenter, get_toughness_from_zeroVertex
 from src.Properties import IterationProperties
@@ -69,14 +70,15 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
                                                     PerfNode_explFront)
 
         if PerfNode_explFront is not None:
+            PerfNode_explFront.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(np.nan)
             PerfNode.subIterations[0].append(PerfNode_explFront)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
             else:
-                PerfNode.status = 'successful'
+                PerfNode.time = Fr_k.time
 
         return exitstatus, Fr_k
 
@@ -100,11 +102,12 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
 
 
         if PerfNode_explFront is not None:
+            PerfNode_explFront.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(np.nan)
             PerfNode.subIterations[0].append(PerfNode_explFront)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
 
         if exitstatus == 1:
@@ -128,11 +131,12 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
                                                                     PerfNode_sameFP)
 
         if PerfNode_sameFP is not None:
+            PerfNode_sameFP.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(np.nan)
             PerfNode.subIterations[1].append(PerfNode_sameFP)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
     else:
         raise ValueError("Provided front advancing type not supported")
@@ -154,7 +158,8 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
         k = k + 1
         if Simulation_Parameters.verbosity > 1:
             print('\nIteration ' + repr(k))
-        Fr_kminus1 = copy.deepcopy(Fr_k)
+
+        fill_frac_last = np.copy(Fr_k.FillF)
 
         if PerfNode is not None:
             PerfNode_extendedFP = IterationProperties(itr_type="extended footprint injection")
@@ -172,30 +177,32 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
                                                               Simulation_Parameters,
                                                               PerfNode_extendedFP)
 
+        if exitstatus == 1:
+            # the new fracture width (notably the new width in the ribbon cells).
+            w_k = np.copy(Fr_k.w)
+
+            # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
+            # with the number of tip cells.
+            norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+        else:
+            norm = np.nan
+
         if PerfNode_extendedFP is not None:
+            PerfNode_extendedFP.CpuTime_end = time.time()
             PerfNode.iterations += 1
             PerfNode.normList.append(norm)
             PerfNode.subIterations[2].append(PerfNode_extendedFP)
             if exitstatus != 1:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
 
         if exitstatus != 1:
             return exitstatus, None
 
-        # the new fracture width (notably the new width in the ribbon cells).
-        w_k = np.copy(Fr_k.w)
-
-        # norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations
-        # with the number of tip cells.
-        norm = abs((sum(Fr_k.FillF) - sum(Fr_kminus1.FillF)) / len(Fr_k.FillF))
-        if Simulation_Parameters.verbosity > 1:
-            print('Norm of subsequent filling fraction estimates = ' + repr(norm))
-
         if k == Simulation_Parameters.maxFrontItr:
             exitstatus = 6
             if PerfNode_extendedFP is not None:
-                PerfNode.status = 'failed'
+                PerfNode.time = Frac.time + TimeStep
                 PerfNode.failure_cause = exitstatus
             return exitstatus, None
 
@@ -203,7 +210,7 @@ def attempt_time_step_volumeControl(Frac, C, Material_properties, Simulation_Par
         print("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
 
     if PerfNode is not None:
-        PerfNode.status = 'successful'
+        PerfNode.time = Fr_k.time
 
     return exitstatus, Fr_k
 
@@ -242,7 +249,9 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, performa
     if performance_node is not None:
         performance_node.iterations += 1
         PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
-        PerfNode_linSolve.subIterations = [[]]
+        PerfNode_linSolve.subIterations = []
+    else:
+        PerfNode_linSolve = None
 
     (A, b) = MakeEquationSystem_volumeControl_sameFP(Fr_lstTmStp.w,
                                                      Fr_lstTmStp.EltCrack,
@@ -251,6 +260,10 @@ def injection_same_footprint_volumeControl(Fr_lstTmStp, C, timeStep, Q, performa
                                                      Q,
                                                      Fr_lstTmStp.mesh.EltArea)
     sol = np.linalg.solve(A, b)
+
+    if PerfNode_linSolve is not None:
+        PerfNode_linSolve.CpuTime_end = time.time()
+        performance_node.subIterations.append(PerfNode_linSolve)
 
     # getting new width by adding the change in width solution to the width from last time step
     w_k = np.copy(Fr_lstTmStp.w)
@@ -333,9 +346,6 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     while itr < sim_parameters.maxToughnessItr:
 
         sgndDist_km1 = np.copy(sgndDist_k)
-        l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
-
-
 
         if not Material_properties.K1cFunc is None:
             alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
@@ -381,7 +391,8 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # be evaluated with the fast marching method to avoid unnecessary computational cost.
         front_region = \
-        np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 * (
+                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                        Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -562,6 +573,13 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
         exitstatus = 4
         return exitstatus, None
 
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
+        PerfNode_linSolve.subIterations = []
+    else:
+        PerfNode_linSolve = None
+
     A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
                                                 wTip,
                                                 Fr_lstTmStp.EltChannel,
@@ -572,6 +590,10 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                                                 Fr_lstTmStp.mesh.EltArea)
 
     sol = np.linalg.solve(A, b)
+
+    if PerfNode_linSolve is not None:
+        PerfNode_linSolve.CpuTime_end = time.time()
+        performance_node.subIterations[2].append(PerfNode_linSolve)
 
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
@@ -668,8 +690,8 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
     sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
                                                                                  Fr_lstTmStp.v)
 
-    front_region = \
-        np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 *(
+                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                    Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -833,7 +855,18 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
                                                        Qin,
                                                        Fr_lstTmStp.mesh.EltArea)
 
+    if performance_node is not None:
+        performance_node.iterations += 1
+        PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
+        PerfNode_linSolve.subIterations = []
+    else:
+        PerfNode_linSolve = None
+
     sol = np.linalg.solve(A, b)
+
+    if PerfNode_linSolve is not None:
+        PerfNode_linSolve.CpuTime_end = time.time()
+        performance_node.subIterations[2].append(PerfNode_linSolve)
 
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
@@ -932,8 +965,8 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
 
             # region expected to have the front after propagation. The signed distance of the cells only in this region will
             # evaluated with the fast marching method to avoid unnecessary computation cost
-            front_region = \
-            np.where(abs(Fr_lstTmStp.sgndDist) < 2 * (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+            front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 * (
+                    Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
             # the search region outwards from the front position at last time step
             pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                            Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]

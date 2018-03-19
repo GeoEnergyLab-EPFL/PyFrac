@@ -102,52 +102,55 @@ ax.set_ylim(-170e-3, 50e-3,)
 
 plt.show()
 
-# make a movie
-from src.Utility import ReadFracture
-from src.PostProcess import to_precision
-tm_srs_index = 0
-exp_data_index = 8
+#### The code below will save images to the given folder and then make a video showing the growth of the fracture along
+#  with the experimental data. You will need to install openCv to make the video from images.
 
+# # make a movie
+# from src.Utility import ReadFracture
+# from src.PostProcess import to_precision
+# tm_srs_index = 0
+# exp_data_index = 8
+#
 # loop to read fracture data
-for i in range(52):
-    name = simulProp.get_outFileAddress() + "fracture_" + repr(i)
-    ff = ReadFracture(name)
-
-    # plotting the current footprint
-    fig = plot_footprint(simulProp.get_outFileAddress(),
-                   plot_at_times=ff.time,
-                   plt_color='k')
-
-    # plotting the traversed footprints
-    fig = plot_footprint(simulProp.get_outFileAddress(),
-                         plot_at_times=simulProp.get_solTimeSeries()[0:tm_srs_index],
-                         fig=fig,
-                         plt_color='k',
-                         plt_mesh=False)
-
-    ax = fig.get_axes()[0]
-    time = to_precision(ff.time, 3)
-    ax.set_title(time + 's.')
-
-    if ff.time == simulProp.get_solTimeSeries()[tm_srs_index]:
-        tm_srs_index += 1
-
-    # plotting traversed experiment data
-    exp_data_index = 8
-    for j in range(tm_srs_index):
-        line1 = ax.plot(data[:, exp_data_index] * 1e-3, -1e-3 * data[:, exp_data_index + 1],
-                        'b', linewidth=0.5, label="Wu et al. 2008")
-        exp_data_index -= 2
-
-    blue_patch = mpatches.mlines.Line2D([], [], color='b', label='experiment (Wu et al. 2008)')
-    black_patch = mpatches.mlines.Line2D([], [], color='k', label='numerical')
-    plt.legend(handles=[blue_patch, black_patch])
-    ax.set_ylim(-170e-3, 50e-3,)
-
-    # saving file
-    print("\nSaving image number: " + str(i).zfill(4))
-    fig.savefig(".\\images\\" + str(i).zfill(4) + '.png', dpi=300)
-    plt.close(fig)
-
-# making a movie from the saved images
-save_images_to_video('.\\images')
+# for i in range(52):
+#     name = simulProp.get_outFileAddress() + "fracture_" + repr(i)
+#     ff = ReadFracture(name)
+#
+#     # plotting the current footprint
+#     fig = plot_footprint(simulProp.get_outFileAddress(),
+#                    plot_at_times=ff.time,
+#                    plt_color='k')
+#
+#     # plotting the traversed footprints
+#     fig = plot_footprint(simulProp.get_outFileAddress(),
+#                          plot_at_times=simulProp.get_solTimeSeries()[0:tm_srs_index],
+#                          fig=fig,
+#                          plt_color='k',
+#                          plt_mesh=False)
+#
+#     ax = fig.get_axes()[0]
+#     time = to_precision(ff.time, 3)
+#     ax.set_title(time + 's.')
+#
+#     if ff.time == simulProp.get_solTimeSeries()[tm_srs_index]:
+#         tm_srs_index += 1
+#
+#     # plotting traversed experiment data
+#     exp_data_index = 8
+#     for j in range(tm_srs_index):
+#         line1 = ax.plot(data[:, exp_data_index] * 1e-3, -1e-3 * data[:, exp_data_index + 1],
+#                         'b', linewidth=0.5, label="Wu et al. 2008")
+#         exp_data_index -= 2
+#
+#     blue_patch = mpatches.mlines.Line2D([], [], color='b', label='experiment (Wu et al. 2008)')
+#     black_patch = mpatches.mlines.Line2D([], [], color='k', label='numerical')
+#     plt.legend(handles=[blue_patch, black_patch])
+#     ax.set_ylim(-170e-3, 50e-3,)
+#
+#     # saving file
+#     print("\nSaving image number: " + str(i).zfill(4))
+#     fig.savefig(".\\images\\" + str(i).zfill(4) + '.png', dpi=300)
+#     plt.close(fig)
+#
+# # making a movie from the saved images
+# save_images_to_video('.\\images')

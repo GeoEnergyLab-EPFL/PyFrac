@@ -1,7 +1,7 @@
 #
 # This file is part of PyFrac.
 #
-# Created by Brice Lecampion on 03.04.17.
+# Created by Haseeb Zia on 03.04.17.
 # Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.  All rights reserved.
 # See the LICENSE.TXT file for more details. 
 #
@@ -605,7 +605,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
     if stagnant.any() and not sim_parameters.get_tipAsymptote() is 'U':
-        print("Stagnant front is only supported with universal tip asymptote")
+        print("Stagnant front is only supported with universal tip asymptote. continuing...")
         stagnant = np.full((EltsTipNew.size, ), False, dtype=bool)
 
     if stagnant.any():
@@ -925,8 +925,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
     sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
                                                                                  Fr_lstTmStp.v)
 
-    front_region = \
-        np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 *(
+    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_parameters.tmStpPrefactor * 6.66 *(
                 Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
@@ -1032,7 +1031,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = Vel_k < 1e-14
     if stagnant.any() and not sim_parameters.get_tipAsymptote() is 'U':
-        print("Stagnant front is only supported with universal tip asymptote")
+        print("Stagnant front is only supported with universal tip asymptote. Continuing...")
         stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if stagnant.any():

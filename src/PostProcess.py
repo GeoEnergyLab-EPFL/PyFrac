@@ -677,7 +677,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
 
         fileNo+=1
 
-        if ff.time - nxt_plt_t == 0:
+        if 1. - nxt_plt_t / ff.time >= -0.01:
             # if the current fracture time has advanced the output time period
             print("Plotting at " + repr(ff.time) + ' s')
 
@@ -851,7 +851,7 @@ def save_footprint_evol_to_image_files(data_address=None, images_folder='.', plo
         time = to_precision(ff.time, 3)
         ax.set_title(time + 's.')
 
-        if ff.time == plot_at_times[index]:
+        if 1. - plot_at_times[index] / ff.time >= -0.01:
             index += 1
             # if the current fracture time has advanced the output time period
             if plt_time:
@@ -997,7 +997,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
 
         fileNo += 1
 
-        if ff.time - nxt_plt_t > -1e-8:
+        if 1. - nxt_plt_t / ff.time >= -0.01:
             # if the current fracture time has advanced the output time period
 
             time_srs = np.append(time_srs, ff.time)
