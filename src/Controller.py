@@ -234,14 +234,19 @@ class Controller:
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
             # smaller time step to reattempt time stepping; equal to the given time step on first iteration
-            smallerTimeStep = TimeStep * self.sim_prop.reAttemptFactor ** i
+            tmStp_to_attempt = TimeStep * self.sim_prop.reAttemptFactor ** i
 
+            # try larger prefactor
             if i > self.sim_prop.maxReattempts/2-1:
-                smallerTimeStep = TimeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
+                tmStp_to_attempt = TimeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
 
-            print('\nEvaluating solution at time = ' + repr(Frac.time+smallerTimeStep) + " ...")
+            # check for final time
+            if Frac.time + tmStp_to_attempt > 0.999 * self.sim_prop.FinalTime:
+                return status, Fr
+
+            print('\nEvaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
             if self.sim_prop.verbosity > 1:
-                print("Attempting time step of " + repr(smallerTimeStep) + " sec...")
+                print("Attempting time step of " + repr(tmStp_to_attempt) + " sec...")
 
             if PerfNode is not None:
                 PerfNode_TmStpAtmpt = IterationProperties(itr_type="time step attempt")
@@ -256,7 +261,7 @@ class Controller:
                                                             self.fluid_prop,
                                                             self.sim_prop,
                                                             self.injection_prop,
-                                                            smallerTimeStep,
+                                                            tmStp_to_attempt,
                                                             PerfNode_TmStpAtmpt)
 
             elif self.sim_prop.get_dryCrack_mechLoading():
@@ -265,10 +270,9 @@ class Controller:
                                                             self.solid_prop,
                                                             self.sim_prop,
                                                             self.load_prop,
-                                                            smallerTimeStep,
+                                                            tmStp_to_attempt,
                                                             Frac.mesh,
-                                                            PerfNode_TmStpAtmpt,
-                                                           )
+                                                            PerfNode_TmStpAtmpt)
 
             elif self.sim_prop.get_volumeControl():
                 status, Fr = attempt_time_step_volumeControl(Frac,
@@ -276,7 +280,7 @@ class Controller:
                                                              self.solid_prop,
                                                              self.sim_prop,
                                                              self.injection_prop,
-                                                             smallerTimeStep,
+                                                             tmStp_to_attempt,
                                                             PerfNode_TmStpAtmpt)
 
             if PerfNode_TmStpAtmpt is not None:

@@ -347,9 +347,9 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=True, time_period=0.0, plot_at_times=None,
-                analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True, plt_t_dimensionless=False,
-                plt_error=True, add_labels=True, multpl_sim=False):
+def plot_at_injection_point(address=None, fig_w=None, fig_p=None, fig_err=None, plt_pressure=True, time_period=0.0,
+                plot_at_times=None, analytical_sol='n', plt_symbol='r.', anltcl_lnStyle='b', loglog=True,
+                plt_t_dimensionless=False, plt_error=True, add_labels=True, multpl_sim=False, err_lnStyle='b.'):
     """
         This function plots the width and pressure at the injection point of the fracture.
 
@@ -432,8 +432,11 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
             p_anltcl = np.array([], dtype=np.float64)
 
         if plt_error:
-            fig_err = plt.figure()
-            ax_err = fig_err.add_subplot(111)
+            if fig_err is None:
+                fig_err = plt.figure()
+                ax_err = fig_err.add_subplot(111)
+            else:
+                ax_err = fig_err.get_axes()[0]
             w_err = np.array([], dtype=np.float64)
             p_err = np.array([], dtype=np.float64)
 
@@ -561,9 +564,9 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
     # ax_w.plot(7000, 1e-4, 'k.')
     # print(repr(time_srs))
         if plt_error:
-            ax_err.semilogx(time_srs, abs(w_err), 'bo-', label='error on width')
+            ax_err.semilogx(time_srs, abs(w_err), err_lnStyle, label='error on width')
             if plt_pressure and not analytical_sol in ('M', 'Mt'):
-                ax_err.semilogx(time_srs, abs(p_err), 'ro-', label='error on pressure')
+                ax_err.semilogx(time_srs, abs(p_err), err_lnStyle, label='error on pressure')
             if add_labels:
                 ax_err.set_ylabel('error')
                 ax_err.set_xlabel('time')
@@ -571,7 +574,7 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, plt_pressure=T
                 ax_err.legend()
 
 
-    return fig_w, fig_p
+    return fig_w, fig_p, fig_err
 
 
 def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, analytical_sol='n', plt_color='k',

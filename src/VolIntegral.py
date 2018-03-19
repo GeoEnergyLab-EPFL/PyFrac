@@ -68,7 +68,15 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
         w = KIPrime * dist ** 0.5 / Eprime
     else:
         a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel)
-        w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
+        try:
+            w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
+        except RuntimeError:
+            M0, M1 = np.nan, np.nan
+            return (M0, M1)
+        except ValueError:
+            M0, M1 = np.nan, np.nan
+            return (M0, M1)
+
         if w < -1e-15:
             w = abs(w)
 
