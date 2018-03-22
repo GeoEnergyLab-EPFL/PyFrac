@@ -77,8 +77,8 @@ def plot_fracture_front_iterations(address=None, fig_itr=None, fig_norm=None, pl
     else:
         ax_itr.plot(frac_time, frac_front_itrs, plt_lnStyle, alpha=alpha)
     ax_itr.set_ylabel('number of fracture front iterations')
-    ax_itr.set_xlabel('time step number')
-    ax_itr.set_title('Fracture front iterations for each time step')
+    ax_itr.set_xlabel('time')
+    ax_itr.set_title('Fracture front iterations for a time step')
 
     if plt_norm:
         if fig_norm is None:
@@ -237,9 +237,9 @@ def plot_reattempts(address=None, fig=None, plt_lnStyle='.', alpha=1):
         ax = fig.get_axes()[0]
 
     ax.plot(time, attempts, plt_lnStyle, alpha=alpha)
-    ax.set_ylabel('number of re-attempts')
-    ax.set_xlabel('time step number')
-    ax.set_title('Re-attempts for each time step')
+    ax.set_ylabel('number of attempts')
+    ax.set_xlabel('time')
+    ax.set_title('Attempts for a time step')
 
     return fig
 
@@ -278,8 +278,8 @@ def plot_timeStep_CPU_time(address=None, fig=None, plt_lnStyle='.', loglog=True,
     else:
         ax.plot(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
     ax.set_ylabel('CPU time (seconds)')
-    ax.set_xlabel('time step number')
-    ax.set_title('CPU time for each time step')
+    ax.set_xlabel('time')
+    ax.set_title('CPU time taken by a time step')
 
     print("Total CPU time = " + repr(sum(CPU_time_list)))
     return fig

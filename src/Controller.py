@@ -241,7 +241,7 @@ class Controller:
                 tmStp_to_attempt = TimeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
 
             # check for final time
-            if Frac.time + tmStp_to_attempt > 0.999 * self.sim_prop.FinalTime:
+            if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.FinalTime:
                 return status, Fr
 
             print('\nEvaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
@@ -407,8 +407,9 @@ def get_time_step(Frac, pre_factor):
     TimeStep_2 = pre_factor * min(Frac.mesh.hx, Frac.mesh.hy) / np.max(Frac.v)
 
     if TimeStep_1 < TimeStep_2:
-        print("Limiting time step according to the fracture length extension")
+        print("Limiting time step according to the factor by which the fracture length extends...")
 
     time_step = min(TimeStep_1, TimeStep_2)
 
-    return time_step
+    # return time_step
+    return 620.
