@@ -1056,9 +1056,9 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
     else:
         ax = fig_r.get_axes()[0]
 
-    with open('.\\Data\\acc_dec_2\\implicit_005\\implicit_005', 'rb') as input:
-        implicit = dill.load(input)
-    # implicit = 1
+    # with open('.\\Data\\acc_dec_2\\implicit_005\\implicit_005', 'rb') as input:
+    #     implicit = dill.load(input)
+    implicit = 1
 
     if loglog:
         if not analytical_sol is 'n':
