@@ -338,8 +338,8 @@ class SimulationParameters:
             bckColor (String)           -- the string specifying the parameter according to which the background of the
                                            domain is color coded. Possible options
                                                 - sigma0 (confining stress)
-                                                - Kprime (fracture toughness)
-                                                - Cprime (leak-off coefficient)
+                                                - K1c (fracture toughness)
+                                                - Cl (leak-off coefficient)
             plotEltType (boolean)       -- if True, the type of element will be spedified with color coded dots(channel,
                                            ribbon or tip).
             utputTimePeriod (float)    -- the time period after which the output file is written or the
@@ -361,6 +361,10 @@ class SimulationParameters:
                                                 -- semi-implicit
                                                 -- implicit
             collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.
+            tipParam_precise (bool)     -- if True, the space dependant parameters such as toughness and leak-off
+                                           coefficients will be taken from the tip by projections instead of taking them
+                                           from the ribbon cell center. The numerical scheme as a result will become
+                                           unstable due to the complexities in finding the projection
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -417,6 +421,7 @@ class SimulationParameters:
         self.set_solTimeSeries(simul_param.req_sol_at)
         self.timeStepLimit = simul_param.timeStep_limit
         self.tmStpFactLimit = simul_param.tmStp_fact_limit
+        self.fixedTmStp = simul_param.fixed_time_step
 
         # time step re-attempt
         self.maxReattempts = simul_param.max_reattemps
@@ -444,6 +449,7 @@ class SimulationParameters:
         self.remeshFactor = simul_param.remesh_factor
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
+        self.precise_tipParam = simul_param.precise_tipParam
 
 # ----------------------------------------------------------------------------------------------------------------------
 

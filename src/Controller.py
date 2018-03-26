@@ -89,8 +89,12 @@ class Controller:
         # starting time stepping loop
         while Fr.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
 
-            # time step is calculated with the current propagation velocity
-            TimeStep = get_time_step(Fr, self.sim_prop.tmStpPrefactor)
+
+            if self.sim_prop.fixedTmStp is not None:
+                TimeStep = self.sim_prop.fixedTmStp
+            else:
+                # time step is calculated with the current propagation velocity
+                TimeStep = get_time_step(Fr, self.sim_prop.tmStpPrefactor)
 
             # to get the solution at the times given in time series
             if self.sim_prop.get_solTimeSeries() is not None and Fr.time + TimeStep > next_in_tmSrs:
@@ -411,5 +415,4 @@ def get_time_step(Frac, pre_factor):
 
     time_step = min(TimeStep_1, TimeStep_2)
 
-    # return time_step
-    return 620.
+    return time_step

@@ -154,7 +154,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
                  time_period=0.0, plot_at_times=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b',
                  multpl_sim=False):
     """
-    This function plots the width and pressure at the injection point of the fracture.
+    This function plots the width and pressure profile along the x and y axis.
 
     Arguments:
         address (string)                -- the folder address containing the saved files
@@ -680,7 +680,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
 
         fileNo+=1
 
-        if 1. - nxt_plt_t / ff.time >= -0.01:
+        if 1. - nxt_plt_t / ff.time >= -0.001:
             # if the current fracture time has advanced the output time period
             print("Plotting at " + repr(ff.time) + ' s')
 
@@ -771,6 +771,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
     ax.set_title("Fracture footprint")
     ax.set_xlabel("meters")
     ax.set_ylabel("meters")
+    ax.axis('equal')
 
     return fig
 
@@ -1055,6 +1056,10 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
     else:
         ax = fig_r.get_axes()[0]
 
+    with open('.\\Data\\acc_dec_2\\implicit_005\\implicit_005', 'rb') as input:
+        implicit = dill.load(input)
+    # implicit = 1
+
     if loglog:
         if not analytical_sol is 'n':
             # ax.semilogx(time_srs, r_anltcl, anltcl_lnStyle)
@@ -1064,7 +1069,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
     else:
         if not analytical_sol is 'n':
             ax.plot(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
-        ax.plot(time_srs, r_numrcl, plt_symbol, label='radius numerical')
+        ax.plot(time_srs, r_numrcl/implicit, plt_symbol, label='radius numerical')
     if add_labels:
         ax.set_ylabel('radius')
         ax.set_xlabel('time')
@@ -1079,6 +1084,9 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
             ax_err.set_title('Relative error on radius')
             ax_err.legend()
 
+    # print(repr(time_srs))
+    # with open(address + "implicit_005", 'wb') as output:
+    #     dill.dump(r_numrcl, output, -1)
 
     return fig_r, fig_err
 

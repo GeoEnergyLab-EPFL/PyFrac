@@ -294,7 +294,7 @@ class Fracture():
                                                 footPrint
                                                 mesh
             analytical (float)      -- radius of fracture footprint calculated analytically. Not plotter if None.
-            identify (ndarray):     -- plot the cells in the provided list with cell number and different color
+            identify (ndarray)      -- plot the cells in the provided list with cell number and different color
                                        to identify. This option can be used in debugging.
             mat_properties (MaterialProperties)   -- material properties to colorcode the grid according to the given
                                        parameter in the simulation properties. Can be None.

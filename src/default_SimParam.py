@@ -16,6 +16,7 @@ req_sol_at = None                       # times at which the solution is require
 final_time = 1000                       # time to stop the propagation
 maximum_steps = 2000                    # maximum time steps
 timeStep_limit = None                   # limit for the time step
+fixed_time_step = None                  # constant time step
 tmStp_fact_limit = 2.0                  # limit on to what factor the time step can increase between two successive
                                         # time steps
 
@@ -43,6 +44,7 @@ tip_asymptote = 'U'                     # the tip_asymptote to be used (see clas
 save_regime = True                      # if True, the the regime of the ribbon cells will also be saved
 verbosity = 1                           # the level of details about the ongoing simulation to be plotted
 remesh_factor = 2.                      # the factor by which the mesh is compressed
-front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'.
+front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree
+precise_tipParam = False                # set the space dependant tip parameters to be taken from ribbon cell.
 

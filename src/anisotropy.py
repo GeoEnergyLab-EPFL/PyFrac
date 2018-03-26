@@ -500,7 +500,11 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
     """
 
     if mat_prop.anisotropic:
-        return mat_prop.K1cFunc(alpha)
+        try:
+            return mat_prop.K1cFunc(alpha)
+        except TypeError:
+            SystemExit("For anisotropic toughness, the function taking the angle and returning the toughness is to "
+                       "be provided")
     else:
         dist = -sgnd_dist
         x = np.zeros((len(elts),), )
@@ -552,8 +556,11 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
         # returning the Kprime according to the given function
         K1c = np.empty((len(elts), ), dtype=np.float64)
         for i in range(len(elts)):
-            K1c[i] = mat_prop.K1cFunc(x[i], y[i])
-
+            try:
+                K1c[i] = mat_prop.K1cFunc(x[i], y[i])
+            except TypeError:
+                SystemExit("For precise spacke dependant toughness, the function taking the coordinates and returning"
+                           "the toughness is to be provided.")
         return K1c
 
 #-----------------------------------------------------------------------------------------------------------------------

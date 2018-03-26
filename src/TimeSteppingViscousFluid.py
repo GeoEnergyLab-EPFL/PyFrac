@@ -416,7 +416,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
 
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    if not Material_properties.K1cFunc is None:
+    if sim_parameters.precise_tipParam or Material_properties.anisotropic:
         alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                  Fr_lstTmStp.EltChannel,
                                                  Fr_lstTmStp.mesh,
@@ -435,7 +435,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         sgndDist_km1 = np.copy(sgndDist_k)
         l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
-        if not Material_properties.K1cFunc is None:
+        if sim_parameters.precise_tipParam or Material_properties.anisotropic:
             alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                   Fr_lstTmStp.EltChannel,
                                                   Fr_lstTmStp.mesh,
@@ -494,7 +494,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                  front_region[ngtv_region])
 
         # do it only once if not anisotropic
-        if not Material_properties.anisotropic:
+        if not Material_properties.anisotropic and not sim_parameters.precise_tipParam:
             break
 
         # norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
@@ -585,7 +585,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
         print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if not Material_properties.K1cFunc is None:
+    if sim_parameters.precise_tipParam or Material_properties.anisotropic:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
         Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                    Fr_lstTmStp.mesh,
@@ -594,7 +594,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, Material_pr
                                                    l_k,
                                                    zrVrtx_newTip)
     else:
-        Kprime_tip = None
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        Kprime_tip = Material_properties.Kprime[tip_neighbor_in_ribbon(EltsTipNew, zrVrtx_newTip, Fr_lstTmStp.mesh)]
 
     if performance_node is not None:
         performance_node.iterations += 1
@@ -1006,7 +1007,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if not Material_properties.K1cFunc is None:
+    if sim_parameters.precise_tipParam or Material_properties.anisotropic:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
         Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                            Fr_lstTmStp.mesh,
@@ -1015,7 +1016,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
                                                                            l_k,
                                                                            zrVrtx_newTip)
     else:
-        Kprime_tip = None
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        Kprime_tip = Material_properties.Kprime[tip_neighbor_in_ribbon(EltsTipNew, zrVrtx_newTip, Fr_lstTmStp.mesh)]
 
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
@@ -1243,7 +1245,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
     if sim_parameters.verbosity > 1:
         print("Solved...\nFinding velocity of front...")
     itr = 0
-    if not Material_properties.K1cFunc is None:
+    if sim_parameters.precise_tipParam or Material_properties.anisotropic:
         alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                               Fr_lstTmStp.EltChannel,
                                               Fr_lstTmStp.mesh,
@@ -1262,7 +1264,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         sgndDist_km1 = np.copy(sgndDist_k)
         l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
-        if not Material_properties.K1cFunc is None:
+        if sim_parameters.precise_tipParam or Material_properties.anisotropic:
             alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                   Fr_lstTmStp.EltChannel,
                                                   Fr_lstTmStp.mesh,
@@ -1328,7 +1330,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
         #     return exitstatus, None
 
         # do it only once if not anisotropic
-        if not Material_properties.anisotropic:
+        if not Material_properties.anisotropic and not sim_parameters.precise_tipParam:
             break
 
         # norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
@@ -1366,3 +1368,19 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, Material_properties,
     return exitstatus, Fr_kplus1
 
 # -----------------------------------------------------------------------------------------------------------------------
+
+def tip_neighbor_in_ribbon(tip_elts, tip_zero_vrtx, mesh):
+
+    coresp_neighbor = np.empty((len(tip_elts), ) , dtype=int)
+    neighbors = mesh.NeiElements[tip_elts]
+    for i in range(len(tip_elts)):
+        if tip_zero_vrtx[i] == 0:
+            coresp_neighbor[i] = neighbors[i, 2] - 1
+        elif tip_zero_vrtx[i] == 1:
+            coresp_neighbor[i] = neighbors[i, 2] + 1
+        elif tip_zero_vrtx[i] == 2:
+            coresp_neighbor[i] = neighbors[i, 3] + 1
+        elif tip_zero_vrtx[i] == 3:
+            coresp_neighbor[i] = neighbors[i, 3] - 1
+
+    return coresp_neighbor

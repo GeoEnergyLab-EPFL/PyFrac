@@ -206,10 +206,43 @@ def Area(dist, *param):
                 Eprime ** 7 * muPrime ** 3 * Vel ** 3)
 
 
-def Integral_over_cell(EltTip, alpha, l, mesh, regime, frac=None, mat_prop=None, fluid_prop=None, Vel=None, Kprime=None,
+def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None, Kprime=None,
                        stagnant=None, KIPrime=None, dt=None):
-    """Calculate Volume integrals of the grid cells according to the tip asymptote given by the variable regime"""
+    """
+    Calculate integral of the function specified by the argument function over the cell.
 
+    Arguments:
+        EltTip (ndarray)                -- the tip cells over which the integral is to be evaluated
+        alpha (ndarray)                 -- the angle alpha of the perpendicular drawn on the front from the zero vertex.
+        l (ndarray)                     -- the length of the perpendicular drawn on the front from the zero vertex.
+        mesh (CartesianMesh)            -- the mesh object.
+        function (string)               -- the string specifying the type of function that is to be integreated.
+                                           Possible options are:
+                                                'A'  gives the area (fill fraction)
+                                                'K'  gives tip volume according to the square root assymptote
+                                                'M'  gives tip volume according to the viscocity dominated assymptote
+                                                'Lk' Lk is used to calculate the leak off given the distance of the
+                                                     front l (note, its not tip volume)
+                                                'Mt' gives tip volume according to the viscocity, Leak-off assymptote
+                                                'U'  gives tip volume according to the Universal assymptote (Donstov
+                                                     and Pierce, 2017)
+                                                'MK' gives tip volume according to the M-K transition assymptote
+        frac (Fracture)                 -- the fracture object.
+        mat_prop (MaterialProperties)   -- the material properties object.
+        fluid_prop (FluidProperties)    -- the fluid properties object
+        Vel (ndarray)                   -- the velocity of the front in the given tip cells.
+        Kprime (ndarray)                -- if provided, the toughness will be taken from the given array instead of
+                                           taking it from the mat_prop object
+        stagnant (ndarray)              -- list of tip cells where the front is not moving.
+        KIPrime (ndarray)               -- the stress intensity factor of the cells where the fracture front is not
+                                           moving
+        dt (float)                      -- the time step, only used to calculate leak off.
+
+    Returns:
+        integral (ndarray)              -- the integral of the specifiend function over the given tip cells.
+    """
+
+    # Pass None as dummy if parameter is not required
     dummy = np.full((alpha.size,),None)
 
     if stagnant is None:
@@ -243,36 +276,36 @@ def Integral_over_cell(EltTip, alpha, l, mesh, regime, frac=None, mat_prop=None,
         t_lstTS = None
 
 
-    volume = np.zeros((len(l),), float)
+    integral = np.zeros((len(l),), float)
     for i in range(0, len(l)):
 
         m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
         # packing parameters to pass
-        param_pack = (regime, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
+        param_pack = (function, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
                       m, t_lstTS, dt)
 
         if abs(alpha[i]) < 1e-8:
             # the angle inscribed by the perpendicular is zero
             if l[i] <= mesh.hx:
                 # the front is within the cell.
-                volume[i] = Area(l[i], *param_pack) * mesh.hy
+                integral[i] = Area(l[i], *param_pack) * mesh.hy
             else:
                 # the front has surpassed this cell.
-                volume[i] = (Area(l[i], *param_pack) - Area(l[i] - mesh.hx, *param_pack)) * mesh.hy
+                integral[i] = (Area(l[i], *param_pack) - Area(l[i] - mesh.hx, *param_pack)) * mesh.hy
 
         elif abs(alpha[i] - np.pi / 2) < 1e-8:
             # the angle inscribed by the perpendicular is 90 degrees
             if l[i] <= mesh.hy:
                 # the front is within the cell.
-                volume[i] = Area(l[i], *param_pack) * mesh.hx
+                integral[i] = Area(l[i], *param_pack) * mesh.hx
             else:
                 # the front has surpassed this cell.
-                volume[i] = (Area(l[i], *param_pack) - Area(l[i] - mesh.hy, *param_pack)) * mesh.hx
+                integral[i] = (Area(l[i], *param_pack) - Area(l[i] - mesh.hy, *param_pack)) * mesh.hx
         else:
             yIntrcpt = l[i] / np.cos(np.pi / 2 - alpha[i]) # Y intercept of the front line
             grad = -1 / np.tan(alpha[i]) # gradient of the front line
 
-            # volume of the triangle made by the front by intersecting the x and y directional lines of the cell
+            # integral of the triangle made by the front by intersecting the x and y directional lines of the cell
             TriVol = VolumeTriangle(l[i], *param_pack)
 
             # distance of the front from the upper left vertex of the grid cell
@@ -299,9 +332,9 @@ def Integral_over_cell(EltTip, alpha, l, mesh, regime, frac=None, mat_prop=None,
             else:
                 IntrsctTri = 0
 
-            volume[i] = TriVol - UpTriVol - RtTriVol + IntrsctTri
+            integral[i] = TriVol - UpTriVol - RtTriVol + IntrsctTri
 
-    return volume
+    return integral
 
 
 def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):

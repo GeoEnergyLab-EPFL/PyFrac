@@ -42,7 +42,7 @@ simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explici
 # simulProp.set_outFileAddress(".\\Data\\radial") # the disk address where the files are saved
 
 # initializing fracture
-initRad = 0.2
+initRad = 0.1
 init_param = ("M", "length", initRad)
 
 # creating fracture object
