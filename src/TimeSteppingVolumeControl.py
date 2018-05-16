@@ -580,6 +580,18 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
     else:
         PerfNode_linSolve = None
 
+    C_EltTip = C[np.ix_(EltsTipNew[partlyFilledTip], EltsTipNew[partlyFilledTip])]  # keeping the tip element entries to restore current
+    #  tip correction. This is done to avoid copying the full elasticity matrix.
+
+    # filling fraction correction for element in the tip region
+    FillF = FillFrac_k[partlyFilledTip]
+    for e in range(0, len(partlyFilledTip)):
+        r = FillF[e] - .25
+        if r < 0.1:
+            r = 0.1
+        ac = (1 - r) / r
+        C[EltsTipNew[partlyFilledTip[e]], EltsTipNew[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
+
     A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
                                                 wTip,
                                                 Fr_lstTmStp.EltChannel,
@@ -590,6 +602,9 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
                                                 Fr_lstTmStp.mesh.EltArea)
 
     sol = np.linalg.solve(A, b)
+
+    # regain original C (without filling fraction correction)
+    C[np.ix_(EltsTipNew[partlyFilledTip], EltsTipNew[partlyFilledTip])] = C_EltTip
 
     if PerfNode_linSolve is not None:
         PerfNode_linSolve.CpuTime_end = time.time()

@@ -273,8 +273,11 @@ def plot_timeStep_CPU_time(address=None, fig=None, plt_lnStyle='.', loglog=True,
     else:
         ax = fig.get_axes()[0]
 
+    CPU_time_list = np.asarray(CPU_time_list)
+    time_list = np.asarray(time_list)
     if loglog:
-        ax.semilogx(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        # ax.semilogx(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax.loglog(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
     else:
         ax.plot(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
     ax.set_ylabel('CPU time (seconds)')
@@ -282,6 +285,7 @@ def plot_timeStep_CPU_time(address=None, fig=None, plt_lnStyle='.', loglog=True,
     ax.set_title('CPU time taken by a time step')
 
     print("Total CPU time = " + repr(sum(CPU_time_list)))
+
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------

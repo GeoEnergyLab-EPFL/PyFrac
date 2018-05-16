@@ -81,12 +81,13 @@ plot_footprint(simulProp.get_outFileAddress(),
                         analytical_sol='E')
 
 # plotting length along minor axis
-plot_radius(simulProp.get_outFileAddress(),
+Fig_ab = plot_radius(simulProp.get_outFileAddress(),
                         r_type='min',
                         analytical_sol='E')
 
 # plotting length along major axis
 plot_radius(simulProp.get_outFileAddress(),
+                        fig_r=Fig_ab,
                         r_type='max',
                         analytical_sol='E')
 

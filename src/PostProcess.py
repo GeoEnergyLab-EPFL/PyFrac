@@ -1056,20 +1056,16 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
     else:
         ax = fig_r.get_axes()[0]
 
-    # with open('.\\Data\\acc_dec_2\\implicit_005\\implicit_005', 'rb') as input:
-    #     implicit = dill.load(input)
-    implicit = 1
-
     if loglog:
         if not analytical_sol is 'n':
             # ax.semilogx(time_srs, r_anltcl, anltcl_lnStyle)
             ax.loglog(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
         # ax.semilogx(time_srs, r_numrcl, plt_symbol)
-        ax.loglog(time_srs, r_numrcl, plt_symbol, label='radius numerical')
+        ax.loglog(time_srs, r_numrcl, plt_symbol, label='radius numerical', alpha=0.5)
     else:
         if not analytical_sol is 'n':
             ax.plot(time_srs, r_anltcl, anltcl_lnStyle, label='radius analytical')
-        ax.plot(time_srs, r_numrcl/implicit, plt_symbol, label='radius numerical')
+        ax.plot(time_srs, r_numrcl, plt_symbol, label='radius numerical')
     if add_labels:
         ax.set_ylabel('radius')
         ax.set_xlabel('time')
@@ -1083,10 +1079,6 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
             ax_err.set_xlabel('time')
             ax_err.set_title('Relative error on radius')
             ax_err.legend()
-
-    # print(repr(time_srs))
-    # with open(address + "implicit_005", 'wb') as output:
-    #     dill.dump(r_numrcl, output, -1)
 
     return fig_r, fig_err
 
@@ -1248,7 +1240,7 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
         else:
             ax_eff = fig_eff.get_axes()[0]
 
-        ax_eff.semilogx(time_srs, efficiency, plt_symbol, label='hydraulic fracturing efficiency numerical')
+        ax_eff.semilogx(time_srs, efficiency, plt_symbol, label='hydraulic fracturing efficiency numerical', alpha=0.5)
         if add_labels:
             ax_eff.set_ylabel('efficiency')
             ax_eff.set_xlabel('time')

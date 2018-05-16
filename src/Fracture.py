@@ -254,6 +254,7 @@ class Fracture():
         if simulProp.plotFigure:
             fig = self.plot_fracture(mat_properties=solid, sim_properties=simulProp)
             plt.show()
+            # plt.pause(0.5)
 
         if simulProp.saveToDisk:
             self.SaveFracture(simulProp.get_outFileAddress() + "fracture_" + repr(0))
@@ -601,10 +602,10 @@ class Fracture():
                 clr_bar.set_label(label)
 
         # maximize the plot window
-        import sys
-        if "win32" in sys.platform or "win64" in sys.platform:
-            mng = plt.get_current_fig_manager()
-            mng.window.showMaximized()
+        # import sys
+        # if "win32" in sys.platform or "win64" in sys.platform:
+        #     mng = plt.get_current_fig_manager()
+        #     mng.window.showMaximized()
 
         ax.set_xlabel("meters")
         ax.set_ylabel("meters")

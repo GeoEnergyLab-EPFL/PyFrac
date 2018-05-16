@@ -53,10 +53,13 @@ class Controller:
        self.smallStep_cnt = 0
        self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
        self.perfData = []
+       self.Figure = plt.figure()
 
+       # basic performance data
        self.remeshings = 0
        self.TotalTimeSteps = 0
        self.failedTimeSteps = 0
+
 
     def run(self):
         """
@@ -344,7 +347,7 @@ class Controller:
         in_req_TS = (not simulation_parameters.get_solTimeSeries() is None) and \
                     Fr_advanced.time in simulation_parameters.get_solTimeSeries()
 
-        if  out_TP_exceeded or in_req_TS:
+        if out_TP_exceeded or in_req_TS:
             # plot fracture footprint
             if simulation_parameters.plotFigure:
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
@@ -366,13 +369,17 @@ class Controller:
                     elif simulation_parameters.analyticalSol == 'PKN':
                         print("PKN is to be implemented.")
 
-                    Fr_advanced.plot_fracture(analytical=R,
+                    plt.close(self.Figure)
+                    self.Figure = Fr_advanced.plot_fracture(analytical=R,
                                                 mat_properties=material_properties,
                                                 sim_properties=simulation_parameters)
                 else:
-                    Fr_advanced.plot_fracture(mat_properties=material_properties,
-                                                sim_properties=simulation_parameters)
-                plt.show()
+                    plt.close(self.Figure)
+                    self.Figure = Fr_advanced.plot_fracture(mat_properties=material_properties,
+                                              # fig=self.Figure,
+                                              sim_properties=simulation_parameters)
+                plt.show(block=False)
+                plt.pause(0.5)
                 print("Done! ")
 
             # save fracture to disk
@@ -401,9 +408,9 @@ def get_time_step(Frac, pre_factor):
     # the distance of tip from the injection point in each of the tip cell
     dist_Inj_pnt = (tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + Frac.l
 
-    # the time step evaluated by restricting the fracture to propagate not more than 7 percent of the current maximum
+    # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current maximum
     # length
-    TimeStep_1 = min(abs(0.10 * pre_factor * dist_Inj_pnt / Frac.v))
+    TimeStep_1 = min(abs(0.08 * pre_factor * dist_Inj_pnt / Frac.v))
 
     # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step. e.g., if
     # the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the cell width in either

@@ -49,6 +49,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
     FinDiffOprtr[EltCrack, Mesh.NeiElements[EltCrack, 2]] = wBtmEdge ** 3 / dy ** 2 / muPrime[EltCrack]
     FinDiffOprtr[EltCrack, Mesh.NeiElements[EltCrack, 3]] = wTopEdge ** 3 / dy ** 2 / muPrime[EltCrack]
 
+
     return FinDiffOprtr
 
 #-----------------------------------------------------------------------------------------------------------------------
