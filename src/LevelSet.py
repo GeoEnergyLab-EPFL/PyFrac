@@ -87,10 +87,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
     # is inverted to run the fast marching algorithm. The sign is finally inverted back to assign the value in the level
     # set to be returned.
     if len(farAwayNgtv)>0:
-        RibbonInwardElts = np.copy(EltChannel)
-        for i in range(len(EltRibbon)):
-            RibbonInwardElts = np.delete(RibbonInwardElts, np.where(RibbonInwardElts == EltRibbon[i])[0])
-
+        RibbonInwardElts = np.setdiff1d(EltChannel, EltRibbon)
         positive_levelSet = 1e10 * np.ones((mesh.NumberOfElts,), np.float64)
         positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
         Alive = np.copy(EltRibbon)
@@ -159,10 +156,7 @@ def reconstruct_front(dist, EltChannel, mesh):
     """
 
     # Elements that are not in channel
-    EltRest = np.arange(mesh.NumberOfElts)
-    for i in range(len(EltChannel)):
-        EltRest = np.delete(EltRest, np.where(EltRest == EltChannel[i])[0])
-    # EltRest = np.delete(range(mesh.NumberOfElts), np.intersect1d(range(mesh.NumberOfElts), EltChannel, None))
+    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), EltChannel)
     ElmntTip = np.asarray([], int)
     l = np.asarray([])
     alpha = np.asarray([])
@@ -272,9 +266,8 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
             i -= 1
         i += 1
 
-    newEltChannel = np.copy(EltsTipNew)  # new channel elements
-    for i in range(0, len(eltsTip)):
-        newEltChannel = np.delete(newEltChannel, np.where(newEltChannel == eltsTip[i]))
+    # new channel elements
+    newEltChannel = np.setdiff1d(EltsTipNew, eltsTip)
 
     eltsChannel = np.append(EltsChannel, newEltChannel)
     eltsCrack = np.append(eltsChannel, eltsTip)
@@ -309,9 +302,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
         if drctx > 0 and drcty > 0:
             zeroVrtx[i] = 2
 
-    for i in range(0,len(eltsTip)):
-        eltsRibbon = np.delete(eltsRibbon,np.where(eltsRibbon==eltsTip[i]))
-
+    eltsRibbon = np.setdiff1d(eltsRibbon, eltsTip)
         # # !!! to be checked if necessary or not
         # if (mesh.NeiElements[eltsTip[i],0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
         #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 0])
@@ -322,11 +313,6 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
         # if (mesh.NeiElements[eltsTip[i], 1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
         #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 1])
 
-    eltsRibbon = np.unique(eltsRibbon)
-    # # Remove repetitions in the ribbon cells
-    # eltsRibbon = np.unique(eltsRibbon)
-    # for i in range(0, len(eltsTip)):
-    #     eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
 
     # to_append = np.asarray([], dtype=np.int)
     # for i in range(0, len(eltsRibbon)):
