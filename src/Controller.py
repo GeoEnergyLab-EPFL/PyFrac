@@ -417,9 +417,6 @@ def get_time_step(Frac, pre_factor):
     # x or y direction depending on which is smaller.
     TimeStep_2 = pre_factor * min(Frac.mesh.hx, Frac.mesh.hy) / np.max(Frac.v)
 
-    if TimeStep_1 < TimeStep_2:
-        print("Limiting time step according to the factor by which the fracture length extends...")
-
     time_step = min(TimeStep_1, TimeStep_2)
 
     return time_step

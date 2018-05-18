@@ -246,7 +246,7 @@ def plot_reattempts(address=None, fig=None, plt_lnStyle='.', alpha=1):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_timeStep_CPU_time(address=None, fig=None, plt_lnStyle='.', loglog=True, alpha=1):
+def plot_timeStep_CPU_time(address=None, fig_T=None, fig_N=None, plt_lnStyle='.', loglog=True, alpha=1):
     print("---Plotting CPU time---\n\n")
 
     if address is None:
@@ -263,30 +263,49 @@ def plot_timeStep_CPU_time(address=None, fig=None, plt_lnStyle='.', loglog=True,
 
     CPU_time_list = []
     time_list = []
+    N_list = []
     for i in perf_data:
         successful_attmpt = i.subIterations[-1]
         CPU_time_list.append(successful_attmpt.CpuTime_end - successful_attmpt.CpuTime_start)
         time_list.append(successful_attmpt.time)
-    if fig is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        N_list.append(successful_attmpt.NumbOfElts)
+    if fig_T is None:
+        fig_T = plt.figure()
+        ax_T = fig_T.add_subplot(111)
     else:
-        ax = fig.get_axes()[0]
+        ax_T = fig_T.get_axes()[0]
+
+    if fig_N is None:
+        fig_N = plt.figure()
+        ax_N = fig_N.add_subplot(111)
+    else:
+        ax_N = fig_N.get_axes()[0]
 
     CPU_time_list = np.asarray(CPU_time_list)
     time_list = np.asarray(time_list)
+    N_list = np.asarray(N_list)
+
     if loglog:
         # ax.semilogx(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
-        ax.loglog(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax_T.loglog(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
     else:
-        ax.plot(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
-    ax.set_ylabel('CPU time (seconds)')
-    ax.set_xlabel('time')
-    ax.set_title('CPU time taken by a time step')
+        ax_T.plot(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+    ax_T.set_ylabel('CPU time (seconds)')
+    ax_T.set_xlabel('time')
+    ax_T.set_title('CPU time taken by a time step')
+
+    if loglog:
+        # ax.semilogx(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax_N.loglog(N_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+    else:
+        ax_N.plot(N_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+    ax_N.set_ylabel('CPU time (seconds)')
+    ax_N.set_xlabel('Number of elements')
+    ax_N.set_title('CPU time taken by a time step')
 
     print("Total CPU time = " + repr(sum(CPU_time_list)))
 
-    return fig
+    return fig_T, fig_N
 
 #-----------------------------------------------------------------------------------------------------------------------
 

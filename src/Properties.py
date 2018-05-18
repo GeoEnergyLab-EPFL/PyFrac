@@ -563,5 +563,6 @@ class IterationProperties:
         self.CpuTime_end = None
         self.status = None
         self.failure_cause = None
+        self.NumbOfElts = None
         self.subIterations = []
 
