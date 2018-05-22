@@ -87,7 +87,8 @@ def attempt_time_step_viscousFluid(Frac, C, mat_properties, fluid_properties, si
 
         if perfNode_explFront is not None:
             perfNode_explFront.CpuTime_end = time.time()
-            perfNode.NumbOfElts = Fr_k.EltCrack.size
+            if Fr_k is not None:
+                perfNode.NumbOfElts = Fr_k.EltCrack.size
             perfNode.iterations += 1
             perfNode.normList.append(np.nan)
             perfNode.subIterations[0].append(perfNode_explFront)
@@ -120,7 +121,8 @@ def attempt_time_step_viscousFluid(Frac, C, mat_properties, fluid_properties, si
 
         if perfNode_explFront is not None:
             perfNode_explFront.CpuTime_end = time.time()
-            perfNode.NumbOfElts = Fr_k.EltCrack.size
+            if Fr_k is not None:
+                perfNode.NumbOfElts = Fr_k.EltCrack.size
             perfNode.iterations += 1
             perfNode.normList.append(np.nan)
             perfNode.subIterations[0].append(perfNode_explFront)
@@ -152,7 +154,8 @@ def attempt_time_step_viscousFluid(Frac, C, mat_properties, fluid_properties, si
                                                    perfNode_sameFP)
         if perfNode_sameFP is not None:
             perfNode_sameFP.CpuTime_end = time.time()
-            perfNode.NumbOfElts = Frac.EltCrack.size
+            if Frac is not None:
+                perfNode.NumbOfElts = Frac.EltCrack.size
             perfNode.iterations += 1
             perfNode.normList.append(np.nan)
             perfNode.subIterations[1].append(perfNode_sameFP)
@@ -209,7 +212,8 @@ def attempt_time_step_viscousFluid(Frac, C, mat_properties, fluid_properties, si
 
         if perfNode_extendedFP is not None:
             perfNode_extendedFP.CpuTime_end = time.time()
-            perfNode.NumbOfElts = Fr_k.EltCrack.size
+            if Fr_k is not None:
+                perfNode.NumbOfElts = Fr_k.EltCrack.size
             perfNode.iterations += 1
             perfNode.normList.append(norm)
             perfNode.subIterations[2].append(perfNode_extendedFP)
