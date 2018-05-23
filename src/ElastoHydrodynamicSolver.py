@@ -359,7 +359,7 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
     A = np.identity(EltCrack.size) - dt * FinDiffOprtr.dot(C[np.ix_(EltCrack, EltCrack)])
     S = dt * FinDiffOprtr.dot(np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]) + \
                             dt * Q[EltCrack] / mesh.EltArea - LeakOff[EltCrack] / mesh.EltArea
-    
+
     return (A, S, vk)
 
 
@@ -405,9 +405,6 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0,
      turb, dgrain) = args
 
-    A = np.zeros((EltChannel.size + EltsTipNew.size, EltChannel.size + EltsTipNew.size), dtype=np.float64)
-    S = np.zeros((EltChannel.size + EltsTipNew.size,), dtype=np.float64)
-
     delwK = solk[np.arange(EltChannel.size)]
     wcNplusOne = np.copy(wLastTS)
     wcNplusOne[EltChannel] = wcNplusOne[EltChannel] + delwK
@@ -440,11 +437,13 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     Channel = np.arange(EltChannel.size)
     Tip = Channel.size + np.arange(EltsTipNew.size)
 
+    A = np.zeros((EltChannel.size + EltsTipNew.size, EltChannel.size + EltsTipNew.size), dtype=np.float64)
     A[np.ix_(Channel, Channel)] = np.identity(Channel.size) - dt * condCC.dot(C[np.ix_(EltChannel, EltChannel)])
     A[np.ix_(Channel, Tip)] = -dt * condCT.toarray()
     A[np.ix_(Tip, Channel)] = -dt * condTC.dot(C[np.ix_(EltChannel, EltChannel)])
     A[np.ix_(Tip, Tip)] = -dt * condTT.toarray()
 
+    S = np.zeros((EltChannel.size + EltsTipNew.size,), dtype=np.float64)
     S[Channel] = dt * condCC.dot(np.dot(C[np.ix_(EltChannel, EltChannel)], wLastTS[EltChannel]) + \
                                 np.dot(C[np.ix_(EltChannel, EltsTipNew)], wTip) + sigma0[EltChannel]) + \
                                 dt * Q[EltChannel] / Mesh.EltArea - LeakOff[EltChannel] / Mesh.EltArea
