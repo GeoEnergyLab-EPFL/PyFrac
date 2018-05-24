@@ -136,7 +136,7 @@ class Fracture():
         # the parameter specifying the type of initialization
         init_type = init_param[0]
 
-        if init_type is 'PKN':
+        if init_type is 'PKN' or 'KGD' in init_type:
             (init_type, given_type, given_value, h) = init_param
         elif init_type in ('M', 'Mt', 'K', 'Kt', 'E'): # radial fracture
             if len(init_param) == 3:
@@ -195,8 +195,18 @@ class Fracture():
                 for i in range(0, surv_cells.size):
                      surv_dist[i] = Distance_ellipse(a, self.initRad, Mesh.CenterCoor[surv_cells[i], 0],
                                                                     Mesh.CenterCoor[surv_cells[i], 1])
-            elif init_type is 'PKN':
-                raise SystemExit("PKN initialization is to be implemented")
+            elif 'PKN' in init_type or 'KGD' in init_type :
+                inner_cells = np.intersect1d(np.where(abs(Mesh.CenterCoor[:, 0]) < self.initRad)[0],
+                                        np.where(abs(Mesh.CenterCoor[:, 1]) < h / 2)[0])
+                max_x = max(abs(Mesh.CenterCoor[inner_cells, 0]))
+                max_y = max(abs(Mesh.CenterCoor[inner_cells, 1]))
+                ribbon_x = np.where(abs(abs(Mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
+                ribbon_y = np.where(abs(abs(Mesh.CenterCoor[inner_cells, 1]) - max_y) < 100 * sys.float_info.epsilon)[0]
+                surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
+                surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
+                surv_dist[0:len(ribbon_x)] = h / 2 - float(abs(Mesh.CenterCoor[inner_cells[ribbon_x[0]], 1]))
+                surv_dist[len(ribbon_x):len(surv_cells)] = self.initRad - float(abs(Mesh.CenterCoor[inner_cells[ribbon_y[0]], 0]))
+                inner_cells = [x for x in inner_cells if x not in surv_cells]
 
         self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
         self.CellStatus, self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,

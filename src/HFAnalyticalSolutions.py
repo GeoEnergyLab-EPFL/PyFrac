@@ -307,8 +307,71 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None):
 
     return t, ell, p, w, v, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------------------------------------------------
+
+def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None):
+    """
+    Analytical solution plain strain hydraulic fracture (KGB geometry) in the toughness dominated regime, given current
+    time or length. The solution does not take leak off into account.
+
+    Arguments:
+        Eprime (float)         -- plain strain elastic modulus
+        Q0 (float)             -- injection rate
+        KPrime (float)         -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
+        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
+        height (float)         -- the height of the KGD fracture (it should be much longer then length)
+        ell (float)            -- length of fracture
+        t (float)              -- the given time for which the solution is evaluated
+
+
+    Returns:
+        t (float)              -- time at which the fracture reaches the given length.
+        ell (float)            -- length of the fracture at the given time
+        p (ndarray-float)      -- pressure at each cell at the given time
+        w (ndarray-float)      -- width at each cell at the given time
+        v (float)              -- propagation velocity
+        actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time
+    """
+
+    if ell is None and t is None:
+        raise ValueError("Either the length or the time is required to evaluate the solution.")
+    elif ell is None:
+        # length of the fracture at the given time
+        ell = 0.932388 * (Eprime * (Q0 / 2) * t / Kp) ** (2 / 3)
+    elif t is None:
+        t = 1.11072 * Kprime / Eprime / (Q0 / 2) * ell ** (3 / 2)
+
+    x = np.linspace(-ell, ell, int(Mesh.nx))
+
+    # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
+    # the power of 1/3 and not evaluate with the series.
+    sol_w = 0.682784 * (Kprime ** 2 * (Q0 / 2) * t / Eprime ** 2) ** (1 / 3) * (1 - (abs(x) / ell) ** 2) ** (1 / 2)
+
+    # interpolation function to calculate width at any length.
+    anltcl_w = interpolate.interp1d(x, sol_w)
+
+    # cells inside the PKN fracture
+    actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= height / 2)
+    actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+    actvElts = np.intersect1d(actvElts_v, actvElts_h)
+
+    w = np.zeros((Mesh.NumberOfElts,), float)
+    # The average width is given by the interpolation function.
+    w[actvElts] = anltcl_w(Mesh.CenterCoor[actvElts, 0])
+
+    # calculating pressure from width
+    p = np.zeros((Mesh.NumberOfElts,), float)
+    p[actvElts] = 0.183074 * (Kprime ** 4 / (Eprime * Q0 * t)) ** (1 / 3)
+
+    # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
+    t1 = 1.11072 * Kprime / Eprime / (Q0 / 2) * (1.01 * ell) ** (3 / 2)
+    v = 0.01 * ell / (t1 - t)
+
+    return t, ell, p, w, v, actvElts
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh, b=None, t=None):
     """
@@ -413,6 +476,8 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
         t, r, p, w, v, actvElts = KT_vertex_solution(Eprime, Cprime, Q0, Kprime, mesh, length, t)
     elif regime is 'PKN':
         t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t)
+    elif regime is 'KGD_K':
+        t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t)
     elif regime is 'E':
         KIc = Kprime / (32 / np.pi) ** 0.5
         t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( KIc, KIc_min, Eprime, Q0, mesh, length, t)

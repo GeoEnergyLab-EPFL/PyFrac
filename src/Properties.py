@@ -396,7 +396,7 @@ class SimulationParameters:
             sys.path.append('.' + slash + 'src')
 
         if address is None:
-            import default_SimParam as simul_param
+            import src.default_SimParam as simul_param
         else:
             import sys
             sys.path.append(address)
