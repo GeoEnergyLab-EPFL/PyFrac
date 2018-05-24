@@ -329,7 +329,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
     itr = 1
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    if not Material_properties.K1cFunc is None:
+    if sim_parameters.precise_tipParam or Material_properties.anisotropic:
         alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                  Fr_lstTmStp.EltChannel,
                                                  Fr_lstTmStp.mesh,
@@ -347,7 +347,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
 
         sgndDist_km1 = np.copy(sgndDist_k)
 
-        if not Material_properties.K1cFunc is None:
+        if sim_parameters.precise_tipParam or Material_properties.anisotropic:
             alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                   Fr_lstTmStp.EltChannel,
                                                   Fr_lstTmStp.mesh,
@@ -418,7 +418,7 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
             return exitstatus, None
 
         # do it only once if KprimeFunc is not provided
-        if Material_properties.K1cFunc is None:
+        if (not sim_parameters.precise_tipParam) or (not Material_properties.anisotropic):
             break
 
         # norm = np.linalg.norm(1 - abs(l_m1 / sgndDist_k[Fr_lstTmStp.EltRibbon]))
@@ -925,7 +925,7 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
             print("Solved...\nFinding velocity of front...")
 
         itr = 0
-        if not Material_properties.K1cFunc is None:
+        if sim_parameters.precise_tipParam or Material_properties.anisotropic:
             alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                   Fr_lstTmStp.EltChannel,
                                                   Fr_lstTmStp.mesh,
@@ -944,7 +944,7 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
             sgndDist_km1 = np.copy(sgndDist_k)
             l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
 
-            if not Material_properties.K1cFunc is None:
+            if sim_parameters.precise_tipParam or Material_properties.anisotropic:
                 alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
                                                       Fr_lstTmStp.EltChannel,
                                                       Fr_lstTmStp.mesh,
@@ -1010,7 +1010,7 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
             #     return exitstatus, None
 
             # do it only once if not anisotropic
-            if not Material_properties.anisotropic:
+            if (not sim_parameters.precise_tipParam) or (not Material_properties.anisotropic):
                 break
 
             # norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
