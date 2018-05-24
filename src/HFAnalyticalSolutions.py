@@ -333,20 +333,22 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None):
         v (float)              -- propagation velocity
         actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time
     """
+    # injection rate per unit height in one wing
+    Q = Q0 / height
 
     if ell is None and t is None:
         raise ValueError("Either the length or the time is required to evaluate the solution.")
     elif ell is None:
         # length of the fracture at the given time
-        ell = 0.932388 * (Eprime * (Q0 / 2) * t / Kp) ** (2 / 3)
+        ell = 0.932388 * (Eprime * Q * t / Kprime) ** (2 / 3)
     elif t is None:
-        t = 1.11072 * Kprime / Eprime / (Q0 / 2) * ell ** (3 / 2)
+        t = 1.11072 * Kprime / Eprime / Q * ell ** (3 / 2)
 
     x = np.linspace(-ell, ell, int(Mesh.nx))
 
     # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
     # the power of 1/3 and not evaluate with the series.
-    sol_w = 0.682784 * (Kprime ** 2 * (Q0 / 2) * t / Eprime ** 2) ** (1 / 3) * (1 - (abs(x) / ell) ** 2) ** (1 / 2)
+    sol_w = 0.682784 * (Kprime ** 2 * Q * t / Eprime ** 2) ** (1 / 3) * (1 - (abs(x) / ell) ** 2) ** (1 / 2)
 
     # interpolation function to calculate width at any length.
     anltcl_w = interpolate.interp1d(x, sol_w)
@@ -365,7 +367,7 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None):
     p[actvElts] = 0.183074 * (Kprime ** 4 / (Eprime * Q0 * t)) ** (1 / 3)
 
     # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
-    t1 = 1.11072 * Kprime / Eprime / (Q0 / 2) * (1.01 * ell) ** (3 / 2)
+    t1 = 1.11072 * Kprime / Eprime / Q * (1.01 * ell) ** (3 / 2)
     v = 0.01 * ell / (t1 - t)
 
     return t, ell, p, w, v, actvElts
