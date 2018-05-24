@@ -483,6 +483,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             exitstatus = 7
             return exitstatus, None
 
+        # Check if the front is receding
+        sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
+                                                       Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
+
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
         front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_properties.tmStpPrefactor * 6.66 * (
@@ -1308,6 +1312,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
             exitstatus = 7
             return exitstatus, None
+
+        # Check if the front is receding
+        sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
+                                                       Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost

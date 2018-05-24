@@ -388,6 +388,9 @@ def injection_extended_footprint_volumeControl(w_k, Fr_lstTmStp, C, timeStep, Qi
             # break
             return exitstatus, None
 
+        sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
+                                                Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
+
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # be evaluated with the fast marching method to avoid unnecessary computational cost.
         front_region = \
@@ -977,6 +980,10 @@ def time_step_explicit_front_volumeControl(Fr_lstTmStp, C, timeStep, Qin, Materi
             if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
                 exitstatus = 7
                 return exitstatus, None
+
+            # Check if the front is receding
+            sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
+                                                           Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
 
             # region expected to have the front after propagation. The signed distance of the cells only in this region will
             # evaluated with the fast marching method to avoid unnecessary computation cost
