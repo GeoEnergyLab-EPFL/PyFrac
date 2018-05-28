@@ -75,7 +75,9 @@ class Controller:
         if self.C is None:
             # dumping and loading of matrix on file system may be is faster but is costly in terms of memory
             # self.C = load_elasticity_matrix(self.fracture.mesh, self.solid_prop.Eprime)
+            print('Making elasticity matrix...')
             self.C = elasticity_matrix_all_mesh_vectorized(self.fracture.mesh, self.solid_prop.Eprime)
+            print('Done!')
 
         i = 0
         Fr = self.fracture

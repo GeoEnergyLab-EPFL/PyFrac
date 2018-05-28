@@ -125,9 +125,13 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     dpTop = (dp[3, EltCrack] ** 2 + dp[7, EltCrack] ** 2) ** 0.5
 
     vk = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
+    # the factor to be multiplied to the velocity from last iteration to get the upper bracket
+    upBracket_factor = 10
 
     # loop to calculate velocity on each cell edge implicitly
     for i in range(0,len(EltCrack)):
+        # if EltCrack[i] == Mesh.CenterElts:
+        #     print()
         # todo !!! Hack. zero velocity if the pressure gradient is zero or very small width
         if dpLft[i] < 1e-8 or wLftEdge[i]<1e-10:
             vk[0, EltCrack[i]] = 0.0
@@ -135,14 +139,14 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
             arg = (wLftEdge[i], mu[EltCrack[i]], rho, dpLft[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[0, EltCrack[i]], *arg) * Velocity_Residual(
-                            10 * vkm1[0, EltCrack[i]], *arg) > 0.0:
+                            upBracket_factor * vkm1[0, EltCrack[i]], *arg) > 0.0:
                 # bracket not valid. finding suitable bracket
                 (a, b) = findBracket(Velocity_Residual, vkm1[0, EltCrack[i]], *arg)
                 vk[0, EltCrack[i]] = brentq(Velocity_Residual, a, b, arg)
             else:
                 # find the root with brentq method.
                 vk[0, EltCrack[i]] = brentq(Velocity_Residual, np.finfo(float).eps * vkm1[0, EltCrack[i]],
-                                            10 * vkm1[0, EltCrack[i]], arg)
+                                            upBracket_factor * vkm1[0, EltCrack[i]], arg)
 
         if dpRgt[i] < 1e-8 or wRgtEdge[i] < 1e-10:
             vk[1, EltCrack[i]] = 0.0
@@ -150,14 +154,14 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
             arg = (wRgtEdge[i], mu[EltCrack[i]], rho, dpRgt[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[1, EltCrack[i]], *arg) * Velocity_Residual(
-                            10 * vkm1[1, EltCrack[i]], *arg) > 0.0:
+                            upBracket_factor * vkm1[1, EltCrack[i]], *arg) > 0.0:
                 # bracket not valid. finding suitable bracket
                 (a, b) = findBracket(Velocity_Residual, vkm1[1, EltCrack[i]], *arg)
                 vk[1, EltCrack[i]] = brentq(Velocity_Residual, a, b, arg)
             else:
                 # find the root with brentq method.
                 vk[1, EltCrack[i]] = brentq(Velocity_Residual, np.finfo(float).eps * vkm1[1, EltCrack[i]],
-                                            10 * vkm1[1, EltCrack[i]], arg)
+                                            upBracket_factor * vkm1[1, EltCrack[i]], arg)
 
         if dpBtm[i] < 1e-8 or wBtmEdge[i] < 1e-10:
             vk[2, EltCrack[i]] = 0.0
@@ -165,14 +169,14 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
             arg = (wBtmEdge[i], mu[EltCrack[i]], rho, dpBtm[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[2, EltCrack[i]], *arg) * Velocity_Residual(
-                            10 * vkm1[2, EltCrack[i]], *arg) > 0.0:
+                            upBracket_factor * vkm1[2, EltCrack[i]], *arg) > 0.0:
                 # bracket not valid. finding suitable bracket
                 (a, b) = findBracket(Velocity_Residual, vkm1[2, EltCrack[i]], *arg)
                 vk[2, EltCrack[i]] = brentq(Velocity_Residual, a, b, arg)
             else:
                 # find the root with brentq method.
                 vk[2, EltCrack[i]] = brentq(Velocity_Residual, np.finfo(float).eps * vkm1[2, EltCrack[i]],
-                                            10 * vkm1[2, EltCrack[i]], arg)
+                                            upBracket_factor * vkm1[2, EltCrack[i]], arg)
 
         if dpTop[i] < 1e-8 or wTopEdge[i] < 1e-10:
             vk[3, EltCrack[i]] = 0.0
@@ -180,14 +184,14 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
             arg = (wTopEdge[i], mu[EltCrack[i]], rho, dpTop[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[3, EltCrack[i]],*arg)*Velocity_Residual(
-                            10 * vkm1[3, EltCrack[i]],*arg)>0.0:
+                            upBracket_factor * vkm1[3, EltCrack[i]],*arg)>0.0:
                 # bracket not valid. finding suitable bracket
                 (a, b) = findBracket(Velocity_Residual, vkm1[3, EltCrack[i]], *arg)
                 vk[3, EltCrack[i]] = brentq(Velocity_Residual, a, b, arg)
             else:
                 # find the root with brentq method.
                 vk[3, EltCrack[i]] = brentq(Velocity_Residual, np.finfo(float).eps * vkm1[3, EltCrack[i]],
-                                            10 * vkm1[3, EltCrack[i]], arg)
+                                            upBracket_factor * vkm1[3, EltCrack[i]], arg)
 
     # calculating Reynold's number with the velocity
     ReLftEdge = 4 / 3 * rho * wLftEdge * vk[0, EltCrack] / mu[EltCrack]
@@ -612,8 +616,7 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
     This function gives the pressure gradient at the cell edges evaluated with the pressure calculated from the
     elasticity relation for the given fracture width.
     """
-    pf = np.zeros((Mesh.NumberOfElts,), dtype=np.float64)
-    # pf[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]
+
     pf = np.dot(C, w) + sigma0
 
     dpdxLft = (pf[EltCrack] - pf[Mesh.NeiElements[EltCrack, 0]]) * InCrack[Mesh.NeiElements[EltCrack, 0]]

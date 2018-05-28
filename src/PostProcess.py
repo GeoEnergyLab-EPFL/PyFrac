@@ -1728,8 +1728,131 @@ def plot_fracture_volume(address=None, fig=None, time_period=0.0, plot_at_times=
 
     return fig
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 
+def plot_aspect_ratio(address=None, fig=None, time_period=0.0, plot_at_times=None, plt_symbol='k.', multpl_sim=False):
+    """
+    This function plots the aspect ration of the fracture at the given time.
+
+    Arguments:
+        address (string)                -- the folder address containing the saved files
+        fig (figure)                    -- figure to superimpose.
+        time_period (float)             -- time period between two successive fracture plots.
+        plot_at_times (ndarray)             -- if provided, the fracture footprints will be plotted at the given times.
+        plt_symbol (string)             -- the line style of the analytical solution lines (e.g. '.k-' for a black
+                                           continous line with data points marked with dots )
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
+
+    Returns:
+        fig(figure)                     -- figure with aspect ratio.
+    """
+
+    print("Plotting aspect ratio...")
+
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    if isinstance(plot_at_times, float) or isinstance(plot_at_times, int):
+        plot_at_times = np.array([plot_at_times])
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = dill.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+
+    fileNo = 0
+    nxt_plt_t = 0.0
+    t_srs_indx = 0
+    t_srs_given = isinstance(plot_at_times, np.ndarray)
+    if t_srs_given:
+        nxt_plt_t = plot_at_times[t_srs_indx]
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    # time at which the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
+
+    time_srs = np.asarray([])
+    aspect_ratio = np.asarray([])
+
+    while fileNo < 5000:
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
+
+        fileNo += 1
+        plotted_fractures = 0
+
+        if ff.time - nxt_plt_t > -1e-8:
+
+            cells_x_axis = np.where(abs(ff.mesh.CenterCoor[:, 1]) < 1e-10)[0]
+            to_delete = np.where(ff.mesh.CenterCoor[cells_x_axis, 0] < 0)[0]
+            cells_x_axis_pstv = np.delete(cells_x_axis, to_delete)
+            tipCell_x_axis = np.intersect1d(ff.EltTip, cells_x_axis_pstv)
+            in_tip_x = np.where(ff.EltTip == tipCell_x_axis)[0]
+            # x = ff.mesh.CenterCoor[cells_x_axis, 0]
+
+            cells_y_axis = np.where(abs(ff.mesh.CenterCoor[:, 0]) < 1e-10)[0]
+            to_delete = np.where(ff.mesh.CenterCoor[cells_y_axis, 1] < 0)[0]
+            cells_y_axis_pstv = np.delete(cells_y_axis, to_delete)
+            tipCell_y_axis = np.intersect1d(ff.EltTip, cells_y_axis_pstv)
+            in_tip_y = np.where(ff.EltTip == tipCell_y_axis)[0]
+            # y = ff.mesh.CenterCoor[cells_y_axis, 1]
+
+            time_srs = np.append(time_srs, ff.time)
+            tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[tipCell_y_axis, 0]]
+            r_y = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + ff.l[in_tip_y]
+            tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[tipCell_x_axis, 0]]
+            r_x = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + ff.l[in_tip_x]
+            aspect_ratio = np.append(aspect_ratio, r_x/r_y)
+
+            if t_srs_given:
+                if t_srs_indx < len(plot_at_times) - 1:
+                    t_srs_indx += 1
+                    nxt_plt_t = plot_at_times[t_srs_indx]
+                if ff.time > max(plot_at_times):
+                    break
+            else:
+                nxt_plt_t = ff.time + time_period
+
+            plotted_fractures += 1
+
+
+    line_aspct_ratio, = ax.plot(time_srs, aspect_ratio, plt_symbol)
+
+    ax.set_ylabel('aspect ratio')
+    ax.set_xlabel('time')
+    ax.set_title('Aspect ratio of the fracture')
+
+    return fig
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def text3d(ax, xyz, s, zdir="z", size=None, angle=0, usetex=False, **kwargs):
     '''
