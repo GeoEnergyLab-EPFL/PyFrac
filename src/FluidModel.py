@@ -162,7 +162,7 @@ def FF_Yang_Dou(Re, rough):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def friction_factor(Re, roughness):
+def friction_factor_lam_turb_rough(Re, roughness):
     """
     This function approximate the friction factor for the given Reynold's number and the relative roughness arrays. The
     analytical friction factor of 16/Re is returned in case of laminar flow, Yang Joseph (see Virtual Nikuradse Yang & 
@@ -172,8 +172,8 @@ def friction_factor(Re, roughness):
     less than 15.
 
     Arguments:
-        ReNum (ndarray-float): Reynold's number 
-        rough (ndarray-float): 1/relative roughness (w/roughness length scale)
+        Re(ndarray-float):          Reynold's number
+        roughness (ndarray-float):  1/relative roughness (w/roughness length scale)
 
     Returns:
          ndarray-float : frction factor
@@ -182,10 +182,32 @@ def friction_factor(Re, roughness):
         return 0
     elif Re < 2300:
         return 16./Re
-    elif roughness >= 15.:
-        return FF_YangJoseph_float(Re, roughness)
+    # elif roughness >= 15.:
+    #     return FF_YangJoseph_float(Re, roughness)
     else:
         return FF_Yang_Dou(Re, roughness)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def friction_factor_MDR(ReNum, roughness):
+    """
+    This function approximate the friction factor for the given Reynold's number and the relative roughness arrays. The
+    analytical friction factor of 16/Re is returned in case of laminar flow, and an explicit approximation of the
+    maximum drag reduction asymptote is returned in case the Reynold's number is larger than 1760.
+
+    Arguments:
+        ReNum (ndarray-float): Reynold's number
+
+    Returns:
+         ndarray-float : frction factor
+    """
+    if ReNum < 1e-8:
+        return 0
+    elif ReNum < 2100:
+        return 16. / ReNum
+    else:
+        return 1.1 / ReNum**0.65
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -195,5 +217,6 @@ def friction_factor_vector(Re,roughness):
     """
     ff = np.zeros((Re.size,),dtype=np.float64)
     for i in range(0,Re.size):
-        ff[i] = friction_factor(Re[i], roughness[i])
+        ff[i] = friction_factor_MDR(Re[i], roughness[i])
+        # ff[i] = friction_factor_lam_turb_rough(Re[i], roughness[i])
     return ff

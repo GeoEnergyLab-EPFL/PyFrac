@@ -263,8 +263,8 @@ def Velocity_Residual(v,*args):
     # Reynolds number
     Re = 4/3 * rho * w * v / mu
 
-    # friction factor using Yang-Joseph approximation
-    f = friction_factor(Re,rough)
+    # friction factor using MDR approximation
+    f = friction_factor_MDR(Re, rough)
 
     return v-w*dp/(v*rho*f)
 
