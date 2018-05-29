@@ -19,6 +19,72 @@ from scipy import interpolate
 import warnings
 from scipy import special
 
+
+#  radial zero toughness turbulent MDR approximation
+def MDR_M_vertex_solution(Eprime,Q0,density,visc,Mesh,R=None,t=None):
+    """
+       Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime
+       propagation, given fracture radius or the time since the start of the injection. The solution does not take leak off into account.
+
+       Arguments:
+           Eprime (float)       -- plain strain elastic modulus.
+           Q0 (float)           -- injection rate.
+           density (float)      -- fluid density.
+           visc (float)         -- fluid viscosity.
+           Mesh (CartesianMesh) -- a CartesianMesh class object describing the grid.
+           R (float)            -- the given radius for which the solution is evaluated.
+           t (float)            -- time since the start of the injection.
+
+       Returns:
+           t (float)            -- time at which the fracture reaches the given radius.
+           R (float)            -- radius of the fracture at the given time.
+           p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius
+           w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time
+           v (float)            -- fracture propagation velocity
+           actvElts (ndarray)   -- list of cells inside the fracture at the given time
+       """
+    fo = 1.78
+    gammam= 0.758244
+
+    if R is None and t is None:
+        raise ValueError("Either radius or time must be provided!")
+    elif t is None:
+        t = ((3**0.175)*(fo**0.25)*(R**2.175)*(visc**0.175)*(density**0.075))/((2**0.35)*(Eprime**0.25)*(Q0**0.675)*(gammam**2.175))
+    elif R is None:
+        R = gammam  * (((2 ** 0.16091954022988506) * (Eprime ** 0.11494252873563218) * (Q0 ** 0.3103448275862069) * (t ** 0.45977011494252873)) /
+    ((3 ** 0.08045977011494253) * (fo ** 0.11494252873563218) * (visc ** 0.08045977011494253) * (density** 0.034482758620689655)) )
+
+    wscale =((3**0.16091954022988506)*(fo**0.22988505747126436)*(Q0**0.3793103448275862)*(t**0.08045977011494253)*
+             (visc**0.16091954022988506)*(density**0.06896551724137931))/((2**0.3218390804597701)*(Eprime**0.22988505747126436))
+
+    pscale = ((3**0.2413793103448276)*
+              (Eprime**0.6551724137931034)*(fo**0.3448275862068966)*(Q0**0.06896551724137931)*(visc**0.2413793103448276)*(density**0.10344827586206896))/((2**0.4827586206896552)*(t**0.3793103448275862))
+
+    v = gammam * 0.45977011494252873* (t ** (0.45977011494252873-1.))  * (((2 ** 0.16091954022988506) * (Eprime ** 0.11494252873563218) * (Q0 ** 0.3103448275862069) ) /
+    ((3 ** 0.08045977011494253) * (fo ** 0.11494252873563218) * (visc ** 0.08045977011494253) * (density** 0.034482758620689655)) )
+
+    w = np.zeros((Mesh.NumberOfElts,))
+    p = np.zeros((Mesh.NumberOfElts,))
+    rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
+    actvElts = np.where(rho <= 1)[0] # active cells (inside fracture)
+
+    var1 = 1 - rho[actvElts]
+
+    w[actvElts]= wscale * (0.916848 * (var1)**0.740741 - 0.283356 * (rho[actvElts])**(7/10) + 0.683013 * (var1)**0.740741 * rho[actvElts]
+    - 0.500775 * (var1)**0.740741 * (rho[actvElts]**2) +  1.07431* (var1)**0.740741 * (rho[actvElts]**3)
+    - 1.2138 *(var1)**0.740741 * (rho[actvElts]**4)  + 0.577514 * (var1)**0.740741  *(rho[actvElts]**5)
+    - 0.502666  * (1 - rho[actvElts]**2)**0.5 + 0.718095 * special.hyp2f1(-(7/20), 1/2, 13/20, rho[actvElts]**2.))  # Hypergeometric2F1[-(7/20), 1/2, 13/20, r^2]
+
+    p[actvElts]= pscale * (
+    0.5948935210154036 - 0.2717984030270058 / (var1 ** 0.25925925925925924) + 0.23531180369007717855 / (rho[actvElts] ** 0.3) -
+    (0.16828914936530234 * rho[actvElts]) / (var1 ** 0.25925925925925924) + (0.2225733568270942 * (rho[actvElts] ** 2)) /
+    (var1 ** 0.25925925925925924) - (0.2158763695654084 * (rho[actvElts] ** 3)) / (var1 ** 0.25925925925925924)
+    + (0.07471989686220308 * (rho[actvElts] ** 4)) /(var1 ** 0.25925925925925924)
+    )
+
+    return t, R, p, w, v, actvElts
+
+
 # ----------------------------------------------------
 def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None):
     """
@@ -49,6 +115,8 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None):
     elif R is None:
         R = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
 
+    v = (4 / 9) *  (t ** (4 / 9 -1.))  * ( (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) ) / muPrime ** (1 / 9) )
+
     w = np.zeros((Mesh.NumberOfElts,))
     p = np.zeros((Mesh.NumberOfElts,))
     rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
@@ -75,8 +143,8 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None):
                                                                                             rho[actvElts]) ** (1 / 3))
 
     # todo !!! Hack: The velocity is evaluated with time taken by the fracture to advance by one percent (not sure)
-    t1 = (2.24846 * (1.01 * R) ** (9 / 4) * muPrime ** (1 / 4)) / (Eprime ** (1 / 4) * Q0 ** (3 / 4))
-    v = 0.01 * R / (t1 - t)
+    # t1 = (2.24846 * (1.01 * R) ** (9 / 4) * muPrime ** (1 / 4)) / (Eprime ** (1 / 4) * Q0 ** (3 / 4))
+    # v = 0.01 * R / (t1 - t)
 
     return t, R, p, w, v, actvElts
 
