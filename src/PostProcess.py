@@ -6,7 +6,7 @@
 # See the LICENSE.TXT file for more details. 
 #
 #
-# post-process script from reading files  in simulation folder.....
+# Post-process scripts to read the saved fracture files and plot results
 
 # adding src folder to the path
 import sys
@@ -149,6 +149,101 @@ def update(frame, *args):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def load_fractures(address=None, time_period=0.0, time_srs=None, multpl_sim = False):
+    """
+    This function plots the footprints of the fractures saved in the given folder.
+
+    Arguments:
+        address (string)                -- the folder address containing the saved files
+        time_period (float)             -- time period between two successive fractures.
+        time_srs (ndarray)              -- if provided, the fracture footprints will be plotted at the given times.
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
+
+    Returns:
+        fracture_list (list)            -- a figure to superimpose.
+
+    """
+
+    print("Returning fractures...")
+
+    if address is None:
+        address = "." + slash + "_simulation_data_PyFrac"
+
+    if not slash in address[-2:]:
+        address = address + slash
+
+    if isinstance(time_srs, float) or isinstance(time_srs, int):
+        time_srs = np.array([time_srs])
+
+    # read properties
+    filename = address + "properties"
+    try:
+        with open(filename, 'rb') as input:
+            (Solid, Fluid, Injection, SimulProp) = dill.load(input)
+    except FileNotFoundError:
+        raise SystemExit("Data not found. The address might be incorrect")
+
+    fileNo = 0
+    next_t = 0.0
+    t_srs_indx = 0
+    fracture_list = []
+
+    t_srs_given = isinstance(time_srs, np.ndarray) #time series is given
+    if t_srs_given:
+        if len(time_srs) == 0:
+            return fracture_list
+        next_t = time_srs[t_srs_indx]
+
+    # time at wich the first fracture file was modified
+    stats = os.stat(address + "fracture_0")
+    prev_modified_at = stats[-2]
+    ff = None
+    while fileNo < 5000:
+
+        # saving last fracture in case the loaded file is to be discarded (possibly its from an old simulation)
+        ff_last = copy.deepcopy(ff)
+
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + "fracture_" + repr(fileNo))
+        except FileNotFoundError:
+            break
+
+        stats = os.stat(address + "fracture_" + repr(fileNo))
+
+        # if the next file was modified before the last one, it means it is from some older simulation
+        if not multpl_sim:
+            if stats[-2] < prev_modified_at:
+                ff = ff_last
+                print("Found data from an older simulation. Quitting..."
+                      "\nSet multpl_sim=True if you want to plot from older simulations as well")
+                break
+            prev_modified_at = stats[-2]
+
+        fileNo+=1
+
+        if 1. - next_t / ff.time >= -0.001:
+            # if the current fracture time has advanced the output time period
+            print("Returning fracture at " + repr(ff.time) + ' s')
+
+            fracture_list.append(ff)
+
+            if t_srs_given:
+                if t_srs_indx < len(time_srs) - 1:
+                    t_srs_indx += 1
+                    next_t = time_srs[t_srs_indx]
+                if ff.time > max(time_srs):
+                    break
+            else:
+                next_t = ff.time + time_period
+
+    if fileNo >= 5000:
+        raise SystemExit("too many files.")
+
+    return fracture_list
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y=None, plt_pressure=False,
                  time_period=0.0, plot_at_times=None, analytical_sol='n', plt_symbol='k.', anltcl_lnStyle='b',
@@ -1814,22 +1909,22 @@ def plot_aspect_ratio(address=None, fig=None, time_period=0.0, plot_at_times=Non
             to_delete = np.where(ff.mesh.CenterCoor[cells_x_axis, 0] < 0)[0]
             cells_x_axis_pstv = np.delete(cells_x_axis, to_delete)
             tipCell_x_axis = np.intersect1d(ff.EltTip, cells_x_axis_pstv)
-            in_tip_x = np.where(ff.EltTip == tipCell_x_axis)[0]
-            # x = ff.mesh.CenterCoor[cells_x_axis, 0]
+            in_tip_x = np.where(ff.EltTip == tipCell_x_axis[0])[0]
 
             cells_y_axis = np.where(abs(ff.mesh.CenterCoor[:, 0]) < 1e-10)[0]
             to_delete = np.where(ff.mesh.CenterCoor[cells_y_axis, 1] < 0)[0]
             cells_y_axis_pstv = np.delete(cells_y_axis, to_delete)
             tipCell_y_axis = np.intersect1d(ff.EltTip, cells_y_axis_pstv)
-            in_tip_y = np.where(ff.EltTip == tipCell_y_axis)[0]
-            # y = ff.mesh.CenterCoor[cells_y_axis, 1]
+            in_tip_y = np.where(ff.EltTip == tipCell_y_axis[0])[0]
 
-            time_srs = np.append(time_srs, ff.time)
             tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[tipCell_y_axis, 0]]
             r_y = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + ff.l[in_tip_y]
             tipVrtxCoord = ff.mesh.VertexCoor[ff.mesh.Connectivity[tipCell_x_axis, 0]]
             r_x = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + ff.l[in_tip_x]
-            aspect_ratio = np.append(aspect_ratio, r_x/r_y)
+
+            if ff is not None:
+                time_srs = np.append(time_srs, ff.time)
+                aspect_ratio = np.append(aspect_ratio, r_x/r_y)
 
             if t_srs_given:
                 if t_srs_indx < len(plot_at_times) - 1:
