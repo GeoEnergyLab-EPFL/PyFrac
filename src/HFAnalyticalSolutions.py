@@ -51,8 +51,8 @@ def MDR_M_vertex_solution(Eprime,Q0,density,visc,Mesh,R=None,t=None):
     elif t is None:
         t = ((3**0.175)*(fo**0.25)*(R**2.175)*(visc**0.175)*(density**0.075))/((2**0.35)*(Eprime**0.25)*(Q0**0.675)*(gammam**2.175))
     elif R is None:
-        R = gammam  * (((2 ** 0.16091954022988506) * (Eprime ** 0.11494252873563218) * (Q0 ** 0.3103448275862069) * (t ** 0.45977011494252873)) /
-    ((3 ** 0.08045977011494253) * (fo ** 0.11494252873563218) * (visc ** 0.08045977011494253) * (density** 0.034482758620689655)) )
+        R = gammam*((2**(14./87))*(Eprime**(10./87))*(Q0**(9./29))*(t**(40/87))
+                    )/((3**(7./87))*(fo**(10./87))*(visc**(7./87))*density**(1./29))
 
     wscale =((3**0.16091954022988506)*(fo**0.22988505747126436)*(Q0**0.3793103448275862)*(t**0.08045977011494253)*
              (visc**0.16091954022988506)*(density**0.06896551724137931))/((2**0.3218390804597701)*(Eprime**0.22988505747126436))
@@ -500,7 +500,7 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
 
 
 def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None,  length=None, t=None,
-                      KIc_min=None, h=None):
+                      KIc_min=None, h=None,density=None):
     """
     This function provides the analytical solution for the given parameters according to the given propagation regime
 
@@ -548,6 +548,8 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
         t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t)
     elif regime is 'KGD_K':
         t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t)
+    elif regime is 'MDR':
+        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime,Q0,density=density,visc=muPrime/12.,Mesh=mesh,t=t)
     elif regime is 'E':
         KIc = Kprime / (32 / np.pi) ** 0.5
         t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( KIc, KIc_min, Eprime, Q0, mesh, length, t)

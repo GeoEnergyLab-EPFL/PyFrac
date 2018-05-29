@@ -19,7 +19,7 @@ from matplotlib.lines import Line2D
 
 
 
-def plot_Reynolds_number(fracture, fig=None, bck_colMap='cool', line_color = 'k', contours_at=None):
+def plot_Reynolds_number(fracture,Rec=2200,fig=None, bck_colMap='cool', line_color = 'k', contours_at=None):
     """
     This function plots the average Reynolds number of the four edges of the cells in a fracture
 
@@ -71,7 +71,7 @@ def plot_Reynolds_number(fracture, fig=None, bck_colMap='cool', line_color = 'k'
 
     plt.clabel(CS, fmt='%1.0f')
 
-    contours_at = np.asarray([2100])
+    contours_at = np.asarray([Rec])
     CS = ax.contour(x,
                     y,
                     ReyNum,

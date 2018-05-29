@@ -364,7 +364,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
             if not analytical_sol is 'n':
                 from src.CartesianMesh import CartesianMesh
                 mesh_refined = CartesianMesh(ff.mesh.Lx, ff.mesh.Ly, 201, 201)
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):  # radial fracture
                     t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
                                                                 mesh_refined,
                                                                 Solid.Eprime,
@@ -373,7 +373,8 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
                                                                 Kprime=Solid.Kprime[ff.mesh.CenterElts],
                                                                 Cprime=Solid.Cprime[ff.mesh.CenterElts],
                                                                 t=ff.time,
-                                                                KIc_min=Solid.K1c_perp)
+                                                                KIc_min=Solid.K1c_perp,
+                                                                density=Fluid.density)
                     hrzntl_rfnd = np.where(abs(mesh_refined.CenterCoor[:, 1]) < 1e-10)[0]
                     x_refined = mesh_refined.CenterCoor[hrzntl_rfnd, 0]
                     vrtcl_rfnd = np.where(abs(mesh_refined.CenterCoor[:, 0]) < 1e-10)[0]
@@ -571,7 +572,7 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, fig_err=None, 
             # if the current fracture time has advanced the output time period
 
             if not analytical_sol is 'n':
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E','MDR'):  # radial fracture
                     t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
                                                                 ff.mesh,
                                                                 Solid.Eprime,
@@ -580,7 +581,8 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, fig_err=None, 
                                                                 Kprime=Solid.Kprime[ff.mesh.CenterElts],
                                                                 Cprime=Solid.Cprime[ff.mesh.CenterElts],
                                                                 t=ff.time,
-                                                                KIc_min=Solid.K1c_perp)
+                                                                KIc_min=Solid.K1c_perp,
+                                                                density=Fluid.density)
                 elif analytical_sol == 'PKN':
                     print("PKN is to be implemented.")
                 else:
@@ -787,7 +789,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
 
             # plot analytical solution
             if not analytical_sol is 'n':
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E','MDR'):  # radial fracture
                     t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
                                                                 ff.mesh,
                                                                 Solid.Eprime,
@@ -796,7 +798,8 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
                                                                 Kprime=Solid.Kprime[ff.mesh.CenterElts],
                                                                 Cprime=Solid.Cprime[ff.mesh.CenterElts],
                                                                 t=ff.time,
-                                                                KIc_min=Solid.K1c_perp)
+                                                                KIc_min=Solid.K1c_perp,
+                                                                density=Fluid.density)
                 elif analytical_sol == 'PKN':
                     print("PKN is to be implemented.")
                 else:
@@ -1111,7 +1114,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
                 raise ValueError("Radius type not supported!")
 
             if not analytical_sol is 'n':
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):  # radial fracture
                     t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
                                                                 ff.mesh,
                                                                 Solid.Eprime,
@@ -1120,7 +1123,8 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
                                                                 Kprime=Solid.Kprime[ff.mesh.CenterElts],
                                                                 Cprime=Solid.Cprime[ff.mesh.CenterElts],
                                                                 t=ff.time,
-                                                                KIc_min=Solid.K1c_perp)
+                                                                KIc_min=Solid.K1c_perp,
+                                                                density = Fluid.density)
                 elif analytical_sol == 'PKN':
                     print("PKN is to be implemented.")
                 else:
@@ -1275,7 +1279,7 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
             time_srs = np.append(time_srs, ff.time)
 
             if analytical_sol is not 'n':
-                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E'):  # radial fracture
+                if analytical_sol in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):  # radial fracture
                     t, R, p, w, v, actvElts = HF_analytical_sol(analytical_sol,
                                                                 ff.mesh,
                                                                 Solid.Eprime,
@@ -1284,7 +1288,8 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
                                                                 Kprime=Solid.Kprime[ff.mesh.CenterElts],
                                                                 Cprime=Solid.Cprime[ff.mesh.CenterElts],
                                                                 t=ff.time,
-                                                                KIc_min=Solid.K1c_perp)
+                                                                KIc_min=Solid.K1c_perp,
+                                                                density=Fluid.density)
 
                     leaked_off_anltcl = Injection.injectionRate[1, 0] * t - sum(w) * ff.mesh.EltArea
                     lk_anltcl = np.append(lk_anltcl, leaked_off_anltcl)
