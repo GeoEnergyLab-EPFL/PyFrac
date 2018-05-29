@@ -829,10 +829,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.saveRegime:
         Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
 
-    # # check if the tip has laminar flow, to be consistent with tip asymptote.
-    # ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
-    # # plot Reynold's number
-    # plot_Reynolds_number(Fr_kplus1, ReNumb, 1)
+    if sim_properties.saveReynNumb:
+        ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
+        Fr_kplus1.ReynoldsNumber = ReNumb
 
     exitstatus = 1
     return exitstatus, Fr_kplus1

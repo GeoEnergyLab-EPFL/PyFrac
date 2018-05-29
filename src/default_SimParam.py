@@ -47,4 +47,4 @@ remesh_factor = 2.                      # the factor by which the mesh is compre
 front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree
 precise_tipParam = False                # set the space dependant tip parameters to be taken from ribbon cell.
-
+save_ReyNumb = False                    # if True, the Reynold's number at each edge will be saved.

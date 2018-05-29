@@ -365,6 +365,8 @@ class SimulationParameters:
                                            coefficients will be taken from the tip by projections instead of taking them
                                            from the ribbon cell center. The numerical scheme as a result will become
                                            unstable due to the complexities in finding the projection
+            saveReynNumb (boolean)      -- if True, the Reynold's number at each edge of the cells inside the fracture
+                                           will be saved.
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -450,6 +452,7 @@ class SimulationParameters:
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.precise_tipParam = simul_param.precise_tipParam
+        self.saveReynNumb = simul_param.save_ReyNumb
 
 # ----------------------------------------------------------------------------------------------------------------------
 

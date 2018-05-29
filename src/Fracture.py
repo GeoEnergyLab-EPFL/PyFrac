@@ -60,6 +60,8 @@ class Fracture():
                                            cells.
             regime (ndarray)            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
                                            and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
+            ReynoldsNumber (ndarray)    -- the reynolds number at each edge of the cells in the fracture. The
+                                           arrangement is left, right, bottom, top.
                                  
         functions:
             __init__                    Initialize the fracture according to the given initialization parameters.
@@ -259,7 +261,10 @@ class Fracture():
             self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
 
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
-        self.regime = np.vstack((np.full((self.EltRibbon.size,), np.nan, dtype=np.float64), self.EltRibbon))
+        self.regime = None
+
+        # Reynolds number at each edge of the cells in the fracture
+        self.ReynoldsNumber = None
 
         # saving initial state of fracture and properties if the output flags are set
         if simulProp.plotFigure:

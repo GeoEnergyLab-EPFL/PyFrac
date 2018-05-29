@@ -11,6 +11,7 @@ See the LICENSE.TXT file for more details.
 from src.Fracture import *
 from src.Controller import *
 from src.PostProcess import *
+from src.PostProcessFracture import *
 
 # creating mesh
 Mesh = CartesianMesh(3, 3, 41, 41)
@@ -43,7 +44,7 @@ simulProp.outputTimePeriod = 1e-4       # to save after every time step
 simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = 'M'
-
+simulProp.saveReynNumb = True
 
 # initializing fracture
 initRad = 1
@@ -69,6 +70,15 @@ controller = Controller(Fr,
 controller.run()
 
 # plot results
+Fr_list = load_fractures(simulProp.get_outFileAddress(),
+               time_srs=np.linspace(0.0028,0.031,7))
+
+for ff in Fr_list:
+    plot_Reynolds_number(ff)
+    # plot_pressure_contour(ff)
+    # plot_width_contour(ff)
+
+    plt.show()
 
 plot_footprint(simulProp.get_outFileAddress(),         # the address where the results are stored
                         plot_at_times=np.linspace(0.0028,0.031,7),# the time series at which the solution is plotted
