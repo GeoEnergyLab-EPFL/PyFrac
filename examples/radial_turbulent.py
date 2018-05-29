@@ -20,7 +20,7 @@ Mesh = CartesianMesh(3, 3, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 0.05e6                          # fracture toughness
+K_Ic = 0.5e6                          # fracture toughness
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
@@ -45,12 +45,12 @@ simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = 'M'
 simulProp.saveReynNumb = True
+simulProp.verbosity = 2
 
 # initializing fracture
 initRad = 1
 init_param = ("M", "length", initRad)
 
-#t, R, p, w, v, actvElts =MDR_M_vertex_solution(Eprime,Q0,Fluid.density,Fluid.viscosity,Mesh,initRad)
 
 
 
@@ -76,7 +76,7 @@ controller.run()
 
 
 
-
+t, R, p, w, v, actvElts =MDR_M_vertex_solution(Eprime,Q0,Fluid.density,Fluid.viscosity,Mesh,initRad)
 
 
 

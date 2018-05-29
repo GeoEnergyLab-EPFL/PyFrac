@@ -143,8 +143,8 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None):
                                                                                             rho[actvElts]) ** (1 / 3))
 
     # todo !!! Hack: The velocity is evaluated with time taken by the fracture to advance by one percent (not sure)
-    # t1 = (2.24846 * (1.01 * R) ** (9 / 4) * muPrime ** (1 / 4)) / (Eprime ** (1 / 4) * Q0 ** (3 / 4))
-    # v = 0.01 * R / (t1 - t)
+    #t1 = (2.24846 * (1.01 * R) ** (9 / 4) * muPrime ** (1 / 4)) / (Eprime ** (1 / 4) * Q0 ** (3 / 4))
+    #v = 0.01 * R / (t1 - t)
 
     return t, R, p, w, v, actvElts
 
