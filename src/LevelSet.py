@@ -303,45 +303,6 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
             zeroVrtx[i] = 2
 
     eltsRibbon = np.setdiff1d(eltsRibbon, eltsTip)
-        # # !!! to be checked if necessary or not
-        # if (mesh.NeiElements[eltsTip[i],0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
-        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 0])
-        # if (mesh.NeiElements[eltsTip[i],1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i],2] in eltsRibbon):
-        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i],2], 1])
-        # if (mesh.NeiElements[eltsTip[i], 0] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
-        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 0])
-        # if (mesh.NeiElements[eltsTip[i], 1] in eltsRibbon) and (mesh.NeiElements[eltsTip[i], 3] in eltsRibbon):
-        #     eltsRibbon = np.append(eltsRibbon, mesh.NeiElements[mesh.NeiElements[eltsTip[i], 3], 1])
-
-
-    # to_append = np.asarray([], dtype=np.int)
-    # for i in range(0, len(eltsRibbon)):
-    #     if mesh.NeiElements[eltsRibbon[i], 2] - 1 in eltsRibbon:
-    #         to_append = np.append(to_append,mesh.NeiElements[eltsRibbon[i], 0])
-    #     elif mesh.NeiElements[eltsRibbon[i], 2] + 1 in eltsRibbon:
-    #         to_append = np.append(to_append, mesh.NeiElements[eltsRibbon[i], 1])
-    #     # elif mesh.NeiElements[eltsRibbon[i], 3] - 1 in eltsRibbon:
-    #     #     to_append = np.append(to_append, mesh.NeiElements[eltsRibbon[i], 0])
-    #     # elif mesh.NeiElements[eltsRibbon[i], 3] + 1 in eltsRibbon:
-    #     #     to_append = np.append(to_append, mesh.NeiElements[eltsRibbon[i], 1])
-    #
-    # eltsRibbon = np.append(eltsRibbon, to_append)
-    #
-    # eltsRibbon = np.unique(eltsRibbon)
-    # for i in range(0, len(eltsTip)):
-    #     eltsRibbon = np.delete(eltsRibbon, np.where(eltsRibbon == eltsTip[i]))
-
-    # # remove wrongfully marked ribbon cells is case of sharp angle
-    # to_delete = np.asarray([])
-    # for i in range(0, len(eltsRibbon)):
-    #     neighbors = mesh.NeiElements[eltsRibbon[i]]
-    #     enclosing = np.append(neighbors, np.asarray(
-    #         [neighbors[2] - 1, neighbors[2] + 1, neighbors[3] - 1, neighbors[3] + 1]))
-    #     if sum(np.in1d(enclosing, eltsRibbon)) < 2:
-    #         to_delete = np.append(to_delete, np.where(eltsRibbon == eltsRibbon[i])[0])
-    # eltsRibbon = np.delete(eltsRibbon, to_delete)
-
-
 
     # Cells status list store the status of all the cells in the domain
     CellStatusNew = np.zeros((mesh.NumberOfElts), int)
