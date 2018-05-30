@@ -358,7 +358,7 @@ class Controller:
                 # if ploting analytical solution enabled
                 if simulation_parameters.plotAnalytical:
                     Q0 = injection_parameters.injectionRate[1, 0]  # injection rate at the start of injection
-                    if simulation_parameters.analyticalSol in ('M', 'Mt', 'K', 'Kt', 'E'): #radial fracture
+                    if simulation_parameters.analyticalSol in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'): #radial fracture
                         t, R, p, w, v, actvElts = HF_analytical_sol(simulation_parameters.analyticalSol,
                                                                     Fr_lstTmStp.mesh,
                                                                     material_properties.Eprime,
@@ -369,7 +369,7 @@ class Controller:
                                                                     Cprime=material_properties.Cprime[
                                                                         Fr_lstTmStp.mesh.CenterElts],
                                                                     t=Fr_advanced.time,
-                                                                    KIc_min=material_properties.K1c_perp)
+                                                                    KIc_min=material_properties.K1c_perp,density=fluid_properties.density)
                     elif simulation_parameters.analyticalSol == 'PKN':
                         print("PKN is to be implemented.")
 

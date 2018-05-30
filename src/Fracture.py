@@ -85,7 +85,7 @@ class Fracture():
                                                 3. given_value  -- the value at which the fracture is initialized.
                                                 4. -h           -- the height of the PKN fracture.
 
-                                            In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt' or 'E',
+                                            In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt', 'MDR' or 'E',
                                             the tuple should contain the following parameters in order:
                                                 2. given_type   -- the type of the given value (see below for possible
                                                                    options).
@@ -140,7 +140,7 @@ class Fracture():
 
         if init_type is 'PKN' or 'KGD' in init_type:
             (init_type, given_type, given_value, h) = init_param
-        elif init_type in ('M', 'Mt', 'K', 'Kt', 'E'): # radial fracture
+        elif init_type in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'): # radial fracture
             if len(init_param) == 3:
                 (init_type, given_type, given_value) = init_param
                 h = None
@@ -182,9 +182,9 @@ class Fracture():
                                                                       length=length,
                                                                       t=time,
                                                                       KIc_min=solid.K1c_perp,
-                                                                      h=h)
+                                                                      h=h,density=fluid.density)
 
-            if init_type in ('M', 'Mt', 'K', 'Kt'):
+            if init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'):
                 # survey cells and their distances from the front
                 surv_cells, inner_cells = get_circular_survey_cells(self.mesh, self.initRad)
                 surv_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
@@ -578,7 +578,7 @@ class Fracture():
         # Plot the analytical solution
         if not (sim_prop is None) and sim_prop.plotAnalytical and (not rAnalytical is None) and not mesh_only:
 
-            if sim_prop.analyticalSol in ('M', 'Mt', 'K', 'Kt'):
+            if sim_prop.analyticalSol in ('M', 'Mt', 'K', 'Kt', 'MDR'):
                 circle = plt.Circle((0, 0), radius=rAnalytical)
                 circle.set_ec('r')
                 circle.set_fill(False)

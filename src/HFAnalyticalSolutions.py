@@ -549,7 +549,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
     elif regime is 'KGD_K':
         t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t)
     elif regime is 'MDR':
-        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime,Q0,density=density,visc=muPrime/12.,Mesh=mesh,t=t)
+        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime=Eprime,Q0=Q0,density=density,visc=muPrime/12.,Mesh=mesh,R=length,t=t)
     elif regime is 'E':
         KIc = Kprime / (32 / np.pi) ** 0.5
         t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( KIc, KIc_min, Eprime, Q0, mesh, length, t)
