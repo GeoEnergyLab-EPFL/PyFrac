@@ -424,7 +424,7 @@ def plot_profile(address=None, fig_w_x=None, fig_w_y=None, fig_p_x=None, fig_p_y
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -629,7 +629,7 @@ def plot_at_injection_point(address=None, fig_w=None, fig_p=None, fig_err=None, 
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -845,7 +845,7 @@ def plot_footprint(address=None, fig=None, time_period=0.0, plot_at_times=None, 
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -1099,7 +1099,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
 
         fileNo += 1
 
-        if 1. - nxt_plt_t / ff.time >= -0.01:
+        if 1. - nxt_plt_t / ff.time >= -0.001:
             # if the current fracture time has advanced the output time period
 
             time_srs = np.append(time_srs, ff.time)
@@ -1144,7 +1144,7 @@ def plot_radius(address=None, r_type='mean', fig_r=None, fig_err=None, plot_at_t
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -1306,7 +1306,7 @@ def plot_leakOff(address=None, fig_lk=None, fig_eff=None, plot_at_times=None, ti
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -1549,7 +1549,7 @@ def plot_footprint_3d(address=None, fig=None, time_period=0.0, plot_at_times=Non
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -1813,7 +1813,7 @@ def plot_fracture_volume(address=None, fig=None, time_period=0.0, plot_at_times=
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
@@ -1935,7 +1935,7 @@ def plot_aspect_ratio(address=None, fig=None, time_period=0.0, plot_at_times=Non
                 if t_srs_indx < len(plot_at_times) - 1:
                     t_srs_indx += 1
                     nxt_plt_t = plot_at_times[t_srs_indx]
-                if ff.time > max(plot_at_times):
+                if ff.time >= max(plot_at_times):
                     break
             else:
                 nxt_plt_t = ff.time + time_period
