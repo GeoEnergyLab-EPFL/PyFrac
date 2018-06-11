@@ -32,7 +32,7 @@ import dill
 from src.PostProcess import to_precision
 import numpy as np
 
-def plot_fracture_front_iterations(address=None, fig_itr=None, fig_norm=None, plt_lnStyle='.', plt_norm=True,
+def plot_fracture_front_iterations(address=None, fig_itr_time=None, fig_itr_N=None, plt_lnStyle='.', plt_norm=True,
                                    loglog=True, alpha=1):
 
     print("---Plotting fracture front iterations---\n\n")
@@ -52,6 +52,7 @@ def plot_fracture_front_iterations(address=None, fig_itr=None, fig_norm=None, pl
 
     frac_front_itrs = []
     frac_time = []
+    N_list = []
     if plt_norm:
         norms_list = []
     for i in perf_data:
@@ -60,37 +61,42 @@ def plot_fracture_front_iterations(address=None, fig_itr=None, fig_norm=None, pl
         if tm_Stp_attmpt.status == 'successful':
             frac_front_itrs.append(tm_Stp_attmpt.iterations)
             frac_time.append(tm_Stp_attmpt.time)
+            N_list.append(tm_Stp_attmpt.NumbOfElts)
             if plt_norm:
                 norms_list.append(tm_Stp_attmpt.normList[2:])
 
     print("total number of iterations = " + repr(sum(frac_front_itrs)) + "; average = "
           + repr(sum(frac_front_itrs) / len(frac_front_itrs)))
 
-    if fig_itr is None:
-        fig_itr = plt.figure()
-        ax_itr = fig_itr.add_subplot(111)
+    if fig_itr_time is None:
+        fig_itr_time = plt.figure()
+        ax_itr_time = fig_itr_time.add_subplot(111)
     else:
-        ax_itr = fig_itr.get_axes()[0]
+        ax_itr_time = fig_itr_time.get_axes()[0]
 
     if loglog:
-        ax_itr.semilogx(frac_time, frac_front_itrs, plt_lnStyle, alpha=alpha)
+        ax_itr_time.semilogx(frac_time, frac_front_itrs, plt_lnStyle, alpha=alpha)
     else:
-        ax_itr.plot(frac_time, frac_front_itrs, plt_lnStyle, alpha=alpha)
-    ax_itr.set_ylabel('number of fracture front iterations')
-    ax_itr.set_xlabel('time')
-    ax_itr.set_title('Fracture front iterations for a time step')
+        ax_itr_time.plot(frac_time, frac_front_itrs, plt_lnStyle, alpha=alpha)
+    ax_itr_time.set_ylabel('number of fracture front iterations')
+    ax_itr_time.set_xlabel('time')
+    ax_itr_time.set_title('Fracture front iterations for a time step')
 
-    if plt_norm:
-        if fig_norm is None:
-            fig_norm = plt.figure()
-            ax_norm = fig_norm.add_subplot(111)
-        else:
-            ax_norm = fig_norm.get_axes()[0]
+    if fig_itr_N is None:
+        fig_itr_N = plt.figure()
+        ax_itr_N = fig_itr_N.add_subplot(111)
+    else:
+        ax_itr_N = fig_itr_N.get_axes()[0]
 
-        for i in norms_list:
-            ax_norm.plot(i, 'o-')
+    if loglog:
+        ax_itr_N.semilogx(N_list, frac_front_itrs, plt_lnStyle, alpha=alpha)
+    else:
+        ax_itr_N.plot(N_list, frac_front_itrs, plt_lnStyle, alpha=alpha)
+    ax_itr_N.set_ylabel('number of fracture front iterations')
+    ax_itr_N.set_xlabel('Number of elments')
+    ax_itr_N.set_title('Fracture front iterations for a time step')
 
-    return fig_itr, fig_norm
+    return fig_itr_time, fig_itr_N
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -287,18 +293,18 @@ def plot_timeStep_CPU_time(address=None, fig_T=None, fig_N=None, plt_lnStyle='.'
 
     if loglog:
         # ax.semilogx(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
-        ax_T.loglog(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax_T.loglog(time_list, CPU_time_list/435, plt_lnStyle, alpha=alpha)
     else:
-        ax_T.plot(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax_T.plot(time_list, CPU_time_list/435, plt_lnStyle, alpha=alpha)
     ax_T.set_ylabel('CPU time (seconds)')
     ax_T.set_xlabel('time')
     ax_T.set_title('CPU time taken by a time step')
 
     if loglog:
         # ax.semilogx(time_list, CPU_time_list, plt_lnStyle, alpha=alpha)
-        ax_N.loglog(N_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax_N.loglog(N_list, CPU_time_list/435, plt_lnStyle, alpha=alpha)
     else:
-        ax_N.plot(N_list, CPU_time_list, plt_lnStyle, alpha=alpha)
+        ax_N.plot(N_list, CPU_time_list/435, plt_lnStyle, alpha=alpha)
     ax_N.set_ylabel('CPU time (seconds)')
     ax_N.set_xlabel('Number of elements')
     ax_N.set_title('CPU time taken by a time step')
