@@ -32,7 +32,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
         ndarray-float:                  the finite difference matrix    
     """
 
-    FinDiffOprtr = sparse.csr_matrix((w.size, w.size), dtype=np.float64)
+    FinDiffOprtr = sparse.csr_matrix((w.size, w.size), dtype=np.float32)
 
     dx = Mesh.hx
     dy = Mesh.hy
@@ -441,13 +441,13 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     Channel = np.arange(EltChannel.size)
     Tip = Channel.size + np.arange(EltsTipNew.size)
 
-    A = np.zeros((EltChannel.size + EltsTipNew.size, EltChannel.size + EltsTipNew.size), dtype=np.float64)
+    A = np.zeros((EltChannel.size + EltsTipNew.size, EltChannel.size + EltsTipNew.size), dtype=np.float32)
     A[np.ix_(Channel, Channel)] = np.identity(Channel.size) - dt * condCC.dot(C[np.ix_(EltChannel, EltChannel)])
     A[np.ix_(Channel, Tip)] = -dt * condCT.toarray()
     A[np.ix_(Tip, Channel)] = -dt * condTC.dot(C[np.ix_(EltChannel, EltChannel)])
     A[np.ix_(Tip, Tip)] = -dt * condTT.toarray()
 
-    S = np.zeros((EltChannel.size + EltsTipNew.size,), dtype=np.float64)
+    S = np.zeros((EltChannel.size + EltsTipNew.size,), dtype=np.float32)
     S[Channel] = dt * condCC.dot(np.dot(C[np.ix_(EltChannel, EltChannel)], wLastTS[EltChannel]) + \
                                 np.dot(C[np.ix_(EltChannel, EltsTipNew)], wTip) + sigma0[EltChannel]) + \
                                 dt * Q[EltChannel] / Mesh.EltArea - LeakOff[EltChannel] / Mesh.EltArea

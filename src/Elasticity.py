@@ -87,7 +87,7 @@ def elasticity_matrix_all_mesh_vectorized(Mesh, Ep):
     b = Mesh.hy / 2.
     Ne = Mesh.NumberOfElts
 
-    A = np.empty([Ne, Ne], dtype=float)
+    A = np.empty([Ne, Ne], dtype=np.float32)
 
     for i in range(0, Ne):
         x = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
