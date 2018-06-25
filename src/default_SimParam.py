@@ -43,6 +43,7 @@ viscous_injection = True                # if True, the viscous fluid solver solv
 tip_asymptote = 'U'                     # the tip_asymptote to be used (see class documentation for details)
 save_regime = True                      # if True, the the regime of the ribbon cells will also be saved
 verbosity = 1                           # the level of details about the ongoing simulation to be plotted
+enable_remeshing = True                 # if true, computation domain will be remeshed after reaching end of the domain
 remesh_factor = 2.                      # the factor by which the mesh is compressed
 front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree

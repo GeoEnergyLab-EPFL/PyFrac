@@ -20,7 +20,7 @@ Mesh = CartesianMesh(0.13, 0.17, 51, 67)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e9                  # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 1000                         # set toughness to a very low value
+K_Ic = 10000                        # set toughness to a very low value
 
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
@@ -47,10 +47,8 @@ Fluid = FluidProperties(viscosity=30)
 simulProp = SimulationParameters()
 simulProp.outputTimePeriod = 0.1        # Setting it small so the file is saved after every time step
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
-simulProp.set_tipAsymptote('M')         # set the tip asymptote to viscosity dominated
-simulProp.tmStpPrefactor = 1.0
-simulProp.frontAdvancing = 'explicit'
-simulProp.set_outFileAddress('.\\Data\\Wu_et_al')
+simulProp.tmStpPrefactor = 0.5          # set the time step prefactor
+# simulProp.set_outFileAddress('.\\Data\\Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 
 # initializing fracture

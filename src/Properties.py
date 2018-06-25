@@ -355,6 +355,9 @@ class SimulationParameters:
                                            saved.
             verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently
                                            two levels 1 and 2 are supported).
+            enableRemeshing (bool)      -- if True, the computational domain will be compressed by the factor given by
+                                           by the variable remeshFactor after the fracture front reaches the end of the
+                                           domain.
             remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.
             frontAdvancing (string)     -- The type of front advancing to be done. Possible options are:
                                                 -- explicit
@@ -448,6 +451,7 @@ class SimulationParameters:
         self.verbosity = simul_param.verbosity
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
+        self.enableRemeshing = simul_param.enable_remeshing
         self.remeshFactor = simul_param.remesh_factor
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
