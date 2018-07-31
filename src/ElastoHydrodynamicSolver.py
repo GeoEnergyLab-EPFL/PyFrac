@@ -32,7 +32,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
         ndarray-float:                  the finite difference matrix    
     """
 
-    FinDiffOprtr = sparse.csr_matrix((w.size, w.size), dtype=np.float32)
+    FinDiffOprtr = sparse.csr_matrix((w.size, w.size), dtype=np.float64)
 
     dx = Mesh.hx
     dy = Mesh.hy
@@ -53,6 +53,21 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
 
 
     return FinDiffOprtr
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def Gravity_term(w, EltCrack, muPrime, Mesh, InCrack, density):
+    b = np.zeros((Mesh.NumberOfElts,), dtype=np.float64)
+
+    # width at the cell edges evaluated by averaging. Zero if the edge is outside fracture
+    wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 2]]
+    wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 3]]
+
+    b[EltCrack] = density * 9.81 * (wTopEdge ** 3 - wBtmEdge ** 3) / Mesh.hy / muPrime[EltCrack]
+
+    return b
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -335,7 +350,7 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
         ndarray-float : the velocity at cell edges
     """
 
-    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain) = args
+    (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain, gravity) = args
     wnPlus1 = np.copy(w)
     wnPlus1[EltCrack] = wnPlus1[EltCrack] + delw_k
 
@@ -358,13 +373,23 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
                                           InCrack)
         vk = inter_iter
 
+    if gravity:
+        G = Gravity_term(wnPlus1,
+                     EltCrack,
+                     muPrime,
+                     mesh,
+                     rho)
+    else:
+        G = np.zeros((mesh.NumberOfElts, ))
+
     FinDiffOprtr = FinDiffOprtr[EltCrack, :][:, EltCrack]
+    G = G[EltCrack]
 
     A = np.identity(EltCrack.size) - dt * FinDiffOprtr.dot(C[np.ix_(EltCrack, EltCrack)])
     S = dt * FinDiffOprtr.dot(np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]) + \
-                            dt * Q[EltCrack] / mesh.EltArea - LeakOff[EltCrack] / mesh.EltArea
+                            dt * Q[EltCrack] / mesh.EltArea - LeakOff[EltCrack] / mesh.EltArea+ G*dt
 
-    return (A, S, vk)
+    return A, S, vk
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -407,7 +432,7 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     """
 
     (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0,
-     turb, dgrain) = args
+     turb, dgrain, gravity) = args
 
     delwK = solk[np.arange(EltChannel.size)]
     wcNplusOne = np.copy(wLastTS)
@@ -433,6 +458,17 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
                                                    InCrack)
         vk = vkm1
 
+    if gravity:
+        G = Gravity_term(wcNplusOne,
+                     EltCrack,
+                     muPrime,
+                     Mesh,
+                     InCrack,
+                     rho)
+
+    else:
+        G = np.zeros((Mesh.NumberOfElts, ))
+
     condCC = FinDiffOprtr[EltChannel, :][:, EltChannel]
     condCT = FinDiffOprtr[EltChannel, :][:, EltsTipNew]
     condTC = FinDiffOprtr[EltsTipNew, :][:, EltChannel]
@@ -441,22 +477,22 @@ def MakeEquationSystem_viscousFluid_extendedFP(solk, vkm1, *args):
     Channel = np.arange(EltChannel.size)
     Tip = Channel.size + np.arange(EltsTipNew.size)
 
-    A = np.zeros((EltChannel.size + EltsTipNew.size, EltChannel.size + EltsTipNew.size), dtype=np.float32)
+    A = np.zeros((EltChannel.size + EltsTipNew.size, EltChannel.size + EltsTipNew.size), dtype=np.float64)
     A[np.ix_(Channel, Channel)] = np.identity(Channel.size) - dt * condCC.dot(C[np.ix_(EltChannel, EltChannel)])
     A[np.ix_(Channel, Tip)] = -dt * condCT.toarray()
     A[np.ix_(Tip, Channel)] = -dt * condTC.dot(C[np.ix_(EltChannel, EltChannel)])
     A[np.ix_(Tip, Tip)] = -dt * condTT.toarray()
 
-    S = np.zeros((EltChannel.size + EltsTipNew.size,), dtype=np.float32)
+    S = np.zeros((EltChannel.size + EltsTipNew.size,), dtype=np.float64)
     S[Channel] = dt * condCC.dot(np.dot(C[np.ix_(EltChannel, EltChannel)], wLastTS[EltChannel]) + \
-                                np.dot(C[np.ix_(EltChannel, EltsTipNew)], wTip) + sigma0[EltChannel]) + \
-                                dt * Q[EltChannel] / Mesh.EltArea - LeakOff[EltChannel] / Mesh.EltArea
+                            np.dot(C[np.ix_(EltChannel, EltsTipNew)], wTip) + sigma0[EltChannel]) + \
+                            dt * Q[EltChannel] / Mesh.EltArea - LeakOff[EltChannel] / Mesh.EltArea+ dt*G[EltChannel]
 
     S[Tip] = -(wTip - wLastTS[EltsTipNew]) + dt * condTC.dot(np.dot(C[np.ix_(EltChannel, EltChannel)], \
                                 wLastTS[EltChannel]) + np.dot(C[np.ix_(EltChannel, EltsTipNew)], wTip) + \
-                                sigma0[EltChannel]) - LeakOff[EltsTipNew] / Mesh.EltArea
+                                sigma0[EltChannel]) - LeakOff[EltsTipNew] / Mesh.EltArea + dt*G[EltsTipNew]
 
-    return (A, S, vk)
+    return A, S, vk
 
 #-----------------------------------------------------------------------------------------------------------------------
 

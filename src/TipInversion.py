@@ -176,7 +176,7 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
 
     for i in range(0, len(w)):
 
-        TipAsmptargs = (w[i], Kprime[i], Eprime, muPrime[i], Cprime[i], -DistLstTS[i], dt)
+        TipAsmptargs = (w[i], Kprime[i], Eprime[i], muPrime[i], Cprime[i], -DistLstTS[i], dt)
         Res_a = ResFunc(a[i], *TipAsmptargs)
         Res_b = ResFunc(b[i], *TipAsmptargs)
 
@@ -197,7 +197,7 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
+def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprime_k=None):
     """ 
     Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in
     the ribbon cells.
@@ -218,6 +218,11 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
         Kprime = matProp.Kprime[frac.EltRibbon]
     else:
         Kprime = Kprime_k
+
+    if Eprime_k is None:
+        Eprime = np.full((frac.EltRibbon.size,), matProp.Eprime)
+    else:
+        Eprime = Eprime_k
 
     if simParmtrs.get_tipAsymptote() == 'U':
         ResFunc = TipAsym_Universal_zrthOrder_Res
@@ -240,7 +245,7 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
 
     a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
                             Kprime[moving],
-                            matProp.Eprime,
+                            Eprime[moving],
                             frac.muPrime[frac.EltRibbon[moving]],
                             matProp.Cprime[frac.EltRibbon[moving]],
                             frac.sgndDist[frac.EltRibbon[moving]],
@@ -253,7 +258,7 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None):
 
         TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
                         Kprime[moving[i]],
-                        matProp.Eprime,
+                        Eprime[i],
                         frac.muPrime[frac.EltRibbon[moving[i]]],
                         matProp.Cprime[frac.EltRibbon[moving[i]]],
                         -frac.sgndDist[frac.EltRibbon[moving[i]]],
@@ -280,7 +285,7 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
         EltRibbon (ndarray-int):        ribbon elements
         stagnant (ndarray-boolean):     the stagnant tip cells
         mesh (CartesianMesh object):    mesh
-        Eprime (float):                 the plain strain modulus
+        Eprime (ndarray):                 the plain strain modulus
         
     Returns:
         ndarray-float:                  the stress intensity factor of the stagnant cells. Zero is returned for the 
@@ -300,15 +305,15 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
                     InRibbon = np.append(InRibbon, EltRibbon[found[0]])
 
             if InRibbon.size == 1:
-                KIPrime[i] = w[InRibbon[0]] * Eprime / (-lvlSetData[InRibbon[0]]) ** 0.5
+                KIPrime[i] = w[InRibbon[0]] * Eprime[i] / (-lvlSetData[InRibbon[0]]) ** 0.5
             elif InRibbon.size > 1:  # evaluate using least squares method
-                KIPrime[i] = Eprime * (w[InRibbon[0]] * (-lvlSetData[InRibbon[0]]) ** 0.5 + w[InRibbon[1]] * (
+                KIPrime[i] = Eprime[i] * (w[InRibbon[0]] * (-lvlSetData[InRibbon[0]]) ** 0.5 + w[InRibbon[1]] * (
                     -lvlSetData[InRibbon[1]]) ** 0.5) / (-lvlSetData[InRibbon[0]] - lvlSetData[InRibbon[1]])
             else:  # ribbon cells not found in enclosure, evaluating with the closest ribbon cell
                 RibbonCellsDist = ((mesh.CenterCoor[EltRibbon, 0] - mesh.CenterCoor[EltTip[i], 0]) ** 2 + (
                     mesh.CenterCoor[EltRibbon, 1] - mesh.CenterCoor[EltTip[i], 1]) ** 2) ** 0.5
                 closest = EltRibbon[np.argmin(RibbonCellsDist)]
-                KIPrime[i] = w[closest] * Eprime / (-lvlSetData[closest]) ** 0.5
+                KIPrime[i] = w[closest] * Eprime[i] / (-lvlSetData[closest]) ** 0.5
 
     return KIPrime
 

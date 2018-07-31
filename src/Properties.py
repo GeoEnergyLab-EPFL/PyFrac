@@ -40,7 +40,8 @@ class MaterialProperties:
     """
 
     def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
-                 anisotropic_flag=False, SigmaO_func = None, Cl_func = None):
+                 anisotropic_K1c=False, SigmaO_func = None, Cl_func = None, TI_elasticity=False, Cij = None,
+                 free_surf=False, free_surf_depth=None, TI_plane_angle=0.):
         """
         Arguments:
             Eprime (float)          -- plain strain modulus.
@@ -60,6 +61,10 @@ class MaterialProperties:
             Cl_func (function)      -- the function giving the in Carter's leak off coefficient on the domain. It
                                        should takes two arguments (x, y) to give the coefficient on these coordinates.
                                        It is also used to get the leak off coefficient if the domain is remeshed.
+            TI_elasticity(bool)     -- if True, the medium is elastic transverse isotropic.
+            Cij(Ndarray-float)      -- the TI stiffness matrix (in the canonical basis) is provided when
+                                       TI_elasticity=true
+
         """
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
@@ -100,8 +105,8 @@ class MaterialProperties:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
 
         self.grainSize = grain_size
-        self.anisotropic = anisotropic_flag
-        if anisotropic_flag:
+        self.anisotropic_K1c = anisotropic_K1c
+        if anisotropic_K1c:
             try:
                 self.K1c_perp = K1c_func(0)
             except TypeError:
@@ -110,12 +115,33 @@ class MaterialProperties:
         else:
             self.K1c_perp = None
 
-        if K1c_func is not None and not self.anisotropic:
+        if K1c_func is not None and not self.anisotropic_K1c:
+            # the function should return toughness by taking x and y coordinates
             try:
                 K1c_func(0.,0.)
             except TypeError:
                 raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
+
+        self.TI_elasticity = TI_elasticity
+        if TI_elasticity or free_surf:
+            if isinstance(Cij, np.ndarray):  # check if float or ndarray
+                if Cij.shape == (6, 6):  # check if size is 6 x 6
+                    self.Cij = Cij
+                else:
+                    raise ValueError('Cij matrix is not a 6x6 array!')
+            else:
+                raise ValueError('Cij matrix is not a numpy array!')
+
+        self.freeSurf = free_surf
+        if free_surf:
+            if free_surf_depth is None:
+                raise ValueError("Depth from free surface is to be provided.")
+            elif Cij is None:
+                raise ValueError("The stiffness matrix (in the canonical basis) is to be provided")
+        self.FreeSurfDepth = free_surf_depth
+        self.TI_PlaneAngle = TI_plane_angle
+
 
         self.K1cFunc = K1c_func
         self.SigmaOFunc = SigmaO_func
@@ -137,13 +163,13 @@ class MaterialProperties:
         Returns:
         """
 
-        if self.K1cFunc is not None and not self.anisotropic:
+        if self.K1cFunc is not None and not self.anisotropic_K1c:
             self.Kprime = np.empty((mesh.NumberOfElts, ), dtype=np.float64)
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
-        elif self.K1cFunc is not None and self.anisotropic:
+        elif self.K1cFunc is not None and self.anisotropic_K1c:
             self.Kprime = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
@@ -308,7 +334,7 @@ class SimulationParameters:
         instance variables
             tolFractFront (float)       -- tolerance for the fracture front loop.
             toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.
-            toleranceToughness (float)  -- tolerance for toughness iteration
+            toleranceProjection (float) -- tolerance for projection iteration for anisotropic case
             maxFrontItr (int)           -- maximum iterations to for the fracture front loop.
             maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton
                                            hybrid) in this case.
@@ -363,6 +389,7 @@ class SimulationParameters:
                                                 -- explicit
                                                 -- semi-implicit
                                                 -- implicit
+            gravity (bool)              -- if True, the effect of gravity will be taken into account.
             collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.
             tipParam_precise (bool)     -- if True, the space dependant parameters such as toughness and leak-off
                                            coefficients will be taken from the tip by projections instead of taking them
@@ -370,6 +397,8 @@ class SimulationParameters:
                                            unstable due to the complexities in finding the projection
             saveReynNumb (boolean)      -- if True, the Reynold's number at each edge of the cells inside the fracture
                                            will be saved.
+            TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic
+                                           kernel or kernel with free surface.
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -412,12 +441,12 @@ class SimulationParameters:
         # tolerances
         self.tolFractFront = simul_param.toleranceFractureFront
         self.toleranceEHL = simul_param.toleranceEHL
-        self.toleranceToughness = simul_param.tol_toughness
+        self.toleranceProjection = simul_param.tol_projection
 
         # max iterations
-        self.maxFrontItr = simul_param.maxfront_its
-        self.maxSolverItr = simul_param.max_itr_solver
-        self.maxToughnessItr = simul_param.max_toughnessItr
+        self.maxFrontItrs = simul_param.max_front_itrs
+        self.maxSolverItrs = simul_param.max_solver_itrs
+        self.maxToughnessItrs = simul_param.max_toughness_Itrs
 
         # time and time stepping
         self.maxTimeSteps = simul_param.maximum_steps
@@ -455,8 +484,10 @@ class SimulationParameters:
         self.remeshFactor = simul_param.remesh_factor
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
-        self.precise_tipParam = simul_param.precise_tipParam
+        self.paramFromTip = simul_param.param_from_tip
         self.saveReynNumb = simul_param.save_ReyNumb
+        self.gravity = simul_param.gravity
+        self.TI_KernelExecPath = simul_param.TI_Kernel_exec_path
 
 # ----------------------------------------------------------------------------------------------------------------------
 

@@ -20,6 +20,7 @@ from src.HFAnalyticalSolutions import *
 from src.TimeSteppingMechLoading import *
 from src.TimeSteppingVolumeControl import *
 from src.Properties import IterationProperties
+from src.anisotropy import TI_plain_strain_modulus
 import time
 
 
@@ -227,7 +228,7 @@ def attempt_time_step_viscousFluid(Frac, C, mat_properties, fluid_properties, si
         if sim_properties.verbosity > 1:
             print('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
-        if k == sim_properties.maxFrontItr:
+        if k == sim_properties.maxFrontItrs:
             exitstatus = 6
             if perfNode_extendedFP is not None:
                 perfNode.time = Frac.time + timeStep
@@ -329,7 +330,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         mat_properties.SigmaO,
         fluid_properties.density,
         fluid_properties.turbulence,
-        mat_properties.grainSize)
+        mat_properties.grainSize,
+        sim_properties.gravity)
 
     # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function documentation)
     # todo: guess is taken as typical values. Needs to be reconsidered
@@ -349,7 +351,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                typclValue,
                                vk,
                                sim_properties.toleranceEHL,
-                               sim_properties.maxSolverItr,
+                               sim_properties.maxSolverItrs,
                                *argSameFP,
                                perf_node=perfNode_Picard)
 
@@ -424,35 +426,31 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
-    if sim_properties.precise_tipParam or mat_properties.anisotropic:
-        alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
-                                                 Fr_lstTmStp.EltChannel,
-                                                 Fr_lstTmStp.mesh,
-                                                 sgndDist_k)
-        Kprime_k = (32 / math.pi) ** 0.5 * get_toughness_from_cellCenter(alpha_ribbon,
-                                                sgndDist_k,
-                                                Fr_lstTmStp.EltRibbon,
-                                                mat_properties,
-                                                Fr_lstTmStp.mesh)
-    # Kprime from last iteration; starts with zero
-        Kprime_km1 = 0 * np.copy(Kprime_k)
 
     # toughness iteration loop
-    while itr < sim_properties.maxToughnessItr:
+    while itr < sim_properties.maxToughnessItrs:
 
-        sgndDist_km1 = np.copy(sgndDist_k)
-        l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
-
-        if sim_properties.precise_tipParam or mat_properties.anisotropic:
-            alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
-                                                  Fr_lstTmStp.EltChannel,
-                                                  Fr_lstTmStp.mesh,
-                                                  sgndDist_k)
-            if np.isnan(alpha_ribbon).any():
+        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
+            if itr == 0:
+                # first iteration
+                alpha_ribbon_k = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                            Fr_lstTmStp.EltChannel,
+                                                            Fr_lstTmStp.mesh,
+                                                            sgndDist_k)
+                alpha_ribbon_km1 = np.zeros((Fr_lstTmStp.EltRibbon.size), )
+            else:
+                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                            Fr_lstTmStp.EltChannel,
+                                                            Fr_lstTmStp.mesh,
+                                                            sgndDist_k)
+            if np.isnan(alpha_ribbon_k).any():
                 exitstatus = 11
                 return exitstatus, None
-            # under relaxing toughnesss
-            Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
+
+
+        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
+
+            Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
                                                             sgndDist_k,
                                                             Fr_lstTmStp.EltRibbon,
                                                             mat_properties,
@@ -463,6 +461,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 return exitstatus, None
         else:
             Kprime_k = None
+
+        if mat_properties.TI_elasticity:
+            Eprime_k = TI_plain_strain_modulus(alpha_ribbon_k,
+                                               mat_properties.Cij)
+            if np.isnan(Eprime_k).any():
+                exitstatus = 13
+                return exitstatus, None
+        else:
+            Eprime_k = None
 
 
 
@@ -475,7 +482,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                mat_properties,
                                                                sim_properties,
                                                                timeStep,
-                                                               Kprime_k=Kprime_k)
+                                                               Kprime_k=Kprime_k,
+                                                               Eprime_k=Eprime_k)
 
 
         # if tip inversion returns nan
@@ -506,23 +514,22 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                  front_region[ngtv_region])
 
         # do it only once if not anisotropic
-        if not mat_properties.anisotropic and not sim_properties.precise_tipParam:
+        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity):
             break
 
-        # norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
-        norm = np.linalg.norm(1 - abs(Kprime_k / Kprime_km1))
-        if norm < sim_properties.toleranceToughness:
+        norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
+        if norm < sim_properties.toleranceProjection:
             if sim_properties.verbosity > 1:
-                print("toughness iteration converged after " + repr(itr-1) + " iterations; exiting norm " +
-                  repr(norm))
+                print("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+                      repr(norm))
             break
 
-        Kprime_km1 = np.copy(Kprime_k)
+        alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
         if sim_properties.verbosity > 1:
-            print("iterating on toughness... norm " + repr(norm))
+            print("iterating on projection... norm " + repr(norm))
         itr += 1
 
-    # if itr == sim_properties.maxToughnessItr:
+    # if itr == sim_properties.maxToughnessItrs:
     #     exitstatus = 10
     #     return exitstatus, None
 
@@ -597,17 +604,23 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if sim_properties.precise_tipParam or mat_properties.anisotropic:
+    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        # get toughness from tip in case of anisotropic or
         Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
-                                                   Fr_lstTmStp.mesh,
-                                                   mat_properties,
-                                                   alpha_k,
-                                                   l_k,
-                                                   zrVrtx_newTip)
+                                                                           Fr_lstTmStp.mesh,
+                                                                           mat_properties,
+                                                                           alpha_k,
+                                                                           l_k,
+                                                                           zrVrtx_newTip)
     else:
-        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-        Kprime_tip = mat_properties.Kprime[tip_neighbor_in_ribbon(EltsTipNew, zrVrtx_newTip, Fr_lstTmStp.mesh)]
+        Kprime_tip = None
+
+    if mat_properties.TI_elasticity:
+        Eprime_tip = TI_plain_strain_modulus(alpha_k,
+                                             mat_properties.Cij)
+    else:
+        Eprime_tip = np.full((EltsTipNew.size,), mat_properties.Eprime, dtype=np.float64)
 
     if perfNode is not None:
         perfNode.iterations += 1
@@ -629,7 +642,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                         EltRibbon_k,
                                         stagnant,
                                         Fr_lstTmStp.mesh,
-                                        mat_properties.Eprime)
+                                        Eprime=Eprime_tip)
 
         # todo: Find the right cause of failure
         # if the stress Intensity factor cannot be found. The most common reason is wiggles in the front resulting
@@ -651,7 +664,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                               fluid_prop=fluid_properties,
                               Vel=Vel_k,
                               stagnant=stagnant,
-                              KIPrime=KIPrime) / Fr_lstTmStp.mesh.EltArea
+                              KIPrime=KIPrime,
+                              Eprime=Eprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
         wTip = Integral_over_cell(EltsTipNew,
@@ -664,6 +678,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                               fluid_prop=fluid_properties,
                               Vel=Vel_k,
                               Kprime=Kprime_tip,
+                              Eprime=Eprime_tip,
                               stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # check if the tip volume has gone into negative
@@ -737,7 +752,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         LkOff,
         mat_properties.SigmaO,
         fluid_properties.turbulence,
-        mat_properties.grainSize
+        mat_properties.grainSize,
+        sim_properties.gravity
         )
 
     if perfNode is not None:
@@ -754,7 +770,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                typValue,
                                vk,
                                sim_properties.toleranceEHL,
-                               sim_properties.maxSolverItr,
+                               sim_properties.maxSolverItrs,
                                *arg,
                                perf_node=perfNode_Picard)
 
@@ -777,7 +793,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.w[EltsTipNew] = wTip
 
     # check if the new width is valid
-    if np.isnan(Fr_kplus1.w).any()  :
+    if np.isnan(Fr_kplus1.w).any():
         exitstatus = 5
         return exitstatus, None
 
@@ -1018,7 +1034,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         print('Solving the EHL system with the new trial footprint')
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if sim_properties.precise_tipParam or mat_properties.anisotropic:
+    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
         Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                            Fr_lstTmStp.mesh,
@@ -1027,8 +1043,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                            l_k,
                                                                            zrVrtx_newTip)
     else:
+        Kprime_tip = None
+
+    if mat_properties.TI_elasticity:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-        Kprime_tip = mat_properties.Kprime[tip_neighbor_in_ribbon(EltsTipNew, zrVrtx_newTip, Fr_lstTmStp.mesh)]
+        Eprime_tip = TI_plain_strain_modulus(alpha_k,
+                                             mat_properties.Cij)
+    else:
+        Eprime_tip = np.full((EltsTipNew.size,), mat_properties.Eprime, dtype=np.float64)
 
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
@@ -1055,7 +1077,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                         EltRibbon_k,
                                         stagnant,
                                         Fr_lstTmStp.mesh,
-                                        mat_properties.Eprime)
+                                        Eprime_tip)
 
         # todo: Find the right cause of failure
         # if the stress Intensity factor cannot be found. The most common reason is wiggles in the front resulting
@@ -1077,7 +1099,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                   fluid_prop=fluid_properties,
                                   Vel=Vel_k,
                                   stagnant=stagnant,
-                                  KIPrime=KIPrime) / Fr_lstTmStp.mesh.EltArea
+                                  KIPrime=KIPrime,
+                                  Eprime=Eprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
         wTip = Integral_over_cell(EltsTipNew,
@@ -1090,6 +1113,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                   fluid_prop=fluid_properties,
                                   Vel=Vel_k,
                                   Kprime=Kprime_tip,
+                                  Eprime=Eprime_tip,
                                   stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # check if the tip volume has gone into negative
@@ -1169,8 +1193,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         LkOff,
         mat_properties.SigmaO,
         fluid_properties.turbulence,
-        mat_properties.grainSize
+        mat_properties.grainSize,
+        sim_properties.gravity
     )
+
     if perfNode is not None:
         perfNode.iterations += 1
         perfNode_Picard = IterationProperties(itr_type="Picard iteration")
@@ -1185,7 +1211,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                typValue,
                                vk,
                                sim_properties.toleranceEHL,
-                               sim_properties.maxSolverItr,
+                               sim_properties.maxSolverItrs,
                                *arg,
                                perf_node=perfNode_Picard)
 
@@ -1212,11 +1238,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 5
         return exitstatus, None
 
-    if (Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !    -> we need a linear solver with constraint to handle pinch point properly.
+    if (Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !
+        #   -> we need a linear solver with constraint to handle pinch point properly.
         print("found negative width. Ignoring...")
         # print(repr(np.where((Fr_kplus1.w < 0))))
         # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
-        Fr_kplus1.w[np.where(Fr_kplus1.w <= 1e-10)[0]] = 1e-10
+        Fr_kplus1.w[np.where(Fr_kplus1.w <= 1e-12)[0]] = 1e-12
         # exitstatus = 5
         # return exitstatus, None
 
@@ -1255,46 +1282,51 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     if sim_properties.verbosity > 1:
         print("Solved...\nFinding velocity of front...")
+
     itr = 0
-    if sim_properties.precise_tipParam or mat_properties.anisotropic:
-        alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
-                                              Fr_lstTmStp.EltChannel,
-                                              Fr_lstTmStp.mesh,
-                                              sgndDist_k)
-        Kprime_k = (32 / math.pi) ** 0.5 * get_toughness_from_cellCenter(alpha_ribbon,
-                                                                         sgndDist_k,
-                                                                         Fr_lstTmStp.EltRibbon,
-                                                                         mat_properties,
-                                                                         Fr_lstTmStp.mesh)
-        # Kprime from last iteration; starts with zero
-        Kprime_km1 = 0 * np.copy(Kprime_k)
-
     # toughness iteration loop
-    while itr < sim_properties.maxToughnessItr:
+    while itr < sim_properties.maxToughnessItrs:
 
-        sgndDist_km1 = np.copy(sgndDist_k)
-        l_m1 = sgndDist_km1[Fr_lstTmStp.EltRibbon]
+        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
 
-        if sim_properties.precise_tipParam or mat_properties.anisotropic:
-            alpha_ribbon = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
-                                                  Fr_lstTmStp.EltChannel,
-                                                  Fr_lstTmStp.mesh,
-                                                  sgndDist_k)
-            if np.isnan(alpha_ribbon).any():
+            if itr == 0:
+                # first iteration
+                alpha_ribbon_k = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                        Fr_lstTmStp.EltChannel,
+                                                        Fr_lstTmStp.mesh,
+                                                        sgndDist_k)
+                alpha_ribbon_km1 = np.zeros((Fr_lstTmStp.EltRibbon.size), )
+            else:
+                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                                                                                     Fr_lstTmStp.EltChannel,
+                                                                                     Fr_lstTmStp.mesh,
+                                                                                     sgndDist_k)
+            if np.isnan(alpha_ribbon_k).any():
                 exitstatus = 11
                 return exitstatus, None
-            # under relaxing toughnesss
-            Kprime_k = 0.3 * Kprime_k + 0.7 * get_toughness_from_cellCenter(alpha_ribbon,
-                                                                            sgndDist_k,
-                                                                            Fr_lstTmStp.EltRibbon,
-                                                                            mat_properties,
-                                                                            Fr_lstTmStp.mesh) * (32 / math.pi) ** 0.5
+
+        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
+
+            Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
+                                                     sgndDist_k,
+                                                     Fr_lstTmStp.EltRibbon,
+                                                     mat_properties,
+                                                     Fr_lstTmStp.mesh) * (32 / math.pi) ** 0.5
 
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
                 return exitstatus, None
         else:
             Kprime_k = None
+
+        if mat_properties.TI_elasticity:
+            Eprime_k = TI_plain_strain_modulus(alpha_ribbon_k,
+                                               mat_properties.Cij)
+            if np.isnan(Eprime_k).any():
+                exitstatus = 13
+                return exitstatus, None
+        else:
+            Eprime_k = None
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
         sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
@@ -1305,7 +1337,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                mat_properties,
                                                                sim_properties,
                                                                timeStep,
-                                                               Kprime_k=Kprime_k)
+                                                               Kprime_k=Kprime_k,
+                                                               Eprime_k=Eprime_k)
 
         # if tip inversion returns nan
         if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
@@ -1345,23 +1378,21 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         #     return exitstatus, None
 
         # do it only once if not anisotropic
-        if not mat_properties.anisotropic and not sim_properties.precise_tipParam:
+        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity):
             break
 
-        # norm = np.linalg.norm(1 - abs(l_m1/sgndDist_k[Fr_lstTmStp.EltRibbon]))
-        norm = np.linalg.norm(1 - abs(Kprime_k / Kprime_km1))
-        if norm < sim_properties.toleranceToughness:
+        norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
+        if norm < sim_properties.toleranceProjection:
             if sim_properties.verbosity > 1:
                 print("toughness iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
             break
-
-        Kprime_km1 = np.copy(Kprime_k)
+        alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
         if sim_properties.verbosity > 1:
-            print("iterating on toughness... norm " + repr(norm))
+            print("iterating on projection... norm = " + repr(norm))
         itr += 1
 
-    # if itr == sim_properties.maxToughnessItr:
+    # if itr == sim_properties.maxToughnessItrs:
     #     exitstatus = 10
     #     return exitstatus, None
 
@@ -1384,18 +1415,18 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def tip_neighbor_in_ribbon(tip_elts, tip_zero_vrtx, mesh):
-
-    coresp_neighbor = np.empty((len(tip_elts), ) , dtype=int)
-    neighbors = mesh.NeiElements[tip_elts]
-    for i in range(len(tip_elts)):
-        if tip_zero_vrtx[i] == 0:
-            coresp_neighbor[i] = neighbors[i, 2] - 1
-        elif tip_zero_vrtx[i] == 1:
-            coresp_neighbor[i] = neighbors[i, 2] + 1
-        elif tip_zero_vrtx[i] == 2:
-            coresp_neighbor[i] = neighbors[i, 3] + 1
-        elif tip_zero_vrtx[i] == 3:
-            coresp_neighbor[i] = neighbors[i, 3] - 1
-
-    return coresp_neighbor
+# def tip_neighbor_in_ribbon(tip_elts, tip_zero_vrtx, mesh):
+#
+#     coresp_neighbor = np.empty((len(tip_elts), ), dtype=int)
+#     neighbors = mesh.NeiElements[tip_elts]
+#     for i in range(len(tip_elts)):
+#         if tip_zero_vrtx[i] == 0:
+#             coresp_neighbor[i] = neighbors[i, 2] - 1
+#         elif tip_zero_vrtx[i] == 1:
+#             coresp_neighbor[i] = neighbors[i, 2] + 1
+#         elif tip_zero_vrtx[i] == 2:
+#             coresp_neighbor[i] = neighbors[i, 3] + 1
+#         elif tip_zero_vrtx[i] == 3:
+#             coresp_neighbor[i] = neighbors[i, 3] - 1
+#
+#     return coresp_neighbor

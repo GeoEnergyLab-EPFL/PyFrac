@@ -3,12 +3,12 @@
 # tolerances
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver
 toleranceEHL = 1.0e-5                   # tolerance for the elastohydrodynamic system solver
-tol_toughness = 2.5e-3                  # tolerance for the toughness iteration
+tol_projection = 2.5e-3                  # tolerance for the toughness iteration
 
 # max iterations
-maxfront_its = 30                       # maximum iterations for the fracture front
-max_itr_solver = 80                     # maximum iterations for the elastohydrodynamic solver
-max_toughnessItr = 20                   # maximum toughness iterations
+max_front_itrs = 30                     # maximum iterations for the fracture front
+max_solver_itrs = 80                    # maximum iterations for the elastohydrodynamic solver
+max_toughness_Itrs = 20                 # maximum toughness iterations
 
 # time and time stepping
 tmStp_prefactor = 0.8                   # time step prefactor(pf) to calculate the time step (dt = pf*min(dx, dy)/max(v)
@@ -47,5 +47,7 @@ enable_remeshing = True                 # if true, computation domain will be re
 remesh_factor = 2.                      # the factor by which the mesh is compressed
 front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree
-precise_tipParam = False                # set the space dependant tip parameters to be taken from ribbon cell.
+param_from_tip = False                  # set the space dependant tip parameters to be taken from ribbon cell.
 save_ReyNumb = False                    # if True, the Reynold's number at each edge will be saved.
+gravity = False                         # if True, the effect of gravity will be taken into account.
+TI_Kernel_exec_path = './TI_Kernel'     # the folder containing the executable to calculate TI elasticty matrix.

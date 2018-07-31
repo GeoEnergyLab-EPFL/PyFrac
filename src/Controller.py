@@ -82,41 +82,19 @@ class Controller:
 
         # load elasticity matrix
         if self.C is None:
-            # dumping and loading of matrix on file system may be is faster but is costly in terms of memory
-            # self.C = load_elasticity_matrix(self.fracture.mesh, self.solid_prop.Eprime)
-            print('Making elasticity matrix...')
-            self.C = elasticity_matrix_all_mesh_vectorized(self.fracture.mesh, self.solid_prop.Eprime)
+            if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
+                self.C = load_TI_elasticity_matrix(self.fracture.mesh,
+                                                   self.solid_prop,
+                                                   self.sim_prop)
+            else:
+                self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
+                                                          self.solid_prop.Eprime)
             print('Done!')
 
         i = 0
-        # tmSrs_indx = 0
-        # # the next time where the solution is required to be evaluated
-        # if (self.sim_prop).get_solTimeSeries() is not None:
-        #     next_in_tmSrs = (self.sim_prop).get_solTimeSeries()[tmSrs_indx]
-        # else:
-        #     # set final time as the time where the solution is required
-        #     next_in_tmSrs = self.sim_prop.FinalTime
-
-
         print("Starting time = " + repr(self.fracture.time))
         # starting time stepping loop
         while self.fracture.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
-
-            # if self.sim_prop.fixedTmStp is not None:
-            #     # fixed time step
-            #     TimeStep = self.sim_prop.fixedTmStp
-            # else:
-            #     # time step is calculated with the current propagation velocity
-            #     TimeStep = get_time_step(self.fracture, self.sim_prop.tmStpPrefactor)
-            #
-            # # to get the solution at the times given in time series or final time
-            # if self.fracture.time + TimeStep > next_in_tmSrs:
-            #     TimeStep = next_in_tmSrs - self.fracture.time
-            #     # set next in time series
-            #     if self.sim_prop.get_solTimeSeries() is not None:
-            #         if tmSrs_indx < len(self.sim_prop.get_solTimeSeries()) - 1:
-            #             tmSrs_indx += 1
-            #         next_in_tmSrs = self.sim_prop.get_solTimeSeries()[tmSrs_indx]
 
             TimeStep = self.get_time_step()
 
