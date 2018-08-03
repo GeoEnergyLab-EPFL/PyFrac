@@ -568,7 +568,7 @@ def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, E
     A[-1,-1] = 0
 
     S = -np.dot(Ccc,w_lst_tmstp[EltChannel]) - np.dot(Cct,wTip)
-    S = np.append(S,Q * dt / ElemArea - (sum(wTip)-sum(w_lst_tmstp[EltTip])))
+    S = np.append(S, sum(Q) * dt / ElemArea - (sum(wTip)-sum(w_lst_tmstp[EltTip])))
 
     return A, S
 

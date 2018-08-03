@@ -10,9 +10,8 @@
 from src.Properties import *
 from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
-from src.TimeSteppingVolumeControl import attempt_time_step_volumeControl
-from src.TimeSteppingViscousFluid import attempt_time_step_viscousFluid
-from src.TimeSteppingMechLoading import attempt_time_step_mechLoading
+from src.TimeStepping import attempt_time_step
+
 
 import copy
 import matplotlib.pyplot as plt
@@ -255,34 +254,17 @@ class Controller:
             else:
                 PerfNode_TmStpAtmpt = None
 
-            if self.sim_prop.get_viscousInjection():
-                status, Fr = attempt_time_step_viscousFluid(Frac,
-                                                            C,
-                                                            self.solid_prop,
-                                                            self.fluid_prop,
-                                                            self.sim_prop,
-                                                            self.injection_prop,
-                                                            tmStp_to_attempt,
-                                                            PerfNode_TmStpAtmpt)
 
-            elif self.sim_prop.get_dryCrack_mechLoading():
-                status, Fr = attempt_time_step_mechLoading(Frac,
-                                                            C,
-                                                            self.solid_prop,
-                                                            self.sim_prop,
-                                                            self.load_prop,
-                                                            tmStp_to_attempt,
-                                                            Frac.mesh,
-                                                            PerfNode_TmStpAtmpt)
+            status, Fr = attempt_time_step(Frac,
+                                            C,
+                                            self.solid_prop,
+                                            self.fluid_prop,
+                                            self.sim_prop,
+                                            self.injection_prop,
+                                            tmStp_to_attempt,
+                                            PerfNode_TmStpAtmpt)
 
-            elif self.sim_prop.get_volumeControl():
-                status, Fr = attempt_time_step_volumeControl(Frac,
-                                                             C,
-                                                             self.solid_prop,
-                                                             self.sim_prop,
-                                                             self.injection_prop,
-                                                             tmStp_to_attempt,
-                                                            PerfNode_TmStpAtmpt)
+
 
             if PerfNode_TmStpAtmpt is not None:
                 PerfNode_TmStpAtmpt.CpuTime_end = time.time()
@@ -359,7 +341,7 @@ class Controller:
                                                                     Cprime=material_properties.Cprime[
                                                                         Fr_lstTmStp.mesh.CenterElts],
                                                                     t=Fr_advanced.time,
-                                                                    KIc_min=material_properties.K1c_perp,density=fluid_properties.density)
+                                                                    Kc_1=material_properties.K1c_perp,density=fluid_properties.density)
                     elif simulation_parameters.analyticalSol == 'PKN':
                         print("PKN is to be implemented.")
 

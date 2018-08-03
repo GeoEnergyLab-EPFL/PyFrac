@@ -181,7 +181,7 @@ class Fracture():
                                                                       Cprime=solid.Cprime[self.mesh.CenterElts][0],
                                                                       length=length,
                                                                       t=time,
-                                                                      KIc_min=solid.K1c_perp,
+                                                                      Kc_1=solid.K1c_perp,
                                                                       h=h,density=fluid.density)
 
             if init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'):
