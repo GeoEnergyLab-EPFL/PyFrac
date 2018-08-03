@@ -41,7 +41,7 @@ class MaterialProperties:
 
     def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, SigmaO_func = None, Cl_func = None, TI_elasticity=False, Cij = None,
-                 free_surf=False, free_surf_depth=None, TI_plane_angle=0.):
+                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0.):
         """
         Arguments:
             Eprime (float)          -- plain strain modulus.
@@ -135,7 +135,7 @@ class MaterialProperties:
 
         self.freeSurf = free_surf
         if free_surf:
-            if free_surf_depth is None:
+            if free_surf_depth == 1.e300:
                 raise ValueError("Depth from free surface is to be provided.")
             elif Cij is None:
                 raise ValueError("The stiffness matrix (in the canonical basis) is to be provided")

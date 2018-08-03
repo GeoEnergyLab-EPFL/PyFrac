@@ -18,6 +18,7 @@ import numpy as np
 from scipy import interpolate
 import warnings
 from scipy import special
+import scipy.integrate as integrate
 
 
 #  radial zero toughness turbulent MDR approximation
@@ -499,8 +500,104 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None,  length=None, t=None,
-                      KIc_min=None, h=None,density=None):
+def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None):
+    """
+    Analytical solution for an elliptical fracture propagating in toughness dominated regime (see Zia and Lecampion,
+    IJF, 2018).
+
+    Arguments:
+        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
+        b (float)              -- the given minor axis length
+        a (float)              -- the given major axis length
+        p (float)              -- pressure
+
+    Returns:
+        w (ndarray-float)      -- width at each cell at the given time
+
+        actvElts (ndarray)     -- list of cells inside the fracture at the given time
+    """
+
+    if b is None and t is None:
+        raise ValueError("Either the minor axis length or time is to be provided!")
+    if b is None:
+        b = (Q0 * t * 3 * Ep3 / (8 * gamma * Kc3 * np.pi**0.5))**(2/5)
+    else:
+        t = b**(5 / 2) * 8 * gamma * Kc3 * np.pi**0.5 / (3 * Q0 * Ep3)
+
+    a = gamma * b
+
+    C11 = Cij[0, 0]
+    C12 = Cij[0, 1]
+    C13 = Cij[0, 2]
+    C33 = Cij[2, 2]
+    C44 = Cij[3, 3]
+    C66 = Cij[5, 5]
+
+    m1 = (-C13 ** 2 + C11 * C33 - 2 * C13 * C44 - 2 * C44 ** 2 + ((C13 ** 2 - C11 * C33) * (C13 ** 2
+                - C11 * C33 + 4 * C13 * C44 + 4 * C44 ** 2)) ** 0.5) / (
+                     2 * (C13 * C44 + C44 ** 2))
+    m2 = (-C13 ** 2 + C11 * C33 - 2 * C13 * C44 - 2 * C44 ** 2 - ((C13 ** 2 - C11 * C33) * (C13 ** 2
+                - C11 * C33 + 4 * C13 * C44 + 4 * C44 ** 2)) ** 0.5) / (
+                     2 * (C13 * C44 + C44 ** 2))
+
+    gamma3 = (C44 / C66) ** 0.5
+
+    args = (Cij, gamma, m1, m2, gamma3)
+
+    sigma_intgrl = integrate.quad(TI_elasticity_sigma,
+                                  0,
+                                  2 * np.pi,
+                                  args=args,
+                                  points=[np.pi / 2, 3 * np.pi / 2])[0]
+
+    w0 = 2 * (4 * (m2 - m1) * gamma3 ** 2) / (C66 * sigma_intgrl)
+    rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
+    actvElts = np.where(rho > 0)[0]  # active cells (inside fracture)
+    p = np.zeros((mesh.NumberOfElts, ), float)
+    p[actvElts] = (4 * gamma * Kc3) / ((np.pi * b) ** 0.5 * w0 * Ep3)
+
+    u0 = w0 * p * b**2 / a
+
+    w = np.zeros((mesh.NumberOfElts,))
+    w[actvElts] = u0[actvElts] * (1 - (mesh.CenterCoor[actvElts, 0] / a) ** 2 - (
+                                    mesh.CenterCoor[actvElts, 1] / b) ** 2)**0.5
+
+    return t, b, p, w, None, actvElts
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def TI_elasticity_sigma(theta, *args):
+
+    (stiff_tensor, gamma, m1, m2, gamma3) = args
+
+    C11 = stiff_tensor[0, 0]
+    C13 = stiff_tensor[0, 2]
+    C44 = stiff_tensor[3, 3]
+
+    gamma1 = ((C44 + m1 * (C13 + C44)) / C11) ** 0.5
+    gamma2 = ((C44 + m2 * (C13 + C44)) / C11) ** 0.5
+
+    h1 = (m1 + 1) * (gamma3 * np.cos(theta)) ** 2 + 2 * np.sin(theta) ** 2
+    h2 = (m2 + 1) * (gamma3 * np.cos(theta)) ** 2 + 2 * np.sin(theta) ** 2
+
+    xi1 = ((gamma1 * np.cos(theta)) ** 2 + np.sin(theta) ** 2) ** 0.5
+    xi2 = ((gamma2 * np.cos(theta)) ** 2 + np.sin(theta) ** 2) ** 0.5
+    xi3 = ((gamma3 * np.cos(theta)) ** 2 + np.sin(theta) ** 2) ** 0.5
+
+    rgam = (gamma ** 2 * np.cos(theta) ** 2 + np.sin(theta) ** 2) ** 0.5
+
+    dd = m2 * h1 ** 2 * xi2 - m1 * h2 ** 2 * xi1 + 4 * (m1 - m2) * xi2 * xi1 * xi3 * np.sin(theta) ** 2
+
+    sigma = dd / (xi1 * xi2 * np.cos(theta) ** 2 * rgam ** 3)
+
+    return sigma
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None, length=None, t=None,
+                      Kc_1=None, h=None, density=None, Cij=None, gamma=None):
     """
     This function provides the analytical solution for the given parameters according to the given propagation regime
 
@@ -549,10 +646,13 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
     elif regime is 'KGD_K':
         t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t)
     elif regime is 'MDR':
-        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime=Eprime,Q0=Q0,density=density,visc=muPrime/12.,Mesh=mesh,R=length,t=t)
-    elif regime is 'E':
-        KIc = Kprime / (32 / np.pi) ** 0.5
-        t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( KIc, KIc_min, Eprime, Q0, mesh, length, t)
+        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime, Q0, density, muPrime/12., mesh, length, t)
+    elif regime is 'E_K':
+        Kc_3 = Kprime / (32 / np.pi) ** 0.5
+        t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( Kc_3, Kc_1, Eprime, Q0, mesh, length, t)
+    elif regime is 'E_E':
+        Kc_3 = Kprime / (32 / np.pi) ** 0.5
+        t, r, p, w, v, actvElts = TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc_3, Eprime, Q0, t, length)
 
     return t, r, p, w, v, actvElts
 
