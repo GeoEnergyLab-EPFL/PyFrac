@@ -21,9 +21,6 @@ namespace hfp3d {
         std::ifstream i(a);
         json j;
         i >> j;
-        //save a json file
-        // std::ofstream l("data.json");
-        //  l << std::setw(4) << o << std::endl;
 
 
 //create the stiffness matrix
@@ -34,11 +31,9 @@ namespace hfp3d {
         Ce.resize(5);
         for (json::iterator it = j["Solid parameters"].begin(); it != j["Solid parameters"].end(); ++it) {
             Ce[ii]=it.value();
-            std::cout <<  "Cij = " << Ce[ii]<< "\n" ;
 
             ii++;
         }
-
          return Ce;
     }
 

@@ -52,7 +52,7 @@ namespace hfp3d {
 
     ////////////////////////////////////Material property
 //    la and mu are the Lamé parameters of the Material
-    vector<double> Ce = hfp3d::Cmatrix("TI_parameters.json");
+    vector<double> Ce = hfp3d::Cmatrix("stiffness_matrix.json");
     double c11=Ce[0];
     double c12= Ce[1];
     double c13=Ce[2];

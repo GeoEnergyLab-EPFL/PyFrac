@@ -37,9 +37,9 @@ simulProp = SimulationParameters()
 simulProp.FinalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
-simulProp.outputTimePeriod = 1e-4        # to save after every time step
+simulProp.outputTimePeriod = 1e-4       # to save after every time step
 simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
-# simulProp.set_outFileAddress(".\\Data\\radial") # the disk address where the files are saved
+simulProp.set_outputFolder(".\\Data\\M_radial_explicit") # the disk address where the files are saved
 
 # initializing fracture
 initRad = 0.1
@@ -64,22 +64,104 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-# plot results
 
-plot_footprint(simulProp.get_outFileAddress(),         # the address where the results are stored
-                        plot_at_times=10**np.linspace(-2,5,15),# the time series at which the solution is plotted
-                        analytical_sol='M')            # analytical solution for reference
-plt.show()
-plot_radius(simulProp.get_outFileAddress(),
-                        r_type='mean',
-                        analytical_sol='M')
-plt.show()
-plot_at_injection_point(simulProp.get_outFileAddress(),
-                        plt_pressure=False,
-                        analytical_sol='M')
-plt.show()
-plot_profile(simulProp.get_outFileAddress(),
-                        plot_at_times=10**np.linspace(-2,5,10),
-                        analytical_sol='M')
+####################
+# plotting results #
+####################
+
+# loading simulation results
+Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit")      # load all fractures
+time_srs = get_fracture_variable_whole_mesh(Fr_list,                            # list of times
+                                            variable='time')
+
+plot_prop = PlotProperties()
+
+# plot fracture radius
+plot_prop.lineStyle = '.'
+plot_prop.graphScaling = 'loglog'
+Fig_R = plot_fracture_list(Fr_list,
+                           variable='d_mean',
+                           plot_prop=plot_prop)
+# plot analytical radius
+Fig_R = plot_analytical_solution('M',
+                                 'd_mean',
+                                 Solid,
+                                 Injection,
+                                 fluid_prop=Fluid,
+                                 time_srs=time_srs,
+                                 fig=Fig_R)
+
+# plot width at center
+Fig_w = plot_fracture_list_at_point(Fr_list,
+                                    variable='w',
+                                    plot_prop=plot_prop)
+# plot analytical width at center
+Fig_w = plot_analytical_solution_at_point('M',
+                                          'w',
+                                          Solid,
+                                          Injection,
+                                          fluid_prop=Fluid,
+                                          time_srs=time_srs,
+                                          fig=Fig_w)
+
+
+time_srs = np.linspace(1, 1e5, 5)
+Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit",
+                                     time_srs=time_srs)
+time_srs = get_fracture_variable_whole_mesh(Fr_list,
+                                            variable='time')
+
+# plot footprint
+Fig_FP = plot_fracture_list(Fr_list,
+                            variable='mesh',
+                            projection='2D')
+Fig_FP = plot_fracture_list(Fr_list,
+                            variable='footprint',
+                            projection='2D',
+                            fig=Fig_FP)
+# plot analytical footprint
+Fig_FP = plot_analytical_solution('M',
+                                  'footprint',
+                                  Solid,
+                                  Injection,
+                                  fluid_prop=Fluid,
+                                  time_srs=time_srs,
+                                  projection='2D',
+                                  fig=Fig_FP)
+
+
+# plot slice
+pnt_1=[-Fr_list[-1].mesh.Lx, 0]
+pnt_2=[Fr_list[-1].mesh.Lx, 0]
+Fig_WS = plot_fracture_list_slice(Fr_list,
+                                  variable='w',
+                                  projection='2D',
+                                  point1=pnt_1,
+                                  point2=pnt_2)
+#plot slice analytical
+Fig_WS = plot_analytical_solution_slice('M',
+                                        'w',
+                                        Solid,
+                                        Injection,
+                                        fluid_prop=Fluid,
+                                        fig=Fig_WS,
+                                        time_srs=time_srs,
+                                        plt_2D_image=False,
+                                        point1=pnt_1,
+                                        point2=pnt_2)
+
+#plotting in 3D
+Fig_Fr = plot_fracture_list(Fr_list,
+                            variable='mesh',
+                            projection='3D')
+Fig_Fr = plot_fracture_list(Fr_list,
+                            variable='width',
+                            projection='3D',
+                            fig=Fig_Fr)
+Fig_Fr = plot_fracture_list(Fr_list,
+                            variable='footprint',
+                            projection='3D',
+                            fig=Fig_Fr)
+
 plt.show()
 

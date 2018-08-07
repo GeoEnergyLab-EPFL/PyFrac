@@ -665,6 +665,35 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def calculate_fluid_flow_characteristics(w, C, sigma0, Mesh, EltCrack, InCrack, muPrime, density):
+    """
+    This function calculate fluid flux and velocity at the cell edges evaluated with the pressure calculated from the
+    elasticity relation for the given fracture width and the poisoille's Law.
+    """
+    dpdxLft, dpdxRgt, dpdyBtm, dpdyTop = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
+
+    # width at the cell edges evaluated by averaging. Zero if the edge is outside fracture
+    wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 0]]
+    wRgtEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 1]]
+    wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 2]]
+    wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 3]]
+
+    fluid_flux = np.vstack((-wLftEdge ** 3 * dpdxLft / muPrime, -wRgtEdge ** 3 * dpdxRgt / muPrime))
+    fluid_flux = np.vstack((fluid_flux, -wBtmEdge ** 3 * dpdyBtm / muPrime))
+    fluid_flux = np.vstack((fluid_flux, -wTopEdge ** 3 * dpdyTop / muPrime))
+
+    fluid_vel = fluid_flux
+    fluid_vel[0] /= wLftEdge
+    fluid_vel[1] /= wRgtEdge
+    fluid_vel[2] /= wBtmEdge
+    fluid_vel[3] /= wTopEdge
+
+    Rey_number = abs(4 / 3 * density * fluid_flux / muPrime * 12)
+
+    return fluid_flux, fluid_vel, Rey_number
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *args, relax=1.0, PicardPerNewton = 100,
                   perf_node=None):

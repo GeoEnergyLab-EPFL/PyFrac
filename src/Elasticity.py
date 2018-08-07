@@ -73,30 +73,29 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
                                  'L3': Mesh.Ly,
                                  'n1': Mesh.nx,
                                  'n3': Mesh.ny},
-            'Free surface parameters': {'flag': mat_prop.freeSurf,
-                                        'depth': mat_prop.FreeSurfDepth,
-                                        'angle': mat_prop.TI_PlaneAngle}
+            'Free_Surf_Param': {'FS_Flag': mat_prop.freeSurf,
+                                        'Frac_Depth': mat_prop.FreeSurfDepth}
+                                        # 'angle': mat_prop.TI_PlaneAngle}
             }
 
-    with open(sim_prop.TI_KernelExecPath + 'TI_parameters.json', 'w') as outfile:
+    print('Writing parameters to a file...')
+    with open(sim_prop.TI_KernelExecPath + 'stiffness_matrix.json', 'w') as outfile:
         json.dump(data, outfile, indent=3)
-    print('done dumping data...')
 
     # Read the elasticity matrix from the npy file
     print('running C++ process...')
-    out = subprocess.run(sim_prop.TI_KernelExecPath + 'TI_Kernel',
+    subprocess.run(sim_prop.TI_KernelExecPath + 'src',
                             cwd=sim_prop.TI_KernelExecPath)
-    print(type(out.stdout))
 
     print('Reading global TI elasticity matrix...')
     try:
-
-        file = open(sim_prop.TI_KernelExecPath + 'ElasticityMatrix.bin', "rb")
+        file = open(sim_prop.TI_KernelExecPath + 'StrainResult.bin', "rb")
         C = array('d')
         C.fromfile(file, pow(data['Mesh']['n1'] * data['Mesh']['n3'], 2))
         C = np.reshape(C,
-                               (data['Mesh']['n1'] * data['Mesh']['n3'],
-                                data['Mesh']['n1'] * data['Mesh']['n3']))
+                       (data['Mesh']['n1'] * data['Mesh']['n3'],
+                        data['Mesh']['n1'] * data['Mesh']['n3']))
+
     except FileNotFoundError:
         # if 'CMatrix' file is not found
         raise SystemExit('file not found')

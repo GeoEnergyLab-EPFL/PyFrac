@@ -27,12 +27,13 @@ reattempt_factor = 0.8                  # the factor by which time step is reduc
 # output
 plot_figure = False                     # if True, figure will be plotted after the given time period
 save_to_disk = True                     # if True, fracture will be saved after the given time period
-out_file_folder = "None"                # the address to save the output data
+output_folder = None                    # the address to save the output data
 plot_analytical = False                 # if True, analytical solution will also be plotted
 analytical_sol = None                   # the analytical solution to be ploted
 bck_color = None                        # the parameter according to which background is color coded (see class doc.)
 plot_eltType = False                    # plot the element type with color coded dots (channel, ribbon or tip)
 output_time_period=None                 # the time period after which the output is generated
+sim_name = None                         # name given to the simulation
 
 # type of solver
 mech_loading = False                    # if True, the mechanical loading solver will be used
@@ -49,5 +50,7 @@ front_advancing = 'semi-implicit'       # possible options include 'implicit', '
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree
 param_from_tip = False                  # set the space dependant tip parameters to be taken from ribbon cell.
 save_ReyNumb = False                    # if True, the Reynold's number at each edge will be saved.
+save_fluid_flux = False                 # if True, the fluid flux at each edge will be saved.
+save_fluid_vel = False                  # if True, the fluid vel at each edge will be saved.
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = './TI_Kernel'     # the folder containing the executable to calculate TI elasticty matrix.

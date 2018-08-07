@@ -9,7 +9,6 @@ See the LICENSE.TXT file for more details.
 
 # local imports
 import numpy as np
-from src.Utility import Neighbors
 import warnings
 from scipy.optimize import fsolve
 
@@ -162,7 +161,7 @@ def reconstruct_front(dist, EltChannel, mesh):
     alpha = np.asarray([])
 
     for i in range(0, len(EltRest)):
-        neighbors = np.asarray(Neighbors(EltRest[i], mesh.nx, mesh.ny))
+        neighbors = mesh.NeiElements[EltRest[i]]
 
         minx = min(dist[neighbors[0]], dist[neighbors[1]])
         miny = min(dist[neighbors[2]], dist[neighbors[3]])
@@ -257,7 +256,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     inTip[eltsTip] = True
     i = 0
     while i < len(eltsTip):  # to remove a special case encountered in sharp edges and rectangular cells
-        neighbors = np.asarray(Neighbors(eltsTip[i], mesh.nx, mesh.ny))
+        neighbors = mesh.NeiElements[eltsTip[i]]
         if inTip[neighbors[0]] and inTip[neighbors[3]] and inTip[neighbors[3] - 1]:
             conjoined = np.asarray([neighbors[0], neighbors[3], neighbors[3] - 1, eltsTip[i]])
             mindist = np.argmin(mesh.distCenter[conjoined])
@@ -276,7 +275,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
 
     # All the inner cells neighboring tip cells are added to ribbon cells
     for i in range(0, len(eltsTip)):
-        neighbors = np.asarray(Neighbors(eltsTip[i], mesh.nx, mesh.ny))
+        neighbors = mesh.NeiElements[eltsTip[i]]
 
         if levelSet[neighbors[0]] <= levelSet[neighbors[1]]:
             eltsRibbon = np.append(eltsRibbon, neighbors[0])

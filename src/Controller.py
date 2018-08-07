@@ -11,11 +11,13 @@ from src.Properties import *
 from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
 from src.TimeStepping import attempt_time_step
-
+from src.Visualization import plot_footprint_analytical
 
 import copy
 import matplotlib.pyplot as plt
 import dill
+import os
+
 
 class Controller:
     """
@@ -47,13 +49,15 @@ class Controller:
        self.sim_prop = Sim_prop
        self.load_prop = Load_prop
        self.C = C
-
        self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.stepsFromChckPnt = 0
        self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
-
        self.perfData = []
-       self.Figure = plt.figure()
+       self.lastSavedFile = 0
+       if Sim_prop.plotFigure:
+        self.Figure = plt.figure()
+       else:
+           self.Figure = None
 
        self.tmSrsIndex = 0
        # the next time where the solution is required to be evaluated
@@ -74,7 +78,28 @@ class Controller:
         This function runs the simulation according to the given parameters.
         """
 
-        f = open('log', 'w+')
+        # output initial fracture
+        if self.sim_prop.saveToDisk:
+            # save properties
+            if not os.path.exists(self.sim_prop.get_outputFolder()):
+                os.makedirs(self.sim_prop.get_outputFolder())
+
+            prop = (self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
+            with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
+                dill.dump(prop, output, -1)
+
+        if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
+            # save or plot fracture
+            self.output(self.fracture,
+                        self.sim_prop,
+                        self.solid_prop,
+                        self.injection_prop,
+                        self.fluid_prop)
+
+        if self.sim_prop.saveToDisk:
+            f = open(self.sim_prop.get_outputFolder() + 'log', 'w+')
+        else:
+            f = open('log', 'w+')
         from time import gmtime, strftime
         f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n\n')
         f.close()
@@ -192,44 +217,15 @@ class Controller:
         time steps. A system exit is raised after maximum allowed reattempts.
 
         Arguments:
-            Frac (Fracture object):                                 fracture object from the last time step
-            C (ndarray-float):                                      the elasticity matrix
-
-
-            TimeStep (float):                                       time step to be attempted
-
-            Loading_Properties (LoadingProperties object)
-
+            Frac (Fracture object):         -- fracture object from the last time step
+            C (ndarray-float):              -- the elasticity matrix
+            TimeStep (float):               -- time step to be attempted
+            PerfNode (IterationProperties)  -- An IterationProperties instance to store performance data
 
         Return:
-            int:   possible values:
-                                        0       -- not propagated
-                                        1       -- iteration successful
-                                        2       -- evaluated level set is not valid
-                                        3       -- front is not tracked correctly
-                                        4       -- evaluated tip volume is not valid
-                                        5       -- solution of elastohydrodynamic solver is not valid
-                                        6       -- did not converge after max iterations
-                                        7       -- tip inversion not successful
-                                        8       -- Ribbon element not found in the enclosure of a tip cell
-                                        9       -- Filling fraction not correct
-                                        10      -- Toughness iteration did not converge
-                                        11      -- projection could not be found
-                                        12      -- Reached end of grid
-
-            Fracture object:            fracture after advancing time step.
+                    exitstatus (int)        -- see documentation for possible values.
+                    Fr (Fracture)           -- fracture after advancing time step.
         """
-
-        # # checking if the time step is above the limit
-        # if TimeStep > self.sim_prop.timeStepLimit:
-        #     TimeStep = self.sim_prop.timeStepLimit
-        #
-        # self.sim_prop.timeStepLimit = max(TimeStep * self.sim_prop.tmStpFactLimit, self.sim_prop.timeStepLimit)
-        #
-        # # in case of fracture not propagating
-        # if TimeStep <= 0:
-        #     TimeStep = self.sim_prop.timeStepLimit*2
-        #     self.sim_prop.timeStepLimit *= 1.5
 
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
@@ -281,12 +277,12 @@ class Controller:
 
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
-                    self.output(Frac,
-                           Fr,
-                           self.sim_prop,
-                           self.solid_prop,
-                           self.injection_prop,
-                           self.fluid_prop)
+                    self.output(Fr,
+                                self.sim_prop,
+                                self.solid_prop,
+                                self.injection_prop,
+                                self.fluid_prop,
+                                Frac)
 
                 return status, Fr
             else:
@@ -302,8 +298,8 @@ class Controller:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def output(self, Fr_lstTmStp, Fr_advanced, simulation_parameters, material_properties, injection_parameters,
-               fluid_properties):
+    def output(self, Fr_advanced, simulation_parameters, material_properties, injection_parameters,
+               fluid_properties, Fr_lstTmStp=None):
         """
         This function plot the fracture footprint and/or save file to disk according to the given time period.
 
@@ -315,45 +311,49 @@ class Controller:
 
         Returns:
         """
-        # output time period exceeded after this time step
-        out_TP_exceeded = not simulation_parameters.outputTimePeriod is None and (Fr_lstTmStp.time //
-            simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod)
+
+        if Fr_lstTmStp is not None:
+            # output time period exceeded after this time step
+            out_TP_exceeded = not simulation_parameters.outputTimePeriod is None and (Fr_lstTmStp.time //
+                simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod)
+        else:
+            out_TP_exceeded = True
 
         # current time in the time series given at which the solution is to be evaluated
-        in_req_TS = (not simulation_parameters.get_solTimeSeries() is None) and \
+        in_req_TS = (simulation_parameters.get_solTimeSeries() is not None) and \
                     Fr_advanced.time in simulation_parameters.get_solTimeSeries()
 
         if out_TP_exceeded or in_req_TS:
             # plot fracture footprint
             if simulation_parameters.plotFigure:
+                plt.close()
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
-                # if ploting analytical solution enabled
-                if simulation_parameters.plotAnalytical:
-                    Q0 = injection_parameters.injectionRate[1, 0]  # injection rate at the start of injection
-                    if simulation_parameters.analyticalSol in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'): #radial fracture
-                        t, R, p, w, v, actvElts = HF_analytical_sol(simulation_parameters.analyticalSol,
-                                                                    Fr_lstTmStp.mesh,
-                                                                    material_properties.Eprime,
-                                                                    Q0,
-                                                                    muPrime=fluid_properties.muPrime,
-                                                                    Kprime=material_properties.Kprime[
-                                                                        Fr_lstTmStp.mesh.CenterElts],
-                                                                    Cprime=material_properties.Cprime[
-                                                                        Fr_lstTmStp.mesh.CenterElts],
-                                                                    t=Fr_advanced.time,
-                                                                    Kc_1=material_properties.K1c_perp,density=fluid_properties.density)
-                    elif simulation_parameters.analyticalSol == 'PKN':
-                        print("PKN is to be implemented.")
+                plot_prop = PlotProperties()
+                plot_prop.lineColor = 'k'
+                self.Figure = Fr_advanced.plot_fracture(variable='footprint',
+                                                        projection='2D',
+                                                        plot_prop=plot_prop)
 
-                    plt.close(self.Figure)
-                    self.Figure = Fr_advanced.plot_fracture(analytical=R,
-                                                mat_properties=material_properties,
-                                                sim_properties=simulation_parameters)
-                else:
-                    plt.close(self.Figure)
-                    self.Figure = Fr_advanced.plot_fracture(mat_properties=material_properties,
-                                              # fig=self.Figure,
-                                              sim_properties=simulation_parameters)
+                plot_prop.lineColor = 'r'
+                if simulation_parameters.plotAnalytical:
+                    self.Figure = plot_footprint_analytical(simulation_parameters.analyticalSol,
+                                                      self.solid_prop,
+                                                      self.injection_prop,
+                                                      self.fluid_prop,
+                                                      [Fr_advanced.time],
+                                                      h=None,
+                                                      samp_cell=None,
+                                                      fig=self.Figure,
+                                                      plot_prop=plot_prop)
+
+                plot_prop.lineWidth = 0.5
+                self.Figure = Fr_advanced.plot_fracture(variable='mesh',
+                                                        mat_properties=self.solid_prop,
+                                                        projection='2D',
+                                                        backGround_param=self.sim_prop.bckColor,
+                                                        fig=self.Figure,
+                                                        plot_prop=plot_prop)
+
                 plt.show(block=False)
                 plt.pause(0.5)
                 print("Done! ")
@@ -361,9 +361,10 @@ class Controller:
             # save fracture to disk
             if simulation_parameters.saveToDisk:
                 print("Saving solution at " + repr(Fr_advanced.time) + "...")
-                simulation_parameters.lastSavedFile += 1
-                Fr_advanced.SaveFracture(simulation_parameters.get_outFileAddress() + "fracture_"
-                                         + repr(simulation_parameters.lastSavedFile))
+                Fr_advanced.SaveFracture(simulation_parameters.get_outputFolder() +
+                                         simulation_parameters.get_simulation_name() +
+                                         '_file_' + repr(self.lastSavedFile))
+                self.lastSavedFile += 1
                 print("Done! ")
 
 

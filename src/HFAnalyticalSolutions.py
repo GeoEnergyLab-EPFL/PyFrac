@@ -656,3 +656,38 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
 
     return t, r, p, w, v, actvElts
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None,
+                      Kc_1=None, h=None, density=None, gamma=None):
+    if regime is 'M':
+        x_len = y_len = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
+    elif regime is 'K':
+        x_len = y_len = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
+    elif regime is 'Mt':
+        x_len = y_len = (2 * Q0 / Cprime) ** 0.5 * t ** 0.25 / np.pi
+    elif regime is 'Kt':
+        x_len = y_len = 2 ** 0.5 * Q0 ** 0.5 * t ** (1 / 4) / Cprime ** 0.5 / np.pi
+    elif regime is 'PKN':
+        x_len = (2 * (Q0 / 2) ** 3 * Eprime / np.pi ** 3 / muPrime * 12 / h ** 4) ** (1 / 5) * t ** (4 / 5)
+        y_len = h
+    elif regime is 'KGD_K':
+        x_len = 0.932388 * (Eprime * Q0 * t / Kprime) ** (2 / 3)
+        y_len = h
+    elif regime is 'MDR':
+        fo = 1.78
+        gammam = 0.758244
+        x_len = y_len = gammam * ((2 ** (14. / 87)) * (Eprime ** (10. / 87)) * (Q0 ** (9. / 29)) * (t ** (40 / 87))
+                    ) / ((3 ** (7. / 87)) * (fo ** (10. / 87)) * ((muPrime / 12) ** (7. / 87)) * density ** (1. / 29))
+    elif regime is 'E_K':
+        Kc_3 = Kprime / (32 / np.pi) ** 0.5
+        c = (Kc_1 / Kc_3) ** 2
+        x_len = (Q0 * t * 3 * c * Eprime / (8 * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
+        y_len = x_len / c
+    elif regime is 'E_E':
+        Kc_3 = Kprime / (32 / np.pi) ** 0.5
+        y_len = (Q0 * t * 3 * Eprime / (8 * gamma * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
+        x_len = y_len * gamma
+
+    return x_len, y_len

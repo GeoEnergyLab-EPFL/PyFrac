@@ -24,7 +24,6 @@ namespace hfp3d{
         Free_surf_flag = FS;
         Frac_depth=Depth;
 
-
     }
 
     void Mesh::get_node(int k, double res[2]) {

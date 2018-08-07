@@ -1,17 +1,17 @@
 #
 # This file is part of PyFrac.
 #
-# Created by Brice Lecampion on 03.04.17.
-# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.  All rights reserved.
-# See the LICENSE.TXT file for more details. 
+# Created by Haseeb Zia on 03.04.17.
+# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.
+#  All rights reserved. See the LICENSE.TXT file for more details.
 #
 
 import math
 import numpy as np
 import time
-
-
-from src.CartesianMesh import *
+import datetime
+import sys
+from matplotlib.colors import to_rgb
 
 
 class MaterialProperties:
@@ -391,11 +391,15 @@ class SimulationParameters:
                                                 -- implicit
             gravity (bool)              -- if True, the effect of gravity will be taken into account.
             collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.
-            tipParam_precise (bool)     -- if True, the space dependant parameters such as toughness and leak-off
+            paramFromTip (bool)     -- if True, the space dependant parameters such as toughness and leak-off
                                            coefficients will be taken from the tip by projections instead of taking them
                                            from the ribbon cell center. The numerical scheme as a result will become
                                            unstable due to the complexities in finding the projection
             saveReynNumb (boolean)      -- if True, the Reynold's number at each edge of the cells inside the fracture
+                                           will be saved.
+            saveFluidFlux (boolean)     -- if True, the fluid flux at each edge of the cells inside the fracture
+                                           will be saved.
+            saveFluidVel (boolean)     -- if True, the fluid velocity at each edge of the cells inside the fracture
                                            will be saved.
             TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic
                                            kernel or kernel with free surface.
@@ -408,6 +412,8 @@ class SimulationParameters:
             __dryCrack_mechLoading(bool)-- if True, the mechanical loading solver will be used.
             __viscousInjection (bool)   -- if True, the the solver will also take the fluid viscosity into account.
             __volumeControl (bool)      -- if True, the the volume control solver will be used.
+            __simName (str)             -- the name of the simulation.
+            __timeStamp (str)           -- the time at which the simulation properties was created.
 
             
     """
@@ -417,8 +423,10 @@ class SimulationParameters:
         The constructor of the SimulationParameters class. See documentation of the class.
 
         Arguments:
-
+            address (str)               -- the folder where the simulation parameters file is located. The file must be
+                                           name 'simul_param'
         """
+
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
             slash = "\\"
@@ -466,7 +474,8 @@ class SimulationParameters:
         self.plotFigure = simul_param.plot_figure
         self.plotAnalytical = simul_param.plot_analytical
         self.analyticalSol = simul_param.analytical_sol
-        self.set_outFileAddress(simul_param.out_file_folder)
+        self.set_simulation_name(simul_param.sim_name)
+        self.set_outputFolder(simul_param.output_folder)
         self.saveToDisk = simul_param.save_to_disk
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
@@ -488,6 +497,9 @@ class SimulationParameters:
         self.saveReynNumb = simul_param.save_ReyNumb
         self.gravity = simul_param.gravity
         self.TI_KernelExecPath = simul_param.TI_Kernel_exec_path
+        self.saveReynNumb = simul_param.save_ReyNumb
+        self.saveFluidFlux = simul_param.save_fluid_flux
+        self.saveFluidVel = simul_param.save_fluid_vel
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -530,7 +542,7 @@ class SimulationParameters:
     def get_dryCrack_mechLoading(self):
         return self.__dryCrack_mechLoading
 
-    def set_outFileAddress(self, out_file_folder):
+    def set_outputFolder(self, output_address):
         # check operating system to get appropriate slash in the address
 
         import sys
@@ -539,38 +551,27 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if out_file_folder is not 'None':
+        if output_address is not None:
             self.saveToDisk = True
-            if "\\" in out_file_folder:
+            if "\\" in output_address:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')
-            elif "/" in out_file_folder:
+            elif "/" in output_address:
                 if slash != "/":
                     raise SystemExit('linux style slash in the given address on windows system!')
 
-            if out_file_folder[-1] is slash:
-                out_file_folder = out_file_folder[:-1]
+            if output_address[-1] is slash:
+                output_address = output_address[:-1]
 
-            import os
-            if not os.path.exists(out_file_folder):
-                os.makedirs(out_file_folder)
-
-            self.__outFileAddress = out_file_folder + slash
-            self.lastSavedFile = 0
-
+            self.__outputAdress = output_address
+            self.__outputFolder = output_address + slash + self.get_simulation_name() + slash
         else:
-            out_file_folder = "." + slash + "_simulation_data_PyFrac"
-
-            import os
-            if not os.path.exists(out_file_folder):
-                os.makedirs(out_file_folder)
-
-            self.__outFileAddress = out_file_folder + slash
-            self.lastSavedFile = 0
+            self.__outputAdress = output_address
+            self.__outputFolder = "." + slash + "_simulation_data_PyFrac" + slash + self.get_simulation_name() + slash
 
 
-    def get_outFileAddress(self):
-        return self.__outFileAddress
+    def get_outputFolder(self):
+        return self.__outputFolder
 
     def set_solTimeSeries(self, sol_t_srs):
         if isinstance(sol_t_srs, np.ndarray):
@@ -584,12 +585,36 @@ class SimulationParameters:
     def get_solTimeSeries(self):
         return self.__solTimeSeries
 
+    def set_simulation_name(self, simul_name):
+        time_stmp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d__%H_%M_%S')
+        if simul_name is None:
+            self.__simName = 'simulation' + '__' + time_stmp
+        else:
+            if not isinstance(simul_name, str):
+                raise ValueError("The given simulation name is not a string")
+            else:
+                self.__simName = simul_name + '__' + time_stmp
+
+        self.__timeStamp = time.time()
+
+        try:
+            self.set_outputFolder(self.__outputAdress)
+        except AttributeError:
+            pass
+
+
+    def get_simulation_name(self):
+        return self.__simName
+
+    def get_timeStamp(self):
+        return self.__timeStamp
+
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 class IterationProperties:
     """
-    This class store performance data in the form of a tree
+    This class stores performance data in the form of a tree
     """
 
     def __init__(self, itr_type="not initialized"):
@@ -604,3 +629,69 @@ class IterationProperties:
         self.NumbOfElts = None
         self.subIterations = []
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class PlotProperties:
+    """
+    This class stores the parameters used for plotting of the post-processed results
+    """
+
+    def __init__(self, color_map=None, line_color=None, line_style='-', line_width=1., line_style_anal='--',
+                 line_color_anal='r', interpolation='none', alpha=0.8, line_width_anal=None, text_size=None,
+                 disp_precision=3, mesh_color='yellowgreen', mesh_edge_color='grey', mesh_label_color='black',
+                 graph_scaling='linear', color_maps=None, colors_list=None, plot_legend=True):
+
+        self.lineStyle = line_style
+        self.lineWidth = line_width
+        self.lineColor = line_color
+        self.colorMap = color_map
+        self.lineColorAnal = line_color_anal
+        self.lineStyleAnal = line_style_anal
+        self.lineWidthAnal = line_width_anal
+        self.textSize = text_size
+        self.dispPrecision = disp_precision
+        self.meshColor = mesh_color
+        self.meshEdgeColor = mesh_edge_color
+        self.meshLabelColor = mesh_label_color
+        self.interpolation = interpolation
+        self.alpha = alpha
+        self.graphScaling = graph_scaling
+        self.plotLegend = plot_legend
+        if color_maps is None:
+            self.colorMaps = ['cool', 'Wistia', 'summer', 'autumn']
+        else:
+            self.colorMaps = color_maps
+        if colors_list is None:
+            self.colorsList = ['black', 'firebrick', 'olivedrab', 'royalblue', 'deeppink', 'darkmagenta']
+        else:
+            self.colorsList = colors_list
+        if self.lineColor is None:
+            self.lineColor = to_rgb(self.colorsList[0])
+        else:
+            self.colorsList = [line_color]
+        if self.colorMap is None:
+            self.colorMap = self.colorMaps[0]
+        else:
+            self.colorMaps = [color_map]
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class LabelProperties:
+    """
+    This class stores the labels of a plot figure.
+    """
+
+    def __init__(self, x_label='meters', y_label='meters', z_label=None, fig_label=None, colorbar_label=None,
+                 latex_font=True, legend=None, scale_with=1., units=None):
+
+        self.xLabel = x_label
+        self.yLabel = y_label
+        self.zLabel = z_label
+        self.figLabel = fig_label
+        self.colorbarLabel = colorbar_label
+        self.latexFont = latex_font
+        self.unitConversion = scale_with
+        self.legend = legend
+        self.units = units

@@ -235,12 +235,12 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
     elif simParmtrs.get_tipAsymptote() == 'MK':
         ResFunc = TipAsym_MK_zrthOrder_Res
     elif simParmtrs.get_tipAsymptote() == 'K':
-        return w[frac.EltRibbon] ** 2 * (matProp.Eprime / Kprime) ** 2
+        return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
 
 
     # checking propagation condition
     stagnant = np.where(Kprime * (-frac.sgndDist[frac.EltRibbon])**0.5 / (
-                                                            matProp.Eprime * w[frac.EltRibbon]) > 1)[0]
+                                        Eprime * w[frac.EltRibbon]) > 1)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 
     a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
@@ -258,7 +258,7 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
 
         TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
                         Kprime[moving[i]],
-                        Eprime[i],
+                        Eprime[moving[i]],
                         frac.muPrime[frac.EltRibbon[moving[i]]],
                         matProp.Cprime[frac.EltRibbon[moving[i]]],
                         -frac.sgndDist[frac.EltRibbon[moving[i]]],

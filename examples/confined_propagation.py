@@ -69,12 +69,42 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-# plot results
-animate_simulation_results(simulProp.get_outFileAddress(),
-               time_period=1.0)
 
-plot_at = np.linspace(1, 27, 4)
-plot_footprint_3d(simulProp.get_outFileAddress(),
-                    plot_at_times =plot_at,
-                    txt_size=0.6)
+####################
+# plotting results #
+####################
+
+# loading simulation results
+Fr_list, properties = load_fractures(time_srs=np.linspace(1, 27, 10))
+
+# animate results
+animate_simulation_results(Fr_list,
+                           variable='footprint',
+                           projection='2D',
+                           backGround_param='sigma0',
+                           mat_properties=Solid)
+
+
+# loading simulation results
+Fr_list, properties = load_fractures(time_srs=np.linspace(1, 27, 4))
+
+#plotting in 3D
+Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
+                            variable='mesh',
+                            projection='3D',
+                            backGround_param='sigma0',
+                            mat_properties=Solid)
+
+Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
+                            variable='footprint',
+                            projection='3D',
+                            fig=Fig_Fr)
+
+plot_prop = PlotProperties(alpha=0.3)           #plotting width
+Fig_Fr = plot_fracture_list(Fr_list,
+                            variable='width',
+                            projection='3D',
+                            fig=Fig_Fr,
+                            plot_prop=plot_prop)
+
 plt.show()

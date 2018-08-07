@@ -156,120 +156,111 @@ namespace hfp3d {
         double xA[3], xB[3], xC[3], xD[3];
         xA[0] = -d1 / 2;
         xA[1] = d3 / 2;
-        xA[2] = -mesh.Frac_depth;
+        xA[2] = -mesh.Frac_depth ;
         xB[0] = d1 / 2;
         xB[1] = d3 / 2;
         xB[2] = -mesh.Frac_depth;
         xC[0] = d1 / 2;
-        xC[1] = -d3 / 2;
-        xC[2] = -mesh.Frac_depth;
+        xC[1] = - d3 / 2;;
+        xC[2] = -mesh.Frac_depth ;
         xD[0] = -d1 / 2;
-        xD[1] = -d3 / 2;
-        xD[2] = -mesh.Frac_depth;
+        xD[1] = - d3 / 2;
+        xD[2] = -mesh.Frac_depth ;
 
         double local_point[3];
 
         double relativeP[3];
         int n = nelts*nelts;
-        for (int i = 0; i<nelts; i++) {
+        if (mesh.Free_surf_flag) {
+            for (int i = 0; i < nelts; i++) {
 
-            double tmp_resi[2];
-            mesh.get_node(i,tmp_resi);
-            local_point[0] = tmp_resi[0];
-            local_point[1] = tmp_resi[1];
+                double tmp_resi[2];
+                mesh.get_node(i, tmp_resi);
+                local_point[0] = tmp_resi[0];
+                local_point[1] = tmp_resi[1];
+                local_point[2] = -mesh.Frac_depth;
+
+
+                for (int j = 0; j < nelts; j++) {
+                    double tmp_resj[2];
+                    mesh.get_node(j, tmp_resj);
+                    relativeP[0] = tmp_resj[0] - local_point[0];
+                    relativeP[1] = tmp_resj[1] - local_point[1];
+                    relativeP[2] = -mesh.Frac_depth;
+
+                    double StressRes[6] = {0, 0, 0, 0, 0, 0};
+                    Stress(2, xA, xB, xC, xD, relativeP, StressRes, mesh.Free_surf_flag);
+                    res[i][j] = -StressRes[2];
+                };
+            }
+        }
+        else{
+            vector<double> reference;
+            reference.resize(n);
+
+            double tmp_res1[2];
+            mesh.get_node(0, tmp_res1);
+            local_point[0] = tmp_res1[0];
+            local_point[1] = tmp_res1[1];
             local_point[2] = -mesh.Frac_depth;
 
+            for (int k = 0; k < nelts; k++) {
+                double tmp_res2[2];
+                mesh.get_node(k, tmp_res2);
 
-            for (int j = 0; j < nelts; j++) {
-                double tmp_resj[2];
-                mesh.get_node(j,tmp_resj);
-                relativeP[0] = tmp_resj[0] - local_point[0];
-                relativeP[1] = tmp_resj[1] - local_point[1];
+                relativeP[0] = tmp_res2[0] - local_point[0];
+                relativeP[1] = tmp_res2[1] - local_point[1];
                 relativeP[2] = -mesh.Frac_depth;
 
-                double StressRes[6] = {0,0,0,0,0,0};
-                Stress(2,xA,xB,xC,xD,relativeP,StressRes,mesh.Free_surf_flag);
-                res[i][j] = -StressRes[2];
-                  // cout<<res[i][j]<<endl;
 
-            };
-        }
-//        vector<double> reference;
-//        reference.resize(n);
+                //influence de j a k
+                double tmp_res[6]={0,0,0,0,0,0};
+                Stress(2, xA, xB, xC, xD, relativeP, tmp_res, mesh.Free_surf_flag);
+                int Result[2];
+                mesh.coor(k, Result);
+                reference[Result[0] * nelts + Result[1]] = tmp_res[2];
+            }
+
+            for (int j = 0; j < nelts / 2; j++) {
+                double tmp_res2[2];
+                mesh.get_node(j, tmp_res2);
+                local_point[0] = tmp_res2[0];
+                local_point[1] = tmp_res2[1];
+                local_point[2] = 0;
+
+
+                for (int k = j; k < nelts - j; k++) {
+                    double tmp_res3[2];
+                    mesh.get_node(k, tmp_res3);
+                    relativeP[0] = tmp_res3[0] - local_point[0];
+                    relativeP[1] = tmp_res3[1] - local_point[1];
+                    relativeP[2] = 0;
+                    int tmp_resk[2];
+                    int tmp_resj[2];
+                    mesh.coor(k,tmp_resk);
+                    mesh.coor(j,tmp_resj);
+                    int nn = abs(tmp_resk[0] - tmp_resj[0]) * nelts + abs(tmp_resk[1] - tmp_resj[1]);
+
+                    res[k][j] = -reference[nn];
+                    res[j][k] = res[k][j];
+
+                }
+
+            }
+
+
+                 //By the symmetry
+
+            for (int j = 0; j < nelts; j++) {
+
+                for (int k = 0; k < nelts - j; k++) {
+                    res[nelts - k - 1][nelts - j - 1] = res[k][j];
+                }
+            }
+    //
+            res[(nelts - 1) / 2][(nelts - 1) / 2] = res[0][0];
+            }
 //
-//        double tmp_res1[2];
-//        mesh.get_node(0, tmp_res1);
-//        local_point[0] = tmp_res1[0];
-//        local_point[1] = tmp_res1[1];
-//        local_point[2] = -mesh.Frac_depth;
-//
-//        for (int k = 0; k < nelts; k++) {
-//            double tmp_res2[2];
-//            mesh.get_node(k, tmp_res2);
-//
-//            relativeP[0] = tmp_res2[0] - local_point[0];
-//            relativeP[1] = tmp_res2[1] - local_point[1];
-//            relativeP[2] = -mesh.Frac_depth;
-//
-//
-//            //influence de j a k
-//            double tmp_res[6]={0,0,0,0,0,0};
-//            Stress(2, xA, xB, xC, xD, relativeP, tmp_res, mesh.Free_surf_flag);
-//            int Result[2];
-//            mesh.coor(k, Result);
-//            reference[Result[0] * nelts + Result[1]] = tmp_res[2];
-//        }
-//
-//        for (int j = 0; j < nelts; j++) {
-//            for (int k = 0; k < nelts; k++) {
-//                int tmp_resk[2];
-//                int tmp_resj[2];
-//                mesh.coor(k,tmp_resk);
-//                mesh.coor(j,tmp_resj);
-//                int nn = abs(tmp_resk[0] - tmp_resj[0]) * nelts + abs(tmp_resk[1] - tmp_resj[1]);
-////                int nn = j*nelts + k;
-//                res[k][j] = -reference[nn];
-//                res[j][k] = res[k][j];
-//            }
-//        }
-//        for (int j = 0; j < nelts / 2; j++) {
-//            double tmp_res2[2];
-//            mesh.get_node(j, tmp_res2);
-//            local_point[0] = tmp_res2[0];
-//            local_point[1] = tmp_res2[1];
-//            local_point[2] = 0;
-//
-//
-//            for (int k = j; k < nelts - j; k++) {
-//                double tmp_res3[2];
-//                mesh.get_node(k, tmp_res3);
-//                relativeP[0] = tmp_res3[0] - local_point[0];
-//                relativeP[1] = tmp_res3[1] - local_point[1];
-//                relativeP[2] = 0;
-//                int tmp_resk[2];
-//                int tmp_resj[2];
-//                mesh.coor(k,tmp_resk);
-//                mesh.coor(j,tmp_resj);
-//                int nn = abs(tmp_resk[0] - tmp_resj[0]) * nelts + abs(tmp_resk[1] - tmp_resj[1]);
-//
-//                res[k][j] = -reference[nn];
-//                res[j][k] = res[k][j];
-//
-//            }
-//
-//        }
-//
-//
-        // By the symmetry
-//
-//        for (int j = 0; j < nelts; j++) {
-//
-//            for (int k = 0; k < nelts - j; k++) {
-//                res[nelts - k - 1][nelts - j - 1] = res[k][j];
-//            }
-//        }
-////
-//        res[(nelts - 1) / 2][(nelts - 1) / 2] = res[0][0];
         return res;
     }
 
