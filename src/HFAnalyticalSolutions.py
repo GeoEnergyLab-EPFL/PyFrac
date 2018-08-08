@@ -683,8 +683,8 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
     elif regime is 'E_K':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         c = (Kc_1 / Kc_3) ** 2
-        x_len = (Q0 * t * 3 * c * Eprime / (8 * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
-        y_len = x_len / c
+        y_len = (Q0 * t * 3 * c * Eprime / (8 * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
+        x_len = y_len / c
     elif regime is 'E_E':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         y_len = (Q0 * t * 3 * Eprime / (8 * gamma * Kc_3 * np.pi ** 0.5)) ** (2 / 5)

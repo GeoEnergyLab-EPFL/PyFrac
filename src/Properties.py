@@ -108,12 +108,12 @@ class MaterialProperties:
         self.anisotropic_K1c = anisotropic_K1c
         if anisotropic_K1c:
             try:
-                self.K1c_perp = K1c_func(0)
+                self.Kc1 = K1c_func(0)
             except TypeError:
                 raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take one'
                                  ' argument, i.e. the angle and return a toughness value.')
         else:
-            self.K1c_perp = None
+            self.Kc1 = None
 
         if K1c_func is not None and not self.anisotropic_K1c:
             # the function should return toughness by taking x and y coordinates
@@ -500,6 +500,11 @@ class SimulationParameters:
         self.saveReynNumb = simul_param.save_ReyNumb
         self.saveFluidFlux = simul_param.save_fluid_flux
         self.saveFluidVel = simul_param.save_fluid_vel
+        self.explicitProjection = simul_param.explict_projection
+
+        # fracture geometry to calculate analytical solution for plotting
+        self.height = simul_param.height
+        self.aspectRatio = simul_param.aspect_ratio
 
 # ----------------------------------------------------------------------------------------------------------------------
 

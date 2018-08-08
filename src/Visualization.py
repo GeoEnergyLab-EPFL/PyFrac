@@ -41,7 +41,7 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
         plot_prop = PlotProperties()
 
     if labels is None:
-        labels = get_labels(variable, 'wm', projection)
+        labels = get_labels(variable, 'wole_mesh', projection)
 
     max_Lx = 0.
     largest_mesh = fracture_list[0].mesh
@@ -77,22 +77,23 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
                                                                     variable,
                                                                     edge=edge)
 
-        var_value = np.copy(var_val_list)
-        for i in range(len(var_value)):
-            var_value[i] /= labels.unitConversion
+        var_val_copy = np.copy(var_val_list)
+        for i in range(len(var_val_copy)):
+            var_val_copy[i] /= labels.unitConversion
 
 
-        var_value = np.copy(var_val_list)
+        var_value_tmp = np.copy(var_val_copy)
         vmin, vmax = np.inf, -np.inf
-        for i in var_value:
+        for i in var_value_tmp:
             i = np.delete(i, np.where(np.isinf(i))[0])
             i = np.delete(i, np.where(np.isnan(i))[0])
-            i_min, i_max = np.min(i), np.max(i)
+            if variable in ('p', 'pressure'):
+                non_zero = np.where(abs(i) > 0)[0]
+                i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
+            else:
+                i_min, i_max = np.min(i), np.max(i)
             vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
-        if plot_non_zero:
-            for i in var_val_list:
-                i[np.where(abs(i) < 1e-16)[0]] = np.nan
 
     if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
                     'front_dist_mean', 'd_mean'):
@@ -100,9 +101,14 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
         fig = plot_variable_vs_time(time_list, var_val_list, fig=fig, plot_prop=plot_prop, label=labels.legend)
         projection = '2D'
     elif variable not in ('mesh', 'footprint'):
+
+        if plot_non_zero:
+            for i in var_val_copy:
+                i[np.where(abs(i) < 1e-16)[0]] = np.nan
+
         if projection is '2D_image':
             for i in range(len(var_val_list)):
-                fig = plot_fracture_variable_as_image(var_val_list[i],
+                fig = plot_fracture_variable_as_image(var_val_copy[i],
                                                           fracture_list[i].mesh,
                                                           fig=fig,
                                                           plot_prop=plot_prop,
@@ -114,7 +120,7 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
             for i in range(len(var_val_list)):
                 labels.legend = 't= ' + to_precision(time_list[i], plot_prop.dispPrecision)
                 plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
-                fig = plot_fracture_variable_as_contours(var_val_list[i],
+                fig = plot_fracture_variable_as_contours(var_val_copy[i],
                                                          fracture_list[i].mesh,
                                                          fig=fig,
                                                          plot_prop=plot_prop,
@@ -124,7 +130,7 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
                                                          vmax=vmax)
         elif projection is '3D':
             for i in range(len(var_val_list)):
-                fig = plot_fracture_variable_as_surface(var_val_list[i],
+                fig = plot_fracture_variable_as_surface(var_val_copy[i],
                                                         fracture_list[i].mesh,
                                                         fig=fig,
                                                         plot_prop=plot_prop,
@@ -169,7 +175,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         plot_prop = PlotProperties()
 
     if labels is None:
-        labels = get_labels(variable, 'wm', projection)
+        labels = get_labels(variable, 'wole_mesh', projection)
 
     mesh_list = get_fracture_variable_whole_mesh(fracture_list,
                                                 'mesh',
@@ -179,19 +185,20 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                 variable,
                                                                edge=edge)
 
+    var_val_copy = np.copy(var_val_list)
+    for i in range(len(var_val_copy)):
+        var_val_copy[i] /= labels.unitConversion
 
-    for i in range(len(var_val_list)):
-        var_val_list[i] /= labels.unitConversion
-
-    var_value = np.copy(var_val_list)
+    var_value_tmp = np.copy(var_val_copy)
     vmin, vmax = np.inf, -np.inf
-    for i in var_value:
+    for i in var_value_tmp:
         i = np.delete(i, np.where(np.isinf(i))[0])
         i = np.delete(i, np.where(np.isnan(i))[0])
-        i_min, i_max = np.min(i), np.max(i)
         if variable in ('p', 'pressure'):
             non_zero = np.where(abs(i) > 0)[0]
             i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
+        else:
+            i_min, i_max = np.min(i), np.max(i)
         vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
     if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
@@ -205,7 +212,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                           plot_prop.dispPrecision)
             plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
             if '2D' in projection:
-                fig = plot_fracture_slice(var_val_list[i],
+                fig = plot_fracture_slice(var_val_copy[i],
                                 mesh_list[i],
                                 point1=point1,
                                 point2=point2,
@@ -216,7 +223,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                 plot_colorbar=False,
                                 labels=labels)
             else:
-                fig = plot_slice_3D(var_val_list[i],
+                fig = plot_slice_3D(var_val_copy[i],
                                     mesh_list[i],
                                     point1=point1,
                                     point2=point2,
@@ -636,7 +643,7 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
 
 def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
                              point1=None, point2=None, time_srs=None, length_srs=None, h=None, samp_cell=None,
-                             plot_prop=None, labels=None, plt_2D_image=True):
+                             plot_prop=None, labels=None, plt_2D_image=True, gamma=None):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -656,7 +663,8 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                                   time_srs=time_srs,
                                                                   length_srs=length_srs,
                                                                   h=h,
-                                                                  samp_cell=samp_cell)
+                                                                  samp_cell=samp_cell,
+                                                                  gamma=gamma)
 
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
@@ -729,7 +737,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
         plot_prop = PlotProperties()
 
     if labels is None:
-        labels = get_labels(variable, 'wm', '2D')
+        labels = get_labels(variable, 'whole_mesh', '2D')
 
     if point is None:
         point = [0., 0.]
@@ -887,8 +895,8 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_srs=None,
-                              h=None, samp_cell=None, fig=None, plot_prop=None, color='b'):
+def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_srs=None, h=None, samp_cell=None,
+                              fig=None, plot_prop=None, color='b', gamma=None):
 
     if fig is None:
         fig = plt.figure()
@@ -907,7 +915,8 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
                                          fluid_prop=fluid_prop,
                                          time_srs=time_srs,
                                          h=h,
-                                         samp_cell=samp_cell)
+                                         samp_cell=samp_cell,
+                                         gamma=gamma)
 
     for i in footprint_patches:
         ax.add_patch(i)
@@ -921,13 +930,13 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
 
 def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
                              projection='3D', time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
-                             labels=None, contours_at=None):
+                             labels=None, contours_at=None, gamma=None):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
     if labels is None:
-        labels = get_labels(variable, 'wm', projection)
+        labels = get_labels(variable, 'wole_mesh', projection)
 
     if variable is 'footprint':
         fig = plot_footprint_analytical(regime,
@@ -938,7 +947,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                         h=h,
                                         samp_cell=samp_cell,
                                         fig=fig,
-                                        plot_prop=plot_prop)
+                                        plot_prop=plot_prop,
+                                        gamma=gamma)
     else:
 
         if plot_prop is None:
@@ -953,7 +963,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                           time_srs=time_srs,
                                           length_srs=length_srs,
                                           h=h,
-                                          samp_cell=samp_cell)
+                                          samp_cell=samp_cell,
+                                          gamma=gamma)
 
         for i in range(len(analytical_list)):
             analytical_list[i] /= labels.unitConversion
@@ -1035,15 +1046,15 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
 
 def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_plot, fluid_prop=None, time_srs=None,
-                                         h=None, samp_cell=None):
+                                         h=None, samp_cell=None, gamma=None):
 
     if time_srs is None:
         raise ValueError("Time series is to be provided.")
 
-    if regime is 'E':
-        KIc_min = mat_prop.K1c_func(0)
+    if regime is 'E_K':
+        Kc_1 = mat_prop.Kc1
     else:
-        KIc_min = None
+        Kc_1 = None
 
     if regime is "MDR":
         density = fluid_prop.density
@@ -1062,9 +1073,10 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_plot, 
                                                           muPrime=fluid_prop.muPrime,
                                                           Kprime=mat_prop.Kprime[samp_cell],
                                                           Cprime=mat_prop.Cprime[samp_cell],
-                                                          Kc_1=KIc_min,
+                                                          Kc_1=Kc_1,
                                                           h=h,
-                                                          density=density)
+                                                          density=density,
+                                                          gamma=gamma)
 
 
         if regime in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):
@@ -1078,7 +1090,7 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_plot, 
                                       height=2 * y_len,
                                       edgecolor=plot_plot.lineColor,
                                       facecolor='none'))
-        elif regime is 'E':
+        elif regime in ('E_K', 'E_E'):
             return_pathces.append(mpatches.Ellipse(xy=(0., 0.),
                                    width=2 * x_len,
                                    height=2 * y_len,

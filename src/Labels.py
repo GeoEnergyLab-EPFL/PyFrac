@@ -125,6 +125,7 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
 
 supported_projections = ('2D', '2D_image', '2D_contours', '3D')
 err_msg_projection = 'Given projection is not supported. Select one of the following:\n' \
+                    '-- \'2D\'\n' \
                     '-- \'3D\'\n' \
                     '-- \'2D_image\'\n' \
                     '-- \'2D_contours\'\n'

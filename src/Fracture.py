@@ -145,12 +145,17 @@ class Fracture():
         # the parameter specifying the type of initialization
         init_type = init_param[0]
 
-        if init_type is 'PKN' or 'KGD' in init_type:
+        if init_type in ('PKN', 'KGD_K'):
             (init_type, given_type, given_value, h) = init_param
-        elif init_type in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'): # radial fracture
+            gamma = None
+        elif init_type in ('E_E', 'E_K'):
+            (init_type, given_type, given_value, gamma) = init_param
+            h = None
+        elif init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'): # radial fracture
             if len(init_param) == 3:
                 (init_type, given_type, given_value) = init_param
                 h = None
+                gamma = None
             else:
                 raise ValueError("Three parameters are to be provided for initialization type " + repr(init_type) +
                                 ". See Fracture class initialization function documentation.")
@@ -188,16 +193,18 @@ class Fracture():
                                                                       Cprime=solid.Cprime[self.mesh.CenterElts][0],
                                                                       length=length,
                                                                       t=time,
-                                                                      Kc_1=solid.K1c_perp,
-                                                                      h=h,density=fluid.density)
+                                                                      Kc_1=solid.Kc1,
+                                                                      h=h,
+                                                                      density=fluid.density,
+                                                                      gamma=gamma)
 
             if init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'):
                 # survey cells and their distances from the front
                 surv_cells, inner_cells = get_circular_survey_cells(self.mesh, self.initRad)
                 surv_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
                                                                             surv_cells, 1] ** 2) ** 0.5
-            elif init_type is 'E':
-                a = (solid.Kprime[self.mesh.CenterElts]/((32 / np.pi) ** 0.5) / solid.K1c_perp) ** 2 * self.initRad
+            elif init_type in ('E_E', 'E_K'):
+                a = self.initRad * gamma
                 surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, a, self.initRad)
                 surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
                 # get minimum distance from center of the survey cells
@@ -479,8 +486,6 @@ class Fracture():
 # -----------------------------------------------------------------------------------------------------------------------
 
     def plot_front(self, fig=None, plot_prop=None):
-
-        print("Plotting front...")
 
         if fig is None:
             fig = plt.figure()

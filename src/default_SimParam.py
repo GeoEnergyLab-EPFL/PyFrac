@@ -3,12 +3,12 @@
 # tolerances
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver
 toleranceEHL = 1.0e-5                   # tolerance for the elastohydrodynamic system solver
-tol_projection = 2.5e-3                  # tolerance for the toughness iteration
+tol_projection = 2.5e-3                 # tolerance for the toughness iteration
 
 # max iterations
 max_front_itrs = 30                     # maximum iterations for the fracture front
 max_solver_itrs = 80                    # maximum iterations for the elastohydrodynamic solver
-max_toughness_Itrs = 20                 # maximum toughness iterations
+max_toughness_Itrs = 10                 # maximum toughness iterations
 
 # time and time stepping
 tmStp_prefactor = 0.8                   # time step prefactor(pf) to calculate the time step (dt = pf*min(dx, dy)/max(v)
@@ -54,3 +54,8 @@ save_fluid_flux = False                 # if True, the fluid flux at each edge w
 save_fluid_vel = False                  # if True, the fluid vel at each edge will be saved.
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = './TI_Kernel'     # the folder containing the executable to calculate TI elasticty matrix.
+explict_projection = False              # if True, direction from last time step will be used to evaluate TI parameters
+
+# fracture geometry
+height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry
+aspect_ratio = None                     # fracture aspect ratio to calculate the analytical solution for TI case

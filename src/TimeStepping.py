@@ -459,7 +459,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
+        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
                                                                         # large float value. (algorithm requires inf)
 
         sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion(w_k,
@@ -499,7 +499,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                  front_region[ngtv_region])
 
         # do it only once if not anisotropic
-        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity):
+        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
+                or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
             break
 
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
@@ -616,7 +617,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5
     if stagnant.any() and not sim_properties.get_tipAsymptote() is 'U':
-        print("Stagnant front is only supported with universal tip asymptote. continuing...")
+        if sim_properties.verbosity > 1:
+            print("Stagnant front is only supported with universal tip asymptote. continuing...")
         stagnant = np.full((EltsTipNew.size, ), False, dtype=bool)
 
     if stagnant.any():
@@ -1042,7 +1044,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fracture object:            fracture after advancing time step.
     """
 
-    sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
+    sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
     # float value. (algorithm requires inf)
     sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
 
@@ -1162,7 +1164,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = Vel_k < 1e-14
     if stagnant.any() and not sim_properties.get_tipAsymptote() is 'U':
-        print("Stagnant front is only supported with universal tip asymptote. Continuing...")
+        if sim_properties.verbosity > 1:
+            print("Stagnant front is only supported with universal tip asymptote. Continuing...")
         stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if stagnant.any():
@@ -1372,7 +1375,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             Eprime_k = None
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        sgndDist_k = 1e10 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
+        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
         # large float value. (algorithm requires inf)
 
         sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion(Fr_kplus1.w,
@@ -1416,12 +1419,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
         # # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
         # # todo: not satisfied with why this happens. need re-examining
-        # if max(sgndDist_k) == 1e10:
+        # if max(sgndDist_k) == 1e50:
         #     exitstatus = 2
         #     return exitstatus, None
 
         # do it only once if not anisotropic
-        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity):
+        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
+                or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
             break
 
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)

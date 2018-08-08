@@ -3,8 +3,8 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri June 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
-See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights
+reserved. See the LICENSE.TXT file for more details.
 """
 
 
@@ -15,149 +15,11 @@ from src.PostProcess import *
 from src.anisotropy import *
 
 # creating mesh
-Mesh = CartesianMesh(6., 3., 41, 41)
+Mesh = CartesianMesh(6., 3., 51, 51)
 
 # solid properties
 
 Cij = np.zeros((6, 6), dtype=float)
-
-# isotropic
-# epsilon = 0.001
-# m = 10
-# lam = 5
-# Cij[0, 0] = (1 + 7 * epsilon) * (2 * m + lam)
-# Cij[5, 5] = (1 + 3 * epsilon) * m
-# Cij[0, 1] = Cij[0, 0] - 2 * Cij[5, 5]
-# Cij[0, 2] = (1 + 5 * epsilon) * lam
-# Cij[2, 2] = (1 + 9 * epsilon) * (2 * m + lam)
-# Cij[3, 3] = (1 + epsilon) * m
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# slate
-# Cij[0, 0] = 38
-# Cij[5, 5] = 0.5*(38-0.35)
-# Cij[0, 1] = 0.35
-# Cij[0, 2] = 0.98
-# Cij[2, 2] = 27
-# Cij[3, 3] = 15
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# calov
-# Cij[0, 0] = 20.50
-# Cij[5, 5] = 0.5*(20.50-8.16)
-# Cij[0, 1] = 8.16
-# Cij[0, 2] = 4.87
-# Cij[2, 2] = 13.11
-# Cij[3, 3] = 5.22
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# Opa
-# Cij[0, 0] = 57.65
-# Cij[5, 5] = 0.5*(57.65-54.61)
-# Cij[0, 1] = 54.61
-# Cij[0, 2] = 38.7
-# Cij[2, 2] = 28.8
-# Cij[3, 3] = 0.9
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# SiltMud
-# Cij[0, 0] = 50.7
-# Cij[0, 1] = 21.24
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 20.82
-# Cij[2, 2] = 36.15
-# Cij[3, 3] = 10.99
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# KimClay
-# Cij[0, 0] = 48.34
-# Cij[0, 1] = 14.41
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 16.31
-# Cij[2, 2] = 27.21
-# Cij[3, 3] = 7.8
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# shale
-# Cij[0, 0] = 46.674
-# Cij[5, 5] = 16.652
-# Cij[0, 1] = 13.369
-# Cij[0, 2] = 12.008
-# Cij[2, 2] = 23.803
-# Cij[3, 3] = 8.7
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# mica
-# Cij[0, 0] = 89.74
-# Cij[0, 1] = 22.22
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 23.51
-# Cij[2, 2] = 65.87
-# Cij[3, 3] = 24
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# # mica
-# Cij[0, 0] = 22.08
-# Cij[0, 1] = 8.36
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 1.25
-# Cij[2, 2] = 10.91
-# Cij[3, 3] = 3.71
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
 
 # modelgam05
 Cij[0, 0] = 47.5
@@ -174,73 +36,13 @@ Cij[1, 2] = Cij[0, 2]
 Cij[4, 4] = Cij[3, 3]
 Cij=Cij*1e9
 
-# # modelgam06
-# Cij[0, 0] = 53.9
-# Cij[0, 1] = 16.55
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 20.34
-# Cij[2, 2] = 28.86
-# Cij[3, 3] = 7.32
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# # Clay
-# Cij[0, 0] = 44.9
-# Cij[0, 1] = 21.7
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 18.1
-# Cij[2, 2] = 24.2
-# Cij[3, 3] = 3.7
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-# Calcamud
-# Cij[0, 0] = 90.4
-# Cij[0, 1] = 51.57
-# Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-# Cij[0, 2] = 39.85
-# Cij[2, 2] = 35.13
-# Cij[3, 3] = 6.49
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
-
-# Cij[0, 0] = 25
-# Cij[5, 5] = 7
-# Cij[0, 1] = 11
-# Cij[0, 2] = 10
-# Cij[2, 2] = 19
-# Cij[3, 3] = 5
-# Cij[1, 1] = Cij[0, 0]
-# Cij[1, 0] = Cij[0, 1]
-# Cij[2, 0] = Cij[0, 2]
-# Cij[2, 1] = Cij[0, 2]
-# Cij[1, 2] = Cij[0, 2]
-# Cij[4, 4] = Cij[3, 3]
-# Cij=Cij*1e9
-
 Eprime = TI_plain_strain_modulus(np.pi/2, Cij)# plain strain modulus
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
 def K1c_func(alpha):
 
-    K1c_3 = 2e6                    # fracture toughness along x-axis
-    gamma = 1.5
+    K1c_3 = 2e6                     # fracture toughness along x-axis
+    gamma = 2.0                     # aspect ratio
 
     Cij = np.zeros((6, 6), dtype=float)
     Cij[0, 0] = 47.5
@@ -278,49 +80,44 @@ Injection = InjectionProperties(Q0, Mesh)
 # fluid properties
 Fluid = FluidProperties(viscosity=1.1e-5)
 
-
-
+# aspect ratio of the elliptical fracture
+gamma = 2.0
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 200              # the time at which the simulation stops
-# simulProp.set_volumeControl(True)       # to set up the solver in volume control mode (inviscid fluid)
-# simulProp.set_tipAsymptote("K")     # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.outputTimePeriod = 1e-3      # save after every time step
-simulProp.tolFractFront = 2e-3          # increase tolerance for the anisotropic case
+simulProp.FinalTime = 75                # the time at which the simulation stops
+simulProp.set_tipAsymptote("K")         # the tip asymptote is evaluated with the toughness dominated assumption
+simulProp.outputTimePeriod = 1e-3       # save after every time step
+simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
 simulProp.maxToughnessItr = 5           # set maximum iterations to 5 for faster simulation
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
-simulProp.verbosity=2
-simulProp.set_outputFolder(".\\data\\TIelasticityuniformKModelgam06")
-simulProp.TI_KernelExecPath = 'C:\\Users\\Haseeb\\Documents\\GitHubPyFrac\\src_TI_Kernel\\'
-# simulProp.plotFigure = True
-# simulProp.set_volumeControl(True)
+simulProp.set_volumeControl(True)       # assume inviscid fluid
+simulProp.explicitProjection = True     # do not iterate on projection to find propagation direction
+simulProp.aspectRatio = gamma           # aspect ratio of the fracture
+simulProp.set_outputFolder(".\\data\\TI_elasticity_ellipse")
+simulProp.set_simulation_name('TI_ellasticy_benchmark')
+simulProp.TI_KernelExecPath = '..\\src_TI_Kernel\\' # path to the executable that calculates TI kernel
+simulProp.verbosity = 2
 
-# simulProp.plotFigure=True
-# simulProp.plotAnalytical=True
-# simulProp.analyticalSol='E'
-simulProp.frontAdvancing="implicit"
-simulProp.tmStpPrefactor=0.4
 
-# simulProp.set_outFileAddress(".\\Data\\ellipse") # the disk address where the files are saved
-initRad = 1.5
-surv_cells, inner_cells = get_circular_survey_cells(Mesh, initRad)
-surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, 3, 2)
+surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, 1.5, 0.75)
 surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
-# # get minimum distance from center of the survey cells
+# get minimum distance from center of the survey cells to the ellipse
 for i in range(0, surv_cells.size):
-     surv_dist[i] = Distance_ellipse(3, 2, Mesh.CenterCoor[surv_cells[i], 0],
-                                                    Mesh.CenterCoor[surv_cells[i], 1])
+     surv_dist[i] = Distance_ellipse(1.6,         # length of major axis
+                                     0.8,       # length of minor axis
+                                     Mesh.CenterCoor[surv_cells[i], 0],
+                                     Mesh.CenterCoor[surv_cells[i], 1])
 
 # initializing fracture
 t, b, p, winit, v, actvElts = HF_analytical_sol('E_E',
                                             Mesh,
                                             Eprime,
                                             Q0,
-                                            gamma=1.5,
+                                            gamma=2.0,
                                             Cij=Cij,
                                             Kprime=(32 / np.pi) ** 0.5 * K1c_func(np.pi / 2),
-                                            length=2)
+                                            length=0.8)
 
 C = load_TI_elasticity_matrix(Mesh, Solid, simulProp)
 
@@ -352,13 +149,22 @@ controller = Controller(Fr,
                         simulProp,
                         C=C)
 
-# run the simulation
-# controller.run()
+#run the simulation
+controller.run()
+
+
+####################
+# plotting results #
+####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\data\\TIelasticityuniformKModelgam06")      # load all fractures
-time_srs = get_fracture_variable_whole_mesh(Fr_list,                            # list of times
+time_srs = 2 ** np.linspace(np.log2(0.38), np.log2(74), 10)
+Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
+                                            simulation='TI_ellasticy_benchmark',
+                                            time_srs=time_srs)
+time_srs = get_fracture_variable_whole_mesh(Fr_list,
                                             variable='time')
+
 Fig_FP = plot_fracture_list(Fr_list,
                             variable='mesh',
                             projection='2D')
@@ -366,5 +172,76 @@ Fig_FP = plot_fracture_list(Fr_list,
                             variable='footprint',
                             projection='2D',
                             fig=Fig_FP)
+Fig_FP = plot_analytical_solution('E_E',
+                                  'footprint',
+                                  Solid,
+                                  Injection,
+                                  fluid_prop=Fluid,
+                                  fig=Fig_FP,
+                                  projection='2D',
+                                  time_srs=time_srs,
+                                  gamma=gamma)
+
+time_srs = 2 ** np.linspace(np.log2(0.38), np.log2(74), 5)
+Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
+                                            simulation='TI_ellasticy_benchmark',
+                                            time_srs=time_srs)
+time_srs = get_fracture_variable_whole_mesh(Fr_list,
+                                            variable='time')
+Fig_w_slice = plot_fracture_list_slice(Fr_list,
+                                       variable='width',
+                                       point1=[-Fr_list[-1].mesh.Lx, 0],
+                                       point2=[Fr_list[-1].mesh.Lx, 0])
+Fig_w_slice = plot_analytical_solution_slice('E_E',
+                                             variable='width',
+                                             mat_prop=Solid,
+                                             inj_prop=Injection,
+                                             fluid_prop=Fluid,
+                                             fig=Fig_w_slice,
+                                             point1=[-Fr_list[-1].mesh.Lx, 0],
+                                             point2=[Fr_list[-1].mesh.Lx, 0],
+                                             time_srs=time_srs,
+                                             plt_2D_image=False,
+                                             gamma=gamma)
+
+
+Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
+                                            simulation='TI_ellasticy_benchmark')
+time_srs = get_fracture_variable_whole_mesh(Fr_list,
+                                            variable='time')
+plot_prop = PlotProperties(line_style='.',
+                           graph_scaling='loglog')
+
+labels = get_labels('d_min', 'wm', '2D')
+labels.figLabel = 'Minor axis length'
+Fig_len_a = plot_fracture_list(Fr_list,
+                             variable='d_min',
+                             plot_prop=plot_prop,
+                             labels=labels)
+Fig_len_a = plot_analytical_solution('E_E',
+                                   'd_min',
+                                   Solid,
+                                   Injection,
+                                   fluid_prop=Fluid,
+                                   fig=Fig_len_a,
+                                   time_srs=time_srs,
+                                   gamma=gamma,
+                                   labels=labels)
+
+labels = get_labels('d_max', 'whole_mesh', '2D')
+labels.figLabel = 'Major axis length'
+Fig_len_b = plot_fracture_list(Fr_list,
+                             variable='d_max',
+                             plot_prop=plot_prop,
+                             labels=labels)
+Fig_len_b = plot_analytical_solution('E_E',
+                                   'd_max',
+                                   Solid,
+                                   Injection,
+                                   fluid_prop=Fluid,
+                                   fig=Fig_len_b,
+                                   time_srs=time_srs,
+                                   gamma=gamma,
+                                   labels=labels)
 
 plt.show()

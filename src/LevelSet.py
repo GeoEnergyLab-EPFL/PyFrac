@@ -71,10 +71,9 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         Alive = np.append(Alive, Smallest)
         NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
-    if (InitlevelSet[farAwayPstv] >= 1e10).any():
-        unevaluated = np.where(InitlevelSet[farAwayPstv] >= 1e10)[0]
-        print("cannot find level set for the cell(s) explicitly: " + repr(unevaluated) + "\n solving with root"
-                                                                                         " finding algorithm...")
+    if (InitlevelSet[farAwayPstv] >= 1e50).any():
+        unevaluated = np.where(InitlevelSet[farAwayPstv] >= 1e50)[0]
+
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayPstv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
@@ -87,7 +86,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
     # set to be returned.
     if len(farAwayNgtv)>0:
         RibbonInwardElts = np.setdiff1d(EltChannel, EltRibbon)
-        positive_levelSet = 1e10 * np.ones((mesh.NumberOfElts,), np.float64)
+        positive_levelSet = 1e50 * np.ones((mesh.NumberOfElts,), np.float64)
         positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
         Alive = np.copy(EltRibbon)
         NarrowBand = np.copy(EltRibbon)
@@ -118,7 +117,8 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
                         positive_levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
                     else:  # the angle is either 0 or 90 degrees
                         # vertical propagation direction.
-                        if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
+                        if NeigxMin > maxdist:
+                            # used to check if very large value (level set value for unevaluated elements)
                             positive_levelSet[neighbor] = NeigyMin + mesh.hy
                         # horizontal propagation direction.
                         if NeigyMin > maxdist:
@@ -131,10 +131,9 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 
 
-    if (abs(InitlevelSet[farAwayNgtv]) >= 1e10).any():
-        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) >= 1e10)[0]
-        print("cannot find level set for the cell(s) explicitly: " + repr(unevaluated) + "\n solving with root"
-                                                                                         " finding algorithm...")
+    if (abs(InitlevelSet[farAwayNgtv]) >= 1e50).any():
+        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) >= 1e50)[0]
+
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayNgtv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function

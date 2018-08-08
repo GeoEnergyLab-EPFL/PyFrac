@@ -71,7 +71,7 @@ class Controller:
        self.remeshings = 0
        self.TotalTimeSteps = 0
        self.failedTimeSteps = 0
-
+       self.frontAdvancing = Sim_prop.frontAdvancing
 
     def run(self):
         """
@@ -106,6 +106,7 @@ class Controller:
 
         # load elasticity matrix
         if self.C is None:
+            print("Making elasticity matrix...")
             if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
                 self.C = load_TI_elasticity_matrix(self.fracture.mesh,
                                                    self.solid_prop,
@@ -115,12 +116,17 @@ class Controller:
                                                           self.solid_prop.Eprime)
             print('Done!')
 
+        # perform first time step with implicit front advancing
+        if self.sim_prop.frontAdvancing == "semi-implicit":
+            self.sim_prop.frontAdvancing = "implicit"
+
         i = 0
         print("Starting time = " + repr(self.fracture.time))
         # starting time stepping loop
         while self.fracture.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
 
             TimeStep = self.get_time_step()
+
 
             if self.sim_prop.collectPerfData:
                 tmStp_perf = IterationProperties(itr_type="time step")
@@ -153,7 +159,7 @@ class Controller:
                     # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
                     self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_max
 
-            # remeshing required
+            # re-meshing required
             elif status == 12:
                 if self.sim_prop.enableRemeshing:
                     self.C *= 1/self.sim_prop.remeshFactor
@@ -193,6 +199,8 @@ class Controller:
                     f.close()
 
             i = i + 1
+            # set front advancing beck as set in simulation properties originally
+            self.sim_prop.frontAdvancing = self.frontAdvancing
 
         f = open('log', 'a')
         f.writelines("\n\nnumber of time steps = " + repr(self.TotalTimeSteps))
@@ -329,10 +337,6 @@ class Controller:
                 plt.close()
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
                 plot_prop = PlotProperties()
-                plot_prop.lineColor = 'k'
-                self.Figure = Fr_advanced.plot_fracture(variable='footprint',
-                                                        projection='2D',
-                                                        plot_prop=plot_prop)
 
                 plot_prop.lineColor = 'r'
                 if simulation_parameters.plotAnalytical:
@@ -341,16 +345,21 @@ class Controller:
                                                       self.injection_prop,
                                                       self.fluid_prop,
                                                       [Fr_advanced.time],
-                                                      h=None,
+                                                      h=simulation_parameters.height,
                                                       samp_cell=None,
-                                                      fig=self.Figure,
-                                                      plot_prop=plot_prop)
+                                                      plot_prop=plot_prop,
+                                                      gamma=simulation_parameters.aspectRatio)
 
-                plot_prop.lineWidth = 0.5
                 self.Figure = Fr_advanced.plot_fracture(variable='mesh',
                                                         mat_properties=self.solid_prop,
                                                         projection='2D',
                                                         backGround_param=self.sim_prop.bckColor,
+                                                        fig=self.Figure,
+                                                        plot_prop=plot_prop)
+
+                plot_prop.lineColor = 'k'
+                self.Figure = Fr_advanced.plot_fracture(variable='footprint',
+                                                        projection='2D',
                                                         fig=self.Figure,
                                                         plot_prop=plot_prop)
 

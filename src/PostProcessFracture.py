@@ -275,15 +275,20 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_HF_analytical_solution_whole_mesh(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None,
-                                              time_srs=None, length_srs=None, h=None, samp_cell=None):
+                                              time_srs=None, length_srs=None, h=None, samp_cell=None, gamma=None):
 
     if time_srs is None and length_srs is None:
         raise ValueError("Either time series or lengths series is to be provided.")
 
-    if regime is 'E':
-        Kc_1 = mat_prop.K1c_func(0)
+    if regime is 'E_K':
+        Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
+
+    if regime is 'E_E':
+        Cij = mat_prop.Cij
+    else:
+        Cij = None
 
     if regime is "MDR":
         density = fluid_prop.density
@@ -307,7 +312,8 @@ def get_HF_analytical_solution_whole_mesh(regime, variable, mat_prop, inj_prop, 
                                                         inj_prop,
                                                         fluid_prop=fluid_prop,
                                                         h=h,
-                                                        samp_cell=samp_cell)
+                                                        samp_cell=samp_cell,
+                                                        gamma=gamma)
 
         from src.CartesianMesh import CartesianMesh
         mesh = CartesianMesh(x_len, y_len, 151, 151)
@@ -331,30 +337,51 @@ def get_HF_analytical_solution_whole_mesh(regime, variable, mat_prop, inj_prop, 
         else:
             time = None
 
-        t, r, p, w, v, actvElts = HF_analytical_sol(regime,
-                                                    mesh,
-                                                    mat_prop.Eprime,
-                                                    inj_prop.injectionRate[1,0],
-                                                    muPrime,
-                                                    Kprime=mat_prop.Kprime[samp_cell],
-                                                    Cprime=mat_prop.Cprime[samp_cell],
-                                                    length=length,
-                                                    t=time,
-                                                    Kc_1=Kc_1,
-                                                    h=h,
-                                                    density=density)
+        if variable in ("time", "t", "radius", "r", "width", "w", "pressure", "p", "front velocity", "v"):
+            t, r, p, w, v, actvElts = HF_analytical_sol(regime,
+                                                        mesh,
+                                                        mat_prop.Eprime,
+                                                        inj_prop.injectionRate[1,0],
+                                                        muPrime,
+                                                        Kprime=mat_prop.Kprime[samp_cell],
+                                                        Cprime=mat_prop.Cprime[samp_cell],
+                                                        length=length,
+                                                        t=time,
+                                                        Kc_1=Kc_1,
+                                                        h=h,
+                                                        density=density,
+                                                        Cij=Cij,
+                                                        gamma=gamma)
 
-        if variable is "time" or variable is "t":
-            return_list.append(t)
-        elif variable in ("radius", "r", "front_dist_min", "d_min", \
-                          "front_dist_max", "d_max", "front_dist_mean", "d_mean"):
-            return_list.append(r)
-        elif variable is "width" or variable is "w":
-            return_list.append(w)
-        elif variable is "pressure" or variable is "p":
-            return_list.append(p)
-        elif variable is "front velocity" or variable is "v":
-            return_list.append(v)
+            if variable is "time" or variable is "t":
+                return_list.append(t)
+            elif variable is "radius" or variable is "r":
+                return_list.append(r)
+            elif variable is "width" or variable is "w":
+                return_list.append(w)
+            elif variable is "pressure" or variable is "p":
+                return_list.append(p)
+            elif variable is "front velocity" or variable is "v":
+                return_list.append(v)
+
+        elif variable in ("front_dist_min", "d_min", "front_dist_max", "d_max", "front_dist_mean", "d_mean"):
+            x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
+                                                                              time,
+                                                                              mat_prop,
+                                                                              inj_prop,
+                                                                              fluid_prop=fluid_prop,
+                                                                              h=h,
+                                                                              samp_cell=samp_cell,
+                                                                              gamma=gamma)
+            if variable is "front_dist_min" or variable is "d_min":
+                return_list.append(y_len)
+            elif variable is "front_dist_max" or variable is "d_max":
+                return_list.append(x_len)
+            elif variable is "front_dist_mean" or variable is "d_mean":
+                if regime in ("E_K", "E_E"):
+                    raise ValueError("Mean distance not available.")
+                else:
+                    return_list.append(x_len)
         else:
             raise ValueError("The variable type is not correct.")
 
@@ -363,8 +390,8 @@ def get_HF_analytical_solution_whole_mesh(regime, variable, mat_prop, inj_prop, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_prop, fluid_prop=None,
-                                              time_srs=None, length_srs=None, h=None, samp_cell=None):
+def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_prop, fluid_prop=None, time_srs=None,
+                                        length_srs=None, h=None, samp_cell=None, gamma=None):
 
 
     values_point = []
@@ -404,7 +431,8 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
                                                                     time_srs=time,
                                                                     length_srs=length,
                                                                     h=h,
-                                                                    samp_cell=samp_cell)
+                                                                    samp_cell=samp_cell,
+                                                                    gamma=gamma)
 
 
         if point == [0., 0.]:
@@ -418,11 +446,11 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_prop, inj_prop, fluid_prop=None,
-                                              h=None, samp_cell=None):
+                                              h=None, samp_cell=None, gamma=None):
 
 
-    if regime is 'E':
-        Kc_1 = mat_prop.K1c_func(0)
+    if regime is 'E_K':
+        Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
 
@@ -450,7 +478,8 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
                                                       Cprime=mat_prop.Cprime[samp_cell],
                                                       Kc_1=Kc_1,
                                                       h=h,
-                                                      density=density)
+                                                      density=density,
+                                                      gamma=gamma)
 
     return x_len, y_len
 
