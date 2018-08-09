@@ -645,7 +645,7 @@ class PlotProperties:
     def __init__(self, color_map=None, line_color=None, line_style='-', line_width=1., line_style_anal='--',
                  line_color_anal='r', interpolation='none', alpha=0.8, line_width_anal=None, text_size=None,
                  disp_precision=3, mesh_color='yellowgreen', mesh_edge_color='grey', mesh_label_color='black',
-                 graph_scaling='linear', color_maps=None, colors_list=None, plot_legend=True):
+                 graph_scaling='linear', color_maps=None, colors_list=None, plot_legend=True, plot_FP_time=True):
 
         self.lineStyle = line_style
         self.lineWidth = line_width
@@ -663,6 +663,7 @@ class PlotProperties:
         self.alpha = alpha
         self.graphScaling = graph_scaling
         self.plotLegend = plot_legend
+        self.PlotFP_Time = plot_FP_time
         if color_maps is None:
             self.colorMaps = ['cool', 'Wistia', 'summer', 'autumn']
         else:

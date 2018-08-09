@@ -162,8 +162,8 @@ time_srs = 2 ** np.linspace(np.log2(0.38), np.log2(74), 10)
 Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
                                             simulation='TI_ellasticy_benchmark',
                                             time_srs=time_srs)
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
 
 Fig_FP = plot_fracture_list(Fr_list,
                             variable='mesh',
@@ -186,8 +186,8 @@ time_srs = 2 ** np.linspace(np.log2(0.38), np.log2(74), 5)
 Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
                                             simulation='TI_ellasticy_benchmark',
                                             time_srs=time_srs)
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
 Fig_w_slice = plot_fracture_list_slice(Fr_list,
                                        variable='width',
                                        point1=[-Fr_list[-1].mesh.Lx, 0],
@@ -207,8 +207,8 @@ Fig_w_slice = plot_analytical_solution_slice('E_E',
 
 Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
                                             simulation='TI_ellasticy_benchmark')
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
 

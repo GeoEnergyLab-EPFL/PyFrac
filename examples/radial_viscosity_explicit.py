@@ -70,9 +70,9 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit")      # load all fractures
-time_srs = get_fracture_variable_whole_mesh(Fr_list,                            # list of times
-                                            variable='time')
+Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit")       # load all fractures
+time_srs = get_fracture_variable(Fr_list,                                        # list of times
+                                 variable='time')
 
 plot_prop = PlotProperties()
 
@@ -108,8 +108,8 @@ Fig_w = plot_analytical_solution_at_point('M',
 time_srs = np.linspace(1, 1e5, 5)
 Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit",
                                      time_srs=time_srs)
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
 
 # plot footprint
 Fig_FP = plot_fracture_list(Fr_list,

@@ -30,7 +30,15 @@ Fig_labels = {
     'd_max': 'Farthest Distance to Front',
     'front_dist_mean': 'Mean Distance to Front',
     'd_mean': 'Mean Distance to Front',
-    'mesh': 'mesh',
+    'V': 'Total Volume',
+    'volume': 'Total Volume',
+    'lk': 'Leaked off Volume',
+    'leaked off': 'Leaked off Volume',
+    'lkv': 'Total Leaked of Volume',
+    'leaked off volume': 'Total Leaked of Volume',
+    'ar': 'Aspect Ratio',
+    'aspect ratio': 'Aspect Ratio',
+    'mesh': 'Mesh',
     'footprint': 'Fracture Footprint'
 }
 labels = {
@@ -54,6 +62,14 @@ labels = {
     'd_max': '$R_{max}$',
     'front_dist_mean': '$R_{mean}$',
     'd_mean': '$R_{mean}$',
+    'V': 'total volume',
+    'volume': 'total volume',
+    'lk': 'leaked off volume',
+    'leaked off': 'leaked off volume',
+    'lkv': 'total leaked off volume',
+    'leaked off volume': 'total leaked off volume',
+    'ar': 'aspect ratio',
+    'aspect ratio': 'aspect ratio',
     'mesh': '',
     'footprint': ''
 }
@@ -79,6 +95,14 @@ units = {
     'd_max': ' ($meters$)',
     'front_dist_mean': ' ($meters$)',
     'd_mean': ' ($meters$)',
+    'V': ' $m^3$',
+    'volume': ' $m^3$',
+    'lk': ' $m^3$',
+    'leaked off': ' $m^3$',
+    'lkv': ' $m^3$',
+    'leaked off volume': ' $m^3$',
+    'ar': '',
+    'aspect ratio': '',
     'mesh': '',
     'footprint': ''
 }
@@ -104,12 +128,25 @@ unit_conversion = {
     'd_max': 1.,
     'front_dist_mean': 1.,
     'd_mean': 1.,
+    'V': 1.,
+    'volume': 1.,
+    'lk': 1.,
+    'leaked off': 1.,
+    'lkv': 1.,
+    'leaked off volume': 1.,
+    'ar': 1.,
+    'aspect ratio': 1.,
     'mesh': None,
-    'footprint': None
+    'footprint': None,
 }
-supported_variables = ('w','width','p','pressure', 'front velocity','v', 'Reynolds number', 'Rn', 'fluid flux',
-             'ff', 'fluid velocity', 'fv', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-             'front_dist_mean', 'd_mean', 'mesh', 'footprint', 't', 'time')
+supported_variables = ('w','width','p','pressure', 'front velocity','v',
+                       'Reynolds number', 'Rn', 'fluid flux', 'ff',
+                       'fluid velocity', 'fv', 'front_dist_min', 'd_min',
+                       'front_dist_max', 'd_max', 'front_dist_mean',
+                       'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
+                       'V', 'lk', 'leaked off', 'lkv', 'leaked off volume',
+                       'ar', 'aspect ratio')
+
 err_msg_variable = 'Given variable is not supported. Select one of the following:\n' \
                     '-- \'w\' or \'width\'\n' \
                     '-- \'p\' or \'pressure\'\n' \
@@ -121,7 +158,11 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'d_max\' or \'front_dist_max\'\n' \
                     '-- \'d_mean\' or \'front_dist_mean\'\n' \
                     '-- \'mesh\'\n' \
-                    '-- \'footprint\'\n'
+                    '-- \'footprint\'\n' \
+                    '-- \'V\' or \'volume\'\n' \
+                    '-- \'lk\' or \'leaked off\'\n' \
+                    '-- \'lkv\' or \'leaked off volume\'\n' \
+                    '-- \'ar\' or \'aspect ratio\'\n' \
 
 supported_projections = ('2D', '2D_image', '2D_contours', '3D')
 err_msg_projection = 'Given projection is not supported. Select one of the following:\n' \
@@ -132,6 +173,7 @@ err_msg_projection = 'Given projection is not supported. Select one of the follo
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
                     " enabled during the simulation. Check SimulationProperties class documentation."
+
 def get_labels(variable, location, projection):
 
     label_prop = LabelProperties()

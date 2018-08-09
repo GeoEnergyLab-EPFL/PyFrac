@@ -39,7 +39,7 @@ Q0 = 0.001  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.1e-5)
+Fluid = FluidProperties(viscosity=1.1e-4)
 
 # simulation properties
 simulProp = SimulationParameters()
@@ -87,13 +87,14 @@ controller.run()
 ####################
 
 # loading simulation results
-time_srs = 2 ** np.linspace(np.log2(1), np.log2(220), 8)
+time_srs = 2 ** np.linspace(np.log2(1), np.log2(104), 8)
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
-                                            simulation='anisotropic_toughness_benchmark',
-                                            time_srs=time_srs)
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+                                    simulation='anisotropic_toughness_benchmark',
+                                    time_srs=time_srs)
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
 
+# plotting footprint
 Fig_FP = plot_fracture_list(Fr_list,
                             variable='mesh',
                             projection='2D')
@@ -110,12 +111,15 @@ Fig_FP = plot_analytical_solution('E_K',
                                   projection='2D',
                                   time_srs=time_srs)
 
+# loading fractures
 time_srs = 2 ** np.linspace(np.log2(3), np.log2(150), 5)
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
                                             simulation='anisotropic_toughness_benchmark',
                                             time_srs=time_srs)
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
+
+#plotting width
 Fig_w_slice = plot_fracture_list_slice(Fr_list,
                                        variable='width',
                                        point1=[-Fr_list[-1].mesh.Lx, 0],
@@ -131,14 +135,15 @@ Fig_w_slice = plot_analytical_solution_slice('E_K',
                                              time_srs=time_srs,
                                              plt_2D_image=False)
 
-
+# loading all fractures
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
-                                            simulation='anisotropic_toughness_benchmark')
-time_srs = get_fracture_variable_whole_mesh(Fr_list,
-                                            variable='time')
+                                     simulation='anisotropic_toughness_benchmark')
+time_srs = get_fracture_variable(Fr_list,
+                                 variable='time')
+# making a plot properties object with desired linestyle and scaling
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
-
+# plotting minor axis length
 labels = get_labels('d_min', 'wm', '2D')
 labels.figLabel = 'Minor axis length'
 Fig_len_a = plot_fracture_list(Fr_list,
@@ -153,7 +158,7 @@ Fig_len_a = plot_analytical_solution('E_K',
                                    fig=Fig_len_a,
                                    time_srs=time_srs,
                                    labels=labels)
-
+# plotting major axis length
 labels = get_labels('d_max', 'whole_mesh', '2D')
 labels.figLabel = 'Major axis length'
 Fig_len_b = plot_fracture_list(Fr_list,
