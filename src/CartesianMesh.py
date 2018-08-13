@@ -380,6 +380,7 @@ class CartesianMesh:
         ax.add_patch(patch)
         art3d.pathpatch_2d_to_3d(patch)
 
+
     def identify_elements(self, elements, fig=None, plot_prop=None):
 
         if fig is None:
@@ -390,6 +391,7 @@ class CartesianMesh:
         if plot_prop is None:
             plot_prop = PlotProperties()
 
+        self.plot(fig=fig)
         # add rectangle for each cell
         patches = []
         for i in elements:

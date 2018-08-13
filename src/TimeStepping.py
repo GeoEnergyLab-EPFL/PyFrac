@@ -840,7 +840,50 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         else:
             PerfNode_linSolve = None
 
-        A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
+        if sim_properties.symmetric:
+
+            corr = corresponding_elements_in_symmetric(Fr_lstTmStp.mesh)
+            symmetric_elmnts = get_symetric_elements(Fr_lstTmStp.mesh, np.arange(Fr_lstTmStp.mesh.NumberOfElts))
+            EltChannel_sym = corr[Fr_lstTmStp.EltChannel]
+            EltChannel_sym = np.unique(EltChannel_sym)
+
+            EltTip_sym = corr[EltsTipNew]
+            EltTip_sym = np.unique(EltTip_sym)
+
+            all, elements, boundary_x, boundary_y = get_active_symmetric_elements(Fr_lstTmStp.mesh)
+
+            wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
+            wTip_sym_elts = all[EltTip_sym]
+            for i in range(len(EltTip_sym)):
+                if len(np.where(EltsTipNew == wTip_sym_elts[i])[0]) != 1:
+                    other_corr = get_symetric_elements(Fr_lstTmStp.mesh, [wTip_sym_elts[i]])
+                    for j in range(4):
+                        in_tip = np.where(EltsTipNew == other_corr[0][j])[0]
+                        if len(in_tip) > 0:
+                            wTip_sym[i] = wTip[in_tip]
+                            break
+                else:
+                    wTip_sym[i] = wTip[np.where(EltsTipNew == wTip_sym_elts[i])[0]]
+
+            dwTip = wTip - Fr_lstTmStp.w[EltsTipNew]
+            C_s = elasticity_matrix_symmetric(C, Fr_lstTmStp.mesh)
+            vol_weights = np.full((C_s.shape[0],), 4., dtype=np.float32)
+            vol_weights[len(elements): -1] = 2.
+            vol_weights[-1] = 1.
+
+            A, b = MakeEquationSystem_volumeControl_extendedFP_symmetric(Fr_lstTmStp.w,
+                                                           wTip_sym,
+                                                           EltChannel_sym,
+                                                           EltTip_sym,
+                                                           C_s,
+                                                           timeStep,
+                                                           Qin,
+                                                           Fr_lstTmStp.mesh.EltArea,
+                                                           vol_weights,
+                                                           all,
+                                                           dwTip)
+        else:
+            A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
                                                            wTip,
                                                            Fr_lstTmStp.EltChannel,
                                                            EltsTipNew,
@@ -859,9 +902,19 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         # regain original C (without filling fraction correction)
         C[np.ix_(EltsTipNew[partlyFilledTip], EltsTipNew[partlyFilledTip])] = C_EltTip
 
-        w = np.copy(Fr_lstTmStp.w)
-        w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
-        w[EltsTipNew] = wTip
+        if sim_properties.symmetric:
+            del_w = np.empty((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+            for i in range(len(sol) - 1):
+                del_w[symmetric_elmnts[all[EltChannel_sym[i]]]] = sol[i]
+            w = np.copy(Fr_lstTmStp.w)
+            w[Fr_lstTmStp.EltChannel] += del_w[Fr_lstTmStp.EltChannel]
+            for i in range(len(wTip_sym_elts)):
+                w[symmetric_elmnts[wTip_sym_elts[i]]] = wTip_sym[i]
+            # w[EltsTipNew] = wTip
+        else:
+            w = np.copy(Fr_lstTmStp.w)
+            w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+            w[EltsTipNew] = wTip
 
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), dtype=np.float64)
         p[EltCrack_k] = sol[-1]

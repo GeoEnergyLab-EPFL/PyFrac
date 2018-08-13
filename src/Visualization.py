@@ -73,7 +73,7 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
                 fig = i.plot_front_3D(fig=fig, plot_prop=plot_prop)
 
     else:
-        var_val_list, time_list = get_fracture_variable_whole_mesh(fracture_list,
+        var_val_list, time_list = get_fracture_variable(fracture_list,
                                                                     variable,
                                                                     edge=edge)
 
@@ -177,11 +177,11 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     if labels is None:
         labels = get_labels(variable, 'wole_mesh', projection)
 
-    mesh_list = get_fracture_variable_whole_mesh(fracture_list,
+    mesh_list = get_fracture_variable(fracture_list,
                                                 'mesh',
                                                 edge=edge,
                                                 return_time=False)
-    var_val_list, time_list = get_fracture_variable_whole_mesh(fracture_list,
+    var_val_list, time_list = get_fracture_variable(fracture_list,
                                                                 variable,
                                                                edge=edge)
 
@@ -654,7 +654,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
     if labels is None:
         labels = get_labels(variable, 'wm', '2D')
 
-    analytical_list, mesh = get_HF_analytical_solution_whole_mesh(regime,
+    analytical_list, mesh = get_HF_analytical_solution(regime,
                                                                   variable,
                                                                   mat_prop,
                                                                   inj_prop,
@@ -954,7 +954,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         if plot_prop is None:
             plot_prop = PlotProperties()
 
-        analytical_list, mesh = get_HF_analytical_solution_whole_mesh(regime,
+        analytical_list, mesh = get_HF_analytical_solution(regime,
                                           variable,
                                           mat_prop,
                                           inj_prop,

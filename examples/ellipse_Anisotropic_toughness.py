@@ -11,10 +11,10 @@ See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import *
+
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 60, 60)
+Mesh = CartesianMesh(8, 4, 40, 40)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -39,11 +39,11 @@ Q0 = 0.001  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.1e-4)
+Fluid = FluidProperties(viscosity=1.1e-5)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 220               # the time at which the simulation stops
+simulProp.FinalTime = 500               # the time at which the simulation stops
 simulProp.set_volumeControl(True)     # to set up the solver in volume control mode (inviscid fluid)
 simulProp.set_tipAsymptote('K')       # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.outputTimePeriod = 1e-10      # save after every time step
@@ -52,10 +52,11 @@ simulProp.remeshFactor = 1.5            # the factor by which the mesh will be c
 simulProp.set_outputFolder(".\\Data\\ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
 simulProp.verbosity = 2
-simulProp.plotFigure = True
+# simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = 'E_K'
 simulProp.explicitProjection = True
+simulProp.symmetric = True
 
 # initializing fracture
 minor_axis = 2.
@@ -79,7 +80,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+# controller.run()
 
 
 ####################
@@ -87,7 +88,7 @@ controller.run()
 ####################
 
 # loading simulation results
-time_srs = 2 ** np.linspace(np.log2(1), np.log2(104), 8)
+time_srs = 2 ** np.linspace(np.log2(1), np.log2(500), 8)
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
                                     simulation='anisotropic_toughness_benchmark',
                                     time_srs=time_srs)
@@ -112,7 +113,7 @@ Fig_FP = plot_analytical_solution('E_K',
                                   time_srs=time_srs)
 
 # loading fractures
-time_srs = 2 ** np.linspace(np.log2(3), np.log2(150), 5)
+time_srs = 2 ** np.linspace(np.log2(3), np.log2(500), 5)
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
                                             simulation='anisotropic_toughness_benchmark',
                                             time_srs=time_srs)

@@ -10,40 +10,56 @@ reserved. See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import *
+
 
 # creating mesh
-Mesh = CartesianMesh(0.3, 0.3, 41, 41)
+Mesh = CartesianMesh(30, 30, 41, 61)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 0.5e6                          # fracture toughness
+K_Ic = 1e6                          # fracture toughness
+
+def K_Ic_func(x, y):
+
+    if abs(y) > 24:
+        return 1.25e6
+    else:
+        return 1e6
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           K_Ic)
+                           K_Ic,
+                           K1c_func=K_Ic_func)
 
 # injection parameters
 Q0 = 0.001  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.1e-3)
+Fluid = FluidProperties(viscosity=1.1e-5)
 
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e5               # the time at which the simulation stops
-simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
+# simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
+simulProp.tolFractFront = 0.005
+simulProp.set_volumeControl(True)
+simulProp.frontAdvancing = 'implicit'   # to set explicit front tracking
 simulProp.outputTimePeriod = 1e-4       # to save after every time step
-simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
-simulProp.set_outputFolder(".\\Data\\M_radial_explicit") # the disk address where the files are saved
+# simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
+simulProp.set_outputFolder(".\\Data\\K_radial_symmetric") # the disk address where the files are saved
+simulProp.plotFigure = True
+simulProp.plotAnalytical = True
+simulProp.analyticalSol = "K"
+simulProp.symmetric = True
+simulProp.bckColor = "K1c"
+simulProp.verbosity = 2
 
 # initializing fracture
-initRad = 0.1
-init_param = ("M", "length", initRad)
+initRad = 21
+init_param = ("K", "length", initRad)
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -70,7 +86,7 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit")       # load all fractures
+Fr_list, properties = load_fractures(address=".\\Data\\K_radial_symmetric")       # load all fractures
 time_srs = get_fracture_variable(Fr_list,                                        # list of times
                                  variable='time')
 
@@ -83,7 +99,7 @@ Fig_R = plot_fracture_list(Fr_list,
                            variable='d_mean',
                            plot_prop=plot_prop)
 # plot analytical radius
-Fig_R = plot_analytical_solution('M',
+Fig_R = plot_analytical_solution('K',
                                  'd_mean',
                                  Solid,
                                  Injection,
@@ -96,7 +112,7 @@ Fig_w = plot_fracture_list_at_point(Fr_list,
                                     variable='w',
                                     plot_prop=plot_prop)
 # plot analytical width at center
-Fig_w = plot_analytical_solution_at_point('M',
+Fig_w = plot_analytical_solution_at_point('K',
                                           'w',
                                           Solid,
                                           Injection,
@@ -105,8 +121,8 @@ Fig_w = plot_analytical_solution_at_point('M',
                                           fig=Fig_w)
 
 
-time_srs = np.linspace(1, 1e5, 5)
-Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit",
+time_srs = np.linspace(1, 1e5, 10)
+Fr_list, properties = load_fractures(address=".\\Data\\K_radial_symmetric",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
@@ -120,7 +136,7 @@ Fig_FP = plot_fracture_list(Fr_list,
                             projection='2D',
                             fig=Fig_FP)
 # plot analytical footprint
-Fig_FP = plot_analytical_solution('M',
+Fig_FP = plot_analytical_solution('K',
                                   'footprint',
                                   Solid,
                                   Injection,
@@ -139,7 +155,7 @@ Fig_WS = plot_fracture_list_slice(Fr_list,
                                   point1=pnt_1,
                                   point2=pnt_2)
 #plot slice analytical
-Fig_WS = plot_analytical_solution_slice('M',
+Fig_WS = plot_analytical_solution_slice('K',
                                         'w',
                                         Solid,
                                         Injection,
@@ -150,18 +166,18 @@ Fig_WS = plot_analytical_solution_slice('M',
                                         point1=pnt_1,
                                         point2=pnt_2)
 
-#plotting in 3D
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='3D')
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='width',
-                            projection='3D',
-                            fig=Fig_Fr)
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
+# #plotting in 3D
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='mesh',
+#                             projection='3D')
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='width',
+#                             projection='3D',
+#                             fig=Fig_Fr)
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='footprint',
+#                             projection='3D',
+#                             fig=Fig_Fr)
 
 plt.show()
 

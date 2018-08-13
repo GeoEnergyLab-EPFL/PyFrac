@@ -501,6 +501,7 @@ class SimulationParameters:
         self.saveFluidFlux = simul_param.save_fluid_flux
         self.saveFluidVel = simul_param.save_fluid_vel
         self.explicitProjection = simul_param.explict_projection
+        self.symmetric = simul_param.symmetric
 
         # fracture geometry to calculate analytical solution for plotting
         self.height = simul_param.height

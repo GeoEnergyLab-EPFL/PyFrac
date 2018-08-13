@@ -485,7 +485,7 @@ class Fracture():
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def plot_front(self, fig=None, plot_prop=None, plt_time=True):
+    def plot_front(self, fig=None, plot_prop=None):
 
         if fig is None:
             fig = plt.figure()
@@ -507,7 +507,7 @@ class Fracture():
                         plot_prop.lineStyle,
                         color=plot_prop.lineColor)
 
-        if plot_prop.plotFP_Time:
+        if plot_prop.PlotFP_Time:
             tipVrtxCoord = self.mesh.VertexCoor[self.mesh.Connectivity[self.EltTip, self.ZeroVertex]]
             r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + self.l)
             x_coor = self.mesh.CenterCoor[self.EltTip[r_indx], 0] + 0.1 * self.mesh.hx

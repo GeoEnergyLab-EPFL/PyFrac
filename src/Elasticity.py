@@ -147,3 +147,5 @@ def load_elasticity_matrix(Mesh, EPrime):
             pickle.dump(Elast, output, -1)
         print("Done!")
         return C
+
+
