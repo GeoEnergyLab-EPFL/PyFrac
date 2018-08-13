@@ -250,6 +250,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         ndarray-float:  width of the fracture after injection with the same footprint
     
     """
+    if sim_properties.symmetric:
+        C = C[0]
     C_EltTip = C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)]  # keeping the tip element entries to restore current
     #  tip correction. This is done to avoid copying the full elasticity matrix.
 
@@ -820,37 +822,45 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                          FillFrac_k, EltCrack_k, InCrack_k, LkOff, wTip, timeStep, Qin, perfNode):
 
     if sim_properties.get_volumeControl():
-        C_EltTip = C[np.ix_(EltsTipNew[partlyFilledTip],
-                            EltsTipNew[partlyFilledTip])]  # keeping the tip element entries to restore current
-        #  tip correction. This is done to avoid copying the full elasticity matrix.
-
-        # filling fraction correction for element in the tip region
-        FillF = FillFrac_k[partlyFilledTip]
-        for e in range(0, len(partlyFilledTip)):
-            r = FillF[e] - .25
-            if r < 0.1:
-                r = 0.1
-            ac = (1 - r) / r
-            C[EltsTipNew[partlyFilledTip[e]], EltsTipNew[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
-
-        if perfNode is not None:
-            perfNode.iterations += 1
-            PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
-            PerfNode_linSolve.subIterations = []
-        else:
-            PerfNode_linSolve = None
 
         if sim_properties.symmetric:
 
+            if perfNode is not None:
+                perfNode.iterations += 1
+                PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
+                PerfNode_linSolve.subIterations = []
+            else:
+                PerfNode_linSolve = None
+
             corr = corresponding_elements_in_symmetric(Fr_lstTmStp.mesh)
             symmetric_elmnts = get_symetric_elements(Fr_lstTmStp.mesh, np.arange(Fr_lstTmStp.mesh.NumberOfElts))
+            all, elements, boundary_x, boundary_y = get_active_symmetric_elements(Fr_lstTmStp.mesh)
+
             EltChannel_sym = corr[Fr_lstTmStp.EltChannel]
             EltChannel_sym = np.unique(EltChannel_sym)
 
             EltTip_sym = corr[EltsTipNew]
             EltTip_sym = np.unique(EltTip_sym)
 
-            all, elements, boundary_x, boundary_y = get_active_symmetric_elements(Fr_lstTmStp.mesh)
+            FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), )
+            FillF_mesh[EltsTipNew] = FillFrac_k
+            FillF_sym = FillF_mesh[all[EltTip_sym]]
+            partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
+
+            C_EltTip = C[1][np.ix_(EltTip_sym[partlyFilledTip_sym],
+                                EltTip_sym[partlyFilledTip_sym])]  # keeping the tip element entries to restore current
+            #  tip correction. This is done to avoid copying the full elasticity matrix.
+
+            # filling fraction correction for element in the tip region
+            FillF = FillF_sym[partlyFilledTip_sym]
+            for e in range(len(partlyFilledTip_sym)):
+                r = FillF[e] - .25
+                if r < 0.1:
+                    r = 0.1
+                ac = (1 - r) / r
+                self_inflence = C[0][np.arange(Fr_lstTmStp.mesh.NumberOfElts), np.arange(Fr_lstTmStp.mesh.NumberOfElts)]
+                TipToTip = self_inflence[all[EltTip_sym[partlyFilledTip_sym[e]]]]
+                C[1][EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += ac * np.pi / 4. * TipToTip
 
             wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
             wTip_sym_elts = all[EltTip_sym]
@@ -866,8 +876,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     wTip_sym[i] = wTip[np.where(EltsTipNew == wTip_sym_elts[i])[0]]
 
             dwTip = wTip - Fr_lstTmStp.w[EltsTipNew]
-            C_s = elasticity_matrix_symmetric(C, Fr_lstTmStp.mesh)
-            vol_weights = np.full((C_s.shape[0],), 4., dtype=np.float32)
+            vol_weights = np.full((C[1].shape[0],), 4., dtype=np.float32)
             vol_weights[len(elements): -1] = 2.
             vol_weights[-1] = 1.
 
@@ -875,14 +884,35 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            wTip_sym,
                                                            EltChannel_sym,
                                                            EltTip_sym,
-                                                           C_s,
+                                                           C[1],
                                                            timeStep,
                                                            Qin,
                                                            Fr_lstTmStp.mesh.EltArea,
                                                            vol_weights,
                                                            all,
                                                            dwTip)
+
+            C[1][np.ix_(EltTip_sym[partlyFilledTip_sym],  EltTip_sym[partlyFilledTip_sym])] = C_EltTip
         else:
+            C_EltTip = C[np.ix_(EltsTipNew[partlyFilledTip],
+                                EltsTipNew[partlyFilledTip])]  # keeping the tip element entries to restore current
+            #  tip correction. This is done to avoid copying the full elasticity matrix.
+
+            # filling fraction correction for element in the tip region
+            FillF = FillFrac_k[partlyFilledTip]
+            for e in range(0, len(partlyFilledTip)):
+                r = FillF[e] - .25
+                if r < 0.1:
+                    r = 0.1
+                ac = (1 - r) / r
+                C[EltsTipNew[partlyFilledTip[e]], EltsTipNew[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
+
+            if perfNode is not None:
+                perfNode.iterations += 1
+                PerfNode_linSolve = IterationProperties(itr_type="Linear solve iterations")
+                PerfNode_linSolve.subIterations = []
+            else:
+                PerfNode_linSolve = None
             A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
                                                            wTip,
                                                            Fr_lstTmStp.EltChannel,
@@ -892,6 +922,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            Qin,
                                                            Fr_lstTmStp.mesh.EltArea)
 
+            C[np.ix_(EltsTipNew[partlyFilledTip], EltsTipNew[partlyFilledTip])] = C_EltTip
 
         sol = np.linalg.solve(A, b)
 
@@ -900,7 +931,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             perfNode.subIterations[2].append(PerfNode_linSolve)
 
         # regain original C (without filling fraction correction)
-        C[np.ix_(EltsTipNew[partlyFilledTip], EltsTipNew[partlyFilledTip])] = C_EltTip
+
 
         if sim_properties.symmetric:
             del_w = np.empty((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)

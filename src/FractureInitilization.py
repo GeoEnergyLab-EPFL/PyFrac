@@ -221,7 +221,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
     if not w is None and not p is None:
         return w_calculated, p_calculated
 
-    C_EltTip = C[np.ix_(EltTip, EltTip)]  # keeping the tip element entries to restore current tip correction. This is
+    C_EltTip = C[0][np.ix_(EltTip, EltTip)]  # keeping the tip element entries to restore current tip correction. This is
                                           # done to avoid copying the full elasticity matrix.
 
     # filling fraction correction for element in the tip region
@@ -230,20 +230,20 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         if r < 0.1:
             r = 0.1
         ac = (1 - r) / r
-        C[EltTip[e], EltTip[e]] = C[EltTip[e], EltTip[e]] * (1. + ac * np.pi / 4.)
+        C[0][EltTip[e], EltTip[e]] = C[0][EltTip[e], EltTip[e]] * (1. + ac * np.pi / 4.)
 
 
 
     if w is None and not p is None:
-        w_calculated[EltCrack] = np.linalg.solve(C[np.ix_(EltCrack, EltCrack)], p_calculated[EltCrack])
+        w_calculated[EltCrack] = np.linalg.solve(C[0][np.ix_(EltCrack, EltCrack)], p_calculated[EltCrack])
 
     if not w is None and p is None:
-        p_calculated[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack])
+        p_calculated[EltCrack] = np.dot(C[0][np.ix_(EltCrack, EltCrack)], w[EltCrack])
 
     # calculate the width and pressure by considering fracture as a static fracture.
     if w is None and p is None:
 
-        C_Crack = C[np.ix_(EltCrack, EltCrack)]
+        C_Crack = C[0][np.ix_(EltCrack, EltCrack)]
 
         A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
         A = np.vstack((A, np.ones((1, EltCrack.size + 1), dtype=np.float64)))
@@ -258,7 +258,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         p_calculated[EltCrack] = sol[EltCrack.size]
 
     # recover original C (without filling fraction correction)
-    C[np.ix_(EltTip, EltTip)] = C_EltTip
+    C[0][np.ix_(EltTip, EltTip)] = C_EltTip
 
     return w_calculated, p_calculated
 

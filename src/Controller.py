@@ -113,7 +113,8 @@ class Controller:
                                                    self.sim_prop)
             else:
                 self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
-                                                          self.solid_prop.Eprime)
+                                                          self.solid_prop.Eprime,
+                                                          self.sim_prop.symmetric)
             print('Done!')
 
         # perform first time step with implicit front advancing
@@ -162,7 +163,11 @@ class Controller:
             # re-meshing required
             elif status == 12:
                 if self.sim_prop.enableRemeshing:
-                    self.C *= 1/self.sim_prop.remeshFactor
+                    if self.sim_prop.symmetric:
+                        self.C = (self.C[0] * 1 / self.sim_prop.remeshFactor,
+                                  self.C[1] * 1 / self.sim_prop.remeshFactor)
+                    else:
+                        self.C *= 1 / self.sim_prop.remeshFactor
                     print("Remeshing...")
                     self.fracture = self.fracture.remesh(self.sim_prop.remeshFactor,
                                    self.C,

@@ -30,8 +30,8 @@ def K_Ic_func(x, y):
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           K_Ic,
-                           K1c_func=K_Ic_func)
+                           K_Ic,)
+                           # K1c_func=K_Ic_func)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -46,11 +46,11 @@ simulProp.FinalTime = 1e5               # the time at which the simulation stops
 # simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.tolFractFront = 0.005
 simulProp.set_volumeControl(True)
-simulProp.frontAdvancing = 'implicit'   # to set explicit front tracking
+# simulProp.frontAdvancing = 'implicit'   # to set explicit front tracking
 simulProp.outputTimePeriod = 1e-4       # to save after every time step
 # simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
 simulProp.set_outputFolder(".\\Data\\K_radial_symmetric") # the disk address where the files are saved
-simulProp.plotFigure = True
+# simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = "K"
 simulProp.symmetric = True
