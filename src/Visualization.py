@@ -96,7 +96,7 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
 
 
     if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-                    'front_dist_mean', 'd_mean'):
+                    'front_dist_mean', 'd_mean', 'efficiency', 'ef'):
         labels.xLabel = 'time'
         fig = plot_variable_vs_time(time_list, var_val_list, fig=fig, plot_prop=plot_prop, label=labels.legend)
         projection = '2D'

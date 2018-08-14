@@ -12,6 +12,7 @@ import math
 from src.Utility import radius_level_set
 from src.LevelSet import SolveFMM, reconstruct_front, UpdateLists
 from src.VolIntegral import Integral_over_cell
+from src.Symmetry import *
 
 
 def get_circular_survey_cells(mesh, initRad):
@@ -179,7 +180,8 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None):
+def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False,
+                       Eprime=None):
     """
     This function calculates the width and pressure depending on the provided data. If only volume is provided, the
     width is calculated as a static fracture with the given footprint. Else, the pressure or width are calculated
@@ -221,44 +223,107 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
     if not w is None and not p is None:
         return w_calculated, p_calculated
 
-    C_EltTip = C[0][np.ix_(EltTip, EltTip)]  # keeping the tip element entries to restore current tip correction. This is
-                                          # done to avoid copying the full elasticity matrix.
+    if symmetric:
+        corr = corresponding_elements_in_symmetric(mesh)
+        symmetric_elmnts = get_symetric_elements(mesh, np.arange(mesh.NumberOfElts))
+        all, elements, boundary_x, boundary_y = get_active_symmetric_elements(mesh)
 
-    # filling fraction correction for element in the tip region
-    for e in range(0, len(EltTip)):
-        r = FillFrac[e] - .25
-        if r < 0.1:
-            r = 0.1
-        ac = (1 - r) / r
-        C[0][EltTip[e], EltTip[e]] = C[0][EltTip[e], EltTip[e]] * (1. + ac * np.pi / 4.)
+        CrackElts_sym = corr[EltCrack]
+        CrackElts_sym = np.unique(CrackElts_sym)
+
+        EltTip_sym = corr[EltTip]
+        EltTip_sym = np.unique(EltTip_sym)
+
+        FillF_mesh = np.zeros((mesh.NumberOfElts,), )
+        FillF_mesh[EltTip] = FillFrac
+        FillF_sym = FillF_mesh[all[EltTip_sym]]
+        self_infl = self_influence(mesh, Eprime)
+
+        C_EltTip = C[np.ix_(EltTip_sym, EltTip_sym)]  # keeping the tip element entries to restore current tip correction. This is
+        # done to avoid copying the full elasticity matrix.
+
+        # filling fraction correction for element in the tip region
+        for e in range(len(EltTip_sym)):
+            r = FillF_sym[e] - .25
+            if r < 0.1:
+                r = 0.1
+            ac = (1 - r) / r
+            C[EltTip_sym[e], EltTip_sym[e]] += ac * np.pi / 4. * self_infl
+
+        if w is None and not p is None:
+            w_sym_EltCrack = np.linalg.solve(C[np.ix_(CrackElts_sym, CrackElts_sym)],
+                                             p_calculated[all[CrackElts_sym]])
+            for i in range(len(w_sym_EltCrack)):
+                w_calculated[symmetric_elmnts[all[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
+
+        if w is not None and p is None:
+            p_sym_EltCrack = np.dot(C[np.ix_(CrackElts_sym, CrackElts_sym)], w[all[CrackElts_sym]])
+            for i in range(len(p_sym_EltCrack)):
+                p_calculated[symmetric_elmnts[all[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
+
+        # calculate the width and pressure by considering fracture as a static fracture.
+        if w is None and p is None:
+            C_Crack = C[np.ix_(CrackElts_sym, CrackElts_sym)]
+
+            vol_weights = np.full((C.shape[0],), 4., dtype=np.float32)
+            vol_weights[len(elements): -1] = 2.
+            vol_weights[-1] = 1.
+
+            A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
+            weights = vol_weights[CrackElts_sym]
+            weights = np.concatenate((weights, np.array([0.0])))
+            A = np.vstack((A, weights))
+
+            b = np.zeros((len(EltCrack) + 1,), dtype=np.float64)
+            b[-1] = volume / mesh.EltArea
+
+            sol = np.linalg.solve(A, b)
+
+            w_calculated[EltCrack] = sol[np.arange(EltCrack.size)]
+            p_calculated[EltCrack] = sol[EltCrack.size]
+
+        # recover original C (without filling fraction correction)
+        C[np.ix_(EltTip_sym, EltTip_sym)] = C_EltTip
+
+    else:
+        C_EltTip = C[np.ix_(EltTip, EltTip)]  # keeping the tip element entries to restore current tip correction. This is
+                                              # done to avoid copying the full elasticity matrix.
+
+        # filling fraction correction for element in the tip region
+        for e in range(0, len(EltTip)):
+            r = FillFrac[e] - .25
+            if r < 0.1:
+                r = 0.1
+            ac = (1 - r) / r
+            C[EltTip[e], EltTip[e]] = C[EltTip[e], EltTip[e]] * (1. + ac * np.pi / 4.)
 
 
 
-    if w is None and not p is None:
-        w_calculated[EltCrack] = np.linalg.solve(C[0][np.ix_(EltCrack, EltCrack)], p_calculated[EltCrack])
+        if w is None and not p is None:
+            w_calculated[EltCrack] = np.linalg.solve(C[0][np.ix_(EltCrack, EltCrack)], p_calculated[EltCrack])
 
-    if not w is None and p is None:
-        p_calculated[EltCrack] = np.dot(C[0][np.ix_(EltCrack, EltCrack)], w[EltCrack])
+        if not w is None and p is None:
+            p_calculated[EltCrack] = np.dot(C[0][np.ix_(EltCrack, EltCrack)], w[EltCrack])
 
-    # calculate the width and pressure by considering fracture as a static fracture.
-    if w is None and p is None:
+        # calculate the width and pressure by considering fracture as a static fracture.
+        if w is None and p is None:
 
-        C_Crack = C[0][np.ix_(EltCrack, EltCrack)]
+            C_Crack = C[np.ix_(EltCrack, EltCrack)]
 
-        A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
-        A = np.vstack((A, np.ones((1, EltCrack.size + 1), dtype=np.float64)))
-        A[-1, -1] = 0
+            A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
+            A = np.vstack((A, np.ones((1, EltCrack.size + 1), dtype=np.float64)))
+            A[-1, -1] = 0
 
-        b = np.zeros((len(EltCrack)+1, ), dtype=np.float64)
-        b[-1] = volume / mesh.EltArea
+            b = np.zeros((len(EltCrack)+1, ), dtype=np.float64)
+            b[-1] = volume / mesh.EltArea
 
-        sol = np.linalg.solve(A, b)
+            sol = np.linalg.solve(A, b)
 
-        w_calculated[EltCrack] = sol[np.arange(EltCrack.size)]
-        p_calculated[EltCrack] = sol[EltCrack.size]
+            w_calculated[EltCrack] = sol[np.arange(EltCrack.size)]
+            p_calculated[EltCrack] = sol[EltCrack.size]
 
-    # recover original C (without filling fraction correction)
-    C[0][np.ix_(EltTip, EltTip)] = C_EltTip
+        # recover original C (without filling fraction correction)
+        C[np.ix_(EltTip, EltTip)] = C_EltTip
 
     return w_calculated, p_calculated
 

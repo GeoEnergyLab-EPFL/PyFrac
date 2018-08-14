@@ -250,8 +250,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         ndarray-float:  width of the fracture after injection with the same footprint
     
     """
-    if sim_properties.symmetric:
-        C = C[0]
+
     C_EltTip = C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)]  # keeping the tip element entries to restore current
     #  tip correction. This is done to avoid copying the full elasticity matrix.
 
@@ -847,7 +846,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             FillF_sym = FillF_mesh[all[EltTip_sym]]
             partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
 
-            C_EltTip = C[1][np.ix_(EltTip_sym[partlyFilledTip_sym],
+            C_EltTip = C[np.ix_(EltTip_sym[partlyFilledTip_sym],
                                 EltTip_sym[partlyFilledTip_sym])]  # keeping the tip element entries to restore current
             #  tip correction. This is done to avoid copying the full elasticity matrix.
 
@@ -858,9 +857,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 if r < 0.1:
                     r = 0.1
                 ac = (1 - r) / r
-                self_inflence = C[0][np.arange(Fr_lstTmStp.mesh.NumberOfElts), np.arange(Fr_lstTmStp.mesh.NumberOfElts)]
-                TipToTip = self_inflence[all[EltTip_sym[partlyFilledTip_sym[e]]]]
-                C[1][EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += ac * np.pi / 4. * TipToTip
+                self_infl = self_influence(Fr_lstTmStp.mesh, mat_properties.Eprime)
+                C[EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += \
+                                                                    ac * np.pi / 4. * self_infl
 
             wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
             wTip_sym_elts = all[EltTip_sym]
@@ -876,7 +875,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     wTip_sym[i] = wTip[np.where(EltsTipNew == wTip_sym_elts[i])[0]]
 
             dwTip = wTip - Fr_lstTmStp.w[EltsTipNew]
-            vol_weights = np.full((C[1].shape[0],), 4., dtype=np.float32)
+            vol_weights = np.full((C.shape[0],), 4., dtype=np.float32)
             vol_weights[len(elements): -1] = 2.
             vol_weights[-1] = 1.
 
@@ -884,7 +883,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            wTip_sym,
                                                            EltChannel_sym,
                                                            EltTip_sym,
-                                                           C[1],
+                                                           C,
                                                            timeStep,
                                                            Qin,
                                                            Fr_lstTmStp.mesh.EltArea,
@@ -892,7 +891,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            all,
                                                            dwTip)
 
-            C[1][np.ix_(EltTip_sym[partlyFilledTip_sym],  EltTip_sym[partlyFilledTip_sym])] = C_EltTip
+            C[np.ix_(EltTip_sym[partlyFilledTip_sym],  EltTip_sym[partlyFilledTip_sym])] = C_EltTip
         else:
             C_EltTip = C[np.ix_(EltsTipNew[partlyFilledTip],
                                 EltsTipNew[partlyFilledTip])]  # keeping the tip element entries to restore current
@@ -922,6 +921,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            Qin,
                                                            Fr_lstTmStp.mesh.EltArea)
 
+            # regain original C (without filling fraction correction)
             C[np.ix_(EltsTipNew[partlyFilledTip], EltsTipNew[partlyFilledTip])] = C_EltTip
 
         sol = np.linalg.solve(A, b)
@@ -930,18 +930,14 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             PerfNode_linSolve.CpuTime_end = time.time()
             perfNode.subIterations[2].append(PerfNode_linSolve)
 
-        # regain original C (without filling fraction correction)
-
-
         if sim_properties.symmetric:
-            del_w = np.empty((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+            del_w = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             for i in range(len(sol) - 1):
                 del_w[symmetric_elmnts[all[EltChannel_sym[i]]]] = sol[i]
             w = np.copy(Fr_lstTmStp.w)
             w[Fr_lstTmStp.EltChannel] += del_w[Fr_lstTmStp.EltChannel]
             for i in range(len(wTip_sym_elts)):
                 w[symmetric_elmnts[wTip_sym_elts[i]]] = wTip_sym[i]
-            # w[EltsTipNew] = wTip
         else:
             w = np.copy(Fr_lstTmStp.w)
             w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]

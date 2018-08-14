@@ -12,9 +12,8 @@ import json
 import subprocess
 import pickle
 from array import array
-from src.Symmetry import elasticity_matrix_symmetric
 
-def load_isotropic_elasticity_matrix(Mesh, Ep, symmetric=False):
+def load_isotropic_elasticity_matrix(Mesh, Ep):
     """
     Evaluate the elasticity matrix for the whole mesh.
     Arguments:
@@ -39,11 +38,6 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, symmetric=False):
             np.square(a + x) + np.square(b - y)
         ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
             np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
-
-    if symmetric:
-        # self_influence = C[np.arange(Mesh.NumberOfElts), np.arange(Mesh.NumberOfElts)]
-        C_s = elasticity_matrix_symmetric(C, Mesh)
-        return C, C_s
 
     return C
 

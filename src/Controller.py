@@ -12,6 +12,7 @@ from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
 from src.TimeStepping import attempt_time_step
 from src.Visualization import plot_footprint_analytical
+from src.Symmetry import load_isotropic_elasticity_matrix_symmetric
 
 import copy
 import matplotlib.pyplot as plt
@@ -107,19 +108,25 @@ class Controller:
         # load elasticity matrix
         if self.C is None:
             print("Making elasticity matrix...")
-            if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
-                self.C = load_TI_elasticity_matrix(self.fracture.mesh,
-                                                   self.solid_prop,
-                                                   self.sim_prop)
+            if self.sim_prop.symmetric:
+                if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
+                    raise ValueError("Symmetric fracture for TI material is not yet supported")
+                else:
+                    self.C = load_isotropic_elasticity_matrix_symmetric(self.fracture.mesh,
+                                                                        self.solid_prop.Eprime)
             else:
-                self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
-                                                          self.solid_prop.Eprime,
-                                                          self.sim_prop.symmetric)
+                if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
+                    self.C = load_TI_elasticity_matrix(self.fracture.mesh,
+                                                       self.solid_prop,
+                                                       self.sim_prop)
+                else:
+                    self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
+                                                              self.solid_prop.Eprime)
             print('Done!')
 
         # perform first time step with implicit front advancing
-        if self.sim_prop.frontAdvancing == "semi-implicit":
-            self.sim_prop.frontAdvancing = "implicit"
+        # if self.sim_prop.frontAdvancing == "semi-implicit":
+        #     self.sim_prop.frontAdvancing = "implicit"
 
         i = 0
         print("Starting time = " + repr(self.fracture.time))
@@ -163,18 +170,14 @@ class Controller:
             # re-meshing required
             elif status == 12:
                 if self.sim_prop.enableRemeshing:
-                    if self.sim_prop.symmetric:
-                        self.C = (self.C[0] * 1 / self.sim_prop.remeshFactor,
-                                  self.C[1] * 1 / self.sim_prop.remeshFactor)
-                    else:
-                        self.C *= 1 / self.sim_prop.remeshFactor
+                    self.C *= 1 / self.sim_prop.remeshFactor
                     print("Remeshing...")
                     self.fracture = self.fracture.remesh(self.sim_prop.remeshFactor,
-                                   self.C,
-                                   self.solid_prop,
-                                   self.fluid_prop,
-                                   self.injection_prop,
-                                   self.sim_prop)
+                                    self.C,
+                                    self.solid_prop,
+                                    self.fluid_prop,
+                                    self.injection_prop,
+                                    self.sim_prop)
                     self.remeshings += 1
                     print("Done!")
 

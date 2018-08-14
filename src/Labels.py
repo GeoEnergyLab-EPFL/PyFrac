@@ -38,6 +38,8 @@ Fig_labels = {
     'leaked off volume': 'Total Leaked of Volume',
     'ar': 'Aspect Ratio',
     'aspect ratio': 'Aspect Ratio',
+    'efficiency': 'Fracture Efficiency',
+    'ef': 'Fracture Efficiency',
     'mesh': 'Mesh',
     'footprint': 'Fracture Footprint'
 }
@@ -70,6 +72,8 @@ labels = {
     'leaked off volume': 'total leaked off volume',
     'ar': 'aspect ratio',
     'aspect ratio': 'aspect ratio',
+    'efficiency': 'fracture efficiency',
+    'ef': 'fracture efficiency',
     'mesh': '',
     'footprint': ''
 }
@@ -103,6 +107,8 @@ units = {
     'leaked off volume': ' $m^3$',
     'ar': '',
     'aspect ratio': '',
+    'efficiency': '',
+    'ef': '',
     'mesh': '',
     'footprint': ''
 }
@@ -136,8 +142,10 @@ unit_conversion = {
     'leaked off volume': 1.,
     'ar': 1.,
     'aspect ratio': 1.,
+    'efficiency': 100.,
+    'ef': 100.,
     'mesh': None,
-    'footprint': None,
+    'footprint': None
 }
 supported_variables = ('w','width','p','pressure', 'front velocity','v',
                        'Reynolds number', 'Rn', 'fluid flux', 'ff',
@@ -145,7 +153,7 @@ supported_variables = ('w','width','p','pressure', 'front velocity','v',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leaked off', 'lkv', 'leaked off volume',
-                       'ar', 'aspect ratio')
+                       'ar', 'aspect ratio', 'efficiency', 'ef')
 
 err_msg_variable = 'Given variable is not supported. Select one of the following:\n' \
                     '-- \'w\' or \'width\'\n' \

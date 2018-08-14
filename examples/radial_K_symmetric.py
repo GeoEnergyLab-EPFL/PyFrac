@@ -13,7 +13,7 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(30, 30, 41, 61)
+Mesh = CartesianMesh(0.3, 0.3, 41, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -58,7 +58,7 @@ simulProp.bckColor = "K1c"
 simulProp.verbosity = 2
 
 # initializing fracture
-initRad = 21
+initRad = 0.21
 init_param = ("K", "length", initRad)
 
 # creating fracture object
@@ -120,7 +120,6 @@ Fig_w = plot_analytical_solution_at_point('K',
                                           time_srs=time_srs,
                                           fig=Fig_w)
 
-
 time_srs = np.linspace(1, 1e5, 10)
 Fr_list, properties = load_fractures(address=".\\Data\\K_radial_symmetric",
                                      time_srs=time_srs)
@@ -166,18 +165,6 @@ Fig_WS = plot_analytical_solution_slice('K',
                                         point1=pnt_1,
                                         point2=pnt_2)
 
-# #plotting in 3D
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='mesh',
-#                             projection='3D')
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='width',
-#                             projection='3D',
-#                             fig=Fig_Fr)
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='footprint',
-#                             projection='3D',
-#                             fig=Fig_Fr)
 
 plt.show()
 

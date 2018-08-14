@@ -647,12 +647,6 @@ def MakeEquationSystem_volumeControl_extendedFP_symmetric(w_lst_tmstp, wTip_sym,
     fracture is imposed to be equal to the fluid injected into the fracture (see Zia and Lecampion 2018).
     """
 
-    # EltChannel_sym = corr[EltChannel]
-    # EltChannel_sym = np.unique(EltChannel_sym)
-    #
-    # EltTip_sym = corr[EltTip]
-    # EltTip_sym = np.unique(EltTip_sym)
-
     Ccc = C_s[np.ix_(EltChannel_sym, EltChannel_sym)]
     Cct = C_s[np.ix_(EltChannel_sym, EltTip_sym)]
 
@@ -661,25 +655,10 @@ def MakeEquationSystem_volumeControl_extendedFP_symmetric(w_lst_tmstp, wTip_sym,
     weights = np.concatenate((weights, np.array([0.0])))
     A = np.vstack((A, weights))
 
-    # wTip_sym = np.zeros((len(EltTip_sym), ), dtype=np.float64)
-    # wTip_sym_elts = sym_elements[EltTip_sym]
-    # for i in range(len(EltTip_sym)):
-    #     wTip_sym[i] = wTip[np.where(EltTip == wTip_sym_elts[i])[0]]
-
     S = -np.dot(Ccc, w_lst_tmstp[sym_elements[EltChannel_sym]]) - np.dot(Cct, wTip_sym)
     S = np.append(S, sum(Q) * dt / ElemArea - sum(dwTip))
 
     return A, S
-
-# Ccc = C[np.ix_(EltChannel, EltChannel)]
-#     Cct = C[np.ix_(EltChannel, EltTip)]
-#
-#     A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
-#     A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
-#     A[-1,-1] = 0
-#
-#     S = -np.dot(Ccc,w_lst_tmstp[EltChannel]) - np.dot(Cct,wTip)
-#     S = np.append(S, sum(Q) * dt / ElemArea - (sum(wTip)-sum(w_lst_tmstp[EltTip])))
 
 #-----------------------------------------------------------------------------------------------------------------------
 

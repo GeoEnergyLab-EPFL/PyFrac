@@ -227,6 +227,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
         for i in fracture_list:
             variable_list.append(i.mesh)
             time_srs.append(i.time)
+
+    elif variable is 'efficiency' or variable is 'ef':
+        for i in fracture_list:
+            variable_list.append(i.efficiency)
+            time_srs.append(i.time)
             
     elif variable is 'volume' or variable is 'V':
         for i in fracture_list:

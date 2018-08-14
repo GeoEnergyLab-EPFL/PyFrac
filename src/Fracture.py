@@ -239,7 +239,9 @@ class Fracture():
                                                 C,
                                                 w,
                                                 p,
-                                                volume)
+                                                volume,
+                                                simulProp.symmetric,
+                                                solid.Eprime)
 
 
             if volume is None:
