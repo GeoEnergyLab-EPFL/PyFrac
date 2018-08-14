@@ -775,6 +775,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                 dt=1.e20)
     injected_vol = sum(Qin) * Fr_kplus1.time
     Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
+    # Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea) / injected_vol
 
     if sim_properties.saveRegime:
         Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
@@ -831,19 +832,15 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             else:
                 PerfNode_linSolve = None
 
-            corr = corresponding_elements_in_symmetric(Fr_lstTmStp.mesh)
-            symmetric_elmnts = get_symetric_elements(Fr_lstTmStp.mesh, np.arange(Fr_lstTmStp.mesh.NumberOfElts))
-            all, elements, boundary_x, boundary_y = get_active_symmetric_elements(Fr_lstTmStp.mesh)
-
-            EltChannel_sym = corr[Fr_lstTmStp.EltChannel]
+            EltChannel_sym = Fr_lstTmStp.mesh.corr[Fr_lstTmStp.EltChannel]
             EltChannel_sym = np.unique(EltChannel_sym)
 
-            EltTip_sym = corr[EltsTipNew]
+            EltTip_sym = Fr_lstTmStp.mesh.corr[EltsTipNew]
             EltTip_sym = np.unique(EltTip_sym)
 
             FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), )
             FillF_mesh[EltsTipNew] = FillFrac_k
-            FillF_sym = FillF_mesh[all[EltTip_sym]]
+            FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.all[EltTip_sym]]
             partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
 
             C_EltTip = C[np.ix_(EltTip_sym[partlyFilledTip_sym],
@@ -862,7 +859,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                                     ac * np.pi / 4. * self_infl
 
             wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
-            wTip_sym_elts = all[EltTip_sym]
+            wTip_sym_elts = Fr_lstTmStp.mesh.all[EltTip_sym]
             for i in range(len(EltTip_sym)):
                 if len(np.where(EltsTipNew == wTip_sym_elts[i])[0]) != 1:
                     other_corr = get_symetric_elements(Fr_lstTmStp.mesh, [wTip_sym_elts[i]])
@@ -875,9 +872,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     wTip_sym[i] = wTip[np.where(EltsTipNew == wTip_sym_elts[i])[0]]
 
             dwTip = wTip - Fr_lstTmStp.w[EltsTipNew]
-            vol_weights = np.full((C.shape[0],), 4., dtype=np.float32)
-            vol_weights[len(elements): -1] = 2.
-            vol_weights[-1] = 1.
 
             A, b = MakeEquationSystem_volumeControl_extendedFP_symmetric(Fr_lstTmStp.w,
                                                            wTip_sym,
@@ -887,8 +881,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            timeStep,
                                                            Qin,
                                                            Fr_lstTmStp.mesh.EltArea,
-                                                           vol_weights,
-                                                           all,
+                                                           Fr_lstTmStp.mesh.vol_weights,
+                                                           Fr_lstTmStp.mesh.all,
                                                            dwTip)
 
             C[np.ix_(EltTip_sym[partlyFilledTip_sym],  EltTip_sym[partlyFilledTip_sym])] = C_EltTip
@@ -933,11 +927,11 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if sim_properties.symmetric:
             del_w = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             for i in range(len(sol) - 1):
-                del_w[symmetric_elmnts[all[EltChannel_sym[i]]]] = sol[i]
+                del_w[Fr_lstTmStp.mesh.symmetric_elmnts[Fr_lstTmStp.mesh.all[EltChannel_sym[i]]]] = sol[i]
             w = np.copy(Fr_lstTmStp.w)
             w[Fr_lstTmStp.EltChannel] += del_w[Fr_lstTmStp.EltChannel]
             for i in range(len(wTip_sym_elts)):
-                w[symmetric_elmnts[wTip_sym_elts[i]]] = wTip_sym[i]
+                w[Fr_lstTmStp.mesh.symmetric_elmnts[wTip_sym_elts[i]]] = wTip_sym[i]
         else:
             w = np.copy(Fr_lstTmStp.w)
             w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]

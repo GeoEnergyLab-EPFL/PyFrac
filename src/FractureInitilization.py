@@ -224,14 +224,11 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         return w_calculated, p_calculated
 
     if symmetric:
-        corr = corresponding_elements_in_symmetric(mesh)
-        symmetric_elmnts = get_symetric_elements(mesh, np.arange(mesh.NumberOfElts))
-        all, elements, boundary_x, boundary_y = get_active_symmetric_elements(mesh)
 
-        CrackElts_sym = corr[EltCrack]
+        CrackElts_sym = mesh.corr[EltCrack]
         CrackElts_sym = np.unique(CrackElts_sym)
 
-        EltTip_sym = corr[EltTip]
+        EltTip_sym = mesh.corr[EltTip]
         EltTip_sym = np.unique(EltTip_sym)
 
         FillF_mesh = np.zeros((mesh.NumberOfElts,), )
@@ -254,23 +251,19 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
             w_sym_EltCrack = np.linalg.solve(C[np.ix_(CrackElts_sym, CrackElts_sym)],
                                              p_calculated[all[CrackElts_sym]])
             for i in range(len(w_sym_EltCrack)):
-                w_calculated[symmetric_elmnts[all[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
+                w_calculated[mesh.symmetric_elmnts[all[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
 
         if w is not None and p is None:
             p_sym_EltCrack = np.dot(C[np.ix_(CrackElts_sym, CrackElts_sym)], w[all[CrackElts_sym]])
             for i in range(len(p_sym_EltCrack)):
-                p_calculated[symmetric_elmnts[all[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
+                p_calculated[mesh.symmetric_elmnts[all[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
 
         # calculate the width and pressure by considering fracture as a static fracture.
         if w is None and p is None:
             C_Crack = C[np.ix_(CrackElts_sym, CrackElts_sym)]
 
-            vol_weights = np.full((C.shape[0],), 4., dtype=np.float32)
-            vol_weights[len(elements): -1] = 2.
-            vol_weights[-1] = 1.
-
             A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
-            weights = vol_weights[CrackElts_sym]
+            weights = mesh.vol_weights[CrackElts_sym]
             weights = np.concatenate((weights, np.array([0.0])))
             A = np.vstack((A, weights))
 

@@ -18,9 +18,9 @@ from matplotlib.collections import PatchCollection
 import mpl_toolkits.mplot3d.art3d as art3d
 from src.Properties import PlotProperties
 import matplotlib.path as mpath
+
 from src.Visualization import zoom_factory, to_precision, text3d
-
-
+from src.Symmetry import *
 
 class CartesianMesh:
     """ Class defining a Cartesian Mesh.
@@ -48,7 +48,7 @@ class CartesianMesh:
                                x and y directions
     """
 
-    def __init__(self, Lx, Ly, nx, ny):
+    def __init__(self, Lx, Ly, nx, ny, symmetric=False):
         """ 
         Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx,Lx]*[-Ly,Ly]
         Arguments:
@@ -128,6 +128,16 @@ class CartesianMesh:
         if self.CenterElts.size != 1:
             #todo
             raise ValueError("Mesh with no center element. To be looked into")
+
+        if symmetric:
+            self.corr = corresponding_elements_in_symmetric(self)
+            self.symmetric_elmnts = get_symetric_elements(self, np.arange(self.NumberOfElts))
+            self.all, self.elements, self.boundary_x, self.boundary_y = get_active_symmetric_elements(self)
+
+            self.vol_weights = np.full((len(self.all), ), 4., dtype=np.float32)
+            self.vol_weights[len(self.elements): -1] = 2.
+            self.vol_weights[-1] = 1.
+
 
     # -----------------------------------------------------------------------------------------------------------------------
 
