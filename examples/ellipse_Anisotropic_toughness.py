@@ -14,7 +14,7 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 40, 40)
+Mesh = CartesianMesh(8, 4, 41, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -80,7 +80,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-# controller.run()
+controller.run()
 
 
 ####################

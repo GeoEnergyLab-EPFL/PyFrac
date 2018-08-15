@@ -588,7 +588,11 @@ class Fracture():
             Fr_coarse           -- the new fracture after remeshing.
         """
 
-        coarse_mesh = CartesianMesh(factor*self.mesh.Lx, factor*self.mesh.Ly, self.mesh.nx, self.mesh.ny)
+        coarse_mesh = CartesianMesh(factor*self.mesh.Lx,
+                                    factor*self.mesh.Ly,
+                                    self.mesh.nx,
+                                    self.mesh.ny,
+                                    symmetric=sim_prop.symmetric)
 
         # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,

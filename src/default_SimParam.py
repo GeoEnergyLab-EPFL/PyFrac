@@ -1,7 +1,7 @@
 ### default simulation parameters ###
 
 # tolerances
-toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver
+toleranceFractureFront = 3.0e-3         # tolerance for the fracture front position solver
 toleranceEHL = 1.0e-5                   # tolerance for the elastohydrodynamic system solver
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration
 
