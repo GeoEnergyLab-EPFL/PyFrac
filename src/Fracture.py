@@ -200,7 +200,7 @@ class Fracture():
 
             if init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'):
                 # survey cells and their distances from the front
-                surv_cells, inner_cells = get_circular_survey_cells(self.mesh, self.initRad)
+                surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, self.initRad, self.initRad)
                 surv_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
                                                                             surv_cells, 1] ** 2) ** 0.5
             elif init_type in ('E_E', 'E_K'):
@@ -297,7 +297,7 @@ class Fracture():
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def plot_fracture(self, variable='width', mat_properties=None, projection='3D', elements=None,
+    def plot_fracture(self, variable='width', mat_properties=None, projection='2D', elements=None,
                        backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None):
         """
         Plots the given parameter of the specified cells.

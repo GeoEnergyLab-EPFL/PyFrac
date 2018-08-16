@@ -33,7 +33,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack):
         ndarray-float:                  the finite difference matrix    
     """
 
-    FinDiffOprtr = sparse.csr_matrix((w.size, w.size), dtype=np.float64)
+    FinDiffOprtr = sparse.csc_matrix((w.size, w.size), dtype=np.float64)
 
     dx = Mesh.hx
     dy = Mesh.hy
@@ -555,6 +555,8 @@ def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
     return A, S
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+
 def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, EltTip, C, dt, Q, ElemArea):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
@@ -573,25 +575,8 @@ def MakeEquationSystem_volumeControl_extendedFP(w_lst_tmstp, wTip, EltChannel, E
 
     return A, S
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 
-# def MakeEquationSystem_volumeControl_extendedFP_width(wTip, EltChannel, EltTip, C, time, Q, ElemArea):
-#
-#     Ccc = C[np.ix_(EltChannel, EltChannel)]
-#     Cct = C[np.ix_(EltChannel, EltTip)]
-#
-#     A = np.hstack((Ccc,-np.ones((EltChannel.size,1),dtype=np.float64)))
-#     A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
-#     A[-1,-1] = 0
-#
-#     S = - np.dot(Cct,wTip)
-#     S = np.append(S,Q * time / ElemArea - sum(wTip))
-#
-#     return A, S
-
-
-#-----------------------------------------------------------------------------------------------------------------------
 
 def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr, *args):
     """

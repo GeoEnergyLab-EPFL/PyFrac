@@ -15,58 +15,6 @@ from src.VolIntegral import Integral_over_cell
 from src.Symmetry import *
 
 
-def get_circular_survey_cells(mesh, initRad):
-    """
-    This function would provide the ribbon of cells on the inside of the perimeter of a circle with the given radius.
-    A list of all the cells inside the fracture is also provided.
-
-    Arguments:
-        mesh (CartesianMesh object)         -- a CartesianMesh class object describing the grid.
-        initRad (float)                     -- the radius of the circle closest to which the survey cells are to be
-                                               provided.
-
-    Returns:
-        surv_cells (ndarray)                -- the list of cells on the inside of the perimeter of a circle with the
-                                               given radius.
-        inner_cells (ndarray)               -- the list of cells inside the given circle.
-    """
-
-    # level set value at middle of the elements
-    phiMid = np.empty([mesh.NumberOfElts, 1], dtype=float)
-    for e in range(0, mesh.NumberOfElts):
-        phiMid[e] = radius_level_set(mesh.CenterCoor[e], initRad)
-    # level set value at vertices of the element
-    phiVertices = np.empty([len(mesh.VertexCoor), 1], dtype=float)
-    for i in range(0, len(mesh.VertexCoor)):
-        phiVertices[i] = radius_level_set(mesh.VertexCoor[i], initRad)
-        # finding elements containing at least one vertices inside the fracture, i.e. with a value of the level <0
-        # avoiding loop on elements....
-
-    # array of Length (number of elements) containig the sum of vertices with neg level set value)
-    psum = np.sum(phiVertices[mesh.Connectivity[:]] < 0, axis=1)
-    # indices of tip element which by definition have less than 4 but at least 1 vertices inside the level set
-    EltTip = (np.where(np.logical_and(psum > 0, psum < 4)))[0]
-    inner_cells = (np.where(psum == 4))[0]  # indices of channel element / fully cracked
-
-    # find the ribbon elements: Channel Elements having at least
-    # on common vertices with a Tip element
-    #
-    # loop on ChannelElement, and on TipElement
-    testribbon = np.empty([len(inner_cells), 1], dtype=float)
-    for e in range(0, len(inner_cells)):
-        for i in range(0, len(EltTip)):
-            if (len(np.intersect1d(mesh.Connectivity[inner_cells[e]], mesh.Connectivity[EltTip[i]])) > 0):
-                testribbon[e] = 1
-                break
-            else:
-                testribbon[e] = 0
-    surv_cells = inner_cells[(np.reshape(testribbon, len(inner_cells)) == 1)]
-
-    return surv_cells, inner_cells
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
 def get_eliptical_survey_cells(mesh, a, b):
     """
         This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given

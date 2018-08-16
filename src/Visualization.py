@@ -26,7 +26,7 @@ from matplotlib.transforms import Affine2D
 import matplotlib.animation as animation
 
 
-def plot_fracture_list(fracture_list, variable='width', mat_properties=None, projection='3D', elements=None,
+def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None, projection='2D', elements=None,
                        backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None,
                        plot_non_zero=True):
 
