@@ -44,10 +44,10 @@ def plot_fracture_list(fracture_list, variable='width', mat_properties=None, pro
         labels = get_labels(variable, 'wole_mesh', projection)
 
     max_Lx = 0.
-    largest_mesh = fracture_list[0].mesh
     for i in fracture_list:
         if i.mesh.Lx > max_Lx:
             largest_mesh = i.mesh
+            max_Lx = i.mesh.Lx
 
     if variable is 'mesh':
         if backGround_param is not None and mat_properties is None:

@@ -55,10 +55,7 @@ class Controller:
        self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
        self.perfData = []
        self.lastSavedFile = 0
-       if Sim_prop.plotFigure:
-        self.Figure = plt.figure()
-       else:
-           self.Figure = None
+       self.Figure = None
 
        self.tmSrsIndex = 0
        # the next time where the solution is required to be evaluated
@@ -342,7 +339,9 @@ class Controller:
         if out_TP_exceeded or in_req_TS:
             # plot fracture footprint
             if simulation_parameters.plotFigure:
-                plt.close()
+                if not simulation_parameters.blockFigure:
+                    plt.close()
+
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
                 plot_prop = PlotProperties()
 
@@ -357,6 +356,8 @@ class Controller:
                                                       samp_cell=None,
                                                       plot_prop=plot_prop,
                                                       gamma=simulation_parameters.aspectRatio)
+                else:
+                    self.Figure = None
 
                 self.Figure = Fr_advanced.plot_fracture(variable='mesh',
                                                         mat_properties=self.solid_prop,
@@ -370,9 +371,12 @@ class Controller:
                                                         projection='2D',
                                                         fig=self.Figure,
                                                         plot_prop=plot_prop)
-
-                plt.show(block=False)
-                plt.pause(0.5)
+                if simulation_parameters.blockFigure:
+                    plt.figure(1)
+                    plt.show()
+                else:
+                    plt.show(block=False)
+                    plt.pause(0.5)
                 print("Done! ")
 
             # save fracture to disk
@@ -437,8 +441,11 @@ class Controller:
                 self.nextInTmSrs = self.sim_prop.get_solTimeSeries()[self.tmSrsIndex]
 
         # checking if the time step is above the limit
-        if TimeStep > self.sim_prop.timeStepLimit:
-            TimeStep = self.sim_prop.timeStepLimit
+        if self.sim_prop.timeStepLimit is None:
+            self.sim_prop.timeStepLimit = TimeStep
+        else:
+            if TimeStep > self.sim_prop.timeStepLimit:
+                TimeStep = self.sim_prop.timeStepLimit
 
         # set time step limit according to largest time step (likely to be the most recent one)
         self.sim_prop.timeStepLimit = max(TimeStep * self.sim_prop.tmStpFactLimit, self.sim_prop.timeStepLimit)

@@ -164,13 +164,11 @@ class MaterialProperties:
         """
 
         if self.K1cFunc is not None and not self.anisotropic_K1c:
-            self.Kprime = np.empty((mesh.NumberOfElts, ), dtype=np.float64)
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
         elif self.K1cFunc is not None and self.anisotropic_K1c:
-            self.Kprime = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(np.pi/2)
@@ -479,6 +477,7 @@ class SimulationParameters:
         self.saveToDisk = simul_param.save_to_disk
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
+        self.blockFigure = simul_param.block_figure
 
         # solver type
         self.set_dryCrack_mechLoading(simul_param.mech_loading)

@@ -34,6 +34,7 @@ bck_color = None                        # the parameter according to which backg
 plot_eltType = False                    # plot the element type with color coded dots (channel, ribbon or tip)
 output_time_period=None                 # the time period after which the output is generated
 sim_name = None                         # name given to the simulation
+block_figure = False                    # if true, the simulation will proceed after the figure is closed
 
 # type of solver
 mech_loading = False                    # if True, the mechanical loading solver will be used
