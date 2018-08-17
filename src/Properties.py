@@ -478,6 +478,7 @@ class SimulationParameters:
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
         self.blockFigure = simul_param.block_figure
+        self.outputEveryTS = simul_param.output_every_TS
 
         # solver type
         self.set_dryCrack_mechLoading(simul_param.mech_loading)

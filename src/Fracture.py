@@ -290,9 +290,6 @@ class Fracture():
                 simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
                                                             self.v) * simulProp.tmStpFactLimit
 
-        if simulProp.get_solTimeSeries() is None and simulProp.outputTimePeriod is None:
-            simulProp.set_solTimeSeries(2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
-                                                      np.log2(simulProp.FinalTime), 15))
 
 #-----------------------------------------------------------------------------------------------------------------------
 

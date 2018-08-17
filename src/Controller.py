@@ -55,7 +55,10 @@ class Controller:
        self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
        self.perfData = []
        self.lastSavedFile = 0
+       self.lastSavedTime = -1e99
        self.Figure = None
+       self.TmStpCount = 0
+       self.chkPntReattmpts = 0
 
        self.tmSrsIndex = 0
        # the next time where the solution is required to be evaluated
@@ -67,7 +70,7 @@ class Controller:
 
        # basic performance data
        self.remeshings = 0
-       self.TotalTimeSteps = 0
+       self.successfulTimeSteps = 0
        self.failedTimeSteps = 0
        self.frontAdvancing = Sim_prop.frontAdvancing
 
@@ -88,11 +91,8 @@ class Controller:
 
         if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
             # save or plot fracture
-            self.output(self.fracture,
-                        self.sim_prop,
-                        self.solid_prop,
-                        self.injection_prop,
-                        self.fluid_prop)
+            self.output(self.fracture)
+            self.lastSavedTime = self.fracture.time
 
         if self.sim_prop.saveToDisk:
             f = open(self.sim_prop.get_outputFolder() + 'log', 'w+')
@@ -122,13 +122,13 @@ class Controller:
             print('Done!')
 
         # perform first time step with implicit front advancing
-        # if self.sim_prop.frontAdvancing == "semi-implicit":
-        #     self.sim_prop.frontAdvancing = "implicit"
+        if not self.sim_prop.symmetric:
+            if self.sim_prop.frontAdvancing == "semi-implicit":
+                self.sim_prop.frontAdvancing = "implicit"
 
-        i = 0
         print("Starting time = " + repr(self.fracture.time))
         # starting time stepping loop
-        while self.fracture.time < 0.999 * self.sim_prop.FinalTime and i < self.sim_prop.maxTimeSteps:
+        while self.fracture.time < 0.999 * self.sim_prop.FinalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
 
             TimeStep = self.get_time_step()
 
@@ -152,17 +152,26 @@ class Controller:
                     tmStp_perf.status = 'failed'
                 self.perfData.append(tmStp_perf)
 
-            self.TotalTimeSteps += 1
+
 
             # saving the last five steps to restart if required
             if status == 1:
                 print("Time step successful!")
+
+                # output
+                if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
+                    if Fr_n_pls1.time > self.lastSavedTime:
+                        self.output(Fr_n_pls1)
+
+                # add the advanced fracture to the last five fractures list
                 self.fracture = copy.deepcopy(Fr_n_pls1)
-                self.fr_queue[i%5] = copy.deepcopy(Fr_n_pls1)
+                self.fr_queue[self.successfulTimeSteps % 5] = copy.deepcopy(Fr_n_pls1)
+                self.chkPntReattmpts = 0
                 self.stepsFromChckPnt += 1
-                if self.stepsFromChckPnt%4 == 0:
+                if self.stepsFromChckPnt % 4 == 0:
                     # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
                     self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_max
+                self.successfulTimeSteps += 1
 
             # re-meshing required
             elif status == 12:
@@ -188,27 +197,26 @@ class Controller:
 
             else:
                 self.sim_prop.tmStpPrefactor *= 0.8
-                self.stepsFromChckPnt = 0
-                if self.fr_queue[(i+1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
+                if self.fr_queue[(self.successfulTimeSteps + 1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
                     raise SystemExit("Simulation failed.")
                 else:
-                    self.fracture = copy.deepcopy(self.fr_queue[(i+1) % 5])
+                    self.chkPntReattmpts += 1
+                    self.fracture = copy.deepcopy(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5])
                     print("Restarting with the last check point...")
 
                     self.failedTimeSteps += 1
-                    self.TotalTimeSteps += 1
 
                     f = open('log', 'a')
                     f.writelines("\n" + self.errorMessages[status])
-                    f.writelines("\nTime step failed at = " + repr(self.fr_queue[i % 5].time))
+                    f.writelines("\nTime step failed at = " + repr(self.fracture.time))
                     f.close()
 
-            i = i + 1
+            self.TmStpCount += 1
             # set front advancing beck as set in simulation properties originally
             self.sim_prop.frontAdvancing = self.frontAdvancing
 
         f = open('log', 'a')
-        f.writelines("\n\nnumber of time steps = " + repr(self.TotalTimeSteps))
+        f.writelines("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
         f.writelines("\nfailed time steps = " + repr(self.failedTimeSteps))
         f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
         f.close()
@@ -263,7 +271,6 @@ class Controller:
             else:
                 PerfNode_TmStpAtmpt = None
 
-
             status, Fr = attempt_time_step(Frac,
                                             C,
                                             self.solid_prop,
@@ -272,8 +279,6 @@ class Controller:
                                             self.injection_prop,
                                             tmStp_to_attempt,
                                             PerfNode_TmStpAtmpt)
-
-
 
             if PerfNode_TmStpAtmpt is not None:
                 PerfNode_TmStpAtmpt.CpuTime_end = time.time()
@@ -285,34 +290,19 @@ class Controller:
                     PerfNode_TmStpAtmpt.status = 'failed'
 
             if status == 1:
+                break
+            else:
                 if self.sim_prop.verbosity > 1:
                     print(self.errorMessages[status])
-
-                # output
-                if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
-                    self.output(Fr,
-                                self.sim_prop,
-                                self.solid_prop,
-                                self.injection_prop,
-                                self.fluid_prop,
-                                Frac)
-
-                return status, Fr
-            else:
-
-                if status == 12:
-                    return status, Fr
-            if self.sim_prop.verbosity > 1:
-                print(self.errorMessages[status])
                 print("Time step failed...")
+
 
         return status, Fr
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def output(self, Fr_advanced, simulation_parameters, material_properties, injection_parameters,
-               fluid_properties, Fr_lstTmStp=None):
+    def output(self, Fr_advanced):
         """
         This function plot the fracture footprint and/or save file to disk according to the given time period.
 
@@ -325,37 +315,53 @@ class Controller:
         Returns:
         """
 
-        if Fr_lstTmStp is not None:
-            # output time period exceeded after this time step
-            out_TP_exceeded = not simulation_parameters.outputTimePeriod is None and (Fr_lstTmStp.time //
-                simulation_parameters.outputTimePeriod != Fr_advanced.time // simulation_parameters.outputTimePeriod)
-        else:
-            out_TP_exceeded = True
+        out_TP_exceeded = False
+        in_req_TS = False
+        in_plot_every_TS = False
+
+        # check if output time period is exceeded since last output
+        if self.sim_prop.outputTimePeriod is not None:
+            if Fr_advanced.time >= self.lastSavedTime + self.sim_prop.outputTimePeriod:
+                out_TP_exceeded = True
 
         # current time in the time series given at which the solution is to be evaluated
-        in_req_TS = (simulation_parameters.get_solTimeSeries() is not None) and \
-                    Fr_advanced.time in simulation_parameters.get_solTimeSeries()
+        if self.sim_prop.get_solTimeSeries() is not None:
+            if Fr_advanced.time in self.sim_prop.get_solTimeSeries():
+                in_req_TS = True
 
-        if out_TP_exceeded or in_req_TS:
+        # check if the number of time steps since last output exceeded
+        if self.sim_prop.outputEveryTS is not None:
+            if self.successfulTimeSteps % self.sim_prop.outputEveryTS == 0:
+                in_plot_every_TS = True
+
+        if self.sim_prop.outputTimePeriod is None and \
+           self.sim_prop.get_solTimeSeries() is None and \
+           self.sim_prop.outputEveryTS is None:
+            in_plot_every_TS = True
+
+        if out_TP_exceeded or in_req_TS or in_plot_every_TS:
+            # output fracture
+            self.lastSavedTime = Fr_advanced.time
+
             # plot fracture footprint
-            if simulation_parameters.plotFigure:
-                if not simulation_parameters.blockFigure:
+            if self.sim_prop.plotFigure:
+                if not self.sim_prop.blockFigure:
                     plt.close()
 
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
                 plot_prop = PlotProperties()
 
                 plot_prop.lineColor = 'r'
-                if simulation_parameters.plotAnalytical:
-                    self.Figure = plot_footprint_analytical(simulation_parameters.analyticalSol,
+                if self.sim_prop.plotAnalytical:
+                    self.Figure = plot_footprint_analytical(self.sim_prop.analyticalSol,
                                                       self.solid_prop,
                                                       self.injection_prop,
                                                       self.fluid_prop,
                                                       [Fr_advanced.time],
-                                                      h=simulation_parameters.height,
+                                                      h=self.sim_prop.height,
                                                       samp_cell=None,
                                                       plot_prop=plot_prop,
-                                                      gamma=simulation_parameters.aspectRatio)
+                                                      gamma=self.sim_prop.aspectRatio)
                 else:
                     self.Figure = None
 
@@ -371,19 +377,18 @@ class Controller:
                                                         projection='2D',
                                                         fig=self.Figure,
                                                         plot_prop=plot_prop)
-                if simulation_parameters.blockFigure:
-                    plt.figure(1)
-                    plt.show()
+                if self.sim_prop.blockFigure:
+                    plt.show(block=True)
                 else:
                     plt.show(block=False)
                     plt.pause(0.5)
                 print("Done! ")
 
             # save fracture to disk
-            if simulation_parameters.saveToDisk:
+            if self.sim_prop.saveToDisk:
                 print("Saving solution at " + repr(Fr_advanced.time) + "...")
-                Fr_advanced.SaveFracture(simulation_parameters.get_outputFolder() +
-                                         simulation_parameters.get_simulation_name() +
+                Fr_advanced.SaveFracture(self.sim_prop.get_outputFolder() +
+                                         self.sim_prop.get_simulation_name() +
                                          '_file_' + repr(self.lastSavedFile))
                 self.lastSavedFile += 1
                 print("Done! ")

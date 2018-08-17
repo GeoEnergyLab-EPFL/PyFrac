@@ -32,9 +32,10 @@ plot_analytical = False                 # if True, analytical solution will also
 analytical_sol = None                   # the analytical solution to be ploted
 bck_color = None                        # the parameter according to which background is color coded (see class doc.)
 plot_eltType = False                    # plot the element type with color coded dots (channel, ribbon or tip)
-output_time_period=None                 # the time period after which the output is generated
+output_time_period = None               # the time period after which the output is generated
 sim_name = None                         # name given to the simulation
 block_figure = False                    # if true, the simulation will proceed after the figure is closed
+output_every_TS = None                  # the number of time steps after which the output is done
 
 # type of solver
 mech_loading = False                    # if True, the mechanical loading solver will be used
