@@ -32,6 +32,8 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
 
     print("Plotting " + variable + '...')
 
+    if len(fracture_list) == 0:
+        raise ValueError("Provided fracture list is empty!")
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
     if projection not in supported_projections:
@@ -929,7 +931,7 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
 
 
 def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
-                             projection='3D', time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
+                             projection='2D', time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
                              labels=None, contours_at=None, gamma=None):
 
     if variable not in supported_variables:
@@ -1064,15 +1066,30 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_plot, 
     if samp_cell is None:
         samp_cell = int(len(mat_prop.Kprime) / 2)
 
+    if regime is 'K':
+        muPrime = None
+        Cprime = None
+    else:
+        muPrime = fluid_prop.muPrime
+        Cprime = mat_prop.Cprime[samp_cell]
+
+    if regime is 'M':
+        Kprime = None
+        Cprime = None
+    else:
+        Kprime = mat_prop.Kprime[samp_cell]
+        Cprime = mat_prop.Cprime[samp_cell]
+
+
     return_pathces = []
     for i in time_srs:
         x_len, y_len = get_fracture_dimensions_analytical(regime,
                                                           i,
                                                           mat_prop.Eprime,
                                                           inj_prop.injectionRate[1, 0],
-                                                          muPrime=fluid_prop.muPrime,
-                                                          Kprime=mat_prop.Kprime[samp_cell],
-                                                          Cprime=mat_prop.Cprime[samp_cell],
+                                                          muPrime=muPrime,
+                                                          Kprime=Kprime,
+                                                          Cprime=Cprime,
                                                           Kc_1=Kc_1,
                                                           h=h,
                                                           density=density,

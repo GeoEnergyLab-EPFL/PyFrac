@@ -739,7 +739,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if (Fr_kplus1.w < 0).any():  #todo: clean this up as it might blow up !
         #     -> we need a linear solver with constraint to handle pinch point properly.
         print("found negative width, ignoring...")
-        Fr_kplus1.w[np.where(Fr_kplus1.w < 1e-10)[0]] = 1e-10
+        Fr_kplus1.w[np.where(Fr_kplus1.w < 1e-10)[0]] = 0
         # exitstatus = 5
         # return exitstatus, None
 
@@ -939,6 +939,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), dtype=np.float64)
         p[EltCrack_k] = sol[-1]
+
+        if np.min(w) > 0:
+            print('found')
 
         return w, p, None
 
