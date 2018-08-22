@@ -113,14 +113,10 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2
 
     # pressure gradient data structure. The rows store pressure gradient in the following order.
-    # 0 - pressure gradient on the left edge in x-direction
-    # 1 - pressure gradient on the right edge in x-direction
-    # 2 - pressure gradient on the bottom edge in y-direction
-    # 3 - pressure gradient on the top edge in y-direction
-    # 4 - pressure gradient on the left edge in y-direction
-    # 5 - pressure gradient on the right edge in y-direction
-    # 6 - pressure gradient on the bottom edge in x-direction
-    # 7 - pressure gradient on the top edge in x-direction
+    # 0 - left edge in x-direction    # 1 - right edge in x-direction
+    # 2 - bottom edge in y-direction  # 3 - top edge in y-direction
+    # 4 - left edge in y-direction    # 5 - right edge in y-direction
+    # 6 - bottom edge in x-direction  # 7 - top edge in x-direction
 
     dp = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
     (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
@@ -146,8 +142,6 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
 
     # loop to calculate velocity on each cell edge implicitly
     for i in range(0,len(EltCrack)):
-        # if EltCrack[i] == Mesh.CenterElts:
-        #     print()
         # todo !!! Hack. zero velocity if the pressure gradient is zero or very small width
         if dpLft[i] < 1e-8 or wLftEdge[i]<1e-10:
             vk[0, EltCrack[i]] = 0.0

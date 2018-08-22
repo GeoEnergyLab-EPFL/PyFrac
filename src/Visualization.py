@@ -200,7 +200,10 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
             non_zero = np.where(abs(i) > 0)[0]
             i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
         else:
-            i_min, i_max = np.min(i), np.max(i)
+            if len(i) >0:
+                i_min, i_max = np.min(i), np.max(i)
+            else:
+                i_min, i_max = np.inf, -np.inf
         vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
     if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
@@ -602,8 +605,8 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
         point1 = np.array([-mesh.Lx, 0.])
     if point2 is None:
         point2 = np.array([mesh.Lx, 0.])
-    ax_2D.plot(np.array([point1[0],point2[0]]),
-               np.array([point1[1],point2[1]]),
+    ax_2D.plot(np.array([point1[0], point2[0]]),
+               np.array([point1[1], point2[1]]),
                plot_prop.lineStyle,
                color=plot_prop.lineColor)
 
@@ -739,7 +742,10 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
         plot_prop = PlotProperties()
 
     if labels is None:
-        labels = get_labels(variable, 'whole_mesh', '2D')
+        labels_given = False
+        labels = get_labels(variable, 'wole_mesh', '2D')
+    else:
+        labels_given = True
 
     if point is None:
         point = [0., 0.]
@@ -763,14 +769,15 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
     plot_prop.lineColor = plot_prop.lineColorAnal
     plot_prop.lineStyle = plot_prop.lineStyleAnal
     plot_prop.lineWidth = plot_prop.lineWidthAnal
-    label = labels.legend + ' analytical'
+    if not labels_given:
+        labels.legend = labels.legend + ' analytical'
     labels.xLabel = 'time ($s$)'
 
     fig = plot_variable_vs_time(time_srs,
                                 analytical_list,
                                 fig=fig,
                                 plot_prop=plot_prop,
-                                label=label)
+                                label=labels.legend)
 
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
@@ -938,7 +945,10 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         raise ValueError(err_msg_variable)
 
     if labels is None:
+        labels_given = False
         labels = get_labels(variable, 'wole_mesh', projection)
+    else:
+        labels_given = True
 
     if variable is 'footprint':
         fig = plot_footprint_analytical(regime,
@@ -984,7 +994,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             plot_prop.lineStyle = plot_prop.lineStyleAnal
             plot_prop.lineColor = plot_prop.lineColorAnal
             plot_prop.lineWidth = plot_prop.lineWidthAnal
-            labels.legend = labels.legend + ' analytical'
+            if not labels_given:
+                labels.legend = labels.legend + ' analytical'
             labels.xLabel = 'time ($s$)'
             fig = plot_variable_vs_time(time_srs,
                                         analytical_list,

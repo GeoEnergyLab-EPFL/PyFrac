@@ -289,7 +289,7 @@ class Controller:
                 else:
                     PerfNode_TmStpAtmpt.status = 'failed'
 
-            if status == 1:
+            if status == 1 or status == 12:
                 break
             else:
                 if self.sim_prop.verbosity > 1:

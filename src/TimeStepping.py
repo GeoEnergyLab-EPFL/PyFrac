@@ -521,8 +521,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     #     return exitstatus, None
 
     if sim_properties.saveRegime:
-        regime_t = find_regime(w_k, Fr_lstTmStp, mat_properties, sim_properties, timeStep, Kprime_k,
-                           -sgndDist_k[Fr_lstTmStp.EltRibbon])
+        regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)
+        regime = find_regime(w_k, Fr_lstTmStp, mat_properties, sim_properties, timeStep, Kprime_k,
+                             -sgndDist_k[Fr_lstTmStp.EltRibbon])
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -775,10 +776,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                 dt=1.e20)
     injected_vol = sum(Qin) * Fr_kplus1.time
     Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
-    # Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea) / injected_vol
 
     if sim_properties.saveRegime:
-        Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
+        Fr_kplus1.regime = regime
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -801,15 +801,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                               fluid_properties.density)
 
             if sim_properties.saveFluidFlux:
-                fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float64)
+                fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fflux[:, Fr_kplus1.EltCrack] = fluid_flux
                 Fr_kplus1.fluidFlux = fflux
             if sim_properties.saveFluidVel:
-                fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float64)
+                fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fvel[:, Fr_kplus1.EltCrack] = fluid_vel
                 Fr_kplus1.fluidVelocity = fvel
             if sim_properties.saveReynNumb:
-                Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float64)
+                Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
@@ -1344,7 +1344,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                       perfNode)
 
     # for the moment, only velocity at edges is returned
-    vel = data
+    fluidVel = data
 
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
@@ -1525,14 +1525,48 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
     if sim_properties.saveRegime:
-        regime_t = find_regime(Fr_kplus1.w, Fr_lstTmStp, mat_properties, sim_properties, timeStep, Kprime_k,
-                               -sgndDist_k[Fr_lstTmStp.EltRibbon])
-        Fr_kplus1.regime = np.vstack((regime_t, Fr_lstTmStp.EltRibbon))
+        regime = np.full((Fr_lstTmStp.mesh.NumberOfElts, ), np.nan, dtype=np.float32)
+        regime[Fr_lstTmStp.EltRibbon] = find_regime(Fr_kplus1.w,
+                                                    Fr_lstTmStp,
+                                                    mat_properties,
+                                                    sim_properties,
+                                                    timeStep,
+                                                    Kprime_k,
+                                                    -sgndDist_k[Fr_lstTmStp.EltRibbon])
+        Fr_kplus1.regime = regime
 
-    # # check if the tip has laminar flow, to be consistent with tip asymptote.
-    # ReNumb, check = turbulence_check_tip(vel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
-    # # plot Reynold's number
-    # plot_Reynolds_number(Fr_kplus1, ReNumb, 1)
+    if fluid_properties.turbulence:
+        if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
+            ReNumb, check = turbulence_check_tip(fluidVel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
+            if sim_properties.saveReynNumb:
+                Fr_kplus1.ReynoldsNumber = ReNumb
+            if sim_properties.saveFluidFlux:
+                Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
+        if sim_properties.saveFluidVel:
+            Fr_kplus1.fluidVelocity = fluidVel
+    else:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics(Fr_kplus1.w,
+                                                              C,
+                                                              mat_properties.SigmaO,
+                                                              Fr_kplus1.mesh,
+                                                              Fr_kplus1.EltCrack,
+                                                              Fr_kplus1.InCrack,
+                                                              fluid_properties.muPrime,
+                                                              fluid_properties.density)
+
+            if sim_properties.saveFluidFlux:
+                fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fflux[:, Fr_kplus1.EltCrack] = fluid_flux
+                Fr_kplus1.fluidFlux = fflux
+            if sim_properties.saveFluidVel:
+                fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fvel[:, Fr_kplus1.EltCrack] = fluid_vel
+                Fr_kplus1.fluidVelocity = fvel
+            if sim_properties.saveReynNumb:
+                Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                Rnum[:, Fr_kplus1.EltCrack] = Rey_num
+                Fr_kplus1.ReynoldsNumber = Rnum
 
     exitstatus = 1
     return exitstatus, Fr_kplus1

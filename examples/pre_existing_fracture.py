@@ -79,6 +79,7 @@ controller.run()
 Fr_list, properties = load_fractures(address=".\\Data\\star")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
+
 plot_prop = PlotProperties(line_style='.')
 Fig_d = plot_fracture_list(Fr_list,
                            variable='d_max',

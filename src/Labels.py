@@ -182,13 +182,26 @@ err_msg_projection = 'Given projection is not supported. Select one of the follo
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
                     " enabled during the simulation. Check SimulationProperties class documentation."
 
-def get_labels(variable, location, projection):
+def get_labels(variable, data_subset='wm', projection='2D'):
+    """
+    This function returns suitable labels for the given variable, location on the mesh and the projection type
 
+    Arguments:
+        variable (string)       -- the given variable for which the labels are to be provided. Possible options are
+                                   given in the supported_variables list.
+        data_subset (string)    -- the subset of data which is plotted. Possible options are:
+                                    -- 'whole mesh' or 'wm'
+                                    -- 'slice' or 's'
+                                    -- 'point' or 'p'
+        projection (string)     -- the string specifying the projection. Possible options are given in
+                                   supported_projections list.
+    :return:
+    """
     label_prop = LabelProperties()
-    if location in ('slice', 's'):
+    if data_subset in ('slice', 's'):
         label_prop.xLabel = 'coordinates ($x,y$)'
         label_prop.yLabel = labels[variable]
-    elif location in ('point', 'p'):
+    elif data_subset in ('point', 'p'):
         label_prop.xLabel = 'time ($s$)'
         label_prop.yLabel = labels[variable]
 

@@ -276,11 +276,27 @@ class Fracture():
         if fluid != None:
             self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
 
+
+        if simulProp.saveReynNumb:
+            self.ReynoldsNumber = np.full((4, Mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.ReynoldsNumber = None
+
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
-        self.regime = None
-        self.ReynoldsNumber = None
-        self.fluidVelocity = None
-        self.fluidFlux = None
+        if simulProp.saveRegime:
+            self.regime = np.full((Mesh.NumberOfElts, ), np.nan, dtype=np.float32)
+        else:
+            self.regime = None
+
+        if simulProp.saveFluidFlux:
+            self.fluidFlux = np.full((4, Mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidFlux = None
+
+        if simulProp.saveFluidVel:
+            self.fluidVelocity = np.full((4, Mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidVelocity = None
 
         if simulProp.timeStepLimit is None:
             # setting time step limit according to the initial velocity
@@ -476,7 +492,6 @@ class Fracture():
                                         labels)
 
 # ------------------------------------------------------------------------------------------------------------------
-
 
     def SaveFracture(self, filename):
         with open(filename, 'wb') as output:

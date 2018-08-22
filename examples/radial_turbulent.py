@@ -10,17 +10,16 @@ See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import *
 from src.PostProcessFracture import *
 
 # creating mesh
-Mesh = CartesianMesh(3, 3, 45, 45)
+Mesh = CartesianMesh(0.3, 0.3, 45, 45)
 
 # solid properties
-nu = 0.                            # Poisson's ratio
+nu = 0.                             # Poisson's ratio
 youngs_mod = 2.0e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 1.e6                          # fracture toughness
+K_Ic = 1.e5                         # fracture toughness
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
@@ -35,42 +34,18 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.e-3,
                         turbulence=True)
 
-tmk = (Eprime**(13/2.)*(12.*Fluid.viscosity)**(5./2)*(Q0**(3./2.)))/(((32./np.pi)**0.5*K_Ic)**9.)  # transition M to K vertex
-
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 500.             # the time at which the simulation stops
+simulProp.FinalTime = 2000.              # the time at which the simulation stops
 simulProp.set_tipAsymptote('U')         # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.frontAdvancing = 'implicit'   # to set explicit front tracking
-simulProp.outputTimePeriod = 1e-4       # to save after every steps
-simulProp.set_outFileAddress("./Data/MDR_r1") # the disk address where the files are saved
-simulProp.plotFigure = True
-simulProp.plotAnalytical = True
-simulProp.analyticalSol = 'MDR'
+simulProp.outputEveryTS = 3
+simulProp.set_outputFolder(".\\Data\\MDR_r1") # the disk address where the files are saved
 simulProp.saveReynNumb = True
-simulProp.verbosity = 1
+simulProp.verbosity = 2
 
 # initializing fracture
-initRad = 0.5
+initRad = 0.2
 init_param = ("MDR", "length", initRad)
-
-# initRad = 1.
-# surv_cells, inner_cells = get_circular_survey_cells(Mesh, initRad)
-# surv_cells_dist = initRad  - (abs(Mesh.CenterCoor[surv_cells,1])**2+abs(Mesh.CenterCoor[surv_cells,0])**2)**0.5
-# C = load_elasticity_matrix(Mesh, Eprime)
-#
-# init_param = ('G',              # type of initialization
-#               surv_cells,       # the given survey cells
-#               inner_cells,      # the cell enclosed by the fracture
-#               surv_cells_dist,  # the distance of the survey cells from the front
-#               None,             # the given width
-#               50,               # the pressure (uniform in this case)
-#               C,                # the elasticity matrix
-#               None,             # the volume of the fracture
-#               0)                # the velocity of the propagating front (stationary in this case)
-
-
-
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -90,64 +65,69 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-########### post process.
 
 # plot results
-Fr_list = load_fractures(simulProp.get_outFileAddress(), multpl_sim=True,
-               time_srs=np.linspace(0.0028,0.5,30))
+Fr_list, properties = load_fractures(".\\Data\\MDR_r1",
+                                     time_srs=np.e**np.linspace(np.log(0.00028), np.log(2000), 8))
+time_srs = get_fracture_variable(Fr_list,
+                                 'time')
 
-fig1,fig2=plot_radius(simulProp.get_outFileAddress(), multpl_sim=True,
-                        r_type='mean',
-                        analytical_sol='M',add_labels=False,anltcl_lnStyle='r')
-
-plot_radius(simulProp.get_outFileAddress(), multpl_sim=True,
-                        r_type='mean',fig_r=fig1,fig_err=fig2,
-                        analytical_sol='MDR',add_labels=False)
-plt.show()
-
-t, R, p, w, v, actvElts =MDR_M_vertex_solution(Eprime,Q0,density=Fluid.density,visc=Fluid.viscosity,Mesh=Mesh,t=Fr_list[5].time)
-
-for ff in Fr_list:
-    fig=plot_Reynolds_number(ff,1810)
-    #plot_pressure_contour(ff)
-    # fig=plot_width_contour(ff,bck_colMap='jet')
-    # plot_footprint(simulProp.get_outFileAddress(),  # the address where the results are stored
-    #                plot_at_times=ff.time,  # the time series at which the solution is plotted
-    #                plt_mesh=False,fig=fig,plt_color='r') #
-    plt.show()
+Fig_FP = plot_fracture_list(Fr_list,
+                           variable='mesh')
+Fig_FP = plot_fracture_list(Fr_list,
+                           variable='footprint',
+                           fig=Fig_FP)
+Fig_FP = plot_analytical_solution(regime="M",
+                                  variable='footprint',
+                                  mat_prop=Solid,
+                                  inj_prop=Injection,
+                                  fluid_prop=Fluid,
+                                  fig=Fig_FP,
+                                  time_srs=time_srs)
 
 
-plot_footprint(simulProp.get_outFileAddress(),         # the address where the results are stored
-                        plot_at_times=np.linspace(0.0028,0.031,7),# the time series at which the solution is plotted
-                        analytical_sol='M')            # analytical solution for reference
-plt.show()
+Fr_list, properties = load_fractures(".\\Data\\MDR_r1",)
+time_srs = get_fracture_variable(Fr_list,
+                                 'time')
 
+plot_prop = PlotProperties(graph_scaling='loglog',
+                           line_style='.')
 
-plot_radius(simulProp.get_outFileAddress(), multpl_sim=True,
-                        r_type='mean',
-                        analytical_sol='MDR')
-plt.show()
+label = get_labels('d_mean')
+label.legend = 'radius'
+Fig_r = plot_fracture_list(Fr_list,
+                           variable='d_mean',
+                           plot_prop=plot_prop,
+                           labels=label)
 
+label.legend = 'radius analytical (MDR asymptote)'
+Fig_r = plot_analytical_solution(regime="MDR",
+                                  variable='d_mean',
+                                  mat_prop=Solid,
+                                  inj_prop=Injection,
+                                  fluid_prop=Fluid,
+                                  fig=Fig_r,
+                                  time_srs=time_srs,
+                                  labels=label)
+plot_prop.lineColorAnal = 'b'
+label.legend = 'radius analytical (viscosity dominated)'
+Fig_r = plot_analytical_solution(regime="M",
+                                  variable='d_mean',
+                                  mat_prop=Solid,
+                                  inj_prop=Injection,
+                                  fluid_prop=Fluid,
+                                  fig=Fig_r,
+                                  time_srs=time_srs,
+                                  plot_prop=plot_prop,
+                                  labels=label)
 
-plot_at_injection_point(simulProp.get_outFileAddress(), multpl_sim=True,
-                        plt_pressure=False,
-                        analytical_sol='MDR')
-plt.show()
-
-
-f1,f2,f3,f4 =plot_profile(simulProp.get_outFileAddress(),multpl_sim=True,
-                        plot_at_times=np.linspace(0.0028,0.5,5),
-                        analytical_sol='MDR') #,plt_pressure=True
-
-plt.show()
-
-
-plot_profile(simulProp.get_outFileAddress(),
-                        plot_at_times=np.linspace(0.0028,0.031,5), plt_symbol=".-b")
-plt.show()
-
-
-plot_profile(simulProp.get_outFileAddress(), plt_symbol=".-b")
+Fr_list, properties = load_fractures(".\\Data\\MDR_r1",
+                                     time_srs=np.e**np.linspace(np.log(0.0002), np.log(2000), 10))
+Fig_RN = plot_fracture_list_slice(Fr_list,
+                                  variable='Rn',
+                                  point1=[-Fr_list[-1].mesh.Lx, 0],
+                                  point2=[Fr_list[-1].mesh.Lx, 0],
+                                  edge=1)
 plt.show()
 
 
