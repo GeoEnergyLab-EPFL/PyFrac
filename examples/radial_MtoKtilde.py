@@ -3,8 +3,8 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri Dec 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights reserved.
-See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights
+reserved. See the LICENSE.TXT file for more details.
 """
 
 # imports
@@ -40,9 +40,6 @@ simulProp.FinalTime = 1e7               # the time at which the simulation stops
 simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder(".\\Data\\MtoK_leakoff") # the disk address where the files are saved
 simulProp.verbosity = 2
-simulProp.tmStpPrefactor = 0.3
-simulProp.frontAdvancing = 'implicit'
-simulProp.remeshFactor = 1.5
 
 # initializing fracture
 initTime = 0.5
@@ -65,11 +62,10 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-# controller.run()
+controller.run()
 
 # plotting efficiency
-Fr_list, properties = load_fractures(".\\Data\\MtoK_leakoff",
-                                     simulation='simulation__2018-08-21__20_07_30')
+Fr_list, properties = load_fractures(".\\Data\\MtoK_leakoff")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 

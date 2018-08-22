@@ -714,6 +714,7 @@ class Fracture():
                                                         dt=1.e20)
         injected_vol = inj_prop.injectionRate[1, 0] * Fr_coarse.time
         Fr_coarse.efficiency = (injected_vol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack])) / injected_vol
+        Fr_coarse.time = self.time
 
         # update the saved properties
         if sim_prop.saveToDisk:

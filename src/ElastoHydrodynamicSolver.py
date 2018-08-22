@@ -772,7 +772,6 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 return solk, None
 
-
         norm = np.linalg.norm(abs(solk - solkm1)) / np.linalg.norm(abs(solkm1))
 
         normlist.append(norm)
