@@ -86,7 +86,7 @@ Fig = plot_fracture_list(Fr_list,
                          variable='mesh',
                          backGround_param='sigma0',
                          mat_properties=Solid)
-plot_prop = PlotProperties(line_color='r')
+plot_prop = PlotProperties(line_color='darkmagenta')
 Fig = plot_fracture_list(Fr_list,
                          variable='footprint',
                          fig=Fig,
@@ -101,7 +101,7 @@ ax.plot(data[:, 6]*1e-3, -1e-3*data[:, 7], 'k')
 ax.plot(data[:, 8]*1e-3, -1e-3*data[:, 9], 'k')
 
 blue_patch = mpatches.mlines.Line2D([], [], color='k', label='experiment (Wu et al. 2008)')
-black_patch = mpatches.mlines.Line2D([], [], color='r', label='numerical')
+black_patch = mpatches.mlines.Line2D([], [], color='darkmagenta', label='numerical')
 plt.legend(handles=[blue_patch, black_patch])
 ax.set_ylim(-170e-3, 50e-3,)
 
