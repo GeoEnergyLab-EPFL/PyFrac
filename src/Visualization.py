@@ -24,6 +24,7 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import matplotlib.animation as animation
+import copy
 
 
 def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None, projection='2D', elements=None,
@@ -655,6 +656,8 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
 
     if plot_prop is None:
         plot_prop = PlotProperties()
+    else:
+        plot_prop_cp = copy.copy(plot_prop)
 
     if labels is None:
         labels = get_labels(variable, 'wm', '2D')
@@ -690,20 +693,20 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                     'front_dist_mean', 'd_mean'):
         raise ValueError("The given variable does not vary spatially.")
     else:
-        plot_prop.colorMap = plot_prop.colorMaps[1]
-        plot_prop.lineStyle = plot_prop.lineStyleAnal
-        plot_prop.lineWidth = plot_prop.lineWidthAnal
+        plot_prop_cp.colorMap = plot_prop.colorMaps[1]
+        plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
+        plot_prop_cp.lineWidth = plot_prop.lineWidthAnal
         label = labels.legend
         for i in range(len(analytical_list)):
             labels.legend = 'analytical t= '+ to_precision(time_srs[i],
                                                                  plot_prop.dispPrecision)
-            plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
+            plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
             fig = plot_fracture_slice(analytical_list[i],
                                 mesh,
                                 point1=point1,
                                 point2=point2,
                                 fig=fig,
-                                plot_prop=plot_prop,
+                                plot_prop=plot_prop_cp,
                                 vmin=vmin,
                                 vmax=vmax,
                                 plot_colorbar=False,
@@ -740,6 +743,8 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if plot_prop is None:
         plot_prop = PlotProperties()
+    else:
+        plot_prop_cp = copy.copy(plot_prop)
 
     if labels is None:
         labels_given = False
@@ -766,9 +771,9 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
                     'front_dist_mean', 'd_mean'):
         print("The given variable does not vary spatially.")
 
-    plot_prop.lineColor = plot_prop.lineColorAnal
-    plot_prop.lineStyle = plot_prop.lineStyleAnal
-    plot_prop.lineWidth = plot_prop.lineWidthAnal
+    plot_prop_cp.lineColor = plot_prop.lineColorAnal
+    plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
+    plot_prop_cp.lineWidth = plot_prop.lineWidthAnal
     if not labels_given:
         labels.legend = labels.legend + ' analytical'
     labels.xLabel = 'time ($s$)'
@@ -776,7 +781,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
     fig = plot_variable_vs_time(time_srs,
                                 analytical_list,
                                 fig=fig,
-                                plot_prop=plot_prop,
+                                plot_prop=plot_prop_cp,
                                 label=labels.legend)
 
     ax = fig.get_axes()[0]
@@ -915,7 +920,7 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
 
     if plot_prop is None:
         plot_prop = PlotProperties()
-        plot_prop.lineColor = color
+        plot_prop.lineColorAnal = color
 
     footprint_patches = get_HF_analytical_solution_footprint(regime,
                                          mat_prop,
@@ -965,6 +970,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
         if plot_prop is None:
             plot_prop = PlotProperties()
+        else:
+            plot_prop_cp = copy.copy(plot_prop)
 
         analytical_list, mesh = get_HF_analytical_solution(regime,
                                           variable,
@@ -991,26 +998,26 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
         if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
                         'front_dist_mean', 'd_mean'):
-            plot_prop.lineStyle = plot_prop.lineStyleAnal
-            plot_prop.lineColor = plot_prop.lineColorAnal
-            plot_prop.lineWidth = plot_prop.lineWidthAnal
+            plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
+            plot_prop_cp.lineColor = plot_prop.lineColorAnal
+            plot_prop_cp.lineWidth = plot_prop.lineWidthAnal
             if not labels_given:
                 labels.legend = labels.legend + ' analytical'
             labels.xLabel = 'time ($s$)'
             fig = plot_variable_vs_time(time_srs,
                                         analytical_list,
                                         fig=fig,
-                                        plot_prop=plot_prop,
+                                        plot_prop=plot_prop_cp,
                                         label=labels.legend)
             projection = '2D'
         else:
-            plot_prop.colorMap = plot_prop.colorMapAnal
+            plot_prop_cp.colorMap = plot_prop.colorMapAnal
             if projection is '2D_image':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_image(analytical_list[i],
                                                           mesh,
                                                           fig=fig,
-                                                          plot_prop=plot_prop,
+                                                          plot_prop=plot_prop_cp,
                                                           vmin=vmin,
                                                           vmax=vmax)
             elif projection is '2D_contours':
@@ -1018,7 +1025,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                     fig = plot_fracture_variable_as_contours(analytical_list[i],
                                                              mesh,
                                                              fig=fig,
-                                                             plot_prop=plot_prop,
+                                                             plot_prop=plot_prop_cp,
                                                              contours_at=contours_at,
                                                              vmin=vmin,
                                                              vmax=vmax)
@@ -1027,7 +1034,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                     fig = plot_fracture_variable_as_surface(analytical_list[i],
                                                             mesh,
                                                             fig=fig,
-                                                            plot_prop=plot_prop,
+                                                            plot_prop=plot_prop_cp,
                                                             plot_colorbar=False,
                                                             vmin=vmin,
                                                             vmax=vmax)
@@ -1038,11 +1045,11 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
     plt.title(labels.figLabel)
     if projection is '3D':
         ax.set_zlabel(labels.zLabel)
-        sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
+        sm = plt.cm.ScalarMappable(cmap=plot_prop_cp.colorMap,
                                    norm=plt.Normalize(vmin=vmin,
                                                       vmax=vmax))
         sm._A = []
-        cb = plt.colorbar(sm, alpha=plot_prop.alpha)
+        cb = plt.colorbar(sm, alpha=plot_prop_cp.alpha)
         cb.set_label(labels.colorbarLabel + ' analytical')
     elif projection in ('2D_image', '2D_contours'):
         im = ax.images
@@ -1058,7 +1065,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_plot, fluid_prop=None, time_srs=None,
+def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, fluid_prop=None, time_srs=None,
                                          h=None, samp_cell=None, gamma=None):
 
     if time_srs is None:
@@ -1110,19 +1117,19 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_plot, 
         if regime in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):
             return_pathces.append(mpatches.Circle((0., 0.),
                                    x_len,
-                                   edgecolor=plot_plot.lineColor,
+                                   edgecolor=plot_prop.lineColorAnal,
                                    facecolor='none'))
         elif regime in ('PKN', 'KGD_K'):
             return_pathces.append(mpatches.Rectangle(xy=(-x_len, -y_len),
                                       width=2 * x_len,
                                       height=2 * y_len,
-                                      edgecolor=plot_plot.lineColor,
+                                      edgecolor=plot_prop.lineColorAnal,
                                       facecolor='none'))
         elif regime in ('E_K', 'E_E'):
             return_pathces.append(mpatches.Ellipse(xy=(0., 0.),
                                    width=2 * x_len,
                                    height=2 * y_len,
-                                   edgecolor=plot_plot.lineColor,
+                                   edgecolor=plot_prop.lineColorAnal,
                                    facecolor='none'))
         else:
             raise ValueError("Regime not supported.")
