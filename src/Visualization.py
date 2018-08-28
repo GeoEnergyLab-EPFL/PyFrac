@@ -98,7 +98,7 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
             vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
+    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'V', 'volume'
                     'front_dist_mean', 'd_mean', 'efficiency', 'ef', 'aspect ratio', 'ar'):
         labels.xLabel = 'time'
         fig = plot_variable_vs_time(time_list, var_val_list, fig=fig, plot_prop=plot_prop, label=labels.legend)

@@ -750,10 +750,6 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
     normlist = []
 
     tryNewton = False
-
-    (EltChannel, EltsTipNew, wLastTS, wTip, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff, sigma0,
-     turb, dgrain, gravity) = args
-
     newton = 0
 
     while norm > Tol and k < maxitr:
@@ -774,27 +770,6 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr, Tol, maxitr, *arg
                 print('singlular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 return solk, None
-
-        if (wLastTS[EltChannel] + solk[np.arange(EltChannel.size)] < 0).any():
-            xsol = np.copy(solk)
-            for j in range(5):
-                print("Found negative width. Trying to find the non-negative solution...")
-                dw_sol = xsol[np.arange(EltChannel.size)]
-                neg = np.where(dw_sol + wLastTS[EltChannel] < 0)[0]
-                xn_ = np.delete(np.arange(len(EltChannel) + len(EltsTipNew)), neg)
-                axx_ = np.dot(A[np.ix_(xn_, neg)], -dw_sol[neg])
-                Ap = np.delete(A, neg, 1)
-                Ap = np.delete(Ap, neg, 0)
-                dx = np.linalg.solve(Ap, -axx_)
-
-                xsol = np.zeros((len(EltChannel) + len(EltsTipNew), ))
-                xsol[xn_] = solk[xn_] + dx
-                if not (wLastTS[EltChannel] + xsol[np.arange(EltChannel.size)] < 0).any():
-                    break
-                else:
-                    print("iterating...")
-
-            solk = xsol
 
         norm = np.linalg.norm(abs(solk - solkm1)) / np.linalg.norm(abs(solkm1))
 

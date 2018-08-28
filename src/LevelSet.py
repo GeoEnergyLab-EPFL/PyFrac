@@ -210,9 +210,16 @@ def reconstruct_front(dist, EltChannel, mesh):
                 else:
                     alpha = np.append(alpha, np.nan)
 
-
-
-
+    nan = np.where(np.isnan(alpha))[0]
+    if len(nan) > 0:
+        alpha_mesh = np.full((mesh.NumberOfElts,), np.nan)
+        alpha_mesh[ElmntTip] = alpha
+        for i in range(len(nan)):
+            neighbors = mesh.NeiElements[ElmntTip[nan[i]]]
+            neig_in_tip = np.intersect1d(ElmntTip, neighbors)
+            alpha_neig = alpha_mesh[neig_in_tip]
+            alpha_neig = np.delete(alpha_neig, np.where(np.isnan(alpha_neig))[0])
+            alpha[nan[i]] = np.mean(alpha_neig)
 
     CellStatusNew = np.zeros((mesh.NumberOfElts), int)
     CellStatusNew[EltChannel] = 1
