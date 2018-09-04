@@ -14,7 +14,7 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 41, 41)
+Mesh = CartesianMesh(10, 4, 101, 101, symmetric=True)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -24,7 +24,7 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
 def K1c_func(alpha):
     K1c_1 = 1.e6                    # fracture toughness along x-axis
-    K1c_2 = 1.5e6                   # fracture toughness along y-axis
+    K1c_2 = 2.0e6                   # fracture toughness along y-axis
 
     beta = np.arctan((K1c_1 / K1c_2)**2 * np.tan(alpha))
     return 4 * (2/np.pi)**0.5 * K1c_2 * (np.sin(beta)**2 + (K1c_1 / K1c_2)**4 * np.cos(beta)**2)**0.25
@@ -45,17 +45,13 @@ Fluid = FluidProperties(viscosity=1.1e-5)
 simulProp = SimulationParameters()
 simulProp.FinalTime = 500               # the time at which the simulation stops
 simulProp.set_volumeControl(True)     # to set up the solver in volume control mode (inviscid fluid)
-simulProp.set_tipAsymptote('K')       # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.outputTimePeriod = 1e-10      # save after every time step
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
 simulProp.set_outputFolder(".\\Data\\ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
-simulProp.verbosity = 2
-# simulProp.plotFigure = True
+simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = 'E_K'
-simulProp.explicitProjection = True
 simulProp.symmetric = True
 
 # initializing fracture
@@ -88,7 +84,7 @@ controller.run()
 ####################
 
 # loading simulation results
-time_srs = 2 ** np.linspace(np.log2(1), np.log2(500), 8)
+time_srs = np.linspace(1, 500, 8)
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
                                     simulation='anisotropic_toughness_benchmark',
                                     time_srs=time_srs)

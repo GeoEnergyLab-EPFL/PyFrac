@@ -559,7 +559,7 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
             try:
                 K1c[i] = mat_prop.K1cFunc(x[i], y[i])
             except TypeError:
-                SystemExit("For precise spacke dependant toughness, the function taking the coordinates and returning"
+                SystemExit("For precise space dependant toughness, the function taking the coordinates and returning"
                            "the toughness is to be provided.")
         return K1c
 

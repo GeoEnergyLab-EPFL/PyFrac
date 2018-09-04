@@ -656,8 +656,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
 
     if plot_prop is None:
         plot_prop = PlotProperties()
-    else:
-        plot_prop_cp = copy.copy(plot_prop)
+    plot_prop_cp = copy.copy(plot_prop)
 
     if labels is None:
         labels = get_labels(variable, 'wm', '2D')
@@ -970,8 +969,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
         if plot_prop is None:
             plot_prop = PlotProperties()
-        else:
-            plot_prop_cp = copy.copy(plot_prop)
+        plot_prop_cp = copy.copy(plot_prop)
 
         analytical_list, mesh = get_HF_analytical_solution(regime,
                                           variable,
