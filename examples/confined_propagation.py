@@ -10,7 +10,7 @@ See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import *
+
 
 # creating mesh
 Mesh = CartesianMesh(12, 4, 51, 35)
@@ -45,6 +45,7 @@ simulProp = SimulationParameters()
 simulProp.FinalTime = 27.           # the time at which the simulation stops
 simulProp.outputTimePeriod = 0.1    # the time after which the next fracture file is saved
 simulProp.bckColor = 'sigma0'       # the parameter according to which the mesh is color coded
+simulProp.set_outputFolder(".\\Data\\confined_propagation")
 
 # initializing fracture
 initRad = 1.5
@@ -75,7 +76,8 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(time_srs=np.linspace(1, 27, 10))
+Fr_list, properties = load_fractures(address=".\\Data\\confined_propagation",
+                                     time_srs=np.linspace(1, 27, 10))
 
 # animate results
 animate_simulation_results(Fr_list,
@@ -86,7 +88,8 @@ animate_simulation_results(Fr_list,
 
 
 # loading simulation results
-Fr_list, properties = load_fractures(time_srs=np.linspace(1, 27, 4))
+Fr_list, properties = load_fractures(address=".\\Data\\confined_propagation",
+                                     time_srs=np.linspace(1, 27, 4))
 
 #plotting in 3D
 Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
