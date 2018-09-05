@@ -11,7 +11,6 @@ reserved. See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import *
 from src.anisotropy import *
 
 # creating mesh
