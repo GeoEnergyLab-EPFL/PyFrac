@@ -742,8 +742,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if plot_prop is None:
         plot_prop = PlotProperties()
-    else:
-        plot_prop_cp = copy.copy(plot_prop)
+    plot_prop_cp = copy.copy(plot_prop)
 
     if labels is None:
         labels_given = False

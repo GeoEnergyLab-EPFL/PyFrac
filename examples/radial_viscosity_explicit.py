@@ -10,7 +10,7 @@ reserved. See the LICENSE.TXT file for more details.
 # imports
 from src.Fracture import *
 from src.Controller import *
-from src.PostProcess import *
+
 
 # creating mesh
 Mesh = CartesianMesh(0.3, 0.3, 41, 41)
