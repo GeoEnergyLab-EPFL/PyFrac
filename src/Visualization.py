@@ -169,7 +169,7 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
 
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
-                             fig=None, edge=4, labels=None):
+                             fig=None, edge=4, labels=None, plt_2D_image=True):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -227,7 +227,8 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                 vmin=vmin,
                                 vmax=vmax,
                                 plot_colorbar=False,
-                                labels=labels)
+                                labels=labels,
+                                plt_2D_image=plt_2D_image)
             else:
                 fig = plot_slice_3D(var_val_copy[i],
                                     mesh_list[i],
@@ -242,7 +243,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
-    if '2D' in projection:
+    if '2D' in projection and plt_2D_image:
         plt.subplot(211)
         plt.title('Top View')
         im = ax.images
@@ -250,12 +251,16 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         cax = divider.append_axes('right', size='5%', pad=0.05)
         cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
         cb.set_label(labels.colorbarLabel)
-
-        ax = fig.get_axes()[1]
-        ax.set_ylabel(labels.colorbarLabel)
-    else:
+    elif projection == '3D':
         ax.set_zlabel(labels.zLabel)
         plt.title(labels.figLabel)
+
+    if plt_2D_image:
+        ax = fig.get_axes()[1]
+    else:
+        ax = fig.get_axes()[0]
+    ax.set_ylabel(labels.colorbarLabel)
+    ax.set_xlabel(labels.xLabel + ' (x,y)')
 
     if plot_prop.plotLegend:
         ax.legend()
@@ -565,13 +570,20 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
                         plot_colorbar=True, labels=None, plt_2D_image=True):
 
     print("Plotting slice...")
-    if fig is None:
-        fig = plt.figure()
-        ax_2D = fig.add_subplot(211)
-        ax_slice = fig.add_subplot(212)
+    if plt_2D_image:
+        if fig is None:
+            fig = plt.figure()
+            ax_2D = fig.add_subplot(211)
+            ax_slice = fig.add_subplot(212)
+        else:
+            ax_2D = fig.get_axes()[0]
+            ax_slice = fig.get_axes()[1]
     else:
-        ax_2D = fig.get_axes()[0]
-        ax_slice = fig.get_axes()[1]
+        if fig is None:
+            fig = plt.figure()
+            ax_slice = fig.add_subplot(111)
+        else:
+            ax_slice = fig.get_axes()[0]
 
     if plot_prop is None:
         plot_prop = PlotProperties()
@@ -596,7 +608,7 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
                             vmin=vmin,
                             vmax=vmax)
 
-        if plot_colorbar:
+        if plt_2D_image and plot_colorbar:
             divider = make_axes_locatable(ax_2D)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             fig.colorbar(im_2D, cax=cax, orientation='vertical')
@@ -606,14 +618,48 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
         point1 = np.array([-mesh.Lx, 0.])
     if point2 is None:
         point2 = np.array([mesh.Lx, 0.])
-    ax_2D.plot(np.array([point1[0], point2[0]]),
+
+    # the code below find the extreme points of the line joining the two given points with the current mesh
+    slope = (point2[1] - point1[1]) / (point2[0] - point1[0])
+    if slope == 0.:
+        point1[0] = -mesh.Lx
+        point2[0] = mesh.Lx
+    else:
+        y_intrcpt_lft = slope * (-mesh.Lx - point1[0]) + point1[1]
+        y_intrcpt_rgt = slope * (mesh.Lx - point1[0]) + point1[1]
+        x_intrcpt_btm = (-mesh.Ly - point1[1]) / slope + point1[0]
+        x_intrcpt_top = (mesh.Ly - point1[1]) / slope + point1[0]
+
+        if abs(y_intrcpt_lft) < mesh.Ly:
+            point1[0] = -mesh.Lx
+            point1[1] = y_intrcpt_lft
+        if y_intrcpt_lft > mesh.Ly:
+            point1[0] = x_intrcpt_top
+            point1[1] = mesh.Ly
+        if y_intrcpt_lft < -mesh.Ly:
+            point1[0] = x_intrcpt_btm
+            point1[1] = -mesh.Ly
+
+        if abs(y_intrcpt_rgt) < mesh.Ly:
+            point2[0] = mesh.Lx
+            point2[1] = y_intrcpt_rgt
+        if y_intrcpt_rgt > mesh.Ly:
+            point2[0] = x_intrcpt_top
+            point2[1] = mesh.Ly
+        if y_intrcpt_rgt < -mesh.Ly:
+            point2[0] = x_intrcpt_btm
+            point2[1] = -mesh.Ly
+
+
+    if plt_2D_image:
+        ax_2D.plot(np.array([point1[0], point2[0]]),
                np.array([point1[1], point2[1]]),
                plot_prop.lineStyle,
                color=plot_prop.lineColor)
 
 
-    sampling_points = np.hstack((np.linspace(point1[0], point2[0], 100).reshape((100, 1)),
-                                 np.linspace(point1[1], point2[1], 100).reshape((100, 1))))
+    sampling_points = np.hstack((np.linspace(point1[0], point2[0], 105).reshape((105, 1)),
+                                 np.linspace(point1[1], point2[1], 105).reshape((105, 1))))
 
     value_samp_points = griddata(mesh.CenterCoor,
                                     var_value,
@@ -621,19 +667,21 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
                                     method='linear',
                                     fill_value=np.nan)
 
-    sampling_line = ((sampling_points[:, 0] - sampling_points[0, 0]) ** 2 +
-                     (sampling_points[:, 1] - sampling_points[0, 1]) ** 2 ) ** 0.5
-
+    sampling_line_lft = ((sampling_points[:52, 0] - sampling_points[52, 0]) ** 2 +
+                     (sampling_points[:52, 1] - sampling_points[52, 1]) ** 2) ** 0.5
+    sampling_line_rgt = ((sampling_points[52:, 0] - sampling_points[52, 0]) ** 2 +
+                         (sampling_points[52:, 1] - sampling_points[52, 1]) ** 2) ** 0.5
+    sampling_line = np.concatenate((-sampling_line_lft, sampling_line_rgt))
     ax_slice.plot(sampling_line,
                   value_samp_points,
                   plot_prop.lineStyle,
                   color=plot_prop.lineColor,
                   label=labels.legend)
 
-    ax_slice.set_xticks(np.hstack((sampling_line[0:100:20], sampling_line[99])))
+    ax_slice.set_xticks(np.hstack((sampling_line[[0, 20, 41, 62, 83, 104]], sampling_line[104])))
 
     xtick_labels = []
-    for i in [0, 19, 39, 59, 79, 99]:
+    for i in [0, 20, 41, 62, 83, 104]:
         xtick_labels.append('(' + to_precision(sampling_points[i, 0],
                                                 plot_prop.dispPrecision) + ', ' +
                                   to_precision(sampling_points[i, 1],
@@ -661,17 +709,17 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
     if labels is None:
         labels = get_labels(variable, 'wm', '2D')
 
-    analytical_list, mesh = get_HF_analytical_solution(regime,
-                                                                  variable,
-                                                                  mat_prop,
-                                                                  inj_prop,
-                                                                  mesh=mesh,
-                                                                  fluid_prop=fluid_prop,
-                                                                  time_srs=time_srs,
-                                                                  length_srs=length_srs,
-                                                                  h=h,
-                                                                  samp_cell=samp_cell,
-                                                                  gamma=gamma)
+    analytical_list, mesh_list = get_HF_analytical_solution(regime,
+                                                      variable,
+                                                      mat_prop,
+                                                      inj_prop,
+                                                      mesh=mesh,
+                                                      fluid_prop=fluid_prop,
+                                                      time_srs=time_srs,
+                                                      length_srs=length_srs,
+                                                      h=h,
+                                                      samp_cell=samp_cell,
+                                                      gamma=gamma)
 
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
@@ -701,7 +749,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                                  plot_prop.dispPrecision)
             plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
             fig = plot_fracture_slice(analytical_list[i],
-                                mesh,
+                                mesh_list[i],
                                 point1=point1,
                                 point2=point2,
                                 fig=fig,
@@ -715,17 +763,19 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
-    plt.subplot(211)
-    plt.title('Top View')
+
     if plt_2D_image:
+        plt.subplot(211)
+        plt.title('Top View')
         im = ax.images
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
         cb.set_label(labels.colorbarLabel + ' analytical')
 
-    ax = fig.get_axes()[1]
-    ax.set_ylabel(labels.colorbarLabel)
+        ax = fig.get_axes()[1]
+        ax.set_ylabel(labels.colorbarLabel)
+
     if plot_prop.plotLegend:
         ax.legend()
 
@@ -970,7 +1020,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             plot_prop = PlotProperties()
         plot_prop_cp = copy.copy(plot_prop)
 
-        analytical_list, mesh = get_HF_analytical_solution(regime,
+        analytical_list, mesh_list = get_HF_analytical_solution(regime,
                                           variable,
                                           mat_prop,
                                           inj_prop,
@@ -1012,7 +1062,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             if projection is '2D_image':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_image(analytical_list[i],
-                                                          mesh,
+                                                          mesh[i],
                                                           fig=fig,
                                                           plot_prop=plot_prop_cp,
                                                           vmin=vmin,
@@ -1020,7 +1070,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             elif projection is '2D_contours':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_contours(analytical_list[i],
-                                                             mesh,
+                                                             mesh[i],
                                                              fig=fig,
                                                              plot_prop=plot_prop_cp,
                                                              contours_at=contours_at,
@@ -1029,7 +1079,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             elif projection is '3D':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_surface(analytical_list[i],
-                                                            mesh,
+                                                            mesh[i],
                                                             fig=fig,
                                                             plot_prop=plot_prop_cp,
                                                             plot_colorbar=False,

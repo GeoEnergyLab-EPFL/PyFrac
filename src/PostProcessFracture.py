@@ -338,7 +338,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     else:
         density = None
 
-    if regime is 'M':
+    if regime in ('M', 'MDR'):
         if fluid_prop is None:
             raise ValueError('Fluid properties required for \'M\' type analytical solution')
         muPrime = fluid_prop.muPrime
@@ -348,18 +348,6 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     if samp_cell is None:
         samp_cell = int(len(mat_prop.Kprime) / 2)
 
-    if mesh is None:
-        x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
-                                                        time_srs,
-                                                        mat_prop,
-                                                        inj_prop,
-                                                        fluid_prop=fluid_prop,
-                                                        h=h,
-                                                        samp_cell=samp_cell,
-                                                        gamma=gamma)
-
-        from src.CartesianMesh import CartesianMesh
-        mesh = CartesianMesh(x_len, y_len, 151, 151)
 
     return_list = []
 
@@ -368,7 +356,24 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     else:
         srs_length = len(length_srs)
 
+    mesh_list = []
     for i in range(srs_length):
+
+        if mesh is None:
+            x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
+                                                                              time_srs[i],
+                                                                              mat_prop,
+                                                                              inj_prop,
+                                                                              fluid_prop=fluid_prop,
+                                                                              h=h,
+                                                                              samp_cell=samp_cell,
+                                                                              gamma=gamma)
+
+            from src.CartesianMesh import CartesianMesh
+            mesh_i = CartesianMesh(x_len, y_len, 151, 151)
+            mesh_list.append(mesh_i)
+        else:
+            mesh_i = mesh
 
         if length_srs is not None:
             length = length_srs[i]
@@ -382,7 +387,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
 
         if variable in ('time', 't', 'radius', 'r', 'width', 'w', 'pressure', 'p', 'front velocity', 'v'):
             t, r, p, w, v, actvElts = HF_analytical_sol(regime,
-                                                        mesh,
+                                                        mesh_i,
                                                         mat_prop.Eprime,
                                                         inj_prop.injectionRate[1,0],
                                                         muPrime,
@@ -428,7 +433,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
         else:
             raise ValueError('The variable type is not correct.')
 
-    return return_list, mesh
+    return return_list, mesh_list
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -465,7 +470,7 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
         else:
             length = None
 
-        value_mesh, mesh = get_HF_analytical_solution(regime,
+        value_mesh, mesh_list = get_HF_analytical_solution(regime,
                                                         variable,
                                                         mat_prop,
                                                         inj_prop,
@@ -479,7 +484,7 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
 
 
         if point == [0., 0.]:
-            values_point.append(value_mesh[0][mesh.CenterElts])
+            values_point.append(value_mesh[0][mesh_list[0].CenterElts])
         else:
             value_point = value_mesh[0][18]
             values_point.append(value_point)
