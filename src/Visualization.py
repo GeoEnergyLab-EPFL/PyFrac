@@ -260,7 +260,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     else:
         ax = fig.get_axes()[0]
     ax.set_ylabel(labels.colorbarLabel)
-    ax.set_xlabel(labels.xLabel + ' (x,y)')
+    ax.set_xlabel('(x,y) ' + labels.xLabel )
 
     if plot_prop.plotLegend:
         ax.legend()
@@ -743,9 +743,8 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
         plot_prop_cp.colorMap = plot_prop.colorMaps[1]
         plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
         plot_prop_cp.lineWidth = plot_prop.lineWidthAnal
-        label = labels.legend
         for i in range(len(analytical_list)):
-            labels.legend = 'analytical t= '+ to_precision(time_srs[i],
+            labels.legend = 'analytical (' + regime + ') t= ' + to_precision(time_srs[i],
                                                                  plot_prop.dispPrecision)
             plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
             fig = plot_fracture_slice(analytical_list[i],
