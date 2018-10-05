@@ -199,12 +199,16 @@ class Fracture():
                                                                       gamma=gamma)
 
             if init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'):
+                if self.initRad > min(Mesh.Lx, Mesh.Ly):
+                    raise ValueError("The radius of the radial fracture is larger than domain!")
                 # survey cells and their distances from the front
                 surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, self.initRad, self.initRad)
                 surv_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
                                                                             surv_cells, 1] ** 2) ** 0.5
             elif init_type in ('E_E', 'E_K'):
                 a = self.initRad * gamma
+                if self.initRad > Mesh.Ly or a > Mesh.Lx:
+                    raise ValueError("The axes length of the elliptical fracture is larger than domain!")
                 surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, a, self.initRad)
                 surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
                 # get minimum distance from center of the survey cells
@@ -212,6 +216,8 @@ class Fracture():
                      surv_dist[i] = Distance_ellipse(a, self.initRad, Mesh.CenterCoor[surv_cells[i], 0],
                                                                     Mesh.CenterCoor[surv_cells[i], 1])
             elif 'PKN' in init_type or 'KGD' in init_type :
+                if self.initRad > Mesh.Lx or h > Mesh.Ly:
+                    raise ValueError("The fracture is larger than domain!")
                 inner_cells = np.intersect1d(np.where(abs(Mesh.CenterCoor[:, 0]) < self.initRad)[0],
                                              np.where(abs(Mesh.CenterCoor[:, 1]) < h / 2)[0])
                 max_x = max(abs(Mesh.CenterCoor[inner_cells, 0]))
