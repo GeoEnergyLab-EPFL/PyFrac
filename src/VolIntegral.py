@@ -128,7 +128,6 @@ def VolumeTriangle(dist, *param):
         else:
             prop_time = t - t_e - dt
 
-        # intgrl_0_t = -2 / 15 * (t - t_e) ** (3 / 2) * Vel * (-5 * dist + 2 * (t - t_e) * Vel) * em
         intgrl_0_t = 4 / 15 * em * (t - t_e) ** (5 / 2) * Vel**2
         intgrl_0_tm1 = 4 / 15 * em * prop_time ** (5 / 2) * Vel**2
 
@@ -184,8 +183,6 @@ def Area(dist, *param):
         intgrl_0_tm1 = 2/3 * prop_time ** (3 / 2) * Vel
 
         return intgrl_0_t - intgrl_0_tm1
-
-        # return 2 / 3 * Vel ** -0.5 * dist ** 1.5
 
     elif regime == 'Mt':
         return 32 / 13 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * Vel ** 0.125 * dist ** (
