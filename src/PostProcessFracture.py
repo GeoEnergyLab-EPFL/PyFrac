@@ -371,9 +371,9 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
 
             from src.CartesianMesh import CartesianMesh
             mesh_i = CartesianMesh(x_len, y_len, 151, 151)
-            mesh_list.append(mesh_i)
         else:
             mesh_i = mesh
+        mesh_list.append(mesh_i)
 
         if length_srs is not None:
             length = length_srs[i]
