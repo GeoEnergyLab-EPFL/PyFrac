@@ -386,6 +386,7 @@ def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
                      EltCrack,
                      muPrime,
                      mesh,
+                     InCrack,
                      rho)
     else:
         G = np.zeros((mesh.NumberOfElts, ))
