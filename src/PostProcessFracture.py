@@ -130,6 +130,9 @@ def load_fractures(address=None, simulation='simulation', time_period=0.0, time_
     if fileNo >= 5000:
         raise SystemExit('too many files.')
 
+    if len(fracture_list) == 0:
+        raise ValueError("Fracture list is empty")
+
     return fracture_list, properties
 
 

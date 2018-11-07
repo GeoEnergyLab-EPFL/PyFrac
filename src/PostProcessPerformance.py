@@ -29,7 +29,7 @@ else:
     slash = "/"
 import matplotlib.pyplot as plt
 import dill
-from src.PostProcess import to_precision
+from src.Visualization import to_precision
 import numpy as np
 
 def plot_fracture_front_iterations(address=None, fig_itr_time=None, fig_itr_N=None, plt_lnStyle='.', plt_norm=True,

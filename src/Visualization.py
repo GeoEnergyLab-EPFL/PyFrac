@@ -169,7 +169,8 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
 
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
-                             fig=None, edge=4, labels=None, plt_2D_image=True):
+                             fig=None, edge=4, labels=None, plt_2D_image=True, plot_cell_center=False,
+                             orientation='horizontal'):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -218,7 +219,22 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                           plot_prop.dispPrecision)
             plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
             if '2D' in projection:
-                fig = plot_fracture_slice(var_val_copy[i],
+                if plot_cell_center:
+                    plot_prop.lineStyle = '.'
+                    fig, return_pnt1, return_pnt2= plot_fracture_slice_cell_center(var_val_copy[i],
+                                                                  mesh_list[i],
+                                                                  point=point1,
+                                                                  orientation=orientation,
+                                                                  fig=fig,
+                                                                  plot_prop=plot_prop,
+                                                                  vmin=vmin,
+                                                                  vmax=vmax,
+                                                                  plot_colorbar=False,
+                                                                  labels=labels,
+                                                                  plt_2D_image=plt_2D_image,
+                                                                  return_points=True)
+                else:
+                    fig = plot_fracture_slice_interpolated(var_val_copy[i],
                                 mesh_list[i],
                                 point1=point1,
                                 point2=point2,
@@ -264,6 +280,9 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
 
     if plot_prop.plotLegend:
         ax.legend()
+
+    if plot_cell_center:
+        return fig, return_pnt1, return_pnt2
 
     return fig
 
@@ -566,8 +585,8 @@ def plot_fracture_variable_as_contours(var_value, mesh, fig=None, plot_prop=None
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plot_prop=None, vmin=None, vmax=None,
-                        plot_colorbar=True, labels=None, plt_2D_image=True):
+def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, fig=None, plot_prop=None, vmin=None,
+                                     vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True):
 
     print("Plotting slice...")
     if plt_2D_image:
@@ -688,7 +707,141 @@ def plot_fracture_slice(var_value, mesh, point1=None, point2=None, fig=None, plo
                                                 plot_prop.dispPrecision) + ')')
 
     ax_slice.set_xticklabels(xtick_labels)
-    ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+    if vmin is not None and vmax is not None:
+        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
+                                vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
+                                return_points=False):
+
+    print("Plotting slice...")
+    if plt_2D_image:
+        if fig is None:
+            fig = plt.figure()
+            ax_2D = fig.add_subplot(211)
+            ax_slice = fig.add_subplot(212)
+        else:
+            ax_2D = fig.get_axes()[0]
+            ax_slice = fig.get_axes()[1]
+    else:
+        if fig is None:
+            fig = plt.figure()
+            ax_slice = fig.add_subplot(111)
+        else:
+            ax_slice = fig.get_axes()[0]
+
+    if plot_prop is None:
+        plot_prop = PlotProperties()
+        plot_prop.lineStyle = '.'
+
+    if labels is None:
+        labels = LabelProperties()
+
+    if plt_2D_image:
+        x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
+        y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
+
+        var_value_2D = var_value.reshape((mesh.ny, mesh.nx))
+
+        dx = (x[0, 1] - x[0, 0]) / 2.
+        dy = (y[1, 0] - y[0, 0]) / 2.
+        extent = [x[0, 0] - dx, x[-1, -1] + dx, y[0, 0] - dy, y[-1, -1] + dy]
+
+        im_2D = ax_2D.imshow(var_value_2D,
+                            cmap=plot_prop.colorMap,
+                            interpolation=plot_prop.interpolation,
+                            extent=extent,
+                            vmin=vmin,
+                            vmax=vmax)
+
+        if plt_2D_image and plot_colorbar:
+            divider = make_axes_locatable(ax_2D)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im_2D, cax=cax, orientation='vertical')
+
+
+    if point is None:
+        point = np.array([0., 0.])
+    if orientation not in ('horizontal', 'vertical', 'increasing', 'decreasing'):
+        raise ValueError("Given orientation is not supported. Possible options:\n 'horizontal', 'vertical',"
+                         " 'increasing', 'decreasing'")
+
+    zero_cell = mesh.locate_element(point[0], point[1])
+    if len(zero_cell) < 1:
+        raise ValueError("The given point does not lie in the grid!")
+
+    if orientation is 'vertical':
+        sampling_cells = np.hstack((np.arange(zero_cell, 0, -mesh.nx)[::-1],
+                                    np.arange(zero_cell, mesh.NumberOfElts, mesh.nx)))
+    elif orientation is 'horizontal':
+        sampling_cells = np.arange(zero_cell // mesh.nx * mesh.nx, (zero_cell // mesh.nx + 1) * mesh.nx)
+
+    elif orientation is 'increasing':
+        bottom_half = np.arange(zero_cell, 0, -mesh.nx - 1)
+        bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] >
+                                                      mesh.CenterCoor[zero_cell, 0])[0])
+        top_half = np.arange(zero_cell, mesh.NumberOfElts, mesh.nx + 1)
+        top_half = np.delete(top_half, np.where(mesh.CenterCoor[top_half, 0] <
+                                                mesh.CenterCoor[zero_cell, 0])[0])
+        sampling_cells = np.hstack((bottom_half[::-1], top_half))
+
+    elif orientation is 'decreasing':
+        bottom_half = np.arange(zero_cell, 0, -mesh.nx + 1)
+        bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] <
+                                                      mesh.CenterCoor[zero_cell, 0])[0])
+        top_half = np.arange(zero_cell, mesh.NumberOfElts, mesh.nx - 1)
+        top_half = np.delete(top_half, np.where(mesh.CenterCoor[top_half, 0] >
+                                                      mesh.CenterCoor[zero_cell, 0])[0])
+        sampling_cells = np.hstack((bottom_half[::-1], top_half))
+
+
+    if plt_2D_image:
+        ax_2D.plot(mesh.CenterCoor[sampling_cells, 0],
+                   mesh.CenterCoor[sampling_cells, 1],
+                   'k.')
+
+    sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
+                   (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
+
+    # making x-axis centered at zero for the 1D slice. Neccessary to have same reference with different meshes and
+    # analytical solution plots.
+    sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
+
+    ax_slice.plot(sampling_line,
+                  var_value[sampling_cells],
+                  plot_prop.lineStyle,
+                  color=plot_prop.lineColor,
+                  label=labels.legend)
+
+    if len(sampling_cells) > 7:
+        mid = len(sampling_cells) // 2
+        half_1st = np.arange(0, mid, mid // 3)
+        half_2nd = np.arange(mid + mid // 3, len(sampling_cells), mid // 3)
+        if len(half_2nd) < 3:
+            half_2nd = np.append(half_2nd, len(sampling_cells) - 1)
+        x_ticks = np.hstack((half_1st[:3], np.array([mid], dtype=int)))
+        x_ticks = np.hstack((x_ticks, half_2nd))
+
+    ax_slice.set_xticks(x_ticks)
+
+    xtick_labels = []
+    for i in x_ticks:
+        xtick_labels.append('(' + to_precision(np.round(mesh.CenterCoor[sampling_cells[i], 0], 3),
+                                                plot_prop.dispPrecision) + ', ' +
+                                  to_precision(np.round(mesh.CenterCoor[sampling_cells[i], 1], 3),
+                                                plot_prop.dispPrecision) + ')')
+
+    ax_slice.set_xticklabels(xtick_labels)
+    if vmin is not None and vmax is not None:
+        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+
+    if return_points:
+        return fig, mesh.CenterCoor[sampling_cells[0]], mesh.CenterCoor[sampling_cells[-1]]
 
     return fig
 
@@ -701,6 +854,10 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
+
+    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
+                    'front_dist_mean', 'd_mean'):
+        raise ValueError("The given variable does not vary spatially.")
 
     if plot_prop is None:
         plot_prop = PlotProperties()
@@ -724,6 +881,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
 
+    # finding maximum and minimum values in complete list
     analytical_value = np.copy(analytical_list)
     vmin, vmax = np.inf, -np.inf
     for i in analytical_value:
@@ -736,28 +894,24 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
             i_min, i_max = np.min(i), np.max(i)
         vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-                    'front_dist_mean', 'd_mean'):
-        raise ValueError("The given variable does not vary spatially.")
-    else:
-        plot_prop_cp.colorMap = plot_prop.colorMaps[1]
-        plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
-        plot_prop_cp.lineWidth = plot_prop.lineWidthAnal
-        for i in range(len(analytical_list)):
-            labels.legend = 'analytical (' + regime + ') t= ' + to_precision(time_srs[i],
-                                                                 plot_prop.dispPrecision)
-            plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
-            fig = plot_fracture_slice(analytical_list[i],
-                                mesh_list[i],
-                                point1=point1,
-                                point2=point2,
-                                fig=fig,
-                                plot_prop=plot_prop_cp,
-                                vmin=vmin,
-                                vmax=vmax,
-                                plot_colorbar=False,
-                                labels=labels,
-                                plt_2D_image=plt_2D_image)
+    plot_prop_cp.colorMap = plot_prop.colorMaps[1]
+    plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
+    plot_prop_cp.lineWidth = plot_prop.lineWidthAnal
+    for i in range(len(analytical_list)):
+        labels.legend = 'analytical (' + regime + ') t= ' + to_precision(time_srs[i],
+                                                             plot_prop.dispPrecision)
+        plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
+        fig = plot_fracture_slice_interpolated(analytical_list[i],
+                            mesh_list[i],
+                            point1=point1,
+                            point2=point2,
+                            fig=fig,
+                            plot_prop=plot_prop_cp,
+                            vmin=vmin,
+                            vmax=vmax,
+                            plot_colorbar=False,
+                            labels=labels,
+                            plt_2D_image=plt_2D_image)
 
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)

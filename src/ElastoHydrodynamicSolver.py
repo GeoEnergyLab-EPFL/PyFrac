@@ -216,21 +216,6 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     ReBtmEdge_nonZero = np.where(ReBtmEdge > 0.)[0]
     ReTopEdge_nonZero = np.where(ReTopEdge > 0.)[0]
 
-    vk[4, EltCrack] = (vk[2, Mesh.NeiElements[EltCrack, 0]] + vk[3, Mesh.NeiElements[EltCrack, 0]] + vk[2, EltCrack] +
-                       vk[3, EltCrack]) / 4
-    vk[5, EltCrack] = (vk[2, Mesh.NeiElements[EltCrack, 1]] + vk[3, Mesh.NeiElements[EltCrack, 1]] + vk[2, EltCrack] +
-                       vk[3, EltCrack]) / 4
-    vk[6, EltCrack] = (vk[0, Mesh.NeiElements[EltCrack, 2]] + vk[1, Mesh.NeiElements[EltCrack, 2]] + vk[0, EltCrack] +
-                       vk[1, EltCrack]) / 4
-    vk[7, EltCrack] = (vk[0, Mesh.NeiElements[EltCrack, 3]] + vk[1, Mesh.NeiElements[EltCrack, 3]] + vk[0, EltCrack] +
-                       vk[1, EltCrack]) / 4
-
-    # magnitude of pressure gradient vector on the cell edges. Used to calculate the friction factor
-    vkLft = (vk[0, EltCrack] ** 2 + vk[4, EltCrack] ** 2) ** 0.5
-    vkRgt = (vk[1, EltCrack] ** 2 + vk[5, EltCrack] ** 2) ** 0.5
-    vkBtm = (vk[2, EltCrack] ** 2 + vk[6, EltCrack] ** 2) ** 0.5
-    vkTop = (vk[3, EltCrack] ** 2 + vk[7, EltCrack] ** 2) ** 0.5
-
     # calculating friction factor with the Yang-Joseph explicit function
     ffLftEdge = np.zeros((EltCrack.size), dtype=np.float64)
     ffRgtEdge = np.zeros((EltCrack.size), dtype=np.float64)
@@ -244,13 +229,13 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     # the conductivity matrix
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
     cond[0, ReLftEdge_nonZero] = wLftEdge[ReLftEdge_nonZero] ** 2 / (rho * ffLftEdge[ReLftEdge_nonZero]
-                                                                     * vkLft[ReLftEdge_nonZero])
+                                                                     * vk[0, EltCrack[ReLftEdge_nonZero]])
     cond[1, ReRgtEdge_nonZero] = wRgtEdge[ReRgtEdge_nonZero] ** 2 / (rho * ffRgtEdge[ReRgtEdge_nonZero]
-                                                                     * vkRgt[ReRgtEdge_nonZero])
+                                                                     * vk[1, EltCrack[ReRgtEdge_nonZero]])
     cond[2, ReBtmEdge_nonZero] = wBtmEdge[ReBtmEdge_nonZero] ** 2 / (rho * ffBtmEdge[ReBtmEdge_nonZero]
-                                                                     * vkBtm[ReBtmEdge_nonZero])
+                                                                     * vk[2, EltCrack[ReBtmEdge_nonZero]])
     cond[3, ReTopEdge_nonZero] = wTopEdge[ReTopEdge_nonZero] ** 2 / (rho * ffTopEdge[ReTopEdge_nonZero]
-                                                                     * vkTop[ReTopEdge_nonZero])
+                                                                     * vk[3, EltCrack[ReTopEdge_nonZero]])
 
 
     # assembling the finite difference matrix

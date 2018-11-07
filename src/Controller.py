@@ -198,6 +198,9 @@ class Controller:
             else:
                 self.sim_prop.tmStpPrefactor *= 0.8
                 if self.fr_queue[(self.successfulTimeSteps + 1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
+                    if self.sim_prop.collectPerfData:
+                        with open(self.sim_prop.get_outputFolder() + "perf_data.dat", 'wb') as output:
+                            dill.dump(self.perfData, output, -1)
                     raise SystemExit("Simulation failed.")
                 else:
                     self.chkPntReattmpts += 1
@@ -222,7 +225,7 @@ class Controller:
         f.close()
 
         if self.sim_prop.collectPerfData:
-            with open(self.sim_prop.get_outFileAddress() + "perf_data.dat", 'wb') as output:
+            with open(self.sim_prop.get_outputFolder() + "perf_data.dat", 'wb') as output:
                 dill.dump(self.perfData, output, -1)
 
         print("\nFinal time = " + repr(self.fracture.time))
