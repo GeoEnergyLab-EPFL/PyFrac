@@ -37,6 +37,7 @@ simulProp = SimulationParameters()
 simulProp.FinalTime = 1e7               # the time at which the simulation stops
 simulProp.saveRegime = True             # enable saving the regime
 simulProp.set_outputFolder(".\\Data\\MtoK") #the folder where the results are saved
+simulProp.frontAdvancing = 'implicit'
 
 # initializing fracture
 initRad = 1.5

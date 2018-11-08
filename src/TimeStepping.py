@@ -251,20 +251,20 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     
     """
 
-    C_EltTip = C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)]  # keeping the tip element entries to restore current
-    #  tip correction. This is done to avoid copying the full elasticity matrix.
-
-    # filling fraction correction for element in the tip region
-    for e in range(0, len(Fr_lstTmStp.EltTip)):
-        r = Fr_lstTmStp.FillF[e] - .25
-        if r < 0.1:
-            r = 0.1
-        ac = (1 - r) / r
-        C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
-                                                                                            + ac * np.pi / 4.)
-
-    # average injected fluid over footprint taken as [\delta] W guess for the iterative solver
-    delwGuess = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size * np.ones((Fr_lstTmStp.EltCrack.size,), float)
+    # C_EltTip = C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)]  # keeping the tip element entries to restore current
+    # #  tip correction. This is done to avoid copying the full elasticity matrix.
+    #
+    # # filling fraction correction for element in the tip region
+    # for e in range(0, len(Fr_lstTmStp.EltTip)):
+    #     r = Fr_lstTmStp.FillF[e] - .25
+    #     if r < 0.1:
+    #         r = 0.1
+    #     ac = (1 - r) / r
+    #     C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] = C[Fr_lstTmStp.EltTip[e], Fr_lstTmStp.EltTip[e]] * (1.
+    #                                                                                         + ac * np.pi / 4.)
+    #
+    # # average injected fluid over footprint taken as [\delta] W guess for the iterative solver
+    # delwGuess = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size * np.ones((Fr_lstTmStp.EltCrack.size,), float)
 
 
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
@@ -287,80 +287,95 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (t_min_t0 ** 0.5 -
                                         t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
 
-    # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
-    vk = np.zeros((4, Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-    if fluid_properties.turbulence:
+    # # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
+    # vk = np.zeros((4, Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    # if fluid_properties.turbulence:
+    #
+    #     wguess = np.copy(Fr_lstTmStp.w)
+    #     wguess[Fr_lstTmStp.EltCrack] = wguess[Fr_lstTmStp.EltCrack] + delwGuess
+    #
+    #     # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
+    #     vk = velocity(wguess,
+    #                   Fr_lstTmStp.EltCrack,
+    #                   Fr_lstTmStp.mesh,
+    #                   Fr_lstTmStp.InCrack,
+    #                   Fr_lstTmStp.muPrime,
+    #                   C,
+    #                   mat_properties.SigmaO)
+    empty = np.array([], dtype=int)
+    w_k, p_k, vel = solve_width_pressure(Fr_lstTmStp,
+                         sim_properties,
+                         fluid_properties,
+                         mat_properties,
+                         empty,
+                         empty,
+                         C,
+                         Fr_lstTmStp.FillF,
+                         Fr_lstTmStp.EltCrack,
+                         Fr_lstTmStp.InCrack,
+                         LkOff,
+                         empty,
+                         timeStep,
+                         Qin,
+                         perfNode)
+    # argSameFP = (
+    #     Fr_lstTmStp.w,
+    #     Fr_lstTmStp.EltCrack,
+    #     Qin,
+    #     C,
+    #     timeStep,
+    #     Fr_lstTmStp.muPrime,
+    #     Fr_lstTmStp.mesh,
+    #     Fr_lstTmStp.InCrack,
+    #     LkOff,
+    #     mat_properties.SigmaO,
+    #     fluid_properties.density,
+    #     fluid_properties.turbulence,
+    #     mat_properties.grainSize,
+    #     sim_properties.gravity)
+    #
+    # # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function documentation)
+    # # todo: guess is taken as typical values. Needs to be reconsidered
+    # typclValue = delwGuess
+    #
+    # if perfNode is not None:
+    #     perfNode.iterations += 1
+    #     perfNode_Picard = IterationProperties(itr_type="Picard iteration")
+    #     perfNode_Picard.subIterations = []
+    # else:
+    #     perfNode_Picard = None
+    #
+    # # solving the system
+    # sol, vel = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
+    #                            MakeEquationSystem_viscousFluid_sameFP,
+    #                            delwGuess,
+    #                            typclValue,
+    #                            vk,
+    #                            sim_properties.toleranceEHL,
+    #                            sim_properties.maxSolverItrs,
+    #                            *argSameFP,
+    #                            perf_node=perfNode_Picard)
+    #
+    # if perfNode_Picard is not None:
+    #     perfNode_Picard.CpuTime_end = time.time()
+    #     perfNode.subIterations.append(perfNode_Picard)
 
-        wguess = np.copy(Fr_lstTmStp.w)
-        wguess[Fr_lstTmStp.EltCrack] = wguess[Fr_lstTmStp.EltCrack] + delwGuess
-
-        # velocity at the cell edges evaluated with the guess width. Used as guess values for the implicit velocity solver.
-        vk = velocity(wguess,
-                      Fr_lstTmStp.EltCrack,
-                      Fr_lstTmStp.mesh,
-                      Fr_lstTmStp.InCrack,
-                      Fr_lstTmStp.muPrime,
-                      C,
-                      mat_properties.SigmaO)
-
-    argSameFP = (
-        Fr_lstTmStp.w,
-        Fr_lstTmStp.EltCrack,
-        Qin,
-        C,
-        timeStep,
-        Fr_lstTmStp.muPrime,
-        Fr_lstTmStp.mesh,
-        Fr_lstTmStp.InCrack,
-        LkOff,
-        mat_properties.SigmaO,
-        fluid_properties.density,
-        fluid_properties.turbulence,
-        mat_properties.grainSize,
-        sim_properties.gravity)
-
-    # typical values of the variable. Used to calculate Jacobian (see Piccard_Newton function documentation)
-    # todo: guess is taken as typical values. Needs to be reconsidered
-    typclValue = delwGuess
-
-    if perfNode is not None:
-        perfNode.iterations += 1
-        perfNode_Picard = IterationProperties(itr_type="Picard iteration")
-        perfNode_Picard.subIterations = []
-    else:
-        perfNode_Picard = None
-
-    # solving the system
-    sol, vel = Picard_Newton(Elastohydrodynamic_ResidualFun_sameFP,
-                               MakeEquationSystem_viscousFluid_sameFP,
-                               delwGuess,
-                               typclValue,
-                               vk,
-                               sim_properties.toleranceEHL,
-                               sim_properties.maxSolverItrs,
-                               *argSameFP,
-                               perf_node=perfNode_Picard)
-
-    if perfNode_Picard is not None:
-        perfNode_Picard.CpuTime_end = time.time()
-        perfNode.subIterations.append(perfNode_Picard)
-
-    # getting new width by adding the change in width solution to the width from last time step
-    w_k = np.copy(Fr_lstTmStp.w)
-    w_k[Fr_lstTmStp.EltCrack] = w_k[Fr_lstTmStp.EltCrack] + sol
-
-    # regain original C (without filling fraction correction)
-    C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)] = C_EltTip
+    # # getting new width by adding the change in width solution to the width from last time step
+    # w_k = np.copy(Fr_lstTmStp.w)
+    # w_k[Fr_lstTmStp.EltCrack] = w_k[Fr_lstTmStp.EltCrack] + sol
+    #
+    # # regain original C (without filling fraction correction)
+    # C[np.ix_(Fr_lstTmStp.EltTip, Fr_lstTmStp.EltTip)] = C_EltTip
 
 
-    # check if the width has gone into negative
-    # todo: !!! Hack: if the width is negative but greater than some factor times the mean width, it is ignored. This
-    #  usually happens when high stress is applied forcing small widths. This will not effect the results as its done
-    # in the ballooning of the fracture to get the guess width for the next iteration.
-    smallNgtvWTip = np.where(np.logical_and(w_k < 0, w_k > -1 * np.mean(w_k)))
-    if np.asarray(smallNgtvWTip).size > 0:
-        # warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
-        w_k[smallNgtvWTip] = 0.01*abs(w_k[smallNgtvWTip])
+    # # check if the width has gone into negative
+    # # todo: !!! Hack: if the width is negative but greater than some factor times the mean width, it is ignored. This
+    # #  usually happens when high stress is applied forcing small widths. This will not effect the results as its done
+    # # in the ballooning of the fracture to get the guess width for the next iteration.
+    # smallNgtvWTip = np.where(np.logical_and(w_k < 0, w_k > -1 * np.mean(w_k)))
+    # if np.asarray(smallNgtvWTip).size > 0:
+    #     # warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+    #     w_k[smallNgtvWTip] = 0.01*abs(w_k[smallNgtvWTip])
 
 
     # check if the solution is valid
@@ -873,7 +888,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             dwTip = wTip - Fr_lstTmStp.w[EltsTipNew]
 
-            A, b = MakeEquationSystem_volumeControl_extendedFP_symmetric(Fr_lstTmStp.w,
+            A, b = MakeEquationSystem_volumeControl_symmetric(Fr_lstTmStp.w,
                                                            wTip_sym,
                                                            EltChannel_sym,
                                                            EltTip_sym,
@@ -906,7 +921,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 PerfNode_linSolve.subIterations = []
             else:
                 PerfNode_linSolve = None
-            A, b = MakeEquationSystem_volumeControl_extendedFP(Fr_lstTmStp.w,
+            A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
                                                            wTip,
                                                            Fr_lstTmStp.EltChannel,
                                                            EltsTipNew,
@@ -1004,8 +1019,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         # sloving the system of equations for the change in width in the channel
         # elements and pressure in the tip elements
-        (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun_ExtendedFP,
-                                   MakeEquationSystem_viscousFluid_extendedFP,
+        (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun,
+                                   MakeEquationSystem_viscousFluid_pressure_substituted,
                                    guess,
                                    typValue,
                                    vk,
