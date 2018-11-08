@@ -307,86 +307,8 @@ def findBracket(func,guess,*args):
 
     return a, b
 
-
-# # -----------------------------------------------------------------------------------------------------------------------
-#
-# def MakeEquationSystem_viscousFluid_sameFP(delw_k, inter_iter, *args ):
-#     """
-#     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
-#     with the same footprint as of the last time step. The viscosity of the injected fluid is taken into account by
-#     calculating fluid fluxes using Poiseuille Law (see Peirce and Detounay 2008, CMAME for details) or turbulent rough,
-#     friction factor based calculation.
-#
-#     Arguments:
-#         delw_k (ndarray-float): the trial change in width for the current iteration of fracture front
-#
-#         args (tupple): arguments passed to the function
-#             w (ndarray-float): fracture width from the last time step
-#             EltCrack (ndarray-int): list of elements in the fracture
-#             Q (float) fluid injection rate at the current time step
-#             C (ndarray-float): the elasticity matrix
-#             dt (float): the current time step
-#             muPrime (ndarray-float): 12 time viscosity of the injected fluid
-#             mesh (CartesianMesh object): the mesh
-#             InCrack (ndarray-float): an array with one for all the elements in the fracture and zero for rest
-#             LeakOff (ndarray-float): the leaked off fluid volume for each cell
-#             sigma0 (ndarray-float): the confining stress
-#             rho (float): density of the injected fluid
-#             turb (boolean): turbulence will be taken into account if true
-#             dgrain (float): the grain size of the rock. it will be used to calculate the fracture roughness
-#
-#         inter_iter (ndarray-float ): the data passed between iterations if any.
-#
-#     Returns:
-#         ndarray-float : the A matrix (in the system Ax=b) to be solved by a linear system solver
-#         ndarray-float : the b matrix (in the system Ax=b) to be solved by a linear system slover
-#         ndarray-float : the velocity at cell edges
-#     """
-#
-#     (w, EltCrack, Q, C, dt, muPrime, mesh, InCrack, LeakOff, sigma0, rho, turb, dgrain, gravity) = args
-#     wnPlus1 = np.copy(w)
-#     wnPlus1[EltCrack] = wnPlus1[EltCrack] + delw_k
-#
-#     if turb:
-#         (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent_implicit(wnPlus1,
-#                                                            EltCrack,
-#                                                            muPrime / 12,
-#                                                            mesh,
-#                                                            InCrack,
-#                                                            rho,
-#                                                            inter_iter,
-#                                                            C,
-#                                                            sigma0,
-#                                                            dgrain)
-#     else:
-#         FinDiffOprtr = finiteDiff_operator_laminar(wnPlus1,
-#                                           EltCrack,
-#                                           muPrime,
-#                                           mesh,
-#                                           InCrack)
-#         vk = inter_iter
-#
-#     if gravity:
-#         G = Gravity_term(wnPlus1,
-#                      EltCrack,
-#                      muPrime,
-#                      mesh,
-#                      InCrack,
-#                      rho)
-#     else:
-#         G = np.zeros((mesh.NumberOfElts, ))
-#
-#     FinDiffOprtr = FinDiffOprtr[EltCrack, :][:, EltCrack]
-#     G = G[EltCrack]
-#
-#     A = np.identity(EltCrack.size) - dt * FinDiffOprtr.dot(C[np.ix_(EltCrack, EltCrack)])
-#     S = dt * FinDiffOprtr.dot(np.dot(C[np.ix_(EltCrack, EltCrack)], w[EltCrack]) + sigma0[EltCrack]) + \
-#                             dt * Q[EltCrack] / mesh.EltArea - LeakOff[EltCrack] / mesh.EltArea + G*dt
-#
-#     return A, S, vk
-
-
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 def MakeEquationSystem_viscousFluid_pressure_substituted(solk, interItr, *args):
     """
@@ -493,26 +415,6 @@ def MakeEquationSystem_viscousFluid_pressure_substituted(solk, interItr, *args):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-# def MakeEquationSystem_mechLoading_sameFP(w_LoadedElts, EltCrack, EltLoaded, C):
-#     """
-#     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
-#     so that the given width is imposed on the loaded elements (see Zia and Lecampion 2018).
-#     """
-#
-#     C_Crack = C[np.ix_(EltCrack, EltCrack)]
-#
-#     A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
-#     A = np.vstack((A, np.zeros((1, EltCrack.size + 1), dtype=np.float64)))
-#     A[-1, np.where(EltCrack == EltLoaded)[0]] = 1
-#
-#     S = np.zeros((EltCrack.size + 1), dtype=np.float64)
-#     S[-1] = w_LoadedElts
-#
-#     return A, S
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loaded):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
@@ -531,23 +433,6 @@ def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loa
     S = np.append(S, w_loaded)
 
     return A, S
-
-# #-----------------------------------------------------------------------------------------------------------------------
-# def MakeEquationSystem_volumeControl_sameFP(w, EltCrack, C, dt, Q, ElemArea):
-#     """
-#     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
-#     so that the volume of the fracture is equal to the fluid injected into the fracture (see Zia and Lecampion 2018)
-#     """
-#     C_Crack = C[np.ix_(EltCrack, EltCrack)]
-#
-#     A = np.hstack((C_Crack,-np.ones((EltCrack.size,1),dtype=np.float64)))
-#     A = np.vstack((A,np.ones((1,EltCrack.size+1),dtype=np.float64)))
-#     A[-1,-1] = 0
-#
-#     S = -np.dot(C_Crack,w[EltCrack])
-#     S = np.append(S,Q * dt / ElemArea)
-#
-#     return A, S
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -573,17 +458,6 @@ def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, C, d
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-# def Elastohydrodynamic_ResidualFun_sameFP(solk, interItr, *args):
-#     """
-#     This function gives the residual of the solution of the current iteration for the viscous fluid, same footprint
-#     case.
-#     """
-#     (A, S, vk) = MakeEquationSystem_viscousFluid_sameFP(solk, interItr, *args)
-#     return (np.dot(A, solk) - S, vk)
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 def Elastohydrodynamic_ResidualFun(solk, *args, interItr=None):
     """
     This function gives the residual of the solution of the current iteration for the viscous fluid, extended footprint
@@ -595,32 +469,8 @@ def Elastohydrodynamic_ResidualFun(solk, *args, interItr=None):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-# def MakeEquationSystem_volumeControl_sameFP_symmetric(w, EltCrack, C_sym, dt, Q, ElemArea, corr, vol_weights,
-#                                                       sym_elements):
-#     """
-#     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
-#     so that the volume of the fracture is equal to the fluid injected into the fracture (see Zia and Lecampion 2018)
-#     """
-#
-#     EltCrack_sym = corr[EltCrack]
-#     EltCrack_sym = np.unique(EltCrack_sym)
-#
-#     C_Crack = C_sym[np.ix_(EltCrack_sym, EltCrack_sym)]
-#
-#     A = np.hstack((C_Crack, -np.ones((EltCrack_sym.size, 1), dtype=np.float64)))
-#     weights = vol_weights[EltCrack_sym]
-#     weights = np.concatenate((weights, np.array([0.0])))
-#     A = np.vstack((A, weights))
-#
-#     S = -np.dot(C_Crack, w[sym_elements[EltCrack_sym]])
-#     S = np.append(S, Q * dt / ElemArea)
-#
-#     return A, S
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel_sym, EltTip_sym, C_s, dt, Q,
-                                                          ElemArea, vol_weights, sym_elements, dwTip):
+                                                          ElemArea, LkOff, vol_weights, sym_elements, dwTip):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The the volume of the
@@ -636,7 +486,7 @@ def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel
     A = np.vstack((A, weights))
 
     S = -np.dot(Ccc, w_lst_tmstp[sym_elements[EltChannel_sym]]) - np.dot(Cct, wTip_sym)
-    S = np.append(S, sum(Q) * dt / ElemArea - sum(dwTip))
+    S = np.append(S, np.sum(Q) * dt / ElemArea - np.sum(dwTip) - np.sum(LkOff))
 
     return A, S
 

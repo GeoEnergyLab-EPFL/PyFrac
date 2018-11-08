@@ -41,7 +41,7 @@ simulProp.outputTimePeriod = 1e-4       # to save after every time step
 simulProp.set_outputFolder(".\\Data\\K_radial_symmetric") # the disk address where the files are saved
 simulProp.symmetric = True
 simulProp.bckColor = "K1c"
-simulProp.verbosity = 2
+
 
 # initializing fracture
 initRad = 0.15
@@ -110,7 +110,7 @@ Fig_w = plot_analytical_solution_at_point('K',
                                           time_srs=time_srs,
                                           fig=Fig_w)
 
-time_srs = np.linspace(1, 1e5, 10)
+time_srs = np.e ** np.linspace(np.log(1), np.log(1e5), 8)
 Fr_list, properties = load_fractures(address=".\\Data\\K_radial_symmetric",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -136,13 +136,11 @@ Fig_FP = plot_analytical_solution('K',
 
 
 # plot slice
-pnt_1=[-Fr_list[-1].mesh.Lx, 0]
-pnt_2=[Fr_list[-1].mesh.Lx, 0]
-Fig_WS = plot_fracture_list_slice(Fr_list,
+Fig_WS, pnt_1, pnt_2 = plot_fracture_list_slice(Fr_list,
                                   variable='w',
                                   projection='2D',
-                                  point1=pnt_1,
-                                  point2=pnt_2)
+                                  plot_cell_center=True,
+                                  orientation='horizontal')
 #plot slice analytical
 Fig_WS = plot_analytical_solution_slice('K',
                                         'w',
@@ -151,7 +149,6 @@ Fig_WS = plot_analytical_solution_slice('K',
                                         fluid_prop=Fluid,
                                         fig=Fig_WS,
                                         time_srs=time_srs,
-                                        plt_2D_image=False,
                                         point1=pnt_1,
                                         point2=pnt_2)
 
