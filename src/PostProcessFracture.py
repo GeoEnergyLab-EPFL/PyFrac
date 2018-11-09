@@ -323,6 +323,8 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
 def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None,
                                 time_srs=None, length_srs=None, h=None, samp_cell=None, gamma=None):
 
+    print("Getting analytical solution for the given series...")
+
     if time_srs is None and length_srs is None:
         raise ValueError('Either time series or lengths series is to be provided.')
 
@@ -387,7 +389,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 mesh_i = CartesianMesh(x_len, y_len, 151, 151)
             else:
                 mesh_i = mesh
-                mesh_list.append(mesh_i)
+            mesh_list.append(mesh_i)
 
             t, r, p, w, v, actvElts = HF_analytical_sol(regime,
                                                         mesh_i,
@@ -436,7 +438,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 else:
                     return_list.append(x_len)
         else:
-            raise ValueError('The variable type is not correct.')
+            raise ValueError('The variable type is not correct or the anayltical solution not available.')
 
     return return_list, mesh_list
 

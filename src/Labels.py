@@ -19,7 +19,7 @@ Fig_labels = {
     'front velocity': 'Front Velocity',
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
-    'Rn': 'Reynold\'s number',
+    'Re': 'Reynold\'s number',
     'fluid flux': 'Fluid Flux',
     'ff': 'Fluid Flux',
     'fluid velocity': 'Fluid Velocity',
@@ -53,7 +53,7 @@ labels = {
     'front velocity': 'front velocity',
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
-    'Rn': 'Reynold\'s number',
+    'Re': 'Reynold\'s number',
     'fluid flux': 'fluid flux',
     'ff': 'fluid flux',
     'fluid velocity': 'fluid velocity',
@@ -88,7 +88,7 @@ units = {
     'front velocity': ' ($m/s$)',
     'v': ' ($m/s$)',
     'Reynolds number': '',
-    'Rn': '',
+    'Re': '',
     'fluid flux': ' ($m^3/s$)',
     'ff': ' ($m^3/s$)',
     'fluid velocity': ' ($m/s$)',
@@ -123,7 +123,7 @@ unit_conversion = {
     'front velocity': 1.,
     'v': 1.,
     'Reynolds number': 1.,
-    'Rn': 1.,
+    'Re': 1.,
     'fluid flux': 1.,
     'ff': 1.,
     'fluid velocity': 1.,
@@ -148,7 +148,7 @@ unit_conversion = {
     'footprint': None
 }
 supported_variables = ('w','width','p','pressure', 'front velocity','v',
-                       'Reynolds number', 'Rn', 'fluid flux', 'ff',
+                       'Reynolds number', 'Re', 'fluid flux', 'ff',
                        'fluid velocity', 'fv', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
@@ -177,7 +177,7 @@ required_string = {
 err_msg_variable = 'Given variable is not supported. Select one of the following:\n' \
                     '-- \'w\' or \'width\'\n' \
                     '-- \'p\' or \'pressure\'\n' \
-                    '-- \'Rn\' or \'Reynolds number\'\n' \
+                    '-- \'Re\' or \'Reynolds number\'\n' \
                     '-- \'v\' or \'front velocity\'\n' \
                     '-- \'ff\' or \'fluid flux\'\n' \
                     '-- \'fv\' or \'fluid velocity\'\n' \

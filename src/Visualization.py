@@ -827,7 +827,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         x_ticks = np.hstack((half_1st[:3], np.array([mid], dtype=int)))
         x_ticks = np.hstack((x_ticks, half_2nd))
 
-    ax_slice.set_xticks(x_ticks)
+    ax_slice.set_xticks(sampling_line[x_ticks])
 
     xtick_labels = []
     for i in x_ticks:
