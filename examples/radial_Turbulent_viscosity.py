@@ -13,7 +13,7 @@ from src.Controller import *
 from src.PostProcessFracture import *
 
 # creating mesh
-Mesh = CartesianMesh(0.2, 0.2, 45, 45)
+Mesh = CartesianMesh(0.8,0.8,45,45)
 
 # solid properties
 Eprime = 2.0e10             # plain strain modulus
@@ -24,27 +24,32 @@ Solid = MaterialProperties(Mesh,
                            K_Ic)
 
 # injection parameters
-Q0 = 0.079  # massive injection rate - 80 BPM
+Q0 = 0.079  # massive injection rate - 30 BPM
 Injection = InjectionProperties(Q0, Mesh)
 
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.e-3,
+Fluid = FluidProperties(viscosity=1.e-3,density=1000,
                         turbulence=True)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 2000.             # the time at which the simulation stops
-simulProp.outputEveryTS = 2             # write a file after every 3 time steps
-simulProp.set_outputFolder(".\\Data\\radial_TtoM") # the disk address where the files are saved
+simulProp.FinalTime = 30             # the time at which the simulation stops
+simulProp.outputEveryTS = 1             # write a file after every 3 time steps
+simulProp.set_outputFolder("./Data/radial_TtoM") # the disk address where the files are saved
 simulProp.saveReynNumb = True           # enable saving Reynolds number at each edge of grid
 simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = 'MDR'
 simulProp.verbosity = 2
+simulProp.plotFigure = True
+simulProp.plotAnalytical = True
+simulProp.analyticalSol = 'MDR'
+simulProp.tmStpPrefactor = 0.5
+
 
 # initializing fracture
-initTime = 2e-4
+initTime = 2e-3
 init_param = ("MDR", "time", initTime)
 
 # creating fracture object
@@ -63,11 +68,11 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+#controller.run()
 
 
 # plot results
-Fr_list, properties = load_fractures(".\\Data\\radial_TtoM",)
+Fr_list, properties = load_fractures("./Data/radial_TtoM")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 
@@ -76,27 +81,33 @@ plot_prop = PlotProperties(graph_scaling='loglog',
 
 # plotting mean distance from the injection point (radius in this case)
 label = get_labels('d_mean')
-label.legend = 'radius'
+label.legend = 'Radius'
 Fig_r = plot_fracture_list(Fr_list,
                            variable='d_mean',
                            plot_prop=plot_prop,
                            labels=label)
 
+plot_fracture_variable_as_image(Fr_list[-1].ReynoldsNumber[0],Fr_list[-1].mesh)
+
+plot_fracture_slice_cell_center(Fr_list[-1].ReynoldsNumber[0],Fr_list[-1].mesh)
+
 # plotting analytical radius from MDR radial solution
 label.legend = 'radius analytical (MDR asymptote)'
 Fig_r = plot_analytical_solution(regime="MDR",
-                                  variable='d_mean',
+                                  variable='d_min',
                                   mat_prop=Solid,
                                   inj_prop=Injection,
                                   fluid_prop=Fluid,
                                   fig=Fig_r,
                                   time_srs=time_srs,
                                   labels=label)
+
+
 # plotting analytical radius from toughness dominated radial solution
 plot_prop.lineColorAnal = 'b'
 label.legend = 'radius analytical (viscosity dominated)'
 Fig_r = plot_analytical_solution(regime="M",
-                                  variable='d_mean',
+                                  variable='d_min',
                                   mat_prop=Solid,
                                   inj_prop=Injection,
                                   fluid_prop=Fluid,
@@ -134,34 +145,35 @@ Fig_r = plot_analytical_solution_at_point(regime="M",
                                   plot_prop=plot_prop,
                                   labels=label)
 
-# plotting fracture slice along x-axis
-Fr_list, properties = load_fractures(".\\Data\\radial_TtoM",
-                                     time_srs=np.e**np.linspace(np.log(0.02), np.log(2000), 8))
-time_srs = get_fracture_variable(Fr_list,
-                                 'time')
-
-plot_prop = PlotProperties(plot_legend=False) # instantiate plot properties object with legends disabled
-
-Fig_w, pnt1, pnt2 = plot_fracture_list_slice(Fr_list,
-                                  variable='w',
-                                  # point1=[-0.5, .5],
-                                  # plt_2D_image=False,
-                                  plot_cell_center=True,
-                                 orientation='horizontal',
-                                             )
-
-Fig_w = plot_analytical_solution_slice('M',
-                                       'w',
-                                       Solid,
-                                       Injection,
-                                       fluid_prop=Fluid,
-                                       point1=pnt1,
-                                       point2=pnt2,
-                                       time_srs=time_srs,
-                                       fig=Fig_w,
-                                       # plt_2D_image=False,      # only plot slice without top view
-                                       plot_prop=plot_prop,     # give the plot properties with legends disabled
-                                       )
+# #
+# # plotting fracture slice along x-axis
+# Fr_list, properties = load_fractures("./Data/radial_TtoM",
+#                                      time_srs=np.e**np.linspace(np.log(0.02), np.log(2000), 8))
+# time_srs = get_fracture_variable(Fr_list,
+#                                  'time')
+#
+# plot_prop = PlotProperties(plot_legend=False) # instantiate plot properties object with legends disabled
+#
+# Fig_w, pnt1, pnt2 = plot_fracture_list_slice(Fr_list,
+#                                   variable='w',
+#                                   # point1=[-0.5, .5],
+#                                   # plt_2D_image=False,
+#                                   plot_cell_center=True,
+#                                  orientation='horizontal',
+#                                              )
+#
+# Fig_w = plot_analytical_solution_slice('M',
+#                                        'w',
+#                                        Solid,
+#                                        Injection,
+#                                        fluid_prop=Fluid,
+#                                        point1=pnt1,
+#                                        point2=pnt2,
+#                                        time_srs=time_srs,
+#                                        fig=Fig_w,
+#                                        # plt_2D_image=False,      # only plot slice without top view
+#                                        plot_prop=plot_prop,     # give the plot properties with legends disabled
+#                                        )
 
 
 

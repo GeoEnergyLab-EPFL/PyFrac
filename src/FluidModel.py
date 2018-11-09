@@ -203,7 +203,7 @@ def friction_factor_MDR(ReNum, roughness):
     """
     if ReNum < 1e-8:
         return 0
-    elif ReNum < 1811: #2100:
+    elif ReNum < 1510: #18112100:
        return 16. / ReNum
     else:
         return 1.78 / ReNum**0.7 #1.1 / ReNum**0.65 #
