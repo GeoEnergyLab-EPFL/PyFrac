@@ -155,6 +155,25 @@ supported_variables = ('w','width','p','pressure', 'front velocity','v',
                        'V', 'lk', 'leaked off', 'lkv', 'leaked off volume',
                        'ar', 'aspect ratio', 'efficiency', 'ef')
 
+required_string = {
+    't': '100000',
+    'time': '100000',
+    'w': '000100',
+    'width': '000100',
+    'p': '001000',
+    'pressure': '001000',
+    'front velocity': '000010',
+    'v': '000010',
+    'front_dist_min': '010000',
+    'd_min': '010000',
+    'front_dist_max': '010000',
+    'd_max': '010000',
+    'front_dist_mean': '010000',
+    'd_mean': '010000',
+    'radius': '010000',
+    'r': '010000'
+}
+
 err_msg_variable = 'Given variable is not supported. Select one of the following:\n' \
                     '-- \'w\' or \'width\'\n' \
                     '-- \'p\' or \'pressure\'\n' \

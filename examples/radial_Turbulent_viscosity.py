@@ -36,7 +36,7 @@ Fluid = FluidProperties(viscosity=1.e-3,density=1000,
 simulProp = SimulationParameters()
 simulProp.FinalTime = 30             # the time at which the simulation stops
 simulProp.outputEveryTS = 1             # write a file after every 3 time steps
-simulProp.set_outputFolder("./Data/radial_TtoM") # the disk address where the files are saved
+simulProp.set_outputFolder(".\\Data\\radial_TtoM") # the disk address where the files are saved
 simulProp.saveReynNumb = True           # enable saving Reynolds number at each edge of grid
 simulProp.plotFigure = True
 simulProp.plotAnalytical = True
@@ -87,9 +87,9 @@ Fig_r = plot_fracture_list(Fr_list,
                            plot_prop=plot_prop,
                            labels=label)
 
-plot_fracture_variable_as_image(Fr_list[-1].ReynoldsNumber[0],Fr_list[-1].mesh)
-
-plot_fracture_slice_cell_center(Fr_list[-1].ReynoldsNumber[0],Fr_list[-1].mesh)
+# plot_fracture_variable_as_image(Fr_list[-1].ReynoldsNumber[0],Fr_list[-1].mesh)
+#
+# plot_fracture_slice_cell_center(Fr_list[-1].ReynoldsNumber[0],Fr_list[-1].mesh)
 
 # plotting analytical radius from MDR radial solution
 label.legend = 'radius analytical (MDR asymptote)'

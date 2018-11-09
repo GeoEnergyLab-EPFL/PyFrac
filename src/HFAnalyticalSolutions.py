@@ -22,7 +22,7 @@ import scipy.integrate as integrate
 
 
 #  radial zero toughness turbulent MDR approximation
-def MDR_M_vertex_solution(Eprime,Q0,density,visc,Mesh,R=None,t=None):
+def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, required='111111'):
     """
        Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime
        propagation, given fracture radius or the time since the start of the injection. The solution does not take leak off into account.
@@ -50,43 +50,69 @@ def MDR_M_vertex_solution(Eprime,Q0,density,visc,Mesh,R=None,t=None):
     if R is None and t is None:
         raise ValueError("Either radius or time must be provided!")
     elif t is None:
-        t = ((3**0.175)*(fo**0.25)*(R**2.175)*(visc**0.175)*(density**0.075))/((2**0.35)*(Eprime**0.25)*(Q0**0.675)*(gammam**2.175))
+        t = ((3**0.175)*(fo**0.25)*(R**2.175)*(visc**0.175)*(density**0.075))/(
+                (2**0.35)*(Eprime**0.25)*(Q0**0.675)*(gammam**2.175))
     elif R is None:
         R = gammam*((2**(14./87))*(Eprime**(10./87))*(Q0**(9./29))*(t**(40/87))
                     )/((3**(7./87))*(fo**(10./87))*(visc**(7./87))*density**(1./29))
 
-    wscale =((3**0.16091954022988506)*(fo**0.22988505747126436)*(Q0**0.3793103448275862)*(t**0.08045977011494253)*
-             (visc**0.16091954022988506)*(density**0.06896551724137931))/((2**0.3218390804597701)*(Eprime**0.22988505747126436))
+    if required[3] is '1':
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
+        var1 = 1 - rho[actvElts]
 
-    pscale = ((3**0.2413793103448276)*
-              (Eprime**0.6551724137931034)*(fo**0.3448275862068966)*(Q0**0.06896551724137931)*(visc**0.2413793103448276)*(density**0.10344827586206896))/((2**0.4827586206896552)*(t**0.3793103448275862))
+        wscale =((3**0.16091954022988506)*(fo**0.22988505747126436)*(Q0**0.3793103448275862)*(t**0.08045977011494253)*
+        (visc**0.16091954022988506)*(density**0.06896551724137931))/(
+        (2**0.3218390804597701)*(Eprime**0.22988505747126436))
 
-    v = gammam * 0.45977011494252873* (t ** (0.45977011494252873-1.))  * (((2 ** 0.16091954022988506) * (Eprime ** 0.11494252873563218) * (Q0 ** 0.3103448275862069) ) /
-    ((3 ** 0.08045977011494253) * (fo ** 0.11494252873563218) * (visc ** 0.08045977011494253) * (density** 0.034482758620689655)) )
+        w = np.zeros((Mesh.NumberOfElts,))
 
-    w = np.zeros((Mesh.NumberOfElts,))
-    p = np.zeros((Mesh.NumberOfElts,))
-    rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
-    actvElts = np.where(rho <= 1)[0] # active cells (inside fracture)
+        w[actvElts] = wscale * (0.916848 * (var1) ** 0.740741 - 0.283356 * (rho[actvElts]) ** (7 / 10) + 0.683013 * (
+            var1) ** 0.740741 * rho[actvElts] - 0.500775 * (var1) ** 0.740741 * (rho[actvElts] ** 2) + 1.07431 * (
+            var1) ** 0.740741 * (rho[actvElts] ** 3) - 1.2138 * (var1) ** 0.740741 * (
+            rho[actvElts] ** 4) + 0.577514 * (var1) ** 0.740741 * (rho[actvElts] ** 5) - 0.502666 * (
+            1 - rho[actvElts] ** 2) ** 0.5 + 0.718095 * special.hyp2f1(
+            -(7 / 20), 1 / 2, 13 / 20, rho[actvElts] ** 2.))
+    else:
+        w = None
 
-    var1 = 1 - rho[actvElts]
+    if required[2] is '1':
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
+        var1 = 1 - rho[actvElts]
 
-    w[actvElts]= wscale * (0.916848 * (var1)**0.740741 - 0.283356 * (rho[actvElts])**(7/10) + 0.683013 * (var1)**0.740741 * rho[actvElts]
-    - 0.500775 * (var1)**0.740741 * (rho[actvElts]**2) +  1.07431* (var1)**0.740741 * (rho[actvElts]**3)
-    - 1.2138 *(var1)**0.740741 * (rho[actvElts]**4)  + 0.577514 * (var1)**0.740741  *(rho[actvElts]**5)
-    - 0.502666  * (1 - rho[actvElts]**2)**0.5 + 0.718095 * special.hyp2f1(-(7/20), 1/2, 13/20, rho[actvElts]**2.))  # Hypergeometric2F1[-(7/20), 1/2, 13/20, r^2]
+        pscale = ((3**0.2413793103448276)*(Eprime**0.6551724137931034)*(fo**0.3448275862068966)*(
+            Q0**0.06896551724137931)*(visc**0.2413793103448276)*(density**0.10344827586206896))/(
+            (2**0.4827586206896552)*(t**0.3793103448275862))
 
-    p[actvElts]= pscale * (
-    0.5948935210154036 - 0.2717984030270058 / (var1 ** 0.25925925925925924) + 0.23531180369007717855 / (rho[actvElts] ** 0.3) -
-    (0.16828914936530234 * rho[actvElts]) / (var1 ** 0.25925925925925924) + (0.2225733568270942 * (rho[actvElts] ** 2)) /
-    (var1 ** 0.25925925925925924) - (0.2158763695654084 * (rho[actvElts] ** 3)) / (var1 ** 0.25925925925925924) + (0.07471989686220308 * (rho[actvElts] ** 4)) /(var1 ** 0.25925925925925924)
-    )
+        p = np.zeros((Mesh.NumberOfElts,))
+
+        p[actvElts] = pscale * (
+            0.5948935210154036 - 0.2717984030270058 / (var1 ** 0.25925925925925924) + 0.23531180369007717855 / (
+            rho[actvElts] ** 0.3) - (0.16828914936530234 * rho[actvElts]) / (var1 ** 0.25925925925925924) + (
+            0.2225733568270942 * (rho[actvElts] ** 2)) / (var1 ** 0.25925925925925924) - (0.2158763695654084 * (
+            rho[actvElts] ** 3)) / (var1 ** 0.25925925925925924) + (0.07471989686220308 * (rho[actvElts] ** 4)) / (
+            var1 ** 0.25925925925925924))
+    else:
+        p = None
+
+    if required[4] is '1':
+        v = gammam * 0.45977011494252873 * (t ** (0.45977011494252873-1.)) * ((
+            (2 ** 0.16091954022988506) * (Eprime ** 0.11494252873563218) * (Q0 ** 0.3103448275862069) ) /
+            ((3 ** 0.08045977011494253) * (fo ** 0.11494252873563218) * (visc ** 0.08045977011494253) * (
+            density** 0.034482758620689655)))
+    else:
+        v = None
+
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, R, p, w, v, actvElts
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-# ----------------------------------------------------
-def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None):
+
+def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='111111'):
     """
     Analytical solution for Viscosity dominated (M vertex) fracture propagation, given fracture radius or the time
     since the start of the injection. The solution does not take leak off into account.
@@ -115,42 +141,50 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None):
     elif R is None:
         R = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
 
-    v = (4 / 9) *  (t ** (4 / 9 -1.))  * ( (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) ) / muPrime ** (1 / 9) )
+    if required[4] is '1':
+        v = (4 / 9) * (t ** (4 / 9 -1.)) * ((0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) ) / muPrime ** (1 / 9))
+    else:
+        v = None
 
-    w = np.zeros((Mesh.NumberOfElts,))
-    p = np.zeros((Mesh.NumberOfElts,))
-    rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
-    actvElts = np.where(rho <= 1)[0] # active cells (inside fracture)
+    if required[3] is '1':
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
+        # temporary variables to avoid recomputation
+        var1 = -2 + 2 * rho[actvElts]
+        var2 = 1 - rho[actvElts]
 
-    # temporary variables to avoid recomputation
-    var1 = -2 + 2 * rho[actvElts]
-    var2 = 1 - rho[actvElts]
+        w = np.zeros((Mesh.NumberOfElts,))
+        w[actvElts] = (1 / (Eprime ** (2 / 9))) * 0.6976 * Q0 ** (1 / 3) * t ** (1 / 9) * muPrime ** (2 / 9) * (
+                1.89201 * var2 ** (2 / 3) + 0.000663163 * var2 ** (2 / 3) * (
+                35 / 9 + 80 / 9 * var1 + 38 / 9 * var1 ** 2) + 0.00314291 * var2 ** (2 / 3) * (
+                455 / 81 + 1235 / 54 * var1 + 2717 / 108 * var1 ** 2 + 5225 / 648 * var1 ** 3) + 0.000843517 * var2 ** (
+                2 / 3) * (1820 / 243 + 11440 / 243 * var1 + 7150 / 81 * var1 ** 2 + 15400 / 243 * var1 ** 3 + (
+                59675 * var1 ** 4) / 3888) + 0.102366 * var2 ** (2 / 3) * (1 / 3 + 13 / 3 * (-1 + 2 * rho[actvElts])
+                ) + 0.237267 * ((1 - rho[actvElts] ** 2) ** 0.5 - rho[actvElts] * np.arccos(rho[actvElts])))
+    else:
+        w = None
 
-    # todo: cite where the solution is taken from
-    w[actvElts] = (1 / (Eprime ** (2 / 9))) * 0.6976 * Q0 ** (1 / 3) * t ** (1 / 9) * muPrime ** (2 / 9) * (
-    1.89201 * var2 ** (2 / 3) + 0.000663163 * var2 ** (2 / 3) * (
-    35 / 9 + 80 / 9 * var1 + 38 / 9 * var1 ** 2) + 0.00314291 * var2 ** (2 / 3) * (
-    455 / 81 + 1235 / 54 * var1 + 2717 / 108 * var1 ** 2 + 5225 / 648 * var1 ** 3) + 0.000843517 * var2 ** (2 / 3) * (
-    1820 / 243 + 11440 / 243 * var1 + 7150 / 81 * var1 ** 2 + 15400 / 243 * var1 ** 3 + (
-    59675 * var1 ** 4) / 3888) + 0.102366 * var2 ** (2 / 3) * (1 / 3 + 13 / 3 * (-1 + 2 * rho[actvElts])) + 0.237267 * (
-    (1 - rho[actvElts] ** 2) ** 0.5 - rho[actvElts] * np.arccos(rho[actvElts])))
+    if required[2] is '1':
+        p = np.zeros((Mesh.NumberOfElts,))
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
+        actvElts = np.where(rho <= 1)[0] # active cells (inside fracture)
+        warnings.filterwarnings("ignore")
 
-    warnings.filterwarnings("ignore")
+        p[actvElts] = (0.0931746 * Eprime ** (2 / 3) * muPrime ** (1 / 3) * (-2.20161 + 8.81828 * (1 - rho[actvElts]
+                        ) ** (1 / 3) - 0.0195787 * rho[actvElts] - 0.171565 * rho[actvElts] ** 2 -
+                        0.103558 * rho[actvElts] ** 3 + (1 - rho[actvElts]) ** (1 / 3) * np.log(1 / rho[actvElts]))
+                       ) / (t ** (1 / 3) * (1 - rho[actvElts]) ** (1 / 3))
+    else:
+        p = None
 
-    p[actvElts] = (0.0931746 * Eprime ** (2 / 3) * muPrime ** (1 / 3) * (
-    -2.20161 + 8.81828 * (1 - rho[actvElts]) ** (1 / 3) - 0.0195787 * rho[actvElts] - 0.171565 * rho[actvElts] ** 2 -
-    0.103558 * rho[actvElts] ** 3 + (1 - rho[actvElts]) ** (1 / 3) * np.log(1 / rho[actvElts]))) / (t ** (1 / 3) * (1 -
-                                                                                            rho[actvElts]) ** (1 / 3))
-
-    # todo !!! Hack: The velocity is evaluated with time taken by the fracture to advance by one percent (not sure)
-    #t1 = (2.24846 * (1.01 * R) ** (9 / 4) * muPrime ** (1 / 4)) / (Eprime ** (1 / 4) * Q0 ** (3 / 4))
-    #v = 0.01 * R / (t1 - t)
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, R, p, w, v, actvElts
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None):
+def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None, required='111111'):
     """
     Analytical solution for toughness dominated (K vertex) fracture propagation, given current radius or time. The
     solution does not take leak off into account.
@@ -179,25 +213,37 @@ def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None):
     elif R is None:
         R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
 
-    p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5) * np.ones(
-        (mesh.NumberOfElts,), float)
+    if required[2] is '1':
+        p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5) * np.ones(
+            (mesh.NumberOfElts,), float)
+    else:
+        p = None
 
-    w = np.zeros((mesh.NumberOfElts,))
-    rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center
-    actvElts = np.where(rad < R) # active cells (inside fracture)
-    w[actvElts] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime ** 4 * t / Eprime ** 4) ** 0.2 * (
-                                                                                1 - (rad[actvElts] / R) ** 2) ** 0.5
+    if required[3] is '1':
+        w = np.zeros((mesh.NumberOfElts,))
+        rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center
+        actvElts = np.where(rad < R) # active cells (inside fracture)
+        w[actvElts] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime ** 4 * t / Eprime ** 4) ** 0.2 * (
+                      1 - (rad[actvElts] / R) ** 2) ** 0.5
+    else:
+        w = None
 
-    # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
-    t1 = 2 ** 0.5 * Kprime * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
-    v = 0.01 * R / (t1 - t)
+    if required[4] is '1':
+        # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
+        t1 = 2 ** 0.5 * Kprime * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
+        v = 0.01 * R / (t1 - t)
+    else:
+        v = None
+
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, R, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None):
+def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, required='111111'):
     """
     Analytical solution for viscosity dominated (M tilde vertex) fracture propagation, given current time. The solution
     takes leak off into account.
@@ -229,37 +275,54 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None):
         if Cprime == 0:
             raise ValueError("leak off cannot be zero for Mt regime!")
         R = (2 * Q0 / Cprime) ** 0.5 * t ** 0.25 / np.pi
-    w = np.zeros((Mesh.NumberOfElts,))
-    p = np.zeros((Mesh.NumberOfElts,))
-    rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
-    actvElts = np.where(rho <= 1) # active cells (inside fracture)
 
-    # temporary variables to avoid recomputation
-    var1 = (1 - rho[actvElts]) ** 0.375
-    var2 = (1 - rho[actvElts]) ** 0.625
+    if required[3] is '1':
+        w = np.zeros((Mesh.NumberOfElts,))
 
-    # todo: cite where the solution is taken from
-    w[actvElts] = (0.07627790025007182 * Q0 ** 0.375 * t ** 0.0625 * muPrime ** 0.25 * (
-    11.40566553791626 * var2 + 7.049001601162521 * var2 * rho[actvElts] - 0.6802327798216378 * var2 * rho[
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
+        actvElts = np.where(rho <= 1) # active cells (inside fracture)
+
+        # temporary variables to avoid recomputation
+        var1 = (1 - rho[actvElts]) ** 0.375
+        var2 = (1 - rho[actvElts]) ** 0.625
+
+        # todo: cite where the solution is taken from
+        w[actvElts] = (0.07627790025007182 * Q0 ** 0.375 * t ** 0.0625 * muPrime ** 0.25 * (
+        11.40566553791626 * var2 + 7.049001601162521 * var2 * rho[actvElts] - 0.6802327798216378 * var2 * rho[
         actvElts] ** 2 - 0.828297356390819 * var2 * rho[actvElts] ** 3 + var2 * rho[actvElts] ** 4 + 2.350633434009811
-    * (1 - rho[actvElts] ** 2) ** 0.5 - 2.350633434009811 * rho[actvElts] * np.arccos(rho[actvElts]))) / (
-              Cprime ** 0.125 * Eprime ** 0.25)
+        * (1 - rho[actvElts] ** 2) ** 0.5 - 2.350633434009811 * rho[actvElts] * np.arccos(rho[actvElts]))) / (
+                  Cprime ** 0.125 * Eprime ** 0.25)
+    else:
+        w = None
 
-    p[actvElts] = (0.156415 * Cprime ** 0.375 * Eprime ** 0.75 * muPrime ** 0.25 * (
-    -1.0882178530759854 + 6.3385626500863985 * var1 - 0.07314343477396379 * rho[actvElts] - 0.21802875891750756 * rho[
-        actvElts] ** 2 - 0.04996007983993901 * rho[actvElts] ** 3 + 1. * var1 * np.log(1 / rho[actvElts]))) / (
-              Q0 ** 0.125 * var1 * t ** 0.1875)
+    if required[2] is '1':
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        actvElts = np.where(rho <= 1)  # active cells (inside fracture)
 
-    # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
-    t1 = Cprime ** 2 * (1.01 * R) ** 4 * np.pi ** 4 / 4 / Q0 ** 2
-    v = 0.01 * R / (t1 - t)
+        p = np.zeros((Mesh.NumberOfElts,))
+        p[actvElts] = (0.156415 * Cprime ** 0.375 * Eprime ** 0.75 * muPrime ** 0.25 * (
+        -1.0882178530759854 + 6.3385626500863985 * var1 - 0.07314343477396379 * rho[actvElts] - 0.21802875891750756
+        * rho[actvElts] ** 2 - 0.04996007983993901 * rho[actvElts] ** 3 + 1. * var1 * np.log(1 / rho[actvElts]))) / (
+        Q0 ** 0.125 * var1 * t ** 0.1875)
+    else:
+        p = None
+
+    if required[4] is '1':
+        # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
+        t1 = Cprime ** 2 * (1.01 * R) ** 4 * np.pi ** 4 / 4 / Q0 ** 2
+        v = 0.01 * R / (t1 - t)
+    else:
+        v = None
+
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, R, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None):
+def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, required='111111'):
     """
     Analytical solution for viscosity dominated (M tilde vertex) fracture propagation, given the current time or the
     radius.
@@ -296,26 +359,39 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None):
             raise ValueError("leak off cannot be zero for Kt regime!")
         t = (R * Cprime**0.5 * np.pi / (2 * Q0)**0.5)**4
 
+    if required[3] is '1':
+        w = np.zeros((Mesh.NumberOfElts,))
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        actvElts = np.where(rho <= 1)  # active cells (inside fracture)
+        w[actvElts] = Kprime * Q0**0.25 * (1-rho[actvElts])**0.5 * t**0.125 / (2**0.25 * Cprime**0.25 *
+                                                                               Eprime * np.pi**0.5)
+    else:
+        w = None
 
-    w = np.zeros((Mesh.NumberOfElts,))
-    p = np.zeros((Mesh.NumberOfElts,))
-    rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
-    actvElts = np.where(rho <= 1)  # active cells (inside fracture)
+    if required[2] is '1':
+        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        actvElts = np.where(rho <= 1)  # active cells (inside fracture)
+        p = np.zeros((Mesh.NumberOfElts,))
+        p[actvElts] = Cprime**0.25 * Kprime * np.pi**(3/2) / (8 * 2**(3/4) * Q0**0.25 * t**0.125)
+    else:
+        p = None
 
-    w[actvElts] = Kprime * Q0**0.25 * (1-rho[actvElts])**0.5 * t**0.125 / (2**0.25 * Cprime**0.25 * Eprime * np.pi**0.5)
+    if required[4] is '1':
+        # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
+        t1 = (1.01 * R * Cprime**0.5 * np.pi / (2 * Q0)**0.5)**4
+        v = 0.01 * R / (t1 - t)
+    else:
+        v = None
 
-    p[actvElts] = Cprime**0.25 * Kprime * np.pi**(3/2) / (8 * 2**(3/4) * Q0**0.25 * t**0.125)
-
-    # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
-    t1 = (1.01 * R * Cprime**0.5 * np.pi / (2 * Q0)**0.5)**4
-    v = 0.01 * R / (t1 - t)
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, R, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None):
+def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='111111'):
     """
     Analytical solution for heigth contained hydraulic fracture (PKN geometry), given current time. The solution
     does not take leak off into account.
@@ -347,38 +423,54 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None):
 
     x = np.linspace(-ell, ell, int(Mesh.nx))
 
-    # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
-    # the power of 1/3 and not evaluate with the series.
-    sol_w = (np.pi ** 3 * muPrime / 12 * (Q0 / 2) ** 2 * (t) / Eprime / h / 2) ** (1 / 5) * 1.32 * (1 - abs(
-                                                                                        x) / ell) ** (1 / 3)
-    # interpolation function to calculate width at any length.
-    anltcl_w = interpolate.interp1d(x, sol_w)
+    if required[3] is '1':
+        # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
+        # the power of 1/3 and not evaluate with the series.
+        sol_w = (np.pi ** 3 * muPrime / 12 * (Q0 / 2) ** 2 * (t) / Eprime / h / 2) ** (1 / 5) * 1.32 * (1 - abs(
+                                                                                            x) / ell) ** (1 / 3)
+        # interpolation function to calculate width at any length.
+        anltcl_w = interpolate.interp1d(x, sol_w)
 
-    # cells inside the PKN fracture
-    actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= h / 2)
-    actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
-    actvElts = np.intersect1d(actvElts_v, actvElts_h)
+        # cells inside the PKN fracture
+        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= h / 2)
+        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+        actvElts = np.intersect1d(actvElts_v, actvElts_h)
 
-    w = np.zeros((Mesh.NumberOfElts,), float)
-    # calculating width across the cross section of the fracture from the average width.
-    # The average width is given by the interpolation function.
-    w[actvElts] = 4 / np.pi * anltcl_w(Mesh.CenterCoor[actvElts, 0]) * (1 - 4 * Mesh.CenterCoor[
-                                                                actvElts, 1] ** 2 / h ** 2) ** 0.5
+        w = np.zeros((Mesh.NumberOfElts,), float)
+        # calculating width across the cross section of the fracture from the average width.
+        # The average width is given by the interpolation function.
+        w[actvElts] = 4 / np.pi * anltcl_w(Mesh.CenterCoor[actvElts, 0]) * (1 - 4 * Mesh.CenterCoor[
+                                                                    actvElts, 1] ** 2 / h ** 2) ** 0.5
+    else:
+        w = None
 
-    # calculating pressure from width
-    p = np.zeros((Mesh.NumberOfElts,), float)
-    p[actvElts] = 2 * Eprime * anltcl_w(Mesh.CenterCoor[actvElts, 0]) / (np.pi * h)
+    if required[2] is '1':
+        # cells inside the PKN fracture
+        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= h / 2)
+        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+        actvElts = np.intersect1d(actvElts_v, actvElts_h)
+        # calculating pressure from width
+        p = np.zeros((Mesh.NumberOfElts,), float)
+        p[actvElts] = 2 * Eprime * anltcl_w(Mesh.CenterCoor[actvElts, 0]) / (np.pi * h)
+    else:
+        p = None
 
-    # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
-    t1 = (1.01 * ell / (2 * (Q0 / 2) ** 3 * Eprime / np.pi ** 3 / muPrime * 12 / h ** 4) ** (1 / 5)) ** (5 / 4)
-    v = 0.01 * ell / (t1 - t)
+    if required[4] is '1':
+        # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
+        t1 = (1.01 * ell / (2 * (Q0 / 2) ** 3 * Eprime / np.pi ** 3 / muPrime * 12 / h ** 4) ** (1 / 5)) ** (5 / 4)
+        v = 0.01 * ell / (t1 - t)
+    else:
+        v = None
+
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, ell, p, w, v, actvElts
 
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None):
+def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None, required='111111'):
     """
     Analytical solution plain strain hydraulic fracture (KGB geometry) in the toughness dominated regime, given current
     time or length. The solution does not take leak off into account.
@@ -414,36 +506,52 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None):
 
     x = np.linspace(-ell, ell, int(Mesh.nx))
 
-    # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
-    # the power of 1/3 and not evaluate with the series.
-    sol_w = 0.682784 * (Kprime ** 2 * Q * t / Eprime ** 2) ** (1 / 3) * (1 - (abs(x) / ell) ** 2) ** (1 / 2)
+    if required[3] is '1':
+        # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
+        # the power of 1/3 and not evaluate with the series.
+        sol_w = 0.682784 * (Kprime ** 2 * Q * t / Eprime ** 2) ** (1 / 3) * (1 - (abs(x) / ell) ** 2) ** (1 / 2)
 
-    # interpolation function to calculate width at any length.
-    anltcl_w = interpolate.interp1d(x, sol_w)
+        # interpolation function to calculate width at any length.
+        anltcl_w = interpolate.interp1d(x, sol_w)
 
-    # cells inside the PKN fracture
-    actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= height / 2)
-    actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
-    actvElts = np.intersect1d(actvElts_v, actvElts_h)
+        # cells inside the PKN fracture
+        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= height / 2)
+        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+        actvElts = np.intersect1d(actvElts_v, actvElts_h)
 
-    w = np.zeros((Mesh.NumberOfElts,), float)
-    # The average width is given by the interpolation function.
-    w[actvElts] = anltcl_w(Mesh.CenterCoor[actvElts, 0])
+        w = np.zeros((Mesh.NumberOfElts,), float)
+        # The average width is given by the interpolation function.
+        w[actvElts] = anltcl_w(Mesh.CenterCoor[actvElts, 0])
+    else:
+        w = None
 
-    # calculating pressure from width
-    p = np.zeros((Mesh.NumberOfElts,), float)
-    p[actvElts] = 0.183074 * (Kprime ** 4 / (Eprime * Q0 * t)) ** (1 / 3)
+    if required[2] is '1':
+        # cells inside the PKN fracture
+        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= height / 2)
+        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+        actvElts = np.intersect1d(actvElts_v, actvElts_h)
+        # calculating pressure from width
+        p = np.zeros((Mesh.NumberOfElts,), float)
+        p[actvElts] = 0.183074 * (Kprime ** 4 / (Eprime * Q0 * t)) ** (1 / 3)
+    else:
+        p = None
 
-    # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
-    t1 = 1.11072 * Kprime / Eprime / Q * (1.01 * ell) ** (3 / 2)
-    v = 0.01 * ell / (t1 - t)
+    if required[4] is '1':
+        # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
+        t1 = 1.11072 * Kprime / Eprime / Q * (1.01 * ell) ** (3 / 2)
+        v = 0.01 * ell / (t1 - t)
+    else:
+        v = None
+
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, ell, p, w, v, actvElts
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh, b=None, t=None):
+def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh, b=None, t=None, required='111111'):
     """
     Analytical solution for an elliptical fracture propagating in toughness dominated regime (see Zia and Lecampion,
     IJF, 2018).
@@ -478,28 +586,35 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
     if t is None:
         t = 8 * KIc_max * np.pi**0.5 * b**(5/2) / (3 * c * Eprime * Q0)
 
-    a = (KIc_max / KIc_min)**2 * b
-    eccentricity = (1 - b ** 2 / a ** 2) ** 0.5
+    if required[3] is '1' or required[2] is '1':
+        a = (KIc_max / KIc_min)**2 * b
+        eccentricity = (1 - b ** 2 / a ** 2) ** 0.5
+        rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
+        actvElts = np.where(rho > 0)[0]  # active cells (inside fracture)
+        p = np.zeros((mesh.NumberOfElts,), float)
+        p[actvElts] = KIc_max * special.ellipe(eccentricity ** 2) / (np.pi * b) ** 0.5
+        w = np.zeros((mesh.NumberOfElts,))
+        w[actvElts] = 4 * b * p[mesh.CenterElts] / (Eprime * special.ellipe(eccentricity ** 2)) * (1 -(mesh.CenterCoor[
+                    actvElts, 0] / a) ** 2 - (mesh.CenterCoor[actvElts, 1] / b) ** 2) ** 0.5
+    else:
+        p = None
+        w = None
 
-    rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
-    actvElts = np.where(rho > 0)[0]  # active cells (inside fracture)
+    if required[4] is '1':
+        t1 = 8 * KIc_max * np.pi**0.5 * (1.01 * b)**(5/2) / (3 * c * Eprime * Q0)
+        v = 0.01 * b / (t1 - t)
+    else:
+        v = None
 
-    p = np.zeros((mesh.NumberOfElts,), float)
-    p[actvElts] = KIc_max * special.ellipe(eccentricity**2) / (np.pi * b)**0.5
-
-    w = np.zeros((mesh.NumberOfElts,))
-    w[actvElts] = 4 * b * p[mesh.CenterElts] / (Eprime * special.ellipe(eccentricity**2)) * (1 -
-                                (mesh.CenterCoor[actvElts, 0] / a) ** 2 - (mesh.CenterCoor[actvElts, 1] / b) ** 2)**0.5
-
-    t1 = 8 * KIc_max * np.pi**0.5 * (1.01 * b)**(5/2) / (3 * c * Eprime * Q0)
-    v = 0.01 * b / (t1 - t)
+    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+        actvElts = None
 
     return t, b, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None):
+def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None, required='111111'):
     """
     Analytical solution for an elliptical fracture propagating in toughness dominated regime (see Zia and Lecampion,
     IJF, 2018).
@@ -523,43 +638,48 @@ def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=
     else:
         t = b**(5 / 2) * 8 * gamma * Kc3 * np.pi**0.5 / (3 * Q0 * Ep3)
 
-    a = gamma * b
+    if required[3] is '1' or required[2] is '1':
+        a = gamma * b
 
-    C11 = Cij[0, 0]
-    C12 = Cij[0, 1]
-    C13 = Cij[0, 2]
-    C33 = Cij[2, 2]
-    C44 = Cij[3, 3]
-    C66 = Cij[5, 5]
+        C11 = Cij[0, 0]
+        C12 = Cij[0, 1]
+        C13 = Cij[0, 2]
+        C33 = Cij[2, 2]
+        C44 = Cij[3, 3]
+        C66 = Cij[5, 5]
 
-    m1 = (-C13 ** 2 + C11 * C33 - 2 * C13 * C44 - 2 * C44 ** 2 + ((C13 ** 2 - C11 * C33) * (C13 ** 2
-                - C11 * C33 + 4 * C13 * C44 + 4 * C44 ** 2)) ** 0.5) / (
-                     2 * (C13 * C44 + C44 ** 2))
-    m2 = (-C13 ** 2 + C11 * C33 - 2 * C13 * C44 - 2 * C44 ** 2 - ((C13 ** 2 - C11 * C33) * (C13 ** 2
-                - C11 * C33 + 4 * C13 * C44 + 4 * C44 ** 2)) ** 0.5) / (
-                     2 * (C13 * C44 + C44 ** 2))
+        m1 = (-C13 ** 2 + C11 * C33 - 2 * C13 * C44 - 2 * C44 ** 2 + ((C13 ** 2 - C11 * C33) * (C13 ** 2
+                    - C11 * C33 + 4 * C13 * C44 + 4 * C44 ** 2)) ** 0.5) / (
+                         2 * (C13 * C44 + C44 ** 2))
+        m2 = (-C13 ** 2 + C11 * C33 - 2 * C13 * C44 - 2 * C44 ** 2 - ((C13 ** 2 - C11 * C33) * (C13 ** 2
+                    - C11 * C33 + 4 * C13 * C44 + 4 * C44 ** 2)) ** 0.5) / (
+                         2 * (C13 * C44 + C44 ** 2))
 
-    gamma3 = (C44 / C66) ** 0.5
+        gamma3 = (C44 / C66) ** 0.5
 
-    args = (Cij, gamma, m1, m2, gamma3)
+        args = (Cij, gamma, m1, m2, gamma3)
 
-    sigma_intgrl = integrate.quad(TI_elasticity_sigma,
-                                  0,
-                                  2 * np.pi,
-                                  args=args,
-                                  points=[np.pi / 2, 3 * np.pi / 2])[0]
+        sigma_intgrl = integrate.quad(TI_elasticity_sigma,
+                                      0,
+                                      2 * np.pi,
+                                      args=args,
+                                      points=[np.pi / 2, 3 * np.pi / 2])[0]
 
-    w0 = 2 * (4 * (m2 - m1) * gamma3 ** 2) / (C66 * sigma_intgrl)
-    rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
-    actvElts = np.where(rho > 0)[0]  # active cells (inside fracture)
-    p = np.zeros((mesh.NumberOfElts, ), float)
-    p[actvElts] = (4 * gamma * Kc3) / ((np.pi * b) ** 0.5 * w0 * Ep3)
+        w0 = 2 * (4 * (m2 - m1) * gamma3 ** 2) / (C66 * sigma_intgrl)
+        rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
+        actvElts = np.where(rho > 0)[0]  # active cells (inside fracture)
+        p = np.zeros((mesh.NumberOfElts, ), float)
+        p[actvElts] = (4 * gamma * Kc3) / ((np.pi * b) ** 0.5 * w0 * Ep3)
 
-    u0 = w0 * p * b**2 / a
+        u0 = w0 * p * b**2 / a
 
-    w = np.zeros((mesh.NumberOfElts,))
-    w[actvElts] = u0[actvElts] * (1 - (mesh.CenterCoor[actvElts, 0] / a) ** 2 - (
-                                    mesh.CenterCoor[actvElts, 1] / b) ** 2)**0.5
+        w = np.zeros((mesh.NumberOfElts,))
+        w[actvElts] = u0[actvElts] * (1 - (mesh.CenterCoor[actvElts, 0] / a) ** 2 - (
+                                        mesh.CenterCoor[actvElts, 1] / b) ** 2)**0.5
+    else:
+        p = None
+        w = None
+        actvElts = None
 
     return t, b, p, w, None, actvElts
 
@@ -596,7 +716,7 @@ def TI_elasticity_sigma(theta, *args):
 
 
 def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None, length=None, t=None,
-                      Kc_1=None, h=None, density=None, Cij=None, gamma=None):
+                      Kc_1=None, h=None, density=None, Cij=None, gamma=None, required='111111'):
     """
     This function provides the analytical solution for the given parameters according to the given propagation regime
 
@@ -633,25 +753,27 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
     """
 
     if regime is 'M':
-        t, r, p, w, v, actvElts = M_vertex_solution(Eprime, Q0, muPrime, mesh, length, t)
+        t, r, p, w, v, actvElts = M_vertex_solution(Eprime, Q0, muPrime, mesh, length, t, required)
     elif regime is 'K':
-        t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, length, t)
+        t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, length, t, required)
     elif regime is 'Mt':
-        t, r, p, w, v, actvElts = Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, mesh, length, t)
+        t, r, p, w, v, actvElts = Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, mesh, length, t, required)
     elif regime is 'Kt':
-        t, r, p, w, v, actvElts = KT_vertex_solution(Eprime, Cprime, Q0, Kprime, mesh, length, t)
+        t, r, p, w, v, actvElts = KT_vertex_solution(Eprime, Cprime, Q0, Kprime, mesh, length, t, required)
     elif regime is 'PKN':
-        t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t)
+        t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t, required)
     elif regime is 'KGD_K':
-        t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t)
+        t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t, required)
     elif regime is 'MDR':
-        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime, Q0, density, muPrime/12., mesh, length, t)
+        t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime, Q0, density, muPrime/12., mesh, length, t, required)
     elif regime is 'E_K':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
-        t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( Kc_3, Kc_1, Eprime, Q0, mesh, length, t)
+        t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( Kc_3, Kc_1, Eprime, Q0, mesh, length, t,
+                                                                             required)
     elif regime is 'E_E':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
-        t, r, p, w, v, actvElts = TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc_3, Eprime, Q0, t, length)
+        t, r, p, w, v, actvElts = TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc_3, Eprime, Q0, t, length,
+                                                                    required)
 
     return t, r, p, w, v, actvElts
 

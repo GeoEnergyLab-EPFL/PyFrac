@@ -351,32 +351,15 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     if samp_cell is None:
         samp_cell = int(len(mat_prop.Kprime) / 2)
 
-
-    return_list = []
-
     if time_srs is not None:
         srs_length = len(time_srs)
     else:
         srs_length = len(length_srs)
 
     mesh_list = []
+    return_list = []
+
     for i in range(srs_length):
-
-        if mesh is None:
-            x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
-                                                                              time_srs[i],
-                                                                              mat_prop,
-                                                                              inj_prop,
-                                                                              fluid_prop=fluid_prop,
-                                                                              h=h,
-                                                                              samp_cell=samp_cell,
-                                                                              gamma=gamma)
-
-            from src.CartesianMesh import CartesianMesh
-            mesh_i = CartesianMesh(x_len, y_len, 151, 151)
-        else:
-            mesh_i = mesh
-        mesh_list.append(mesh_i)
 
         if length_srs is not None:
             length = length_srs[i]
@@ -388,7 +371,24 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
         else:
             time = None
 
-        if variable in ('time', 't', 'radius', 'r', 'width', 'w', 'pressure', 'p', 'front velocity', 'v'):
+        if variable in ('time', 't', 'width', 'w', 'pressure', 'p', 'front velocity', 'v'):
+
+            if mesh is None and variable in ('width', 'w', 'pressure', 'p'):
+                x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
+                                                                                  time_srs[i],
+                                                                                  mat_prop,
+                                                                                  inj_prop,
+                                                                                  fluid_prop=fluid_prop,
+                                                                                  h=h,
+                                                                                  samp_cell=samp_cell,
+                                                                                  gamma=gamma)
+
+                from src.CartesianMesh import CartesianMesh
+                mesh_i = CartesianMesh(x_len, y_len, 151, 151)
+            else:
+                mesh_i = mesh
+                mesh_list.append(mesh_i)
+
             t, r, p, w, v, actvElts = HF_analytical_sol(regime,
                                                         mesh_i,
                                                         mat_prop.Eprime,
@@ -402,12 +402,11 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                         h=h,
                                                         density=density,
                                                         Cij=Cij,
-                                                        gamma=gamma)
+                                                        gamma=gamma,
+                                                        required=required_string[variable])
 
             if variable is 'time' or variable is 't':
                 return_list.append(t)
-            elif variable is 'radius' or variable is 'r':
-                return_list.append(r)
             elif variable is 'width' or variable is 'w':
                 return_list.append(w)
             elif variable is 'pressure' or variable is 'p':
@@ -415,7 +414,8 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
             elif variable is 'front velocity' or variable is 'v':
                 return_list.append(v)
 
-        elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
+        elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean',
+                          'radius', 'r'):
             x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
                                                                               time,
                                                                               mat_prop,
@@ -424,7 +424,9 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                                               h=h,
                                                                               samp_cell=samp_cell,
                                                                               gamma=gamma)
-            if variable is 'front_dist_min' or variable is 'd_min':
+            if variable is 'radius' or variable is 'r':
+                return_list.append(x_len)
+            elif variable is 'front_dist_min' or variable is 'd_min':
                 return_list.append(y_len)
             elif variable is 'front_dist_max' or variable is 'd_max':
                 return_list.append(x_len)
@@ -534,4 +536,4 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
 
     return x_len, y_len
 
-
+#-----------------------------------------------------------------------------------------------------------------------

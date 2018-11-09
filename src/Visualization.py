@@ -1113,6 +1113,8 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
 def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_srs=None, h=None, samp_cell=None,
                               fig=None, plot_prop=None, color='b', gamma=None):
 
+    print("Plotting analytical footprint...")
+
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -1147,6 +1149,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                              projection='2D', time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
                              labels=None, contours_at=None, gamma=None):
 
+    print("Plotting analytical " + variable + " " + regime + " solution...")
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
