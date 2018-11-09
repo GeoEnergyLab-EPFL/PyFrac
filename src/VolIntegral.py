@@ -128,7 +128,6 @@ def VolumeTriangle(dist, *param):
         else:
             prop_time = t - t_e - dt
 
-        # intgrl_0_t = -2 / 15 * (t - t_e) ** (3 / 2) * Vel * (-5 * dist + 2 * (t - t_e) * Vel) * em
         intgrl_0_t = 4 / 15 * em * (t - t_e) ** (5 / 2) * Vel**2
         intgrl_0_tm1 = 4 / 15 * em * prop_time ** (5 / 2) * Vel**2
 
@@ -185,8 +184,6 @@ def Area(dist, *param):
 
         return intgrl_0_t - intgrl_0_tm1
 
-        # return 2 / 3 * Vel ** -0.5 * dist ** 1.5
-
     elif regime == 'Mt':
         return 32 / 13 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * Vel ** 0.125 * dist ** (
         13 / 8)
@@ -206,8 +203,8 @@ def Area(dist, *param):
                 Eprime ** 7 * muPrime ** 3 * Vel ** 3)
 
 
-def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None, Kprime=None,
-                       stagnant=None, KIPrime=None, dt=None):
+def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None,
+                       Kprime=None, Eprime=None, stagnant=None, KIPrime=None, dt=None):
     """
     Calculate integral of the function specified by the argument function over the cell.
 
@@ -233,6 +230,8 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
         Vel (ndarray)                   -- the velocity of the front in the given tip cells.
         Kprime (ndarray)                -- if provided, the toughness will be taken from the given array instead of
                                            taking it from the mat_prop object
+        Eprime(ndarray-float):          -- plain strain TI modulus for current iteration. if not given, the Eprime
+                                                from the given material properties object will be used.
         stagnant (ndarray)              -- list of tip cells where the front is not moving.
         KIPrime (ndarray)               -- the stress intensity factor of the cells where the fracture front is not
                                            moving
@@ -255,14 +254,17 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
     if Kprime is None and mat_prop is None:
         Kprime = dummy
 
+    if Eprime is None and mat_prop is not None:
+        Eprime = np.full((alpha.size,), mat_prop.Eprime)
+    if Eprime is None and mat_prop is None:
+        Eprime = dummy
+
     if Vel is None:
         Vel = dummy
 
     if mat_prop is None:
-        Eprime = None
         Cprime = dummy
     else:
-        Eprime = mat_prop.Eprime
         Cprime = mat_prop.Cprime[EltTip]
 
     if not fluid_prop is None:
@@ -281,7 +283,7 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
 
         m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
         # packing parameters to pass
-        param_pack = (function, Kprime[i], Eprime, muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
+        param_pack = (function, Kprime[i], Eprime[i], muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
                       m, t_lstTS, dt)
 
         if abs(alpha[i]) < 1e-8:

@@ -499,7 +499,7 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
     of heterogenous or anisotropic toughness are taken care off.
     """
 
-    if mat_prop.anisotropic:
+    if mat_prop.anisotropic_K1c:
         try:
             return mat_prop.K1cFunc(alpha)
         except TypeError:
@@ -559,7 +559,7 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
             try:
                 K1c[i] = mat_prop.K1cFunc(x[i], y[i])
             except TypeError:
-                SystemExit("For precise spacke dependant toughness, the function taking the coordinates and returning"
+                SystemExit("For precise space dependant toughness, the function taking the coordinates and returning"
                            "the toughness is to be provided.")
         return K1c
 
@@ -575,7 +575,7 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
     if mat_prop.K1cFunc is None:
         return mat_prop.K1c[elts]
 
-    if mat_prop.anisotropic:
+    if mat_prop.anisotropic_K1c:
         return mat_prop.K1cFunc(alpha)
     else:
         x = np.zeros((len(elts),), )
@@ -600,4 +600,50 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
             K1c[i] = mat_prop.K1cFunc(x[i], y[i])
 
         return K1c
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def TI_plain_strain_modulus(alpha, Cij):
+    """
+    This function computes the plain strain elasticity modulus in transverse isotropic medium function of the orientation
+    of the fracture front with the bedding plane. This functions is used for the tip inversion and the evaluation of the
+     fracture volume for the case of TI elasticity.
+
+    Arguments:
+        alpha (ndarray-float)             -- the angle inscribed by the perpendiculars drawn on the front from
+                                                   the ribbon cell centers.
+        Cij (ndarray-float)               -- the TI stiffness matrix in the canonical basis
+
+
+    Returns:
+        E' (ndarray-float)               -- plain strain TI elastic modulus.
+    """
+
+    C11 = Cij[0, 0]
+    C12 = Cij[0, 1]
+    C13 = Cij[0, 2]
+    C33 = Cij[2, 2]
+    C44 = Cij[3, 3]
+
+    # we use the same notation for the elastic paramateres as S. Fata et al. (2013).
+
+    alphag = (C11 * (C11-C12) * np.cos(alpha) ** 4 + (C11 * C13
+                 - C12 * (C13 + 2 * C44)) * (np.cos(alpha) * np.sin(alpha)) ** 2
+                 - (C13 ** 2 - C11 * C33 + 2 * C13 * C44) * np.sin(alpha) ** 4
+                 + C11 * C44 * np.sin(2 * alpha) ** 2) / (C11 * (C11 - C12) * np.cos(alpha) ** 2
+                                                          + 2 * C11 * C44 * np.sin(alpha) ** 2)
+
+    gammag = ((C11 * np.cos(alpha) ** 4 + 2 * C13 * (np.cos(alpha) * np.sin(alpha)) ** 2
+                 + C33 * np.sin(alpha) ** 4 + C44 * np.sin(2 * alpha) ** 2) / C11) ** 0.5
+
+    deltag = ((C11 - C12) * (C11 + C12) * np.cos(alpha) ** 4
+                 + 2 * (C11 - C12) * C13 * (np.cos(alpha) * np.sin(alpha)) ** 2
+                 + (- C13 ** 2 + C11 * C33) * np.sin(alpha) ** 4
+                 + C11 * C44 * np.sin(2 * alpha) ** 2) / (C11 * (2 * (alphag + gammag)) ** 0.5)
+
+    Eprime = 2 * deltag / gammag
+
+    return Eprime
+
 #-----------------------------------------------------------------------------------------------------------------------

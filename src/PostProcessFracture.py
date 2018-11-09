@@ -9,203 +9,529 @@
 # Post-process scripts to plot results for a fracture
 
 # local
-import src.Fracture
+from src.Properties import *
+from src.Utility import ReadFracture
+# from src.CartesianMesh import CartesianMesh
+from src.HFAnalyticalSolutions import HF_analytical_sol, get_fracture_dimensions_analytical
+from src.Labels import *
 
-import matplotlib
 import numpy as np
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
+from scipy.interpolate import griddata
+import matplotlib.patches as mpatches
+import dill
+import os
+import re
 
 
-
-def plot_Reynolds_number(fracture,Rec=2200,fig=None, bck_colMap='cool', line_color = 'k', contours_at=None):
-    """
-    This function plots the average Reynolds number of the four edges of the cells in a fracture
-
-    Arguments:
-        fracture (Fracture):        -- the fracture object for which the Reynolds number is to be plotted.
-        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.
-        bck_colMap (Colormaps)      -- colormap for the Reynold's number shown in the background.
-        line_color (color)          -- the color of the contour line (e.g. 'r' will plot in red).
-        contours_at (ndarray)       -- a list of Reynold's numbers to plot contours at.
-
-    Returns:
-         Fig
-    """
-
-    if fracture.ReynoldsNumber is None:
-        print("Reynold's numbers not available for time = " + repr(fracture.time) + '\nProbably initial fracture')
-        return
-
-    ReyNum = np.mean(fracture.ReynoldsNumber, axis=0)
-
-    if fig is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-    else:
-        ax = fig.get_axes()[0]
-
-    x = fracture.mesh.CenterCoor[:, 0].reshape((fracture.mesh.ny, fracture.mesh.nx))
-    y = fracture.mesh.CenterCoor[:, 1].reshape((fracture.mesh.ny, fracture.mesh.nx))
-    ReyNum = ReyNum.reshape((fracture.mesh.ny, fracture.mesh.nx))
-
-    dx = (x[0,1] - x[0,0]) / 2.
-    dy = (y[1,0] - y[0,0]) / 2.
-    extent = [x[0,0] - dx, x[-1, -1] + dx, y[0,0] - dy, y[-1, -1] + dy]
-
-    cax = ax.imshow(ReyNum,
-              cmap=bck_colMap,
-              interpolation='spline16',
-              extent=extent)
-    cbar = fig.colorbar(cax)
-
-    if contours_at is None:
-        contours_at = np.max(ReyNum) * np.asarray([0.01, 0.07, 0.15, 0.5, 0.7, 0.9])
-
-    CS = ax.contour(x,
-                    y,
-                    ReyNum,
-                    contours_at,
-                    colors=line_color)
-
-    plt.clabel(CS, fmt='%1.0f')
-
-    contours_at = np.asarray([Rec])
-    CS = ax.contour(x,
-                    y,
-                    ReyNum,
-                    contours_at,
-                    colors='w',
-                    linewidths=2)
-    # fmt = {}
-    # strs = ['transition']
-    # for l, s in zip(CS.levels, strs):
-    #     fmt[l] = s
-    #
-    # # Label every other level using strings
-    # plt.clabel(CS, CS.levels[::2], inline=True, fmt=fmt, fontsize=10)
-
-
-    custom_line = [Line2D([0], [0], color='w', lw=2)]
-    ax.legend(custom_line, ['turbulent to laminar transition'])
-
-    ax.set_ylabel('meters')
-    ax.set_xlabel('meters')
-    ax.set_title('Reynolds number')
-
-    return fig
+if 'win32' in sys.platform or 'win64' in sys.platform:
+    slash = '\\'
+else:
+    slash = '/'
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_width_contour(fracture, fig=None, bck_colMap='cool', line_color = 'k', contours_at=None):
-    """
-    This function plots the contours of the fracture width in millimeters.
+def load_fractures(address=None, simulation='simulation', time_period=0.0, time_srs=None):
+    '''
+    This function plots the footprints of the fractures saved in the given folder.
 
     Arguments:
-        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.
-        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.
-        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.
-        line_color (color)          -- the color of the contour line (e.g. 'r' will plot in red).
-        contours_at (ndarray)       -- a list of fracture widths to plot contours at.
+        address (string)                -- the folder address containing the saved files
+        time_period (float)             -- time period between two successive fractures.
+        time_srs (ndarray)              -- if provided, the fracture footprints will be plotted at the given times.
+        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
 
     Returns:
-         Fig
-    """
+        fracture_list (list)            -- a figure to superimpose.
 
-    if fig is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+    '''
+
+    print('Returning fractures...')
+
+    if address is None:
+        address = '.' + slash + '_simulation_data_PyFrac'
+
+    if address[-1] is not slash:
+        address = address + slash
+
+    if isinstance(time_srs, float) or isinstance(time_srs, int):
+        time_srs = np.array([time_srs])
+    elif isinstance(time_srs, list):
+        time_srs = np.array(time_srs)
+
+    sim_full_name = None
+    if re.match('\d+-\d+-\d+__\d+_\d+_\d+', simulation[-20:]):
+        sim_full_name = simulation
     else:
-        ax = fig.get_axes()[0]
+        simulations = os.listdir(address)
+        recent_sim_time = 0
+        for i in simulations:
+            if re.match(simulation + '__\d+-\d+-\d+__\d+_\d+_\d+', i):
 
-    x = fracture.mesh.CenterCoor[:, 0].reshape((fracture.mesh.ny, fracture.mesh.nx))
-    y = fracture.mesh.CenterCoor[:, 1].reshape((fracture.mesh.ny, fracture.mesh.nx))
+                filename = address + i + slash + 'properties'
+                try:
+                    with open(filename, 'rb') as input:
+                        (Solid, Fluid, Injection, SimulProp) = dill.load(input)
+                except FileNotFoundError:
+                    raise SystemExit('Data not found. The address might be incorrect')
 
-    #
-    width = fracture.w.reshape((fracture.mesh.ny, fracture.mesh.nx)) * 1e3
+                if SimulProp.get_timeStamp() > recent_sim_time:
+                    recent_sim_time = SimulProp.get_timeStamp()
+                    sim_full_name = i
 
-    dx = (x[0,1] - x[0,0]) / 2.
-    dy = (y[1,0] - y[0,0]) / 2.
-    extent = [x[0,0] - dx, x[-1, -1] + dx, y[0,0] - dy, y[-1, -1] + dy]
+    if sim_full_name is None:
+        raise ValueError('Simulation not found! The address might be incorrect.')
 
-    cax = ax.imshow(width,
-              cmap=bck_colMap,
-              interpolation='spline16',
-              extent=extent)
-    cbar = fig.colorbar(cax)
+    # read properties
+    filename = address + sim_full_name + slash + 'properties'
+    try:
+        with open(filename, 'rb') as input:
+            properties = dill.load(input)
+    except FileNotFoundError:
+        raise SystemExit('Data not found. The address might be incorrect')
 
-    if contours_at is None:
-        contours_at = np.max(width) * np.asarray([0.01, 0.15, 0.5, 0.7, 0.9])
+    fileNo = 0
+    next_t = 0.0
+    t_srs_indx = 0
+    fracture_list = []
 
-    CS = ax.contour(x,
-                    y,
-                    width,
-                    contours_at,
-                    colors=line_color)
+    t_srs_given = isinstance(time_srs, np.ndarray) #time series is given
+    if t_srs_given:
+        if len(time_srs) == 0:
+            return fracture_list
+        next_t = time_srs[t_srs_indx]
 
-    plt.clabel(CS)
+    # time at wich the first fracture file was modified
+    ff = None
+    while fileNo < 5000:
 
-    ax.set_ylabel('meters')
-    ax.set_xlabel('meters')
-    ax.set_title('Fracture width (mm)')
+        # trying to load next file. exit loop if not found
+        try:
+            ff = ReadFracture(address + sim_full_name + slash + sim_full_name + '_file_' + repr(fileNo))
+        except FileNotFoundError:
+            break
 
-    return fig
+        fileNo+=1
+
+        if 1. - next_t / ff.time >= -0.001:
+            # if the current fracture time has advanced the output time period
+            print('Returning fracture at ' + repr(ff.time) + ' s')
+
+            fracture_list.append(ff)
+
+            if t_srs_given:
+                if t_srs_indx < len(time_srs) - 1:
+                    t_srs_indx += 1
+                    next_t = time_srs[t_srs_indx]
+                if ff.time > max(time_srs):
+                    break
+            else:
+                next_t = ff.time + time_period
+
+    if fileNo >= 5000:
+        raise SystemExit('too many files.')
+
+    if len(fracture_list) == 0:
+        raise ValueError("Fracture list is empty")
+
+    return fracture_list, properties
 
 
-# -----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 
-def plot_pressure_contour(fracture, fig=None, bck_colMap='cool', line_color='k', contours_at=None):
-    """
-    This function plots the contours of the fracture pressure in mega pascals.
+def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
 
-    Arguments:
-        fracture (Fracture):        -- the fracture object for which the fracture pressure is to be plotted.
-        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.
-        bck_colMap (Colormaps)      -- colormap for the fracture pressure shown in the background.
-        line_color (color)          -- the color of the contour line (e.g. 'r' will plot in red).
-        contours_at (ndarray)       -- a list of fracture pressures to plot contours at.
 
-    Returns:
-         Fig
-    """
+    variable_list = []
+    time_srs = []
 
-    if fig is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+    if variable is 'time' or variable is 't':
+        for i in fracture_list:
+            variable_list.append(i.time)
+            time_srs.append(i.time)
+        return variable_list
+
+    elif variable is 'width' or variable is 'w':
+        for i in fracture_list:
+            variable_list.append(i.w)
+            time_srs.append(i.time)
+
+    elif variable is 'pressure' or variable is 'p':
+        for i in fracture_list:
+            variable_list.append(i.p)
+            time_srs.append(i.time)
+
+    elif variable is 'front velocity' or variable is 'v':
+        for i in fracture_list:
+            vel = np.full((i.mesh.NumberOfElts, ), np.nan)
+            vel[i.EltTip] = i.v
+            variable_list.append(vel)
+            time_srs.append(i.time)
+
+    elif variable is 'Reynolds number' or variable is 'Rn':
+        if fracture_list[-1].ReynoldsNumber is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.ReynoldsNumber[edge])
+                time_srs.append(i.time)
+            elif i.ReynoldsNumber is not None:
+                variable_list.append(np.mean(i.ReynoldsNumber, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+
+    elif variable is 'fluid flux' or variable is 'ff':
+        if fracture_list[-1].fluidFlux is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidFlux[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux is not None:
+                variable_list.append(np.mean(i.fluidFlux, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts,), np.nan))
+
+    elif variable is 'fluid velocity' or variable is 'fv':
+        if fracture_list[-1].fluidVelocity is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidVelocity[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux is not None:
+                variable_list.append(np.mean(i.fluidVelocity, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+
+    elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
+        for i in fracture_list:
+            # coordinate of the zero vertex in the tip cells
+            vertex_coord_tip = i.mesh.VertexCoor[i.mesh.Connectivity[i.EltTip, i.ZeroVertex]]
+            if variable is 'front_dist_mean' or variable is 'd_mean':
+                variable_list.append(np.mean((vertex_coord_tip[:, 0] ** 2 +
+                                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+            elif variable is 'front_dist_max' or variable is 'd_max':
+                variable_list.append(max((vertex_coord_tip[:, 0] ** 2 +
+                                          vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+            elif variable is 'front_dist_min' or variable is 'd_min':
+                variable_list.append(min((vertex_coord_tip[:, 0] ** 2 +
+                                          vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+            time_srs.append(i.time)
+    elif variable is 'mesh':
+        for i in fracture_list:
+            variable_list.append(i.mesh)
+            time_srs.append(i.time)
+
+    elif variable is 'efficiency' or variable is 'ef':
+        for i in fracture_list:
+            variable_list.append(i.efficiency)
+            time_srs.append(i.time)
+            
+    elif variable is 'volume' or variable is 'V':
+        for i in fracture_list:
+            variable_list.append(i.FractureVolume)
+            time_srs.append(i.time)
+            
+    elif variable is 'leaked off' or variable is 'lk':
+        for i in fracture_list:
+            variable_list.append(i.LkOff_vol)
+            time_srs.append(i.time)
+            
+    elif variable is 'leaked off volume' or variable is 'lkv':
+        for i in fracture_list:
+            variable_list.append(sum(i.LkOff_vol[i.EltCrack]))
+            time_srs.append(i.time)
+            
+    elif variable is 'aspect ratio' or variable is 'ar':
+        for i in fracture_list:
+            cells_x_axis = np.where(abs(i.mesh.CenterCoor[:, 1]) < 1e-12)[0]
+            to_delete = np.where(i.mesh.CenterCoor[cells_x_axis, 0] < 0)[0]
+            cells_x_axis_pstv = np.delete(cells_x_axis, to_delete)
+            tipCell_x_axis = np.intersect1d(i.EltTip, cells_x_axis_pstv)
+            in_tip_x = np.where(i.EltTip == tipCell_x_axis[0])[0]
+    
+            cells_y_axis = np.where(abs(i.mesh.CenterCoor[:, 0]) < 1e-12)[0]
+            to_delete = np.where(i.mesh.CenterCoor[cells_y_axis, 1] < 0)[0]
+            cells_y_axis_pstv = np.delete(cells_y_axis, to_delete)
+            tipCell_y_axis = np.intersect1d(i.EltTip, cells_y_axis_pstv)
+            in_tip_y = np.where(i.EltTip == tipCell_y_axis[0])[0]
+    
+            tipVrtxCoord = i.mesh.VertexCoor[i.mesh.Connectivity[tipCell_y_axis, 0]]
+            r_y = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + i.l[in_tip_y]
+            tipVrtxCoord = i.mesh.VertexCoor[i.mesh.Connectivity[tipCell_x_axis, 0]]
+            r_x = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + i.l[in_tip_x]
+    
+            variable_list.append(r_x / r_y)
+            time_srs.append(i.time)
+            
     else:
-        ax = fig.get_axes()[0]
+        raise ValueError('The variable type is not correct.')
 
-    x = fracture.mesh.CenterCoor[:, 0].reshape((fracture.mesh.ny, fracture.mesh.nx))
-    y = fracture.mesh.CenterCoor[:, 1].reshape((fracture.mesh.ny, fracture.mesh.nx))
+    if not return_time:
+        return variable_list
+    else:
+        return variable_list, time_srs
 
-    #
-    pressure = fracture.p.reshape((fracture.mesh.ny, fracture.mesh.nx)) /1e6
 
-    dx = (x[0, 1] - x[0, 0]) / 2.
-    dy = (y[1, 0] - y[0, 0]) / 2.
-    extent = [x[0, 0] - dx, x[-1, -1] + dx, y[0, 0] - dy, y[-1, -1] + dy]
+#-----------------------------------------------------------------------------------------------------------------------
 
-    cax = ax.imshow(pressure,
-                    cmap=bck_colMap,
-                    interpolation='spline16',
-                    extent=extent)
-    cbar = fig.colorbar(cax)
+def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, return_time=True):
 
-    if contours_at is None:
-        pressure_range = np.max(pressure) - np.min(pressure)
-        contours_at = np.min(pressure) + pressure_range * np.asarray([0.00, 0.03, 0.25, 0.6, 0.8])
+    if variable not in supported_variables:
+        raise ValueError(err_msg_variable)
 
-    CS = ax.contour(x,
-                    y,
-                    pressure,
-                    contours_at,
-                    colors=line_color)
+    return_list = []
 
-    plt.clabel(CS)
+    var_values, time_list = get_fracture_variable(fracture_list,
+                                                        variable,
+                                                        edge=edge)
 
-    ax.set_ylabel('meters')
-    ax.set_xlabel('meters')
-    ax.set_title('Fracture pressure (MPa)')
+    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
+                      'front_dist_mean', 'd_mean'):
+        return_list = var_values
+    else:
+        for i in range(len(fracture_list)):
+            if variable in ('width', 'w', 'pressure', 'p', 'fluid flux', 'ff', 'fluid velocity', \
+                            'fv', 'Reynolds number', 'Rn'):
+                value_point = griddata(fracture_list[i].mesh.CenterCoor,
+                                       var_values[i],
+                                       point,
+                                       method='linear',
+                                       fill_value=np.nan)
+                if np.isnan(value_point):
+                    print('Point outside fracture.')
 
-    return fig
+                return_list.append(value_point[0])
+
+    if return_time:
+        return return_list, time_list
+    else:
+        return return_list
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None,
+                                time_srs=None, length_srs=None, h=None, samp_cell=None, gamma=None):
+
+    if time_srs is None and length_srs is None:
+        raise ValueError('Either time series or lengths series is to be provided.')
+
+    if regime is 'E_K':
+        Kc_1 = mat_prop.Kc1
+    else:
+        Kc_1 = None
+
+    if regime is 'E_E':
+        Cij = mat_prop.Cij
+    else:
+        Cij = None
+
+    if regime is 'MDR':
+        density = fluid_prop.density
+    else:
+        density = None
+
+    if regime in ('M', 'MDR'):
+        if fluid_prop is None:
+            raise ValueError('Fluid properties required for \'M\' type analytical solution')
+        muPrime = fluid_prop.muPrime
+    else:
+        muPrime = None
+
+    if samp_cell is None:
+        samp_cell = int(len(mat_prop.Kprime) / 2)
+
+
+    return_list = []
+
+    if time_srs is not None:
+        srs_length = len(time_srs)
+    else:
+        srs_length = len(length_srs)
+
+    mesh_list = []
+    for i in range(srs_length):
+
+        if mesh is None:
+            x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
+                                                                              time_srs[i],
+                                                                              mat_prop,
+                                                                              inj_prop,
+                                                                              fluid_prop=fluid_prop,
+                                                                              h=h,
+                                                                              samp_cell=samp_cell,
+                                                                              gamma=gamma)
+
+            from src.CartesianMesh import CartesianMesh
+            mesh_i = CartesianMesh(x_len, y_len, 151, 151)
+        else:
+            mesh_i = mesh
+        mesh_list.append(mesh_i)
+
+        if length_srs is not None:
+            length = length_srs[i]
+        else:
+            length = None
+
+        if time_srs is not None:
+            time = time_srs[i]
+        else:
+            time = None
+
+        if variable in ('time', 't', 'radius', 'r', 'width', 'w', 'pressure', 'p', 'front velocity', 'v'):
+            t, r, p, w, v, actvElts = HF_analytical_sol(regime,
+                                                        mesh_i,
+                                                        mat_prop.Eprime,
+                                                        inj_prop.injectionRate[1,0],
+                                                        muPrime,
+                                                        Kprime=mat_prop.Kprime[samp_cell],
+                                                        Cprime=mat_prop.Cprime[samp_cell],
+                                                        length=length,
+                                                        t=time,
+                                                        Kc_1=Kc_1,
+                                                        h=h,
+                                                        density=density,
+                                                        Cij=Cij,
+                                                        gamma=gamma)
+
+            if variable is 'time' or variable is 't':
+                return_list.append(t)
+            elif variable is 'radius' or variable is 'r':
+                return_list.append(r)
+            elif variable is 'width' or variable is 'w':
+                return_list.append(w)
+            elif variable is 'pressure' or variable is 'p':
+                return_list.append(p)
+            elif variable is 'front velocity' or variable is 'v':
+                return_list.append(v)
+
+        elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
+            x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
+                                                                              time,
+                                                                              mat_prop,
+                                                                              inj_prop,
+                                                                              fluid_prop=fluid_prop,
+                                                                              h=h,
+                                                                              samp_cell=samp_cell,
+                                                                              gamma=gamma)
+            if variable is 'front_dist_min' or variable is 'd_min':
+                return_list.append(y_len)
+            elif variable is 'front_dist_max' or variable is 'd_max':
+                return_list.append(x_len)
+            elif variable is 'front_dist_mean' or variable is 'd_mean':
+                if regime in ('E_K', 'E_E'):
+                    raise ValueError('Mean distance not available.')
+                else:
+                    return_list.append(x_len)
+        else:
+            raise ValueError('The variable type is not correct.')
+
+    return return_list, mesh_list
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_prop, fluid_prop=None, time_srs=None,
+                                        length_srs=None, h=None, samp_cell=None, gamma=None):
+
+
+    values_point = []
+
+    if time_srs is not None:
+        srs_length = len(time_srs)
+    else:
+        srs_length = len(length_srs)
+
+    from src.CartesianMesh import CartesianMesh
+    if point == [0., 0.]:
+        mesh_Lx = 1.
+        mesh_Ly = 1.
+    else:
+        mesh_Lx = 2 * abs(point[0])
+        mesh_Ly = 2 * abs(point[1])
+    mesh = CartesianMesh(mesh_Lx, mesh_Ly, 5, 5)
+
+    for i in range(srs_length):
+
+        if time_srs is not None:
+            time = [time_srs[i]]
+        else:
+            time = None
+
+        if length_srs is not None:
+            length = [length_srs[i]]
+        else:
+            length = None
+
+        value_mesh, mesh_list = get_HF_analytical_solution(regime,
+                                                        variable,
+                                                        mat_prop,
+                                                        inj_prop,
+                                                        mesh=mesh,
+                                                        fluid_prop=fluid_prop,
+                                                        time_srs=time,
+                                                        length_srs=length,
+                                                        h=h,
+                                                        samp_cell=samp_cell,
+                                                        gamma=gamma)
+
+
+        if point == [0., 0.]:
+            values_point.append(value_mesh[0][mesh_list[0].CenterElts])
+        else:
+            value_point = value_mesh[0][18]
+            values_point.append(value_point)
+
+    return values_point
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_prop, inj_prop, fluid_prop=None,
+                                              h=None, samp_cell=None, gamma=None):
+
+
+    if regime is 'E_K':
+        Kc_1 = mat_prop.Kc1
+    else:
+        Kc_1 = None
+
+    if regime is 'MDR':
+        density = fluid_prop.density
+    else:
+        density = None
+
+    if regime in ('M', 'Mt', 'PKN', 'MDR'):
+        if fluid_prop is None:
+            raise ValueError('Fluid properties required to evaluate analytical solution')
+        muPrime = fluid_prop.muPrime
+    else:
+        muPrime = None
+
+    if samp_cell is None:
+        samp_cell = int(len(mat_prop.Kprime) / 2)
+
+    x_len, y_len = get_fracture_dimensions_analytical(regime,
+                                                      np.max(time_srs),
+                                                      mat_prop.Eprime,
+                                                      inj_prop.injectionRate[1, 0],
+                                                      muPrime,
+                                                      Kprime=mat_prop.Kprime[samp_cell],
+                                                      Cprime=mat_prop.Cprime[samp_cell],
+                                                      Kc_1=Kc_1,
+                                                      h=h,
+                                                      density=density,
+                                                      gamma=gamma)
+
+    return x_len, y_len
+
+

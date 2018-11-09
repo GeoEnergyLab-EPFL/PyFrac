@@ -1,17 +1,17 @@
 #
 # This file is part of PyFrac.
 #
-# Created by Brice Lecampion on 03.04.17.
-# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.  All rights reserved.
-# See the LICENSE.TXT file for more details. 
+# Created by Haseeb Zia on 03.04.17.
+# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.
+#  All rights reserved. See the LICENSE.TXT file for more details.
 #
 
 import math
 import numpy as np
 import time
-
-
-from src.CartesianMesh import *
+import datetime
+import sys
+from matplotlib.colors import to_rgb
 
 
 class MaterialProperties:
@@ -40,7 +40,8 @@ class MaterialProperties:
     """
 
     def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
-                 anisotropic_flag=False, SigmaO_func = None, Cl_func = None):
+                 anisotropic_K1c=False, SigmaO_func = None, Cl_func = None, TI_elasticity=False, Cij = None,
+                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0.):
         """
         Arguments:
             Eprime (float)          -- plain strain modulus.
@@ -60,6 +61,10 @@ class MaterialProperties:
             Cl_func (function)      -- the function giving the in Carter's leak off coefficient on the domain. It
                                        should takes two arguments (x, y) to give the coefficient on these coordinates.
                                        It is also used to get the leak off coefficient if the domain is remeshed.
+            TI_elasticity(bool)     -- if True, the medium is elastic transverse isotropic.
+            Cij(Ndarray-float)      -- the TI stiffness matrix (in the canonical basis) is provided when
+                                       TI_elasticity=true
+
         """
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
@@ -100,22 +105,43 @@ class MaterialProperties:
             self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
 
         self.grainSize = grain_size
-        self.anisotropic = anisotropic_flag
-        if anisotropic_flag:
+        self.anisotropic_K1c = anisotropic_K1c
+        if anisotropic_K1c:
             try:
-                self.K1c_perp = K1c_func(0)
+                self.Kc1 = K1c_func(0)
             except TypeError:
                 raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take one'
                                  ' argument, i.e. the angle and return a toughness value.')
         else:
-            self.K1c_perp = None
+            self.Kc1 = None
 
-        if K1c_func is not None and not self.anisotropic:
+        if K1c_func is not None and not self.anisotropic_K1c:
+            # the function should return toughness by taking x and y coordinates
             try:
                 K1c_func(0.,0.)
             except TypeError:
                 raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
+
+        self.TI_elasticity = TI_elasticity
+        if TI_elasticity or free_surf:
+            if isinstance(Cij, np.ndarray):  # check if float or ndarray
+                if Cij.shape == (6, 6):  # check if size is 6 x 6
+                    self.Cij = Cij
+                else:
+                    raise ValueError('Cij matrix is not a 6x6 array!')
+            else:
+                raise ValueError('Cij matrix is not a numpy array!')
+
+        self.freeSurf = free_surf
+        if free_surf:
+            if free_surf_depth == 1.e300:
+                raise ValueError("Depth from free surface is to be provided.")
+            elif Cij is None:
+                raise ValueError("The stiffness matrix (in the canonical basis) is to be provided")
+        self.FreeSurfDepth = free_surf_depth
+        self.TI_PlaneAngle = TI_plane_angle
+
 
         self.K1cFunc = K1c_func
         self.SigmaOFunc = SigmaO_func
@@ -137,14 +163,12 @@ class MaterialProperties:
         Returns:
         """
 
-        if self.K1cFunc is not None and not self.anisotropic:
-            self.Kprime = np.empty((mesh.NumberOfElts, ), dtype=np.float64)
+        if self.K1cFunc is not None and not self.anisotropic_K1c:
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
-        elif self.K1cFunc is not None and self.anisotropic:
-            self.Kprime = np.empty((mesh.NumberOfElts,), dtype=np.float64)
+        elif self.K1cFunc is not None and self.anisotropic_K1c:
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(np.pi/2)
@@ -308,7 +332,7 @@ class SimulationParameters:
         instance variables
             tolFractFront (float)       -- tolerance for the fracture front loop.
             toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.
-            toleranceToughness (float)  -- tolerance for toughness iteration
+            toleranceProjection (float) -- tolerance for projection iteration for anisotropic case
             maxFrontItr (int)           -- maximum iterations to for the fracture front loop.
             maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton
                                            hybrid) in this case.
@@ -355,18 +379,28 @@ class SimulationParameters:
                                            saved.
             verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently
                                            two levels 1 and 2 are supported).
+            enableRemeshing (bool)      -- if True, the computational domain will be compressed by the factor given by
+                                           by the variable remeshFactor after the fracture front reaches the end of the
+                                           domain.
             remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.
             frontAdvancing (string)     -- The type of front advancing to be done. Possible options are:
                                                 -- explicit
                                                 -- semi-implicit
                                                 -- implicit
+            gravity (bool)              -- if True, the effect of gravity will be taken into account.
             collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.
-            tipParam_precise (bool)     -- if True, the space dependant parameters such as toughness and leak-off
+            paramFromTip (bool)     -- if True, the space dependant parameters such as toughness and leak-off
                                            coefficients will be taken from the tip by projections instead of taking them
                                            from the ribbon cell center. The numerical scheme as a result will become
                                            unstable due to the complexities in finding the projection
             saveReynNumb (boolean)      -- if True, the Reynold's number at each edge of the cells inside the fracture
                                            will be saved.
+            saveFluidFlux (boolean)     -- if True, the fluid flux at each edge of the cells inside the fracture
+                                           will be saved.
+            saveFluidVel (boolean)     -- if True, the fluid velocity at each edge of the cells inside the fracture
+                                           will be saved.
+            TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic
+                                           kernel or kernel with free surface.
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -376,6 +410,8 @@ class SimulationParameters:
             __dryCrack_mechLoading(bool)-- if True, the mechanical loading solver will be used.
             __viscousInjection (bool)   -- if True, the the solver will also take the fluid viscosity into account.
             __volumeControl (bool)      -- if True, the the volume control solver will be used.
+            __simName (str)             -- the name of the simulation.
+            __timeStamp (str)           -- the time at which the simulation properties was created.
 
             
     """
@@ -385,8 +421,10 @@ class SimulationParameters:
         The constructor of the SimulationParameters class. See documentation of the class.
 
         Arguments:
-
+            address (str)               -- the folder where the simulation parameters file is located. The file must be
+                                           name 'simul_param'
         """
+
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
             slash = "\\"
@@ -409,12 +447,12 @@ class SimulationParameters:
         # tolerances
         self.tolFractFront = simul_param.toleranceFractureFront
         self.toleranceEHL = simul_param.toleranceEHL
-        self.toleranceToughness = simul_param.tol_toughness
+        self.toleranceProjection = simul_param.tol_projection
 
         # max iterations
-        self.maxFrontItr = simul_param.maxfront_its
-        self.maxSolverItr = simul_param.max_itr_solver
-        self.maxToughnessItr = simul_param.max_toughnessItr
+        self.maxFrontItrs = simul_param.max_front_itrs
+        self.maxSolverItrs = simul_param.max_solver_itrs
+        self.maxToughnessItrs = simul_param.max_toughness_Itrs
 
         # time and time stepping
         self.maxTimeSteps = simul_param.maximum_steps
@@ -434,10 +472,13 @@ class SimulationParameters:
         self.plotFigure = simul_param.plot_figure
         self.plotAnalytical = simul_param.plot_analytical
         self.analyticalSol = simul_param.analytical_sol
-        self.set_outFileAddress(simul_param.out_file_folder)
+        self.set_simulation_name(simul_param.sim_name)
+        self.set_outputFolder(simul_param.output_folder)
         self.saveToDisk = simul_param.save_to_disk
         self.bckColor = simul_param.bck_color
         self.plotEltType = simul_param.plot_eltType
+        self.blockFigure = simul_param.block_figure
+        self.outputEveryTS = simul_param.output_every_TS
 
         # solver type
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
@@ -448,11 +489,23 @@ class SimulationParameters:
         self.verbosity = simul_param.verbosity
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
+        self.enableRemeshing = simul_param.enable_remeshing
         self.remeshFactor = simul_param.remesh_factor
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
-        self.precise_tipParam = simul_param.precise_tipParam
+        self.paramFromTip = simul_param.param_from_tip
         self.saveReynNumb = simul_param.save_ReyNumb
+        self.gravity = simul_param.gravity
+        self.TI_KernelExecPath = simul_param.TI_Kernel_exec_path
+        self.saveReynNumb = simul_param.save_ReyNumb
+        self.saveFluidFlux = simul_param.save_fluid_flux
+        self.saveFluidVel = simul_param.save_fluid_vel
+        self.explicitProjection = simul_param.explict_projection
+        self.symmetric = simul_param.symmetric
+
+        # fracture geometry to calculate analytical solution for plotting
+        self.height = simul_param.height
+        self.aspectRatio = simul_param.aspect_ratio
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -495,7 +548,7 @@ class SimulationParameters:
     def get_dryCrack_mechLoading(self):
         return self.__dryCrack_mechLoading
 
-    def set_outFileAddress(self, out_file_folder):
+    def set_outputFolder(self, output_address):
         # check operating system to get appropriate slash in the address
 
         import sys
@@ -504,38 +557,27 @@ class SimulationParameters:
         else:
             slash = "/"
 
-        if out_file_folder is not 'None':
+        if output_address is not None:
             self.saveToDisk = True
-            if "\\" in out_file_folder:
+            if "\\" in output_address:
                 if slash != "\\":
                     raise SystemExit('Windows style slash in the given address on linux system.')
-            elif "/" in out_file_folder:
+            elif "/" in output_address:
                 if slash != "/":
                     raise SystemExit('linux style slash in the given address on windows system!')
 
-            if out_file_folder[-1] is slash:
-                out_file_folder = out_file_folder[:-1]
+            if output_address[-1] is slash:
+                output_address = output_address[:-1]
 
-            import os
-            if not os.path.exists(out_file_folder):
-                os.makedirs(out_file_folder)
-
-            self.__outFileAddress = out_file_folder + slash
-            self.lastSavedFile = 0
-
+            self.__outputAdress = output_address
+            self.__outputFolder = output_address + slash + self.get_simulation_name() + slash
         else:
-            out_file_folder = "." + slash + "_simulation_data_PyFrac"
-
-            import os
-            if not os.path.exists(out_file_folder):
-                os.makedirs(out_file_folder)
-
-            self.__outFileAddress = out_file_folder + slash
-            self.lastSavedFile = 0
+            self.__outputAdress = output_address
+            self.__outputFolder = "." + slash + "_simulation_data_PyFrac" + slash + self.get_simulation_name() + slash
 
 
-    def get_outFileAddress(self):
-        return self.__outFileAddress
+    def get_outputFolder(self):
+        return self.__outputFolder
 
     def set_solTimeSeries(self, sol_t_srs):
         if isinstance(sol_t_srs, np.ndarray):
@@ -549,12 +591,36 @@ class SimulationParameters:
     def get_solTimeSeries(self):
         return self.__solTimeSeries
 
+    def set_simulation_name(self, simul_name):
+        time_stmp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d__%H_%M_%S')
+        if simul_name is None:
+            self.__simName = 'simulation' + '__' + time_stmp
+        else:
+            if not isinstance(simul_name, str):
+                raise ValueError("The given simulation name is not a string")
+            else:
+                self.__simName = simul_name + '__' + time_stmp
+
+        self.__timeStamp = time.time()
+
+        try:
+            self.set_outputFolder(self.__outputAdress)
+        except AttributeError:
+            pass
+
+
+    def get_simulation_name(self):
+        return self.__simName
+
+    def get_timeStamp(self):
+        return self.__timeStamp
+
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 class IterationProperties:
     """
-    This class store performance data in the form of a tree
+    This class stores performance data in the form of a tree
     """
 
     def __init__(self, itr_type="not initialized"):
@@ -569,3 +635,70 @@ class IterationProperties:
         self.NumbOfElts = None
         self.subIterations = []
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class PlotProperties:
+    """
+    This class stores the parameters used for plotting of the post-processed results
+    """
+
+    def __init__(self, color_map=None, line_color=None, line_style='-', line_width=1., line_style_anal='--',
+                 line_color_anal='r', interpolation='none', alpha=0.8, line_width_anal=None, text_size=None,
+                 disp_precision=3, mesh_color='yellowgreen', mesh_edge_color='grey', mesh_label_color='black',
+                 graph_scaling='linear', color_maps=None, colors_list=None, plot_legend=True, plot_FP_time=True):
+
+        self.lineStyle = line_style
+        self.lineWidth = line_width
+        self.lineColor = line_color
+        self.colorMap = color_map
+        self.lineColorAnal = line_color_anal
+        self.lineStyleAnal = line_style_anal
+        self.lineWidthAnal = line_width_anal
+        self.textSize = text_size
+        self.dispPrecision = disp_precision
+        self.meshColor = mesh_color
+        self.meshEdgeColor = mesh_edge_color
+        self.meshLabelColor = mesh_label_color
+        self.interpolation = interpolation
+        self.alpha = alpha
+        self.graphScaling = graph_scaling
+        self.plotLegend = plot_legend
+        self.PlotFP_Time = plot_FP_time
+        if color_maps is None:
+            self.colorMaps = ['cool', 'Wistia', 'summer', 'autumn']
+        else:
+            self.colorMaps = color_maps
+        if colors_list is None:
+            self.colorsList = ['black', 'firebrick', 'olivedrab', 'royalblue', 'deeppink', 'darkmagenta']
+        else:
+            self.colorsList = colors_list
+        if self.lineColor is None:
+            self.lineColor = to_rgb(self.colorsList[0])
+        else:
+            self.colorsList = [line_color]
+        if self.colorMap is None:
+            self.colorMap = self.colorMaps[0]
+        else:
+            self.colorMaps = [color_map]
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class LabelProperties:
+    """
+    This class stores the labels of a plot figure.
+    """
+
+    def __init__(self, x_label='meters', y_label='meters', z_label=None, fig_label=None, colorbar_label=None,
+                 latex_font=True, legend=None, scale_with=1., units=None):
+
+        self.xLabel = x_label
+        self.yLabel = y_label
+        self.zLabel = z_label
+        self.figLabel = fig_label
+        self.colorbarLabel = colorbar_label
+        self.latexFont = latex_font
+        self.unitConversion = scale_with
+        self.legend = legend
+        self.units = units

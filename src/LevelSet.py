@@ -9,7 +9,6 @@ See the LICENSE.TXT file for more details.
 
 # local imports
 import numpy as np
-from src.Utility import Neighbors
 import warnings
 from scipy.optimize import fsolve
 
@@ -72,10 +71,9 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         Alive = np.append(Alive, Smallest)
         NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
-    if (InitlevelSet[farAwayPstv] >= 1e10).any():
-        unevaluated = np.where(InitlevelSet[farAwayPstv] >= 1e10)[0]
-        print("cannot find level set for the cell(s) explicitly: " + repr(unevaluated) + "\n solving with root"
-                                                                                         " finding algorithm...")
+    if (InitlevelSet[farAwayPstv] >= 1e50).any():
+        unevaluated = np.where(InitlevelSet[farAwayPstv] >= 1e50)[0]
+
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayPstv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
@@ -88,7 +86,7 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
     # set to be returned.
     if len(farAwayNgtv)>0:
         RibbonInwardElts = np.setdiff1d(EltChannel, EltRibbon)
-        positive_levelSet = 1e10 * np.ones((mesh.NumberOfElts,), np.float64)
+        positive_levelSet = 1e50 * np.ones((mesh.NumberOfElts,), np.float64)
         positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
         Alive = np.copy(EltRibbon)
         NarrowBand = np.copy(EltRibbon)
@@ -119,7 +117,8 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
                         positive_levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
                     else:  # the angle is either 0 or 90 degrees
                         # vertical propagation direction.
-                        if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
+                        if NeigxMin > maxdist:
+                            # used to check if very large value (level set value for unevaluated elements)
                             positive_levelSet[neighbor] = NeigyMin + mesh.hy
                         # horizontal propagation direction.
                         if NeigyMin > maxdist:
@@ -132,10 +131,9 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
         InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 
 
-    if (abs(InitlevelSet[farAwayNgtv]) >= 1e10).any():
-        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) >= 1e10)[0]
-        print("cannot find level set for the cell(s) explicitly: " + repr(unevaluated) + "\n solving with root"
-                                                                                         " finding algorithm...")
+    if (abs(InitlevelSet[farAwayNgtv]) >= 1e50).any():
+        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) >= 1e50)[0]
+
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayNgtv[unevaluated[i]]]
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
@@ -162,7 +160,7 @@ def reconstruct_front(dist, EltChannel, mesh):
     alpha = np.asarray([])
 
     for i in range(0, len(EltRest)):
-        neighbors = np.asarray(Neighbors(EltRest[i], mesh.nx, mesh.ny))
+        neighbors = mesh.NeiElements[EltRest[i]]
 
         minx = min(dist[neighbors[0]], dist[neighbors[1]])
         miny = min(dist[neighbors[2]], dist[neighbors[3]])
@@ -212,9 +210,16 @@ def reconstruct_front(dist, EltChannel, mesh):
                 else:
                     alpha = np.append(alpha, np.nan)
 
-
-
-
+    nan = np.where(np.isnan(alpha))[0]
+    if len(nan) > 0:
+        alpha_mesh = np.full((mesh.NumberOfElts,), np.nan)
+        alpha_mesh[ElmntTip] = alpha
+        for i in range(len(nan)):
+            neighbors = mesh.NeiElements[ElmntTip[nan[i]]]
+            neig_in_tip = np.intersect1d(ElmntTip, neighbors)
+            alpha_neig = alpha_mesh[neig_in_tip]
+            alpha_neig = np.delete(alpha_neig, np.where(np.isnan(alpha_neig))[0])
+            alpha[nan[i]] = np.mean(alpha_neig)
 
     CellStatusNew = np.zeros((mesh.NumberOfElts), int)
     CellStatusNew[EltChannel] = 1
@@ -257,7 +262,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     inTip[eltsTip] = True
     i = 0
     while i < len(eltsTip):  # to remove a special case encountered in sharp edges and rectangular cells
-        neighbors = np.asarray(Neighbors(eltsTip[i], mesh.nx, mesh.ny))
+        neighbors = mesh.NeiElements[eltsTip[i]]
         if inTip[neighbors[0]] and inTip[neighbors[3]] and inTip[neighbors[3] - 1]:
             conjoined = np.asarray([neighbors[0], neighbors[3], neighbors[3] - 1, eltsTip[i]])
             mindist = np.argmin(mesh.distCenter[conjoined])
@@ -276,7 +281,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
 
     # All the inner cells neighboring tip cells are added to ribbon cells
     for i in range(0, len(eltsTip)):
-        neighbors = np.asarray(Neighbors(eltsTip[i], mesh.nx, mesh.ny))
+        neighbors = mesh.NeiElements[eltsTip[i]]
 
         if levelSet[neighbors[0]] <= levelSet[neighbors[1]]:
             eltsRibbon = np.append(eltsRibbon, neighbors[0])

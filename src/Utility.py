@@ -35,48 +35,6 @@ def radius_level_set(xy, R):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def Neighbors(elem, nx, ny):
-    """
-    Neighbouring elements of an element within the mesh . Boundary elements have themselves as neighbor
-    Arguments:
-        elem (int): element whose neighbor are to be found
-        nx (int):   number of elements in x direction
-        ny (int):   number of elements in y direction
-        
-    Returns:
-        int:        left neighbour
-        int:        right neighbour
-        int:        bottom neighbour
-        int:        top neighbour
-    """
-
-    j = elem // nx
-    i = elem % nx
-
-    if i == 0:
-        left = elem
-    else:
-        left = j * nx + i - 1
-
-    if i == nx - 1:
-        right = elem
-    else:
-        right = j * nx + i + 1
-
-    if j == 0:
-        bottom = elem
-    else:
-        bottom = (j - 1) * nx + i
-
-    if j == ny - 1:
-        up = elem
-    else:
-        up = (j + 1) * nx + i
-
-    return (left, right, bottom, up)
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 def PrintDomain(Matrix, mesh, Elem = None):
     """
     3D plot of all elements given in the form of a list;

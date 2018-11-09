@@ -22,7 +22,10 @@ from src.VolIntegral import *
 from src.Properties import *
 from src.CartesianMesh import *
 from src.FractureInitilization import *
+from src.Labels import *
+from src.PostProcessFracture import *
 from scipy.interpolate import griddata
+from src.Visualization import *
 
 
 class Fracture():
@@ -61,6 +64,10 @@ class Fracture():
             regime (ndarray)            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
                                            and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
             ReynoldsNumber (ndarray)    -- the reynolds number at each edge of the cells in the fracture. The
+                                           arrangement is left, right, bottom, top.
+            fluidFlux (ndarray)         -- the fluid flux at each edge of the cells in the fracture. The arrangement is
+                                           left, right, bottom, top.
+            fluidVelocity (ndarray)     -- the fluid velocity at each edge of the cells in the fracture. The
                                            arrangement is left, right, bottom, top.
                                  
         functions:
@@ -138,12 +145,17 @@ class Fracture():
         # the parameter specifying the type of initialization
         init_type = init_param[0]
 
-        if init_type is 'PKN' or 'KGD' in init_type:
+        if init_type in ('PKN', 'KGD_K'):
             (init_type, given_type, given_value, h) = init_param
-        elif init_type in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'): # radial fracture
+            gamma = None
+        elif init_type in ('E_E', 'E_K'):
+            (init_type, given_type, given_value, gamma) = init_param
+            h = None
+        elif init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'): # radial fracture
             if len(init_param) == 3:
                 (init_type, given_type, given_value) = init_param
                 h = None
+                gamma = None
             else:
                 raise ValueError("Three parameters are to be provided for initialization type " + repr(init_type) +
                                 ". See Fracture class initialization function documentation.")
@@ -181,16 +193,22 @@ class Fracture():
                                                                       Cprime=solid.Cprime[self.mesh.CenterElts][0],
                                                                       length=length,
                                                                       t=time,
-                                                                      KIc_min=solid.K1c_perp,
-                                                                      h=h,density=fluid.density)
+                                                                      Kc_1=solid.Kc1,
+                                                                      h=h,
+                                                                      density=fluid.density,
+                                                                      gamma=gamma)
 
             if init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'):
+                if self.initRad > min(Mesh.Lx, Mesh.Ly):
+                    raise ValueError("The radius of the radial fracture is larger than domain!")
                 # survey cells and their distances from the front
-                surv_cells, inner_cells = get_circular_survey_cells(self.mesh, self.initRad)
+                surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, self.initRad, self.initRad)
                 surv_dist = self.initRad - (Mesh.CenterCoor[surv_cells, 0] ** 2 + Mesh.CenterCoor[
                                                                             surv_cells, 1] ** 2) ** 0.5
-            elif init_type is 'E':
-                a = (solid.Kprime[self.mesh.CenterElts]/((32 / np.pi) ** 0.5) / solid.K1c_perp) ** 2 * self.initRad
+            elif init_type in ('E_E', 'E_K'):
+                a = self.initRad * gamma
+                if self.initRad > Mesh.Ly or a > Mesh.Lx:
+                    raise ValueError("The axes length of the elliptical fracture is larger than domain!")
                 surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, a, self.initRad)
                 surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
                 # get minimum distance from center of the survey cells
@@ -198,6 +216,8 @@ class Fracture():
                      surv_dist[i] = Distance_ellipse(a, self.initRad, Mesh.CenterCoor[surv_cells[i], 0],
                                                                     Mesh.CenterCoor[surv_cells[i], 1])
             elif 'PKN' in init_type or 'KGD' in init_type :
+                if self.initRad > Mesh.Lx or h > Mesh.Ly:
+                    raise ValueError("The fracture is larger than domain!")
                 inner_cells = np.intersect1d(np.where(abs(Mesh.CenterCoor[:, 0]) < self.initRad)[0],
                                              np.where(abs(Mesh.CenterCoor[:, 1]) < h / 2)[0])
                 max_x = max(abs(Mesh.CenterCoor[inner_cells, 0]))
@@ -225,7 +245,9 @@ class Fracture():
                                                 C,
                                                 w,
                                                 p,
-                                                volume)
+                                                volume,
+                                                simulProp.symmetric,
+                                                solid.Eprime)
 
 
             if volume is None:
@@ -260,23 +282,27 @@ class Fracture():
         if fluid != None:
             self.muPrime = np.full((Mesh.NumberOfElts,), fluid.muPrime, dtype=np.float64)
 
+
+        if simulProp.saveReynNumb:
+            self.ReynoldsNumber = np.full((4, Mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.ReynoldsNumber = None
+
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
-        self.regime = None
+        if simulProp.saveRegime:
+            self.regime = np.full((Mesh.NumberOfElts, ), np.nan, dtype=np.float32)
+        else:
+            self.regime = None
 
-        # Reynolds number at each edge of the cells in the fracture
-        self.ReynoldsNumber = None
+        if simulProp.saveFluidFlux:
+            self.fluidFlux = np.full((4, Mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidFlux = None
 
-        # saving initial state of fracture and properties if the output flags are set
-        if simulProp.plotFigure:
-            fig = self.plot_fracture(mat_properties=solid, sim_properties=simulProp)
-            plt.show()
-            # plt.pause(0.5)
-
-        if simulProp.saveToDisk:
-            self.SaveFracture(simulProp.get_outFileAddress() + "fracture_" + repr(0))
-            prop = (solid, fluid, injection, simulProp)
-            with open(simulProp.get_outFileAddress() + "properties", 'wb') as output:
-                dill.dump(prop, output, -1)
+        if simulProp.saveFluidVel:
+            self.fluidVelocity = np.full((4, Mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidVelocity = None
 
         if simulProp.timeStepLimit is None:
             # setting time step limit according to the initial velocity
@@ -286,15 +312,12 @@ class Fracture():
                 simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
                                                             self.v) * simulProp.tmStpFactLimit
 
-        if simulProp.get_solTimeSeries() is None and simulProp.outputTimePeriod is None:
-            simulProp.set_solTimeSeries(2 ** np.linspace(np.log2(self.time + simulProp.timeStepLimit),
-                                                      np.log2(simulProp.FinalTime), 15))
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def plot_fracture(self, parameter='footPrint', elts='complete', analytical=None, identify=[], mat_properties=None,
-                      sim_properties=None, fig=None, alpha=1.0):
+    def plot_fracture(self, variable='width', mat_properties=None, projection='2D', elements=None,
+                       backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None):
         """
         Plots the given parameter of the specified cells.
         
@@ -320,57 +343,18 @@ class Fracture():
             fig (figure)            -- figure object to superimpose the image
 
         """
+        fig = plot_fracture_list([self],
+                           variable,
+                           mat_properties,
+                           projection,
+                           elements,
+                           backGround_param,
+                           plot_prop,
+                           fig,
+                           edge,
+                           contours_at,
+                           labels)
 
-        if elts == 'complete':
-            Elts = np.arange(self.mesh.NumberOfElts)
-        elif elts == 'channel':
-            Elts = self.EltChannel
-        elif elts == 'crack':
-            Elts = self.EltCrack
-        elif elts == 'ribbon':
-            Elts = self.EltRibbon
-        elif elts == 'tip':
-            Elts = self.EltTip
-        else:
-            raise ValueError('Invalid element identifier!')
-
-        values = np.zeros((self.mesh.NumberOfElts), float)
-        if parameter == 'width':
-            values[Elts] = self.w[Elts]
-        elif parameter == 'pressure':
-            values[Elts] = self.p[Elts]
-        elif parameter == 'muPrime':
-            values[Elts] = self.muPrime[Elts]
-        elif parameter == 'footPrint':
-            fig = self.print_fracture_trace(rAnalytical=analytical,
-                                            identify=identify,
-                                            mat_properties=mat_properties,
-                                            sim_prop=sim_properties,
-                                            fig=fig)
-            return fig
-        elif parameter == 'mesh':
-            fig = self.print_fracture_trace(rAnalytical=analytical,
-                                            identify=identify,
-                                            mat_properties=mat_properties,
-                                            sim_prop=sim_properties,
-                                            fig=fig,
-                                            mesh_only=True)
-            return fig
-        else:
-            raise ValueError('Invalid parameter identifier!')
-
-        if fig is None:
-            fig = plt.figure()
-            ax = fig.gca(projection='3d')
-        else:
-            ax = fig.gca(projection='3d')
-
-        ax.plot_trisurf(self.mesh.CenterCoor[Elts, 0],
-                        self.mesh.CenterCoor[Elts, 1],
-                        values[Elts],
-                        cmap=cm.plasma,
-                        linewidth=0.2,
-                        alpha=alpha)
         return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -473,166 +457,134 @@ class Fracture():
         self.Ffront=tmp
 
 #-----------------------------------------------------------------------------------------------------------------------
-
-
-    def print_fracture_trace(self, rAnalytical, identify, mat_properties, sim_prop=None, colormap=cm.viridis,
-                             color='0.5', fig=None, mesh_only=False):
+    def plot_fracture_slice(self, variable='width', point1=None, point2=None, projection='2D',
+                           plot_prop=None, fig=None, edge=4):
         """
-        Print fracture front footprint and other parameters.
+        This function Plots the given parameter of the fracture. Fracture width is plotted in 3D if the parameter is
+        not provided
 
         Arguments:
-            rAnalytical (float)     -- radius of fracture footprint calculated analytically.
-            identify (ndarray)      -- list of elements to be identified (see plot_fracture function).
-            mat_Properties          -- solid material properties object (containing the material properties which
-                                       can be specified to color code the cells).
-            sim_prop                -- the SimulationParameters object specifying different parameters to plot.
-            colormap                -- colormap to be used to color code the grid cells.
-            color                   -- color of the grid lines (default is grey).
-            fig                     -- matplotlib figure object to superimpose the image.
-            mesh_only (boolean)     -- if True, onle mesh will be plotted.
+            elts(string)            -- elements to be printed; possible options:
+                                                complete
+                                                channel
+                                                crack
+                                                ribbon
+            parameter(string)       -- parameter to be ploted; possible options:
+                                                width
+                                                pressure
+                                                viscosity
+                                                footPrint
+                                                mesh
+            analytical (float)      -- radius of fracture footprint calculated analytically. Not plotter if None.
+            identify (ndarray)      -- plot the cells in the provided list with cell number and different color
+                                       to identify. This option can be used in debugging.
+            mat_properties (MaterialProperties)   -- material properties to colorcode the grid according to the given
+                                       parameter in the simulation properties. Can be None.
+            sim_properties (SimulationParameters) -- Simulation paramters to define various plotting parameters. Can be
+                                       None
+            fig (figure)            -- figure object to superimpose the image
 
-        Returns:
-            fig                     -- matplotlib figure object.
         """
 
 
+        return plot_fracture_list_slice([self],
+                                        variable,
+                                        point1,
+                                        point2,
+                                        plot_prop,
+                                        projection,
+                                        fig,
+                                        edge,
+                                        labels)
+
+# ------------------------------------------------------------------------------------------------------------------
+
+    def SaveFracture(self, filename):
+        with open(filename, 'wb') as output:
+            dill.dump(self, output, -1)
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+    def plot_front(self, fig=None, plot_prop=None):
+
         if fig is None:
-            fig, ax = plt.subplots()
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            plt.axis('equal')
         else:
             ax = fig.get_axes()[0]
 
-        # set the four corners of the rectangular mesh
-        ax.set_xlim([-self.mesh.Lx, self.mesh.Lx])
-        ax.set_ylim([-self.mesh.Ly, self.mesh.Ly])
+        if plot_prop is None:
+            plot_prop = PlotProperties()
 
-        # add rectangle for each cell
-        patches = []
-        for i in range(self.mesh.NumberOfElts):
-            polygon = Polygon(np.reshape(self.mesh.VertexCoor[self.mesh.Connectivity[i], :], (4, 2)), True)
-            patches.append(polygon)
+        I = self.Ffront[:, 0:2]
+        J = self.Ffront[:, 2:4]
+        # todo !!!Hack: gets very large values sometime, needs to be resolved
+        for e in range(0, len(I)):
+            if max(abs(I[e, :] - J[e, :])) < 3 * (self.mesh.hx ** 2 + self.mesh.hy ** 2) ** 0.5:
+                ax.plot(np.array([I[e, 0], J[e, 0]]),
+                        np.array([I[e, 1], J[e, 1]]),
+                        plot_prop.lineStyle,
+                        color=plot_prop.lineColor)
 
-        p = PatchCollection(patches, cmap=colormap, alpha=0.65, edgecolor=color, linewidth=0.5)
+        if plot_prop.PlotFP_Time:
+            tipVrtxCoord = self.mesh.VertexCoor[self.mesh.Connectivity[self.EltTip, self.ZeroVertex]]
+            r_indx = np.argmax((tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + self.l)
+            x_coor = self.mesh.CenterCoor[self.EltTip[r_indx], 0] + 0.1 * self.mesh.hx
+            y_coor = self.mesh.CenterCoor[self.EltTip[r_indx], 1] + 0.1 * self.mesh.hy
+            if plot_prop.textSize is None:
+                plot_prop.textSize = max(self.mesh.hx, self.mesh.hx)
+            t = to_precision(self.time, plot_prop.dispPrecision) + 's'
 
-
-        # applying color according to the prescribed parameter
-        colors = np.full(len(patches), 0.5)
-
-        if not sim_prop is None:
-            if sim_prop.bckColor == 'sigma0':
-                max_bck = max(mat_properties.SigmaO) / 1e6
-                min_bck = min(mat_properties.SigmaO) / 1e6
-                if max_bck - min_bck > 0:
-                    plt_clrBar = True
-                    colors = (mat_properties.SigmaO / 1e6 - min_bck) / (max_bck - min_bck)
-                else:
-                    plt_clrBar = False
-                label = "confining stress (MPa)"
-            elif sim_prop.bckColor == 'K1c':
-                max_bck = max(mat_properties.K1c) / 1e6
-                min_bck = min(mat_properties.K1c) / 1e6
-                if max_bck - min_bck > 0:
-                    plt_clrBar = True
-                    colors = (mat_properties.K1c / 1e6 - min_bck) / (max_bck - min_bck)
-                else:
-                    plt_clrBar = False
-                label = "fracture toughness (Mpa m^(1/2))"
-            elif sim_prop.bckColor == 'Cl':
-                max_bck = max(mat_properties.Cl)
-                min_bck = min(mat_properties.Cl)
-                if max_bck - min_bck > 0:
-                    plt_clrBar = True
-                    colors = (mat_properties.Cl - min_bck) / (max_bck - min_bck)
-                else:
-                    plt_clrBar = False
-                label = "Carter leak off coefficient (C)"
-            elif not sim_prop.bckColor is None:
-                raise ValueError("Back ground color identifier not supported!")
-
-        p.set_array(np.array(colors))
-        ax.add_collection(p)
-
-        # mark type of elements
-        if (not sim_prop is None) and sim_prop.plotEltType and not mesh_only:
-            for i in self.EltTip:
-                coord = self.mesh.CenterCoor[i]
-                circle = plt.Circle((coord[0], coord[1]),
-                                    radius=1/4 * min(self.mesh.hy,self.mesh.hy),
-                                    fc='#E52C54')
-                ax.add_patch(circle)
-
-            for i in self.EltChannel:
-                coord = self.mesh.CenterCoor[i]
-                circle = plt.Circle((coord[0], coord[1]),
-                                    radius=1/4 * min(self.mesh.hy,self.mesh.hy),
-                                    fc='#D16A4E')
-                ax.add_patch(circle)
-
-            for i in self.EltRibbon:
-                coord = self.mesh.CenterCoor[i]
-                circle = plt.Circle((coord[0], coord[1]),
-                                    radius=1/4 * min(self.mesh.hy,self.mesh.hy),
-                                    fc='#07E81C')
-                ax.add_patch(circle)
-
-
-        # Plot the analytical solution
-        if not (sim_prop is None) and sim_prop.plotAnalytical and (not rAnalytical is None) and not mesh_only:
-
-            if sim_prop.analyticalSol in ('M', 'Mt', 'K', 'Kt', 'MDR'):
-                circle = plt.Circle((0, 0), radius=rAnalytical)
-                circle.set_ec('r')
-                circle.set_fill(False)
-                ax.add_patch(circle)
-            elif sim_prop.analyticalSol is 'E' and (not mat_properties.K1c_perp is None):
-                from matplotlib.patches import Ellipse
-                import matplotlib as mpl
-                a = (mat_properties.K1c[0] / mat_properties.K1c_perp)**2 * rAnalytical
-                ellipse = mpl.patches.Ellipse(xy=[0., 0.], width=2 * a, height=2 * rAnalytical, angle=360)
-                ellipse.set_fill(False)
-                ellipse.set_ec('r')
-                ax.add_patch(ellipse)
-            elif sim_prop.analyticalSol is 'PKN':
-                print("PKN is to be implemented.")
-
-        # print Element numbers on the plot for elements to be identified
-        for i in range(len(identify)):
-            ax.text(self.mesh.CenterCoor[identify[i], 0] - self.mesh.hx / 4, self.mesh.CenterCoor[identify[i], 1] -
-                    self.mesh.hy / 4, repr(identify[i]), fontsize=10)
-
-        # print the front lines
-        if not mesh_only:
-            I = self.Ffront[:, 0:2]
-            J = self.Ffront[:, 2:4]
-            # todo !!!Hack: gets very large values sometime, needs to be resolved
-            for e in range(0, len(I)):
-                if max(abs(I[e, :] - J[e, :])) < 3 * (self.mesh.hx ** 2 + self.mesh.hy ** 2) ** 0.5:  # if
-                    plt.plot(np.array([I[e, 0], J[e, 0]]), np.array([I[e, 1], J[e, 1]]), '-k')
-
-        plt.axis('equal')
-
-        if sim_prop is not None:
-            if sim_prop.bckColor is not None:
-                sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=min_bck, vmax=max_bck))
-                sm._A = []
-                clr_bar = plt.colorbar(sm,alpha=0.65)
-                clr_bar.set_label(label)
-
-        # maximize the plot window
-        # import sys
-        # if "win32" in sys.platform or "win64" in sys.platform:
-        #     mng = plt.get_current_fig_manager()
-        #     mng.window.showMaximized()
-
-        ax.set_xlabel("meters")
-        ax.set_ylabel("meters")
+            ax.text(x_coor,
+                    y_coor,
+                    t)
 
         return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def SaveFracture(self, filename):
-        with open(filename, 'wb') as output:
-            dill.dump(self, output, -1)
+
+    def plot_front_3D(self, fig=None, plot_prop=None):
+
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1, projection='3d')
+            ax.set_xlim(np.min(self.Ffront), np.max(self.Ffront))
+            ax.set_ylim(np.min(self.Ffront), np.max(self.Ffront))
+            plt.gca().set_aspect('equal')
+            scale = 1.1
+            zoom_factory(ax, base_scale=scale)
+        else:
+            ax = fig.get_axes()[0]
+
+        ax.set_frame_on(False)
+        ax.grid(False)
+        ax.set_frame_on(False)
+        ax.set_axis_off()
+
+        if plot_prop is None:
+            plot_prop = PlotProperties()
+
+        I = self.Ffront[:, 0:2]
+        J = self.Ffront[:, 2:4]
+
+        # draw front lines
+        for e in range(0, len(I)):
+            Path = mpath.Path
+            path_data = [
+                (Path.MOVETO, [I[e, 0], I[e, 1]]),
+                (Path.LINETO, [J[e, 0], J[e, 1]])]
+
+            codes, verts = zip(*path_data)
+            path = mpath.Path(verts, codes)
+            patch = mpatches.PathPatch(path,
+                                       lw=plot_prop.lineWidth,
+                                       edgecolor=plot_prop.lineColor)
+            ax.add_patch(patch)
+            art3d.pathpatch_2d_to_3d(patch)
+
+        return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -654,7 +606,11 @@ class Fracture():
             Fr_coarse           -- the new fracture after remeshing.
         """
 
-        coarse_mesh = CartesianMesh(factor*self.mesh.Lx, factor*self.mesh.Ly, self.mesh.nx, self.mesh.ny)
+        coarse_mesh = CartesianMesh(factor*self.mesh.Lx,
+                                    factor*self.mesh.Ly,
+                                    self.mesh.nx,
+                                    self.mesh.ny,
+                                    symmetric=sim_prop.symmetric)
 
         # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,
@@ -683,8 +639,6 @@ class Fracture():
                             method='linear',
                             fill_value=0.)
 
-        # w_coarse[np.isnan(w_coarse)]=0
-
         # interpolate last level set by first advancing to the end of the grid and then interpolating
         SolveFMM(self.sgndDist_last,
                  self.EltRibbon,
@@ -709,12 +663,6 @@ class Fracture():
                      C,
                      self.FractureVolume,
                      np.nan)
-
-        # to avoid plotting and saving of the remeshed fracture
-        saveToDisk_cpy = copy.copy(sim_prop.saveToDisk)
-        plotFigure_cpy = copy.copy(sim_prop.plotFigure)
-        sim_prop.saveToDisk = False
-        sim_prop.plotFigure = False
 
         # re-meshing of the material properties
         material_prop.remesh(coarse_mesh)
@@ -772,15 +720,12 @@ class Fracture():
                                                         dt=1.e20)
         injected_vol = inj_prop.injectionRate[1, 0] * Fr_coarse.time
         Fr_coarse.efficiency = (injected_vol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack])) / injected_vol
-
         Fr_coarse.time = self.time
-        sim_prop.saveToDisk = copy.copy(saveToDisk_cpy)
-        sim_prop.plotFigure = copy.copy(plotFigure_cpy)
 
         # update the saved properties
         if sim_prop.saveToDisk:
             prop = (material_prop, fluid_prop, inj_prop, sim_prop)
-            with open(sim_prop.get_outFileAddress() + "properties", 'wb') as output:
+            with open(sim_prop.get_outputFolder() + "properties", 'wb') as output:
                 dill.dump(prop, output, -1)
 
         return Fr_coarse
