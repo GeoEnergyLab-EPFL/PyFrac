@@ -167,7 +167,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
             variable_list.append(vel)
             time_srs.append(i.time)
 
-    elif variable is 'Reynolds number' or variable is 'Rn':
+    elif variable is 'Reynolds number' or variable is 'Re':
         if fracture_list[-1].ReynoldsNumber is None:
             raise SystemExit(err_var_not_saved)
         for i in fracture_list:
@@ -301,7 +301,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
     else:
         for i in range(len(fracture_list)):
             if variable in ('width', 'w', 'pressure', 'p', 'fluid flux', 'ff', 'fluid velocity', \
-                            'fv', 'Reynolds number', 'Rn'):
+                            'fv', 'Reynolds number', 'Re'):
                 value_point = griddata(fracture_list[i].mesh.CenterCoor,
                                        var_values[i],
                                        point,

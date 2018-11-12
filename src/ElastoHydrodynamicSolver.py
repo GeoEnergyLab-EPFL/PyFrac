@@ -312,7 +312,8 @@ def findBracket(func,guess,*args):
 
 def MakeEquationSystem_viscousFluid_pressure_substituted(solk, interItr, *args):
     """
-    This function makes the elasto-hydrodynamic linear system of equations to be solved by a linear system solver.
+    This function makes the elasto-hydrodynamic linear system of equations to be solved by a linear system solver. The
+    pressure is back substituted as width using the elasticity relation (see Zia and Lecampion 2019).
 
     Arguments:
         sol_k (ndarray-float)               -- the trial change in width and pressure for the current iteration of
@@ -419,7 +420,7 @@ def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loa
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The given width is
-    imposed on the given loaded elements (see Zia and Lecampion 2018)
+    imposed on the given loaded elements (see Zia and Lecampion 2019)
     """
 
     Ccc = C[np.ix_(EltChannel, EltChannel)]
@@ -441,7 +442,7 @@ def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, C, d
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The the volume of the
-    fracture is imposed to be equal to the fluid injected into the fracture (see Zia and Lecampion 2018).
+    fracture is imposed to be equal to the fluid injected into the fracture (see Zia and Lecampion 2019).
     """
     Ccc = C[np.ix_(EltChannel, EltChannel)]
     Cct = C[np.ix_(EltChannel, EltTip)]
