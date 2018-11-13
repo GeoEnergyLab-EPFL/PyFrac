@@ -304,14 +304,10 @@ class Fracture():
         else:
             self.fluidVelocity = None
 
-        if simulProp.timeStepLimit is None:
-            # setting time step limit according to the initial velocity
-            if max(self.v) <= 0:
-                simulProp.timeStepLimit = self.time * 0.1
-            else:
-                simulProp.timeStepLimit = simulProp.tmStpPrefactor * min(Mesh.hx, Mesh.hy) / np.max(
-                                                            self.v) * simulProp.tmStpFactLimit
+        self.closed = np.array([], dtype=int)
 
+        self.TarrvlZrVrtx = np.full((Mesh.NumberOfElts,), np.nan, dtype=np.float64)
+        self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -717,10 +713,13 @@ class Fracture():
                                                         frac=Fr_coarse,
                                                         mat_prop=material_prop,
                                                         Vel=Fr_coarse.v,
-                                                        dt=1.e20)
+                                                        dt=1.e20,
+                                                        arrival_t=Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip])
+
         injected_vol = inj_prop.injectionRate[1, 0] * Fr_coarse.time
         Fr_coarse.efficiency = (injected_vol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack])) / injected_vol
         Fr_coarse.time = self.time
+        Fr_coarse.closed = self.closed
 
         # update the saved properties
         if sim_prop.saveToDisk:

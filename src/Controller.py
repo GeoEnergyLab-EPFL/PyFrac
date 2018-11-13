@@ -60,19 +60,35 @@ class Controller:
        self.TmStpCount = 0
        self.chkPntReattmpts = 0
 
-       self.tmSrsIndex = 0
-       # the next time where the solution is required to be evaluated
-       if (self.sim_prop).get_solTimeSeries() is not None:
-           self.nextInTmSrs = (self.sim_prop).get_solTimeSeries()[self.tmSrsIndex]
-       else:
-           # set final time as the time where the solution is required
-           self.nextInTmSrs = self.sim_prop.FinalTime
+       # Find the times where any parameter changes. These times will be added to the time series where the solution is
+       # required to ensure the exact time is hit during time stepping and the change is applied at the correct time.
+       param_change_at = np.array([], dtype=np.float64)
+       if isinstance(Injection_prop.injectionRate, np.ndarray):
+           param_change_at = np.hstack((param_change_at, Injection_prop.injectionRate[0]))
+       if isinstance(Sim_prop.fixedTmStp, np.ndarray):
+           param_change_at = np.hstack((param_change_at, Sim_prop.fixedTmStp[0]))
+
+       if len(param_change_at) > 0:
+            if self.sim_prop.get_solTimeSeries() is not None:
+                sol_time_srs = np.hstack((self.sim_prop.get_solTimeSeries(), param_change_at))
+            else:
+                sol_time_srs = param_change_at
+            sol_time_srs = np.unique(sol_time_srs)
+            if sol_time_srs[0] == 0:
+                sol_time_srs = np.delete(sol_time_srs, 0)
+            self.sim_prop.set_solTimeSeries(sol_time_srs)
+
+       if self.sim_prop.get_solTimeSeries() is None and self.sim_prop.FinalTime is None:
+            raise ValueError("The final time to stop the simulation is not provided!")
 
        # basic performance data
        self.remeshings = 0
        self.successfulTimeSteps = 0
        self.failedTimeSteps = 0
        self.frontAdvancing = Sim_prop.frontAdvancing
+
+    #-------------------------------------------------------------------------------------------------------------------
+
 
     def run(self):
         """
@@ -216,7 +232,8 @@ class Controller:
 
             self.TmStpCount += 1
             # set front advancing beck as set in simulation properties originally
-            self.sim_prop.frontAdvancing = self.frontAdvancing
+            if self.TmStpCount == 1:
+                self.sim_prop.frontAdvancing = self.frontAdvancing
 
         f = open('log', 'a')
         f.writelines("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
@@ -262,6 +279,7 @@ class Controller:
 
             # check for final time
             if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.FinalTime:
+                print(repr(Frac.time + tmStp_to_attempt))
                 return status, Fr
 
             print('\nEvaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
@@ -354,7 +372,7 @@ class Controller:
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
                 plot_prop = PlotProperties()
 
-                plot_prop.lineColor = 'r'
+                plot_prop.lineColor = 'b'
                 if self.sim_prop.plotAnalytical:
                     self.Figure = plot_footprint_analytical(self.sim_prop.analyticalSol,
                                                       self.solid_prop,
@@ -380,6 +398,13 @@ class Controller:
                                                         projection='2D',
                                                         fig=self.Figure,
                                                         plot_prop=plot_prop)
+                if len(Fr_advanced.closed) > 0:
+                    plot_prop.lineColor = 'r'
+                    self.Figure = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
+                                                                     fig=self.Figure,
+                                                                     plot_prop=plot_prop,
+                                                                     plot_mesh=False)
+
                 if self.sim_prop.blockFigure:
                     plt.show(block=True)
                 else:
@@ -412,15 +437,24 @@ class Controller:
             time_step (float)   -- the appropriate time step
         """
 
-        if self.nextInTmSrs < self.fracture.time:
-            raise SystemExit('The minimum time required in the given time series or the end time'
-                             ' is less than initial time.')
-
+        time_step_given = False
         if self.sim_prop.fixedTmStp is not None:
             # fixed time step
-            TimeStep = self.sim_prop.fixedTmStp
+            if isinstance(self.sim_prop.fixedTmStp, float) or isinstance(self.sim_prop.fixedTmStp, int):
+                TimeStep = self.sim_prop.fixedTmStp
+                time_step_given = True
+            elif isinstance(self.sim_prop.fixedTmStp, np.ndarray):
+                # fixed time step list is given
+                indxCurTime = max(np.where(self.fracture.time >= self.sim_prop.fixedTmStp[0, :])[0])
+                if self.sim_prop.fixedTmStp[1, indxCurTime] is not None:
+                    # time step is not given as None.
+                    TimeStep = self.sim_prop.fixedTmStp[1, indxCurTime]  # current injection rate
+                    time_step_given = True
+                else:
+                    # time step is given as None. In this case time step will be evaluated with front velocity
+                    time_step_given = False
 
-        else:
+        if not time_step_given:
             # time step is calculated with the current propagation velocity
             tipVrtxCoord = self.fracture.mesh.VertexCoor[self.fracture.mesh.Connectivity[self.fracture.EltTip,
                                                                                          self.fracture.ZeroVertex]]
@@ -438,29 +472,32 @@ class Controller:
 
             TimeStep = min(TS_cell_length, TS_fracture_length)
 
-
-        # to get the solution at the times given in time series or final time
-        if self.fracture.time + TimeStep > self.nextInTmSrs:
-            TimeStep = self.nextInTmSrs - self.fracture.time
-            # set next in time series
-            if self.sim_prop.get_solTimeSeries() is not None:
-                if self.tmSrsIndex < len(self.sim_prop.get_solTimeSeries()) - 1:
-                    self.tmSrsIndex += 1
-                self.nextInTmSrs = self.sim_prop.get_solTimeSeries()[self.tmSrsIndex]
-
         # checking if the time step is above the limit
-        if self.sim_prop.timeStepLimit is None:
-            self.sim_prop.timeStepLimit = TimeStep
-        else:
-            if TimeStep > self.sim_prop.timeStepLimit:
-                TimeStep = self.sim_prop.timeStepLimit
-
-        # set time step limit according to largest time step (likely to be the most recent one)
-        self.sim_prop.timeStepLimit = max(TimeStep * self.sim_prop.tmStpFactLimit, self.sim_prop.timeStepLimit)
+        if self.sim_prop.timeStepLimit is not None and TimeStep > self.sim_prop.timeStepLimit:
+            TimeStep = self.sim_prop.timeStepLimit
 
         # in case of fracture not propagating
-        if TimeStep <= 0:
-            TimeStep = self.sim_prop.timeStepLimit * 2
-            self.sim_prop.timeStepLimit *= 1.5
+        if TimeStep <= 0 or np.isinf(TimeStep):
+            if self.sim_prop.timeStepLimit is not None:
+                TimeStep = self.sim_prop.timeStepLimit
+            else:
+                raise ValueError("The fracture front seems to be stagnant. The time step limit would be used as time"
+                                 "step.\nMake sure it is set in the simulation properties.")
+
+        # to get the solution at the times given in time series or final time
+        next_in_TS = self.sim_prop.FinalTime
+        sol_time_srs = self.sim_prop.get_solTimeSeries()
+        if sol_time_srs is not None:
+            larger_in_TS = np.where(sol_time_srs > self.fracture.time)[0]
+            if len(larger_in_TS) > 0:
+                next_in_TS = np.min(sol_time_srs[larger_in_TS])
+
+        if next_in_TS < self.fracture.time:
+            raise SystemExit('The minimum time required in the given time series or the end time'
+                             ' is less than initial time.')
+
+        # check if time step would step over the next time in required time series
+        if self.fracture.time + TimeStep > next_in_TS:
+            TimeStep = next_in_TS - self.fracture.time
 
         return TimeStep

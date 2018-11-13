@@ -13,12 +13,10 @@ max_toughness_Itrs = 10                 # maximum toughness iterations
 # time and time stepping
 tmStp_prefactor = 0.8                   # time step prefactor(pf) to calculate the time step (dt = pf*min(dx, dy)/max(v)
 req_sol_at = None                       # times at which the solution is required
-final_time = 1000                       # time to stop the propagation
+final_time = None                       # time to stop the propagation
 maximum_steps = 2000                    # maximum time steps
 timeStep_limit = None                   # limit for the time step
 fixed_time_step = None                  # constant time step
-tmStp_fact_limit = 2.0                  # limit on to what factor the time step can increase between two successive
-                                        # time steps
 
 # time step re-attempt
 max_reattemps = 8                       # maximum reattempts in case of time step failure
@@ -41,11 +39,12 @@ output_every_TS = None                  # the number of time steps after which t
 mech_loading = False                    # if True, the mechanical loading solver will be used
 volume_control = False                  # if True, the volume control solver will be used
 viscous_injection = True                # if True, the viscous fluid solver solver will be used
+substitute_pressure = True              # if True, the pressure will be substituted with width to make the EHL system
 
 # miscellaneous
 tip_asymptote = 'U'                     # the tip_asymptote to be used (see class documentation for details)
 save_regime = True                      # if True, the the regime of the ribbon cells will also be saved
-verbosity = 1                           # the level of details about the ongoing simulation to be plotted
+verbosity = 2                           # the level of details about the ongoing simulation to be plotted
 enable_remeshing = True                 # if true, computation domain will be remeshed after reaching end of the domain
 remesh_factor = 2.                      # the factor by which the mesh is compressed
 front_advancing = 'semi-implicit'       # possible options include 'implicit', 'explicit' and 'semi-implicit'

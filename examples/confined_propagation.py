@@ -13,18 +13,18 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(12, 4, 51, 35)
+Mesh = CartesianMesh(15, 4, 61, 35)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 2e6                          # fracture toughness of the material
+K_Ic = 1e5                          # fracture toughness of the material
 
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
-    if abs(y) > 2:
-        return 4.5e6
+    if abs(y) > 3:
+        return 7.5e6
     else:
         return 1e6
 
@@ -43,12 +43,13 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 27.           # the time at which the simulation stops
-simulProp.outputTimePeriod = 0.1    # the time after which the next fracture file is saved
+simulProp.outputEveryTS = 1         # the fracture file will be saved after every time step
 simulProp.bckColor = 'sigma0'       # the parameter according to which the mesh is color coded
 simulProp.set_outputFolder(".\\Data\\confined_propagation")
+simulProp.plotFigure = True         # the fracture footprint will be plotted during the simulation
 
 # initializing fracture
-initRad = 1.5
+initRad = 2.8
 init_param = ('M', "length", initRad)
 
 # creating fracture object

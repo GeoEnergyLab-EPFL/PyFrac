@@ -109,7 +109,7 @@ def VolumeTriangle(dist, *param):
     is the angle of the perpendicular). The regime variable identifies the propagation regime.
     """
 
-    regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, em, t_lstTS, dt = param
+    regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
     if regime == 'A':
         return dist ** 2 * em / 2
@@ -122,14 +122,16 @@ def VolumeTriangle(dist, *param):
 
     elif regime == 'Lk':
         t = t_lstTS + dt
-        t_e = t - dist / Vel
-        if (t - t_e - dt) < 0:
-            prop_time = 0
+        if Vel <= 0:
+            t_e = arrival_t
         else:
-            prop_time = t - t_e - dt
+            t_e = t - dist / Vel
 
-        intgrl_0_t = 4 / 15 * em * (t - t_e) ** (5 / 2) * Vel**2
-        intgrl_0_tm1 = 4 / 15 * em * prop_time ** (5 / 2) * Vel**2
+        intgrl_0_t = 4 / 15 * em * (t - t_e) ** (5 / 2) * Vel ** 2
+        if (t - t_e - dt) < 0:
+            intgrl_0_tm1 = 0.
+        else:
+            intgrl_0_tm1 = 4 / 15 * em * (t - t_e - dt) ** (5 / 2) * Vel ** 2
 
         return intgrl_0_t - intgrl_0_tm1
 
@@ -159,7 +161,7 @@ def Area(dist, *param):
     """Gives Area under the tip depending on the regime identifier ;  
     used in case of 0 or 90 degree angle; can be used for 1d case"""
 
-    regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, em, t_lstTS, dt = param
+    regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
     if regime == 'A':
         return dist
@@ -172,15 +174,16 @@ def Area(dist, *param):
 
     elif regime == 'Lk':
         t = t_lstTS + dt
-        t_e = t - dist/Vel
-        #todo: t_e for stagnant tip cells
-        if (t - t_e - dt)<0:
-            prop_time = 0
+        if Vel <= 0:
+            t_e = arrival_t
         else:
-            prop_time = t - t_e - dt
+            t_e = t - dist / Vel
 
-        intgrl_0_t = 2/3 * (t - t_e)**(3/2) * Vel
-        intgrl_0_tm1 = 2/3 * prop_time ** (3 / 2) * Vel
+        intgrl_0_t = 2 / 3 * (t - t_e) ** (3 / 2) * Vel
+        if (t - t_e - dt) < 0:
+            intgrl_0_tm1 = 0.
+        else:
+            intgrl_0_tm1 = 2 / 3 * (t - t_e - dt) ** (3 / 2) * Vel
 
         return intgrl_0_t - intgrl_0_tm1
 
@@ -204,7 +207,7 @@ def Area(dist, *param):
 
 
 def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None,
-                       Kprime=None, Eprime=None, stagnant=None, KIPrime=None, dt=None):
+                       Kprime=None, Eprime=None, stagnant=None, KIPrime=None, dt=None, arrival_t=None):
     """
     Calculate integral of the function specified by the argument function over the cell.
 
@@ -277,6 +280,8 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
     else:
         t_lstTS = None
 
+    if arrival_t is None:
+        arrival_t = dummy
 
     integral = np.zeros((len(l),), float)
     for i in range(0, len(l)):
@@ -284,7 +289,7 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
         m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
         # packing parameters to pass
         param_pack = (function, Kprime[i], Eprime[i], muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
-                      m, t_lstTS, dt)
+                      arrival_t[i], m, t_lstTS, dt)
 
         if abs(alpha[i]) < 1e-8:
             # the angle inscribed by the perpendicular is zero

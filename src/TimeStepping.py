@@ -41,17 +41,12 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         Fr_k (Fracture)  -- fracture after advancing time step.
     """
 
-    exitstatus = 0  # exit code to be returned
-
     # index of current time in the time series (first row) of the injection rate array
     indxCurTime = max(np.where(Frac.time >= inj_properties.injectionRate[0, :])[0])
     CurrentRate = inj_properties.injectionRate[1, indxCurTime]  # current injection rate
 
     Qin = np.zeros((Frac.mesh.NumberOfElts), float)
     Qin[inj_properties.source_location] = CurrentRate # current injection over the domain
-
-    # todo : write log file
-    # f = open('log', 'a')
 
     if sim_properties.frontAdvancing == 'explicit':
 
@@ -255,15 +250,17 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltCrack]) > 0.:
         # Calculate leak-off term for the tip cell
-        LkOff[Fr_lstTmStp.EltTip] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltTip] * Integral_over_cell(Fr_lstTmStp.EltTip,
-                                                                               Fr_lstTmStp.alpha,
-                                                                               Fr_lstTmStp.l,
-                                                                               Fr_lstTmStp.mesh,
-                                                                               'Lk',
-                                                                               mat_prop=mat_properties,
-                                                                               frac=Fr_lstTmStp,
-                                                                               Vel=Fr_lstTmStp.v,
-                                                                               dt=timeStep)
+        LkOff[Fr_lstTmStp.EltTip] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltTip] * Integral_over_cell(
+                                                               Fr_lstTmStp.EltTip,
+                                                               Fr_lstTmStp.alpha,
+                                                               Fr_lstTmStp.l,
+                                                               Fr_lstTmStp.mesh,
+                                                               'Lk',
+                                                               mat_prop=mat_properties,
+                                                               frac=Fr_lstTmStp,
+                                                               Vel=Fr_lstTmStp.v,
+                                                               dt=timeStep,
+                                                               arrival_t=Fr_lstTmStp.TarrvlZrVrtx[Fr_lstTmStp.EltTip])
 
         # Calculate leak-off term for the channel cell
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
@@ -274,21 +271,21 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # solve for width. All of the fracture cells are solved (no tip values are is imposed)
     empty = np.array([], dtype=int)
-    w_k, p_k, vel = solve_width_pressure(Fr_lstTmStp,
-                         sim_properties,
-                         fluid_properties,
-                         mat_properties,
-                         empty,
-                         empty,
-                         C,
-                         Fr_lstTmStp.FillF[empty],
-                         Fr_lstTmStp.EltCrack,
-                         Fr_lstTmStp.InCrack,
-                         LkOff,
-                         empty,
-                         timeStep,
-                         Qin,
-                         perfNode)
+    w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
+                                         sim_properties,
+                                         fluid_properties,
+                                         mat_properties,
+                                         empty,
+                                         empty,
+                                         C,
+                                         Fr_lstTmStp.FillF[empty],
+                                         Fr_lstTmStp.EltCrack,
+                                         Fr_lstTmStp.InCrack,
+                                         LkOff,
+                                         empty,
+                                         timeStep,
+                                         Qin,
+                                         perfNode)
 
     # check if the solution is valid
     if np.isnan(w_k).any() or (w_k < 0).any():
@@ -620,7 +617,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                     mat_prop=mat_properties,
                                                                     frac=Fr_lstTmStp,
                                                                     Vel=Vel_k,
-                                                                    dt=timeStep)
+                                                                    dt=timeStep,
+                                                                    arrival_t=Fr_lstTmStp.TarrvlZrVrtx[EltsTipNew])
+
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
         #todo: no need to evaluate on each iteration. Need to decide. Evaluating here for now for better readability
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((Fr_lstTmStp.time +
@@ -643,8 +642,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                         Qin,
                                                         perfNode)
 
-    # for the moment, only velocity at edges is returned
-    fluidVel = data
+    # check if the new width is valid
+    if np.isnan(w_n_plus1).any():
+        print("Picard iteration did not converged. Trying to solve pressure and width seperately...")
+        sim_properties.substitutePressure = False
+        exitstatus = 5
+        return exitstatus, None
+
+    fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     new_channel = np.where(FillFrac_k>0.9999)[0]
@@ -658,19 +663,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.time += timeStep
     Fr_kplus1.w = w_n_plus1
     Fr_kplus1.p = p_n_plus1
-
-    # check if the new width is valid
-    if np.isnan(Fr_kplus1.w).any():
-        exitstatus = 5
-        return exitstatus, None
-
-    if (Fr_kplus1.w < 0).any():  #todo: clean this up as it might blow up !
-        #     -> we need a linear solver with constraint to handle pinch point properly.
-        print("found negative width, ignoring...")
-        Fr_kplus1.w[np.where(Fr_kplus1.w < 1e-10)[0]] = 0
-        # exitstatus = 5
-        # return exitstatus, None
-
+    Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
@@ -687,6 +680,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.process_fracture_front()
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
     Fr_kplus1.Tarrival = Tarrival_k
+    new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
+    Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
 
     # setting leak off
     Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * mat_properties.Cprime[Fr_kplus1.EltChannel] * (
@@ -700,7 +695,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                 mat_prop=mat_properties,
                                                                 frac=Fr_kplus1,
                                                                 Vel=Fr_kplus1.v,
-                                                                dt=1.e20)
+                                                                dt=1.e20,
+                                                                arrival_t=Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip])
     injected_vol = sum(Qin) * Fr_kplus1.time
     Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
 
@@ -718,7 +714,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             Fr_kplus1.fluidVelocity = fluidVel
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
-            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics(Fr_kplus1.w,
+            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
                                                               C,
                                                               mat_properties.SigmaO,
                                                               Fr_kplus1.mesh,
@@ -759,6 +755,12 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             else:
                 PerfNode_linSolve = None
 
+            try:
+                EltChannel_sym = Fr_lstTmStp.mesh.corr[Fr_lstTmStp.EltChannel]
+            except AttributeError:
+                raise SystemExit("Symmetric fracture needs symmetric mesh. Set symmetric flag to True\n"
+                                 "while initializing the mesh")
+
             EltChannel_sym = Fr_lstTmStp.mesh.corr[Fr_lstTmStp.EltChannel]
             EltChannel_sym = np.unique(EltChannel_sym)
 
@@ -772,7 +774,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             C_EltTip = C[np.ix_(EltTip_sym[partlyFilledTip_sym],
                                 EltTip_sym[partlyFilledTip_sym])]  # keeping the tip element entries to restore current
-            #  tip correction. This is done to avoid copying the full elasticity matrix.
 
             # filling fraction correction for element in the tip region
             FillF = FillF_sym[partlyFilledTip_sym]
@@ -868,19 +869,18 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), dtype=np.float64)
         p[EltCrack_k] = sol[-1]
 
-        if np.min(w) > 0:
-            print('found')
-
         return w, p, None
 
     if sim_properties.get_viscousInjection():
 
-        guess = np.zeros((Fr_lstTmStp.EltChannel.size + EltTip.size,), float)
-        # pguess = Fr_lstTmStp.p[EltTip]
-
-        guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                        * np.ones((Fr_lstTmStp.EltChannel.size,), float)
-
+        if sim_properties.substitutePressure:
+            guess = np.zeros((Fr_lstTmStp.EltChannel.size + EltTip.size,), float)
+            guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                            * np.ones((Fr_lstTmStp.EltChannel.size,), float)
+        else:
+            guess = 1e6 * np.ones((2 * Fr_lstTmStp.EltChannel.size + EltTip.size,), float)
+            guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                            * np.ones((Fr_lstTmStp.EltChannel.size,), float)
         # velocity at the cell edges evaluated with the guess width. Used as guess
         # values for the implicit velocity solver.
         vk = np.zeros((4, Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
@@ -902,27 +902,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         typValue = np.copy(guess)
         typValue[Fr_lstTmStp.EltChannel.size + np.arange(EltTip.size)] = 1e5
 
-        # todo too many arguments; properties class needs to be utilized
-        arg = (
-            Fr_lstTmStp.EltChannel,
-            EltTip,
-            Fr_lstTmStp.w,
-            wTip,
-            EltCrack_k,
-            Fr_lstTmStp.mesh,
-            timeStep,
-            Qin,
-            C,
-            Fr_lstTmStp.muPrime,
-            fluid_properties.density,
-            InCrack_k,
-            LkOff,
-            mat_properties.SigmaO,
-            fluid_properties.turbulence,
-            mat_properties.grainSize,
-            sim_properties.gravity
-        )
-
         if perfNode is not None:
             perfNode.iterations += 1
             perfNode_Picard = IterationProperties(itr_type="Picard iteration")
@@ -930,32 +909,123 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         else:
             perfNode_Picard = None
 
-        # sloving the system of equations for the change in width in the channel
-        # elements and pressure in the tip elements
-        (sol, vel) = Picard_Newton(Elastohydrodynamic_ResidualFun,
-                                   MakeEquationSystem_viscousFluid_pressure_substituted,
-                                   guess,
-                                   typValue,
-                                   vk,
-                                   sim_properties.toleranceEHL,
-                                   sim_properties.maxSolverItrs,
-                                   *arg,
-                                   perf_node=perfNode_Picard)
+        # neg_in_Chann = np.empty((len(Fr_lstTmStp.closed), ), dtype=int)
+        # for i in range(len(Fr_lstTmStp.closed)):
+        #     neg_in_Chann[i] = np.where(Fr_lstTmStp.EltChannel == Fr_lstTmStp.closed[i])[0][0]
+        # neg = np.copy(Fr_lstTmStp.closed)
+        # neg = np.setdiff1d(neg, EltTip)
+        neg = np.array([], dtype=int)
+        non_neg = False
+        to_open = True
+
+        # Making and sloving the system of equations. The width constraint is checked. If active, system is remade with
+        # the oonstraint imposed and is resolved.
+        while to_open:
+            while not non_neg > 0:
+
+                to_solve = np.setdiff1d(Fr_lstTmStp.EltChannel, neg)
+                to_impose = EltTip
+                imposed_val = wTip
+
+                arg = (
+                    to_solve,
+                    to_impose,
+                    Fr_lstTmStp.w,
+                    imposed_val,
+                    EltCrack_k,
+                    Fr_lstTmStp.mesh,
+                    timeStep,
+                    Qin,
+                    C,
+                    Fr_lstTmStp.muPrime,
+                    fluid_properties.density,
+                    InCrack_k,
+                    LkOff,
+                    mat_properties.SigmaO,
+                    fluid_properties.turbulence,
+                    mat_properties.grainSize,
+                    sim_properties.gravity,
+                    neg,
+                    mat_properties.wc)
+
+                if sim_properties.substitutePressure:
+                    sys_fun = MakeEquationSystem_viscousFluid_pressure_substituted
+                else:
+                    sys_fun = MakeEquationSystem_ViscousFluid
+
+                sol, v_k = Picard_Newton(None,
+                                       sys_fun,
+                                       guess,
+                                       typValue,
+                                       vk,
+                                       sim_properties.toleranceEHL,
+                                       sim_properties.maxSolverItrs,
+                                       *arg,
+                                       perf_node=perfNode_Picard)
+
+                if np.isnan(sol).any():
+                    return np.nan, np.nan, (np.nan, np.nan)
+
+                w = np.copy(Fr_lstTmStp.w)
+                w[to_solve] += sol[:len(to_solve)]
+                w[EltTip] = wTip
+                w[neg] = mat_properties.wc
+
+                neg_km1 = np.copy(neg)
+                new_neg = to_solve[np.where(w[to_solve] < 0.98 * mat_properties.wc)[0]]
+                new_neg = np.setdiff1d(new_neg, neg)
+                if len(new_neg) == 0:
+                    non_neg = True
+                else:
+                    if sim_properties.frontAdvancing is not 'implicit':
+                        print('Width is getting extremely small. Starting again without substituting pressure with'
+                              ' width...')
+                        sim_properties.frontAdvancing = 'implicit'
+                        sim_properties.substitutePressure = False
+                        return np.nan, np.nan, (np.nan, np.nan)
+
+                    sim_properties.substitutePressure = False
+                    # changing length of guess
+                    guess = 1e6 * np.ones((2 * Fr_lstTmStp.EltChannel.size + EltTip.size,), float)
+                    guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                                    * np.ones((Fr_lstTmStp.EltChannel.size,), float)
+                    neg = np.concatenate((neg, new_neg))
+                    print('Width has gone down to negative value. Imposing constraint on width...')
+
+            if False: #not sim_properties.substitutePressure:
+                tr = np.dot(C[np.ix_(Fr_lstTmStp.EltChannel, Fr_lstTmStp.EltCrack)],
+                            w[Fr_lstTmStp.EltCrack]) # + mat_properties.SigmaO[Fr_lstTmStp.EltChannel]
+
+                pos_tr = np.where(tr > 0)[0]
+                intersct = np.intersect1d(Fr_lstTmStp.EltChannel[pos_tr], neg_km1)
+                if len(intersct) > 0:
+                    neg = np.setdiff1d(neg_km1, pos_tr)
+                    print('removed from imposed ' + repr(intersct))
+                    non_neg = False
+                    to_open = True
+                else:
+                    to_open = False
+            else:
+                to_open = False
 
         if perfNode_Picard is not None:
             perfNode_Picard.CpuTime_end = time.time()
             perfNode.subIterations[2].append(perfNode_Picard)
 
-        w = np.copy(Fr_lstTmStp.w)
-        w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
-        w[EltTip] = wTip
+        if sim_properties.substitutePressure:
+            # pressure evaluated by dot product of width and elasticity matrix
+            p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+            p[EltCrack_k] = np.dot(C[np.ix_(EltCrack_k, EltCrack_k)], w[EltCrack_k])
+            p[EltTip] = sol[Fr_lstTmStp.EltChannel.size:]
+        else:
+            n_w = len(to_solve) + len(neg_km1)
+            p = np.zeros(len(w))
+            p[to_solve] = sol[n_w:n_w + len(to_solve)]
+            p[neg_km1] = sol[n_w + len(to_solve):n_w + len(to_solve) + len(neg_km1)]
+            p[to_impose] = sol[n_w + len(to_solve) + len(neg_km1): n_w + len(to_solve) + len(neg_km1) + len(to_impose)]
 
-        # pressure evaluated by dot product of width and elasticity matrix
-        p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-        p[EltCrack_k] = np.dot(C[np.ix_(EltCrack_k, EltCrack_k)], w[EltCrack_k])
-        p[EltTip] = sol[Fr_lstTmStp.EltChannel.size:]
-
-        return w, p, vel
+        return_data = (vk, neg_km1)
+        return w, p, return_data
 
 
 def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
@@ -1241,7 +1311,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                     mat_prop=mat_properties,
                                                                     frac=Fr_lstTmStp,
                                                                     Vel=Vel_k,
-                                                                    dt=timeStep)
+                                                                    dt=timeStep,
+                                                                    arrival_t=Fr_lstTmStp.TarrvlZrVrtx[EltsTipNew])
         if np.isnan(LkOff[EltsTipNew]).any():
             exitstatus = 13
             return exitstatus, None
@@ -1271,9 +1342,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                       Qin,
                                                       perfNode)
 
-    # for the moment, only velocity at edges is returned
-    fluidVel = data
+    # check if the new width is valid
+    if np.isnan(w_n_plus1).any():
+        print("Picard iteration did not converged. Trying to solve pressure and width seperately...")
+        sim_properties.substitutePressure = False
+        exitstatus = 5
+        return exitstatus, None
 
+    fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     new_channel = np.where(FillFrac_k > 0.9999)[0]
@@ -1287,21 +1363,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.w = w_n_plus1
     Fr_kplus1.p = p_n_plus1
     Fr_kplus1.time += timeStep
-
-    # check if the new width is valid
-    if np.isnan(Fr_kplus1.w).any():
-        exitstatus = 5
-        return exitstatus, None
-
-    if (Fr_kplus1.w < 0).any():  # todo: clean this up as it might blow up !
-        #   -> we need a linear solver with constraint to handle pinch point properly.
-        print("found negative width. Ignoring...")
-        # print(repr(np.where((Fr_kplus1.w < 0))))
-        # print(repr(Fr_kplus1.w[np.where((Fr_kplus1.w < 0))[0]]))
-        Fr_kplus1.w[np.where(Fr_kplus1.w <= 1e-12)[0]] = 1e-12
-        # exitstatus = 5
-        # return exitstatus, None
-
+    Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
@@ -1314,22 +1376,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.process_fracture_front()
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
     Fr_kplus1.Tarrival = Tarrival_k
-
-    # setting leak off
-    Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * mat_properties.Cprime[Fr_kplus1.EltChannel] * (
-            Fr_kplus1.time - Fr_kplus1.Tarrival[Fr_kplus1.EltChannel]) ** 0.5 * Fr_kplus1.mesh.EltArea
-    Fr_kplus1.LkOff_vol[Fr_kplus1.EltTip] = 2 * mat_properties.Cprime[Fr_kplus1.EltTip] * Integral_over_cell(
-                                                    Fr_kplus1.EltTip,
-                                                    Fr_kplus1.alpha,
-                                                    Fr_kplus1.l,
-                                                    Fr_kplus1.mesh,
-                                                    'Lk',
-                                                    mat_prop=mat_properties,
-                                                    frac=Fr_kplus1,
-                                                    Vel=Vel_k,
-                                                    dt=1.e20)
-    injected_vol = sum(Qin) * Fr_kplus1.time
-    Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
 
     if sim_properties.verbosity > 1:
         print("Solved...\nFinding velocity of front...")
@@ -1452,6 +1498,27 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
+    new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
+    Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
+
+    # setting leak off
+    Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * mat_properties.Cprime[Fr_kplus1.EltChannel] * (
+            Fr_kplus1.time - Fr_kplus1.Tarrival[Fr_kplus1.EltChannel]) ** 0.5 * Fr_kplus1.mesh.EltArea
+    Fr_kplus1.LkOff_vol[Fr_kplus1.EltTip] = 2 * mat_properties.Cprime[Fr_kplus1.EltTip] * Integral_over_cell(
+                                                                        Fr_kplus1.EltTip,
+                                                                        Fr_kplus1.alpha,
+                                                                        Fr_kplus1.l,
+                                                                        Fr_kplus1.mesh,
+                                                                        'Lk',
+                                                                        mat_prop=mat_properties,
+                                                                        frac=Fr_kplus1,
+                                                                        Vel=Vel_k,
+                                                                        dt=1.e20,
+                                                                        arrival_t=Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip])
+
+    injected_vol = sum(Qin) * Fr_kplus1.time
+    Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
+
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts, ), np.nan, dtype=np.float32)
         regime[Fr_lstTmStp.EltRibbon] = find_regime(Fr_kplus1.w,
@@ -1474,14 +1541,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             Fr_kplus1.fluidVelocity = fluidVel
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
-            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics(Fr_kplus1.w,
-                                                              C,
-                                                              mat_properties.SigmaO,
-                                                              Fr_kplus1.mesh,
-                                                              Fr_kplus1.EltCrack,
-                                                              Fr_kplus1.InCrack,
-                                                              fluid_properties.muPrime,
-                                                              fluid_properties.density)
+            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
+                                                                      C,
+                                                                      mat_properties.SigmaO,
+                                                                      Fr_kplus1.mesh,
+                                                                      Fr_kplus1.EltCrack,
+                                                                      Fr_kplus1.InCrack,
+                                                                      fluid_properties.muPrime,
+                                                                      fluid_properties.density)
 
             if sim_properties.saveFluidFlux:
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)

@@ -391,7 +391,7 @@ class CartesianMesh:
         art3d.pathpatch_2d_to_3d(patch)
 
 
-    def identify_elements(self, elements, fig=None, plot_prop=None):
+    def identify_elements(self, elements, fig=None, plot_prop=None, plot_mesh=True):
 
         if fig is None:
             fig, ax = plt.subplots()
@@ -401,7 +401,8 @@ class CartesianMesh:
         if plot_prop is None:
             plot_prop = PlotProperties()
 
-        self.plot(fig=fig)
+        if plot_mesh:
+            self.plot(fig=fig)
         # add rectangle for each cell
         patches = []
         for i in elements:
@@ -410,7 +411,7 @@ class CartesianMesh:
 
         p = PatchCollection(patches,
                             cmap=plot_prop.colorMap,
-                            edgecolor='k',
+                            edgecolor=plot_prop.lineColor,
                             linewidth=plot_prop.lineWidth,
                             facecolors='none')
         ax.add_collection(p)

@@ -41,7 +41,7 @@ class MaterialProperties:
 
     def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, SigmaO_func = None, Cl_func = None, TI_elasticity=False, Cij = None,
-                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0.):
+                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., wc=1e-10):
         """
         Arguments:
             Eprime (float)          -- plain strain modulus.
@@ -63,7 +63,8 @@ class MaterialProperties:
                                        It is also used to get the leak off coefficient if the domain is remeshed.
             TI_elasticity(bool)     -- if True, the medium is elastic transverse isotropic.
             Cij(Ndarray-float)      -- the TI stiffness matrix (in the canonical basis) is provided when
-                                       TI_elasticity=true
+                                       TI_elasticity=true.
+            wc (float)              -- minimum width corresponding to the asperity of the material.
 
         """
 
@@ -151,6 +152,7 @@ class MaterialProperties:
         if (K1c_func is not None) or (SigmaO_func is not None) or (Cl_func is not None):
             self.remesh(Mesh)
 
+        self.wc = wc
 
 # ----------------------------------------------------------------------------------------------------------------------
     def remesh(self, mesh):
@@ -343,8 +345,6 @@ class SimulationParameters:
             tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.
             FinalTime (float)           -- time where the simulation ends.
             timeStepLimit (float)       -- limit above which time step will not exceed.
-            tmStpFactLimit (float)      -- limit on to what factor the time step can increase between two successive
-                                           time steps.
             maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller
                                            time step will be attempted the given number of times.
             reAttemptFactor (float)     -- the factor by which time step is reduced on reattempts.
@@ -460,8 +460,11 @@ class SimulationParameters:
         self.FinalTime = simul_param.final_time
         self.set_solTimeSeries(simul_param.req_sol_at)
         self.timeStepLimit = simul_param.timeStep_limit
-        self.tmStpFactLimit = simul_param.tmStp_fact_limit
         self.fixedTmStp = simul_param.fixed_time_step
+        if isinstance(self.fixedTmStp, np.ndarray):
+            if self.fixedTmStp.shape[0] != 2:
+                raise ValueError('Invalid fixed time step. The list should have 2 rows (to specify time and '
+                                 'corresponding time step) for each entry')
 
         # time step re-attempt
         self.maxReattempts = simul_param.max_reattemps
@@ -484,6 +487,7 @@ class SimulationParameters:
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
+        self.substitutePressure = simul_param.substitute_pressure
 
         # miscellaneous
         self.verbosity = simul_param.verbosity
@@ -502,6 +506,7 @@ class SimulationParameters:
         self.saveFluidVel = simul_param.save_fluid_vel
         self.explicitProjection = simul_param.explict_projection
         self.symmetric = simul_param.symmetric
+
 
         # fracture geometry to calculate analytical solution for plotting
         self.height = simul_param.height
@@ -582,7 +587,6 @@ class SimulationParameters:
     def set_solTimeSeries(self, sol_t_srs):
         if isinstance(sol_t_srs, np.ndarray):
             self.__solTimeSeries = sol_t_srs
-            self.FinalTime = max(sol_t_srs)
         elif sol_t_srs is None:
             self.__solTimeSeries = None
         else:

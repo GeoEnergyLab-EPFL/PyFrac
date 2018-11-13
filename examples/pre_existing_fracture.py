@@ -36,9 +36,10 @@ Fluid = FluidProperties(viscosity=viscosity)
 # simulation properties
 simulProp = SimulationParameters()
 simulProp.FinalTime = 50                # the time at which the simulation stops
-simulProp.outputTimePeriod = 0.01       # the time period after which the fracture is saved
+simulProp.outputEveryTS = 2
 simulProp.set_outputFolder(".\\Data\\star") # the address of the output folder
-
+simulProp.fixedTmStp = np.asarray([[2e-4, 11], [1, None]])
+simulProp.plotFigure = True
 
 # initializing fracture
 initRad = np.pi
@@ -50,7 +51,7 @@ init_param = ('G',              # type of initialization
               inner_cells,      # the cell enclosed by the fracture
               surv_cells_dist,  # the distance of the survey cells from the front
               None,             # the given width
-              50,               # the pressure (uniform in this case)
+              1e4,              # the pressure (uniform in this case)
               C,                # the elasticity matrix
               None,             # the volume of the fracture
               0)                # the velocity of the propagating front (stationary in this case)
