@@ -323,8 +323,6 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
 def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None,
                                 time_srs=None, length_srs=None, h=None, samp_cell=None, gamma=None):
 
-    print("Getting analytical solution for the given series...")
-
     if time_srs is None and length_srs is None:
         raise ValueError('Either time series or lengths series is to be provided.')
 
@@ -447,7 +445,6 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
 
 def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_prop, fluid_prop=None, time_srs=None,
                                         length_srs=None, h=None, samp_cell=None, gamma=None):
-
 
     values_point = []
 

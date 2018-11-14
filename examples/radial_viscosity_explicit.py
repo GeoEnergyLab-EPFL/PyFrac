@@ -21,6 +21,7 @@ youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 K_Ic = 0.5e6                          # fracture toughness
 
+# material properties
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K_Ic)
@@ -34,8 +35,8 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 1e5               # the time at which the simulation stops
-simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the toughness dominated assumption
+simulProp.finalTime = 1e5               # the time at which the simulation stops
+simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the viscosity dominated assumption
 simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
 simulProp.outputTimePeriod = 1e-4       # to save after every time step
 simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
@@ -74,11 +75,10 @@ Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit")      
 time_srs = get_fracture_variable(Fr_list,                                        # list of times
                                  variable='time')
 
-plot_prop = PlotProperties()
-
 # plot fracture radius
-plot_prop.lineStyle = '.'
-plot_prop.graphScaling = 'loglog'
+plot_prop = PlotProperties()
+plot_prop.lineStyle = '.'               # setting the linestyle to point
+plot_prop.graphScaling = 'loglog'       # setting to log log plot
 Fig_R = plot_fracture_list(Fr_list,
                            variable='d_mean',
                            plot_prop=plot_prop)

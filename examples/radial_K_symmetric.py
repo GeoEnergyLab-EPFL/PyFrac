@@ -36,11 +36,10 @@ Fluid = FluidProperties(viscosity=1.1e-5)
 simulProp = SimulationParameters()
 simulProp.FinalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.set_volumeControl(True)
-simulProp.outputTimePeriod = 1e-4       # to save after every time step
+simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
 simulProp.set_outputFolder(".\\Data\\K_radial_symmetric") # the disk address where the files are saved
-simulProp.symmetric = True
-simulProp.bckColor = "K1c"
+simulProp.symmetric = True              # assume fracture geometry to be symmetric (only available for volume control)
+simulProp.bckColor = "K1c"              # setting the parameter according to which the mesh is color coded
 
 
 # initializing fracture
@@ -73,7 +72,7 @@ controller.run()
 
 # loading simulation results
 Fr_list, properties = load_fractures(address=".\\Data\\K_radial_symmetric")       # load all fractures
-time_srs = get_fracture_variable(Fr_list,                                        # list of times
+time_srs = get_fracture_variable(Fr_list,                                         # list of times
                                  variable='time')
 
 plot_prop = PlotProperties()

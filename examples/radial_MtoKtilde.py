@@ -19,8 +19,9 @@ nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu**2)   # plain strain modulus
 K1c = 5e5 / (32 / math.pi)**0.5     # K' = 5e5
-Cl = np.full((Mesh.NumberOfElts,), 0.5e-6, dtype=np.float64)
+Cl = 0.5e-6                         # Carter's leak off coefficient
 
+# material properties
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K1c,
@@ -36,10 +37,9 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 1e7               # the time at which the simulation stops
+simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder(".\\Data\\MtoK_leakoff") # the disk address where the files are saved
-simulProp.verbosity = 2
 
 # initializing fracture
 initTime = 0.5
@@ -64,11 +64,17 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-# plotting efficiency
+
+####################
+# plotting results #
+####################
+
+# loading simulation results
 Fr_list, properties = load_fractures(".\\Data\\MtoK_leakoff")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 
+# plotting efficiency
 plot_prop = PlotProperties(graph_scaling='loglog',
                            line_style='.')
 label = get_labels('efficiency')

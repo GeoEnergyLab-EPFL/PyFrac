@@ -76,10 +76,15 @@ class Controller:
             sol_time_srs = np.unique(sol_time_srs)
             if sol_time_srs[0] == 0:
                 sol_time_srs = np.delete(sol_time_srs, 0)
-            self.sim_prop.set_solTimeSeries(sol_time_srs)
+       else:
+           sol_time_srs = self.sim_prop.get_solTimeSeries()
+       self.timeToHit = sol_time_srs
 
-       if self.sim_prop.get_solTimeSeries() is None and self.sim_prop.finalTime is None:
-            raise ValueError("The final time to stop the simulation is not provided!")
+       if self.sim_prop.finalTime is None:
+           if self.sim_prop.get_solTimeSeries() is None:
+                raise ValueError("The final time to stop the simulation is not provided!")
+           else:
+               self.sim_prop.finalTime = np.max(self.sim_prop.get_solTimeSeries())
 
        # basic performance data
        self.remeshings = 0
@@ -486,11 +491,11 @@ class Controller:
 
         # to get the solution at the times given in time series or final time
         next_in_TS = self.sim_prop.finalTime
-        sol_time_srs = self.sim_prop.get_solTimeSeries()
-        if sol_time_srs is not None:
-            larger_in_TS = np.where(sol_time_srs > self.fracture.time)[0]
+
+        if self.timeToHit is not None:
+            larger_in_TS = np.where(self.timeToHit > self.fracture.time)[0]
             if len(larger_in_TS) > 0:
-                next_in_TS = np.min(sol_time_srs[larger_in_TS])
+                next_in_TS = np.min(self.timeToHit[larger_in_TS])
 
         if next_in_TS < self.fracture.time:
             raise SystemExit('The minimum time required in the given time series or the end time'

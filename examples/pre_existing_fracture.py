@@ -35,11 +35,11 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 50                # the time at which the simulation stops
-simulProp.outputEveryTS = 2
-simulProp.set_outputFolder(".\\Data\\star") # the address of the output folder
-simulProp.fixedTmStp = np.asarray([[2e-4, 11], [1, None]])
-simulProp.plotFigure = True
+simulProp.finalTime = 50                        # the time at which the simulation stops
+simulProp.outputEveryTS = 2                     # the fracture file will be saved after every 2 time steps
+simulProp.set_outputFolder(".\\Data\\star")     # the address of the output folder
+simulProp.fixedTmStp = np.asarray([[2e-4, 11], [1, None]]) # list giving the time steps to adopt at the given times
+simulProp.plotFigure = True                     # the fracture footprint will be plotted during the simulation
 
 # initializing fracture
 initRad = np.pi
@@ -48,7 +48,7 @@ surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells,0])+2.5 - abs(Mesh.CenterCoo
 C = load_elasticity_matrix(Mesh, Eprime)
 init_param = ('G',              # type of initialization
               surv_cells,       # the given survey cells
-              inner_cells,      # the cell enclosed by the fracture
+              inner_cells,      # the cell enclosed by the survey cells
               surv_cells_dist,  # the distance of the survey cells from the front
               None,             # the given width
               1e4,              # the pressure (uniform in this case)
@@ -76,11 +76,16 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-# plot results
+####################
+# plotting results #
+####################
+
+# loading simulation results
 Fr_list, properties = load_fractures(address=".\\Data\\star")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 
+# plotting maximum distance of the front from the injection point
 plot_prop = PlotProperties(line_style='.')
 Fig_d = plot_fracture_list(Fr_list,
                            variable='d_max',
@@ -91,12 +96,15 @@ Fig_FP = plot_analytical_solution(regime='K',
                                  inj_prop=Injection,
                                  fig=Fig_d,
                                  time_srs=time_srs)
-# #
+
+# loading five fractures from the simulation separated with equal time period
 Fr_list, properties = load_fractures(address=".\\Data\\star",
                                      time_srs=np.linspace(0, 50, 5))
+# getting exact time of the loaded fractures
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 
+# plotting footprint
 Fig_FP = plot_fracture_list(Fr_list,
                                 variable='mesh')
 Fig_FP = plot_fracture_list(Fr_list,
@@ -109,6 +117,7 @@ Fig_FP = plot_analytical_solution(regime='K',
                                  fig=Fig_FP,
                                  time_srs=time_srs)
 
+# plotting fracture in 3D
 Fig_3D = plot_fracture_list(Fr_list,
                             variable='mesh',
                             projection='3D')

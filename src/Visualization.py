@@ -220,31 +220,30 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
             plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
             if '2D' in projection:
                 if plot_cell_center:
-                    plot_prop.lineStyle = '.'
                     fig, return_pnt1, return_pnt2= plot_fracture_slice_cell_center(var_val_copy[i],
-                                                                  mesh_list[i],
-                                                                  point=point1,
-                                                                  orientation=orientation,
-                                                                  fig=fig,
-                                                                  plot_prop=plot_prop,
-                                                                  vmin=vmin,
-                                                                  vmax=vmax,
-                                                                  plot_colorbar=False,
-                                                                  labels=labels,
-                                                                  plt_2D_image=plt_2D_image,
-                                                                  return_points=True)
+                                                                      mesh_list[i],
+                                                                      point=point1,
+                                                                      orientation=orientation,
+                                                                      fig=fig,
+                                                                      plot_prop=plot_prop,
+                                                                      vmin=vmin,
+                                                                      vmax=vmax,
+                                                                      plot_colorbar=False,
+                                                                      labels=labels,
+                                                                      plt_2D_image=plt_2D_image,
+                                                                      return_points=True)
                 else:
                     fig = plot_fracture_slice_interpolated(var_val_copy[i],
-                                mesh_list[i],
-                                point1=point1,
-                                point2=point2,
-                                fig=fig,
-                                plot_prop=plot_prop,
-                                vmin=vmin,
-                                vmax=vmax,
-                                plot_colorbar=False,
-                                labels=labels,
-                                plt_2D_image=plt_2D_image)
+                                                                    mesh_list[i],
+                                                                    point1=point1,
+                                                                    point2=point2,
+                                                                    fig=fig,
+                                                                    plot_prop=plot_prop,
+                                                                    vmin=vmin,
+                                                                    vmax=vmax,
+                                                                    plot_colorbar=False,
+                                                                    labels=labels,
+                                                                    plt_2D_image=plt_2D_image)
             else:
                 fig = plot_slice_3D(var_val_copy[i],
                                     mesh_list[i],
@@ -639,11 +638,14 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
         point2 = np.array([mesh.Lx, 0.])
 
     # the code below find the extreme points of the line joining the two given points with the current mesh
-    slope = (point2[1] - point1[1]) / (point2[0] - point1[0])
-    if slope == 0.:
+    if point2[0] == point1[0]:
+        point1[1] = -mesh.Ly
+        point2[1] = mesh.Ly
+    elif point2[1] == point1[1]:
         point1[0] = -mesh.Lx
         point2[0] = mesh.Lx
     else:
+        slope = (point2[1] - point1[1]) / (point2[0] - point1[0])
         y_intrcpt_lft = slope * (-mesh.Lx - point1[0]) + point1[1]
         y_intrcpt_rgt = slope * (mesh.Lx - point1[0]) + point1[1]
         x_intrcpt_btm = (-mesh.Ly - point1[1]) / slope + point1[0]
@@ -803,7 +805,10 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     if plt_2D_image:
         ax_2D.plot(mesh.CenterCoor[sampling_cells, 0],
                    mesh.CenterCoor[sampling_cells, 1],
-                   'k.')
+                   'k.',
+                   linewidth=plot_prop.lineWidth,
+                   alpha=plot_prop.alpha,
+                   markersize='1')
 
     sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
                    (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5

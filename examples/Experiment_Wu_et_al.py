@@ -46,7 +46,7 @@ Fluid = FluidProperties(viscosity=30)
 simulProp = SimulationParameters()
 simulProp.outputTimePeriod = 0.1        # Setting it small so the file is saved after every time step
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
-simulProp.tmStpPrefactor = 0.5          # set the time step prefactor
+simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('.\\Data\\Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 
@@ -78,6 +78,11 @@ import csv
 with open('./wu_et_al_data.csv', 'r') as f:
     reader = csv.reader(f)
     data = np.asarray(list(reader), dtype=np.float64)
+
+
+####################
+# plotting results #
+####################
 
 # plotting fracture footprint
 Fr_list, properties = load_fractures(address='.\\Data\\Wu_et_al',

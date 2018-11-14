@@ -19,8 +19,9 @@ Mesh = CartesianMesh(2., 2., 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 1.5e6                          # fracture toughness
+K_Ic = 1.5e6                        # fracture toughness
 
+# material properties
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K_Ic)
@@ -34,10 +35,10 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 1e7               # the time at which the simulation stops
+simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.saveRegime = True             # enable saving the regime
 simulProp.set_outputFolder(".\\Data\\MtoK") #the folder where the results are saved
-simulProp.frontAdvancing = 'implicit'
+simulProp.frontAdvancing = 'explicit'
 
 # initializing fracture
 initRad = 1.5
@@ -62,9 +63,15 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-# plot results
+
+####################
+# plotting results #
+####################
+
+# loading 8 fractures between 0.134s and 1e7s spaced with equal time periods
 Fr_list, properties = load_fractures(".\\Data\\MtoK",
                                      time_srs=np.linspace(0.134, 1e7, 8))
+# getting exact time of the loaded fractures to be used to compare analytical solution
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 

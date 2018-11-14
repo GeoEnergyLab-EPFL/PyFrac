@@ -17,7 +17,6 @@ from src.anisotropy import *
 Mesh = CartesianMesh(6., 3., 51, 51)
 
 # solid properties
-
 Cij = np.zeros((6, 6), dtype=float)
 
 # modelgam05
@@ -35,10 +34,11 @@ Cij[1, 2] = Cij[0, 2]
 Cij[4, 4] = Cij[3, 3]
 Cij=Cij*1e9
 
-Eprime = TI_plain_strain_modulus(np.pi/2, Cij)# plain strain modulus
+Eprime = TI_plain_strain_modulus(np.pi/2, Cij) # plain strain modulus
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
 def K1c_func(alpha):
+    """ function giving the dependence of fracture toughness on propagation direction alpha"""
 
     K1c_3 = 2e6                     # fracture toughness along x-axis
     gamma = 2.0                     # aspect ratio
@@ -63,7 +63,7 @@ def K1c_func(alpha):
 
     return K1c_3 * Eprime_ratio * ((np.sin(beta))**2 + (np.cos(beta)/gamma)**2)**0.25
 
-
+# materila properties
 Solid = MaterialProperties(Mesh,
                            Eprime=Eprime,
                            anisotropic_K1c=True,
@@ -130,7 +130,6 @@ init_param = ('G',              # type of initialization
               None,             # the volume of the fracture
               0)                # the velocity of the propagating front (stationary in this case)
 
-
 #  creating fracture object
 Fr = Fracture(Mesh,
               init_param,
@@ -138,7 +137,6 @@ Fr = Fracture(Mesh,
               Fluid,
               Injection,
               simulProp)
-
 
 # create a Controller
 controller = Controller(Fr,
@@ -150,7 +148,6 @@ controller = Controller(Fr,
 
 #run the simulation
 controller.run()
-
 
 ####################
 # plotting results #

@@ -1321,7 +1321,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # check if the new width is valid
     if np.isnan(w_n_plus1).any():
-        print("Picard iteration did not converged. Trying to solve pressure and width seperately...")
+        print("Picard iteration did not converged. Pressure and width will be solved separately in next attempt...")
         sim_properties.substitutePressure = False
         exitstatus = 5
         return exitstatus, None

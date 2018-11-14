@@ -43,7 +43,7 @@ Fluid = FluidProperties(viscosity=1.1e-5)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 500               # the time at which the simulation stops
+simulProp.finalTime = 500               # the time at which the simulation stops
 simulProp.set_volumeControl(True)     # to set up the solver in volume control mode (inviscid fluid)
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.

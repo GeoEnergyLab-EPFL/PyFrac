@@ -343,7 +343,7 @@ class SimulationParameters:
             tmStpPrefactor (float)      -- factor for time-step adaptivity.
             maxTimeSteps (integer)      -- maximum number of time steps.
             tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.
-            FinalTime (float)           -- time where the simulation ends.
+            finalTime (float)           -- time where the simulation ends.
             timeStepLimit (float)       -- limit above which time step will not exceed.
             maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller
                                            time step will be attempted the given number of times.
@@ -457,7 +457,7 @@ class SimulationParameters:
         # time and time stepping
         self.maxTimeSteps = simul_param.maximum_steps
         self.tmStpPrefactor = simul_param.tmStp_prefactor
-        self.FinalTime = simul_param.final_time
+        self.finalTime = simul_param.final_time
         self.set_solTimeSeries(simul_param.req_sol_at)
         self.timeStepLimit = simul_param.timeStep_limit
         self.fixedTmStp = simul_param.fixed_time_step
