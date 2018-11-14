@@ -63,7 +63,7 @@ class Controller:
        # Find the times where any parameter changes. These times will be added to the time series where the solution is
        # required to ensure the exact time is hit during time stepping and the change is applied at the correct time.
        param_change_at = np.array([], dtype=np.float64)
-       if isinstance(Injection_prop.injectionRate, np.ndarray):
+       if Injection_prop.injectionRate.shape[1] > 1:
            param_change_at = np.hstack((param_change_at, Injection_prop.injectionRate[0]))
        if isinstance(Sim_prop.fixedTmStp, np.ndarray):
            param_change_at = np.hstack((param_change_at, Sim_prop.fixedTmStp[0]))
@@ -78,7 +78,7 @@ class Controller:
                 sol_time_srs = np.delete(sol_time_srs, 0)
             self.sim_prop.set_solTimeSeries(sol_time_srs)
 
-       if self.sim_prop.get_solTimeSeries() is None and self.sim_prop.FinalTime is None:
+       if self.sim_prop.get_solTimeSeries() is None and self.sim_prop.finalTime is None:
             raise ValueError("The final time to stop the simulation is not provided!")
 
        # basic performance data
@@ -144,7 +144,7 @@ class Controller:
 
         print("Starting time = " + repr(self.fracture.time))
         # starting time stepping loop
-        while self.fracture.time < 0.999 * self.sim_prop.FinalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
+        while self.fracture.time < 0.999 * self.sim_prop.finalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
 
             TimeStep = self.get_time_step()
 
@@ -278,7 +278,7 @@ class Controller:
                 tmStp_to_attempt = TimeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
 
             # check for final time
-            if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.FinalTime:
+            if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.finalTime:
                 print(repr(Frac.time + tmStp_to_attempt))
                 return status, Fr
 
@@ -485,7 +485,7 @@ class Controller:
                                  "step.\nMake sure it is set in the simulation properties.")
 
         # to get the solution at the times given in time series or final time
-        next_in_TS = self.sim_prop.FinalTime
+        next_in_TS = self.sim_prop.finalTime
         sol_time_srs = self.sim_prop.get_solTimeSeries()
         if sol_time_srs is not None:
             larger_in_TS = np.where(sol_time_srs > self.fracture.time)[0]

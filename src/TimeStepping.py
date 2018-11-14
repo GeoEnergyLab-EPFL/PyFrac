@@ -909,104 +909,81 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         else:
             perfNode_Picard = None
 
-        # neg_in_Chann = np.empty((len(Fr_lstTmStp.closed), ), dtype=int)
-        # for i in range(len(Fr_lstTmStp.closed)):
-        #     neg_in_Chann[i] = np.where(Fr_lstTmStp.EltChannel == Fr_lstTmStp.closed[i])[0][0]
-        # neg = np.copy(Fr_lstTmStp.closed)
-        # neg = np.setdiff1d(neg, EltTip)
         neg = np.array([], dtype=int)
         non_neg = False
-        to_open = True
 
         # Making and sloving the system of equations. The width constraint is checked. If active, system is remade with
         # the oonstraint imposed and is resolved.
-        while to_open:
-            while not non_neg > 0:
+        while not non_neg > 0:
 
-                to_solve = np.setdiff1d(Fr_lstTmStp.EltChannel, neg)
-                to_impose = EltTip
-                imposed_val = wTip
+            to_solve = np.setdiff1d(Fr_lstTmStp.EltChannel, neg)
+            to_impose = EltTip
+            imposed_val = wTip
 
-                arg = (
-                    to_solve,
-                    to_impose,
-                    Fr_lstTmStp.w,
-                    imposed_val,
-                    EltCrack_k,
-                    Fr_lstTmStp.mesh,
-                    timeStep,
-                    Qin,
-                    C,
-                    Fr_lstTmStp.muPrime,
-                    fluid_properties.density,
-                    InCrack_k,
-                    LkOff,
-                    mat_properties.SigmaO,
-                    fluid_properties.turbulence,
-                    mat_properties.grainSize,
-                    sim_properties.gravity,
-                    neg,
-                    mat_properties.wc)
+            arg = (
+                to_solve,
+                to_impose,
+                Fr_lstTmStp.w,
+                imposed_val,
+                EltCrack_k,
+                Fr_lstTmStp.mesh,
+                timeStep,
+                Qin,
+                C,
+                Fr_lstTmStp.muPrime,
+                fluid_properties.density,
+                InCrack_k,
+                LkOff,
+                mat_properties.SigmaO,
+                fluid_properties.turbulence,
+                mat_properties.grainSize,
+                sim_properties.gravity,
+                neg,
+                mat_properties.wc)
 
-                if sim_properties.substitutePressure:
-                    sys_fun = MakeEquationSystem_viscousFluid_pressure_substituted
-                else:
-                    sys_fun = MakeEquationSystem_ViscousFluid
+            if sim_properties.substitutePressure:
+                sys_fun = MakeEquationSystem_viscousFluid_pressure_substituted
+            else:
+                sys_fun = MakeEquationSystem_ViscousFluid
 
-                sol, v_k = Picard_Newton(None,
-                                       sys_fun,
-                                       guess,
-                                       typValue,
-                                       vk,
-                                       sim_properties.toleranceEHL,
-                                       sim_properties.maxSolverItrs,
-                                       *arg,
-                                       perf_node=perfNode_Picard)
+            sol, v_k = Picard_Newton(None,
+                                   sys_fun,
+                                   guess,
+                                   typValue,
+                                   vk,
+                                   sim_properties.toleranceEHL,
+                                   sim_properties.maxSolverItrs,
+                                   *arg,
+                                   perf_node=perfNode_Picard)
 
-                if np.isnan(sol).any():
+            if np.isnan(sol).any():
+                return np.nan, np.nan, (np.nan, np.nan)
+
+            w = np.copy(Fr_lstTmStp.w)
+            w[to_solve] += sol[:len(to_solve)]
+            w[EltTip] = wTip
+            w[neg] = mat_properties.wc
+
+            neg_km1 = np.copy(neg)
+            new_neg = to_solve[np.where(w[to_solve] < 0.98 * mat_properties.wc)[0]]
+            new_neg = np.setdiff1d(new_neg, neg)
+            if len(new_neg) == 0:
+                non_neg = True
+            else:
+                if sim_properties.frontAdvancing is not 'implicit':
+                    print('Width is getting extremely small. Starting again without substituting pressure with'
+                          ' width...')
+                    sim_properties.frontAdvancing = 'implicit'
+                    sim_properties.substitutePressure = False
                     return np.nan, np.nan, (np.nan, np.nan)
 
-                w = np.copy(Fr_lstTmStp.w)
-                w[to_solve] += sol[:len(to_solve)]
-                w[EltTip] = wTip
-                w[neg] = mat_properties.wc
-
-                neg_km1 = np.copy(neg)
-                new_neg = to_solve[np.where(w[to_solve] < 0.98 * mat_properties.wc)[0]]
-                new_neg = np.setdiff1d(new_neg, neg)
-                if len(new_neg) == 0:
-                    non_neg = True
-                else:
-                    if sim_properties.frontAdvancing is not 'implicit':
-                        print('Width is getting extremely small. Starting again without substituting pressure with'
-                              ' width...')
-                        sim_properties.frontAdvancing = 'implicit'
-                        sim_properties.substitutePressure = False
-                        return np.nan, np.nan, (np.nan, np.nan)
-
-                    sim_properties.substitutePressure = False
-                    # changing length of guess
-                    guess = 1e6 * np.ones((2 * Fr_lstTmStp.EltChannel.size + EltTip.size,), float)
-                    guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                                    * np.ones((Fr_lstTmStp.EltChannel.size,), float)
-                    neg = np.concatenate((neg, new_neg))
-                    print('Width has gone down to negative value. Imposing constraint on width...')
-
-            if False: #not sim_properties.substitutePressure:
-                tr = np.dot(C[np.ix_(Fr_lstTmStp.EltChannel, Fr_lstTmStp.EltCrack)],
-                            w[Fr_lstTmStp.EltCrack]) # + mat_properties.SigmaO[Fr_lstTmStp.EltChannel]
-
-                pos_tr = np.where(tr > 0)[0]
-                intersct = np.intersect1d(Fr_lstTmStp.EltChannel[pos_tr], neg_km1)
-                if len(intersct) > 0:
-                    neg = np.setdiff1d(neg_km1, pos_tr)
-                    print('removed from imposed ' + repr(intersct))
-                    non_neg = False
-                    to_open = True
-                else:
-                    to_open = False
-            else:
-                to_open = False
+                sim_properties.substitutePressure = False
+                # changing length of guess
+                guess = 1e6 * np.ones((2 * Fr_lstTmStp.EltChannel.size + EltTip.size,), float)
+                guess[np.arange(Fr_lstTmStp.EltChannel.size)] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                                * np.ones((Fr_lstTmStp.EltChannel.size,), float)
+                neg = np.concatenate((neg, new_neg))
+                print('Width has gone down to negative value. Imposing constraint on width...')
 
         if perfNode_Picard is not None:
             perfNode_Picard.CpuTime_end = time.time()
