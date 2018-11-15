@@ -10,8 +10,8 @@ import math
 import numpy as np
 import time
 import datetime
-import sys
 from matplotlib.colors import to_rgb
+from src.Labels import *
 
 
 class MaterialProperties:
@@ -694,15 +694,34 @@ class LabelProperties:
     This class stores the labels of a plot figure.
     """
 
-    def __init__(self, x_label='meters', y_label='meters', z_label=None, fig_label=None, colorbar_label=None,
-                 latex_font=True, legend=None, scale_with=1., units=None):
+    def __init__(self, variable, data_subset, projection='2D', use_latex=True):
 
-        self.xLabel = x_label
-        self.yLabel = y_label
-        self.zLabel = z_label
-        self.figLabel = fig_label
-        self.colorbarLabel = colorbar_label
-        self.latexFont = latex_font
-        self.unitConversion = scale_with
-        self.legend = legend
-        self.units = units
+        if variable not in supported_variables:
+            raise ValueError(err_msg_variable)
+
+        if data_subset in ('whole mesh', 'wm'):
+            if projection in ('2D_clrmap', '2D_contours', '3D', '2D'):
+                self.yLabel = 'meters'
+                self.xLabel = 'meters'
+                self.zLabel = labels[variable] + units[variable]
+            elif projection is '1D':
+                self.xLabel = 'time $(s)$'
+                self.yLabel = labels[variable] + units[variable]
+        elif data_subset in ('slice', 's'):
+            if '2D' in projection:
+                self.xLabel = 'meters'
+                self.yLabel = labels[variable] + units[variable]
+            elif projection is '3D':
+                self.yLabel = 'meters'
+                self.xLabel = 'meters'
+                self.zLabel = labels[variable] + units[variable]
+        elif data_subset in ('point', 'p'):
+            self.xLabel = 'time $(s)$'
+            self.yLabel = labels[variable] + units[variable]
+
+        self.colorbarLabel = labels[variable] + units[variable]
+        self.units = units[variable]
+        self.unitConversion = unit_conversion[variable]
+        self.figLabel = Fig_labels[variable]
+        self.legend = labels[variable]
+        self.useLatex = use_latex

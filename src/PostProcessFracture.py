@@ -9,18 +9,17 @@
 # Post-process scripts to plot results for a fracture
 
 # local
-from src.Properties import *
+
 from src.Utility import ReadFracture
-# from src.CartesianMesh import CartesianMesh
 from src.HFAnalyticalSolutions import HF_analytical_sol, get_fracture_dimensions_analytical
 from src.Labels import *
 
 import numpy as np
 from scipy.interpolate import griddata
-import matplotlib.patches as mpatches
 import dill
 import os
 import re
+import sys
 
 
 if 'win32' in sys.platform or 'win64' in sys.platform:

@@ -7,8 +7,6 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-from src.Properties import LabelProperties
-
 Fig_labels = {
     't': 'Time',
     'time': 'Time',
@@ -43,6 +41,7 @@ Fig_labels = {
     'mesh': 'Mesh',
     'footprint': 'Fracture Footprint'
 }
+
 labels = {
     't': 'time',
     'time': 'time',
@@ -147,13 +146,19 @@ unit_conversion = {
     'mesh': None,
     'footprint': None
 }
-supported_variables = ('w','width','p','pressure', 'front velocity','v',
+
+
+supported_variables = ['w','width','p','pressure', 'front velocity','v',
                        'Reynolds number', 'Re', 'fluid flux', 'ff',
                        'fluid velocity', 'fv', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leaked off', 'lkv', 'leaked off volume',
-                       'ar', 'aspect ratio', 'efficiency', 'ef')
+                       'ar', 'aspect ratio', 'efficiency', 'ef']
+
+unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
+                            'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
+                            'efficiency', 'ef', 'aspect ratio', 'ar']
 
 required_string = {
     't': '100000',
@@ -191,46 +196,40 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'lkv\' or \'leaked off volume\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
 
-supported_projections = ('2D', '2D_image', '2D_contours', '3D')
-err_msg_projection = 'Given projection is not supported. Select one of the following:\n' \
-                    '-- \'2D\'\n' \
-                    '-- \'3D\'\n' \
-                    '-- \'2D_image\'\n' \
-                    '-- \'2D_contours\'\n'
+supported_projections ={
+    'w': ['2D_clrmap', '2D_contours', '3D'],
+    'width': ['2D_clrmap', '2D_contours', '3D'],
+    'p': ['2D_clrmap', '2D_contours', '3D'],
+    'pressure': ['2D_clrmap', '2D_contours', '3D'],
+    'front velocity': ['2D_clrmap', '2D_contours'],
+    'v': ['2D_clrmap', '2D_contours'],
+    'Reynolds number': ['2D_clrmap', '2D_contours', '3D'],
+    'Re': ['2D_clrmap', '2D_contours', '3D'],
+    'fluid flux': ['2D_clrmap', '2D_contours', '3D'],
+    'ff': ['2D_clrmap', '2D_contours', '3D'],
+    'fluid velocity': ['2D_clrmap', '2D_contours', '3D'],
+    'fv': ['2D_clrmap', '2D_contours', '3D'],
+    'front_dist_min': ['1D'],
+    'd_min': ['1D'],
+    'front_dist_max': ['1D'],
+    'd_max': ['1D'],
+    'front_dist_mean': ['1D'],
+    'd_mean': ['1D'],
+    'mesh': ['2D', '3D'],
+    'footprint': ['2D', '3D'],
+    't': ['1D'],
+    'time': ['1D'],
+    'volume': ['1D'],
+    'V': ['1D'],
+    'lk': ['2D_clrmap', '2D_contours', '3D'],
+    'leaked off': ['2D_clrmap', '2D_contours', '3D'],
+    'lkv': ['1D'],
+    'leaked off volume': ['1D'],
+    'ar': ['1D'],
+    'aspect ratio': ['1D'],
+    'efficiency': ['1D'],
+    'ef': ['1D']
+}
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
-                    " enabled during the simulation. Check SimulationProperties class documentation."
-
-def get_labels(variable, data_subset='wm', projection='2D'):
-    """
-    This function returns suitable labels for the given variable, location on the mesh and the projection type
-
-    Arguments:
-        variable (string)       -- the given variable for which the labels are to be provided. Possible options are
-                                   given in the supported_variables list.
-        data_subset (string)    -- the subset of data which is plotted. Possible options are:
-                                    -- 'whole mesh' or 'wm'
-                                    -- 'slice' or 's'
-                                    -- 'point' or 'p'
-        projection (string)     -- the string specifying the projection. Possible options are given in
-                                   supported_projections list.
-    :return:
-    """
-    label_prop = LabelProperties()
-    if data_subset in ('slice', 's'):
-        label_prop.xLabel = 'coordinates ($x,y$)'
-        label_prop.yLabel = labels[variable]
-    elif data_subset in ('point', 'p'):
-        label_prop.xLabel = 'time ($s$)'
-        label_prop.yLabel = labels[variable]
-
-    if projection is '3D':
-        label_prop.zLabel = labels[variable]
-
-    label_prop.colorbarLabel = labels[variable] + units[variable]
-    label_prop.units = units[variable]
-    label_prop.unitConversion = unit_conversion[variable]
-    label_prop.figLabel = Fig_labels[variable]
-    label_prop.legend = labels[variable]
-
-    return label_prop
+                    "enabled during the simulation. Enable saving it through simulation properties."

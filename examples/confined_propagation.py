@@ -47,6 +47,7 @@ simulProp.outputEveryTS = 1         # the fracture file will be saved after ever
 simulProp.bckColor = 'sigma0'       # setting the parameter according to which the mesh is color coded
 simulProp.set_outputFolder(".\\Data\\confined_propagation")
 simulProp.plotFigure = True         # the fracture footprint will be plotted during the simulation
+simulProp.blockFigure = True
 
 # initializing fracture
 initRad = 2.8

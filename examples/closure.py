@@ -27,7 +27,6 @@ Solid = MaterialProperties(Mesh,
                            Cl=Cl)
 
 # injection parameters
-# Q0 = 0.01  # injection rate
 Q0 = np.asarray([[0, 15., 1415.], [0.01, 0, 0.01]])
 Injection = InjectionProperties(Q0, Mesh)
 
@@ -37,13 +36,14 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 1500               # the time at which the simulation stops
-simulProp.outputEveryTS = 1             # the time after the output is generated (saving or plotting)
+simulProp.finalTime = 1500               # the time at which the simulation stops
+simulProp.outputEveryTS = 1              # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder(".\\Data\\closure") # the disk address where the files are saved
-simulProp.verbosity = 2
-simulProp.plotFigure = True
-simulProp.timeStepLimit = 100.
-simulProp.fixedTmStp = np.asarray([[0, 1415, 1440], [None, 3, None]])
+simulProp.plotFigure = True              # plot fracture during simulation
+simulProp.timeStepLimit = 100.           # set the time step limit. Will be used as time step when front stops
+simulProp.fixedTmStp = np.asarray([[0, 1415, 1425], [None, 3, None]]) # give a list of time steps. None means will be
+                                                                      # set according to front velocity. Needed to be
+                                                                      # restricted before starting injection again.
 
 
 # initializing fracture

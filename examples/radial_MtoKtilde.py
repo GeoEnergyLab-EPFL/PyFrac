@@ -77,7 +77,7 @@ time_srs = get_fracture_variable(Fr_list,
 # plotting efficiency
 plot_prop = PlotProperties(graph_scaling='loglog',
                            line_style='.')
-label = get_labels('efficiency')
+label = LabelProperties('efficiency', 'whole mesh', '1D')
 label.legend = 'fracturing efficiency'
 Fig_eff = plot_fracture_list(Fr_list,
                            variable='efficiency',
@@ -93,7 +93,7 @@ ax_eff.semilogx(t, eff_analytical, 'r-', label='analytical fracturing efficiency
 ax_eff.legend()
 
 
-label = get_labels('d_mean')
+label = LabelProperties('d_mean', 'whole mesh', '1D')
 label.legend = 'radius'
 Fig_r = plot_fracture_list(Fr_list,
                            variable='d_mean',

@@ -312,7 +312,7 @@ class Fracture():
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def plot_fracture(self, variable='width', mat_properties=None, projection='2D', elements=None,
+    def plot_fracture(self, variable='complete', mat_properties=None, projection='3D', elements=None,
                        backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None):
         """
         Plots the given parameter of the specified cells.
@@ -339,6 +339,32 @@ class Fracture():
             fig (figure)            -- figure object to superimpose the image
 
         """
+        if variable is 'complete':
+            fig = plot_fracture_list([self],
+                                       'mesh',
+                                       mat_properties,
+                                       projection,
+                                       elements,
+                                       backGround_param,
+                                       plot_prop,
+                                       fig,
+                                       edge,
+                                       contours_at,
+                                       labels)
+
+            fig = plot_fracture_list([self],
+                                     'footprint',
+                                     mat_properties,
+                                     projection,
+                                     elements,
+                                     backGround_param,
+                                     plot_prop,
+                                     fig,
+                                     edge,
+                                     contours_at,
+                                     labels)
+            variable = 'width'
+
         fig = plot_fracture_list([self],
                            variable,
                            mat_properties,

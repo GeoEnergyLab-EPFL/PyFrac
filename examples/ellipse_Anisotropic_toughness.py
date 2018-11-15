@@ -129,19 +129,19 @@ Fig_w_slice = plot_analytical_solution_slice('E_K',
                                              fig=Fig_w_slice,
                                              point1=[-Fr_list[-1].mesh.Lx, 0],
                                              point2=[Fr_list[-1].mesh.Lx, 0],
-                                             time_srs=time_srs,
-                                             plt_2D_image=False)
+                                             time_srs=time_srs)
 
 # loading all fractures
 Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
                                      simulation='anisotropic_toughness_benchmark')
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
+
 # making a plot properties object with desired linestyle and scaling
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
 # plotting minor axis length
-labels = get_labels('d_min', 'wm', '2D')
+labels = LabelProperties('d_min', 'wm', '1D')
 labels.figLabel = 'Minor axis length'
 Fig_len_a = plot_fracture_list(Fr_list,
                              variable='d_min',
@@ -156,7 +156,6 @@ Fig_len_a = plot_analytical_solution('E_K',
                                    time_srs=time_srs,
                                    labels=labels)
 # plotting major axis length
-labels = get_labels('d_max', 'whole_mesh', '2D')
 labels.figLabel = 'Major axis length'
 Fig_len_b = plot_fracture_list(Fr_list,
                              variable='d_max',

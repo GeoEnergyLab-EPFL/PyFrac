@@ -9,8 +9,7 @@ reserved. See the LICENSE.TXT file for more details.
 
 
 from src.Properties import PlotProperties
-from src.HFAnalyticalSolutions import get_fracture_dimensions_analytical
-from src.Labels import *
+from src.Properties import LabelProperties
 from src.PostProcessFracture import *
 
 import numpy as np
@@ -24,10 +23,11 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import matplotlib.animation as animation
+from matplotlib.colors import to_rgb
 import copy
 
 
-def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None, projection='2D', elements=None,
+def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None, projection=None, elements=None,
                        backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None,
                        plot_non_zero=True):
 
@@ -35,16 +35,21 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
 
     if len(fracture_list) == 0:
         raise ValueError("Provided fracture list is empty!")
+
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
-    if projection not in supported_projections:
-        raise ValueError(err_msg_projection)
+
+    if projection is None:
+        projection = supported_projections[variable][0]
+    elif projection not in supported_projections[variable]:
+        raise ValueError("The given projection is not supported for \'" + variable +
+                         '\'. Select one the following\n' + repr(supported_projections[variable]))
 
     if plot_prop is None:
         plot_prop = PlotProperties()
 
     if labels is None:
-        labels = get_labels(variable, 'wole_mesh', projection)
+        labels = LabelProperties(variable, 'whole mesh', projection)
 
     max_Lx = 0.
     for i in fracture_list:
@@ -55,20 +60,20 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
     if variable is 'mesh':
         if backGround_param is not None and mat_properties is None:
             raise ValueError("Material properties are required to color code background")
-        if projection is '3D':
-            fig = largest_mesh.plot_3D(fig=fig,
+        if projection is '2D':
+            fig = largest_mesh.plot(fig=fig,
                                     material_prop=mat_properties,
                                     backGround_param=backGround_param,
                                     plot_prop=plot_prop)
 
         else:
-            fig = largest_mesh.plot(fig=fig,
+            fig = largest_mesh.plot_3D(fig=fig,
                                  material_prop=mat_properties,
                                  backGround_param=backGround_param,
                                  plot_prop=plot_prop)
 
     elif variable is 'footprint':
-        if '2D' in projection:
+        if projection is '2D':
             for i in fracture_list:
                 fig = i.plot_front(fig=fig, plot_prop=plot_prop)
         else:
@@ -98,18 +103,20 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
             vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'V', 'volume'
-                    'front_dist_mean', 'd_mean', 'efficiency', 'ef', 'aspect ratio', 'ar'):
-        labels.xLabel = 'time'
-        fig = plot_variable_vs_time(time_list, var_val_list, fig=fig, plot_prop=plot_prop, label=labels.legend)
-        projection = '2D'
+    if variable in unidimensional_variables:
+        fig = plot_variable_vs_time(time_list,
+                                    var_val_list,
+                                    fig=fig,
+                                    plot_prop=plot_prop,
+                                    label=labels.legend)
+
     elif variable not in ('mesh', 'footprint'):
 
         if plot_non_zero:
             for i in var_val_copy:
                 i[np.where(abs(i) < 1e-16)[0]] = np.nan
 
-        if projection is '2D_image':
+        if projection is '2D_clrmap':
             for i in range(len(var_val_list)):
                 fig = plot_fracture_variable_as_image(var_val_copy[i],
                                                           fracture_list[i].mesh,
@@ -154,7 +161,7 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
         sm._A = []
         cb = plt.colorbar(sm, alpha=plot_prop.alpha)
         cb.set_label(labels.colorbarLabel)
-    elif projection in ('2D_image', '2D_contours'):
+    elif projection in ('2D_clrmap', '2D_contours'):
         im = ax.images
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -169,17 +176,21 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
 
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
-                             fig=None, edge=4, labels=None, plt_2D_image=True, plot_cell_center=False,
-                             orientation='horizontal'):
+                             fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal'):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
+    if variable in unidimensional_variables:
+        raise ValueError("The given variable does not vary spatially.")
+
     if plot_prop is None:
         plot_prop = PlotProperties()
+        if plot_cell_center:
+            plot_prop.lineStyle = '.'
 
     if labels is None:
-        labels = get_labels(variable, 'wole_mesh', projection)
+        labels = LabelProperties(variable, 'slice', projection)
 
     mesh_list = get_fracture_variable(fracture_list,
                                                 'mesh',
@@ -208,77 +219,73 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                 i_min, i_max = np.inf, -np.inf
         vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-                    'front_dist_mean', 'd_mean'):
-        raise ValueError("The given variable does not vary spatially.")
-
-    else:
-        label = labels.legend
-        for i in range(len(var_val_list)):
-            labels.legend = label + ' t= ' + to_precision(time_list[i],
-                                                          plot_prop.dispPrecision)
-            plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
-            if '2D' in projection:
-                if plot_cell_center:
-                    fig, return_pnt1, return_pnt2= plot_fracture_slice_cell_center(var_val_copy[i],
-                                                                      mesh_list[i],
-                                                                      point=point1,
-                                                                      orientation=orientation,
-                                                                      fig=fig,
-                                                                      plot_prop=plot_prop,
-                                                                      vmin=vmin,
-                                                                      vmax=vmax,
-                                                                      plot_colorbar=False,
-                                                                      labels=labels,
-                                                                      plt_2D_image=plt_2D_image,
-                                                                      return_points=True)
-                else:
-                    fig = plot_fracture_slice_interpolated(var_val_copy[i],
-                                                                    mesh_list[i],
-                                                                    point1=point1,
-                                                                    point2=point2,
-                                                                    fig=fig,
-                                                                    plot_prop=plot_prop,
-                                                                    vmin=vmin,
-                                                                    vmax=vmax,
-                                                                    plot_colorbar=False,
-                                                                    labels=labels,
-                                                                    plt_2D_image=plt_2D_image)
+    label = labels.legend
+    for i in range(len(var_val_list)):
+        labels.legend = label + ' t= ' + to_precision(time_list[i],
+                                                      plot_prop.dispPrecision)
+        plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
+        if '2D' in projection:
+            if plot_cell_center:
+                fig, return_pnt1, return_pnt2= plot_fracture_slice_cell_center(var_val_copy[i],
+                                                                  mesh_list[i],
+                                                                  point=point1,
+                                                                  orientation=orientation,
+                                                                  fig=fig,
+                                                                  plot_prop=plot_prop,
+                                                                  vmin=vmin,
+                                                                  vmax=vmax,
+                                                                  plot_colorbar=False,
+                                                                  labels=labels,
+                                                                  return_points=True)
             else:
-                fig = plot_slice_3D(var_val_copy[i],
-                                    mesh_list[i],
-                                    point1=point1,
-                                    point2=point2,
-                                    fig=fig,
-                                    plot_prop=plot_prop,
-                                    vmin=vmin,
-                                    vmax=vmax,
-                                    label=labels.legend)
+                fig = plot_fracture_slice_interpolated(var_val_copy[i],
+                                                                mesh_list[i],
+                                                                point1=point1,
+                                                                point2=point2,
+                                                                fig=fig,
+                                                                plot_prop=plot_prop,
+                                                                vmin=vmin,
+                                                                vmax=vmax,
+                                                                plot_colorbar=False,
+                                                                labels=labels)
+            ax_tv = fig.get_axes()[0]
+            ax_tv.set_xlabel('meter')
+            ax_tv.set_ylabel('meter')
+            plt.subplot(211)
+            plt.title('Top View')
 
-    ax = fig.get_axes()[0]
-    ax.set_xlabel(labels.xLabel)
-    ax.set_ylabel(labels.yLabel)
-    if '2D' in projection and plt_2D_image:
-        plt.subplot(211)
-        plt.title('Top View')
-        im = ax.images
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
-        cb.set_label(labels.colorbarLabel)
-    elif projection == '3D':
-        ax.set_zlabel(labels.zLabel)
-        plt.title(labels.figLabel)
+            # making colorbar
+            im = ax_tv.images
+            divider = make_axes_locatable(ax_tv)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
+            cb.set_label(labels.colorbarLabel)
 
-    if plt_2D_image:
-        ax = fig.get_axes()[1]
-    else:
-        ax = fig.get_axes()[0]
-    ax.set_ylabel(labels.colorbarLabel)
-    ax.set_xlabel('(x,y) ' + labels.xLabel )
+            ax_slice = fig.get_axes()[1]
+            ax_slice.set_ylabel(labels.colorbarLabel)
+            ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
+
+        elif projection is '3D':
+            fig = plot_slice_3D(var_val_copy[i],
+                                mesh_list[i],
+                                point1=point1,
+                                point2=point2,
+                                fig=fig,
+                                plot_prop=plot_prop,
+                                vmin=vmin,
+                                vmax=vmax,
+                                label=labels.legend)
+            ax_slice = fig.get_axes()[0]
+            ax_slice.set_xlabel('meter')
+            ax_slice.set_ylabel('meter')
+            ax_slice.set_zlabel(labels.zLabel)
+            plt.title(labels.figLabel)
+        else:
+            raise ValueError("Given Projection is not correct!")
 
     if plot_prop.plotLegend:
-        ax.legend()
+        ax_slice.legend()
+
 
     if plot_cell_center:
         return fig, return_pnt1, return_pnt2
@@ -302,15 +309,15 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
         plot_prop = PlotProperties()
 
     if labels is None:
-        labels = get_labels(variable, 'wm', '2D')
+        labels = LabelProperties(variable, 'point', '2D')
 
     if point is None:
         point = [0., 0.]
 
     point_values, time_list = get_fracture_variable_at_point(fracture_list,
-                                                variable,
-                                                point=point,
-                                                edge=edge)
+                                                            variable,
+                                                            point=point,
+                                                            edge=edge)
 
     point_values = np.asarray(point_values) / labels.unitConversion
 
@@ -327,23 +334,25 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
     if plot_prop.plotLegend:
         ax.legend()
 
-    labels.figLabel = 'Sampling Point'
+    labels_2D = LabelProperties(variable, 'whole mesh', '2D_clrmap')
+    labels_2D.figLabel = 'Sampling Point'
     fig_image = plot_fracture_list([fracture_list[-1]],
                        variable,
-                       projection='2D_image',
+                       projection='2D_clrmap',
                        plot_prop=plot_prop,
                        edge=edge,
-                       labels=labels)
-    plot_prop.lineColor = to_rgb('black')
-    plot_prop.colorsList = ['black']
-    plot_prop.lineStyle = '-'
-    labels.figLabel=''
+                       labels=labels_2D)
+
+    plot_prop_fp = PlotProperties(line_color='k')
+    labels_fp = LabelProperties('footprint', 'whole mesh', '2D')
+    labels_fp.figLabel = ''
     fig_image = plot_fracture_list([fracture_list[-1]],
                                    fig=fig_image,
                                    projection='2D',
                                    variable='footprint',
-                                   plot_prop=plot_prop,
-                                   labels=labels)
+                                   plot_prop=plot_prop_fp,
+                                   labels=labels_fp
+                                   )
 
     ax_image = fig_image.get_axes()[0]
     ax_image.plot([point[0]], [point[1]], 'ko')
@@ -606,8 +615,6 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
     if plot_prop is None:
         plot_prop = PlotProperties()
 
-    if labels is None:
-        labels = LabelProperties()
 
     if plt_2D_image:
         x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
@@ -626,7 +633,7 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
                             vmin=vmin,
                             vmax=vmax)
 
-        if plt_2D_image and plot_colorbar:
+        if plot_colorbar:
             divider = make_axes_locatable(ax_2D)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             fig.colorbar(im_2D, cax=cax, orientation='vertical')
@@ -693,11 +700,17 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
     sampling_line_rgt = ((sampling_points[52:, 0] - sampling_points[52, 0]) ** 2 +
                          (sampling_points[52:, 1] - sampling_points[52, 1]) ** 2) ** 0.5
     sampling_line = np.concatenate((-sampling_line_lft, sampling_line_rgt))
+
+    if labels is None:
+        legend = None
+    else:
+        legend = labels.legend
+
     ax_slice.plot(sampling_line,
                   value_samp_points,
                   plot_prop.lineStyle,
                   color=plot_prop.lineColor,
-                  label=labels.legend)
+                  label=legend)
 
     ax_slice.set_xticks(np.hstack((sampling_line[[0, 20, 41, 62, 83, 104]], sampling_line[104])))
 
@@ -741,8 +754,6 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         plot_prop = PlotProperties()
         plot_prop.lineStyle = '.'
 
-    if labels is None:
-        labels = LabelProperties()
 
     if plt_2D_image:
         x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
@@ -855,7 +866,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
 
 def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
                              point1=None, point2=None, time_srs=None, length_srs=None, h=None, samp_cell=None,
-                             plot_prop=None, labels=None, plt_2D_image=True, gamma=None):
+                             plot_prop=None, labels=None, gamma=None):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -869,7 +880,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
     plot_prop_cp = copy.copy(plot_prop)
 
     if labels is None:
-        labels = get_labels(variable, 'wm', '2D')
+        labels = LabelProperties(variable, 'slice', '2D')
 
     analytical_list, mesh_list = get_HF_analytical_solution(regime,
                                                       variable,
@@ -907,35 +918,35 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                              plot_prop.dispPrecision)
         plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
         fig = plot_fracture_slice_interpolated(analytical_list[i],
-                            mesh_list[i],
-                            point1=point1,
-                            point2=point2,
-                            fig=fig,
-                            plot_prop=plot_prop_cp,
-                            vmin=vmin,
-                            vmax=vmax,
-                            plot_colorbar=False,
-                            labels=labels,
-                            plt_2D_image=plt_2D_image)
+                                                mesh_list[i],
+                                                point1=point1,
+                                                point2=point2,
+                                                fig=fig,
+                                                plot_prop=plot_prop_cp,
+                                                vmin=vmin,
+                                                vmax=vmax,
+                                                plot_colorbar=False,
+                                                labels=labels)
 
-    ax = fig.get_axes()[0]
-    ax.set_xlabel(labels.xLabel)
-    ax.set_ylabel(labels.yLabel)
+    ax_tv = fig.get_axes()[0]
+    ax_tv.set_xlabel('meter')
+    ax_tv.set_ylabel('meter')
+    plt.subplot(211)
+    plt.title('Top View')
 
-    if plt_2D_image:
-        plt.subplot(211)
-        plt.title('Top View')
-        im = ax.images
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
-        cb.set_label(labels.colorbarLabel + ' analytical')
+    # making colorbar
+    im = ax_tv.images
+    divider = make_axes_locatable(ax_tv)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
+    cb.set_label(labels.colorbarLabel)
 
-        ax = fig.get_axes()[1]
-        ax.set_ylabel(labels.colorbarLabel)
+    ax_slice = fig.get_axes()[1]
+    ax_slice.set_ylabel(labels.colorbarLabel)
+    ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
 
     if plot_prop.plotLegend:
-        ax.legend()
+        ax_slice.legend()
 
     return fig
 
@@ -954,7 +965,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if labels is None:
         labels_given = False
-        labels = get_labels(variable, 'wole_mesh', '2D')
+        labels = LabelProperties(variable, 'point', '2D')
     else:
         labels_given = True
 
@@ -1160,7 +1171,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
     if labels is None:
         labels_given = False
-        labels = get_labels(variable, 'wole_mesh', projection)
+        labels = LabelProperties(variable, 'whole mesh', projection)
     else:
         labels_given = True
 
@@ -1220,7 +1231,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             projection = '2D'
         else:
             plot_prop_cp.colorMap = plot_prop.colorMapAnal
-            if projection is '2D_image':
+            if projection is '2D_clrmap':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_image(analytical_list[i],
                                                           mesh[i],
@@ -1259,7 +1270,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         sm._A = []
         cb = plt.colorbar(sm, alpha=plot_prop_cp.alpha)
         cb.set_label(labels.colorbarLabel + ' analytical')
-    elif projection in ('2D_image', '2D_contours'):
+    elif projection in ('2D_clrmap', '2D_contours'):
         im = ax.images
         cb = im[-1].colorbar
         cb.set_label(labels.colorbarLabel + ' analytical')
@@ -1409,7 +1420,7 @@ def update(frame, *args):
      backGround_param, plot_prop, edge, contours_at, labels, fig, plot_non_zero) = args
 
     ffi = fracture_list[frame]
-    labels = LabelProperties()
+    labels = LabelProperties(variable, 'whole mesh', projection)
     labels.figLabel = 't = ' + to_precision(ffi.time, plot_prop.dispPrecision) + "($s$)"
     ffi.plot_fracture(variable=variable,
                       mat_properties=mat_properties,

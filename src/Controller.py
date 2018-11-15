@@ -403,12 +403,14 @@ class Controller:
                                                         projection='2D',
                                                         fig=self.Figure,
                                                         plot_prop=plot_prop)
+
                 if len(Fr_advanced.closed) > 0:
                     plot_prop.lineColor = 'r'
                     self.Figure = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
                                                                      fig=self.Figure,
                                                                      plot_prop=plot_prop,
                                                                      plot_mesh=False)
+
 
                 if self.sim_prop.blockFigure:
                     plt.show(block=True)

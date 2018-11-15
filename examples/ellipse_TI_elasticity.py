@@ -84,7 +84,7 @@ gamma = 2.0
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 75                # the time at which the simulation stops
+simulProp.finalTime = 75                # the time at which the simulation stops
 simulProp.set_tipAsymptote("K")         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.outputTimePeriod = 1e-3       # save after every time step
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
@@ -184,20 +184,20 @@ Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
                                             time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
-Fig_w_slice = plot_fracture_list_slice(Fr_list,
+Fig_w_slice, pnt1, pnt2 = plot_fracture_list_slice(Fr_list,
                                        variable='width',
                                        point1=[-Fr_list[-1].mesh.Lx, 0],
-                                       point2=[Fr_list[-1].mesh.Lx, 0])
+                                       plot_cell_center=True,
+                                       orientation='horizontal')
 Fig_w_slice = plot_analytical_solution_slice('E_E',
                                              variable='width',
                                              mat_prop=Solid,
                                              inj_prop=Injection,
                                              fluid_prop=Fluid,
                                              fig=Fig_w_slice,
-                                             point1=[-Fr_list[-1].mesh.Lx, 0],
-                                             point2=[Fr_list[-1].mesh.Lx, 0],
+                                             point1=pnt1,
+                                             point2=pnt2,
                                              time_srs=time_srs,
-                                             plt_2D_image=False,
                                              gamma=gamma)
 
 
@@ -208,7 +208,7 @@ time_srs = get_fracture_variable(Fr_list,
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
 
-labels = get_labels('d_min', 'wm', '2D')
+labels = LabelProperties('d_min', 'wm', '1D')
 labels.figLabel = 'Minor axis length'
 Fig_len_a = plot_fracture_list(Fr_list,
                              variable='d_min',
@@ -224,7 +224,6 @@ Fig_len_a = plot_analytical_solution('E_E',
                                    gamma=gamma,
                                    labels=labels)
 
-labels = get_labels('d_max', 'whole_mesh', '2D')
 labels.figLabel = 'Major axis length'
 Fig_len_b = plot_fracture_list(Fr_list,
                              variable='d_max',

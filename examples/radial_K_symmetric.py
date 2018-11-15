@@ -34,7 +34,7 @@ Fluid = FluidProperties(viscosity=1.1e-5)
 
 # simulation properties
 simulProp = SimulationParameters()
-simulProp.FinalTime = 1e5               # the time at which the simulation stops
+simulProp.finalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
 simulProp.set_outputFolder(".\\Data\\K_radial_symmetric") # the disk address where the files are saved
@@ -91,10 +91,6 @@ Fig_R = plot_analytical_solution('K',
                                  fluid_prop=Fluid,
                                  time_srs=time_srs,
                                  fig=Fig_R)
-
-Fig_eff = plot_fracture_list(Fr_list,
-                           variable='ef',
-                           plot_prop=plot_prop)
 
 # plot width at center
 Fig_w = plot_fracture_list_at_point(Fr_list,
