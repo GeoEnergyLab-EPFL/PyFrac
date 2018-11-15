@@ -89,7 +89,7 @@ class Controller:
        # Setting to volume control solver if viscosity is zero
        if self.fluid_prop.viscosity < 1e-15:
            print("Fluid viscosity is zero. Setting solver to volume control...")
-           self.sim_prop._volumeControl(True)
+           self.sim_prop.set_volumeControl(True)
 
        # basic performance data
        self.remeshings = 0
