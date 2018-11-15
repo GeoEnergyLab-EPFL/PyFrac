@@ -68,14 +68,14 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
         w = KIPrime * dist ** 0.5 / Eprime
     else:
         a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel)
-        try:
-            w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
-        except RuntimeError:
-            M0, M1 = np.nan, np.nan
-            return (M0, M1)
-        except ValueError:
-            M0, M1 = np.nan, np.nan
-            return (M0, M1)
+        # try:
+        w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
+        # except RuntimeError:
+        #     M0, M1 = np.nan, np.nan
+        #     return (M0, M1)
+        # except ValueError:
+        #     M0, M1 = np.nan, np.nan
+        #     return (M0, M1)
 
         if w < -1e-15:
             w = abs(w)
@@ -349,36 +349,18 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
 
-    a = 0.01 * dist ** 0.5 * Kprime / Eprime  # lower bound on width
-    b = 100 * dist ** 0.5 * Kprime / Eprime
-
+    LEFM = dist ** 0.5 * Kprime / Eprime
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cprime, Vel)
-    Res_a = TipAsym_UniversalW_zero_Res(a, *TipAsmptargs)
-    Res_b = TipAsym_UniversalW_zero_Res(b, *TipAsmptargs)
 
-
-    # res_U = np.zeros((100,),)
-    # x=np.linspace(a, b, 100)
-    # for j in range(0,len(x)):
-    #     res_U[j] = TipAsym_UniversalW_zero_Res(x[j], *TipAsmptargs)
-    # plt.plot(x, res_U, 'b.-')
-    # plt.plot(x, np.zeros((100,),),'k')
-    # plt.show()
-
-
-    if a == 0:
-        a = 10 * np.finfo(float).eps
-    if b == 0:
-        b = 10.
-
-
-    cnt = 0
-    mid = b
+    cnt = 1
+    Res_a = Res_b = TipAsym_UniversalW_zero_Res(LEFM, *TipAsmptargs)
     while Res_a * Res_b > 0:
-        mid = (a + 2 * mid) / 3  # weighted
-        Res_a = TipAsym_UniversalW_zero_Res(mid, *TipAsmptargs)
+        a = 10**-cnt * LEFM
+        b = 10**cnt * LEFM
+        Res_a = TipAsym_UniversalW_zero_Res(a, *TipAsmptargs)
+        Res_b = TipAsym_UniversalW_zero_Res(b, *TipAsmptargs)
         cnt += 1
-        if cnt >= 50:
+        if cnt >= 12:
             a = np.nan
             b = np.nan
 

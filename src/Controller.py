@@ -86,6 +86,11 @@ class Controller:
            else:
                self.sim_prop.finalTime = np.max(self.sim_prop.get_solTimeSeries())
 
+       # Setting to volume control solver if viscosity is zero
+       if self.fluid_prop.viscosity < 1e-15:
+           print("Fluid viscosity is zero. Setting solver to volume control...")
+           self.sim_prop._volumeControl(True)
+
        # basic performance data
        self.remeshings = 0
        self.successfulTimeSteps = 0

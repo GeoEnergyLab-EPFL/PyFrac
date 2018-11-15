@@ -30,7 +30,7 @@ Q0 = 0.001  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.1e-5)
+Fluid = FluidProperties(viscosity=0)
 
 # simulation properties
 simulProp = SimulationParameters()
