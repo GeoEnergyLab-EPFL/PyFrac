@@ -146,7 +146,6 @@ Fig_WS = plot_analytical_solution_slice('M',
                                         fluid_prop=Fluid,
                                         fig=Fig_WS,
                                         time_srs=time_srs,
-                                        plt_2D_image=False,
                                         point1=pnt_1,
                                         point2=pnt_2)
 

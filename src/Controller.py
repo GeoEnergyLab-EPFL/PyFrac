@@ -116,12 +116,13 @@ class Controller:
             self.lastSavedTime = self.fracture.time
 
         if self.sim_prop.saveToDisk:
-            f = open(self.sim_prop.get_outputFolder() + 'log', 'w+')
+            f = open(self.sim_prop.get_outputFolder() + 'log.txt', 'w+')
         else:
-            f = open('log', 'w+')
+            os.remove("log.txt")
+            f = open('log.txt', 'w+')
         from time import gmtime, strftime
-        f.write('log file, program run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n\n')
-        f.close()
+        f.write('log file, simulation run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n')
+        # f.close()
 
         # load elasticity matrix
         if self.C is None:
@@ -208,39 +209,40 @@ class Controller:
                     self.remeshings += 1
                     print("Done!")
 
-                    # saving to log file
-                    f = open('log', 'a')
                     f.writelines("\nRemeshed at " + repr(self.fracture.time))
-                    f.close()
+
                 else:
                     print("Reached end of the domain. Exiting...")
                     break
 
             else:
+                f.writelines("\n" + self.errorMessages[status])
+                f.writelines("\nTime step failed at = " + repr(self.fracture.time))
+
                 self.sim_prop.tmStpPrefactor *= 0.8
                 if self.fr_queue[(self.successfulTimeSteps + 1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
                     if self.sim_prop.collectPerfData:
                         with open(self.sim_prop.get_outputFolder() + "perf_data.dat", 'wb') as output:
                             dill.dump(self.perfData, output, -1)
+
+                    f.writelines("\n\n---Simulation failed---")
+                    f.close()
+
                     raise SystemExit("Simulation failed.")
                 else:
                     self.chkPntReattmpts += 1
                     self.fracture = copy.deepcopy(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5])
-                    print("Restarting with the last check point...")
+                    print("Restarting from the last check point...")
+                    f.writelines("\nRestarting from the last check point...")
 
                     self.failedTimeSteps += 1
-
-                    f = open('log', 'a')
-                    f.writelines("\n" + self.errorMessages[status])
-                    f.writelines("\nTime step failed at = " + repr(self.fracture.time))
-                    f.close()
 
             self.TmStpCount += 1
             # set front advancing beck as set in simulation properties originally
             if self.TmStpCount == 1:
                 self.sim_prop.frontAdvancing = self.frontAdvancing
 
-        f = open('log', 'a')
+        f.writelines("\n\n-----Simulation finished------")
         f.writelines("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
         f.writelines("\nfailed time steps = " + repr(self.failedTimeSteps))
         f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
