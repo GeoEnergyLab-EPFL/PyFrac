@@ -697,8 +697,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                 Vel=Fr_kplus1.v,
                                                                 dt=1.e20,
                                                                 arrival_t=Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip])
-    injected_vol = sum(Qin) * Fr_kplus1.time
-    Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
+    Fr_kplus1.injectedVol += sum(Qin) * timeStep
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack]))\
+                           / Fr_kplus1.injectedVol
 
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
@@ -1459,7 +1460,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
         if norm < sim_properties.toleranceProjection:
             if sim_properties.verbosity > 1:
-                print("toughness iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+                print("Projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
             break
         alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
@@ -1467,6 +1468,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             print("iterating on projection... norm = " + repr(norm))
         itr += 1
 
+    #todo Hack!!! keep going if projection does not converge
     # if itr == sim_properties.maxToughnessItrs:
     #     exitstatus = 10
     #     return exitstatus, None
@@ -1482,19 +1484,20 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * mat_properties.Cprime[Fr_kplus1.EltChannel] * (
             Fr_kplus1.time - Fr_kplus1.Tarrival[Fr_kplus1.EltChannel]) ** 0.5 * Fr_kplus1.mesh.EltArea
     Fr_kplus1.LkOff_vol[Fr_kplus1.EltTip] = 2 * mat_properties.Cprime[Fr_kplus1.EltTip] * Integral_over_cell(
-                                                                        Fr_kplus1.EltTip,
-                                                                        Fr_kplus1.alpha,
-                                                                        Fr_kplus1.l,
-                                                                        Fr_kplus1.mesh,
-                                                                        'Lk',
-                                                                        mat_prop=mat_properties,
-                                                                        frac=Fr_kplus1,
-                                                                        Vel=Vel_k,
-                                                                        dt=1.e20,
-                                                                        arrival_t=Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip])
+                                                                    Fr_kplus1.EltTip,
+                                                                    Fr_kplus1.alpha,
+                                                                    Fr_kplus1.l,
+                                                                    Fr_kplus1.mesh,
+                                                                    'Lk',
+                                                                    mat_prop=mat_properties,
+                                                                    frac=Fr_kplus1,
+                                                                    Vel=Vel_k,
+                                                                    dt=1.e20,
+                                                                    arrival_t=Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip])
 
-    injected_vol = sum(Qin) * Fr_kplus1.time
-    Fr_kplus1.efficiency = (injected_vol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) / injected_vol
+    Fr_kplus1.injectedVol += sum(Qin) * timeStep
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) \
+                           / Fr_kplus1.injectedVol
 
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts, ), np.nan, dtype=np.float32)

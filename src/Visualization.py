@@ -454,7 +454,8 @@ def plot_fracture_variable_as_image(var_value, mesh, fig=None, plot_prop=None, e
               extent=extent,
               alpha=0.8,
               vmin=vmin,
-              vmax=vmax)
+              vmax=vmax,
+              origin='lower')
 
     if plt_colorbar:
         fig.colorbar(cax)
@@ -571,7 +572,9 @@ def plot_fracture_variable_as_contours(var_value, mesh, fig=None, plot_prop=None
                   interpolation=plot_prop.interpolation,
                   extent=extent,
                   vmin=vmin,
-                  vmax=vmax)
+                  vmax=vmax,
+                  origin='lower')
+
         if plt_colorbar:
             cbar = fig.colorbar(cax)
 
@@ -631,7 +634,8 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
                             interpolation=plot_prop.interpolation,
                             extent=extent,
                             vmin=vmin,
-                            vmax=vmax)
+                            vmax=vmax,
+                            origin='lower')
 
         if plot_colorbar:
             divider = make_axes_locatable(ax_2D)
@@ -770,7 +774,8 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                             interpolation=plot_prop.interpolation,
                             extent=extent,
                             vmin=vmin,
-                            vmax=vmax)
+                            vmax=vmax,
+                            origin='lower')
 
         if plt_2D_image and plot_colorbar:
             divider = make_axes_locatable(ax_2D)

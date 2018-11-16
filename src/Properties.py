@@ -276,8 +276,11 @@ class InjectionProperties:
 
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
-                raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and corresponding '
-                      'injection rate) for each entry')
+                raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and'
+                                 ' corresponding injection rate) for each entry')
+            elif rate[0, 0] != 0:
+                raise ValueError("The injection rate should start from zero second i.e. rate[0, 0] should"
+                                 " be zero.")
             else:
                 self.injectionRate = rate
         else:

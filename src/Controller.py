@@ -40,7 +40,6 @@ class Controller:
                      "Leak off can't be evaluated!"
                      )
 
-
     def __init__(self, Fracture, Solid_prop, Fluid_prop, Injection_prop, Sim_prop, Load_prop=None, C=None):
 
        self.fracture = Fracture
@@ -95,6 +94,7 @@ class Controller:
        self.remeshings = 0
        self.successfulTimeSteps = 0
        self.failedTimeSteps = 0
+
        self.frontAdvancing = Sim_prop.frontAdvancing
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -457,16 +457,23 @@ class Controller:
             if isinstance(self.sim_prop.fixedTmStp, float) or isinstance(self.sim_prop.fixedTmStp, int):
                 TimeStep = self.sim_prop.fixedTmStp
                 time_step_given = True
-            elif isinstance(self.sim_prop.fixedTmStp, np.ndarray):
+            elif isinstance(self.sim_prop.fixedTmStp, np.ndarray) and self.sim_prop.fixedTmStp.shape[0]==2:
                 # fixed time step list is given
-                indxCurTime = max(np.where(self.fracture.time >= self.sim_prop.fixedTmStp[0, :])[0])
-                if self.sim_prop.fixedTmStp[1, indxCurTime] is not None:
-                    # time step is not given as None.
-                    TimeStep = self.sim_prop.fixedTmStp[1, indxCurTime]  # current injection rate
-                    time_step_given = True
+                times_past = np.where(self.fracture.time >= self.sim_prop.fixedTmStp[0, :])[0]
+                if len(times_past) > 0:
+                    indxCurTime = max(times_past)
+                    if self.sim_prop.fixedTmStp[1, indxCurTime] is not None:
+                        # time step is not given as None.
+                        TimeStep = self.sim_prop.fixedTmStp[1, indxCurTime]  # current injection rate
+                        time_step_given = True
+                    else:
+                        time_step_given = False
                 else:
                     # time step is given as None. In this case time step will be evaluated with front velocity
                     time_step_given = False
+            else:
+                raise ValueError("Fixed time step can be a float or an ndarray with two rows giving the time and"
+                                 " corresponding time steps.")
 
         if not time_step_given:
             # time step is calculated with the current propagation velocity

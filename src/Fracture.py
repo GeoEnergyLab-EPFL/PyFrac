@@ -270,13 +270,12 @@ class Fracture():
         self.Tarrival[self.EltCrack] = self.time
         self.LkOff_vol = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
         self.efficiency = 1.
-
-        self.process_fracture_front()
-
-        self.FractureVolume = np.sum(self.w)*(Mesh.EltArea)
-
+        self.FractureVolume = np.sum(self.w) * Mesh.EltArea
+        self.injectedVol = np.sum(self.w) * Mesh.EltArea
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
+
+        self.process_fracture_front()
 
         # local viscosity
         if fluid != None:
@@ -655,11 +654,48 @@ class Fracture():
         sgndDist_coarse = np.full(sgndDist_coarse.shape, 1e10, dtype=np.float64)
         sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
 
-        w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                            self.w[self.EltChannel],
-                            coarse_mesh.CenterCoor,
-                            method='linear',
-                            fill_value=0.)
+        # enclosing cells for each cell in the grid
+        enclosing = np.zeros((self.mesh.NumberOfElts, 8), dtype=int)
+        enclosing[:, :4] = self.mesh.NeiElements[:, :]
+        enclosing[:, 4] = self.mesh.NeiElements[enclosing[:, 2], 0]
+        enclosing[:, 5] = self.mesh.NeiElements[enclosing[:, 2], 1]
+        enclosing[:, 6] = self.mesh.NeiElements[enclosing[:, 3], 0]
+        enclosing[:, 7] = self.mesh.NeiElements[enclosing[:, 3], 1]
+
+        if factor == 2.:
+            intersecting = np.array([], dtype=int)
+            for i in range(-int(((self.mesh.ny - 1) / 2 + 1) / 2) + 1, int(((self.mesh.ny - 1) / 2 + 1) / 2)):
+                center = self.mesh.CenterElts[0] + i * self.mesh.nx
+                row_to_add = np.arange(center - int(((self.mesh.nx - 1) / 2 + 1) / 2) + 1,
+                                       center + int(((self.mesh.nx - 1) / 2 + 1) / 2),
+                                       dtype=int)
+                intersecting = np.append(intersecting, row_to_add)
+
+            corresponding = []
+            for i in intersecting:
+                corresponding.append(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
+                                                            coarse_mesh.CenterCoor[i, 1]))
+
+
+            corresponding = np.asarray(corresponding, dtype=int)
+
+            w_coarse = np.zeros((coarse_mesh.NumberOfElts, ), dtype=np.float64)
+            w_coarse[intersecting] = (self.w[corresponding]
+                                        + np.sum(self.w[enclosing[corresponding, :4]] / 2, axis=1) +
+                                        np.sum(self.w[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
+
+            LkOff_vol = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
+            LkOff_vol[intersecting] = (self.LkOff_vol[corresponding]
+                                        + np.sum(self.LkOff_vol[enclosing[corresponding, :4]] / 2, axis=1) +
+                                        np.sum(self.LkOff_vol[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
+
+
+        else:
+            w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                self.w[self.EltChannel],
+                                coarse_mesh.CenterCoor,
+                                method='linear',
+                                fill_value=0.)
 
         # interpolate last level set by first advancing to the end of the grid and then interpolating
         SolveFMM(self.sgndDist_last,
@@ -728,22 +764,10 @@ class Fracture():
                                                             coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
                                                             method='linear')
 
-        Fr_coarse.LkOff_vol[Fr_coarse.EltChannel] = 2 * material_prop.Cprime[Fr_coarse.EltChannel] * (
-                                Fr_coarse.time - Fr_coarse.Tarrival[Fr_coarse.EltChannel])**0.5 * coarse_mesh.EltArea
-        Fr_coarse.LkOff_vol[Fr_coarse.EltTip] = 2 * material_prop.Cprime[Fr_coarse.EltTip] * Integral_over_cell(
-                                                        Fr_coarse.EltTip,
-                                                        Fr_coarse.alpha,
-                                                        Fr_coarse.l,
-                                                        Fr_coarse.mesh,
-                                                        'Lk',
-                                                        frac=Fr_coarse,
-                                                        mat_prop=material_prop,
-                                                        Vel=Fr_coarse.v,
-                                                        dt=1.e20,
-                                                        arrival_t=Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip])
-
-        injected_vol = inj_prop.injectionRate[1, 0] * Fr_coarse.time
-        Fr_coarse.efficiency = (injected_vol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack])) / injected_vol
+        Fr_coarse.LkOff_vol = LkOff_vol
+        Fr_coarse.injectedVol = self.injectedVol
+        Fr_coarse.efficiency = (Fr_coarse.injectedVol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack]))\
+                               / Fr_coarse.injectedVol
         Fr_coarse.time = self.time
         Fr_coarse.closed = self.closed
 

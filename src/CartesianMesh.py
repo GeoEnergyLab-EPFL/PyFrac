@@ -153,10 +153,13 @@ class CartesianMesh:
         """
         elt = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) <= self.hx/2.+sys.float_info.epsilon)[0],
                            np.where(abs(self.CenterCoor[:, 1] - y) <= self.hy/2.+sys.float_info.epsilon)[0])
-        if elt.size>1:
-            print("two found")
-            return elt[0]
-        return elt
+
+        if elt.size == 0:
+            return np.nan
+        elif elt.size > 1:
+            print("more than one found!")
+
+        return elt[0]
 
 #-----------------------------------------------------------------------------------------------------------------------
 
