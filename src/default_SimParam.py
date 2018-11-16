@@ -57,6 +57,7 @@ gravity = False                         # if True, the effect of gravity will be
 TI_Kernel_exec_path = './TI_Kernel'     # the folder containing the executable to calculate TI elasticty matrix.
 explict_projection = False              # if True, direction from last time step will be used to evaluate TI parameters
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved
+proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
 
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry

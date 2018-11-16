@@ -139,13 +139,14 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
             Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
             guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
             InitlevelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 def reconstruct_front(dist, EltChannel, mesh):
     """
     Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
-    perpendicular.
+    perpendicular. The angle is calculated using the formulation given by Pierce and Detournay 2008.
     
     Arguments:
         dist (ndarray-float): the signed distance of the cells from the fracture front
@@ -227,8 +228,95 @@ def reconstruct_front(dist, EltChannel, mesh):
 
     return (ElmntTip, l, alpha, CellStatusNew)
 
-
 # -----------------------------------------------------------------------------------------------------------------------
+
+
+def reconstruct_front_LS_gradient(dist, EltChannel, mesh):
+    """
+    Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
+    perpendicular. The angle is calculated from the gradient of the level set.
+
+    Arguments:
+        dist (ndarray-float): the signed distance of the cells from the fracture front
+        EltChannel (ndarray-int): list of Channel elements
+        mesh (CartesianMesh object): the mesh of the fracture
+    """
+
+    # Elements that are not in channel
+    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), EltChannel)
+    ElmntTip = np.asarray([], int)
+    l = np.asarray([])
+    alpha = np.asarray([])
+
+    for i in range(0, len(EltRest)):
+        neighbors = mesh.NeiElements[EltRest[i]]
+
+        minx = min(dist[neighbors[0]], dist[neighbors[1]])
+        miny = min(dist[neighbors[2]], dist[neighbors[3]])
+        # distance of the vertex (zero vertex, i.e. rotated distance) of the current cell from the front
+        Pdis = -(minx + miny) / 2
+
+        # if the vertex distance is positive, meaning the fracture has passed the vertex
+        if Pdis >= 0:
+            ElmntTip = np.append(ElmntTip, EltRest[i])
+            l = np.append(l, Pdis)
+
+            # neighbors
+            #     6     3    7
+            #     0    elt   1
+            #     4    2     5
+            neighbors_tip = np.zeros(8, dtype=int)
+            neighbors_tip[:4] = mesh.NeiElements[EltRest[i]]
+            neighbors_tip[4] = mesh.NeiElements[neighbors_tip[2]][0]
+            neighbors_tip[5] = mesh.NeiElements[neighbors_tip[2]][1]
+            neighbors_tip[6] = mesh.NeiElements[neighbors_tip[3]][0]
+            neighbors_tip[7] = mesh.NeiElements[neighbors_tip[3]][1]
+
+            # zero Vertex
+            #     3         2
+            #     0         1
+            if dist[neighbors_tip[0]] <= dist[neighbors_tip[1]] and dist[neighbors_tip[2]] <= dist[
+                neighbors_tip[3]]:
+                # if zero vertex is 0:
+                gradx = -((dist[neighbors_tip[0]] + dist[neighbors_tip[4]]) / 2 - (
+                    dist[EltRest[i]] + dist[neighbors_tip[2]]) / 2) / mesh.hx
+                grady = ((dist[neighbors_tip[0]] + dist[EltRest[i]]) / 2 - (
+                    dist[neighbors_tip[4]] + dist[neighbors_tip[2]]) / 2) / mesh.hy
+
+            elif dist[neighbors_tip[0]] > dist[neighbors_tip[1]] and dist[neighbors_tip[2]] <= dist[
+                    neighbors_tip[3]]:
+                # if zero vertex is 1:
+                gradx = ((dist[neighbors_tip[1]] + dist[neighbors_tip[5]]) / 2 - (
+                    dist[EltRest[i]] + dist[neighbors_tip[2]]) / 2) / mesh.hx
+                grady = ((dist[neighbors_tip[1]] + dist[EltRest[i]]) / 2 - (
+                    dist[neighbors_tip[5]] + dist[neighbors_tip[2]]) / 2) / mesh.hy
+
+            elif dist[neighbors_tip[0]] > dist[neighbors_tip[1]] and dist[neighbors_tip[2]] > dist[
+                    neighbors_tip[3]]:
+                # if zero vertex is 2:
+                gradx = ((dist[neighbors_tip[1]] + dist[neighbors_tip[7]]) / 2 - (
+                    dist[EltRest[i]] + dist[neighbors_tip[3]]) / 2) / mesh.hx
+                grady = -((dist[neighbors_tip[1]] + dist[EltRest[i]]) / 2 - (
+                    dist[neighbors_tip[3]] + dist[neighbors_tip[7]]) / 2) / mesh.hy
+
+            elif dist[neighbors_tip[0]] <= dist[neighbors_tip[1]] and dist[neighbors_tip[2]] > dist[
+                    neighbors_tip[3]]:
+                # if zero vertex is 3:
+                gradx = -((dist[neighbors_tip[6]] + dist[neighbors_tip[0]]) / 2 - (
+                    dist[EltRest[i]] + dist[neighbors_tip[3]]) / 2) / mesh.hx
+                grady = ((dist[neighbors_tip[0]] + dist[EltRest[i]]) / 2 - (
+                    dist[neighbors_tip[6]] + dist[neighbors_tip[3]]) / 2) / mesh.hy
+
+            alpha = np.append(alpha, np.abs(np.arcsin(grady / (gradx ** 2 + grady ** 2) ** 0.5)))
+
+    CellStatusNew = np.zeros((mesh.NumberOfElts), int)
+    CellStatusNew[EltChannel] = 1
+    CellStatusNew[ElmntTip] = 2
+
+    return (ElmntTip, l, alpha, CellStatusNew)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     """

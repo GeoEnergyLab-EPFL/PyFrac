@@ -9,7 +9,7 @@
 
 import numpy as np
 
-from src.LevelSet import reconstruct_front
+from src.LevelSet import reconstruct_front_LS_gradient
 from src.VolIntegral import Integral_over_cell
 
 
@@ -30,9 +30,9 @@ def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
     """
 
     # reconstruct front to get tip cells from the given level set
-    (elt_tip, l_tip, alpha_tip, CellStatus) = reconstruct_front(sgnd_dist,
-                                                                channel_elts,
-                                                                mesh)
+    (elt_tip, l_tip, alpha_tip, CellStatus) = reconstruct_front_LS_gradient(sgnd_dist,
+                                                                            channel_elts,
+                                                                            mesh)
     # get the filling fraction to find partially filled tip cells
     FillFrac = Integral_over_cell(elt_tip,
                                   alpha_tip,
@@ -456,6 +456,91 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def projection_from_ribbon_LS_gradient(ribbon_elts, tip_elts, mesh, sgnd_dist):
+    """
+    This function finds the projection of the ribbon cell centers on to the fracture front from the gradient of the
+    level set. It is returned as the angle inscribed by the perpendiculars drawn on the front from the ribbon cell
+    centers.
+
+    Arguments:
+        ribbon_elts (ndarray-int)               -- list of ribbon elements
+        mesh (CartesianMesh object)             -- The cartesian mesh object
+        mat_prop (MaterialProperties object)    -- Material properties:
+        sgnd_dist (ndarray-float)               -- level set data
+
+    Returns:
+        alpha (ndarray-float)                   -- the angle inscribed by the perpendiculars drawn on the front from
+                                                   the ribbon cell centers.
+    """
+
+    n_vertex = np.zeros((len(tip_elts), 2), float)
+    n_centre = np.zeros((len(ribbon_elts), 2), float)
+    Coor_vertex = np.zeros((len(tip_elts), 2), float)
+    alpha = np.zeros((len(ribbon_elts),), dtype=np.float64)
+
+    zero_vertex = find_zero_vertex(tip_elts,
+                                      sgnd_dist,
+                                      mesh)
+    for i in range(len(tip_elts)):
+        # neighbors
+        #     6     3    7
+        #     0    elt   1
+        #     4    2     5
+         neighbors_tip = np.zeros(8, dtype=int)
+         neighbors_tip[:4] = mesh.NeiElements[tip_elts[i]]
+         neighbors_tip[4] = mesh.NeiElements[neighbors_tip[2]][0]
+         neighbors_tip[5] = mesh.NeiElements[neighbors_tip[2]][1]
+         neighbors_tip[6] = mesh.NeiElements[neighbors_tip[3]][0]
+         neighbors_tip[7] = mesh.NeiElements[neighbors_tip[3]][1]
+
+        # Vertex
+        #     3         2
+        #     0         1
+         if zero_vertex[i]==0:
+              gradx = -((sgnd_dist[neighbors_tip[0]]+sgnd_dist[neighbors_tip[4]])/2 - (
+                      sgnd_dist[tip_elts[i]]+sgnd_dist[neighbors_tip[2]])/2) / mesh.hx
+              grady = ((sgnd_dist[neighbors_tip[0]]+sgnd_dist[tip_elts[i]])/2 - (
+                      sgnd_dist[neighbors_tip[4]]+sgnd_dist[neighbors_tip[2]])/2) / mesh.hy
+              Coor_vertex[i,0] = mesh.CenterCoor[tip_elts[i], 0]-mesh.hx/2
+              Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] - mesh.hy / 2
+         elif zero_vertex[i] == 1:
+              gradx = ((sgnd_dist[neighbors_tip[1]] + sgnd_dist[neighbors_tip[5]]) / 2 - (
+                        sgnd_dist[tip_elts[i]] + sgnd_dist[neighbors_tip[2]]) / 2) / mesh.hx
+              grady = ((sgnd_dist[neighbors_tip[1]] + sgnd_dist[tip_elts[i]]) / 2 - (
+                          sgnd_dist[neighbors_tip[5]] + sgnd_dist[neighbors_tip[2]]) / 2) / mesh.hy
+              Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] + mesh.hx / 2
+              Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] - mesh.hy / 2
+         elif zero_vertex[i] == 2:
+              gradx = ((sgnd_dist[neighbors_tip[1]] + sgnd_dist[neighbors_tip[7]]) / 2 - (
+                    sgnd_dist[tip_elts[i]] + sgnd_dist[neighbors_tip[3]]) / 2) / mesh.hx
+              grady = -((sgnd_dist[neighbors_tip[1]] + sgnd_dist[tip_elts[i]]) / 2 - (
+                  sgnd_dist[neighbors_tip[3]] + sgnd_dist[neighbors_tip[7]]) / 2) / mesh.hy
+              Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] + mesh.hx / 2
+              Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] + mesh.hy / 2
+         elif zero_vertex[i] == 3:
+               gradx =-((sgnd_dist[neighbors_tip[6]] + sgnd_dist[neighbors_tip[0]]) / 2 - (
+                    sgnd_dist[tip_elts[i]] + sgnd_dist[neighbors_tip[3]]) / 2) /mesh.hx
+               grady = ((sgnd_dist[neighbors_tip[0]] + sgnd_dist[tip_elts[i]]) / 2 - (
+                    sgnd_dist[neighbors_tip[6]] + sgnd_dist[neighbors_tip[3]]) / 2) / mesh.hy
+               Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] - mesh.hx / 2
+               Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] + mesh.hy / 2
+         n_vertex[i, 0] = gradx / (gradx ** 2 + grady ** 2) ** 0.5
+         n_vertex[i, 1] = grady / (gradx ** 2 + grady ** 2) ** 0.5
+
+    for i in range(len(ribbon_elts)):
+
+         actvElts = np.where((2 * abs(mesh.CenterCoor[ribbon_elts[i], 0] - Coor_vertex[:, 0]) - mesh.hx < mesh.hx/10) &
+                            (2 * abs(mesh.CenterCoor[ribbon_elts[i], 1] - Coor_vertex[:, 1]) - mesh.hy < mesh.hy/10))[0]
+
+         n_centre[i, 0] = np.mean(n_vertex[actvElts, 0])
+         n_centre[i, 1] = np.mean(n_vertex[actvElts, 1])
+         alpha[i] = np.abs(np.arcsin(n_centre[i, 1]))
+
+    return alpha
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 def find_zero_vertex(Elts, level_set, mesh):
     """
     This function finds the zero-vertex (the vertex opposite to the propagation direction) from where the perpendicular
@@ -475,16 +560,16 @@ def find_zero_vertex(Elts, level_set, mesh):
         neighbors = mesh.NeiElements[Elts]
 
         if level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
-            neighbors[i, 3]]:
+                                                                                            neighbors[i, 3]]:
             zero_vertex[i] = 0
         elif level_set[neighbors[i, 0]] > level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
-            neighbors[i, 3]]:
+                                                                                            neighbors[i, 3]]:
             zero_vertex[i] = 1
         elif level_set[neighbors[i, 0]] > level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] > level_set[
-            neighbors[i, 3]]:
+                                                                                            neighbors[i, 3]]:
             zero_vertex[i] = 2
         elif level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] > level_set[
-            neighbors[i, 3]]:
+                                                                                            neighbors[i, 3]]:
             zero_vertex[i] = 3
 
     return zero_vertex

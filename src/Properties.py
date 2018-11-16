@@ -404,6 +404,10 @@ class SimulationParameters:
                                            will be saved.
             TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic
                                            kernel or kernel with free surface.
+            projMethod (string)         -- the method by which the angle prescribed by the projections onto the front
+                                            are evaluated. Possible options are:
+                                                -- 'ILSA_orig' (the method described in the original ILSA scheme)
+                                                -- 'LS_grad' (using gradient of the level set)
 
         private variables:
             __out_file_address (string) -- disk address of the files to be saved. If not given, a new
@@ -509,7 +513,9 @@ class SimulationParameters:
         self.saveFluidVel = simul_param.save_fluid_vel
         self.explicitProjection = simul_param.explict_projection
         self.symmetric = simul_param.symmetric
-
+        self.projMethod = simul_param.proj_method
+        if self.projMethod not in ['ILSA_orig', 'LS_grad']:
+            raise ValueError("Projection method is not recognised!")
 
         # fracture geometry to calculate analytical solution for plotting
         self.height = simul_param.height

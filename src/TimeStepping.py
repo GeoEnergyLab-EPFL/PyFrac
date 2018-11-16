@@ -341,15 +341,19 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     while itr < sim_properties.maxToughnessItrs:
 
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
+            if sim_properties.projMethod is 'ILSA_orig':
+                projection_method = projection_from_ribbon
+            elif sim_properties.projMethod is 'LS_grad':
+                projection_method = projection_from_ribbon_LS_gradient
             if itr == 0:
                 # first iteration
-                alpha_ribbon_k = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
                                                             Fr_lstTmStp.EltChannel,
                                                             Fr_lstTmStp.mesh,
                                                             sgndDist_k)
                 alpha_ribbon_km1 = np.zeros((Fr_lstTmStp.EltRibbon.size), )
             else:
-                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_method(Fr_lstTmStp.EltRibbon,
                                                             Fr_lstTmStp.EltChannel,
                                                             Fr_lstTmStp.mesh,
                                                             sgndDist_k)
@@ -451,9 +455,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
-    (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k,
-                                                                Fr_lstTmStp.EltChannel,
-                                                                Fr_lstTmStp.mesh)
+    if sim_properties.projMethod is 'ILSA_orig':
+        EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front(sgndDist_k,
+                                                                       Fr_lstTmStp.EltChannel,
+                                                                       Fr_lstTmStp.mesh)
+    elif sim_properties.projMethod is 'LS_grad':
+        EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front_LS_gradient(sgndDist_k,
+                                                                       Fr_lstTmStp.EltChannel,
+                                                                       Fr_lstTmStp.mesh)
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
@@ -870,7 +879,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), dtype=np.float64)
         p[EltCrack_k] = sol[-1]
 
-        return w, p, (None, None)
+        return_data = (None, np.asarray([]))
+        return w, p, return_data
 
     if sim_properties.get_viscousInjection():
 
@@ -1122,9 +1132,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
-    (EltsTipNew, l_k, alpha_k, CellStatus) = reconstruct_front(sgndDist_k,
-                                                               Fr_lstTmStp.EltChannel,
-                                                               Fr_lstTmStp.mesh)
+    if sim_properties.projMethod is 'ILSA_orig':
+        EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front(sgndDist_k,
+                                                                       Fr_lstTmStp.EltChannel,
+                                                                       Fr_lstTmStp.mesh)
+    elif sim_properties.projMethod is 'LS_grad':
+        EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front_LS_gradient(sgndDist_k,
+                                                                       Fr_lstTmStp.EltChannel,
+                                                                       Fr_lstTmStp.mesh)
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
@@ -1363,19 +1378,23 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     while itr < sim_properties.maxToughnessItrs:
 
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
+            if sim_properties.projMethod is 'ILSA_orig':
+                projection_method = projection_from_ribbon
+            elif sim_properties.projMethod is 'LS_grad':
+                projection_method = projection_from_ribbon_LS_gradient
 
             if itr == 0:
                 # first iteration
-                alpha_ribbon_k = projection_from_ribbon(Fr_lstTmStp.EltRibbon,
+                alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
                                                         Fr_lstTmStp.EltChannel,
                                                         Fr_lstTmStp.mesh,
                                                         sgndDist_k)
                 alpha_ribbon_km1 = np.zeros((Fr_lstTmStp.EltRibbon.size), )
             else:
-                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_from_ribbon(Fr_lstTmStp.EltRibbon,
-                                                                                     Fr_lstTmStp.EltChannel,
-                                                                                     Fr_lstTmStp.mesh,
-                                                                                     sgndDist_k)
+                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_method(Fr_lstTmStp.EltRibbon,
+                                                                             Fr_lstTmStp.EltChannel,
+                                                                             Fr_lstTmStp.mesh,
+                                                                             sgndDist_k)
             if np.isnan(alpha_ribbon_k).any():
                 exitstatus = 11
                 return exitstatus, None
