@@ -57,7 +57,7 @@ def TipAsym_MK_zrthOrder_Res(dist, *args):
         return TipAsym_viscStor_Res(dist, *args)
     if muPrime == 0:
         # return toughness dominated asymptote
-        return wEltRibbon ** 2 * (Eprime / Kprime) ** 2
+        return dist - wEltRibbon ** 2 * (Eprime / Kprime) ** 2
 
     w_tld = Eprime * wEltRibbon / (Kprime * dist**0.5)
     V = (dist - DistLstTSEltRibbon) / dt
@@ -169,10 +169,8 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
     """
 
     a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
-    a[np.where(a<=np.finfo(float).eps * np.finfo(float).eps)[0]]= np.finfo(float).eps
-    # b = 10 * (w / (Kprime / Eprime)) ** 2
-    b = np.full((len(w),), 3 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
-    # b[np.where(np.isinf(b))[0]] = 4 * (mesh.hx**2 + mesh.hy**2)**0.5
+    a[np.where(a <= np.finfo(float).eps * np.finfo(float).eps)[0]] = np.finfo(float).eps
+    b = np.full((len(w),), 4 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
 
     for i in range(0, len(w)):
 

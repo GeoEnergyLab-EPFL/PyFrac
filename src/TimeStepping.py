@@ -524,6 +524,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.verbosity > 1:
         print('Solving the EHL system with the new trial footprint')
 
+    # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
+    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+    # finding ribbon cells corresponding to tip cells
+    corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
+                                                 alpha_k,
+                                                 zrVrtx_newTip,
+                                                 Fr_lstTmStp.mesh)
+    Cprime_tip = mat_properties.Cprime[corr_ribbon]
+
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
     if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
@@ -535,7 +544,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                            l_k,
                                                                            zrVrtx_newTip)
     else:
-        Kprime_tip = None
+        Kprime_tip = mat_properties.Kprime[corr_ribbon]
 
     if mat_properties.TI_elasticity:
         Eprime_tip = TI_plain_strain_modulus(alpha_k,
@@ -587,7 +596,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                               Vel=Vel_k,
                               stagnant=stagnant,
                               KIPrime=KIPrime,
-                              Eprime=Eprime_tip) / Fr_lstTmStp.mesh.EltArea
+                              Eprime=Eprime_tip,
+                              Cprime=Cprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
         wTip = Integral_over_cell(EltsTipNew,
@@ -601,6 +611,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                               Vel=Vel_k,
                               Kprime=Kprime_tip,
                               Eprime=Eprime_tip,
+                              Cprime=Cprime_tip,
                               stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # check if the tip volume has gone into negative
@@ -1199,9 +1210,16 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if sim_properties.verbosity > 1:
         print('Solving the EHL system with the new trial footprint')
 
-    # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
+    # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
+    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+    # finding ribbon cells corresponding to tip cells
+    corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
+                                                 alpha_k,
+                                                 zrVrtx_newTip,
+                                                 Fr_lstTmStp.mesh)
+    Cprime_tip = mat_properties.Cprime[corr_ribbon]
+
     if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
-        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
         Kprime_tip = (32 / math.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                            Fr_lstTmStp.mesh,
                                                                            mat_properties,
@@ -1209,10 +1227,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                            l_k,
                                                                            zrVrtx_newTip)
     else:
-        Kprime_tip = None
+        Kprime_tip = mat_properties.Kprime[corr_ribbon]
 
     if mat_properties.TI_elasticity:
-        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
         Eprime_tip = TI_plain_strain_modulus(alpha_k,
                                              mat_properties.Cij)
     else:
@@ -1267,7 +1284,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                   Vel=Vel_k,
                                   stagnant=stagnant,
                                   KIPrime=KIPrime,
-                                  Eprime=Eprime_tip) / Fr_lstTmStp.mesh.EltArea
+                                  Eprime=Eprime_tip,
+                                  Cprime=Cprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
         # Calculate average width in the tip cells by integrating tip asymptote
         wTip = Integral_over_cell(EltsTipNew,
@@ -1281,12 +1299,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                   Vel=Vel_k,
                                   Kprime=Kprime_tip,
                                   Eprime=Eprime_tip,
+                                  Cprime=Cprime_tip,
                                   stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # check if the tip volume has gone into negative
     smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
     if np.asarray(smallNgtvWTip).size > 0:
-        #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
         wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
     if (wTip < 0).any() or sum(wTip) == 0.:
@@ -1312,7 +1330,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
         t_since_arrival = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
-        # t_since_arrival[np.where(t_since_arrival < 0)[0]] = 0
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((t_since_arrival
                                             + timeStep)**0.5 - t_since_arrival**0.5) * Fr_lstTmStp.mesh.EltArea
         if np.isnan(LkOff[Fr_lstTmStp.EltChannel]).any():

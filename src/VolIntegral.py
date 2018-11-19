@@ -68,14 +68,14 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
         w = KIPrime * dist ** 0.5 / Eprime
     else:
         a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel)
-        # try:
-        w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
-        # except RuntimeError:
-        #     M0, M1 = np.nan, np.nan
-        #     return (M0, M1)
-        # except ValueError:
-        #     M0, M1 = np.nan, np.nan
-        #     return (M0, M1)
+        try:
+            w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
+        except RuntimeError:
+            M0, M1 = np.nan, np.nan
+            return (M0, M1)
+        except ValueError:
+            M0, M1 = np.nan, np.nan
+            return (M0, M1)
 
         if w < -1e-15:
             w = abs(w)
@@ -207,7 +207,7 @@ def Area(dist, *param):
 
 
 def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None,
-                       Kprime=None, Eprime=None, stagnant=None, KIPrime=None, dt=None, arrival_t=None):
+                       Kprime=None, Eprime=None, Cprime=None, stagnant=None, KIPrime=None, dt=None, arrival_t=None):
     """
     Calculate integral of the function specified by the argument function over the cell.
 
@@ -267,7 +267,7 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
 
     if mat_prop is None:
         Cprime = dummy
-    else:
+    elif Cprime is None:
         Cprime = mat_prop.Cprime[EltTip]
 
     if not fluid_prop is None:
@@ -349,7 +349,7 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
 
-    LEFM = dist ** 0.5 * Kprime / Eprime
+    a = b = LEFM = dist ** 0.5 * Kprime / Eprime
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cprime, Vel)
 
     cnt = 1
@@ -368,9 +368,28 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def toughness_at_tip(elts, mesh, mat_prop, alpha, l):
-    if mat_prop.anisotropic:
-        return mat_prop.KprimeFunc(alpha)
-    else:
+def find_corresponding_ribbon_cell(tip_cells, alpha, zero_vertex, mesh):
 
-        return
+    corr_ribbon = np.empty((len(tip_cells), ), dtype=int)
+    for i in range(len(tip_cells)):
+        if alpha[i] == 0:
+            if zero_vertex[i] == 0 or zero_vertex[i] == 3:
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 0]
+            elif zero_vertex[i] == 1 or zero_vertex[i] == 2:
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 1]
+        elif alpha[i] == np.pi/2:
+            if zero_vertex[i] == 0 or zero_vertex[i] == 1:
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 2]
+            elif zero_vertex[i] == 3 or zero_vertex[i] == 2:
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 3]
+        else:
+            if zero_vertex[i] == 0:
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 2], 0]
+            elif zero_vertex[i] == 1:
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 2], 1]
+            elif zero_vertex[i] == 2:
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 1]
+            elif zero_vertex[i] == 3:
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 0]
+
+    return corr_ribbon

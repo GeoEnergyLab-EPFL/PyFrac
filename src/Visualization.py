@@ -95,12 +95,13 @@ def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None,
         for i in var_value_tmp:
             i = np.delete(i, np.where(np.isinf(i))[0])
             i = np.delete(i, np.where(np.isnan(i))[0])
-            if variable in ('p', 'pressure'):
-                non_zero = np.where(abs(i) > 0)[0]
-                i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
-            else:
-                i_min, i_max = np.min(i), np.max(i)
-            vmin, vmax = min(vmin, i_min), max(vmax, i_max)
+            if not (not isinstance(i, float) and len(i) == 0):
+                if variable in ('p', 'pressure'):
+                    non_zero = np.where(abs(i) > 0)[0]
+                    i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
+                else:
+                    i_min, i_max = np.min(i), np.max(i)
+                vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
 
     if variable in unidimensional_variables:
@@ -204,20 +205,22 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     for i in range(len(var_val_copy)):
         var_val_copy[i] /= labels.unitConversion
 
+    # find maximum and minimum to set the viewing limits on axis
     var_value_tmp = np.copy(var_val_copy)
     vmin, vmax = np.inf, -np.inf
     for i in var_value_tmp:
         i = np.delete(i, np.where(np.isinf(i))[0])
         i = np.delete(i, np.where(np.isnan(i))[0])
-        if variable in ('p', 'pressure'):
-            non_zero = np.where(abs(i) > 0)[0]
-            i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
-        else:
-            if len(i) >0:
-                i_min, i_max = np.min(i), np.max(i)
+        if not (not isinstance(i, float) and len(i) == 0):
+            if variable in ('p', 'pressure'):
+                non_zero = np.where(abs(i) > 0)[0]
+                i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
             else:
-                i_min, i_max = np.inf, -np.inf
-        vmin, vmax = min(vmin, i_min), max(vmax, i_max)
+                if len(i) >0:
+                    i_min, i_max = np.min(i), np.max(i)
+                else:
+                    i_min, i_max = np.inf, -np.inf
+            vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
     label = labels.legend
     for i in range(len(var_val_list)):
@@ -790,7 +793,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                          " 'increasing', 'decreasing'")
 
     zero_cell = mesh.locate_element(point[0], point[1])
-    if len(zero_cell) < 1:
+    if zero_cell == np.nan:
         raise ValueError("The given point does not lie in the grid!")
 
     if orientation is 'vertical':
