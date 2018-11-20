@@ -25,7 +25,6 @@ namespace hfp3d{
 
 
 
-
     // basic_assembly returns the global matrix for the pre-mesh parallel to the isotropic plan
     // which contains the influence component of all three
     //directions, the size of the matrix is (3 nelts) times (3 nelts)

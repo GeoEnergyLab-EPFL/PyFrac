@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri August 09 16:30:21 2018.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2017. All rights
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights
 reserved. See the LICENSE.TXT file for more details.
 """
 import numpy as np

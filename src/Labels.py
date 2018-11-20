@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Tue July 10 2018.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2017.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
