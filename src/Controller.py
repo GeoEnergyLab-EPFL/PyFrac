@@ -11,7 +11,7 @@ from src.Properties import *
 from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
 from src.TimeStepping import attempt_time_step
-from src.Visualization import plot_footprint_analytical
+from src.Visualization import plot_footprint_analytical, plot_analytical_solution
 from src.Symmetry import load_isotropic_elasticity_matrix_symmetric
 
 import copy

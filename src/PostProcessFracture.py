@@ -137,7 +137,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
 
-    return fracture_list
+    return fracture_list, properties
 
 
 #-----------------------------------------------------------------------------------------------------------------------
