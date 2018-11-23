@@ -433,6 +433,13 @@ class Controller:
                     else:
                         self.Figure = None
 
+                    fig_labels = LabelProperties(self.sim_prop.plotVar, 'whole mesh', '2D')
+                    fig_labels.figLabel = ''
+                    self.Figure = Fr_advanced.plot_fracture(variable='footprint',
+                                                            projection='2D',
+                                                            fig=self.Figure,
+                                                            labels=fig_labels)
+
                     self.Figure = Fr_advanced.plot_fracture(variable=self.sim_prop.plotVar,
                                                             projection=self.sim_prop.plotProj,
                                                             mat_properties=self.solid_prop,
