@@ -43,7 +43,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=30)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.outputTimePeriod = 0.1        # Setting it small so the file is saved after every time step
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
 simulProp.frontAdvancing = 'explicit'

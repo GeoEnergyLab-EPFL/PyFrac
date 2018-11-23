@@ -41,7 +41,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 27.           # the time at which the simulation stops
 simulProp.outputEveryTS = 1         # the fracture file will be saved after every time step
 simulProp.bckColor = 'sigma0'       # setting the parameter according to which the mesh is color coded

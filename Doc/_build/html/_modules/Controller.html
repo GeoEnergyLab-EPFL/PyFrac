@@ -1,0 +1,608 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Controller &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Controller</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># This file is part of PyFrac.</span>
+<span class="c1">#</span>
+<span class="c1"># Created by Haseeb Zia on 11.05.17.</span>
+<span class="c1"># Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.  All rights</span>
+<span class="c1"># reserved. See the LICENSE.TXT file for more details.</span>
+<span class="c1">#</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span> <span class="nn">src.Properties</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">src.Elasticity</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">src.HFAnalyticalSolutions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">src.TimeStepping</span> <span class="k">import</span> <span class="n">attempt_time_step</span>
+<span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="k">import</span> <span class="n">plot_footprint_analytical</span>
+<span class="kn">from</span> <span class="nn">src.Symmetry</span> <span class="k">import</span> <span class="n">load_isotropic_elasticity_matrix_symmetric</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">dill</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="Controller"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller">[docs]</a><span class="k">class</span> <span class="nc">Controller</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">errorMessages</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Propagation not attempted!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Time step successful!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Evaluated level set is not valid!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Front is not tracked correctly!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Evaluated tip volume is not valid!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Solution obtained from the elastohydrodynamic solver is not valid!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Did not converge after max iterations!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Tip inversion is not correct!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Ribbon element not found in the enclosure of the tip cell!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Filling fraction not correct!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Toughness iteration did not converge!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;projection could not be found!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Reached end of grid!&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Leak off can&#39;t be evaluated!&quot;</span>
+                     <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Fracture</span><span class="p">,</span> <span class="n">Solid_prop</span><span class="p">,</span> <span class="n">Fluid_prop</span><span class="p">,</span> <span class="n">Injection_prop</span><span class="p">,</span> <span class="n">Sim_prop</span><span class="p">,</span> <span class="n">Load_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+       <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">Fracture</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span> <span class="o">=</span> <span class="n">Solid_prop</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span> <span class="o">=</span> <span class="n">Fluid_prop</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span> <span class="o">=</span> <span class="n">Injection_prop</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span> <span class="o">=</span> <span class="n">Sim_prop</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">load_prop</span> <span class="o">=</span> <span class="n">Load_prop</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">C</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="c1"># queue of fractures from the last five time steps</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">stepsFromChckPnt</span> <span class="o">=</span> <span class="mi">0</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_max</span> <span class="o">=</span> <span class="n">Sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="o">=</span> <span class="kc">None</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">perfData</span> <span class="o">=</span> <span class="p">[]</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span> <span class="o">=</span> <span class="mi">0</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e99</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="kc">None</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">=</span> <span class="mi">0</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
+
+       <span class="c1"># Find the times where any parameter changes. These times will be added to the time series where the solution is</span>
+       <span class="c1"># required to ensure the exact time is hit during time stepping and the change is applied at the correct time.</span>
+       <span class="n">param_change_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+       <span class="k">if</span> <span class="n">Injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+           <span class="n">param_change_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">param_change_at</span><span class="p">,</span> <span class="n">Injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+       <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+           <span class="n">param_change_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">param_change_at</span><span class="p">,</span> <span class="n">Sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+       <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_change_at</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">(),</span> <span class="n">param_change_at</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="n">param_change_at</span>
+            <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">sol_time_srs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sol_time_srs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">sol_time_srs</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+       <span class="k">else</span><span class="p">:</span>
+           <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">timeToHit</span> <span class="o">=</span> <span class="n">sol_time_srs</span>
+
+       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+           <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The final time to stop the simulation is not provided!&quot;</span><span class="p">)</span>
+           <span class="k">else</span><span class="p">:</span>
+               <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">())</span>
+
+       <span class="c1"># Setting to volume control solver if viscosity is zero</span>
+       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="o">.</span><span class="n">viscosity</span> <span class="o">&lt;</span> <span class="mf">1e-15</span><span class="p">:</span>
+           <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fluid viscosity is zero. Setting solver to volume control...&quot;</span><span class="p">)</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">set_volumeControl</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+       <span class="c1"># basic performance data</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">remeshings</span> <span class="o">=</span> <span class="mi">0</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">=</span> <span class="mi">0</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">failedTimeSteps</span> <span class="o">=</span> <span class="mi">0</span>
+
+       <span class="bp">self</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="n">Sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span>
+
+    <span class="c1">#-------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="Controller.run"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function runs the simulation according to the given parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># output initial fracture</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
+            <span class="c1"># save properties</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">())</span>
+
+            <span class="n">prop</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
+                <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotFigure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
+            <span class="c1"># save or plot fracture</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;log.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;log.txt&quot;</span><span class="p">)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;log.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">gmtime</span><span class="p">,</span> <span class="n">strftime</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;log file, simulation run at: &#39;</span> <span class="o">+</span> <span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span> <span class="n">gmtime</span><span class="p">())</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># f.close()</span>
+
+        <span class="c1"># load elasticity matrix</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Making elasticity matrix...&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">symmetric</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">TI_elasticity</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">freeSurf</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Symmetric fracture for TI material is not yet supported&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">load_isotropic_elasticity_matrix_symmetric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                                                        <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">Eprime</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">TI_elasticity</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">freeSurf</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">load_TI_elasticity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">load_isotropic_elasticity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                                              <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">Eprime</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># perform first time step with implicit front advancing</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">symmetric</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">==</span> <span class="s2">&quot;semi-implicit&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="s2">&quot;implicit&quot;</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting time = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+        <span class="c1"># starting time stepping loop</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="mf">0.999</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">maxTimeSteps</span><span class="p">:</span>
+
+            <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_time_step</span><span class="p">()</span>
+
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">collectPerfData</span><span class="p">:</span>
+                <span class="n">tmStp_perf</span> <span class="o">=</span> <span class="n">IterationProperties</span><span class="p">(</span><span class="n">itr_type</span><span class="o">=</span><span class="s2">&quot;time step&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tmStp_perf</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># advancing time step</span>
+            <span class="n">status</span><span class="p">,</span> <span class="n">Fr_n_pls1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">advance_time_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="p">,</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">,</span>
+                                                 <span class="n">TimeStep</span><span class="p">,</span>
+                                                 <span class="n">tmStp_perf</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">collectPerfData</span><span class="p">:</span>
+                <span class="n">tmStp_perf</span><span class="o">.</span><span class="n">CpuTime_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">:</span>
+                    <span class="n">tmStp_perf</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;successful&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tmStp_perf</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;failed&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">perfData</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmStp_perf</span><span class="p">)</span>
+
+
+
+            <span class="c1"># saving the last five steps to restart if required</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time step successful!&quot;</span><span class="p">)</span>
+
+                <span class="c1"># output</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotFigure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
+
+                <span class="c1"># add the advanced fracture to the last five fractures list</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">%</span> <span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stepsFromChckPnt</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stepsFromChckPnt</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># set the prefactor to the original value after four time steps (after the 5 time steps back jump)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_max</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># re-meshing required</span>
+            <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">enableRemeshing</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Remeshing...&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">remeshings</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done!&quot;</span><span class="p">)</span>
+
+                    <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Remeshed at &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reached end of the domain. Exiting...&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">errorMessages</span><span class="p">[</span><span class="n">status</span><span class="p">])</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time step failed at = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*=</span> <span class="mf">0.8</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">5</span> <span class="p">]</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">collectPerfData</span><span class="p">:</span>
+                        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;perf_data.dat&quot;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
+                            <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perfData</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">---Simulation failed---&quot;</span><span class="p">)</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+                    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;Simulation failed.&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span><span class="p">)</span> <span class="o">%</span> <span class="mi">5</span><span class="p">])</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Restarting from the last check point...&quot;</span><span class="p">)</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Restarting from the last check point...&quot;</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">failedTimeSteps</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1"># set front advancing beck as set in simulation properties originally</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frontAdvancing</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">-----Simulation finished------&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">number of time steps = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span><span class="p">))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">failed time steps = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">failedTimeSteps</span><span class="p">))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">number of remeshings = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remeshings</span><span class="p">))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">collectPerfData</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;perf_data.dat&quot;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
+                <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perfData</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Final time = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">-----Simulation finished------&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;See log file for details</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="Controller.advance_time_step"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.advance_time_step">[docs]</a>    <span class="k">def</span> <span class="nf">advance_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Frac</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">TimeStep</span><span class="p">,</span> <span class="n">PerfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller</span>
+<span class="sd">        time steps. A system exit is raised after maximum allowed reattempts.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            Frac (Fracture object):         -- fracture object from the last time step</span>
+<span class="sd">            C (ndarray-float):              -- the elasticity matrix</span>
+<span class="sd">            TimeStep (float):               -- time step to be attempted</span>
+<span class="sd">            PerfNode (IterationProperties)  -- An IterationProperties instance to store performance data</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">                    exitstatus (int)        -- see documentation for possible values.</span>
+<span class="sd">                    Fr (Fracture)           -- fracture after advancing time step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># loop for reattempting time stepping in case of failure.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">maxReattempts</span><span class="p">):</span>
+            <span class="c1"># smaller time step to reattempt time stepping; equal to the given time step on first iteration</span>
+            <span class="n">tmStp_to_attempt</span> <span class="o">=</span> <span class="n">TimeStep</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">reAttemptFactor</span> <span class="o">**</span> <span class="n">i</span>
+
+            <span class="c1"># try larger prefactor</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">maxReattempts</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">tmStp_to_attempt</span> <span class="o">=</span> <span class="n">TimeStep</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">reAttemptFactor</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">maxReattempts</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="c1"># check for final time</span>
+            <span class="k">if</span> <span class="n">Frac</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">tmStp_to_attempt</span> <span class="o">&gt;</span> <span class="mf">1.01</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">Frac</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">tmStp_to_attempt</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">status</span><span class="p">,</span> <span class="n">Fr</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Evaluating solution at time = &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">Frac</span><span class="o">.</span><span class="n">time</span><span class="o">+</span><span class="n">tmStp_to_attempt</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; ...&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Attempting time step of &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">tmStp_to_attempt</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; sec...&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">PerfNode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">PerfNode_TmStpAtmpt</span> <span class="o">=</span> <span class="n">IterationProperties</span><span class="p">(</span><span class="n">itr_type</span><span class="o">=</span><span class="s2">&quot;time step attempt&quot;</span><span class="p">)</span>
+                <span class="n">PerfNode_TmStpAtmpt</span><span class="o">.</span><span class="n">subIterations</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[],</span> <span class="p">[]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">PerfNode_TmStpAtmpt</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">status</span><span class="p">,</span> <span class="n">Fr</span> <span class="o">=</span> <span class="n">attempt_time_step</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span>
+                                            <span class="n">C</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                            <span class="n">tmStp_to_attempt</span><span class="p">,</span>
+                                            <span class="n">PerfNode_TmStpAtmpt</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">PerfNode_TmStpAtmpt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">PerfNode_TmStpAtmpt</span><span class="o">.</span><span class="n">CpuTime_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="n">PerfNode</span><span class="o">.</span><span class="n">iterations</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">PerfNode</span><span class="o">.</span><span class="n">subIterations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PerfNode_TmStpAtmpt</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">PerfNode_TmStpAtmpt</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;successful&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">PerfNode_TmStpAtmpt</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;failed&#39;</span>
+
+            <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errorMessages</span><span class="p">[</span><span class="n">status</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time step failed...&quot;</span><span class="p">)</span>
+
+
+        <span class="k">return</span> <span class="n">status</span><span class="p">,</span> <span class="n">Fr</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="Controller.output"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Fr_advanced</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function plot the fracture footprint and/or save file to disk according to the given time period.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            Fr_lstTmStp (Fracture object):                      fracture from last time step</span>
+<span class="sd">            Fr_advanced (Fracture object):                      fracture after time step advancing</span>
+<span class="sd">            simulation_parameters (SimulationParameters object): simulation parameters</span>
+<span class="sd">            material_properties (MaterialProperties object):    Material properties</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">out_TP_exceeded</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">in_req_TS</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">in_plot_every_TS</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># check if output time period is exceeded since last output</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputTimePeriod</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputTimePeriod</span><span class="p">:</span>
+                <span class="n">out_TP_exceeded</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># current time in the time series given at which the solution is to be evaluated</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">():</span>
+                <span class="n">in_req_TS</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># check if the number of time steps since last output exceeded</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">in_plot_every_TS</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputTimePeriod</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
+           <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
+           <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_plot_every_TS</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">out_TP_exceeded</span> <span class="ow">or</span> <span class="n">in_req_TS</span> <span class="ow">or</span> <span class="n">in_plot_every_TS</span><span class="p">:</span>
+            <span class="c1"># output fracture</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span>
+
+            <span class="c1"># plot fracture footprint</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotFigure</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">blockFigure</span><span class="p">:</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting solution at &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
+                <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
+
+                <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">plot_footprint_analytical</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                      <span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
+                                                      <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                                                      <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                      <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                      <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
+                                                        <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                        <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
+                                                        <span class="n">backGround_param</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">bckColor</span><span class="p">,</span>
+                                                        <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
+                                                        <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
+
+                <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
+                                                        <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
+                                                        <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
+                                                        <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">identify_elements</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
+                                                                     <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
+                                                                     <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                                     <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">blockFigure</span><span class="p">:</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done! &quot;</span><span class="p">)</span>
+
+            <span class="c1"># save fracture to disk</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving solution at &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
+                <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">SaveFracture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_simulation_name</span><span class="p">()</span> <span class="o">+</span>
+                                         <span class="s1">&#39;_file_&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done! &quot;</span><span class="p">)</span></div>
+
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="Controller.get_time_step"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.get_time_step">[docs]</a>    <span class="k">def</span> <span class="nf">get_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function calculate the appropriate time step.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            Frac (Fracture)     -- fracture from the last time step</span>
+<span class="sd">            pre_factor (float)  -- the pre-factor to be multiplied to the time step evaluated with the maximum propagation</span>
+<span class="sd">                                   velocity from the last time step.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            time_step (float)   -- the appropriate time step</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">time_step_given</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># fixed time step</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span>
+                <span class="n">time_step_given</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+                <span class="c1"># fixed time step list is given</span>
+                <span class="n">times_past</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">times_past</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">times_past</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># time step is not given as None.</span>
+                        <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
+                        <span class="n">time_step_given</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">time_step_given</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># time step is given as None. In this case time step will be evaluated with front velocity</span>
+                    <span class="n">time_step_given</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Fixed time step can be a float or an ndarray with two rows giving the time and&quot;</span>
+                                 <span class="s2">&quot; corresponding time steps.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">time_step_given</span><span class="p">:</span>
+            <span class="c1"># time step is calculated with the current propagation velocity</span>
+            <span class="n">tipVrtxCoord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span>
+                                                                                         <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">ZeroVertex</span><span class="p">]]</span>
+            <span class="c1"># the distance of tip from the injection point in each of the tip cell</span>
+            <span class="n">dist_Inj_pnt</span> <span class="o">=</span> <span class="p">(</span><span class="n">tipVrtxCoord</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">tipVrtxCoord</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">l</span>
+            <span class="c1"># the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current</span>
+            <span class="c1"># maximum length</span>
+            <span class="n">TS_cell_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">0.08</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*</span> <span class="n">dist_Inj_pnt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">))</span>
+
+            <span class="c1"># the time step evaluated by restricting the fraction of the cell that would be traversed in the time step.</span>
+            <span class="c1"># e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the</span>
+            <span class="c1"># cell width in either x or y direction depending on which is smaller.</span>
+            <span class="n">TS_fracture_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
+                                                            <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">)</span>
+
+            <span class="n">TimeStep</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">TS_cell_length</span><span class="p">,</span> <span class="n">TS_fracture_length</span><span class="p">)</span>
+
+        <span class="c1"># checking if the time step is above the limit</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">timeStepLimit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">TimeStep</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">timeStepLimit</span><span class="p">:</span>
+            <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">timeStepLimit</span>
+
+        <span class="c1"># in case of fracture not propagating</span>
+        <span class="k">if</span> <span class="n">TimeStep</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">TimeStep</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The fracture front seems to be stagnant and no time step is available. Provide a &quot;</span>
+                                 <span class="s2">&quot;fixed time step at this time.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># to get the solution at the times given in time series or final time</span>
+        <span class="n">next_in_TS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeToHit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">larger_in_TS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeToHit</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">larger_in_TS</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">next_in_TS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeToHit</span><span class="p">[</span><span class="n">larger_in_TS</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">next_in_TS</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;The minimum time required in the given time series or the end time&#39;</span>
+                             <span class="s1">&#39; is less than initial time.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># check if time step would step over the next time in required time series</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">TimeStep</span> <span class="o">&gt;</span> <span class="n">next_in_TS</span><span class="p">:</span>
+            <span class="n">TimeStep</span> <span class="o">=</span> <span class="n">next_in_TS</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="o">=</span> <span class="n">TimeStep</span> <span class="o">*</span> <span class="mf">1.2</span>
+
+        <span class="k">return</span> <span class="n">TimeStep</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

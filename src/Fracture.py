@@ -30,50 +30,105 @@ from src.Visualization import *
 
 class Fracture():
     """ Class defining propagating fracture;
-        
-        Instance variables:
 
-            w (ndarray-float)           -- fracture opening (width)
-            p (ndarray-float)           -- fracture pressure
-            time (float)                -- time since the start of injection
-            EltChannel (ndarray-int)    -- list of cells currently in the channel region
-            EltCrack (ndarray-int)      -- list of cells currently in the crack region
-            EltRibbon (ndarray-int)     -- list of cells currently in the Ribbon region
-            EltTip (ndarray-int)        -- list of cells currently in the Tip region
-            v (ndarray-float)           -- propagation velocity for each cell in the tip cells
-            alpha (ndarray-float)       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,
-                                           Computation Methods Appl. Mech)
-            l (ndarray-float)           -- length of perpendicular on the fracture front
-                                           (see Pierce 2015, Computation Methods Appl. Mech)
-            ZeroVertex (ndarray-float)  -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,
-                                           where 0 signify bottom left, 1 signifying bottom right, 2 signifying top
-                                           right and 3 signifying top left vertex)
-            FillF (ndarray-float)       -- filling fraction of each tip cell
-            CellStatus (ndarray-int)    -- specifies which region each element currently belongs to
-            initRad (float)             -- starting radius
-            initTime (float)            -- starting time
-            sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain
-            Q (ndarray-float)           -- injection rate into each cell of the domain
-            FractEvol (ndarray-float)   -- array containing the coordinates of the individual fracture front lines;
-                                           used for printing fracture evolution through time
-            InCrack (ndarray-int)       -- array specifying whether the cell is inside or outside the fracture.
-            FractureVolume (float)      -- fracture volume
-            muPrime (ndarray)           -- local viscosity parameter
-            Ffront (ndarray)            -- a list containing the intersection of the front and grid lines for the tip
-                                           cells.
-            regime (ndarray)            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
-                                           and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
-            ReynoldsNumber (ndarray)    -- the reynolds number at each edge of the cells in the fracture. The
-                                           arrangement is left, right, bottom, top.
-            fluidFlux (ndarray)         -- the fluid flux at each edge of the cells in the fracture. The arrangement is
-                                           left, right, bottom, top.
-            fluidVelocity (ndarray)     -- the fluid velocity at each edge of the cells in the fracture. The
-                                           arrangement is left, right, bottom, top.
-                                 
-        functions:
-            __init__                    Initialize the fracture according to the given initialization parameters.
-            plot_fracture               plot given variable of the fracture
-            PrintFractureTrace:         plot current regions and front position of the fracture
+    Args:
+
+        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        init_param (tuple):     -- a tuple with the initialization parameters. The number of parameters depends
+                                   on the initialization type given by the first element of the tuple.
+
+                                    -- In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt' or 'MDR',
+                                    the tuple should contain the following parameters in order:
+                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        2. (string)     -- the type of the given value (see below for possible options).
+                                        3. (float)      -- the value at which the fracture is initialized.
+
+                                    -- In case the first element (init_param[0]) is 'G', the tuple should
+                                    contain the following parameters in order:
+                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture front.
+                                        3. (ndarray)    -- the cells enclosed by the survey cells inside the fracture.
+                                        4. (ndarray)    -- the dist of the survey cells from the fracture front.
+                                        5. (ndarray)    -- the array giving the width to be initialized for each of the mesh cell. It can be 'None' if not available.
+                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of the mesh cell. It can be 'None' if not available.
+                                        7. (ndarray)    -- the elasticity influence matrix.
+                                        8. (ndarray)    -- total volume of the fracture. It can be 'None' if not available.
+                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity will be used to calculate the time step.
+
+                                    -- In case the first element (init_param[0], see below for possible options)
+                                    is 'PKN', the tuple should contain the following parameters in order:
+                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        2. (string)     -- the type of the given value (see below for possible options).
+                                        3. (float)      -- the value at which the fracture is initialized.
+                                        4. (float)      -- the height of the PKN fracture.
+
+                                    The fracture can be initialized according to the following regimes
+                                    (specified by the first element of the init_param tuple):
+                                        | 'M'     -- radial fracture in viscosity dominated regime
+                                        | 'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                        | 'K'     -- radial fracture in toughness dominated regime
+                                        | 'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                        | 'E'     -- elliptical fracture in toughness dominated regime
+                                        | 'PKN'   -- PKN fracture
+                                        | 'G'     -- flexible, general purpose initialization
+
+                                    given_type can be one of the following:
+                                        'time'      -- time at which the fracture is to be initialized.
+                                        'length'    -- the length parameter. It will be treated as the fracture
+                                                   radius, the minor axis length and the fracture length for the
+                                                   cases of a radial fracture, an elliptical fracture and a PKN
+                                                   fracture respectively.
+
+        solid (MaterialProperties):           -- the MaterialProperties object giving the material properties.
+        fluid (FluidProperties):              -- the FluidProperties object giving the fluid properties.
+        injection (InjectionProperties):      -- the InjectionProperties object giving the injection
+                                                       properties.
+        simulProp (SimulationParameters):     -- the SimulationParameters object giving the numerical
+                                                       parameters to be used in the simulation.
+
+    Attributes:
+
+        w (ndarray) :          -- fracture opening (width)
+        p (ndarray):           -- fracture pressure
+        time (float):                -- time since the start of injection
+        EltChannel (ndarray):    -- list of cells currently in the channel region
+        EltCrack (ndarray):      -- list of cells currently in the crack region
+        EltRibbon (ndarray):     -- list of cells currently in the Ribbon region
+        EltTip (ndarray):        -- list of cells currently in the Tip region
+        v (ndarray):           -- propagation velocity for each cell in the tip cells
+        alpha (ndarray):       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,
+                                       Computation Methods Appl. Mech)
+        l (ndarray):           -- length of perpendicular on the fracture front
+                                       (see Pierce 2015, Computation Methods Appl. Mech)
+        ZeroVertex (ndarray):  -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,
+                                       where 0 signify bottom left, 1 signifying bottom right, 2 signifying top
+                                       right and 3 signifying top left vertex)
+        FillF (ndarray):       -- filling fraction of each tip cell
+        CellStatus (ndarray):    -- specifies which region each element currently belongs to
+        initRad (float):             -- starting radius
+        initTime (float):            -- starting time
+        sgndDist (ndarray):    -- signed minimun distance from fracture front of each cell in the domain
+        Q (ndarray-float):           -- injection rate into each cell of the domain
+        FractEvol (ndarray):   -- array containing the coordinates of the individual fracture front lines;
+                                       used for printing fracture evolution through time
+        InCrack (ndarray):       -- array specifying whether the cell is inside or outside the fracture.
+        FractureVolume (float):      -- fracture volume
+        muPrime (ndarray):           -- local viscosity parameter
+        Ffront (ndarray):            -- a list containing the intersection of the front and grid lines for the tip
+                                       cells.
+        regime (ndarray):            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
+                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
+        ReynoldsNumber (ndarray):    -- the reynolds number at each edge of the cells in the fracture. The
+                                       arrangement is left, right, bottom, top.
+        fluidFlux (ndarray):         -- the fluid flux at each edge of the cells in the fracture. The arrangement is
+                                       left, right, bottom, top.
+        fluidVelocity (ndarray):     -- the fluid velocity at each edge of the cells in the fracture. The
+                                       arrangement is left, right, bottom, top.
+
+    functions:
+        __init__                    Initialize the fracture according to the given initialization parameters.
+        plot_fracture               plot given variable of the fracture
+        PrintFractureTrace:         plot current regions and front position of the fracture
 
             
     """
@@ -81,7 +136,7 @@ class Fracture():
     def __init__(self, Mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
         """ Initialize the fracture according to the given initialization parameters.
             
-        Arguments:
+        Args:
             Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
             init_param (tuple)     -- a tuple with the initialization parameters. The number of parameters depends
                                       on the initialization type given by the first element of the tuple.
@@ -338,43 +393,52 @@ class Fracture():
             fig (figure)            -- figure object to superimpose the image
 
         """
+
+        if variable in unidimensional_variables:
+            raise ValueError("The variable does not vary spatially!")
+
         if variable is 'complete':
             fig = plot_fracture_list([self],
-                                       'mesh',
-                                       mat_properties,
-                                       projection,
-                                       elements,
-                                       backGround_param,
-                                       plot_prop,
-                                       fig,
-                                       edge,
-                                       contours_at,
-                                       labels)
+                                       variable='mesh',
+                                       mat_properties=mat_properties,
+                                       projection=projection,
+                                       elements=elements,
+                                       backGround_param=backGround_param,
+                                       plot_prop=plot_prop,
+                                       fig=fig,
+                                       edge=edge,
+                                       contours_at=contours_at,
+                                       labels=labels)
 
             fig = plot_fracture_list([self],
-                                     'footprint',
-                                     mat_properties,
-                                     projection,
-                                     elements,
-                                     backGround_param,
-                                     plot_prop,
-                                     fig,
-                                     edge,
-                                     contours_at,
-                                     labels)
+                                     variable='footprint',
+                                     mat_properties=mat_properties,
+                                     projection=projection,
+                                     elements=elements,
+                                     backGround_param=backGround_param,
+                                     plot_prop=plot_prop,
+                                     fig=fig,
+                                     edge=edge,
+                                     contours_at=contours_at,
+                                     labels=labels)
             variable = 'width'
 
+        plot_non_zero = True
+        if projection is '3D':
+            plot_non_zero = False
+
         fig = plot_fracture_list([self],
-                           variable,
-                           mat_properties,
-                           projection,
-                           elements,
-                           backGround_param,
-                           plot_prop,
-                           fig,
-                           edge,
-                           contours_at,
-                           labels)
+                           variable=variable,
+                           mat_properties=mat_properties,
+                           projection=projection,
+                           elements=elements,
+                           backGround_param=backGround_param,
+                           plot_prop=plot_prop,
+                           fig=fig,
+                           edge=edge,
+                           contours_at=contours_at,
+                           labels=labels,
+                           plot_non_zero=plot_non_zero)
 
         return fig
 
@@ -478,45 +542,24 @@ class Fracture():
         self.Ffront=tmp
 
 #-----------------------------------------------------------------------------------------------------------------------
-    def plot_fracture_slice(self, variable='width', point1=None, point2=None, projection='2D',
-                           plot_prop=None, fig=None, edge=4):
-        """
-        This function Plots the given parameter of the fracture. Fracture width is plotted in 3D if the parameter is
-        not provided
-
-        Arguments:
-            elts(string)            -- elements to be printed; possible options:
-                                                complete
-                                                channel
-                                                crack
-                                                ribbon
-            parameter(string)       -- parameter to be ploted; possible options:
-                                                width
-                                                pressure
-                                                viscosity
-                                                footPrint
-                                                mesh
-            analytical (float)      -- radius of fracture footprint calculated analytically. Not plotter if None.
-            identify (ndarray)      -- plot the cells in the provided list with cell number and different color
-                                       to identify. This option can be used in debugging.
-            mat_properties (MaterialProperties)   -- material properties to colorcode the grid according to the given
-                                       parameter in the simulation properties. Can be None.
-            sim_properties (SimulationParameters) -- Simulation paramters to define various plotting parameters. Can be
-                                       None
-            fig (figure)            -- figure object to superimpose the image
-
+    def plot_fracture_slice(self, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
+                            fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal'):
         """
 
+
+        """
 
         return plot_fracture_list_slice([self],
-                                        variable,
-                                        point1,
-                                        point2,
-                                        plot_prop,
-                                        projection,
-                                        fig,
-                                        edge,
-                                        labels)
+                                        variable=variable,
+                                        point1=point1,
+                                        point2=point2,
+                                        plot_prop=plot_prop,
+                                        projection=projection,
+                                        fig=fig,
+                                        edge=edge,
+                                        labels=labels,
+                                        plot_cell_center=plot_cell_center,
+                                        orientation=orientation)
 
 # ------------------------------------------------------------------------------------------------------------------
 

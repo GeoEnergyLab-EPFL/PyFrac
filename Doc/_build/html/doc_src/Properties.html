@@ -1,0 +1,418 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Properties module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-Properties">
+<span id="properties-module"></span><span id="properties"></span><h1>Properties module<a class="headerlink" href="#module-Properties" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="Properties.FluidProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">FluidProperties</code><span class="sig-paren">(</span><em>viscosity=None</em>, <em>density=1000.0</em>, <em>rheology='Newtonian'</em>, <em>turbulence=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#FluidProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.FluidProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class defining the fluid properties</p>
+<dl class="docutils">
+<dt>Instance variables:</dt>
+<dd><dl class="first docutils">
+<dt>viscosity (ndarray)     – Viscosity of the fluid (note its different from local viscosity, see</dt>
+<dd>fracture class for local viscosity)</dd>
+<dt>rheology (string)       – string specifying rheology of the fluid. Possible options:</dt>
+<dd><ul class="first last simple">
+<li>“Newtonian”</li>
+<li>“non-Newtonian”</li>
+</ul>
+</dd>
+</dl>
+<p class="last">muPrime (float)         – 12 * viscosity (// plates viscosity factor)
+density (float)         – density of the fluid
+turbulence (bool)       – turbulence flag. If true, turbulence will be taken into account</p>
+</dd>
+</dl>
+<p>Methods:</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.InjectionProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">InjectionProperties</code><span class="sig-paren">(</span><em>rate</em>, <em>Mesh</em>, <em>source_coordinates=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#InjectionProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.InjectionProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class defining the injection schedule</p>
+<dl class="docutils">
+<dt>instance variables:</dt>
+<dd><dl class="first docutils">
+<dt>injectionRate (ndarray)      – array specifying the time series (row 0) and the corresponding injection</dt>
+<dd>rates (row 1).</dd>
+<dt>source_coordinates (ndarray) – array with a single row and two columns specifying the x and y coordinate</dt>
+<dd>of the injection point coordinates.</dd>
+</dl>
+<p class="last">source_location (ndarray)    – the element(s) where the fluid is injected in the cartesian mesh.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.IterationProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">IterationProperties</code><span class="sig-paren">(</span><em>itr_type='not initialized'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#IterationProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.IterationProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class stores performance data in the form of a tree</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.LabelProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">LabelProperties</code><span class="sig-paren">(</span><em>variable</em>, <em>data_subset</em>, <em>projection='2D'</em>, <em>use_latex=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#LabelProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.LabelProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class stores the labels of a plot figure.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.LoadingProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">LoadingProperties</code><span class="sig-paren">(</span><em>displ_rate=0.0</em>, <em>loaded_elts=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#LoadingProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.LoadingProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class defining the mechanical loading properties</p>
+<dl class="docutils">
+<dt>Instance variables:</dt>
+<dd><p class="first">EltLoaded (ndarray)   – array of elements that are loaded.
+displ_rate (float):   – the rate at which the elements in the EltLoaded list are displaced due to the</p>
+<blockquote class="last">
+<div>applied mechanical loading</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.MaterialProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">MaterialProperties</code><span class="sig-paren">(</span><em>Mesh</em>, <em>Eprime</em>, <em>Toughness=None</em>, <em>Cl=0.0</em>, <em>SigmaO=0.0</em>, <em>grain_size=0.0</em>, <em>K1c_func=None</em>, <em>anisotropic_K1c=False</em>, <em>SigmaO_func=None</em>, <em>Cl_func=None</em>, <em>TI_elasticity=False</em>, <em>Cij=None</em>, <em>free_surf=False</em>, <em>free_surf_depth=1e+300</em>, <em>TI_plane_angle=0.0</em>, <em>wc=1e-10</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#MaterialProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.MaterialProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class defining the Material properties of the solid</p>
+<dl class="docutils">
+<dt>Instance variables:</dt>
+<dd><p class="first">Eprime (float)       – plain strain modulus
+K1c (ndarray)        – Linear-Elastic Plane-Strain Toughness for each cell
+Kprime (ndarray)     – 4*(2/pi)**0.5 * K1c
+Cl (float)           – Carter’s leak off coefficient
+Cprime (ndarray)     – 2 * Carter’s leak off coefficient
+SigmaO (ndarray)     – in-situ stress field
+grainSize (float)    – the grain size of the rock; used to calculate the relative roughness.
+anisotropic (bool)   – if True, the toughness is considered anisotropic.
+K1cFunc (function)   – the function giving the toughness on the domain. It takes one argument (angle) in</p>
+<blockquote>
+<div>case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
+toughness. The function is also used to get the toughness if the domain is remeshed.</div></blockquote>
+<dl class="last docutils">
+<dt>SigmaOFunc (function)– the function giving the in-situ stress on the domain. It should takes two arguments</dt>
+<dd>(x, y) to give the stress on these coordinates. It is also used to get the
+stress if the domain is remeshed.</dd>
+<dt>ClFunc (function)    – the function giving the in Carter’s leak off coefficient on the domain. It should</dt>
+<dd>takes two arguments (x, y) to give the coefficient on these coordinates. It is also
+used to get the leak off coefficient if the domain is remeshed.</dd>
+</dl>
+</dd>
+</dl>
+<p>Methods:</p>
+<dl class="method">
+<dt id="Properties.MaterialProperties.remesh">
+<code class="descname">remesh</code><span class="sig-paren">(</span><em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#MaterialProperties.remesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.MaterialProperties.remesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function evaluate the toughness, confining stress and leak off coefficient according to the given mesh</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </td>
+</tr>
+</tbody>
+</table>
+<p>Returns:</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.PlotProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">PlotProperties</code><span class="sig-paren">(</span><em>color_map=None</em>, <em>line_color=None</em>, <em>line_style='-'</em>, <em>line_width=1.0</em>, <em>line_style_anal='--'</em>, <em>line_color_anal='r'</em>, <em>interpolation='none'</em>, <em>alpha=0.8</em>, <em>line_width_anal=None</em>, <em>text_size=None</em>, <em>disp_precision=3</em>, <em>mesh_color='yellowgreen'</em>, <em>mesh_edge_color='grey'</em>, <em>mesh_label_color='black'</em>, <em>graph_scaling='linear'</em>, <em>color_maps=None</em>, <em>colors_list=None</em>, <em>plot_legend=True</em>, <em>plot_FP_time=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#PlotProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.PlotProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class stores the parameters used for plotting of the post-processed results</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="Properties.SimulationProperties">
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">SimulationProperties</code><span class="sig-paren">(</span><em>address=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class defining the simulation properties.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>instance variables</dt>
+<dd><p class="first">tolFractFront (float)       – tolerance for the fracture front loop.
+toleranceEHL (float)        – tolerance for the Elastohydrodynamic solver.
+toleranceProjection (float) – tolerance for projection iteration for anisotropic case
+maxFrontItr (int)           – maximum iterations to for the fracture front loop.
+maxSolverItr (int)          – maximum iterations for the EHL iterative solver (Picard-Newton</p>
+<blockquote>
+<div>hybrid) in this case.</div></blockquote>
+<p>maximumItrEHL (int)         – maximum number of iterations for the Elastohydrodynamic solver.
+maxToughnessItr (int)       – maximum toughness loop iterations.
+tmStpPrefactor (float)      – factor for time-step adaptivity.
+maxTimeSteps (integer)      – maximum number of time steps.
+tmStpPrefactor_max (float)  – used in the case of re-attempt from five steps back.
+finalTime (float)           – time where the simulation ends.
+timeStepLimit (float)       – limit above which time step will not exceed.
+maxReattempts (int)         – maximum number of reattempts in case of failure of a time step. A smaller</p>
+<blockquote>
+<div>time step will be attempted the given number of times.</div></blockquote>
+<p>reAttemptFactor (float)     – the factor by which time step is reduced on reattempts.
+plotFigure (boolean)        – flag specifying to plot fracture trace after the given time period.
+saveToDisk (boolean)        – flag specifying to save fracture to dist after the given time period.
+plotAnalytical (boolean)    – if true, analytical solution will also be plotted along with the computed</p>
+<blockquote>
+<div>solution.</div></blockquote>
+<dl class="docutils">
+<dt>analyticalSol (String)      – the analytical solution of the radial fracture to be plotted on the</dt>
+<dd><dl class="first last docutils">
+<dt>fracture. Possible options:</dt>
+<dd><ul class="first last simple">
+<li>K  (toughness dominated regime, without leak off)</li>
+<li>Kt (toughness dominated regime , with leak off)</li>
+<li>M  (viscosity dominated regime, without leak off)</li>
+<li>Mt (viscosity dominated regime , with leak off)</li>
+<li>E  (elliptical, toughness dominated without leak off)</li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>bckColor (String)           – the string specifying the parameter according to which the background of the</dt>
+<dd><dl class="first last docutils">
+<dt>domain is color coded. Possible options</dt>
+<dd><ul class="first last simple">
+<li>sigma0 (confining stress)</li>
+<li>K1c (fracture toughness)</li>
+<li>Cl (leak-off coefficient)</li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>plotEltType (boolean)       – if True, the type of element will be spedified with color coded dots(channel,</dt>
+<dd>ribbon or tip).</dd>
+<dt>utputTimePeriod (float)    – the time period after which the output file is written or the</dt>
+<dd>figures are plotted.</dd>
+<dt>tipAsymptote (string)       – propagation regime. Possible options:</dt>
+<dd><ul class="first last simple">
+<li>K  (toughness dominated regime, without leak off)</li>
+<li>M  (viscosity dominated regime, without leak off)</li>
+<li>Mt (viscosity dominated regime , with leak off)</li>
+<li><dl class="first docutils">
+<dt>U  (Universal regime accommodating viscosity, toughness</dt>
+<dd>and leak off (see Donstov and Pierce, 2017))</dd>
+</dl>
+</li>
+<li>MK (viscosity to toughness transition regime)</li>
+</ul>
+</dd>
+<dt>saveRegime (boolean)        – if True, the regime of the propagation (see Zia and Lecampion 2018) will be</dt>
+<dd>saved.</dd>
+<dt>verbosity (int)             – the level of details about the ongoing simulation to be plotted (currently</dt>
+<dd>two levels 1 and 2 are supported).</dd>
+<dt>enableRemeshing (bool)      – if True, the computational domain will be compressed by the factor given by</dt>
+<dd>by the variable remeshFactor after the fracture front reaches the end of the
+domain.</dd>
+</dl>
+<p>remeshFactor (float)        – the factor by which the domain is compressed on re-meshing.
+frontAdvancing (string)     – The type of front advancing to be done. Possible options are:</p>
+<blockquote>
+<div>– explicit
+– semi-implicit
+– implicit</div></blockquote>
+<p>gravity (bool)              – if True, the effect of gravity will be taken into account.
+collectPerfData (bool)      – if True, the performance data will be collected in the form of a tree.
+paramFromTip (bool)     – if True, the space dependant parameters such as toughness and leak-off</p>
+<blockquote>
+<div>coefficients will be taken from the tip by projections instead of taking them
+from the ribbon cell center. The numerical scheme as a result will become
+unstable due to the complexities in finding the projection</div></blockquote>
+<dl class="last docutils">
+<dt>saveReynNumb (boolean)      – if True, the Reynold’s number at each edge of the cells inside the fracture</dt>
+<dd>will be saved.</dd>
+<dt>saveFluidFlux (boolean)     – if True, the fluid flux at each edge of the cells inside the fracture</dt>
+<dd>will be saved.</dd>
+<dt>saveFluidVel (boolean)     – if True, the fluid velocity at each edge of the cells inside the fracture</dt>
+<dd>will be saved.</dd>
+<dt>TI_KernelExecPath (string)  – the folder containing the executable to calculate transverse isotropic</dt>
+<dd>kernel or kernel with free surface.</dd>
+<dt>projMethod (string)         – the method by which the angle prescribed by the projections onto the front</dt>
+<dd><dl class="first last docutils">
+<dt>are evaluated. Possible options are:</dt>
+<dd>– ‘ILSA_orig’ (the method described in the original ILSA scheme)
+– ‘LS_grad’ (using gradient of the level set)</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>private variables:</dt>
+<dd><dl class="first docutils">
+<dt>__out_file_address (string) – disk address of the files to be saved. If not given, a new</dt>
+<dd>./Data/”tim stamp” folder will be automatically created.</dd>
+<dt>__solTimeSeries (ndarray)   – time series where the solution is required. The time stepping would be</dt>
+<dd>adjusted to get solution exactly at the given times.</dd>
+</dl>
+<p class="last">__dryCrack_mechLoading(bool)– if True, the mechanical loading solver will be used.
+__viscousInjection (bool)   – if True, the the solver will also take the fluid viscosity into account.
+__volumeControl (bool)      – if True, the the volume control solver will be used.
+__simName (str)             – the name of the simulation.
+__timeStamp (str)           – the time at which the simulation properties was created.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_dryCrack_mechLoading">
+<code class="descname">get_dryCrack_mechLoading</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_dryCrack_mechLoading"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_dryCrack_mechLoading" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_outputFolder">
+<code class="descname">get_outputFolder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_outputFolder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_outputFolder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_simulation_name">
+<code class="descname">get_simulation_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_simulation_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_simulation_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_solTimeSeries">
+<code class="descname">get_solTimeSeries</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_solTimeSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_solTimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_timeStamp">
+<code class="descname">get_timeStamp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_timeStamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_timeStamp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_tipAsymptote">
+<code class="descname">get_tipAsymptote</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_tipAsymptote"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_tipAsymptote" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_viscousInjection">
+<code class="descname">get_viscousInjection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_viscousInjection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_viscousInjection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_volumeControl">
+<code class="descname">get_volumeControl</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_volumeControl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_volumeControl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_dryCrack_mechLoading">
+<code class="descname">set_dryCrack_mechLoading</code><span class="sig-paren">(</span><em>mech_loading</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_dryCrack_mechLoading"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_dryCrack_mechLoading" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_outputFolder">
+<code class="descname">set_outputFolder</code><span class="sig-paren">(</span><em>output_address</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_outputFolder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_outputFolder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_simulation_name">
+<code class="descname">set_simulation_name</code><span class="sig-paren">(</span><em>simul_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_simulation_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_simulation_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_solTimeSeries">
+<code class="descname">set_solTimeSeries</code><span class="sig-paren">(</span><em>sol_t_srs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_solTimeSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_solTimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_tipAsymptote">
+<code class="descname">set_tipAsymptote</code><span class="sig-paren">(</span><em>tip_asymptote</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_tipAsymptote"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_tipAsymptote" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_viscousInjection">
+<code class="descname">set_viscousInjection</code><span class="sig-paren">(</span><em>visc_injection</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_viscousInjection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_viscousInjection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.set_volumeControl">
+<code class="descname">set_volumeControl</code><span class="sig-paren">(</span><em>vol_control</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_volumeControl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_volumeControl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/Properties.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

@@ -34,11 +34,11 @@ viscosity = 1.1e-3
 Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 50                        # the time at which the simulation stops
 simulProp.outputEveryTS = 2                     # the fracture file will be saved after every 2 time steps
 simulProp.set_outputFolder(".\\Data\\star")     # the address of the output folder
-simulProp.fixedTmStp = np.asarray([[2e-4, 11], [1, None]]) # list giving the time steps to adopt at the given times
+simulProp.fixedTmStp = np.asarray([[2e-4, 1.], [1., None]]) # list giving the time steps to adopt at the given times
 simulProp.plotFigure = True                     # the fracture footprint will be plotted during the simulation
 
 # initializing fracture

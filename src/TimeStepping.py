@@ -777,20 +777,20 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 PerfNode_linSolve = None
 
             try:
-                EltChannel_sym = Fr_lstTmStp.mesh.corr[Fr_lstTmStp.EltChannel]
+                EltChannel_sym = Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
             except AttributeError:
                 raise SystemExit("Symmetric fracture needs symmetric mesh. Set symmetric flag to True\n"
                                  "while initializing the mesh")
 
-            EltChannel_sym = Fr_lstTmStp.mesh.corr[Fr_lstTmStp.EltChannel]
+            EltChannel_sym = Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
             EltChannel_sym = np.unique(EltChannel_sym)
 
-            EltTip_sym = Fr_lstTmStp.mesh.corr[EltTip]
+            EltTip_sym = Fr_lstTmStp.mesh.corresponding[EltTip]
             EltTip_sym = np.unique(EltTip_sym)
 
             FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), )
             FillF_mesh[EltTip] = FillFrac_k
-            FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.all[EltTip_sym]]
+            FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]]
             partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
 
             C_EltTip = C[np.ix_(EltTip_sym[partlyFilledTip_sym],
@@ -808,7 +808,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                                     ac * np.pi / 4. * self_infl
 
             wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
-            wTip_sym_elts = Fr_lstTmStp.mesh.all[EltTip_sym]
+            wTip_sym_elts = Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]
             for i in range(len(EltTip_sym)):
                 if len(np.where(EltTip == wTip_sym_elts[i])[0]) != 1:
                     other_corr = get_symetric_elements(Fr_lstTmStp.mesh, [wTip_sym_elts[i]])
@@ -830,8 +830,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            Qin,
                                                            Fr_lstTmStp.mesh.EltArea,
                                                            LkOff,
-                                                           Fr_lstTmStp.mesh.vol_weights,
-                                                           Fr_lstTmStp.mesh.all,
+                                                           Fr_lstTmStp.mesh.volWeights,
+                                                           Fr_lstTmStp.mesh.activeSymtrc,
                                                            dwTip)
 
             C[np.ix_(EltTip_sym[partlyFilledTip_sym],  EltTip_sym[partlyFilledTip_sym])] = C_EltTip
@@ -877,11 +877,11 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if sim_properties.symmetric:
             del_w = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             for i in range(len(sol) - 1):
-                del_w[Fr_lstTmStp.mesh.symmetric_elmnts[Fr_lstTmStp.mesh.all[EltChannel_sym[i]]]] = sol[i]
+                del_w[Fr_lstTmStp.mesh.symmetricElts[Fr_lstTmStp.mesh.activeSymtrc[EltChannel_sym[i]]]] = sol[i]
             w = np.copy(Fr_lstTmStp.w)
             w[Fr_lstTmStp.EltChannel] += del_w[Fr_lstTmStp.EltChannel]
             for i in range(len(wTip_sym_elts)):
-                w[Fr_lstTmStp.mesh.symmetric_elmnts[wTip_sym_elts[i]]] = wTip_sym[i]
+                w[Fr_lstTmStp.mesh.symmetricElts[wTip_sym_elts[i]]] = wTip_sym[i]
         else:
             w = np.copy(Fr_lstTmStp.w)
             w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]

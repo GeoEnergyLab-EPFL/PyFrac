@@ -1,0 +1,291 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>TimeStepping module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-TimeStepping">
+<span id="timestepping-module"></span><h1>TimeStepping module<a class="headerlink" href="#module-TimeStepping" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="TimeStepping.attempt_time_step">
+<code class="descclassname">TimeStepping.</code><code class="descname">attempt_time_step</code><span class="sig-paren">(</span><em>Frac</em>, <em>C</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>inj_properties</em>, <em>timeStep</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#attempt_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.attempt_time_step" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>this function attempts to propagate fracture with the given time step. The function injects fluid into the</dt>
+<dd>fracture according to the given front advacning scheme.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Frac</strong> (<em>Fracture object</em>) – fracture object from the last time step</li>
+<li><strong>C</strong> (<em>ndarray-float</em>) – the elasticity matrix</li>
+<li><strong>mat_properties</strong> (<em>MaterialProperties object</em>) – material properties</li>
+<li><strong>fluid_properties</strong> (<em>FluidProperties object</em>) – fluid properties</li>
+<li><strong>sim_properties</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
+<li><strong>inj_properties</strong> (<em>InjectionProperties object</em>) – injection properties</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">exitstatus (int) – see documentation for possible values
+Fr_k (Fracture)  – fracture after advancing time step.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TimeStepping.injection_extended_footprint">
+<code class="descclassname">TimeStepping.</code><code class="descname">injection_extended_footprint</code><span class="sig-paren">(</span><em>w_k</em>, <em>Fr_lstTmStp</em>, <em>C</em>, <em>timeStep</em>, <em>Qin</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#injection_extended_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.injection_extended_footprint" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
+(fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
+the new fracture width.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>w_k</strong> (<em>ndarray-float</em>) – </li>
+<li><strong>Fr_lstTmStp</strong> (<em>Fracture object</em>) – fracture object from the last time step</li>
+<li><strong>C</strong> (<em>ndarray-float</em>) – the elasticity matrix</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
+<li><strong>Qin</strong> (<em>ndarray-float</em>) – current injection rate</li>
+<li><strong>mat_properties</strong> (<em>MaterialProperties object</em>) – material properties</li>
+<li><strong>fluid_properties</strong> (<em>FluidProperties object</em>) – fluid properties</li>
+<li><strong>sim_Parameters</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>possible values:</dt>
+<dd><p class="first last">0       – not propagated
+1       – iteration successful
+2       – evaluated level set is not valid
+3       – front is not tracked correctly
+4       – evaluated tip volume is not valid
+5       – solution of elastohydrodynamic solver is not valid
+6       – did not converge after max iterations
+7       – tip inversion not successful
+8       – Ribbon element not found in the enclosure of a tip cell
+9       – Filling fraction not correct
+10      – Toughness iteration did not converge
+11      – Projection could not be found
+12      – Reached end of grid</p>
+</dd>
+</dl>
+<p>Fracture object:            fracture after advancing time step.</p>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TimeStepping.injection_same_footprint">
+<code class="descclassname">TimeStepping.</code><code class="descname">injection_same_footprint</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>C</em>, <em>timeStep</em>, <em>Qin</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#injection_same_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.injection_same_footprint" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
+to be the same as in the fracture from the last time step.
+:param Fr_lstTmStp:
+:type Fr_lstTmStp: Fracture object
+:param C:
+:type C: ndarray-float
+:param timeStep:
+:type timeStep: float
+:param Qin:
+:type Qin: ndarray-float
+:param mat_properties:
+:type mat_properties: MaterialProperties object
+:param fluid_properties:
+:type fluid_properties: FluidProperties object
+:param sim_properties:
+:type sim_properties: SimulationParameters object
+:param perfNode:
+:type perfNode: IterationProperties</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">exitstatus (int)            – exit status
+w_k (ndarray-float)         – width of the fracture after injection with the same footprint</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TimeStepping.solve_width_pressure">
+<code class="descclassname">TimeStepping.</code><code class="descname">solve_width_pressure</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>sim_properties</em>, <em>fluid_properties</em>, <em>mat_properties</em>, <em>EltTip</em>, <em>partlyFilledTip</em>, <em>C</em>, <em>FillFrac_k</em>, <em>EltCrack_k</em>, <em>InCrack_k</em>, <em>LkOff</em>, <em>wTip</em>, <em>timeStep</em>, <em>Qin</em>, <em>perfNode</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#solve_width_pressure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.solve_width_pressure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="TimeStepping.time_step_explicit_front">
+<code class="descclassname">TimeStepping.</code><code class="descname">time_step_explicit_front</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>C</em>, <em>timeStep</em>, <em>Qin</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#time_step_explicit_front"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.time_step_explicit_front" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
+(fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
+the new fracture width.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>w_k</strong> (<em>ndarray-float</em>) – </li>
+<li><strong>Fr_lstTmStp</strong> (<em>Fracture object</em>) – fracture object from the last time step</li>
+<li><strong>C</strong> (<em>ndarray-float</em>) – the elasticity matrix</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
+<li><strong>Qin</strong> (<em>ndarray-float</em>) – current injection rate</li>
+<li><strong>mat_properties</strong> (<em>MaterialProperties object</em>) – material properties</li>
+<li><strong>fluid_properties</strong> (<em>FluidProperties object</em>) – fluid properties</li>
+<li><strong>sim_Parameters</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>possible values:</dt>
+<dd><p class="first last">0       – not propagated
+1       – iteration successful
+2       – evaluated level set is not valid
+3       – front is not tracked correctly
+4       – evaluated tip volume is not valid
+5       – solution of elastohydrodynamic solver is not valid
+6       – did not converge after max iterations
+7       – tip inversion not successful
+8       – Ribbon element not found in the enclosure of a tip cell
+9       – Filling fraction not correct
+10      – Toughness iteration did not converge
+11      – Projection could not be found
+12      – Reached end of grid
+13      – Leak off can’t be evaluated</p>
+</dd>
+</dl>
+<p>Fracture object:            fracture after advancing time step.</p>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TimeStepping.turbulence_check_tip">
+<code class="descclassname">TimeStepping.</code><code class="descname">turbulence_check_tip</code><span class="sig-paren">(</span><em>vel</em>, <em>Fr</em>, <em>fluid</em>, <em>return_ReyNumb=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#turbulence_check_tip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.turbulence_check_tip" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculate the Reynolds number at the cell edges and check if any to the edge between the ribbon cells
+and the tip cells are turbulent (i.e. the Reynolds number is greater than 2100).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>vel</strong> (<em>ndarray-float</em>) – the array giving velocity of each edge of the cells in domain</li>
+<li><strong>Fr</strong> (<em>Fracture object</em>) – the fracture object to be checked</li>
+<li><strong>fluid</strong> (<em>FluidProperties object</em>) – fluid properties object</li>
+<li><strong>return_ReyNumb</strong> (<em>boolean</em><em>, </em><em>default False</em>) – if true, Reynolds number at all cell edges will be returned</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Reynolds number of all the cells in the domain; row-wise in the following order <span class="classifier-delimiter">:</span> <span class="classifier">0–left,</span></dt>
+<dd><p class="first last">1–right, 2–bottom, 3–top</p>
+</dd>
+<dt>boolean             true if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds number</dt>
+<dd><p class="first last">is more than 2100)</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray-float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/TimeStepping.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

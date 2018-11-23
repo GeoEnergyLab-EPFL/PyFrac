@@ -1,0 +1,227 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Utility &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Utility</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file is part of PyFrac.</span>
+
+<span class="sd">Created by Haseeb Zia on Thu Dec 22 17:18:37 2016.</span>
+<span class="sd">Copyright (c) &quot;ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory&quot;, 2016-2019. All rights reserved.</span>
+<span class="sd">See the LICENSE.TXT file for more details.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">cm</span>
+<span class="kn">import</span> <span class="nn">dill</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">src.TipInversion</span> <span class="k">import</span> <span class="n">TipAsymInversion</span>
+
+
+<div class="viewcode-block" id="radius_level_set"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.radius_level_set">[docs]</a><span class="k">def</span> <span class="nf">radius_level_set</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="n">R</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    signed distance from a circle; (&lt;0 inside circle , &gt;0 outside, - zero at the circle)</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        xy (ndarray-flat):      array with x and y coordinate values of the cell centers. The x coordinates are given in</span>
+<span class="sd">                                the frist column and y coordinate is given in the second column</span>
+<span class="sd">        R (float):              radius of the circle</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        ndarray-float:          signed distance from the given circle for each cell given row wise by the argument xy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># for arrays</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">R</span>  <span class="c1"># norm(xy)=(x^2+y^2)^1/2    -R</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># for single entries</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">R</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="PrintDomain"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.PrintDomain">[docs]</a><span class="k">def</span> <span class="nf">PrintDomain</span><span class="p">(</span><span class="n">Matrix</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">Elem</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    3D plot of all elements given in the form of a list;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        Elem(ndarray-int):          list of elements to be plotted</span>
+<span class="sd">        Matrix(ndarray-float):      values to be plotted, should be equal in size to the first argument(Elem)</span>
+<span class="sd">        mesh(CartesianMesh object): mesh object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Elem</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Elem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">)</span>
+
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,))</span>
+    <span class="n">tmp</span><span class="p">[</span><span class="n">Elem</span><span class="p">]</span> <span class="o">=</span> <span class="n">Matrix</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot_trisurf</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cm</span><span class="o">.</span><span class="n">jet</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span></div>
+
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="plot_Reynolds_number"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.plot_Reynolds_number">[docs]</a><span class="k">def</span> <span class="nf">plot_Reynolds_number</span><span class="p">(</span><span class="n">Fr</span><span class="p">,</span> <span class="n">ReyNum</span><span class="p">,</span> <span class="n">edge</span><span class="p">):</span>
+
+
+    <span class="n">figr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">figr</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">ReMesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">ReyNum</span><span class="p">[</span><span class="n">edge</span><span class="p">,</span> <span class="p">:],</span> <span class="p">(</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">))</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">)</span>
+    <span class="n">xv</span><span class="p">,</span> <span class="n">yv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="c1"># cax = ax.contourf(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])</span>
+    <span class="n">cax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">ReMesh</span><span class="p">)</span>
+    <span class="n">figr</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Reynolds number&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">figr</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="plot_as_matrix"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.plot_as_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_as_matrix</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="n">ReMesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">))</span>
+    <span class="n">cax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">ReMesh</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="ReadFracture"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.ReadFracture">[docs]</a><span class="k">def</span> <span class="nf">ReadFracture</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dill</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="find_regime"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.find_regime">[docs]</a><span class="k">def</span> <span class="nf">find_regime</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">Fr</span><span class="p">,</span> <span class="n">Material_properties</span><span class="p">,</span> <span class="n">sim_properties</span><span class="p">,</span> <span class="n">timeStep</span><span class="p">,</span> <span class="n">Kprime</span><span class="p">,</span> <span class="n">asymptote_universal</span><span class="p">):</span>
+
+    <span class="n">sim_parameters_tmp</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">sim_properties</span><span class="p">)</span>
+    <span class="n">sim_parameters_tmp</span><span class="o">.</span><span class="n">set_tipAsymptote</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">)</span>
+    <span class="n">asymptote_toughness</span> <span class="o">=</span> <span class="n">TipAsymInversion</span><span class="p">(</span><span class="n">w</span><span class="p">,</span>
+                                           <span class="n">Fr</span><span class="p">,</span>
+                                           <span class="n">Material_properties</span><span class="p">,</span>
+                                           <span class="n">sim_parameters_tmp</span><span class="p">,</span>
+                                           <span class="n">timeStep</span><span class="p">,</span>
+                                           <span class="n">Kprime_k</span><span class="o">=</span><span class="n">Kprime</span><span class="p">)</span>
+    <span class="n">sim_parameters_tmp</span><span class="o">.</span><span class="n">set_tipAsymptote</span><span class="p">(</span><span class="s1">&#39;M&#39;</span><span class="p">)</span>
+    <span class="n">asymptote_viscosity</span> <span class="o">=</span> <span class="n">TipAsymInversion</span><span class="p">(</span><span class="n">w</span><span class="p">,</span>
+                                         <span class="n">Fr</span><span class="p">,</span>
+                                         <span class="n">Material_properties</span><span class="p">,</span>
+                                         <span class="n">sim_parameters_tmp</span><span class="p">,</span>
+                                         <span class="n">timeStep</span><span class="p">)</span>
+
+    <span class="n">regime</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="n">asymptote_viscosity</span> <span class="o">-</span> <span class="n">asymptote_universal</span><span class="p">)</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">asymptote_viscosity</span> <span class="o">-</span> <span class="n">asymptote_toughness</span><span class="p">)</span>
+    <span class="n">regime</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">regime</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">regime</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">regime</span> <span class="o">&gt;</span> <span class="mf">1.</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="k">return</span> <span class="n">regime</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="save_images_to_video"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.save_images_to_video">[docs]</a><span class="k">def</span> <span class="nf">save_images_to_video</span><span class="p">(</span><span class="n">image_folder</span><span class="p">,</span> <span class="n">video_name</span><span class="o">=</span><span class="s1">&#39;movie&#39;</span><span class="p">):</span>
+
+    <span class="kn">import</span> <span class="nn">cv2</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+
+    <span class="k">if</span> <span class="s2">&quot;.avi&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">video_name</span><span class="p">:</span>
+        <span class="n">video_name</span> <span class="o">=</span> <span class="n">video_name</span> <span class="o">+</span> <span class="s1">&#39;.avi&#39;</span>
+
+    <span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="n">img</span> <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">image_folder</span><span class="p">)</span> <span class="k">if</span> <span class="n">img</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.png&quot;</span><span class="p">)]</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">image_folder</span><span class="p">,</span> <span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">layers</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">video</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoWriter</span><span class="p">(</span><span class="n">video_name</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">width</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>
+
+    <span class="n">img_no</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;adding image no &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">img_no</span><span class="p">))</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">image_folder</span><span class="p">,</span> <span class="n">image</span><span class="p">)))</span>
+        <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">img_no</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">cv2</span><span class="o">.</span><span class="n">destroyAllWindows</span><span class="p">()</span>
+    <span class="n">video</span><span class="o">.</span><span class="n">release</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

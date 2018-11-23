@@ -1,0 +1,198 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>VolIntegral module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-VolIntegral">
+<span id="volintegral-module"></span><h1>VolIntegral module<a class="headerlink" href="#module-VolIntegral" title="Permalink to this headline">¶</a></h1>
+<p>This file is part of PyFrac.</p>
+<p>Created by Haseeb Zia on Fri Oct 14 18:27:39 2016.
+Copyright (c) “ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory”, 2016-2019. All rights reserved.
+See the LICENSE.TXT file for more details.</p>
+<p>Functions to calculate tip volumes, given the propagation regime</p>
+<blockquote>
+<div>regime – A  gives the area (fill fraction)
+regime – K  gives tip volume according to the square root assymptote
+regime – M  gives tip volume according to the viscocity dominated assymptote
+regime – Lk is used to calculate the leak off given the distance of the front l (note, its not tip volume)
+regime – Mt gives tip volume according to the viscocity, Leak-off assymptote
+regime – U  gives tip volume according to the Universal assymptote (Donstov and Pierce, 2017)
+regime – MK gives tip volume according to the M-K transition assymptote</div></blockquote>
+<dl class="function">
+<dt id="VolIntegral.Area">
+<code class="descclassname">VolIntegral.</code><code class="descname">Area</code><span class="sig-paren">(</span><em>dist</em>, <em>*param</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#Area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.Area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives Area under the tip depending on the regime identifier ;
+used in case of 0 or 90 degree angle; can be used for 1d case</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.FindBracket_w">
+<code class="descclassname">VolIntegral.</code><code class="descname">FindBracket_w</code><span class="sig-paren">(</span><em>dist</em>, <em>Kprime</em>, <em>Eprime</em>, <em>muPrime</em>, <em>Cprime</em>, <em>Vel</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#FindBracket_w"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.FindBracket_w" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function finds the bracket to be used by the Universal tip asymptote root finder.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.Integral_over_cell">
+<code class="descclassname">VolIntegral.</code><code class="descname">Integral_over_cell</code><span class="sig-paren">(</span><em>EltTip</em>, <em>alpha</em>, <em>l</em>, <em>mesh</em>, <em>function</em>, <em>frac=None</em>, <em>mat_prop=None</em>, <em>fluid_prop=None</em>, <em>Vel=None</em>, <em>Kprime=None</em>, <em>Eprime=None</em>, <em>Cprime=None</em>, <em>stagnant=None</em>, <em>KIPrime=None</em>, <em>dt=None</em>, <em>arrival_t=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#Integral_over_cell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.Integral_over_cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate integral of the function specified by the argument function over the cell.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>EltTip</strong> (<em>ndarray</em>) – </li>
+<li><strong>alpha</strong> (<em>ndarray</em>) – </li>
+<li><strong>l</strong> (<em>ndarray</em>) – </li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>function</strong> (<em>string</em>) – <dl class="docutils">
+<dt>Possible options are:</dt>
+<dd>’A’  gives the area (fill fraction)
+‘K’  gives tip volume according to the square root assymptote
+‘M’  gives tip volume according to the viscocity dominated assymptote
+‘Lk’ Lk is used to calculate the leak off given the distance of the<blockquote>
+<div>front l (note, its not tip volume)</div></blockquote>
+<p>’Mt’ gives tip volume according to the viscocity, Leak-off assymptote
+‘U’  gives tip volume according to the Universal assymptote (Donstov</p>
+<blockquote>
+<div>and Pierce, 2017)</div></blockquote>
+<p class="last">’MK’ gives tip volume according to the M-K transition assymptote</p>
+</dd>
+</dl>
+</li>
+<li><strong>frac</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – </li>
+<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – </li>
+<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – </li>
+<li><strong>Vel</strong> (<em>ndarray</em>) – </li>
+<li><strong>Kprime</strong> (<em>ndarray</em>) – taking it from the mat_prop object</li>
+<li><strong>Eprime</strong> (<em>ndarray-float</em>) – – plain strain TI modulus for current iteration. if not given, the Eprime
+from the given material properties object will be used.</li>
+<li><strong>stagnant</strong> (<em>ndarray</em>) – </li>
+<li><strong>KIPrime</strong> (<em>ndarray</em>) – moving</li>
+<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">integral (ndarray)              – the integral of the specifiend function over the given tip cells.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.MomentsTipAssympGeneral">
+<code class="descclassname">VolIntegral.</code><code class="descname">MomentsTipAssympGeneral</code><span class="sig-paren">(</span><em>dist</em>, <em>Kprime</em>, <em>Eprime</em>, <em>muPrime</em>, <em>Cbar</em>, <em>Vel</em>, <em>stagnant</em>, <em>KIPrime</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#MomentsTipAssympGeneral"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.MomentsTipAssympGeneral" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moments of the General tip asymptote to calculate the volume integral (see Donstov and Pierce, 2017)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.Pdistance">
+<code class="descclassname">VolIntegral.</code><code class="descname">Pdistance</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>slope</em>, <em>intercpt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#Pdistance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.Pdistance" title="Permalink to this definition">¶</a></dt>
+<dd><p>distance of a point from a line</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.TipAsym_UniversalW_delt_Res">
+<code class="descclassname">VolIntegral.</code><code class="descname">TipAsym_UniversalW_delt_Res</code><span class="sig-paren">(</span><em>w</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#TipAsym_UniversalW_delt_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.TipAsym_UniversalW_delt_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>The residual function zero of which will give the General asymptote</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.TipAsym_UniversalW_zero_Res">
+<code class="descclassname">VolIntegral.</code><code class="descname">TipAsym_UniversalW_zero_Res</code><span class="sig-paren">(</span><em>w</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#TipAsym_UniversalW_zero_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.TipAsym_UniversalW_zero_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.VolumeTriangle">
+<code class="descclassname">VolIntegral.</code><code class="descname">VolumeTriangle</code><span class="sig-paren">(</span><em>dist</em>, <em>*param</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#VolumeTriangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.VolumeTriangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Volume  of the triangle defined by perpendicular distance (dist) and em (em=1/sin(alpha)cos(alpha), where alpha
+is the angle of the perpendicular). The regime variable identifies the propagation regime.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.find_corresponding_ribbon_cell">
+<code class="descclassname">VolIntegral.</code><code class="descname">find_corresponding_ribbon_cell</code><span class="sig-paren">(</span><em>tip_cells</em>, <em>alpha</em>, <em>zero_vertex</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#find_corresponding_ribbon_cell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.find_corresponding_ribbon_cell" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/VolIntegral.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

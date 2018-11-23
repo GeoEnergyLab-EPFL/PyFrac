@@ -33,7 +33,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=0)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
@@ -54,6 +54,7 @@ Fr = Fracture(Mesh,
               Injection,
               simulProp)
 
+Fr.plot_fracture_slice(variable='width', point1=[-0.1, 0], point2=[0.1, 0])
 
 # create a Controller
 controller = Controller(Fr,

@@ -1,0 +1,817 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Properties &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Properties</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># This file is part of PyFrac.</span>
+<span class="c1">#</span>
+<span class="c1"># Created by Haseeb Zia on 03.04.17.</span>
+<span class="c1"># Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.</span>
+<span class="c1">#  All rights reserved. See the LICENSE.TXT file for more details.</span>
+<span class="c1">#</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="k">import</span> <span class="n">to_rgb</span>
+<span class="kn">from</span> <span class="nn">src.Labels</span> <span class="k">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="MaterialProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.MaterialProperties">[docs]</a><span class="k">class</span> <span class="nc">MaterialProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class defining the Material properties of the solid</span>
+
+<span class="sd">    Instance variables:</span>
+<span class="sd">        Eprime (float)       -- plain strain modulus</span>
+<span class="sd">        K1c (ndarray)        -- Linear-Elastic Plane-Strain Toughness for each cell</span>
+<span class="sd">        Kprime (ndarray)     -- 4*(2/pi)**0.5 * K1c</span>
+<span class="sd">        Cl (float)           -- Carter&#39;s leak off coefficient</span>
+<span class="sd">        Cprime (ndarray)     -- 2 * Carter&#39;s leak off coefficient</span>
+<span class="sd">        SigmaO (ndarray)     -- in-situ stress field</span>
+<span class="sd">        grainSize (float)    -- the grain size of the rock; used to calculate the relative roughness.</span>
+<span class="sd">        anisotropic (bool)   -- if True, the toughness is considered anisotropic.</span>
+<span class="sd">        K1cFunc (function)   -- the function giving the toughness on the domain. It takes one argument (angle) in</span>
+<span class="sd">                                case of anisotropic toughness and two arguments (x, y) in case of hetrogenous</span>
+<span class="sd">                                toughness. The function is also used to get the toughness if the domain is remeshed.</span>
+<span class="sd">        SigmaOFunc (function)-- the function giving the in-situ stress on the domain. It should takes two arguments</span>
+<span class="sd">                                (x, y) to give the stress on these coordinates. It is also used to get the</span>
+<span class="sd">                                stress if the domain is remeshed.</span>
+<span class="sd">        ClFunc (function)    -- the function giving the in Carter&#39;s leak off coefficient on the domain. It should</span>
+<span class="sd">                                takes two arguments (x, y) to give the coefficient on these coordinates. It is also</span>
+<span class="sd">                                used to get the leak off coefficient if the domain is remeshed.</span>
+<span class="sd">    Methods:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Toughness</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cl</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">SigmaO</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">K1c_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">anisotropic_K1c</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SigmaO_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Cl_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TI_elasticity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">wc</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            Eprime (float)          -- plain strain modulus.</span>
+<span class="sd">            Toughness (float)       -- Linear-Elastic Plane-Strain Fracture Toughness.</span>
+<span class="sd">            Cl (float)              -- Carter&#39;s leak off coefficient.</span>
+<span class="sd">            SigmaO (ndarray)        -- in-situ stress field.</span>
+<span class="sd">            grainSize (float)       -- the grain size of the rock; used to calculate the relative roughness.</span>
+<span class="sd">            anisotropic (bool)      -- flag to specify if the fracture toughness is anisotropic.</span>
+<span class="sd">            K1c_perp (float)        -- the fracture toughness in the direction of x-axis.</span>
+<span class="sd">            anisotropic_flag(bool)  -- if True, the toughness is considered anisotropic.</span>
+<span class="sd">            K1c_func (function)     -- the function giving the toughness on the domain. It takes one argument (angle) in</span>
+<span class="sd">                                       case of anisotropic toughness and two arguments (x, y) in case of hetrogenous</span>
+<span class="sd">                                       toughness. The function is also used to get the toughness if the domain is remeshed.</span>
+<span class="sd">            SigmaO_func (function)  -- the function giving the in situ stress on the domain. It should takes two</span>
+<span class="sd">                                       arguments (x, y) to give the stress on these coordinates. It is also used to get</span>
+<span class="sd">                                       the stress if the domain is remeshed.</span>
+<span class="sd">            Cl_func (function)      -- the function giving the in Carter&#39;s leak off coefficient on the domain. It</span>
+<span class="sd">                                       should takes two arguments (x, y) to give the coefficient on these coordinates.</span>
+<span class="sd">                                       It is also used to get the leak off coefficient if the domain is remeshed.</span>
+<span class="sd">            TI_elasticity(bool)     -- if True, the medium is elastic transverse isotropic.</span>
+<span class="sd">            Cij(Ndarray-float)      -- the TI stiffness matrix (in the canonical basis) is provided when</span>
+<span class="sd">                                       TI_elasticity=true.</span>
+<span class="sd">            wc (float)              -- minimum width corresponding to the asperity of the material.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Eprime</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Eprime can not be an array as input! - homogeneous medium only &quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Eprime</span> <span class="o">=</span> <span class="n">Eprime</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Toughness</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">if</span> <span class="n">Toughness</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">=</span> <span class="n">Toughness</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Kprime</span> <span class="o">=</span> <span class="p">(</span><span class="mi">32</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">Toughness</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># error</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Error in the size of Toughness input!&#39;</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">Toughness</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">=</span> <span class="n">Toughness</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Kprime</span> <span class="o">=</span> <span class="p">(</span><span class="mi">32</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">Toughness</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Cl</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">if</span> <span class="n">Cl</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">Cl</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Cl</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Error in the size of Leak-Off coefficient input!&#39;</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">Cl</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Cl</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">SigmaO</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">if</span> <span class="n">SigmaO</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">SigmaO</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Error in the size of Sigma input!&#39;</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">SigmaO</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grainSize</span> <span class="o">=</span> <span class="n">grain_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic_K1c</span> <span class="o">=</span> <span class="n">anisotropic_K1c</span>
+        <span class="k">if</span> <span class="n">anisotropic_K1c</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Kc1</span> <span class="o">=</span> <span class="n">K1c_func</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;The given Kprime function is not correct for anisotropic case! It should take one&#39;</span>
+                                 <span class="s1">&#39; argument, i.e. the angle and return a toughness value.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Kc1</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">K1c_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic_K1c</span><span class="p">:</span>
+            <span class="c1"># the function should return toughness by taking x and y coordinates</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">K1c_func</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;The  given Kprime function is not correct! It should take two arguments, &#39;</span>
+                           <span class="s1">&#39;i.e. the x and y coordinates of a point and return the toughness at this point.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">TI_elasticity</span> <span class="o">=</span> <span class="n">TI_elasticity</span>
+        <span class="k">if</span> <span class="n">TI_elasticity</span> <span class="ow">or</span> <span class="n">free_surf</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Cij</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+                <span class="k">if</span> <span class="n">Cij</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>  <span class="c1"># check if size is 6 x 6</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Cij</span> <span class="o">=</span> <span class="n">Cij</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cij matrix is not a 6x6 array!&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cij matrix is not a numpy array!&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">freeSurf</span> <span class="o">=</span> <span class="n">free_surf</span>
+        <span class="k">if</span> <span class="n">free_surf</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">free_surf_depth</span> <span class="o">==</span> <span class="mf">1.e300</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Depth from free surface is to be provided.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">Cij</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The stiffness matrix (in the canonical basis) is to be provided&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FreeSurfDepth</span> <span class="o">=</span> <span class="n">free_surf_depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TI_PlaneAngle</span> <span class="o">=</span> <span class="n">TI_plane_angle</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span> <span class="o">=</span> <span class="n">K1c_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SigmaOFunc</span> <span class="o">=</span> <span class="n">SigmaO_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ClFunc</span> <span class="o">=</span> <span class="n">Cl_func</span>
+
+        <span class="c1"># overriding with the values evaluated by the given functions</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">K1c_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">SigmaO_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Cl_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">Mesh</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">wc</span> <span class="o">=</span> <span class="n">wc</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="MaterialProperties.remesh"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.MaterialProperties.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function evaluate the toughness, confining stress and leak off coefficient according to the given mesh</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            mesh (CartesianMesh)        -- the CartesianMesh object describing the new mesh</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic_K1c</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Kprime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">*</span> <span class="p">((</span><span class="mi">32</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic_K1c</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Kprime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">*</span> <span class="p">((</span><span class="mi">32</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">SigmaOFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SigmaOFunc</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ClFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ClFunc</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span></div></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="FluidProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.FluidProperties">[docs]</a><span class="k">class</span> <span class="nc">FluidProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       Class defining the fluid properties</span>
+
+<span class="sd">       Instance variables:</span>
+<span class="sd">            viscosity (ndarray)     -- Viscosity of the fluid (note its different from local viscosity, see</span>
+<span class="sd">                                       fracture class for local viscosity)</span>
+<span class="sd">            rheology (string)       -- string specifying rheology of the fluid. Possible options:</span>
+<span class="sd">                                         - &quot;Newtonian&quot;</span>
+<span class="sd">                                         - &quot;non-Newtonian&quot;</span>
+<span class="sd">            muPrime (float)         -- 12 * viscosity (// plates viscosity factor)</span>
+<span class="sd">            density (float)         -- density of the fluid</span>
+<span class="sd">            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account</span>
+<span class="sd">       Methods:</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">rheology</span><span class="o">=</span><span class="s2">&quot;Newtonian&quot;</span><span class="p">,</span> <span class="n">turbulence</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor function.</span>
+
+<span class="sd">        Instance variables:</span>
+<span class="sd">            viscosity (ndarray)     -- viscosity of the fluid (note its different from local viscosity, see</span>
+<span class="sd">                                       fracture class for local viscosity)</span>
+<span class="sd">            density (float)         -- density of the fluid</span>
+<span class="sd">            rheology (string)       -- string specifying rheology of the fluid. Possible options:</span>
+<span class="sd">                                         - &quot;Newtonian&quot;</span>
+<span class="sd">                                         - &quot;non-Newtonian&quot;</span>
+<span class="sd">            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">viscosity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># uniform viscosity</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">viscosity</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">muPrime</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">viscosity</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Viscosity of the fluid can not be an array!. Note that&#39;</span>
+                             <span class="s1">&#39; its different from local viscosity&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">viscosity</span> <span class="o">=</span> <span class="n">viscosity</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">muPrime</span> <span class="o">=</span> <span class="mf">12.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">viscosity</span>  <span class="c1"># the geometric viscosity in the parallel plate solution</span>
+
+        <span class="n">rheologyOptions</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Newtonian&quot;</span><span class="p">,</span> <span class="s2">&quot;non-Newtonian&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rheology</span> <span class="ow">in</span> <span class="n">rheologyOptions</span><span class="p">:</span>  <span class="c1"># check if rheology match to any rheology option</span>
+            <span class="k">if</span> <span class="n">rheology</span> <span class="ow">is</span> <span class="s2">&quot;Newtonian&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rheology</span> <span class="o">=</span> <span class="n">rheology</span>
+            <span class="k">elif</span> <span class="n">rheology</span> <span class="ow">is</span> <span class="s2">&quot;non-Newtonian&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Non-Newtonian rheology not yet supported&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span><span class="c1"># error</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid input for rheology. Possible options: &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">rheologyOptions</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">density</span> <span class="o">=</span> <span class="n">density</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">turbulence</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">turbulence</span> <span class="o">=</span> <span class="n">turbulence</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># error</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid turbulence flag. Can be either True or False&#39;</span><span class="p">)</span></div>
+
+
+<span class="c1"># --------------------------------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="InjectionProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.InjectionProperties">[docs]</a><span class="k">class</span> <span class="nc">InjectionProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Class defining the injection schedule</span>
+
+<span class="sd">        instance variables:</span>
+<span class="sd">            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection</span>
+<span class="sd">                                            rates (row 1).</span>
+<span class="sd">            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate</span>
+<span class="sd">                                            of the injection point coordinates.</span>
+<span class="sd">            source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">source_coordinates</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor of the InjectionProperties class.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection</span>
+<span class="sd">                                            rates (row 1).</span>
+<span class="sd">            Mesh (CartesianMesh)         -- the CartesianMesh object defining mesh.</span>
+<span class="sd">            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate</span>
+<span class="sd">                                            of the injection point coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">rate</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid injection rate. The list should have 2 rows (to specify time and&#39;</span>
+                                 <span class="s1">&#39; corresponding injection rate) for each entry&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">rate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The injection rate should start from zero second i.e. rate[0, 0] should&quot;</span>
+                                 <span class="s2">&quot; be zero.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span> <span class="o">=</span> <span class="n">rate</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">rate</span><span class="p">]])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">source_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable source location not yet supported!&quot;</span><span class="p">)</span>
+            <span class="c1"># if len(source_coordinates) == 2:</span>
+            <span class="c1">#     self.source_coordinates = source_coordinates</span>
+            <span class="c1"># else:</span>
+            <span class="c1">#     # error</span>
+            <span class="c1">#     raise ValueError(&#39;Invalid source coordinates. Correct format: a numpy array with a single row&#39;</span>
+            <span class="c1">#                      &#39; and two columns to \n specify x and y coordinate of the source e.g.&#39;</span>
+            <span class="c1">#                      &#39; np.array([x_coordinate, y_coordinate])&#39;)</span>
+        <span class="n">source_coordinates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_location</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="n">source_coordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">source_coordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="LoadingProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.LoadingProperties">[docs]</a><span class="k">class</span> <span class="nc">LoadingProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Class defining the mechanical loading properties</span>
+
+<span class="sd">        Instance variables:</span>
+<span class="sd">            EltLoaded (ndarray)   -- array of elements that are loaded.</span>
+<span class="sd">            displ_rate (float):   -- the rate at which the elements in the EltLoaded list are displaced due to the</span>
+<span class="sd">                                     applied mechanical loading</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>  <span class="n">displ_rate</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">loaded_elts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor of the InjectionProperties class.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            EltLoaded (ndarray)   -- array of elements that are loaded.</span>
+<span class="sd">            displ_rate (float):   -- the rate at which the elements in the EltLoaded list are displaced due to the</span>
+<span class="sd">                                     applied mechanical loading</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">displRate</span> <span class="o">=</span> <span class="n">displ_rate</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loaded_elts</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">EltLoaded</span> <span class="o">=</span> <span class="n">loaded_elts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The loaded elements should be given in the form an ndarray of integers.&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="SimulationProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties">[docs]</a><span class="k">class</span> <span class="nc">SimulationProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class defining the simulation properties.</span>
+
+<span class="sd">        instance variables</span>
+<span class="sd">            tolFractFront (float)       -- tolerance for the fracture front loop.</span>
+<span class="sd">            toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.</span>
+<span class="sd">            toleranceProjection (float) -- tolerance for projection iteration for anisotropic case</span>
+<span class="sd">            maxFrontItr (int)           -- maximum iterations to for the fracture front loop.</span>
+<span class="sd">            maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton</span>
+<span class="sd">                                           hybrid) in this case.</span>
+<span class="sd">            maximumItrEHL (int)         -- maximum number of iterations for the Elastohydrodynamic solver.</span>
+<span class="sd">            maxToughnessItr (int)       -- maximum toughness loop iterations.</span>
+<span class="sd">            tmStpPrefactor (float)      -- factor for time-step adaptivity.</span>
+<span class="sd">            maxTimeSteps (integer)      -- maximum number of time steps.</span>
+<span class="sd">            tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.</span>
+<span class="sd">            finalTime (float)           -- time where the simulation ends.</span>
+<span class="sd">            timeStepLimit (float)       -- limit above which time step will not exceed.</span>
+<span class="sd">            maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller</span>
+<span class="sd">                                           time step will be attempted the given number of times.</span>
+<span class="sd">            reAttemptFactor (float)     -- the factor by which time step is reduced on reattempts.</span>
+<span class="sd">            plotFigure (boolean)        -- flag specifying to plot fracture trace after the given time period.</span>
+<span class="sd">            saveToDisk (boolean)        -- flag specifying to save fracture to dist after the given time period.</span>
+<span class="sd">            plotAnalytical (boolean)    -- if true, analytical solution will also be plotted along with the computed</span>
+<span class="sd">                                           solution.</span>
+<span class="sd">            analyticalSol (String)      -- the analytical solution of the radial fracture to be plotted on the</span>
+<span class="sd">                                           fracture. Possible options:</span>
+<span class="sd">                                                - K  (toughness dominated regime, without leak off)</span>
+<span class="sd">                                                - Kt (toughness dominated regime , with leak off)</span>
+<span class="sd">                                                - M  (viscosity dominated regime, without leak off)</span>
+<span class="sd">                                                - Mt (viscosity dominated regime , with leak off)</span>
+<span class="sd">                                                - E  (elliptical, toughness dominated without leak off)</span>
+<span class="sd">            bckColor (String)           -- the string specifying the parameter according to which the background of the</span>
+<span class="sd">                                           domain is color coded. Possible options</span>
+<span class="sd">                                                - sigma0 (confining stress)</span>
+<span class="sd">                                                - K1c (fracture toughness)</span>
+<span class="sd">                                                - Cl (leak-off coefficient)</span>
+<span class="sd">            plotEltType (boolean)       -- if True, the type of element will be spedified with color coded dots(channel,</span>
+<span class="sd">                                           ribbon or tip).</span>
+<span class="sd">            utputTimePeriod (float)    -- the time period after which the output file is written or the</span>
+<span class="sd">                                           figures are plotted.</span>
+<span class="sd">            tipAsymptote (string)       -- propagation regime. Possible options:</span>
+<span class="sd">                                                - K  (toughness dominated regime, without leak off)</span>
+<span class="sd">                                                - M  (viscosity dominated regime, without leak off)</span>
+<span class="sd">                                                - Mt (viscosity dominated regime , with leak off)</span>
+<span class="sd">                                                - U  (Universal regime accommodating viscosity, toughness</span>
+<span class="sd">                                                     and leak off (see Donstov and Pierce, 2017))</span>
+<span class="sd">                                                - MK (viscosity to toughness transition regime)</span>
+<span class="sd">            saveRegime (boolean)        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be</span>
+<span class="sd">                                           saved.</span>
+<span class="sd">            verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently</span>
+<span class="sd">                                           two levels 1 and 2 are supported).</span>
+<span class="sd">            enableRemeshing (bool)      -- if True, the computational domain will be compressed by the factor given by</span>
+<span class="sd">                                           by the variable remeshFactor after the fracture front reaches the end of the</span>
+<span class="sd">                                           domain.</span>
+<span class="sd">            remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.</span>
+<span class="sd">            frontAdvancing (string)     -- The type of front advancing to be done. Possible options are:</span>
+<span class="sd">                                                -- explicit</span>
+<span class="sd">                                                -- semi-implicit</span>
+<span class="sd">                                                -- implicit</span>
+<span class="sd">            gravity (bool)              -- if True, the effect of gravity will be taken into account.</span>
+<span class="sd">            collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.</span>
+<span class="sd">            paramFromTip (bool)     -- if True, the space dependant parameters such as toughness and leak-off</span>
+<span class="sd">                                           coefficients will be taken from the tip by projections instead of taking them</span>
+<span class="sd">                                           from the ribbon cell center. The numerical scheme as a result will become</span>
+<span class="sd">                                           unstable due to the complexities in finding the projection</span>
+<span class="sd">            saveReynNumb (boolean)      -- if True, the Reynold&#39;s number at each edge of the cells inside the fracture</span>
+<span class="sd">                                           will be saved.</span>
+<span class="sd">            saveFluidFlux (boolean)     -- if True, the fluid flux at each edge of the cells inside the fracture</span>
+<span class="sd">                                           will be saved.</span>
+<span class="sd">            saveFluidVel (boolean)     -- if True, the fluid velocity at each edge of the cells inside the fracture</span>
+<span class="sd">                                           will be saved.</span>
+<span class="sd">            TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic</span>
+<span class="sd">                                           kernel or kernel with free surface.</span>
+<span class="sd">            projMethod (string)         -- the method by which the angle prescribed by the projections onto the front</span>
+<span class="sd">                                            are evaluated. Possible options are:</span>
+<span class="sd">                                                -- &#39;ILSA_orig&#39; (the method described in the original ILSA scheme)</span>
+<span class="sd">                                                -- &#39;LS_grad&#39; (using gradient of the level set)</span>
+
+<span class="sd">        private variables:</span>
+<span class="sd">            __out_file_address (string) -- disk address of the files to be saved. If not given, a new</span>
+<span class="sd">                                           ./Data/&quot;tim stamp&quot; folder will be automatically created.</span>
+<span class="sd">            __solTimeSeries (ndarray)   -- time series where the solution is required. The time stepping would be</span>
+<span class="sd">                                           adjusted to get solution exactly at the given times.</span>
+<span class="sd">            __dryCrack_mechLoading(bool)-- if True, the mechanical loading solver will be used.</span>
+<span class="sd">            __viscousInjection (bool)   -- if True, the the solver will also take the fluid viscosity into account.</span>
+<span class="sd">            __volumeControl (bool)      -- if True, the the volume control solver will be used.</span>
+<span class="sd">            __simName (str)             -- the name of the simulation.</span>
+<span class="sd">            __timeStamp (str)           -- the time at which the simulation properties was created.</span>
+
+<span class="sd">            </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor of the SimulationParameters class. See documentation of the class.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            address (str)               -- the folder where the simulation parameters file is located. The file must be</span>
+<span class="sd">                                           name &#39;simul_param&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="k">if</span> <span class="s2">&quot;win32&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="ow">or</span> <span class="s2">&quot;win64&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>
+            <span class="n">slash</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slash</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;..&#39;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;src&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;..&#39;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;src&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;src&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;src&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">address</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">src.default_SimParam</span> <span class="k">as</span> <span class="nn">simul_param</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">sys</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+            <span class="kn">import</span> <span class="nn">simul_param</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+
+
+        <span class="c1"># tolerances</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tolFractFront</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">toleranceFractureFront</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toleranceEHL</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">toleranceEHL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toleranceProjection</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">tol_projection</span>
+
+        <span class="c1"># max iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxFrontItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_front_itrs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxSolverItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_solver_itrs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxToughnessItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_toughness_Itrs</span>
+
+        <span class="c1"># time and time stepping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxTimeSteps</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">maximum_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">tmStp_prefactor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finalTime</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">final_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_solTimeSeries</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">req_sol_at</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeStepLimit</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">timeStep_limit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">fixed_time_step</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid fixed time step. The list should have 2 rows (to specify time and &#39;</span>
+                                 <span class="s1">&#39;corresponding time step) for each entry&#39;</span><span class="p">)</span>
+
+        <span class="c1"># time step re-attempt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxReattempts</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_reattemps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reAttemptFactor</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">reattempt_factor</span>
+
+        <span class="c1"># output parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputTimePeriod</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">output_time_period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotFigure</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">plot_figure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotAnalytical</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">plot_analytical</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">analyticalSol</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">analytical_sol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_simulation_name</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">sim_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_outputFolder</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">output_folder</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveToDisk</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_to_disk</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bckColor</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">bck_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotEltType</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">plot_eltType</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blockFigure</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">block_figure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">output_every_TS</span>
+
+        <span class="c1"># solver type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_dryCrack_mechLoading</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">mech_loading</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_viscousInjection</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">viscous_injection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_volumeControl</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">volume_control</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">substitute_pressure</span>
+
+        <span class="c1"># miscellaneous</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">verbosity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_tipAsymptote</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">tip_asymptote</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveRegime</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_regime</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enableRemeshing</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">enable_remeshing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remeshFactor</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">remesh_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">front_advancing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collectPerfData</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">collect_perf_data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramFromTip</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">param_from_tip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveReynNumb</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_ReyNumb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gravity</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">gravity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TI_KernelExecPath</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">TI_Kernel_exec_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveReynNumb</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_ReyNumb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveFluidFlux</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_fluid_flux</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveFluidVel</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_fluid_vel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explicitProjection</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">explict_projection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symmetric</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">symmetric</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projMethod</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">proj_method</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">projMethod</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ILSA_orig&#39;</span><span class="p">,</span> <span class="s1">&#39;LS_grad&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Projection method is not recognised!&quot;</span><span class="p">)</span>
+
+        <span class="c1"># fracture geometry to calculate analytical solution for plotting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aspectRatio</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">aspect_ratio</span>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+    <span class="c1"># setter and getter functions</span>
+
+<div class="viewcode-block" id="SimulationProperties.set_tipAsymptote"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_tipAsymptote">[docs]</a>    <span class="k">def</span> <span class="nf">set_tipAsymptote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tip_asymptote</span><span class="p">):</span>
+        <span class="n">tipAssymptOptions</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;Mt&quot;</span><span class="p">,</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span> <span class="s2">&quot;MK&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tip_asymptote</span> <span class="ow">in</span> <span class="n">tipAssymptOptions</span><span class="p">:</span>  <span class="c1"># check if tip asymptote matches any option</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__tipAsymptote</span> <span class="o">=</span> <span class="n">tip_asymptote</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># error</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid tip asymptote. Possible options: &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">tipAssymptOptions</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_tipAsymptote"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_tipAsymptote">[docs]</a>    <span class="k">def</span> <span class="nf">get_tipAsymptote</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tipAsymptote</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.set_viscousInjection"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_viscousInjection">[docs]</a>    <span class="k">def</span> <span class="nf">set_viscousInjection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visc_injection</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__viscousInjection</span> <span class="o">=</span> <span class="n">visc_injection</span>
+        <span class="k">if</span> <span class="n">visc_injection</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__volumeControl</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__dryCrack_mechLoading</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_viscousInjection"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_viscousInjection">[docs]</a>    <span class="k">def</span> <span class="nf">get_viscousInjection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__viscousInjection</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.set_volumeControl"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_volumeControl">[docs]</a>    <span class="k">def</span> <span class="nf">set_volumeControl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vol_control</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__volumeControl</span> <span class="o">=</span> <span class="n">vol_control</span>
+        <span class="k">if</span> <span class="n">vol_control</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__viscousInjection</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__dryCrack_mechLoading</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_volumeControl"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_volumeControl">[docs]</a>    <span class="k">def</span> <span class="nf">get_volumeControl</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__volumeControl</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.set_dryCrack_mechLoading"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_dryCrack_mechLoading">[docs]</a>    <span class="k">def</span> <span class="nf">set_dryCrack_mechLoading</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mech_loading</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dryCrack_mechLoading</span> <span class="o">=</span> <span class="n">mech_loading</span>
+        <span class="k">if</span> <span class="n">mech_loading</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__viscousInjection</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__volumeControl</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_dryCrack_mechLoading"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_dryCrack_mechLoading">[docs]</a>    <span class="k">def</span> <span class="nf">get_dryCrack_mechLoading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dryCrack_mechLoading</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.set_outputFolder"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_outputFolder">[docs]</a>    <span class="k">def</span> <span class="nf">set_outputFolder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_address</span><span class="p">):</span>
+        <span class="c1"># check operating system to get appropriate slash in the address</span>
+
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="k">if</span> <span class="s2">&quot;win32&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="ow">or</span> <span class="s2">&quot;win64&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>
+            <span class="n">slash</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slash</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span>
+
+        <span class="k">if</span> <span class="n">output_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">saveToDisk</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">output_address</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">slash</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;Windows style slash in the given address on linux system.&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">output_address</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">slash</span> <span class="o">!=</span> <span class="s2">&quot;/&quot;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;linux style slash in the given address on windows system!&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">output_address</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="n">slash</span><span class="p">:</span>
+                <span class="n">output_address</span> <span class="o">=</span> <span class="n">output_address</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">__outputAdress</span> <span class="o">=</span> <span class="n">output_address</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__outputFolder</span> <span class="o">=</span> <span class="n">output_address</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_simulation_name</span><span class="p">()</span> <span class="o">+</span> <span class="n">slash</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__outputAdress</span> <span class="o">=</span> <span class="n">output_address</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__outputFolder</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s2">&quot;_simulation_data_PyFrac&quot;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_simulation_name</span><span class="p">()</span> <span class="o">+</span> <span class="n">slash</span></div>
+
+
+<div class="viewcode-block" id="SimulationProperties.get_outputFolder"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_outputFolder">[docs]</a>    <span class="k">def</span> <span class="nf">get_outputFolder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__outputFolder</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.set_solTimeSeries"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_solTimeSeries">[docs]</a>    <span class="k">def</span> <span class="nf">set_solTimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol_t_srs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sol_t_srs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__solTimeSeries</span> <span class="o">=</span> <span class="n">sol_t_srs</span>
+        <span class="k">elif</span> <span class="n">sol_t_srs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__solTimeSeries</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The given solution time series is not a numpy array!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_solTimeSeries"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_solTimeSeries">[docs]</a>    <span class="k">def</span> <span class="nf">get_solTimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__solTimeSeries</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.set_simulation_name"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_simulation_name">[docs]</a>    <span class="k">def</span> <span class="nf">set_simulation_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simul_name</span><span class="p">):</span>
+        <span class="n">time_stmp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">__%H_%M_%S&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">simul_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__simName</span> <span class="o">=</span> <span class="s1">&#39;simulation&#39;</span> <span class="o">+</span> <span class="s1">&#39;__&#39;</span> <span class="o">+</span> <span class="n">time_stmp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">simul_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The given simulation name is not a string&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__simName</span> <span class="o">=</span> <span class="n">simul_name</span> <span class="o">+</span> <span class="s1">&#39;__&#39;</span> <span class="o">+</span> <span class="n">time_stmp</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__timeStamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_outputFolder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__outputAdress</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SimulationProperties.get_simulation_name"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_simulation_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_simulation_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__simName</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_timeStamp"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_timeStamp">[docs]</a>    <span class="k">def</span> <span class="nf">get_timeStamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeStamp</span></div></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="IterationProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.IterationProperties">[docs]</a><span class="k">class</span> <span class="nc">IterationProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores performance data in the form of a tree</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">itr_type</span><span class="o">=</span><span class="s2">&quot;not initialized&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normList</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">itrType</span> <span class="o">=</span> <span class="n">itr_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CpuTime_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CpuTime_end</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">failure_cause</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">NumbOfElts</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subIterations</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="PlotProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.PlotProperties">[docs]</a><span class="k">class</span> <span class="nc">PlotProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores the parameters used for plotting of the post-processed results</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_style</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">line_style_anal</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span>
+                 <span class="n">line_color_anal</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">line_width_anal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">text_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">disp_precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">mesh_color</span><span class="o">=</span><span class="s1">&#39;yellowgreen&#39;</span><span class="p">,</span> <span class="n">mesh_edge_color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">mesh_label_color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span>
+                 <span class="n">graph_scaling</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">color_maps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colors_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_FP_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineStyle</span> <span class="o">=</span> <span class="n">line_style</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineWidth</span> <span class="o">=</span> <span class="n">line_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="n">line_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorMap</span> <span class="o">=</span> <span class="n">color_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineColorAnal</span> <span class="o">=</span> <span class="n">line_color_anal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineStyleAnal</span> <span class="o">=</span> <span class="n">line_style_anal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineWidthAnal</span> <span class="o">=</span> <span class="n">line_width_anal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">textSize</span> <span class="o">=</span> <span class="n">text_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispPrecision</span> <span class="o">=</span> <span class="n">disp_precision</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meshColor</span> <span class="o">=</span> <span class="n">mesh_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meshEdgeColor</span> <span class="o">=</span> <span class="n">mesh_edge_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meshLabelColor</span> <span class="o">=</span> <span class="n">mesh_label_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span> <span class="o">=</span> <span class="n">interpolation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graphScaling</span> <span class="o">=</span> <span class="n">graph_scaling</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotLegend</span> <span class="o">=</span> <span class="n">plot_legend</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PlotFP_Time</span> <span class="o">=</span> <span class="n">plot_FP_time</span>
+        <span class="k">if</span> <span class="n">color_maps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorMaps</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cool&#39;</span><span class="p">,</span> <span class="s1">&#39;Wistia&#39;</span><span class="p">,</span> <span class="s1">&#39;summer&#39;</span><span class="p">,</span> <span class="s1">&#39;autumn&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorMaps</span> <span class="o">=</span> <span class="n">color_maps</span>
+        <span class="k">if</span> <span class="n">colors_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorsList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="s1">&#39;firebrick&#39;</span><span class="p">,</span> <span class="s1">&#39;olivedrab&#39;</span><span class="p">,</span> <span class="s1">&#39;royalblue&#39;</span><span class="p">,</span> <span class="s1">&#39;deeppink&#39;</span><span class="p">,</span> <span class="s1">&#39;darkmagenta&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorsList</span> <span class="o">=</span> <span class="n">colors_list</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lineColor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="n">to_rgb</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">colorsList</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorsList</span> <span class="o">=</span> <span class="p">[</span><span class="n">line_color</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorMap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colorMaps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colorMaps</span> <span class="o">=</span> <span class="p">[</span><span class="n">color_map</span><span class="p">]</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="LabelProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.LabelProperties">[docs]</a><span class="k">class</span> <span class="nc">LabelProperties</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores the labels of a plot figure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">data_subset</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span> <span class="n">use_latex</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">data_subset</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;wm&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">projection</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;2D_clrmap&#39;</span><span class="p">,</span> <span class="s1">&#39;2D_contours&#39;</span><span class="p">,</span> <span class="s1">&#39;3D&#39;</span><span class="p">,</span> <span class="s1">&#39;2D&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">yLabel</span> <span class="o">=</span> <span class="s1">&#39;meters&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xLabel</span> <span class="o">=</span> <span class="s1">&#39;meters&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zLabel</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">+</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;1D&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xLabel</span> <span class="o">=</span> <span class="s1">&#39;time $(s)$&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">yLabel</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">+</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">data_subset</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;slice&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s1">&#39;2D&#39;</span> <span class="ow">in</span> <span class="n">projection</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xLabel</span> <span class="o">=</span> <span class="s1">&#39;meters&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">yLabel</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">+</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;3D&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">yLabel</span> <span class="o">=</span> <span class="s1">&#39;meters&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xLabel</span> <span class="o">=</span> <span class="s1">&#39;meters&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zLabel</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">+</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">data_subset</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;point&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xLabel</span> <span class="o">=</span> <span class="s1">&#39;time $(s)$&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">yLabel</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">+</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorbarLabel</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">+</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unitConversion</span> <span class="o">=</span> <span class="n">unit_conversion</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="n">Fig_labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legend</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">useLatex</span> <span class="o">=</span> <span class="n">use_latex</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

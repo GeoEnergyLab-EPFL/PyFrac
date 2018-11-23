@@ -1,0 +1,166 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Post-processing and Visualization &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="Examples.html" />
+    <link rel="prev" title="Running a Simulation" href="RunningASimulation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Examples.html" title="Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="RunningASimulation.html" title="Running a Simulation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="post-processing-and-visualization">
+<h1>Post-processing and Visualization<a class="headerlink" href="#post-processing-and-visualization" title="Permalink to this headline">¶</a></h1>
+<p>A comprehensive set of post-processing and visualization routines are provided by <strong>PyFrac</strong>. The fist step to visualize the results is to load the fracture objects from a stored simulation run. <a class="reference internal" href="doc_src/PostProcessFracture.html#PostProcessFracture.load_fractures" title="PostProcessFracture.load_fractures"><code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.load_fractures()</span></code></a> function will do that for you. You can provide the time series at which the fractures are to be loaded. The function will provide a list of Fracture objects with the closest times to the given time series. Note that for a time given in the time series, the fracture with time closest and larger to it will be returned. Let us load a fracture at the simulation time of 100 seconds from the results of the simulation ran in the <a class="reference internal" href="RunningASimulation.html#run-a-simulation"><span class="std std-ref">Running a Simulation</span></a> chapter.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.PostProcessFracture</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">Fr_list</span> <span class="o">=</span> <span class="n">load_fractures</span><span class="p">(</span><span class="n">sim_name</span><span class="o">=</span><span class="s1">&#39;radial&#39;</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The above instruction will return a list of <a class="reference internal" href="doc_src/Fracture.html#module-Fracture" title="Fracture"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fracture</span></code></a> objects corresponding to the given time series, which of length one in this case. Note that since we have not provided any folder address, the results will be loaded from the default folder. Also, if multiple simulations with the same simulation name are found, the most recent run will be loaded. To visualize the fracture, we can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">Fracture.plot_fracture()</span></code> function.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Fr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>With the default options, this function plots the mesh, the footprint and the fracture width with 3D projection. The 3D plot is interactive and can be zoomed in using the mouse wheel.</p>
+<a class="reference internal image-reference" href="_images/default_fracture.png"><img alt="_images/default_fracture.png" class="align-center" src="_images/default_fracture.png" style="width: 512.0px; height: 380.8px;" /></a>
+<p>You can also provide which quantity you want to plot. The following quantities can be plotted.</p>
+<table border="1" class="docutils align-center" id="id1">
+<caption><span class="caption-text">supported variables</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="100%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">supported variables</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>‘w’ or ‘width’</td>
+</tr>
+<tr class="row-odd"><td>‘p’ or ‘pressure’</td>
+</tr>
+<tr class="row-even"><td>‘v’ or ‘front velocity’</td>
+</tr>
+<tr class="row-odd"><td>‘Re’ or ‘Reynolds number’</td>
+</tr>
+<tr class="row-even"><td>‘ff’ or ‘fluid flux’</td>
+</tr>
+<tr class="row-odd"><td>‘fv’ or ‘fluid velocity’</td>
+</tr>
+<tr class="row-even"><td>‘mesh’</td>
+</tr>
+<tr class="row-odd"><td>‘footprint’</td>
+</tr>
+<tr class="row-even"><td>‘lk’ or ‘leaked off’</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The variables ‘Reynolds number’, ‘fluid flux’ and ‘fluid velocity’ are not saved by default in the results. Their saving can be enabled using simulation properties. See <a class="reference internal" href="doc_src/Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.SimulationProperties</span></code></a> for details.</p>
+</div>
+<p>For example, to plot fracture footprint in 2D projection, we can do the following:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Fig</span> <span class="o">=</span> <span class="n">Fr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">)</span>
+<span class="n">Fig</span> <span class="o">=</span> <span class="n">Fr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="n">Fig</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first instruction will plot mesh of our Fracture and will return a <code class="xref py py-class docutils literal notranslate"><span class="pre">Figure</span></code> object. We can use the same figure to plot the footprint. In this case, it will be superimposed on the first plot. The above example show only some basic functionality. For a complete list of available options, see the documentation of the <code class="xref py py-func docutils literal notranslate"><span class="pre">Fracture.plot_fracture()</span></code> function.</p>
+<p>Apart from plotting the whole fracture, you can also plot a slice of the fracture using the py:func:<cite>Fracture.plot_fracture_slice</cite> function. You can give any two points on the domain and the function will plot fracture slice on the mesh joining the two points. let us plot a slice of our mesh passing from the two points (-7, -5) and (7, 5).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Fr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot_fracture_slice</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">point2</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>By default, it will be plotted in 2D projection, but 3D projection can also be plotted.</p>
+<a class="reference internal image-reference" href="_images/fracture_slice.png"><img alt="_images/fracture_slice.png" class="align-center" src="_images/fracture_slice.png" style="width: 512.0px; height: 500.8px;" /></a>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="RunningASimulation.html"
+                        title="previous chapter">Running a Simulation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Examples.html"
+                        title="next chapter">Examples</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Visualization.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Examples.html" title="Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="RunningASimulation.html" title="Running a Simulation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

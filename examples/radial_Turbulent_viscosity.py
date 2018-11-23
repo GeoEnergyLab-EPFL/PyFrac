@@ -33,7 +33,7 @@ Fluid = FluidProperties(viscosity=1.e-3,density=1000,
                         turbulence=True)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.FinalTime = 30             # the time at which the simulation stops
 simulProp.outputEveryTS = 1             # write a file after every 3 time steps
 simulProp.set_outputFolder(".\\Data\\radial_TtoM") # the disk address where the files are saved

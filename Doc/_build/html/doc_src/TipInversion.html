@@ -1,0 +1,234 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>TipInversion module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-TipInversion">
+<span id="tipinversion-module"></span><h1>TipInversion module<a class="headerlink" href="#module-TipInversion" title="Permalink to this headline">¶</a></h1>
+<p>This file is part of PyFrac.</p>
+<p>Created by Haseeb Zia on Tue Nov  1 15:22:00 2016.
+Copyright (c) “ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory”, 2016-2019. All rights
+reserved. See the LICENSE.TXT file for more details.</p>
+<p>Tip inversion for different flow regimes. These functions take width opening and gives distance from tip calculated
+using the given propagation regime.</p>
+<dl class="function">
+<dt id="TipInversion.FindBracket_dist">
+<code class="descclassname">TipInversion.</code><code class="descname">FindBracket_dist</code><span class="sig-paren">(</span><em>w</em>, <em>Kprime</em>, <em>Eprime</em>, <em>muPrime</em>, <em>Cprime</em>, <em>DistLstTS</em>, <em>dt</em>, <em>mesh</em>, <em>ResFunc</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#FindBracket_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.FindBracket_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the valid bracket for the root evaluation function.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.StressIntensityFactor">
+<code class="descclassname">TipInversion.</code><code class="descname">StressIntensityFactor</code><span class="sig-paren">(</span><em>w</em>, <em>lvlSetData</em>, <em>EltTip</em>, <em>EltRibbon</em>, <em>stagnant</em>, <em>mesh</em>, <em>Eprime</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#StressIntensityFactor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.StressIntensityFactor" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function evaluate the stress intensity factor. See Donstov &amp; Pierce Comput. Methods Appl. Mech. Engrn. 2017</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>w</strong> (<em>ndarray-float</em>) – fracture width</li>
+<li><strong>lvlSetData</strong> (<em>ndarray-float</em>) – the level set values, i.e. distance from the fracture front</li>
+<li><strong>EltTip</strong> (<em>ndarray-int</em>) – tip elements</li>
+<li><strong>EltRibbon</strong> (<em>ndarray-int</em>) – ribbon elements</li>
+<li><strong>stagnant</strong> (<em>ndarray-boolean</em>) – the stagnant tip cells</li>
+<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – mesh</li>
+<li><strong>Eprime</strong> (<em>ndarray</em>) – the plain strain modulus</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>the stress intensity factor of the stagnant cells. Zero is returned for the</dt>
+<dd><p class="first last">tip cells that are moving.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray-float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsymInversion">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsymInversion</code><span class="sig-paren">(</span><em>w</em>, <em>frac</em>, <em>matProp</em>, <em>simParmtrs</em>, <em>dt=None</em>, <em>Kprime_k=None</em>, <em>Eprime_k=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsymInversion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsymInversion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in
+the ribbon cells.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>w</strong> (<em>ndarray-float</em>) – fracture width</li>
+<li><strong>frac</strong> (<em>Fracture object</em>) – current fracture object</li>
+<li><strong>matProp</strong> (<em>MaterialProperties object</em>) – Material properties</li>
+<li><strong>simParmtrs</strong> (<em>SimulationParameters object</em>) – Simulation parameters</li>
+<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
+<li><strong>Kprime_k</strong> (<em>ndarray-float</em>) – Kprime for current iteration of toughness loop. if not given, the Kprime
+from the given material properties object will be used.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">distance (unsigned) from the front to the ribbon cells.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dist (ndarray-float)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsymInversion_hetrogenous_toughness">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsymInversion_hetrogenous_toughness</code><span class="sig-paren">(</span><em>w</em>, <em>frac</em>, <em>mat_prop</em>, <em>level_set</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsymInversion_hetrogenous_toughness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsymInversion_hetrogenous_toughness" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function inverts the tip asymptote with the toughness value taken at the tip instead of taking at the ribbon
+cell.</p>
+<dl class="docutils">
+<dt>Argument:</dt>
+<dd>w (ndarray-float):                      fracture width
+frac (Fracture object):                 current fracture object
+matProp (MaterialProperties object):    material properties
+level_set (ndarray-float):              the level set values, i.e. signed distance from the fracture front</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the inverted tip asymptote for the ribbon cells</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">ndarray-float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_MK_zrthOrder_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_MK_zrthOrder_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_MK_zrthOrder_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_MK_zrthOrder_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Residual function for viscosity to toughness regime with transition, without leak off</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_MTildeK_zrthOrder_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_MTildeK_zrthOrder_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_MTildeK_zrthOrder_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_MTildeK_zrthOrder_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Residual function for zeroth-order solution for M~K edge tip asymptote</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_Universal_zrthOrder_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_Universal_zrthOrder_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_Universal_zrthOrder_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_Universal_zrthOrder_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_variable_Toughness_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_variable_Toughness_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_variable_Toughness_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_variable_Toughness_Res" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_viscLeakOff_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_viscLeakOff_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_viscLeakOff_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_viscLeakOff_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Residual function for viscosity dominated regime, with leak off</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_viscStor_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_viscStor_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_viscStor_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_viscStor_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Residual function for viscosity dominate regime, without leak off</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.f">
+<code class="descclassname">TipInversion.</code><code class="descname">f</code><span class="sig-paren">(</span><em>K</em>, <em>Cb</em>, <em>C1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#f"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.find_zero_vertex">
+<code class="descclassname">TipInversion.</code><code class="descname">find_zero_vertex</code><span class="sig-paren">(</span><em>Elts</em>, <em>level_set</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#find_zero_vertex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.find_zero_vertex" title="Permalink to this definition">¶</a></dt>
+<dd><p>find the vertex opposite to the propagation direction from which the perpendicular on the front is drawn</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/TipInversion.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

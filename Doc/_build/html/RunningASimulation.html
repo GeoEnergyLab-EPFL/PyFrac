@@ -1,0 +1,181 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Running a Simulation &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Post-processing and Visualization" href="Visualization.html" />
+    <link rel="prev" title="Installation" href="Installation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Visualization.html" title="Post-processing and Visualization"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-a-simulation">
+<span id="run-a-simulation"></span><h1>Running a Simulation<a class="headerlink" href="#running-a-simulation" title="Permalink to this headline">¶</a></h1>
+<p>Lets run a simple simulation of a radial fracture propagation. The first step towards running the simulation is to create a mesh describing our domain as a <a class="reference internal" href="doc_src/CartesianMesh.html#module-CartesianMesh" title="CartesianMesh"><code class="xref py py-class docutils literal notranslate"><span class="pre">CartesianMesh</span></code></a> object (see the class documentation for details). <strong>PyFrac</strong> uses a rectangular mesh to discretize the domain.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.CartesianMesh</span> <span class="kn">import</span> <span class="n">CartesianMesh</span>
+
+<span class="n">Mesh</span> <span class="o">=</span> <span class="n">CartesianMesh</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mi">41</span><span class="p">,</span> <span class="mi">41</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above code will generate a rectangular mesh with 41 cells along both the x and y axes, having the dimensions of [x_min=-20, x_max=20, y_min=-20, y_max=20] meters. Next, we have to specify the parameters describing the material being fractured and the injected fluid. This is to be done by instantiating the properties classes. Below, we set up a material with the Poisson’s ratio of <span class="math notranslate nohighlight">\(0.4\)</span>, the Young’s modulus of <span class="math notranslate nohighlight">\(3.3\times10^{10}\,Pa\)</span>  and the fracture toughness of <span class="math notranslate nohighlight">\(5\;Mpa\,\sqrt{m}\)</span> by instantiating a <a class="reference internal" href="doc_src/Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.MaterialProperties</span></code></a> object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Properties</span> <span class="kn">import</span> <span class="n">MaterialProperties</span>
+
+<span class="c1"># solid properties</span>
+<span class="n">nu</span> <span class="o">=</span> <span class="mf">0.4</span>                            <span class="c1"># Poisson&#39;s ratio</span>
+<span class="n">youngs_mod</span> <span class="o">=</span> <span class="mf">3.3e10</span>                 <span class="c1"># Young&#39;s modulus</span>
+<span class="n">Eprime</span> <span class="o">=</span> <span class="n">youngs_mod</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">nu</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># plain strain modulus</span>
+<span class="n">K_Ic</span> <span class="o">=</span> <span class="mf">5e6</span>                          <span class="c1"># fracture toughness</span>
+
+<span class="n">Solid</span> <span class="o">=</span> <span class="n">MaterialProperties</span><span class="p">(</span><span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">K_Ic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The fluid properties are to be set up with a <a class="reference internal" href="doc_src/Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.FluidProperties</span></code></a> object. Below we set up a fluid with a viscosity of <span class="math notranslate nohighlight">\(1.1\times 10^{-3}\;Pa\,s\)</span>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Properties</span> <span class="kn">import</span> <span class="n">FluidProperties</span>
+
+<span class="c1"># fluid properties</span>
+<span class="n">Fluid</span> <span class="o">=</span> <span class="n">FluidProperties</span><span class="p">(</span><span class="n">viscosity</span><span class="o">=</span><span class="mf">1.1e-3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we will set up injection parameters with the <a class="reference internal" href="doc_src/Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.InjectionProperties</span></code></a> object. For this simulation, we set the injection rate to be <span class="math notranslate nohighlight">\(0.001\;m^3/s\)</span>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Properties</span> <span class="kn">import</span> <span class="n">InjectionProperties</span>
+
+<span class="c1"># injection parameters</span>
+<span class="n">Q0</span> <span class="o">=</span> <span class="mf">0.001</span>  <span class="c1"># injection rate</span>
+<span class="n">Injection</span> <span class="o">=</span> <span class="n">InjectionProperties</span><span class="p">(</span><span class="n">Q0</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Simulation parameters such as the end time, the times at which the solution is required to be evaluated, the output folder to write data and many others can be set up using <a class="reference internal" href="doc_src/Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.SimulationProperties</span></code></a> object (See the class description for the available options). The parameters are read from a file at the time of instantiation. If no file is given, the default values are used. Below, we first instantiate the simulation parameters object with the default values and then set up the parameters that are required to be changed according to our simulation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Properties</span> <span class="kn">import</span> <span class="n">SimulationProperties</span>
+
+<span class="c1"># simulation properties</span>
+<span class="n">simulProp</span> <span class="o">=</span> <span class="n">SimulationProperties</span><span class="p">()</span>
+<span class="n">simulProp</span><span class="o">.</span><span class="n">finalTime</span> <span class="o">=</span> <span class="mf">1e5</span>                    <span class="c1"># the time at which the simulation stops</span>
+<span class="n">simulProp</span><span class="o">.</span><span class="n">set_simulation_name</span><span class="p">(</span><span class="s2">&quot;radial&quot;</span><span class="p">)</span>      <span class="c1"># name the simulation &quot;radial&quot;</span>
+</pre></div>
+</div>
+<p>After setting up of the properties, let us set up the initial state of the fracture that is to be propagated. It is done by creating a Fracture object. For this simulation, we set the viscosity dominated analytical solution as the initial state of the fracture. A tuple with the initialization parameters “M” (specifying the viscosity dominated regime), “length” (specifying that the type of the value provided is length) and initRad (the value) is passed to the constructor along with the properties objects that we had instantiated before. For a complete list of options and the ways a fracture can be initialized, see the documentation of the <a class="reference internal" href="doc_src/Fracture.html#module-Fracture" title="Fracture"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fracture</span></code></a> class . For this simulation, we start with a fracture with a radius of <span class="math notranslate nohighlight">\(0.1\,m\)</span>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Fracture</span> <span class="kn">import</span> <span class="n">Fracture</span>
+
+<span class="c1"># initialization parameters</span>
+<span class="n">initRad</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">init_param</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;length&quot;</span><span class="p">,</span> <span class="n">initRad</span><span class="p">)</span>
+
+<span class="c1"># creating fracture object</span>
+<span class="n">Fr</span> <span class="o">=</span> <span class="n">Fracture</span><span class="p">(</span><span class="n">Mesh</span><span class="p">,</span>
+              <span class="n">init_param</span><span class="p">,</span>
+              <span class="n">Solid</span><span class="p">,</span>
+              <span class="n">Fluid</span><span class="p">,</span>
+              <span class="n">Injection</span><span class="p">,</span>
+              <span class="n">simulProp</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After specifying all the properties and initializing the fracture, we will set up a controller and run the simulation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Controller</span> <span class="kn">import</span> <span class="n">Controller</span>
+
+<span class="c1"># create a Controller</span>
+<span class="n">controller</span> <span class="o">=</span> <span class="n">Controller</span><span class="p">(</span><span class="n">Fr</span><span class="p">,</span>
+                        <span class="n">Solid</span><span class="p">,</span>
+                        <span class="n">Fluid</span><span class="p">,</span>
+                        <span class="n">Injection</span><span class="p">,</span>
+                        <span class="n">simulProp</span><span class="p">)</span>
+
+<span class="c1"># run the simulation</span>
+<span class="n">controller</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The <code class="xref py py-func docutils literal notranslate"><span class="pre">Controller.run()</span></code> function will advance the simulation according to the parameters set in the simulation properties. The state of the fracture is stored in the form of the fracture object in the output folder set up in the simulation properties. A new folder with the name of the simulation and the time stamp at which the simulation was run is created for each of the simulation. If a folder or name is not provided, the simulation will be saved in the default folder (_simulation_data_PyFrac) with the default name (simulation). After the simulation is finished, the results can be post-processed and visualized using the provided visualization routines.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Installation.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Visualization.html"
+                        title="next chapter">Post-processing and Visualization</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/RunningASimulation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Visualization.html" title="Post-processing and Visualization"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Installation.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

@@ -36,7 +36,7 @@ viscosity = 0.001 / 12  # mu' =0.001
 Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder(".\\Data\\MtoK_leakoff") # the disk address where the files are saved

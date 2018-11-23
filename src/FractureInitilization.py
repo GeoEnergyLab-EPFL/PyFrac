@@ -120,7 +120,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
     FillFrac = FillFrac_tmp[newTip_indices]
 
     if EltChannel.size <= EltRibbon.size:
-        raise SystemExit("No channel elements. The initial radius is probably too small")
+        raise SystemExit("No channel elements. The initial radius is probably too small!")
 
 
     return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist
@@ -173,15 +173,15 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
     if symmetric:
 
-        CrackElts_sym = mesh.corr[EltCrack]
+        CrackElts_sym = mesh.corresponding[EltCrack]
         CrackElts_sym = np.unique(CrackElts_sym)
 
-        EltTip_sym = mesh.corr[EltTip]
+        EltTip_sym = mesh.corresponding[EltTip]
         EltTip_sym = np.unique(EltTip_sym)
 
         FillF_mesh = np.zeros((mesh.NumberOfElts,), )
         FillF_mesh[EltTip] = FillFrac
-        FillF_sym = FillF_mesh[mesh.all[EltTip_sym]]
+        FillF_sym = FillF_mesh[mesh.activeSymtrc[EltTip_sym]]
         self_infl = self_influence(mesh, Eprime)
 
         C_EltTip = C[np.ix_(EltTip_sym, EltTip_sym)]  # keeping the tip element entries to restore current tip correction. This is
@@ -197,21 +197,21 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
         if w is None and not p is None:
             w_sym_EltCrack = np.linalg.solve(C[np.ix_(CrackElts_sym, CrackElts_sym)],
-                                             p_calculated[mesh.all[CrackElts_sym]])
+                                             p_calculated[mesh.activeSymtrc[CrackElts_sym]])
             for i in range(len(w_sym_EltCrack)):
-                w_calculated[mesh.symmetric_elmnts[mesh.all[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
+                w_calculated[mesh.symmetricElts[mesh.activeSymtrc[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
 
         if w is not None and p is None:
-            p_sym_EltCrack = np.dot(C[np.ix_(CrackElts_sym, CrackElts_sym)], w[mesh.all[CrackElts_sym]])
+            p_sym_EltCrack = np.dot(C[np.ix_(CrackElts_sym, CrackElts_sym)], w[mesh.activeSymtrc[CrackElts_sym]])
             for i in range(len(p_sym_EltCrack)):
-                p_calculated[mesh.symmetric_elmnts[mesh.all[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
+                p_calculated[mesh.symmetricElts[mesh.activeSymtrc[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
 
         # calculate the width and pressure by considering fracture as a static fracture.
         if w is None and p is None:
             C_Crack = C[np.ix_(CrackElts_sym, CrackElts_sym)]
 
             A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
-            weights = mesh.vol_weights[CrackElts_sym]
+            weights = mesh.volWeights[CrackElts_sym]
             weights = np.concatenate((weights, np.array([0.0])))
             A = np.vstack((A, weights))
 

@@ -148,7 +148,7 @@ unit_conversion = {
 }
 
 
-supported_variables = ['w','width','p','pressure', 'front velocity','v',
+supported_variables = ['w', 'width', 'p', 'pressure', 'front velocity', 'v',
                        'Reynolds number', 'Re', 'fluid flux', 'ff',
                        'fluid velocity', 'fv', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
@@ -195,6 +195,7 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'lk\' or \'leaked off\'\n' \
                     '-- \'lkv\' or \'leaked off volume\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
+                    '-- \'ef\' or \'efficiency\'\n' \
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],

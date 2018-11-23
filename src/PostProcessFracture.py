@@ -29,20 +29,25 @@ else:
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def load_fractures(address=None, simulation='simulation', time_period=0.0, time_srs=None):
-    '''
-    This function plots the footprints of the fractures saved in the given folder.
 
-    Arguments:
-        address (string)                -- the folder address containing the saved files
-        time_period (float)             -- time period between two successive fractures.
-        time_srs (ndarray)              -- if provided, the fracture footprints will be plotted at the given times.
-        multpl_sim (bool)               -- if True, data from older simulation will also be plotted.
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None):
+    """
+    This function returns a list of the fractures. If address and simulation name are not provided, results from the
+    default address and having the default name will be loaded.
 
+    Args:
+        address (string):               -- the folder address containing the saved files. If it is not provided,
+                                            simulation from the default folder (_simulation_data_PyFrac) will be loaded.
+        sim_name (string):              -- the simulation name from which the fractures are to be loaded. If not
+                                            provided, simulation with the default name (Simulation) will be loaded.
+        time_period (float):            -- time period between two successive fractures to be loaded. if not provided,
+                                            all fractures will be loaded.
+        time_srs (ndarray):             -- if provided, the fracture stored at the closest time after the given times
+                                            will be loaded.
     Returns:
-        fracture_list (list)            -- a figure to superimpose.
+        (list):                         -- a list of fractures.
 
-    '''
+    """
 
     print('Returning fractures...')
 
@@ -58,13 +63,13 @@ def load_fractures(address=None, simulation='simulation', time_period=0.0, time_
         time_srs = np.array(time_srs)
 
     sim_full_name = None
-    if re.match('\d+-\d+-\d+__\d+_\d+_\d+', simulation[-20:]):
-        sim_full_name = simulation
+    if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):
+        sim_full_name = sim_name
     else:
         simulations = os.listdir(address)
         recent_sim_time = 0
         for i in simulations:
-            if re.match(simulation + '__\d+-\d+-\d+__\d+_\d+_\d+', i):
+            if re.match(sim_name + '__\d+-\d+-\d+__\d+_\d+_\d+', i):
 
                 filename = address + i + slash + 'properties'
                 try:
@@ -132,7 +137,7 @@ def load_fractures(address=None, simulation='simulation', time_period=0.0, time_
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
 
-    return fracture_list, properties
+    return fracture_list
 
 
 #-----------------------------------------------------------------------------------------------------------------------

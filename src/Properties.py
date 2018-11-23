@@ -330,9 +330,9 @@ class LoadingProperties:
 
 
 # --------------------------------------------------------------------------------------------------------
-class SimulationParameters:
+class SimulationProperties:
     """
-        Class defining the simulation parameters
+    Class defining the simulation properties.
 
         instance variables
             tolFractFront (float)       -- tolerance for the fracture front loop.

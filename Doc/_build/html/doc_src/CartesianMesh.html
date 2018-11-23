@@ -1,0 +1,397 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>CartesianMesh module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-CartesianMesh">
+<span id="cartesianmesh-module"></span><span id="cartesianmesh"></span><h1>CartesianMesh module<a class="headerlink" href="#module-CartesianMesh" title="Permalink to this headline">¶</a></h1>
+<p>This file is part of PyFrac.</p>
+<p>Created by Haseeb Zia on Thu Dec 22 11:51:00 2016.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019. All rights reserved.
+See the LICENSE.TXT file for more details.</p>
+<dl class="class">
+<dt id="CartesianMesh.CartesianMesh">
+<em class="property">class </em><code class="descclassname">CartesianMesh.</code><code class="descname">CartesianMesh</code><span class="sig-paren">(</span><em>Lx</em>, <em>Ly</em>, <em>nx</em>, <em>ny</em>, <em>symmetric=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class defining a Cartesian Mesh.</p>
+<p>The constructor creates a uniform Cartesian mesh centered at (0,0) and having the dimensions of [-Lx,Lx]*[-Ly,Ly].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nx</strong><strong>,</strong><strong>ny</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – number of elements in x and y directions respectively.</li>
+<li><strong>Lx</strong><strong>,</strong><strong>Ly</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – lengths in x and y directions respectively.</li>
+<li><strong>symmetric</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, additional variables (see list of attributes) will be evaluated for symmetric
+fracture solver.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt>
+<code class="descname">Lx,Ly</code></dt>
+<dd><p><em>float</em> – – length of the domain in x and y directions respectively. The rectangular domain
+have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
+the positive and negative halves are included.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">nx,ny</code></dt>
+<dd><p><em>int</em> – – number of elements in x and y directions respectively.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">hx,hy</code></dt>
+<dd><p><em>float</em> – – grid spacing in x and y directions respectively.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.VertexCoor">
+<code class="descname">VertexCoor</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.VertexCoor" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – [x,y] Coordinates of the vertices.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.CenterCoor">
+<code class="descname">CenterCoor</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.CenterCoor" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – [x,y] coordinates of the center of the elements.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.NumberOfElts">
+<code class="descname">NumberOfElts</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.NumberOfElts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – – total number of elements in the mesh.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.EltArea">
+<code class="descname">EltArea</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.EltArea" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – – area of each element.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.Connectivity">
+<code class="descname">Connectivity</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.Connectivity" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – connectivity array giving four vertices of an element in the following order
+[bottom left, bottom right, top right, top left]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.NeiElements">
+<code class="descname">NeiElements</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.NeiElements" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – Giving four neighboring elements with the following order:[left, right,
+bottom, up].</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.distCenter">
+<code class="descname">distCenter</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.distCenter" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the distance of the cells from the center.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.CenterElts">
+<code class="descname">CenterElts</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.CenterElts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the element in the center (the cell with the injection point).</p>
+</dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The attributes below are only evaluated if symmetric solver is used.</p>
+</div>
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.corresponding">
+<code class="descname">corresponding</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.corresponding" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the index of the corresponding symmetric cells in the set of active cells
+(activeSymtrc) for each cell in the mesh.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.symmetricElts">
+<code class="descname">symmetricElts</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.symmetricElts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the set of four symmetric cells in the mesh for each of the cell.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.activeSymtrc">
+<code class="descname">activeSymtrc</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.activeSymtrc" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the set of cells that are active in the mesh. Only these cells will be solved
+and the solution will be replicated in the symmetric cells.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.posQdrnt">
+<code class="descname">posQdrnt</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.posQdrnt" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the set of elements in the positive quadrant not including the boundaries.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.boundary_x">
+<code class="descname">boundary_x</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.boundary_x" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the elements intersecting the positive x-axis line.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.boundary_y">
+<code class="descname">boundary_y</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.boundary_y" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the elements intersecting the positive y-axis line.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="CartesianMesh.CartesianMesh.volWeights">
+<code class="descname">volWeights</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.volWeights" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the weights of the active elements in the volume of the fracture. The cells in the
+positive quadrant, the boundaries and the injection cell have the weights of 4, 2
+and 1 respectively.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="CartesianMesh.CartesianMesh.Neighbors">
+<code class="descname">Neighbors</code><span class="sig-paren">(</span><em>elem</em>, <em>nx</em>, <em>ny</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.Neighbors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.Neighbors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Neighbouring elements of an element within the mesh. Boundary elements have themselves as neighbor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>elem</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – element whose neighbor are to be found.</li>
+<li><strong>nx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – number of elements in x direction.</li>
+<li><strong>ny</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – number of elements in y direction.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>A tuple containing the following:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">left (int)     – left neighbour.</div>
+<div class="line">right (int)    – right neighbour.</div>
+<div class="line">bottom (int)   – bottom neighbour.</div>
+<div class="line">top (int)      – top neighbour.</div>
+</div>
+</div></blockquote>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CartesianMesh.CartesianMesh.identify_elements">
+<code class="descname">identify_elements</code><span class="sig-paren">(</span><em>elements</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plot_mesh=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.identify_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.identify_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>This functions identify the given set of elements by highlighting them on the grid. the function plots
+the grid and the given set of elements.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>elements</strong> (<em>ndarray</em>) – – the given set of elements to be highlighted.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – A figure object to superimpose.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – A PlotProperties object giving the properties to be utilized for
+the plot.</li>
+<li><strong>plot_mesh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if False, grid will not be plotted and only the edges of the given
+elements will be plotted.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object to superimpose.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CartesianMesh.CartesianMesh.locate_element">
+<code class="descname">locate_element</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.locate_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.locate_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function gives the cell containing the given coordinates. Numpy nan is returned if the cell is not in
+the mesh.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the x coordinate of the given point.</li>
+<li><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the y coordinate of the given point.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">elt (int)   – the element containing the given coordinates.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CartesianMesh.CartesianMesh.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>material_prop=None</em>, <em>backGround_param=None</em>, <em>fig=None</em>, <em>plot_prop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the mesh in 2D. If the material properties is given, the cells will be color coded
+according to the parameter given by the backGround_param argument.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>material_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – a MaterialProperties class object</li>
+<li><strong>backGround_param</strong> (<em>string</em>) – – the cells of the grid will be color coded according to the value
+of the parameter given by this argument.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – A figure object to superimpose.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – A PlotProperties object giving the properties to be utilized for
+the plot.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object to superimpose.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CartesianMesh.CartesianMesh.plot_3D">
+<code class="descname">plot_3D</code><span class="sig-paren">(</span><em>material_prop=None</em>, <em>backGround_param=None</em>, <em>fig=None</em>, <em>plot_prop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.plot_3D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.plot_3D" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the mesh in 3D. If the material properties is given, the cells will be color coded
+according to the parameter given by the backGround_param argument.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>material_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – a MaterialProperties class object</li>
+<li><strong>backGround_param</strong> (<em>string</em>) – – the cells of the grid will be color coded according to the value
+of the parameter given by this argument.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – A figure object to superimpose.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – A PlotProperties object giving the properties to be utilized for
+the plot.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object to superimpose.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CartesianMesh.CartesianMesh.plot_scale_3d">
+<code class="descname">plot_scale_3d</code><span class="sig-paren">(</span><em>ax</em>, <em>plot_prop</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.plot_scale_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.plot_scale_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the scale of the fracture by adding lines giving the length dimensions of the fracture.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="CartesianMesh.make_3D_colorbar">
+<code class="descclassname">CartesianMesh.</code><code class="descname">make_3D_colorbar</code><span class="sig-paren">(</span><em>mesh</em>, <em>material_prop</em>, <em>backGround_param</em>, <em>ax</em>, <em>plot_prop</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#make_3D_colorbar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.make_3D_colorbar" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function makes the color bar on 3D mesh plot using rectangular patches with color gradient from gray to the
+color given by the plot properties. The minimum and maximum values are taken from the given parameter in the
+material properties.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="CartesianMesh.process_material_prop_for_display">
+<code class="descclassname">CartesianMesh.</code><code class="descname">process_material_prop_for_display</code><span class="sig-paren">(</span><em>material_prop</em>, <em>backGround_param</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#process_material_prop_for_display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.process_material_prop_for_display" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function generates the appropriate variables to display the color coded mesh background.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/CartesianMesh.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

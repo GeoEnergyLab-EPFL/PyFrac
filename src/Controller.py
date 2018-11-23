@@ -52,6 +52,7 @@ class Controller:
        self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.stepsFromChckPnt = 0
        self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
+       self.stagnant_TS = None
        self.perfData = []
        self.lastSavedFile = 0
        self.lastSavedTime = -1e99
@@ -499,11 +500,11 @@ class Controller:
 
         # in case of fracture not propagating
         if TimeStep <= 0 or np.isinf(TimeStep):
-            if self.sim_prop.timeStepLimit is not None:
-                TimeStep = self.sim_prop.timeStepLimit
+            if self.stagnant_TS is not None:
+                TimeStep = self.stagnant_TS
             else:
-                raise ValueError("The fracture front seems to be stagnant. The time step limit would be used as time"
-                                 "step.\nMake sure it is set in the simulation properties.")
+                raise ValueError("The fracture front seems to be stagnant and no time step is available. Provide a "
+                                 "fixed time step at this time.")
 
         # to get the solution at the times given in time series or final time
         next_in_TS = self.sim_prop.finalTime
@@ -520,5 +521,7 @@ class Controller:
         # check if time step would step over the next time in required time series
         if self.fracture.time + TimeStep > next_in_TS:
             TimeStep = next_in_TS - self.fracture.time
+
+        self.stagnant_TS = TimeStep * 1.2
 
         return TimeStep

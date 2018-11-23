@@ -23,37 +23,61 @@ from src.Visualization import zoom_factory, to_precision, text3d
 from src.Symmetry import *
 
 class CartesianMesh:
-    """ Class defining a Cartesian Mesh.
+    """Class defining a Cartesian Mesh.
 
-        Instance variables:
-            Lx,Ly (float)           -- length of the domain in x and y directions respectively. The rectangular domain
-                                       have a total length of 2xLx in the x direction and 2xLy in the y direction if
-                                       both the positive and negative halves are included.
-            nx,ny (int)             -- number of elements in x and y directions respectively
-            hx,hy (float)           -- grid spacing in x and y directions respectively
-            VertexCoor  (ndarray)   -- [x,y] Coordinates of the vertices
-            CenterCoor  (ndarray)   -- [x,y] coordinates of the center of the elements
-            NumberOfElts (int)      -- total number of elements in the mesh
-            EltArea (float)         -- area of each element
-            Connectivity (ndarray)  -- connectivity array giving four vertices of an element in the following order
-                                        3         2
-                                        0         1
-            NeiElements (ndarray)   -- Giving four neighbouring elements with the following order:[left,right,bottom,up]
-            distCenter (ndarray)    -- the distance of the cells from the center
-            CenterElts (ndarray)    -- the element(s) in the center (the cell with the injection point)
-            
-        Methods:
-            __init__()      -- create a uniform Cartesian mesh centered  [-Lx,Lx]*[-Ly,Ly]
-            remesh()        -- remesh the grid uniformly by increasing the domain lengths with the given factor in both
-                               x and y directions
+    The constructor creates a uniform Cartesian mesh centered at (0,0) and having the dimensions of [-Lx,Lx]*[-Ly,Ly].
+
+    Args:
+        nx,ny (int):        -- number of elements in x and y directions respectively.
+        Lx,Ly (float):      -- lengths in x and y directions respectively.
+        symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for symmetric
+                                fracture solver.
+
+    Attributes:
+        Lx,Ly (float):           -- length of the domain in x and y directions respectively. The rectangular domain
+                                    have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
+                                    the positive and negative halves are included.
+        nx,ny (int):             -- number of elements in x and y directions respectively.
+        hx,hy (float):           -- grid spacing in x and y directions respectively.
+        VertexCoor  (ndarray):   -- [x,y] Coordinates of the vertices.
+        CenterCoor  (ndarray):   -- [x,y] coordinates of the center of the elements.
+        NumberOfElts (int):      -- total number of elements in the mesh.
+        EltArea (float):         -- area of each element.
+        Connectivity (ndarray):  -- connectivity array giving four vertices of an element in the following order
+                                    [bottom left, bottom right, top right, top left]
+        NeiElements (ndarray):   -- Giving four neighboring elements with the following order:[left, right,
+                                    bottom, up].
+        distCenter (ndarray):    -- the distance of the cells from the center.
+        CenterElts (ndarray):    -- the element in the center (the cell with the injection point).
+
+    Note:
+        The attributes below are only evaluated if symmetric solver is used.
+
+    Attributes:
+        corresponding (ndarray): -- the index of the corresponding symmetric cells in the set of active cells
+                                    (activeSymtrc) for each cell in the mesh.
+        symmetricElts (ndarray): -- the set of four symmetric cells in the mesh for each of the cell.
+        activeSymtrc (ndarray):  -- the set of cells that are active in the mesh. Only these cells will be solved
+                                    and the solution will be replicated in the symmetric cells.
+        posQdrnt (ndarray):      -- the set of elements in the positive quadrant not including the boundaries.
+        boundary_x (ndarray):    -- the elements intersecting the positive x-axis line.
+        boundary_y (ndarray):    -- the elements intersecting the positive y-axis line.
+        volWeights (ndarray):    -- the weights of the active elements in the volume of the fracture. The cells in the
+                                    positive quadrant, the boundaries and the injection cell have the weights of 4, 2
+                                    and 1 respectively.
+
     """
 
     def __init__(self, Lx, Ly, nx, ny, symmetric=False):
         """ 
-        Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx,Lx]*[-Ly,Ly]
-        Arguments:
-            nx,ny (int)     -- number of elements in x and y directions respectively
-            Lx,Ly (float)   -- lengths in x and y directions respectively
+        Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx, Lx]*[-Ly, Ly].
+
+        Args:
+            nx,ny (int)         -- number of elements in x and y directions respectively
+            Lx,Ly (float)       -- lengths in x and y directions respectively
+            symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for
+                                    symmetric fracture solver.
+
         """
 
         self.Lx = Lx
@@ -122,7 +146,6 @@ class CartesianMesh:
         self.NeiElements = Nei
 
         # the element in the center (used for fluid injection)
-        (minx, miny) = (min(abs(self.CenterCoor[:, 0])), min(abs(self.CenterCoor[:, 1])))
         self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < self.hx/2),
                                          np.where(abs(self.CenterCoor[:, 1]) < self.hy/2))
         if self.CenterElts.size != 1:
@@ -130,33 +153,38 @@ class CartesianMesh:
             raise ValueError("Mesh with no center element. To be looked into")
 
         if symmetric:
-            self.corr = corresponding_elements_in_symmetric(self)
-            self.symmetric_elmnts = get_symetric_elements(self, np.arange(self.NumberOfElts))
-            self.all, self.elements, self.boundary_x, self.boundary_y = get_active_symmetric_elements(self)
+            self.corresponding = corresponding_elements_in_symmetric(self)
+            self.symmetricElts = get_symetric_elements(self, np.arange(self.NumberOfElts))
+            self.activeSymtrc, self.posQdrnt, self.boundary_x, self.boundary_y = get_active_symmetric_elements(self)
 
-            self.vol_weights = np.full((len(self.all), ), 4., dtype=np.float32)
-            self.vol_weights[len(self.elements): -1] = 2.
-            self.vol_weights[-1] = 1.
+            self.volWeights = np.full((len(self.activeSymtrc), ), 4., dtype=np.float32)
+            self.volWeights[len(self.posQdrnt): -1] = 2.
+            self.volWeights[-1] = 1.
 
 
     # -----------------------------------------------------------------------------------------------------------------------
 
     def locate_element(self, x, y):
         """
-        This function gives the cell containing the given coordinates
-        Arguments:
-            x (float)  -- the x coordinate of the given point
-            y (float)  -- the y coordinate of the given point
+        This function gives the cell containing the given coordinates. Numpy nan is returned if the cell is not in
+        the mesh.
+
+        Args:
+            x (float):  -- the x coordinate of the given point.
+            y (float):  -- the y coordinate of the given point.
 
         Returns:
-            elt (int)  -- the element containing the given coordinates
+            elt (int)   -- the element containing the given coordinates.
+
         """
+
         elt = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) <= self.hx/2.+sys.float_info.epsilon)[0],
                            np.where(abs(self.CenterCoor[:, 1] - y) <= self.hy/2.+sys.float_info.epsilon)[0])
 
         if elt.size == 0:
             return np.nan
         elif elt.size > 1:
+            # can happen if the point lie on edge
             print("more than one found!")
 
         return elt[0]
@@ -166,17 +194,21 @@ class CartesianMesh:
 
     def Neighbors(self, elem, nx, ny):
         """
-        Neighbouring elements of an element within the mesh . Boundary elements have themselves as neighbor
-        Arguments:
-            elem (int): element whose neighbor are to be found
-            nx (int):   number of elements in x direction
-            ny (int):   number of elements in y direction
+        Neighbouring elements of an element within the mesh. Boundary elements have themselves as neighbor.
+
+        Args:
+            elem (int):         -- element whose neighbor are to be found.
+            nx (int):           -- number of elements in x direction.
+            ny (int):           -- number of elements in y direction.
 
         Returns:
-            int:        left neighbour
-            int:        right neighbour
-            int:        bottom neighbour
-            int:        top neighbour
+            (tuple): A tuple containing the following:
+
+                | left (int)     -- left neighbour.
+                | right (int)    -- right neighbour.
+                | bottom (int)   -- bottom neighbour.
+                | top (int)      -- top neighbour.
+
         """
 
         j = elem // nx
@@ -202,22 +234,27 @@ class CartesianMesh:
         else:
             up = (j + 1) * nx + i
 
-        return (left, right, bottom, up)
+        return left, right, bottom, up
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
     def plot(self, material_prop=None, backGround_param=None, fig=None, plot_prop=None):
         """
-        This function plots the mesh. If the material properties is given, the cells will be color coded according to
-        the parameter given by the backGround_param argument
+        This function plots the mesh in 2D. If the material properties is given, the cells will be color coded
+        according to the parameter given by the backGround_param argument.
 
-        Arguments:
-            material_prop (MaterialProperties)      -- a MaterialProperties class object
-            backGround_param (string)               -- the cells of the grid will be color coded according to the value
-                                                       of the parameter given by this argument
+        Args:
+            material_prop (MaterialProperties):  -- a MaterialProperties class object
+            backGround_param (string):           -- the cells of the grid will be color coded according to the value
+                                                    of the parameter given by this argument.
+            fig (Figure):                        -- A figure object to superimpose.
+            plot_prop (PlotProperties):          -- A PlotProperties object giving the properties to be utilized for
+                                                    the plot.
+
         Returns:
-            fig (Figure)                            -- A Figure object to superimpose
+            (Figure):                            -- A Figure object to superimpose.
+
         """
 
         if fig is None:
@@ -266,7 +303,26 @@ class CartesianMesh:
 
         return fig
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
     def plot_3D(self, material_prop=None, backGround_param=None, fig=None, plot_prop=None):
+        """
+        This function plots the mesh in 3D. If the material properties is given, the cells will be color coded
+        according to the parameter given by the backGround_param argument.
+
+        Args:
+            material_prop (MaterialProperties):  -- a MaterialProperties class object
+            backGround_param (string):           -- the cells of the grid will be color coded according to the value
+                                                    of the parameter given by this argument.
+            fig (Figure):                        -- A figure object to superimpose.
+            plot_prop (PlotProperties):          -- A PlotProperties object giving the properties to be utilized for
+                                                    the plot.
+
+        Returns:
+            (Figure):                            -- A Figure object to superimpose.
+
+        """
 
         if backGround_param is not None and material_prop is None:
             raise ValueError("Material properties are required to plot the background parameter.")
@@ -325,7 +381,15 @@ class CartesianMesh:
 
         return fig
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
     def plot_scale_3d(self, ax, plot_prop):
+        """
+        This function plots the scale of the fracture by adding lines giving the length dimensions of the fracture.
+
+        """
+
         print("\tPlotting scale...")
 
         Path = mpath.Path
@@ -393,8 +457,26 @@ class CartesianMesh:
         ax.add_patch(patch)
         art3d.pathpatch_2d_to_3d(patch)
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 
     def identify_elements(self, elements, fig=None, plot_prop=None, plot_mesh=True):
+        """
+        This functions identify the given set of elements by highlighting them on the grid. the function plots
+        the grid and the given set of elements.
+
+        Args:
+            elements (ndarray):             -- the given set of elements to be highlighted.
+            fig (Figure):                   -- A figure object to superimpose.
+            plot_prop (PlotProperties):     -- A PlotProperties object giving the properties to be utilized for
+                                               the plot.
+            plot_mesh (bool):               -- if False, grid will not be plotted and only the edges of the given
+                                               elements will be plotted.
+
+        Returns:
+            (Figure):                       -- A Figure object to superimpose.
+
+        """
 
         if fig is None:
             fig, ax = plt.subplots()
@@ -426,8 +508,17 @@ class CartesianMesh:
 
         return fig
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 def make_3D_colorbar(mesh, material_prop, backGround_param, ax, plot_prop):
+    """
+    This function makes the color bar on 3D mesh plot using rectangular patches with color gradient from gray to the
+    color given by the plot properties. The minimum and maximum values are taken from the given parameter in the
+    material properties.
+
+    """
+
     print("\tMaking colorbar...")
 
     min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
@@ -483,8 +574,15 @@ def make_3D_colorbar(mesh, material_prop, backGround_param, ax, plot_prop):
                ec="none",
                fc=txt_color)
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 def process_material_prop_for_display(material_prop, backGround_param):
+    """
+    This function generates the appropriate variables to display the color coded mesh background.
+
+    """
+
     colors = np.full((len(material_prop.SigmaO),), 0.5)
 
     if backGround_param == 'sigma0':

@@ -35,17 +35,15 @@ viscosity = 0.001 / 12  # mu' =0.001
 Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 1500               # the time at which the simulation stops
 simulProp.outputEveryTS = 1              # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder(".\\Data\\closure") # the disk address where the files are saved
 simulProp.plotFigure = True              # plot fracture during simulation
 simulProp.timeStepLimit = 100.           # set the time step limit. Will be used as time step when front stops
-simulProp.fixedTmStp = np.asarray([[0, 1415, 1425], [None, 3, None]]) # give a list of time steps. None means will be
+simulProp.fixedTmStp = np.asarray([[0, 1415, 1425], [None, 3, None]]) # give a list of time steps. None means it will be
                                                                       # set according to front velocity. Needed to be
                                                                       # restricted before starting injection again.
-
-
 # initializing fracture
 initTime = 10
 init_param = ("M", "time", initTime)

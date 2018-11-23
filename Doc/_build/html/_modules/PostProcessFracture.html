@@ -1,0 +1,623 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>PostProcessFracture &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for PostProcessFracture</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># This file is part of PyFrac.</span>
+<span class="c1">#</span>
+<span class="c1"># Created by Brice Lecampion on 12.06.17.</span>
+<span class="c1"># Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.  All rights reserved.</span>
+<span class="c1"># See the LICENSE.TXT file for more details.</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1"># Post-process scripts to plot results for a fracture</span>
+
+<span class="c1"># local</span>
+
+<span class="kn">from</span> <span class="nn">src.Utility</span> <span class="k">import</span> <span class="n">ReadFracture</span>
+<span class="kn">from</span> <span class="nn">src.HFAnalyticalSolutions</span> <span class="k">import</span> <span class="n">HF_analytical_sol</span><span class="p">,</span> <span class="n">get_fracture_dimensions_analytical</span>
+<span class="kn">from</span> <span class="nn">src.Labels</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">griddata</span>
+<span class="kn">import</span> <span class="nn">dill</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+
+<span class="k">if</span> <span class="s1">&#39;win32&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="ow">or</span> <span class="s1">&#39;win64&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>
+    <span class="n">slash</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">slash</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="load_fractures"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.load_fractures">[docs]</a><span class="k">def</span> <span class="nf">load_fractures</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sim_name</span><span class="o">=</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="n">time_period</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns a list of the fractures. If address and simulation name are not provided, results from the</span>
+<span class="sd">    default address and having the default name will be loaded.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        address (string):               -- the folder address containing the saved files. If it is not provided,</span>
+<span class="sd">                                            simulation from the default folder (_simulation_data_PyFrac) will be loaded.</span>
+<span class="sd">        sim_name (string):              -- the simulation name from which the fractures are to be loaded. If not</span>
+<span class="sd">                                            provided, simulation with the default name (Simulation) will be loaded.</span>
+<span class="sd">        time_period (float):            -- time period between two successive fractures to be loaded. if not provided,</span>
+<span class="sd">                                            all fractures will be loaded.</span>
+<span class="sd">        time_srs (ndarray):             -- if provided, the fracture stored at the closest time after the given times</span>
+<span class="sd">                                            will be loaded.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (list):                         -- a list of fractures.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Returning fractures...&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">address</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;_simulation_data_PyFrac&#39;</span>
+
+    <span class="k">if</span> <span class="n">address</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">slash</span><span class="p">:</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="n">address</span> <span class="o">+</span> <span class="n">slash</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_srs</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_srs</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time_srs</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_srs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">time_srs</span><span class="p">)</span>
+
+    <span class="n">sim_full_name</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;\d+-\d+-\d+__\d+_\d+_\d+&#39;</span><span class="p">,</span> <span class="n">sim_name</span><span class="p">[</span><span class="o">-</span><span class="mi">20</span><span class="p">:]):</span>
+        <span class="n">sim_full_name</span> <span class="o">=</span> <span class="n">sim_name</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">simulations</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+        <span class="n">recent_sim_time</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">simulations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">sim_name</span> <span class="o">+</span> <span class="s1">&#39;__\d+-\d+-\d+__\d+_\d+_\d+&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">address</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;properties&#39;</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="nb">input</span><span class="p">:</span>
+                        <span class="p">(</span><span class="n">Solid</span><span class="p">,</span> <span class="n">Fluid</span><span class="p">,</span> <span class="n">Injection</span><span class="p">,</span> <span class="n">SimulProp</span><span class="p">)</span> <span class="o">=</span> <span class="n">dill</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;Data not found. The address might be incorrect&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">SimulProp</span><span class="o">.</span><span class="n">get_timeStamp</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">recent_sim_time</span><span class="p">:</span>
+                    <span class="n">recent_sim_time</span> <span class="o">=</span> <span class="n">SimulProp</span><span class="o">.</span><span class="n">get_timeStamp</span><span class="p">()</span>
+                    <span class="n">sim_full_name</span> <span class="o">=</span> <span class="n">i</span>
+
+    <span class="k">if</span> <span class="n">sim_full_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Simulation not found! The address might be incorrect.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># read properties</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">address</span> <span class="o">+</span> <span class="n">sim_full_name</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="s1">&#39;properties&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="nb">input</span><span class="p">:</span>
+            <span class="n">properties</span> <span class="o">=</span> <span class="n">dill</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;Data not found. The address might be incorrect&#39;</span><span class="p">)</span>
+
+    <span class="n">fileNo</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">next_t</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">t_srs_indx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">fracture_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">t_srs_given</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_srs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="c1">#time series is given</span>
+    <span class="k">if</span> <span class="n">t_srs_given</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_srs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fracture_list</span>
+        <span class="n">next_t</span> <span class="o">=</span> <span class="n">time_srs</span><span class="p">[</span><span class="n">t_srs_indx</span><span class="p">]</span>
+
+    <span class="c1"># time at wich the first fracture file was modified</span>
+    <span class="n">ff</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">while</span> <span class="n">fileNo</span> <span class="o">&lt;</span> <span class="mi">5000</span><span class="p">:</span>
+
+        <span class="c1"># trying to load next file. exit loop if not found</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ff</span> <span class="o">=</span> <span class="n">ReadFracture</span><span class="p">(</span><span class="n">address</span> <span class="o">+</span> <span class="n">sim_full_name</span> <span class="o">+</span> <span class="n">slash</span> <span class="o">+</span> <span class="n">sim_full_name</span> <span class="o">+</span> <span class="s1">&#39;_file_&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">fileNo</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">break</span>
+
+        <span class="n">fileNo</span><span class="o">+=</span><span class="mi">1</span>
+
+        <span class="k">if</span> <span class="mf">1.</span> <span class="o">-</span> <span class="n">next_t</span> <span class="o">/</span> <span class="n">ff</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="mf">0.001</span><span class="p">:</span>
+            <span class="c1"># if the current fracture time has advanced the output time period</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Returning fracture at &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; s&#39;</span><span class="p">)</span>
+
+            <span class="n">fracture_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ff</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">t_srs_given</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">t_srs_indx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_srs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">t_srs_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">next_t</span> <span class="o">=</span> <span class="n">time_srs</span><span class="p">[</span><span class="n">t_srs_indx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">ff</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">time_srs</span><span class="p">):</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">next_t</span> <span class="o">=</span> <span class="n">ff</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">time_period</span>
+
+    <span class="k">if</span> <span class="n">fileNo</span> <span class="o">&gt;=</span> <span class="mi">5000</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;too many files.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Fracture list is empty&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fracture_list</span></div>
+
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="get_fracture_variable"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_variable</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+
+    <span class="n">variable_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">time_srs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;time&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">variable_list</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;width&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;w&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;pressure&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front velocity&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,</span> <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">v</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vel</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;Reynolds number&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;Re&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ReynoldsNumber</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="n">err_var_not_saved</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">edge</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">edge</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Edge can be an integer between and including 0 and 4.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">edge</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">ReynoldsNumber</span><span class="p">[</span><span class="n">edge</span><span class="p">])</span>
+                <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">i</span><span class="o">.</span><span class="n">ReynoldsNumber</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">ReynoldsNumber</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+                <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,</span> <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;fluid flux&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;ff&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">fluidFlux</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="n">err_var_not_saved</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">edge</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">edge</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Edge can be an integer between and including 0 and 4.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">edge</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">fluidFlux</span><span class="p">[</span><span class="n">edge</span><span class="p">])</span>
+                <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">i</span><span class="o">.</span><span class="n">fluidFlux</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">fluidFlux</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+                <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;fluid velocity&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;fv&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">fluidVelocity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="n">err_var_not_saved</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">edge</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">edge</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Edge can be an integer between and including 0 and 4.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">edge</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">fluidVelocity</span><span class="p">[</span><span class="n">edge</span><span class="p">])</span>
+                <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">i</span><span class="o">.</span><span class="n">fluidFlux</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">fluidVelocity</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+                <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,</span> <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;front_dist_min&#39;</span><span class="p">,</span> <span class="s1">&#39;d_min&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_max&#39;</span><span class="p">,</span> <span class="s1">&#39;d_max&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="c1"># coordinate of the zero vertex in the tip cells</span>
+            <span class="n">vertex_coord_tip</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">ZeroVertex</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front_dist_mean&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">vertex_coord_tip</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span>
+                                              <span class="n">vertex_coord_tip</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="n">i</span><span class="o">.</span><span class="n">l</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front_dist_max&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;d_max&#39;</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">max</span><span class="p">((</span><span class="n">vertex_coord_tip</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span>
+                                          <span class="n">vertex_coord_tip</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="n">i</span><span class="o">.</span><span class="n">l</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front_dist_min&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;d_min&#39;</span><span class="p">:</span>
+                <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">((</span><span class="n">vertex_coord_tip</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span>
+                                          <span class="n">vertex_coord_tip</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="n">i</span><span class="o">.</span><span class="n">l</span><span class="p">))</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;mesh&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;efficiency&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;ef&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">efficiency</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;volume&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;V&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">FractureVolume</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;leaked off&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;lk&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;leaked off volume&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;lkv&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]))</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;aspect ratio&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;ar&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">cells_x_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">to_delete</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">cells_x_axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">cells_x_axis_pstv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">cells_x_axis</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">)</span>
+            <span class="n">tipCell_x_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span> <span class="n">cells_x_axis_pstv</span><span class="p">)</span>
+            <span class="n">in_tip_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">EltTip</span> <span class="o">==</span> <span class="n">tipCell_x_axis</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    
+            <span class="n">cells_y_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">to_delete</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">cells_y_axis</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">cells_y_axis_pstv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">cells_y_axis</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">)</span>
+            <span class="n">tipCell_y_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span> <span class="n">cells_y_axis_pstv</span><span class="p">)</span>
+            <span class="n">in_tip_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">EltTip</span> <span class="o">==</span> <span class="n">tipCell_y_axis</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    
+            <span class="n">tipVrtxCoord</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">tipCell_y_axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+            <span class="n">r_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">tipVrtxCoord</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">tipVrtxCoord</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="n">i</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">in_tip_y</span><span class="p">]</span>
+            <span class="n">tipVrtxCoord</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">tipCell_x_axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+            <span class="n">r_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">tipVrtxCoord</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">tipVrtxCoord</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="n">i</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">in_tip_x</span><span class="p">]</span>
+    
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r_x</span> <span class="o">/</span> <span class="n">r_y</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The variable type is not correct.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">return_time</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">variable_list</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">variable_list</span><span class="p">,</span> <span class="n">time_srs</span></div>
+
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="get_fracture_variable_at_point"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_variable_at_point</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
+
+    <span class="n">return_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">var_values</span><span class="p">,</span> <span class="n">time_list</span> <span class="o">=</span> <span class="n">get_fracture_variable</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span>
+                                                        <span class="n">variable</span><span class="p">,</span>
+                                                        <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_min&#39;</span><span class="p">,</span> <span class="s1">&#39;d_min&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_max&#39;</span><span class="p">,</span> <span class="s1">&#39;d_max&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;front_dist_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">):</span>
+        <span class="n">return_list</span> <span class="o">=</span> <span class="n">var_values</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;pressure&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="s1">&#39;fluid flux&#39;</span><span class="p">,</span> <span class="s1">&#39;ff&#39;</span><span class="p">,</span> <span class="s1">&#39;fluid velocity&#39;</span><span class="p">,</span> \
+                            <span class="s1">&#39;fv&#39;</span><span class="p">,</span> <span class="s1">&#39;Reynolds number&#39;</span><span class="p">,</span> <span class="s1">&#39;Re&#39;</span><span class="p">):</span>
+                <span class="n">value_point</span> <span class="o">=</span> <span class="n">griddata</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">,</span>
+                                       <span class="n">var_values</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="n">point</span><span class="p">,</span>
+                                       <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                                       <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">value_point</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Point outside fracture.&#39;</span><span class="p">)</span>
+
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value_point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">return_time</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">return_list</span><span class="p">,</span> <span class="n">time_list</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">return_list</span></div>
+
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="get_HF_analytical_solution"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_HF_analytical_solution">[docs]</a><span class="k">def</span> <span class="nf">get_HF_analytical_solution</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">length_srs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Either time series or lengths series is to be provided.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;E_K&#39;</span><span class="p">:</span>
+        <span class="n">Kc_1</span> <span class="o">=</span> <span class="n">mat_prop</span><span class="o">.</span><span class="n">Kc1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Kc_1</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;E_E&#39;</span><span class="p">:</span>
+        <span class="n">Cij</span> <span class="o">=</span> <span class="n">mat_prop</span><span class="o">.</span><span class="n">Cij</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;MDR&#39;</span><span class="p">:</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">fluid_prop</span><span class="o">.</span><span class="n">density</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;MDR&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fluid_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Fluid properties required for </span><span class="se">\&#39;</span><span class="s1">M</span><span class="se">\&#39;</span><span class="s1"> type analytical solution&#39;</span><span class="p">)</span>
+        <span class="n">muPrime</span> <span class="o">=</span> <span class="n">fluid_prop</span><span class="o">.</span><span class="n">muPrime</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">muPrime</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">samp_cell</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">samp_cell</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mat_prop</span><span class="o">.</span><span class="n">Kprime</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">srs_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_srs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">srs_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">length_srs</span><span class="p">)</span>
+
+    <span class="n">mesh_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">return_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">srs_length</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">length_srs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="n">length_srs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">time_srs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;pressure&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="s1">&#39;front velocity&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;pressure&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">):</span>
+                <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span> <span class="o">=</span> <span class="n">get_fracture_dimensions_analytical_with_properties</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
+                                                                                  <span class="n">time_srs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                                                                  <span class="n">mat_prop</span><span class="p">,</span>
+                                                                                  <span class="n">inj_prop</span><span class="p">,</span>
+                                                                                  <span class="n">fluid_prop</span><span class="o">=</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                                                  <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
+                                                                                  <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">,</span>
+                                                                                  <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
+
+                <span class="kn">from</span> <span class="nn">src.CartesianMesh</span> <span class="k">import</span> <span class="n">CartesianMesh</span>
+                <span class="n">mesh_i</span> <span class="o">=</span> <span class="n">CartesianMesh</span><span class="p">(</span><span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span><span class="p">,</span> <span class="mi">151</span><span class="p">,</span> <span class="mi">151</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mesh_i</span> <span class="o">=</span> <span class="n">mesh</span>
+            <span class="n">mesh_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mesh_i</span><span class="p">)</span>
+
+            <span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">actvElts</span> <span class="o">=</span> <span class="n">HF_analytical_sol</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
+                                                        <span class="n">mesh_i</span><span class="p">,</span>
+                                                        <span class="n">mat_prop</span><span class="o">.</span><span class="n">Eprime</span><span class="p">,</span>
+                                                        <span class="n">inj_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                                                        <span class="n">muPrime</span><span class="p">,</span>
+                                                        <span class="n">Kprime</span><span class="o">=</span><span class="n">mat_prop</span><span class="o">.</span><span class="n">Kprime</span><span class="p">[</span><span class="n">samp_cell</span><span class="p">],</span>
+                                                        <span class="n">Cprime</span><span class="o">=</span><span class="n">mat_prop</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">samp_cell</span><span class="p">],</span>
+                                                        <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+                                                        <span class="n">t</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+                                                        <span class="n">Kc_1</span><span class="o">=</span><span class="n">Kc_1</span><span class="p">,</span>
+                                                        <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
+                                                        <span class="n">density</span><span class="o">=</span><span class="n">density</span><span class="p">,</span>
+                                                        <span class="n">Cij</span><span class="o">=</span><span class="n">Cij</span><span class="p">,</span>
+                                                        <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">,</span>
+                                                        <span class="n">required</span><span class="o">=</span><span class="n">required_string</span><span class="p">[</span><span class="n">variable</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;time&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;width&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;w&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;pressure&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front velocity&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;front_dist_min&#39;</span><span class="p">,</span> <span class="s1">&#39;d_min&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_max&#39;</span><span class="p">,</span> <span class="s1">&#39;d_max&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">):</span>
+            <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span> <span class="o">=</span> <span class="n">get_fracture_dimensions_analytical_with_properties</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
+                                                                              <span class="n">time</span><span class="p">,</span>
+                                                                              <span class="n">mat_prop</span><span class="p">,</span>
+                                                                              <span class="n">inj_prop</span><span class="p">,</span>
+                                                                              <span class="n">fluid_prop</span><span class="o">=</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                                              <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
+                                                                              <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">,</span>
+                                                                              <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_len</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front_dist_min&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;d_min&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_len</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front_dist_max&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;d_max&#39;</span><span class="p">:</span>
+                <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_len</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front_dist_mean&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">regime</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;E_K&#39;</span><span class="p">,</span> <span class="s1">&#39;E_E&#39;</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Mean distance not available.&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_len</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The variable type is not correct or the anayltical solution not available.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">return_list</span><span class="p">,</span> <span class="n">mesh_list</span></div>
+
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="get_HF_analytical_solution_at_point"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_HF_analytical_solution_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_HF_analytical_solution_at_point</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="n">values_point</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">srs_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_srs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">srs_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">length_srs</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">src.CartesianMesh</span> <span class="k">import</span> <span class="n">CartesianMesh</span>
+    <span class="k">if</span> <span class="n">point</span> <span class="o">==</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]:</span>
+        <span class="n">mesh_Lx</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="n">mesh_Ly</span> <span class="o">=</span> <span class="mf">1.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mesh_Lx</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">mesh_Ly</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">CartesianMesh</span><span class="p">(</span><span class="n">mesh_Lx</span><span class="p">,</span> <span class="n">mesh_Ly</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">srs_length</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="p">[</span><span class="n">time_srs</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">length_srs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="p">[</span><span class="n">length_srs</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">value_mesh</span><span class="p">,</span> <span class="n">mesh_list</span> <span class="o">=</span> <span class="n">get_HF_analytical_solution</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
+                                                        <span class="n">variable</span><span class="p">,</span>
+                                                        <span class="n">mat_prop</span><span class="p">,</span>
+                                                        <span class="n">inj_prop</span><span class="p">,</span>
+                                                        <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+                                                        <span class="n">fluid_prop</span><span class="o">=</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                        <span class="n">time_srs</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+                                                        <span class="n">length_srs</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+                                                        <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
+                                                        <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">,</span>
+                                                        <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="n">point</span> <span class="o">==</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]:</span>
+            <span class="n">values_point</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value_mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">mesh_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">CenterElts</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value_point</span> <span class="o">=</span> <span class="n">value_mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">18</span><span class="p">]</span>
+            <span class="n">values_point</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value_point</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">values_point</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="get_fracture_dimensions_analytical_with_properties"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_dimensions_analytical_with_properties">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_dimensions_analytical_with_properties</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">time_srs</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                              <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;E_K&#39;</span><span class="p">:</span>
+        <span class="n">Kc_1</span> <span class="o">=</span> <span class="n">mat_prop</span><span class="o">.</span><span class="n">Kc1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Kc_1</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;MDR&#39;</span><span class="p">:</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">fluid_prop</span><span class="o">.</span><span class="n">density</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">regime</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;Mt&#39;</span><span class="p">,</span> <span class="s1">&#39;PKN&#39;</span><span class="p">,</span> <span class="s1">&#39;MDR&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fluid_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Fluid properties required to evaluate analytical solution&#39;</span><span class="p">)</span>
+        <span class="n">muPrime</span> <span class="o">=</span> <span class="n">fluid_prop</span><span class="o">.</span><span class="n">muPrime</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">muPrime</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">samp_cell</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">samp_cell</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mat_prop</span><span class="o">.</span><span class="n">Kprime</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span> <span class="o">=</span> <span class="n">get_fracture_dimensions_analytical</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
+                                                      <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">time_srs</span><span class="p">),</span>
+                                                      <span class="n">mat_prop</span><span class="o">.</span><span class="n">Eprime</span><span class="p">,</span>
+                                                      <span class="n">inj_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                                                      <span class="n">muPrime</span><span class="p">,</span>
+                                                      <span class="n">Kprime</span><span class="o">=</span><span class="n">mat_prop</span><span class="o">.</span><span class="n">Kprime</span><span class="p">[</span><span class="n">samp_cell</span><span class="p">],</span>
+                                                      <span class="n">Cprime</span><span class="o">=</span><span class="n">mat_prop</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">samp_cell</span><span class="p">],</span>
+                                                      <span class="n">Kc_1</span><span class="o">=</span><span class="n">Kc_1</span><span class="p">,</span>
+                                                      <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
+                                                      <span class="n">density</span><span class="o">=</span><span class="n">density</span><span class="p">,</span>
+                                                      <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

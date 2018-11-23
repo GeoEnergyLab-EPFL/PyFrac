@@ -1,0 +1,172 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Controller module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-Controller">
+<span id="controller-module"></span><h1>Controller module<a class="headerlink" href="#module-Controller" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="Controller.Controller">
+<em class="property">class </em><code class="descclassname">Controller.</code><code class="descname">Controller</code><span class="sig-paren">(</span><em>Fracture</em>, <em>Solid_prop</em>, <em>Fluid_prop</em>, <em>Injection_prop</em>, <em>Sim_prop</em>, <em>Load_prop=None</em>, <em>C=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="Controller.Controller.advance_time_step">
+<code class="descname">advance_time_step</code><span class="sig-paren">(</span><em>Frac</em>, <em>C</em>, <em>TimeStep</em>, <em>PerfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.advance_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.advance_time_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
+time steps. A system exit is raised after maximum allowed reattempts.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Frac</strong> (<em>Fracture object</em>) – – fracture object from the last time step</li>
+<li><strong>C</strong> (<em>ndarray-float</em>) – – the elasticity matrix</li>
+<li><strong>TimeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time step to be attempted</li>
+<li><strong>PerfNode</strong> (<a class="reference internal" href="Properties.html#Properties.IterationProperties" title="Properties.IterationProperties"><em>IterationProperties</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">exitstatus (int)        – see documentation for possible values.
+Fr (Fracture)           – fracture after advancing time step.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Controller.Controller.errorMessages">
+<code class="descname">errorMessages</code><em class="property"> = ('Propagation not attempted!', 'Time step successful!', 'Evaluated level set is not valid!', 'Front is not tracked correctly!', 'Evaluated tip volume is not valid!', 'Solution obtained from the elastohydrodynamic solver is not valid!', 'Did not converge after max iterations!', 'Tip inversion is not correct!', 'Ribbon element not found in the enclosure of the tip cell!', 'Filling fraction not correct!', 'Toughness iteration did not converge!', 'projection could not be found!', 'Reached end of grid!', &quot;Leak off can't be evaluated!&quot;)</em><a class="headerlink" href="#Controller.Controller.errorMessages" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Controller.Controller.get_time_step">
+<code class="descname">get_time_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.get_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.get_time_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculate the appropriate time step.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Frac</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – </li>
+<li><strong>pre_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – velocity from the last time step.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">time_step (float)   – the appropriate time step</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Controller.Controller.output">
+<code class="descname">output</code><span class="sig-paren">(</span><em>Fr_advanced</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plot the fracture footprint and/or save file to disk according to the given time period.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Fr_lstTmStp</strong> (<em>Fracture object</em>) – fracture from last time step</li>
+<li><strong>Fr_advanced</strong> (<em>Fracture object</em>) – fracture after time step advancing</li>
+<li><strong>simulation_parameters</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
+<li><strong>material_properties</strong> (<em>MaterialProperties object</em>) – Material properties</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Returns:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Controller.Controller.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function runs the simulation according to the given parameters.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/Controller.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

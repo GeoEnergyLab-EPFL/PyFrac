@@ -19,7 +19,7 @@ Mesh = CartesianMesh(0.3, 0.3, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 0.5e6                          # fracture toughness
+K_Ic = 0.5e6                        # fracture toughness
 
 # material properties
 Solid = MaterialProperties(Mesh,
@@ -34,7 +34,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the viscosity dominated assumption
 simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
@@ -42,7 +42,7 @@ simulProp.outputTimePeriod = 1e-4       # to save after every time step
 simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
 simulProp.set_outputFolder(".\\Data\\M_radial_explicit") # the disk address where the files are saved
 
-# initializing fracture
+# initialization parameters
 initRad = 0.1
 init_param = ("M", "length", initRad)
 

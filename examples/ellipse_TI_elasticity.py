@@ -83,7 +83,7 @@ Fluid = FluidProperties(viscosity=1.1e-5)
 gamma = 2.0
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 75                # the time at which the simulation stops
 simulProp.set_tipAsymptote("K")         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.outputTimePeriod = 1e-3       # save after every time step

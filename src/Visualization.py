@@ -27,10 +27,30 @@ from matplotlib.colors import to_rgb
 import copy
 
 
-def plot_fracture_list(fracture_list, variable='footprint', mat_properties=None, projection=None, elements=None,
-                       backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None,
+def plot_fracture_list(fracture_list, variable='footprint', projection=None, elements=None, plot_prop=None, fig=None,
+                       edge=4, contours_at=None, labels=None, mat_properties=None, backGround_param=None,
                        plot_non_zero=True):
+    """
+    This function plots the fracture evolution with time. The state of the fracture at different times is provided in
+    the form of a list of Fracture objects.
 
+    Args:
+    fracture_list (list): -- the list of Fracture objects giving the evolution of fracture with time.
+    variable (string):  -- the variable to be plotted. See :py:data:`supported_variables` of the :py:mod:`Labels` module for a list of supported variables
+    mat_properties (MaterialProperties): -- the material properties. It is mainly used to colormap the mesh.
+    projection (string): -- a string specifying the projection. See :py:data:`supported_projections` for the supported projections for each of the supprted variable. If not provided, the default will be used
+    elements (ndarray): -- the elements to be plotted.
+    backGround_param (string): -- the parameter according to which the the mesh will be colormapped.
+    plot_prop (PlotProperties): -- the properties to be used for the plot.
+    fig (Figure): -- the figure to superimpose on. New figure will be made if not provided.
+    edge (int): -- the edge of the cell that will be plotted. This is for variables that are evaluated on the cell edges instead of cell center. It can have a value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
+    contours_at (list): -- the values at which the contours are to be plotted.
+    labels (LabelProperties): -- the labels to be used for the plot.
+    plot_non_zero (bool): -- if true, only non-zero values will be plotted.
+
+    Returns:
+
+    """
     print("Plotting " + variable + '...')
 
     if len(fracture_list) == 0:
@@ -340,7 +360,7 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
     labels_2D = LabelProperties(variable, 'whole mesh', '2D_clrmap')
     labels_2D.figLabel = 'Sampling Point'
     fig_image = plot_fracture_list([fracture_list[-1]],
-                       variable,
+                       variable=variable,
                        projection='2D_clrmap',
                        plot_prop=plot_prop,
                        edge=edge,
@@ -350,12 +370,11 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
     labels_fp = LabelProperties('footprint', 'whole mesh', '2D')
     labels_fp.figLabel = ''
     fig_image = plot_fracture_list([fracture_list[-1]],
+                                   variable='footprint',
                                    fig=fig_image,
                                    projection='2D',
-                                   variable='footprint',
                                    plot_prop=plot_prop_fp,
-                                   labels=labels_fp
-                                   )
+                                   labels=labels_fp)
 
     ax_image = fig_image.get_axes()[0]
     ax_image.plot([point[0]], [point[1]], 'ko')

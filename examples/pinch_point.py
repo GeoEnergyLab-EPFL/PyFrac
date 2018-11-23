@@ -49,7 +49,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 0.05              # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
 simulProp.set_outputFolder('.\\Data\\pinch_point')
@@ -75,7 +75,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-# controller.run()
+controller.run()
 
 
 ####################

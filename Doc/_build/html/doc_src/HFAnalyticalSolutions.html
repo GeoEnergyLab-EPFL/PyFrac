@@ -1,0 +1,436 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>HFAnalyticalSolutions module &#8212; PyFrac 1.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-HFAnalyticalSolutions">
+<span id="hfanalyticalsolutions-module"></span><h1>HFAnalyticalSolutions module<a class="headerlink" href="#module-HFAnalyticalSolutions" title="Permalink to this headline">¶</a></h1>
+<p>This file is part of PyFrac.</p>
+<p>Created by Haseeb Zia on Wed Nov 16 18:33:56 2016.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019. All rights reserved.
+See the LICENSE.TXT file for more details.</p>
+<p>Hydraulic fracture propagation Analytical solutions
+notably for</p>
+<blockquote>
+<div><ul class="simple">
+<li>planar radial fracture with constant injection rate</li>
+<li>height contained fracture</li>
+</ul>
+</div></blockquote>
+<dl class="function">
+<dt id="HFAnalyticalSolutions.HF_analytical_sol">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">HF_analytical_sol</code><span class="sig-paren">(</span><em>regime</em>, <em>mesh</em>, <em>Eprime</em>, <em>Q0</em>, <em>muPrime=None</em>, <em>Kprime=None</em>, <em>Cprime=None</em>, <em>length=None</em>, <em>t=None</em>, <em>Kc_1=None</em>, <em>h=None</em>, <em>density=None</em>, <em>Cij=None</em>, <em>gamma=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#HF_analytical_sol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.HF_analytical_sol" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function provides the analytical solution for the given parameters according to the given propagation regime</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regime</strong> (<em>string</em>) – <ul>
+<li>K  (toughness dominated regime, without leak off)</li>
+<li>M  (viscosity dominated regime, without leak off)</li>
+<li>Kt (viscosity dominated regime , with leak off)</li>
+<li>Mt (viscosity dominated regime , with leak off)</li>
+<li>PKN (height contained hydraulic fracture with PKN geometry)</li>
+<li>E (elliptical fracture propagating in toughness dominated regime).</li>
+</ul>
+</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)         </em><em>-- the fracture toughness</em><em> (</em><em>K'</em>) – </li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – axis in the case of elliptical fracture and the fracture radius in all of the rest).</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Kp_perp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>t (float)              – time at which the fracture reaches the given length.
+r (float)              – length of the fracture at the given time (fracture length in the case of PKN, length</p>
+<blockquote>
+<div><p>of the minor axis in the case of elliptical fracture and the fracture radius in all
+of the rest).</p>
+</div></blockquote>
+<p>p (ndarray-float)      – pressure at each cell at the given time.
+w (ndarray-float)      – width at each cell at the given time.
+v (float)              – propagation velocity.
+actvElts (ndarray)     – list of cells inside the fracture at the given time.</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.KGD_solution_K">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">KGD_solution_K</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Q0</em>, <em>Kprime</em>, <em>Mesh</em>, <em>height</em>, <em>ell=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#KGD_solution_K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.KGD_solution_K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution plain strain hydraulic fracture (KGB geometry) in the toughness dominated regime, given current
+time or length. The solution does not take leak off into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>KPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)         </em><em>-- 4*</em><em>(</em><em>2/pi</em>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)         </em><em>-- the height of the KGD fracture</em><em> (</em><em>it should be much longer then length</em>) – </li>
+<li><strong>ell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)              – time at which the fracture reaches the given length.
+ell (float)            – length of the fracture at the given time
+p (ndarray-float)      – pressure at each cell at the given time
+w (ndarray-float)      – width at each cell at the given time
+v (float)              – propagation velocity
+actvElts (ndarray)     – list of cells inside the KGD fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.KT_vertex_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">KT_vertex_solution</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Cprime</em>, <em>Q0</em>, <em>Kprime</em>, <em>Mesh</em>, <em>R=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#KT_vertex_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.KT_vertex_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for viscosity dominated (M tilde vertex) fracture propagation, given the current time or the
+radius.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)      </em><em>-- 4*</em><em>(</em><em>2/pi</em>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – be provided</li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – be provided</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)           – time at which the fracture reaches the given radius.
+R (float)           – radius of the fracture at the given time.
+p (ndarray)         – pressure at each cell when the fracture has propagated to the given radius
+w (ndarray)         – width opening at each cell when the fracture has propagated to the given radius or time
+v (float)           – fracture propagation velocity
+actvElts (ndarray)  – list of cells inside the fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.K_vertex_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">K_vertex_solution</code><span class="sig-paren">(</span><em>Kprime</em>, <em>Eprime</em>, <em>Q0</em>, <em>mesh</em>, <em>R=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#K_vertex_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.K_vertex_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for toughness dominated (K vertex) fracture propagation, given current radius or time. The
+solution does not take leak off into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)          </em><em>-- 4*</em><em>(</em><em>2/pi</em>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)               – time at which the fracture reaches the given radius.
+R (float)               – radius of the fracture at the given time.
+p (ndarray)             – pressure at each cell when the fracture has propagated to the given radius
+w (ndarray)             – width opening at each cell when the fracture has propagated to the given radius or time
+v (float)               – fracture propagation velocity
+actvElts (ndarray)      – list of cells inside the fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.MDR_M_vertex_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">MDR_M_vertex_solution</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Q0</em>, <em>density</em>, <em>visc</em>, <em>Mesh</em>, <em>R=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#MDR_M_vertex_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.MDR_M_vertex_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime
+propagation, given fracture radius or the time since the start of the injection. The solution does not take leak off into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>visc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)            – time at which the fracture reaches the given radius.
+R (float)            – radius of the fracture at the given time.
+p (ndarray)          – pressure at each cell when the fracture has propagated to the given radius
+w (ndarray)          – width opening at each cell when the fracture has propagated to the given radius or time
+v (float)            – fracture propagation velocity
+actvElts (ndarray)   – list of cells inside the fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.M_vertex_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">M_vertex_solution</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Q0</em>, <em>muPrime</em>, <em>Mesh</em>, <em>R=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#M_vertex_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.M_vertex_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for Viscosity dominated (M vertex) fracture propagation, given fracture radius or the time
+since the start of the injection. The solution does not take leak off into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)            – time at which the fracture reaches the given radius.
+R (float)            – radius of the fracture at the given time.
+p (ndarray)          – pressure at each cell when the fracture has propagated to the given radius
+w (ndarray)          – width opening at each cell when the fracture has propagated to the given radius or time
+v (float)            – fracture propagation velocity
+actvElts (ndarray)   – list of cells inside the fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.Mt_vertex_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">Mt_vertex_solution</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Cprime</em>, <em>Q0</em>, <em>muPrime</em>, <em>Mesh</em>, <em>R=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#Mt_vertex_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.Mt_vertex_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for viscosity dominated (M tilde vertex) fracture propagation, given current time. The solution
+takes leak off into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)               – time at which the fracture reaches the given radius.
+R (float)               – radius of the fracture at the given time.
+p (ndarray)             – pressure at each cell when the fracture has propagated to the given radius
+w (ndarray)             – width opening at each cell when the fracture has propagated to the given radius or time
+v (float)               – fracture propagation velocity
+actvElts (ndarray)      – list of cells inside the fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.PKN_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">PKN_solution</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Q0</em>, <em>muPrime</em>, <em>Mesh</em>, <em>h</em>, <em>ell=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#PKN_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.PKN_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for heigth contained hydraulic fracture (PKN geometry), given current time. The solution
+does not take leak off into account.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)              – time at which the fracture reaches the given length.
+ell (float)            – length of the fracture at the given time
+p (ndarray-float)      – pressure at each cell at the given time
+w (ndarray-float)      – width at each cell at the given time
+v (float)              – propagation velocity
+actvElts (ndarray)     – list of cells inside the PKN fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.TI_Elasticity_elliptical_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">TI_Elasticity_elliptical_solution</code><span class="sig-paren">(</span><em>mesh</em>, <em>gamma</em>, <em>Cij</em>, <em>Kc3</em>, <em>Ep3</em>, <em>Q0</em>, <em>t=None</em>, <em>b=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#TI_Elasticity_elliptical_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.TI_Elasticity_elliptical_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for an elliptical fracture propagating in toughness dominated regime (see Zia and Lecampion,
+IJF, 2018).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>a</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>w (ndarray-float)      – width at each cell at the given time</p>
+<p>actvElts (ndarray)     – list of cells inside the fracture at the given time</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.TI_elasticity_sigma">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">TI_elasticity_sigma</code><span class="sig-paren">(</span><em>theta</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#TI_elasticity_sigma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.TI_elasticity_sigma" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.anisotropic_toughness_elliptical_solution">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">anisotropic_toughness_elliptical_solution</code><span class="sig-paren">(</span><em>KIc_max</em>, <em>KIc_min</em>, <em>Eprime</em>, <em>Q0</em>, <em>mesh</em>, <em>b=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#anisotropic_toughness_elliptical_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.anisotropic_toughness_elliptical_solution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytical solution for an elliptical fracture propagating in toughness dominated regime (see Zia and Lecampion,
+IJF, 2018).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>KIc_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>KIc_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)              – time at which the fracture reaches the given length.
+b (float)              – length of the fracture at the given time
+p (ndarray-float)      – pressure at each cell at the given time
+w (ndarray-float)      – width at each cell at the given time
+v (float)              – propagation velocity
+actvElts (ndarray)     – list of cells inside the fracture at the given time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.get_fracture_dimensions_analytical">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">get_fracture_dimensions_analytical</code><span class="sig-paren">(</span><em>regime</em>, <em>t</em>, <em>Eprime</em>, <em>Q0</em>, <em>muPrime=None</em>, <em>Kprime=None</em>, <em>Cprime=None</em>, <em>Kc_1=None</em>, <em>h=None</em>, <em>density=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#get_fracture_dimensions_analytical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.get_fracture_dimensions_analytical" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/doc_src/HFAnalyticalSolutions.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PyFrac 1.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Haseeb Zia.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

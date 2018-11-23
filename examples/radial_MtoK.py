@@ -34,7 +34,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
-simulProp = SimulationParameters()
+simulProp = SimulationProperties()
 simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.saveRegime = True             # enable saving the regime
 simulProp.set_outputFolder(".\\Data\\MtoK") #the folder where the results are saved
