@@ -34,6 +34,8 @@ output_time_period = None               # the time period after which the output
 sim_name = None                         # name given to the simulation
 block_figure = False                    # if true, the simulation will proceed after the figure is closed
 output_every_TS = None                  # the number of time steps after which the output is done
+plot_var = None                         # the variable to be plotted during simulation
+plot_proj = '2D_clrmap'                 # projection to be plotted with
 
 # type of solver
 mech_loading = False                    # if True, the mechanical loading solver will be used

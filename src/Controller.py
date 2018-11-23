@@ -385,39 +385,58 @@ class Controller:
                 print("Plotting solution at " + repr(Fr_advanced.time) + "...")
                 plot_prop = PlotProperties()
 
-                plot_prop.lineColor = 'b'
-                if self.sim_prop.plotAnalytical:
-                    self.Figure = plot_footprint_analytical(self.sim_prop.analyticalSol,
-                                                      self.solid_prop,
-                                                      self.injection_prop,
-                                                      self.fluid_prop,
-                                                      [Fr_advanced.time],
-                                                      h=self.sim_prop.height,
-                                                      samp_cell=None,
-                                                      plot_prop=plot_prop,
-                                                      gamma=self.sim_prop.aspectRatio)
+                if self.sim_prop.plotVar is None or self.sim_prop.plotVar is 'footprint':
+                    # footprint is plotted if variable to plot is not given
+                    plot_prop.lineColor = 'b'
+                    if self.sim_prop.plotAnalytical:
+                        self.Figure = plot_footprint_analytical(self.sim_prop.analyticalSol,
+                                                          self.solid_prop,
+                                                          self.injection_prop,
+                                                          self.fluid_prop,
+                                                          [Fr_advanced.time],
+                                                          h=self.sim_prop.height,
+                                                          samp_cell=None,
+                                                          plot_prop=plot_prop,
+                                                          gamma=self.sim_prop.aspectRatio)
+                    else:
+                        self.Figure = None
+
+                    self.Figure = Fr_advanced.plot_fracture(variable='mesh',
+                                                            mat_properties=self.solid_prop,
+                                                            projection='2D',
+                                                            backGround_param=self.sim_prop.bckColor,
+                                                            fig=self.Figure,
+                                                            plot_prop=plot_prop)
+
+                    plot_prop.lineColor = 'k'
+                    self.Figure = Fr_advanced.plot_fracture(variable='footprint',
+                                                            projection='2D',
+                                                            fig=self.Figure,
+                                                            plot_prop=plot_prop)
+
+                    if len(Fr_advanced.closed) > 0:
+                        plot_prop.lineColor = 'r'
+                        self.Figure = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
+                                                                         fig=self.Figure,
+                                                                         plot_prop=plot_prop,
+                                                                         plot_mesh=False)
                 else:
-                    self.Figure = None
+                    if self.sim_prop.plotAnalytical:
+                        self.Figure = plot_analytical_solution(regime=self.sim_prop.analyticalSol,
+                                                              variable=self.sim_prop.plotVar,
+                                                              mat_prop=self.solid_prop,
+                                                              inj_prop=self.injection_prop,
+                                                              fluid_prop=self.fluid_prop,
+                                                              time_srs=[Fr_advanced.time],
+                                                              h=self.sim_prop.height,
+                                                              gamma=self.sim_prop.aspectRatio)
+                    else:
+                        self.Figure = None
 
-                self.Figure = Fr_advanced.plot_fracture(variable='mesh',
-                                                        mat_properties=self.solid_prop,
-                                                        projection='2D',
-                                                        backGround_param=self.sim_prop.bckColor,
-                                                        fig=self.Figure,
-                                                        plot_prop=plot_prop)
-
-                plot_prop.lineColor = 'k'
-                self.Figure = Fr_advanced.plot_fracture(variable='footprint',
-                                                        projection='2D',
-                                                        fig=self.Figure,
-                                                        plot_prop=plot_prop)
-
-                if len(Fr_advanced.closed) > 0:
-                    plot_prop.lineColor = 'r'
-                    self.Figure = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
-                                                                     fig=self.Figure,
-                                                                     plot_prop=plot_prop,
-                                                                     plot_mesh=False)
+                    self.Figure = Fr_advanced.plot_fracture(variable=self.sim_prop.plotVar,
+                                                            projection=self.sim_prop.plotProj,
+                                                            mat_properties=self.solid_prop,
+                                                            fig=self.Figure)
 
 
                 if self.sim_prop.blockFigure:

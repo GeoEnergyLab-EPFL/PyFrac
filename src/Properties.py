@@ -489,6 +489,8 @@ class SimulationProperties:
         self.plotEltType = simul_param.plot_eltType
         self.blockFigure = simul_param.block_figure
         self.outputEveryTS = simul_param.output_every_TS
+        self.plotVar = simul_param.plot_var
+        self.plotProj = simul_param.plot_proj
 
         # solver type
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
