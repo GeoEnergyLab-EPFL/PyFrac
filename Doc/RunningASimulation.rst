@@ -21,7 +21,7 @@ The above code will generate a rectangular mesh with 41 cells along both the x a
    nu = 0.4                            # Poisson's ratio
    youngs_mod = 3.3e10                 # Young's modulus
    Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-   K_Ic = 5e6                          # fracture toughness
+   K_Ic = 5e3                          # fracture toughness
 
    Solid = MaterialProperties(Mesh, Eprime, K_Ic)
 
@@ -52,7 +52,7 @@ Simulation parameters such as the end time, the times at which the solution is r
 
    # simulation properties
    simulProp = SimulationProperties()
-   simulProp.finalTime = 1e5                    # the time at which the simulation stops
+   simulProp.finalTime = 1                      # the time at which the simulation stops
    simulProp.set_simulation_name("radial")      # name the simulation "radial"
 
 After setting up of the properties, let us set up the initial state of the fracture that is to be propagated. It is done by creating a Fracture object. For this simulation, we set the viscosity dominated analytical solution as the initial state of the fracture. A tuple with the initialization parameters "M" (specifying the viscosity dominated regime), "length" (specifying that the type of the value provided is length) and initRad (the value) is passed to the constructor along with the properties objects that we had instantiated before. For a complete list of options and the ways a fracture can be initialized, see the documentation of the :py:class:`Fracture` class . For this simulation, we start with a fracture with a radius of :math:`0.1\,m`.
@@ -62,7 +62,7 @@ After setting up of the properties, let us set up the initial state of the fract
    from src.Fracture import Fracture
 
    # initialization parameters
-   initRad = 0.1
+   initRad = 0.28
    init_param = ("M", "length", initRad)
 
    # creating fracture object

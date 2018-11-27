@@ -173,7 +173,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
-    plt.title(labels.figLabel)
+    ax.set_title(labels.figLabel)
     if projection is '3D' and variable not in ('mesh', 'footprint'):
         ax.set_zlabel(labels.zLabel)
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
@@ -188,8 +188,6 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         cax = divider.append_axes('right', size='5%', pad=0.05)
         cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
         cb.set_label(labels.colorbarLabel)
-    elif projection is '2D':
-        plt.title(labels.figLabel)
 
     return fig
 
@@ -275,8 +273,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
             ax_tv = fig.get_axes()[0]
             ax_tv.set_xlabel('meter')
             ax_tv.set_ylabel('meter')
-            plt.subplot(211)
-            plt.title('Top View')
+            ax_tv.set_title('Top View')
 
             # making colorbar
             im = ax_tv.images
@@ -303,7 +300,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
             ax_slice.set_xlabel('meter')
             ax_slice.set_ylabel('meter')
             ax_slice.set_zlabel(labels.zLabel)
-            plt.title(labels.figLabel)
+            ax_slice.title(labels.figLabel)
         else:
             raise ValueError("Given Projection is not correct!")
 
@@ -350,7 +347,7 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
     ax = fig.get_axes()[0]
     ax.set_xlabel('time ($s$)')
     ax.set_ylabel(labels.colorbarLabel)
-    plt.title(labels.figLabel)
+    ax.set_title(labels.figLabel)
     if plot_prop.plotLegend:
         ax.legend()
 
@@ -891,7 +888,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
 
 def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
                              point1=None, point2=None, time_srs=None, length_srs=None, h=None, samp_cell=None,
-                             plot_prop=None, labels=None, gamma=None):
+                             plot_prop=None, labels=None, gamma=None, plt_top_view=False):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -951,20 +948,20 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                 vmin=vmin,
                                                 vmax=vmax,
                                                 plot_colorbar=False,
-                                                labels=labels)
+                                                labels=labels,
+                                                plt_2D_image=plt_top_view)
+    if plt_top_view:
+        ax_tv = fig.get_axes()[0]
+        ax_tv.set_xlabel('meter')
+        ax_tv.set_ylabel('meter')
+        ax_tv.set_title('Top View')
 
-    ax_tv = fig.get_axes()[0]
-    ax_tv.set_xlabel('meter')
-    ax_tv.set_ylabel('meter')
-    plt.subplot(211)
-    plt.title('Top View')
-
-    # making colorbar
-    im = ax_tv.images
-    divider = make_axes_locatable(ax_tv)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
-    cb.set_label(labels.colorbarLabel)
+        # making colorbar
+        im = ax_tv.images
+        divider = make_axes_locatable(ax_tv)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
+        cb.set_label(labels.colorbarLabel)
 
     ax_slice = fig.get_axes()[1]
     ax_slice.set_ylabel(labels.colorbarLabel)
@@ -1286,7 +1283,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
-    plt.title(labels.figLabel)
+    ax.set_title(labels.figLabel)
     if projection is '3D':
         ax.set_zlabel(labels.zLabel)
         sm = plt.cm.ScalarMappable(cmap=plot_prop_cp.colorMap,
@@ -1300,7 +1297,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         cb = im[-1].colorbar
         cb.set_label(labels.colorbarLabel + ' analytical')
     elif projection is '2D':
-        plt.title(labels.figLabel)
+        ax.set_title(labels.figLabel)
         if variable not in ('footprint'):
             ax.legend()
 

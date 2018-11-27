@@ -66,10 +66,30 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 
 
-<div class="viewcode-block" id="plot_fracture_list"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_list">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_list</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span> <span class="n">mat_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                       <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="plot_fracture_list"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_list">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_list</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mat_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                        <span class="n">plot_non_zero</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the fracture evolution with time. The state of the fracture at different times is provided in</span>
+<span class="sd">    the form of a list of Fracture objects.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">    fracture_list (list): -- the list of Fracture objects giving the evolution of fracture with time.</span>
+<span class="sd">    variable (string):  -- the variable to be plotted. See :py:data:`supported_variables` of the :py:mod:`Labels` module for a list of supported variables</span>
+<span class="sd">    mat_properties (MaterialProperties): -- the material properties. It is mainly used to colormap the mesh.</span>
+<span class="sd">    projection (string): -- a string specifying the projection. See :py:data:`supported_projections` for the supported projections for each of the supprted variable. If not provided, the default will be used</span>
+<span class="sd">    elements (ndarray): -- the elements to be plotted.</span>
+<span class="sd">    backGround_param (string): -- the parameter according to which the the mesh will be colormapped.</span>
+<span class="sd">    plot_prop (PlotProperties): -- the properties to be used for the plot.</span>
+<span class="sd">    fig (Figure): -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">    edge (int): -- the edge of the cell that will be plotted. This is for variables that are evaluated on the cell edges instead of cell center. It can have a value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">    contours_at (list): -- the values at which the contours are to be plotted.</span>
+<span class="sd">    labels (LabelProperties): -- the labels to be used for the plot.</span>
+<span class="sd">    plot_non_zero (bool): -- if true, only non-zero values will be plotted.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting &quot;</span> <span class="o">+</span> <span class="n">variable</span> <span class="o">+</span> <span class="s1">&#39;...&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -192,7 +212,7 @@
     <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">xLabel</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">yLabel</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;3D&#39;</span> <span class="ow">and</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;footprint&#39;</span><span class="p">):</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">zLabel</span><span class="p">)</span>
         <span class="n">sm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">ScalarMappable</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">colorMap</span><span class="p">,</span>
@@ -207,8 +227,6 @@
         <span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;5%&#39;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
         <span class="n">cb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
         <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;2D&#39;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">fig</span></div>
 
@@ -216,7 +234,8 @@
 
 
 <div class="viewcode-block" id="plot_fracture_list_slice"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_list_slice">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_list_slice</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                             <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_cell_center</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">):</span>
+                             <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_cell_center</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span>
+                             <span class="n">extreme_points</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
@@ -268,7 +287,7 @@
         <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">colorsList</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">colorsList</span><span class="p">)]</span>
         <span class="k">if</span> <span class="s1">&#39;2D&#39;</span> <span class="ow">in</span> <span class="n">projection</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">plot_cell_center</span><span class="p">:</span>
-                <span class="n">fig</span><span class="p">,</span> <span class="n">return_pnt1</span><span class="p">,</span> <span class="n">return_pnt2</span><span class="o">=</span> <span class="n">plot_fracture_slice_cell_center</span><span class="p">(</span><span class="n">var_val_copy</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_fracture_slice_cell_center</span><span class="p">(</span><span class="n">var_val_copy</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                                                   <span class="n">mesh_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                                                   <span class="n">point</span><span class="o">=</span><span class="n">point1</span><span class="p">,</span>
                                                                   <span class="n">orientation</span><span class="o">=</span><span class="n">orientation</span><span class="p">,</span>
@@ -278,7 +297,7 @@
                                                                   <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
                                                                   <span class="n">plot_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                                                   <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
-                                                                  <span class="n">return_points</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                                                                  <span class="n">extreme_points</span><span class="o">=</span><span class="n">extreme_points</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_fracture_slice_interpolated</span><span class="p">(</span><span class="n">var_val_copy</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                                                 <span class="n">mesh_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
@@ -293,8 +312,7 @@
             <span class="n">ax_tv</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
             <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Top View&#39;</span><span class="p">)</span>
+            <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Top View&#39;</span><span class="p">)</span>
 
             <span class="c1"># making colorbar</span>
             <span class="n">im</span> <span class="o">=</span> <span class="n">ax_tv</span><span class="o">.</span><span class="n">images</span>
@@ -321,16 +339,12 @@
             <span class="n">ax_slice</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
             <span class="n">ax_slice</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
             <span class="n">ax_slice</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">zLabel</span><span class="p">)</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
+            <span class="n">ax_slice</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Given Projection is not correct!&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">plotLegend</span><span class="p">:</span>
         <span class="n">ax_slice</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-
-
-    <span class="k">if</span> <span class="n">plot_cell_center</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">return_pnt1</span><span class="p">,</span> <span class="n">return_pnt2</span>
 
     <span class="k">return</span> <span class="n">fig</span></div>
 
@@ -372,14 +386,14 @@
     <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;time ($s$)&#39;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">plotLegend</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
     <span class="n">labels_2D</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D_clrmap&#39;</span><span class="p">)</span>
     <span class="n">labels_2D</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;Sampling Point&#39;</span>
     <span class="n">fig_image</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-                       <span class="n">variable</span><span class="p">,</span>
+                       <span class="n">variable</span><span class="o">=</span><span class="n">variable</span><span class="p">,</span>
                        <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D_clrmap&#39;</span><span class="p">,</span>
                        <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
                        <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
@@ -389,12 +403,11 @@
     <span class="n">labels_fp</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D&#39;</span><span class="p">)</span>
     <span class="n">labels_fp</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
     <span class="n">fig_image</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                                   <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
                                    <span class="n">fig</span><span class="o">=</span><span class="n">fig_image</span><span class="p">,</span>
                                    <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
-                                   <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
                                    <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop_fp</span><span class="p">,</span>
-                                   <span class="n">labels</span><span class="o">=</span><span class="n">labels_fp</span>
-                                   <span class="p">)</span>
+                                   <span class="n">labels</span><span class="o">=</span><span class="n">labels_fp</span><span class="p">)</span>
 
     <span class="n">ax_image</span> <span class="o">=</span> <span class="n">fig_image</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">ax_image</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="s1">&#39;ko&#39;</span><span class="p">)</span>
@@ -778,7 +791,7 @@
 
 <div class="viewcode-block" id="plot_fracture_slice_cell_center"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_slice_cell_center">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_slice_cell_center</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                 <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_2D_image</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                <span class="n">return_points</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                                <span class="n">extreme_points</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting slice...&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">plt_2D_image</span><span class="p">:</span>
@@ -903,8 +916,9 @@
     <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ax_slice</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">vmin</span> <span class="o">-</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">+</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">vmax</span><span class="p">))</span>
 
-    <span class="k">if</span> <span class="n">return_points</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">extreme_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">extreme_points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">extreme_points</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
 
     <span class="k">return</span> <span class="n">fig</span></div>
 
@@ -913,7 +927,7 @@
 
 <div class="viewcode-block" id="plot_analytical_solution_slice"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution_slice">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution_slice</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                             <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                             <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_top_view</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
@@ -973,20 +987,20 @@
                                                 <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span>
                                                 <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
                                                 <span class="n">plot_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                                <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+                                                <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                                                <span class="n">plt_2D_image</span><span class="o">=</span><span class="n">plt_top_view</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">plt_top_view</span><span class="p">:</span>
+        <span class="n">ax_tv</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
+        <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
+        <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Top View&#39;</span><span class="p">)</span>
 
-    <span class="n">ax_tv</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
-    <span class="n">ax_tv</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;meter&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Top View&#39;</span><span class="p">)</span>
-
-    <span class="c1"># making colorbar</span>
-    <span class="n">im</span> <span class="o">=</span> <span class="n">ax_tv</span><span class="o">.</span><span class="n">images</span>
-    <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax_tv</span><span class="p">)</span>
-    <span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;5%&#39;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
-    <span class="n">cb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
-    <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span><span class="p">)</span>
+        <span class="c1"># making colorbar</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">ax_tv</span><span class="o">.</span><span class="n">images</span>
+        <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax_tv</span><span class="p">)</span>
+        <span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;5%&#39;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
+        <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span><span class="p">)</span>
 
     <span class="n">ax_slice</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">ax_slice</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span><span class="p">)</span>
@@ -1308,7 +1322,7 @@
     <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">xLabel</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">yLabel</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;3D&#39;</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">zLabel</span><span class="p">)</span>
         <span class="n">sm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">ScalarMappable</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">plot_prop_cp</span><span class="o">.</span><span class="n">colorMap</span><span class="p">,</span>
@@ -1322,7 +1336,7 @@
         <span class="n">cb</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">colorbar</span>
         <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span> <span class="o">+</span> <span class="s1">&#39; analytical&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;2D&#39;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;footprint&#39;</span><span class="p">):</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 

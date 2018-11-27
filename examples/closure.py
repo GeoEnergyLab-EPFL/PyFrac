@@ -41,9 +41,13 @@ simulProp.outputEveryTS = 1              # the time after the output is generate
 simulProp.set_outputFolder(".\\Data\\closure") # the disk address where the files are saved
 simulProp.plotFigure = True              # plot fracture during simulation
 simulProp.timeStepLimit = 100.           # set the time step limit. Will be used as time step when front stops
-simulProp.fixedTmStp = np.asarray([[0, 1415, 1425], [None, 3, None]]) # give a list of time steps. None means it will be
+simulProp.plotVar = 'p'
+simulProp.blockFigure = True
+simulProp.substitutePressure = False
+simulProp.fixedTmStp = np.asarray([[0, 1415, 1425], [None, 2, None]]) # give a list of time steps. None means it will be
                                                                       # set according to front velocity. Needed to be
                                                                       # restricted before starting injection again.
+
 # initializing fracture
 initTime = 10
 init_param = ("M", "time", initTime)

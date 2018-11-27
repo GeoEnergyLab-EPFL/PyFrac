@@ -402,9 +402,8 @@ def MakeEquationSystem_ViscousFluid(solk, interItr, *args):
     else:
         G = np.zeros((Mesh.NumberOfElts,))
 
-
     LeakOff_cp = np.copy(LeakOff)
-    LeakOff_cp[active] = (wLastTS[active] - wc) * Mesh.EltArea
+    # LeakOff_cp[active] = (wLastTS[active] - wc) * Mesh.EltArea
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -465,7 +464,13 @@ def MakeEquationSystem_ViscousFluid(solk, interItr, *args):
 
     S[tip_p_row_no] = dt * Q[to_impose] / Mesh.EltArea - LeakOff_cp[to_impose] / Mesh.EltArea - (imposed_val - wLastTS[to_impose]) + dt * G[to_impose]  # + dt * cond.dot(pfLastTS[EltCrack_R])
 
-    return A, S, interItr_kp1, n_ch
+    # indices of solved width, pressure and traction in the solution
+    indices = []
+    indices.append(ch_w_row_no)
+    indices.append(np.concatenate((ch_p_row_no, act_p_row_no, tip_p_row_no)))
+    indices.append(act_w_row_no)
+
+    return A, S, interItr_kp1, indices
 
 #-----------------------------------------------------------------------------------------------------------------
 
@@ -571,7 +576,13 @@ def MakeEquationSystem_viscousFluid_pressure_substituted(solk, interItr, *args):
                                 wLastTS[EltChannel]) + np.dot(C[np.ix_(EltChannel, EltTip)], wTip) + \
                                 sigma0[EltChannel]) - LeakOff[EltTip] / Mesh.EltArea + dt*G[EltTip]
 
-    return A, S, interItr_kp1, len(S)
+    # indices of solved width, pressure and traction in the solution
+    indices = []
+    indices.append(Channel)
+    indices.append(Tip)
+    indices.append(np.array([], dtype=int))
+
+    return A, S, interItr_kp1, indices
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -775,14 +786,21 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
             newton += 1
         else:
             try:
-                (A, b, interItr, n) = sys_fun(solk, interItr, *args)
+                (A, b, interItr, indices) = sys_fun(solk, interItr, *args)
                 solk = (1 - relax) * solkm1 + relax * np.linalg.solve(A, b)
             except np.linalg.linalg.LinAlgError:
                 print('singlular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 return solk, None
 
-        norm = np.linalg.norm(abs(solk[:n] - solkm1[:n])) / np.linalg.norm(abs(solkm1[:n]))
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]])) / np.linalg.norm(abs(solkm1[indices[0]]))
+        norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]])) / np.linalg.norm(abs(solkm1[indices[1]]))
+        if len(indices[2]) > 0:
+            norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]])) / \
+                      np.linalg.norm(abs(solkm1[indices[2]]))
+        else:
+            norm_tr = 0.
+        norm = norm_w + norm_p + norm_tr
 
         normlist.append(norm)
 

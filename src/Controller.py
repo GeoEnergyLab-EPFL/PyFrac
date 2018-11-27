@@ -520,10 +520,6 @@ class Controller:
 
             TimeStep = min(TS_cell_length, TS_fracture_length)
 
-        # checking if the time step is above the limit
-        if self.sim_prop.timeStepLimit is not None and TimeStep > self.sim_prop.timeStepLimit:
-            TimeStep = self.sim_prop.timeStepLimit
-
         # in case of fracture not propagating
         if TimeStep <= 0 or np.isinf(TimeStep):
             if self.stagnant_TS is not None:
@@ -549,5 +545,9 @@ class Controller:
             TimeStep = next_in_TS - self.fracture.time
 
         self.stagnant_TS = TimeStep * 1.2
+
+        # checking if the time step is above the limit
+        if self.sim_prop.timeStepLimit is not None and TimeStep > self.sim_prop.timeStepLimit:
+            TimeStep = self.sim_prop.timeStepLimit
 
         return TimeStep

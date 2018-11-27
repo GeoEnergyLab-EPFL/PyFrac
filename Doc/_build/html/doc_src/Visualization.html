@@ -83,7 +83,7 @@ clutter.</li>
 
 <dl class="function">
 <dt id="Visualization.plot_analytical_solution_slice">
-<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em>, <em>plt_top_view=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -93,8 +93,24 @@ clutter.</li>
 
 <dl class="function">
 <dt id="Visualization.plot_fracture_list">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='footprint'</em>, <em>mat_properties=None</em>, <em>projection=None</em>, <em>elements=None</em>, <em>backGround_param=None</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>plot_non_zero=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='footprint'</em>, <em>projection=None</em>, <em>elements=None</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>mat_properties=None</em>, <em>backGround_param=None</em>, <em>plot_non_zero=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the fracture evolution with time. The state of the fracture at different times is provided in
+the form of a list of Fracture objects.</p>
+<p>Args:
+fracture_list (list): – the list of Fracture objects giving the evolution of fracture with time.
+variable (string):  – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the <a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables
+mat_properties (MaterialProperties): – the material properties. It is mainly used to colormap the mesh.
+projection (string): – a string specifying the projection. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_projections</span></code> for the supported projections for each of the supprted variable. If not provided, the default will be used
+elements (ndarray): – the elements to be plotted.
+backGround_param (string): – the parameter according to which the the mesh will be colormapped.
+plot_prop (PlotProperties): – the properties to be used for the plot.
+fig (Figure): – the figure to superimpose on. New figure will be made if not provided.
+edge (int): – the edge of the cell that will be plotted. This is for variables that are evaluated on the cell edges instead of cell center. It can have a value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).
+contours_at (list): – the values at which the contours are to be plotted.
+labels (LabelProperties): – the labels to be used for the plot.
+plot_non_zero (bool): – if true, only non-zero values will be plotted.</p>
+<p>Returns:</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_fracture_list_at_point">
@@ -103,12 +119,12 @@ clutter.</li>
 
 <dl class="function">
 <dt id="Visualization.plot_fracture_list_slice">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list_slice</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>point1=None</em>, <em>point2=None</em>, <em>projection='2D'</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>labels=None</em>, <em>plot_cell_center=False</em>, <em>orientation='horizontal'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list_slice" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list_slice</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>point1=None</em>, <em>point2=None</em>, <em>projection='2D'</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>labels=None</em>, <em>plot_cell_center=False</em>, <em>orientation='horizontal'</em>, <em>extreme_points=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list_slice" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_fracture_slice_cell_center">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_slice_cell_center</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point=None</em>, <em>orientation='horizontal'</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plot_colorbar=True</em>, <em>labels=None</em>, <em>plt_2D_image=True</em>, <em>return_points=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_slice_cell_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_slice_cell_center" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_slice_cell_center</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point=None</em>, <em>orientation='horizontal'</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plot_colorbar=True</em>, <em>labels=None</em>, <em>plt_2D_image=True</em>, <em>extreme_points=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_slice_cell_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_slice_cell_center" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
