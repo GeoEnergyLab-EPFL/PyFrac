@@ -68,7 +68,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-#controller.run()
+controller.run()
 
 
 # plot results
@@ -80,7 +80,7 @@ plot_prop = PlotProperties(graph_scaling='loglog',
                            line_style='.')
 
 # plotting mean distance from the injection point (radius in this case)
-label = get_labels('d_mean')
+label = LabelProperties('d_mean', 'whole mesh', '1D')
 label.legend = 'Radius'
 Fig_r = plot_fracture_list(Fr_list,
                            variable='d_mean',
@@ -112,12 +112,13 @@ Fig_r = plot_analytical_solution(regime="M",
                                   plot_prop=plot_prop,
                                   labels=label)
 
-label = get_labels('w')
+label = LabelProperties('w', 'point', '1D')
 label.legend = 'width at injection'
 Fig_wc = plot_fracture_list_at_point(Fr_list,
                            variable='w',
                            plot_prop=plot_prop,
                            labels=label)
+
 # plotting analytical radius from MDR radial solution
 label.legend = 'radius analytical (MDR asymptote)'
 Fig_r = plot_analytical_solution_at_point(regime="MDR",
@@ -150,48 +151,37 @@ time_srs = get_fracture_variable(Fr_list,
 
 plot_prop = PlotProperties(plot_legend=False) # instantiate plot properties object with legends disabled
 
-Fig_w, pnt1, pnt2 = plot_fracture_list_slice(Fr_list,
+ext_pnts = np.empty((2, 2), dtype=np.float64)
+Fig_w = plot_fracture_list_slice(Fr_list,
                                   variable='w',
-                                  # point1=[-0.5, .5],
-                                  # plt_2D_image=False,
                                   plot_cell_center=True,
-                                 orientation='horizontal',
-                                             )
+                                  orientation='horizontal',
+                                  extreme_points=ext_pnts)
 
 Fig_w = plot_analytical_solution_slice('M',
                                        'w',
                                        Solid,
                                        Injection,
                                        fluid_prop=Fluid,
-                                       point1=pnt1,
-                                       point2=pnt2,
+                                       point1=ext_pnts[0],
+                                       point2=ext_pnts[1],
                                        time_srs=time_srs,
                                        fig=Fig_w,
-                                       plot_prop=plot_prop,     # give the plot properties with legends disabled
-                                       )
+                                       plot_prop=plot_prop)
 
+Fig_wT = plot_analytical_solution_slice('MDR',
+                                       'w',
+                                       Solid,
+                                       Injection,
+                                       fluid_prop=Fluid,
+                                       point1=[-Fr_list[-1].mesh.Lx, 0],
+                                       point2=[Fr_list[-1].mesh.Lx, 0],
+                                       time_srs=time_srs)
 
-
-
-# Fig_wT = plot_analytical_solution_slice('MDR',
-#                                        'w',
-#                                        Solid,
-#                                        Injection,
-#                                        fluid_prop=Fluid,
-#                                        point1=[-Fr_list[-1].mesh.Lx, 0],
-#                                        point2=[Fr_list[-1].mesh.Lx, 0],
-#                                        time_srs=time_srs,
-#                                        # plt_2D_image=False,
-#                                        # plot_prop=plot_prop,
-#                                        )
-#
-# Fig_wT = plot_fracture_list_slice(Fr_list,
-#                                   variable='w',
-#                                   point1=[-Fr_list[-1].mesh.Lx, 0],
-#                                   point2=[Fr_list[-1].mesh.Lx, 0],
-#                                     fig=Fig_wT,
-#                                   # plt_2D_image=False,
-#                                   # plot_prop=plot_prop,
-#                                   )
+Fig_wT = plot_fracture_list_slice(Fr_list,
+                                  variable='w',
+                                  point1=[-Fr_list[-1].mesh.Lx, 0],
+                                  point2=[Fr_list[-1].mesh.Lx, 0],
+                                  fig=Fig_wT)
 
 plt.show()

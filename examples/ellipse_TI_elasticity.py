@@ -184,19 +184,22 @@ Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
                                             time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
-Fig_w_slice, pnt1, pnt2 = plot_fracture_list_slice(Fr_list,
+
+ext_pnts = np.empty((2, 2), dtype=np.float64)
+Fig_w_slice = plot_fracture_list_slice(Fr_list,
                                        variable='width',
                                        point1=[-Fr_list[-1].mesh.Lx, 0],
                                        plot_cell_center=True,
-                                       orientation='horizontal')
+                                       orientation='horizontal',
+                                       extreme_points=ext_pnts)
 Fig_w_slice = plot_analytical_solution_slice('E_E',
                                              variable='width',
                                              mat_prop=Solid,
                                              inj_prop=Injection,
                                              fluid_prop=Fluid,
                                              fig=Fig_w_slice,
-                                             point1=pnt1,
-                                             point2=pnt2,
+                                             point1=ext_pnts[0],
+                                             point2=ext_pnts[1],
                                              time_srs=time_srs,
                                              gamma=gamma)
 

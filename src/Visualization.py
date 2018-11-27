@@ -197,7 +197,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
-                             fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal'):
+                             fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal',
+                             extreme_points=None):
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -249,7 +250,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
         if '2D' in projection:
             if plot_cell_center:
-                fig, return_pnt1, return_pnt2= plot_fracture_slice_cell_center(var_val_copy[i],
+                fig = plot_fracture_slice_cell_center(var_val_copy[i],
                                                                   mesh_list[i],
                                                                   point=point1,
                                                                   orientation=orientation,
@@ -259,7 +260,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   vmax=vmax,
                                                                   plot_colorbar=False,
                                                                   labels=labels,
-                                                                  return_points=True)
+                                                                  extreme_points=extreme_points)
             else:
                 fig = plot_fracture_slice_interpolated(var_val_copy[i],
                                                                 mesh_list[i],
@@ -308,10 +309,6 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
 
     if plot_prop.plotLegend:
         ax_slice.legend()
-
-
-    if plot_cell_center:
-        return fig, return_pnt1, return_pnt2
 
     return fig
 
@@ -758,7 +755,7 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
-                                return_points=False):
+                                extreme_points=None):
 
     print("Plotting slice...")
     if plt_2D_image:
@@ -883,8 +880,9 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     if vmin is not None and vmax is not None:
         ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
 
-    if return_points:
-        return fig, mesh.CenterCoor[sampling_cells[0]], mesh.CenterCoor[sampling_cells[-1]]
+    if extreme_points is not None:
+        extreme_points[0] = mesh.CenterCoor[sampling_cells[0]]
+        extreme_points[1] = mesh.CenterCoor[sampling_cells[-1]]
 
     return fig
 

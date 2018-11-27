@@ -132,11 +132,13 @@ Fig_FP = plot_analytical_solution('K',
 
 
 # plot slice
-Fig_WS, pnt_1, pnt_2 = plot_fracture_list_slice(Fr_list,
+ext_pnts = np.empty((2, 2), dtype=np.float64)
+Fig_WS = plot_fracture_list_slice(Fr_list,
                                   variable='w',
                                   projection='2D',
                                   plot_cell_center=True,
-                                  orientation='horizontal')
+                                  orientation='horizontal',
+                                  extreme_points=ext_pnts)
 #plot slice analytical
 Fig_WS = plot_analytical_solution_slice('K',
                                         'w',
@@ -145,8 +147,8 @@ Fig_WS = plot_analytical_solution_slice('K',
                                         fluid_prop=Fluid,
                                         fig=Fig_WS,
                                         time_srs=time_srs,
-                                        point1=pnt_1,
-                                        point2=pnt_2)
+                                        point1=ext_pnts[0],
+                                        point2=ext_pnts[1])
 
 
 plt.show()

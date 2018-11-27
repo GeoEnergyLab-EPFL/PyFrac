@@ -131,13 +131,12 @@ Fig_FP = plot_analytical_solution('M',
 
 
 # plot slice
-pnt_1=[-Fr_list[-1].mesh.Lx, 0]
-pnt_2=[Fr_list[-1].mesh.Lx, 0]
+ext_pnts = np.empty((2, 2), dtype=np.float64)
 Fig_WS = plot_fracture_list_slice(Fr_list,
                                   variable='w',
                                   projection='2D',
-                                  point1=pnt_1,
-                                  point2=pnt_2)
+                                  plot_cell_center=True,
+                                  extreme_points=ext_pnts)
 #plot slice analytical
 Fig_WS = plot_analytical_solution_slice('M',
                                         'w',
@@ -146,8 +145,8 @@ Fig_WS = plot_analytical_solution_slice('M',
                                         fluid_prop=Fluid,
                                         fig=Fig_WS,
                                         time_srs=time_srs,
-                                        point1=pnt_1,
-                                        point2=pnt_2)
+                                        point1=ext_pnts[0],
+                                        point2=ext_pnts[1])
 
 #plotting in 3D
 Fig_Fr = plot_fracture_list(Fr_list,
