@@ -1,7 +1,0 @@
-.idea/
-_simulation_data_PyFrac/
-examples/CMatrix
-examples/Data/
-src/__pycache__/
-.gitignore
-_gsdata_/
