@@ -27,4 +27,4 @@ Running an example
 
 Change directory to the folder containing the PyFrac code. An example can be run from the windows command prompt or linux shell by executing the example script e.g::
 
-    python ./examples/radial.py
+    python ./examples/radial_viscosity_explicit.py

@@ -76,6 +76,27 @@
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 
+<div class="viewcode-block" id="TipAsym_MDR_Res"><a class="viewcode-back" href="../doc_src/TipInversion.html#TipInversion.TipAsym_MDR_Res">[docs]</a><span class="k">def</span> <span class="nf">TipAsym_MDR_Res</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Residual function for viscosity dominate regime, without leak off&quot;&quot;&quot;</span>
+
+    <span class="p">(</span><span class="n">wEltRibbon</span><span class="p">,</span> <span class="n">Kprime</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">muPrime</span><span class="p">,</span> <span class="n">Cbar</span><span class="p">,</span> <span class="n">DistLstTSEltRibbon</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="n">density</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.7</span> <span class="o">*</span> <span class="mf">1.18</span> <span class="o">*</span> <span class="p">(</span><span class="n">muPrime</span> <span class="o">/</span> <span class="mi">12</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">density</span> <span class="o">**</span> <span class="mf">0.3</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mf">0.7</span>
+    <span class="c1"># beta_mdr = 7 / 10</span>
+    <span class="c1"># return wEltRibbon - c ** (1 / (2 + n)) * Eprime ** -(1 / (2 + n)) * dist ** (2 / (2 + n)) * (</span>
+    <span class="c1">#                                     (dist - DistLstTSEltRibbon) / dt) ** ((2 - n) / (2 + n)) / beta_mdr</span>
+
+    <span class="n">Lt</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span> <span class="p">((</span><span class="n">dist</span> <span class="o">-</span> <span class="n">DistLstTSEltRibbon</span><span class="p">)</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">Eprime</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">alpha_n</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">/</span> <span class="mf">2.7</span>
+    <span class="n">beta_n</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="o">-</span><span class="n">alpha_n</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">alpha_n</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">wEltRibbon</span> <span class="o">-</span> <span class="n">Lt</span> <span class="o">*</span> <span class="n">beta_n</span> <span class="o">*</span> <span class="n">dist</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span></div>
+
+<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
+
+
 <div class="viewcode-block" id="TipAsym_viscLeakOff_Res"><a class="viewcode-back" href="../doc_src/TipInversion.html#TipInversion.TipAsym_viscLeakOff_Res">[docs]</a><span class="k">def</span> <span class="nf">TipAsym_viscLeakOff_Res</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Residual function for viscosity dominated regime, with leak off&quot;&quot;&quot;</span>
 
@@ -234,7 +255,7 @@
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 
-<div class="viewcode-block" id="TipAsymInversion"><a class="viewcode-back" href="../doc_src/TipInversion.html#TipInversion.TipAsymInversion">[docs]</a><span class="k">def</span> <span class="nf">TipAsymInversion</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">frac</span><span class="p">,</span> <span class="n">matProp</span><span class="p">,</span> <span class="n">simParmtrs</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Kprime_k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Eprime_k</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="TipAsymInversion"><a class="viewcode-back" href="../doc_src/TipInversion.html#TipInversion.TipAsymInversion">[docs]</a><span class="k">def</span> <span class="nf">TipAsymInversion</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">frac</span><span class="p">,</span> <span class="n">matProp</span><span class="p">,</span> <span class="n">simParmtrs</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Kprime_k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Eprime_k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in</span>
 <span class="sd">    the ribbon cells.</span>
@@ -263,6 +284,8 @@
 
     <span class="k">if</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span>
         <span class="n">ResFunc</span> <span class="o">=</span> <span class="n">TipAsym_Universal_zrthOrder_Res</span>
+    <span class="k">elif</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;K&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">w</span><span class="p">[</span><span class="n">frac</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">Eprime</span> <span class="o">/</span> <span class="n">Kprime</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
     <span class="k">elif</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Kt&#39;</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Tip inversion with Kt regime is yet to be implemented&quot;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;M&#39;</span><span class="p">:</span>
@@ -271,9 +294,8 @@
         <span class="n">ResFunc</span> <span class="o">=</span> <span class="n">TipAsym_viscLeakOff_Res</span>
     <span class="k">elif</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;MK&#39;</span><span class="p">:</span>
         <span class="n">ResFunc</span> <span class="o">=</span> <span class="n">TipAsym_MK_zrthOrder_Res</span>
-    <span class="k">elif</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;K&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">w</span><span class="p">[</span><span class="n">frac</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">Eprime</span> <span class="o">/</span> <span class="n">Kprime</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-
+    <span class="k">elif</span> <span class="n">simParmtrs</span><span class="o">.</span><span class="n">get_tipAsymptote</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;MDR&#39;</span><span class="p">:</span>
+        <span class="n">ResFunc</span> <span class="o">=</span> <span class="n">TipAsym_MDR_Res</span>
 
     <span class="c1"># checking propagation condition</span>
     <span class="n">stagnant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Kprime</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">frac</span><span class="o">.</span><span class="n">sgndDist</span><span class="p">[</span><span class="n">frac</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span> <span class="o">/</span> <span class="p">(</span>

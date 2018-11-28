@@ -74,20 +74,27 @@
 <span class="sd">    the form of a list of Fracture objects.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">    fracture_list (list): -- the list of Fracture objects giving the evolution of fracture with time.</span>
-<span class="sd">    variable (string):  -- the variable to be plotted. See :py:data:`supported_variables` of the :py:mod:`Labels` module for a list of supported variables</span>
-<span class="sd">    mat_properties (MaterialProperties): -- the material properties. It is mainly used to colormap the mesh.</span>
-<span class="sd">    projection (string): -- a string specifying the projection. See :py:data:`supported_projections` for the supported projections for each of the supprted variable. If not provided, the default will be used</span>
-<span class="sd">    elements (ndarray): -- the elements to be plotted.</span>
-<span class="sd">    backGround_param (string): -- the parameter according to which the the mesh will be colormapped.</span>
-<span class="sd">    plot_prop (PlotProperties): -- the properties to be used for the plot.</span>
-<span class="sd">    fig (Figure): -- the figure to superimpose on. New figure will be made if not provided.</span>
-<span class="sd">    edge (int): -- the edge of the cell that will be plotted. This is for variables that are evaluated on the cell edges instead of cell center. It can have a value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
-<span class="sd">    contours_at (list): -- the values at which the contours are to be plotted.</span>
-<span class="sd">    labels (LabelProperties): -- the labels to be used for the plot.</span>
-<span class="sd">    plot_non_zero (bool): -- if true, only non-zero values will be plotted.</span>
+<span class="sd">        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with</span>
+<span class="sd">                                                    time.</span>
+<span class="sd">        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                                :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">        mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.</span>
+<span class="sd">        projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`</span>
+<span class="sd">                                                for the supported projections for each of the supprted variable. If not</span>
+<span class="sd">                                                provided, the default will be used.</span>
+<span class="sd">        elements (ndarray):                 -- the elements to be plotted.</span>
+<span class="sd">        backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                                are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">        contours_at (list):                 -- the values at which the contours are to be plotted.</span>
+<span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
+<span class="sd">        plot_non_zero (bool):               -- if true, only non-zero values will be plotted.</span>
 
 <span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting &quot;</span> <span class="o">+</span> <span class="n">variable</span> <span class="o">+</span> <span class="s1">&#39;...&#39;</span><span class="p">)</span>
@@ -236,7 +243,42 @@
 <div class="viewcode-block" id="plot_fracture_list_slice"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_list_slice">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_list_slice</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_cell_center</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span>
                              <span class="n">extreme_points</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be</span>
+<span class="sd">    joined to form the slice. The values on the slice are either interpolated from the values available on the cell</span>
+<span class="sd">    centers. Exact values on the cell centers can also be plotted.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with</span>
+<span class="sd">                                                time.</span>
+<span class="sd">        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                                :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">        point1 (list or ndarray):           -- the left point from which the slice should pass.</span>
+<span class="sd">        point1 (list or ndarray):           -- the right point from which the slice should pass.</span>
+<span class="sd">        projection (string):                -- a string specifying the projection. It can either &#39;3D&#39; or &#39;2D&#39;.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                                are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
+<span class="sd">        plot_cell_center (bool):            -- if True, the discrete values at the cell centers will be plot. In this</span>
+<span class="sd">                                                case, the slice passing through the center of the cell containing</span>
+<span class="sd">                                                point1 will be taken. The slice of will be made according to the</span>
+<span class="sd">                                                given orientation (see orientation). If False, the values will be</span>
+<span class="sd">                                                interpolated on the line joining the given two points.</span>
+<span class="sd">        orientation (string):               -- the orientation according to which the slice is made in the case the</span>
+<span class="sd">                                               plotted values are not interpolated and are taken at the cell centers.</span>
+<span class="sd">                                               Any of the four (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;)</span>
+<span class="sd">                                               orientation can be used.</span>
+<span class="sd">        extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme</span>
+<span class="sd">                                                points of the plotted slice. These points can be used to plot analytical</span>
+<span class="sd">                                                solution.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
 
@@ -353,7 +395,26 @@
 
 <div class="viewcode-block" id="plot_fracture_list_at_point"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_list_at_point">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_list_at_point</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the fracture evolution on a given point.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with</span>
+<span class="sd">                                                time.</span>
+<span class="sd">        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                                :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">        point (list or ndarray):            -- the point at which the given variable is plotted against time.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                                are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
 
@@ -418,6 +479,21 @@
 
 
 <div class="viewcode-block" id="plot_variable_vs_time"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_variable_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_variable_vs_time</span><span class="p">(</span><span class="n">time_list</span><span class="p">,</span> <span class="n">value_list</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots a given list of values against time.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        time_list (list or array):      -- the list of times.</span>
+<span class="sd">        value_list (list or array):     -- the list of values.</span>
+<span class="sd">        fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):     -- the properties to be used for the plot.</span>
+<span class="sd">        label (string):                 -- the label given to the plot line.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                       -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
@@ -459,17 +535,20 @@
 <div class="viewcode-block" id="plot_fracture_variable_as_image"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_variable_as_image">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_variable_as_image</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                     <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function plots the contours of the fracture width in millimeters.</span>
+<span class="sd">    This function plots the 2D fracture variable in the form of a colormap.</span>
 
-<span class="sd">    Arguments:</span>
-<span class="sd">        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.</span>
-<span class="sd">        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.</span>
-<span class="sd">        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.</span>
-<span class="sd">        line_color (color)          -- the color of the contour line (e.g. &#39;r&#39; will plot in red).</span>
-<span class="sd">        contours_at (ndarray)       -- a list of fracture widths to plot contours at.</span>
-
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):                -- a ndarray of the length of the number of cells in the mesh.</span>
+<span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        elements (ndarray):                 -- the elements to be plotted.</span>
+<span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        plt_colorbar (bool):                -- if True, colorbar will be plotted.</span>
 <span class="sd">    Returns:</span>
-<span class="sd">         Fig</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">elements</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -523,17 +602,20 @@
 <div class="viewcode-block" id="plot_fracture_variable_as_surface"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_variable_as_surface">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_variable_as_surface</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                       <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function plots the contours of the fracture width in millimeters.</span>
+<span class="sd">    This function plots the 2D fracture variable in the form of a surface.</span>
 
-<span class="sd">    Arguments:</span>
-<span class="sd">        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.</span>
-<span class="sd">        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.</span>
-<span class="sd">        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.</span>
-<span class="sd">        line_color (color)          -- the color of the contour line (e.g. &#39;r&#39; will plot in red).</span>
-<span class="sd">        contours_at (ndarray)       -- a list of fracture widths to plot contours at.</span>
-
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):                -- a ndarray of the length of the number of cells in the mesh.</span>
+<span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        elements (ndarray):                 -- the elements to be plotted.</span>
+<span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        plt_colorbar (bool):                -- if True, colorbar will be plotted.</span>
 <span class="sd">    Returns:</span>
-<span class="sd">         Fig</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -585,17 +667,22 @@
 <div class="viewcode-block" id="plot_fracture_variable_as_contours"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_variable_as_contours">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_variable_as_contours</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_backGround</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                        <span class="n">plt_colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function plots the contours of the fracture width in millimeters.</span>
+<span class="sd">    This function plots the contours of the 2D fracture variable.</span>
 
-<span class="sd">    Arguments:</span>
-<span class="sd">        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.</span>
-<span class="sd">        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.</span>
-<span class="sd">        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.</span>
-<span class="sd">        line_color (color)          -- the color of the contour line (e.g. &#39;r&#39; will plot in red).</span>
-<span class="sd">        contours_at (ndarray)       -- a list of fracture widths to plot contours at.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):                -- a ndarray of the length of the number of cells in the mesh.</span>
+<span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        plt_backGround(bool):               -- if True, the colormap of the variable will also be plotted.</span>
+<span class="sd">        plt_colorbar (bool):                -- if True, colorbar will be plotted.</span>
+<span class="sd">        contours_at (list or ndarray):      -- the values at which the countours are to be plotted.</span>
+<span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">         Fig</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -653,6 +740,29 @@
 
 <div class="viewcode-block" id="plot_fracture_slice_interpolated"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_slice_interpolated">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_slice_interpolated</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                      <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_2D_image</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the fracture on a given slice of the domain. Two points are to be given that will be</span>
+<span class="sd">    joined to form the slice. The values on the slice are interpolated from the values available on the cell</span>
+<span class="sd">    centers.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.</span>
+<span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
+<span class="sd">        point1 (list or ndarray):           -- the left point from which the slice should pass.</span>
+<span class="sd">        point1 (list or ndarray):           -- the right point from which the slice should pass.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        plt_colorbar (bool):                -- if True, colorbar will be plotted.</span>
+<span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
+<span class="sd">        plt_2D_image (bool):                -- if True, a subplot showing the colormap and the slice will also be</span>
+<span class="sd">                                                plotted.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting slice...&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">plt_2D_image</span><span class="p">:</span>
@@ -792,6 +902,34 @@
 <div class="viewcode-block" id="plot_fracture_slice_cell_center"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_fracture_slice_cell_center">[docs]</a><span class="k">def</span> <span class="nf">plot_fracture_slice_cell_center</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                 <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_2D_image</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                 <span class="n">extreme_points</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the fracture on a given slice of the domain. A points along with the direction of the slice is</span>
+<span class="sd">    given to form the slice. The slice is made from the center of the cell containing the given point along the given</span>
+<span class="sd">    orientation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.</span>
+<span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
+<span class="sd">        point (list or ndarray):            -- the point from which the slice should pass.</span>
+<span class="sd">        orientation (string):               -- the orientation according to which the slice is made. Any of the four</span>
+<span class="sd">                                                (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;) orientations</span>
+<span class="sd">                                                 can be used.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        plt_colorbar (bool):                -- if True, colorbar will be plotted.</span>
+<span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
+<span class="sd">        plt_2D_image (bool):                -- if True, a subplot showing the colormap and the slice will also be</span>
+<span class="sd">                                                plotted.</span>
+<span class="sd">        extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme</span>
+<span class="sd">                                                points of the plotted slice. These points can be used to plot analytical</span>
+<span class="sd">                                                solution.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting slice...&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">plt_2D_image</span><span class="p">:</span>
@@ -928,6 +1066,46 @@
 <div class="viewcode-block" id="plot_analytical_solution_slice"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution_slice">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution_slice</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_top_view</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots slice of the given analytical solution. It can be used to compare simulation results by</span>
+<span class="sd">    superimposing on the figure obtained from the slice plot function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        regime (string): -- the string specifying the limiting case solution to be plotted. The available options are:</span>
+
+<span class="sd">            ========    ============================</span>
+<span class="sd">            option      limiting solution</span>
+<span class="sd">            ========    ============================</span>
+<span class="sd">            &#39;M&#39;         viscosity storage</span>
+<span class="sd">            &#39;Mt&#39;        viscosity leak-off</span>
+<span class="sd">            &#39;K&#39;         toughness storage</span>
+<span class="sd">            &#39;Kt&#39;        toughness leak-off</span>
+<span class="sd">            &#39;PKN&#39;       PKN</span>
+<span class="sd">            &#39;KGD_K&#39;     KGD toughness</span>
+<span class="sd">            &#39;MDR&#39;       MDR turbulent viscosity</span>
+<span class="sd">            &#39;E_K&#39;       anisotropic toughness</span>
+<span class="sd">            &#39;E_E&#39;       anisotropic elasticity</span>
+<span class="sd">            ========    ============================</span>
+
+<span class="sd">        variable (string):                  -- the variable to be plotted. Possible options are:</span>
+
+<span class="sd">        mat_prop:</span>
+<span class="sd">    :param inj_prop:</span>
+<span class="sd">    :param mesh:</span>
+<span class="sd">    :param fluid_prop:</span>
+<span class="sd">    :param fig:</span>
+<span class="sd">    :param point1:</span>
+<span class="sd">    :param point2:</span>
+<span class="sd">    :param time_srs:</span>
+<span class="sd">    :param length_srs:</span>
+<span class="sd">    :param h:</span>
+<span class="sd">    :param samp_cell:</span>
+<span class="sd">    :param plot_prop:</span>
+<span class="sd">    :param labels:</span>
+<span class="sd">    :param gamma:</span>
+<span class="sd">    :param plt_top_view:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>

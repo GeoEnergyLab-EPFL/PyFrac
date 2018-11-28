@@ -85,7 +85,7 @@ using the given propagation regime.</p>
 
 <dl class="function">
 <dt id="TipInversion.TipAsymInversion">
-<code class="descclassname">TipInversion.</code><code class="descname">TipAsymInversion</code><span class="sig-paren">(</span><em>w</em>, <em>frac</em>, <em>matProp</em>, <em>simParmtrs</em>, <em>dt=None</em>, <em>Kprime_k=None</em>, <em>Eprime_k=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsymInversion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsymInversion" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsymInversion</code><span class="sig-paren">(</span><em>w</em>, <em>frac</em>, <em>matProp</em>, <em>simParmtrs</em>, <em>dt=None</em>, <em>Kprime_k=None</em>, <em>Eprime_k=None</em>, <em>density=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsymInversion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsymInversion" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in
 the ribbon cells.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -135,6 +135,12 @@ level_set (ndarray-float):              the level set values, i.e. signed distan
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="TipInversion.TipAsym_MDR_Res">
+<code class="descclassname">TipInversion.</code><code class="descname">TipAsym_MDR_Res</code><span class="sig-paren">(</span><em>dist</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TipInversion.html#TipAsym_MDR_Res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TipInversion.TipAsym_MDR_Res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Residual function for viscosity dominate regime, without leak off</p>
 </dd></dl>
 
 <dl class="function">

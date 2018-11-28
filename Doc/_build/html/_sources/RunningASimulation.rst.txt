@@ -3,7 +3,7 @@
 Running a Simulation
 ====================
 
-Lets run a simple simulation of a radial fracture propagation. The first step towards running the simulation is to create a mesh describing our domain as a :class:`CartesianMesh` object (see the class documentation for details). **PyFrac** uses a rectangular mesh to discretize the domain.
+Lets run a simple simulation of a radial fracture propagation. The first step towards running the simulation is to create a mesh describing our domain as a :class:`CartesianMesh` object (see the class documentation for details). PyFrac uses a rectangular mesh to discretize the domain.
 
 .. code-block:: python
 
@@ -11,7 +11,7 @@ Lets run a simple simulation of a radial fracture propagation. The first step to
 
    Mesh = CartesianMesh(0.3, 0.3, 41, 41)
 
-The above code will generate a rectangular mesh with 41 cells along both the x and y axes, having the dimensions of [x_min=-20, x_max=20, y_min=-20, y_max=20] meters. Next, we have to specify the parameters describing the material being fractured and the injected fluid. This is to be done by instantiating the properties classes. Below, we set up a material with the Poisson's ratio of :math:`0.4`, the Young's modulus of :math:`3.3\times10^{10}\,Pa`  and the fracture toughness of :math:`5\;Mpa\,\sqrt{m}` by instantiating a :py:class:`Properties.MaterialProperties` object:
+The above code will generate a rectangular mesh with 41 cells along both the x and y axes, having the dimensions of [x_min=-0.3, x_max=0.3, y_min=-0.3, y_max=0.3] meters. Next, we have to specify the parameters describing the material being fractured and the injected fluid. This is to be done by instantiating the properties classes. Below, we set up a material with the Poisson's ratio of :math:`0.4`, the Young's modulus of :math:`3.3\times10^{10}\,Pa`  and the fracture toughness of :math:`0.005\;Mpa\,\sqrt{m}` by instantiating a :py:class:`Properties.MaterialProperties` object:
 
 .. code-block:: python
 

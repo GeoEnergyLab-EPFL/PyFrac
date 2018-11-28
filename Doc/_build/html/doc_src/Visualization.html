@@ -84,7 +84,80 @@ clutter.</li>
 <dl class="function">
 <dt id="Visualization.plot_analytical_solution_slice">
 <code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em>, <em>plt_top_view=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function plots slice of the given analytical solution. It can be used to compare simulation results by
+superimposing on the figure obtained from the slice plot function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regime</strong> (<em>string</em>) – <p>– the string specifying the limiting case solution to be plotted. The available options are:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">option</th>
+<th class="head">limiting solution</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>’M’</td>
+<td>viscosity storage</td>
+</tr>
+<tr class="row-odd"><td>’Mt’</td>
+<td>viscosity leak-off</td>
+</tr>
+<tr class="row-even"><td>’K’</td>
+<td>toughness storage</td>
+</tr>
+<tr class="row-odd"><td>’Kt’</td>
+<td>toughness leak-off</td>
+</tr>
+<tr class="row-even"><td>’PKN’</td>
+<td>PKN</td>
+</tr>
+<tr class="row-odd"><td>’KGD_K’</td>
+<td>KGD toughness</td>
+</tr>
+<tr class="row-even"><td>’MDR’</td>
+<td>MDR turbulent viscosity</td>
+</tr>
+<tr class="row-odd"><td>’E_K’</td>
+<td>anisotropic toughness</td>
+</tr>
+<tr class="row-even"><td>’E_E’</td>
+<td>anisotropic elasticity</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. Possible options are:</li>
+<li><strong>mat_prop</strong> – </li>
+<li><strong>inj_prop</strong> – </li>
+<li><strong>mesh</strong> – </li>
+<li><strong>fluid_prop</strong> – </li>
+<li><strong>fig</strong> – </li>
+<li><strong>point1</strong> – </li>
+<li><strong>point2</strong> – </li>
+<li><strong>time_srs</strong> – </li>
+<li><strong>length_srs</strong> – </li>
+<li><strong>h</strong> – </li>
+<li><strong>samp_cell</strong> – </li>
+<li><strong>plot_prop</strong> – </li>
+<li><strong>labels</strong> – </li>
+<li><strong>gamma</strong> – </li>
+<li><strong>plt_top_view</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_footprint_analytical">
@@ -96,60 +169,226 @@ clutter.</li>
 <code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='footprint'</em>, <em>projection=None</em>, <em>elements=None</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>mat_properties=None</em>, <em>backGround_param=None</em>, <em>plot_non_zero=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots the fracture evolution with time. The state of the fracture at different times is provided in
 the form of a list of Fracture objects.</p>
-<p>Args:
-fracture_list (list): – the list of Fracture objects giving the evolution of fracture with time.
-variable (string):  – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the <a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables
-mat_properties (MaterialProperties): – the material properties. It is mainly used to colormap the mesh.
-projection (string): – a string specifying the projection. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_projections</span></code> for the supported projections for each of the supprted variable. If not provided, the default will be used
-elements (ndarray): – the elements to be plotted.
-backGround_param (string): – the parameter according to which the the mesh will be colormapped.
-plot_prop (PlotProperties): – the properties to be used for the plot.
-fig (Figure): – the figure to superimpose on. New figure will be made if not provided.
-edge (int): – the edge of the cell that will be plotted. This is for variables that are evaluated on the cell edges instead of cell center. It can have a value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).
-contours_at (list): – the values at which the contours are to be plotted.
-labels (LabelProperties): – the labels to be used for the plot.
-plot_non_zero (bool): – if true, only non-zero values will be plotted.</p>
-<p>Returns:</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_fracture_list_at_point">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list_at_point</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>point=None</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>labels=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list_at_point" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_fracture_list_slice">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list_slice</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>point1=None</em>, <em>point2=None</em>, <em>projection='2D'</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>labels=None</em>, <em>plot_cell_center=False</em>, <em>orientation='horizontal'</em>, <em>extreme_points=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list_slice" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_fracture_slice_cell_center">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_slice_cell_center</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point=None</em>, <em>orientation='horizontal'</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plot_colorbar=True</em>, <em>labels=None</em>, <em>plt_2D_image=True</em>, <em>extreme_points=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_slice_cell_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_slice_cell_center" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_fracture_slice_interpolated">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_slice_interpolated</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point1=None</em>, <em>point2=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plot_colorbar=True</em>, <em>labels=None</em>, <em>plt_2D_image=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_slice_interpolated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_slice_interpolated" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_fracture_variable_as_contours">
-<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_variable_as_contours</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plt_backGround=True</em>, <em>plt_colorbar=True</em>, <em>contours_at=None</em>, <em>vmin=None</em>, <em>vmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_variable_as_contours"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_variable_as_contours" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plots the contours of the fracture width in millimeters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fracture</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – the fracture object for which the fracture width is to be plotted.</li>
-<li><strong>fig</strong> (<em>figure</em>) – </li>
-<li><strong>bck_colMap</strong> (<em>Colormaps</em>) – </li>
-<li><strong>line_color</strong> (<em>color</em><em>)          </em><em>-- the color of the contour line</em><em> (</em><em>e.g. 'r' will plot in red</em>) – </li>
-<li><strong>contours_at</strong> (<em>ndarray</em>) – </li>
+<li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the list of Fracture objects giving the evolution of fracture with
+time.</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the material properties. It is mainly used to colormap the mesh.</li>
+<li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_projections</span></code>
+for the supported projections for each of the supprted variable. If not
+provided, the default will be used.</li>
+<li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
+<li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be colormapped.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
+are evaluated on the cell edges instead of cell center. It can have a
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+<li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>plot_non_zero</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, only non-zero values will be plotted.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Fig</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_fracture_list_at_point">
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list_at_point</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>point=None</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>labels=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list_at_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the fracture evolution on a given point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the list of Fracture objects giving the evolution of fracture with
+time.</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the given variable is plotted against time.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
+are evaluated on the cell edges instead of cell center. It can have a
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_fracture_list_slice">
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_list_slice</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>point1=None</em>, <em>point2=None</em>, <em>projection='2D'</em>, <em>plot_prop=None</em>, <em>fig=None</em>, <em>edge=4</em>, <em>labels=None</em>, <em>plot_cell_center=False</em>, <em>orientation='horizontal'</em>, <em>extreme_points=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_list_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_list_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be
+joined to form the slice. The values on the slice are either interpolated from the values available on the cell
+centers. Exact values on the cell centers can also be plotted.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the list of Fracture objects giving the evolution of fracture with
+time.</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
+<li><strong>point1</strong> – – the right point from which the slice should pass.</li>
+<li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection. It can either ‘3D’ or ‘2D’.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
+are evaluated on the cell edges instead of cell center. It can have a
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>plot_cell_center</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the discrete values at the cell centers will be plot. In this
+case, the slice passing through the center of the cell containing
+point1 will be taken. The slice of will be made according to the
+given orientation (see orientation). If False, the values will be
+interpolated on the line joining the given two points.</li>
+<li><strong>orientation</strong> (<em>string</em>) – – the orientation according to which the slice is made in the case the
+plotted values are not interpolated and are taken at the cell centers.
+Any of the four (‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’)
+orientation can be used.</li>
+<li><strong>extreme_points</strong> (<em>ndarray</em><em>)            </em><em>-- An empty array of shape</em><em> (</em><em>2</em><em>, </em><em>2</em>) – points of the plotted slice. These points can be used to plot analytical
+solution.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_fracture_slice_cell_center">
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_slice_cell_center</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point=None</em>, <em>orientation='horizontal'</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plot_colorbar=True</em>, <em>labels=None</em>, <em>plt_2D_image=True</em>, <em>extreme_points=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_slice_cell_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_slice_cell_center" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the fracture on a given slice of the domain. A points along with the direction of the slice is
+given to form the slice. The slice is made from the center of the cell containing the given point along the given
+orientation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point from which the slice should pass.</li>
+<li><strong>orientation</strong> (<em>string</em>) – <p>– the orientation according to which the slice is made. Any of the four
+(‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’) orientations</p>
+<blockquote>
+<div>can be used.</div></blockquote>
+</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+<li><strong>plt_colorbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, colorbar will be plotted.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>plt_2D_image</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, a subplot showing the colormap and the slice will also be
+plotted.</li>
+<li><strong>extreme_points</strong> (<em>ndarray</em><em>)            </em><em>-- An empty array of shape</em><em> (</em><em>2</em><em>, </em><em>2</em>) – points of the plotted slice. These points can be used to plot analytical
+solution.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_fracture_slice_interpolated">
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_slice_interpolated</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point1=None</em>, <em>point2=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plot_colorbar=True</em>, <em>labels=None</em>, <em>plt_2D_image=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_slice_interpolated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_slice_interpolated" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the fracture on a given slice of the domain. Two points are to be given that will be
+joined to form the slice. The values on the slice are interpolated from the values available on the cell
+centers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
+<li><strong>point1</strong> – – the right point from which the slice should pass.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+<li><strong>plt_colorbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, colorbar will be plotted.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>plt_2D_image</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, a subplot showing the colormap and the slice will also be
+plotted.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_fracture_variable_as_contours">
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_variable_as_contours</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plt_backGround=True</em>, <em>plt_colorbar=True</em>, <em>contours_at=None</em>, <em>vmin=None</em>, <em>vmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_variable_as_contours"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_variable_as_contours" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the contours of the 2D fracture variable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray of the length of the number of cells in the mesh.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>plt_backGround</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the colormap of the variable will also be plotted.</li>
+<li><strong>plt_colorbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, colorbar will be plotted.</li>
+<li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the values at which the countours are to be plotted.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
 </td>
 </tr>
 </tbody>
@@ -159,21 +398,27 @@ plot_non_zero (bool): – if true, only non-zero values will be plotted.</p>
 <dl class="function">
 <dt id="Visualization.plot_fracture_variable_as_image">
 <code class="descclassname">Visualization.</code><code class="descname">plot_fracture_variable_as_image</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>elements=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>plt_colorbar=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_variable_as_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_variable_as_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plots the contours of the fracture width in millimeters.</p>
+<dd><p>This function plots the 2D fracture variable in the form of a colormap.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fracture</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – the fracture object for which the fracture width is to be plotted.</li>
-<li><strong>fig</strong> (<em>figure</em>) – </li>
-<li><strong>bck_colMap</strong> (<em>Colormaps</em>) – </li>
-<li><strong>line_color</strong> (<em>color</em><em>)          </em><em>-- the color of the contour line</em><em> (</em><em>e.g. 'r' will plot in red</em>) – </li>
-<li><strong>contours_at</strong> (<em>ndarray</em>) – </li>
+<li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray of the length of the number of cells in the mesh.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+<li><strong>plt_colorbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, colorbar will be plotted.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Fig</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
 </td>
 </tr>
 </tbody>
@@ -183,21 +428,27 @@ plot_non_zero (bool): – if true, only non-zero values will be plotted.</p>
 <dl class="function">
 <dt id="Visualization.plot_fracture_variable_as_surface">
 <code class="descclassname">Visualization.</code><code class="descname">plot_fracture_variable_as_surface</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plot_colorbar=True</em>, <em>elements=None</em>, <em>vmin=None</em>, <em>vmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_variable_as_surface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_variable_as_surface" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plots the contours of the fracture width in millimeters.</p>
+<dd><p>This function plots the 2D fracture variable in the form of a surface.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fracture</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – the fracture object for which the fracture width is to be plotted.</li>
-<li><strong>fig</strong> (<em>figure</em>) – </li>
-<li><strong>bck_colMap</strong> (<em>Colormaps</em>) – </li>
-<li><strong>line_color</strong> (<em>color</em><em>)          </em><em>-- the color of the contour line</em><em> (</em><em>e.g. 'r' will plot in red</em>) – </li>
-<li><strong>contours_at</strong> (<em>ndarray</em>) – </li>
+<li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray of the length of the number of cells in the mesh.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+<li><strong>plt_colorbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, colorbar will be plotted.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Fig</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
 </td>
 </tr>
 </tbody>
@@ -217,7 +468,29 @@ plot_non_zero (bool): – if true, only non-zero values will be plotted.</p>
 <dl class="function">
 <dt id="Visualization.plot_variable_vs_time">
 <code class="descclassname">Visualization.</code><code class="descname">plot_variable_vs_time</code><span class="sig-paren">(</span><em>time_list</em>, <em>value_list</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>label=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_variable_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_variable_vs_time" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function plots a given list of values against time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>time_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>array</em>) – – the list of times.</li>
+<li><strong>value_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>array</em>) – – the list of values.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>label</strong> (<em>string</em>) – – the label given to the plot line.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.save_images_to_video">
