@@ -44,21 +44,33 @@ reserved. See the LICENSE.TXT file for more details.</p>
 <dl class="function">
 <dt id="Visualization.animate_simulation_results">
 <code class="descclassname">Visualization.</code><code class="descname">animate_simulation_results</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>mat_properties=None</em>, <em>projection='3D'</em>, <em>elements=None</em>, <em>backGround_param=None</em>, <em>plot_prop=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>plot_non_zero=True</em>, <em>Interval=400</em>, <em>Repeat=None</em>, <em>save=False</em>, <em>address=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#animate_simulation_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.animate_simulation_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plays an animation of the evolution of fracture with time. See the arguments list for options</p>
+<dd><p>This function plays an animation of the evolution of fracture with time.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>address</strong> (<em>string</em>) – the folder containing the fracture files</li>
-<li><strong>time_period</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – the output time period after which the next available fracture will be plotted.
-This is the minimum time between two ploted fractures and can be used to avoid
-clutter.</li>
-<li><strong>colormap</strong> (<em>matplotlib colormap</em>) – the color map used to plot</li>
-<li><strong>edge_color</strong> (<em>matplotlib colors</em>) – the color used to plot the grid lines</li>
-<li><strong>Interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time in milliseconds between the frames of animation</li>
-<li><strong>Repeat</strong> (<em>boolean</em>) – True will play the animation in a loop</li>
-<li><strong>maxFiles</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – the maximum no. of files to be loaded</li>
+<li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the list of Fracture objects giving the evolution of fracture with
+time.</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the material properties. It is mainly used to colormap the mesh.</li>
+<li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_projections</span></code>
+for the supported projections for each of the supprted variable. If not
+provided, the default will be used.</li>
+<li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
+<li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be colormapped.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
+are evaluated on the cell edges instead of cell center. It can have a
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+<li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>plot_non_zero</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, only non-zero values will be plotted.</li>
+<li><strong>interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time interval between two frames.</li>
+<li><strong>Repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the animation will be played in a loop.</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the animation will be saved in the form of a video</li>
+<li><strong>address</strong> (<em>string</em>) – – the address where to save the file.</li>
 </ul>
 </td>
 </tr>
@@ -69,21 +81,12 @@ clutter.</li>
 <dl class="function">
 <dt id="Visualization.get_HF_analytical_solution_footprint">
 <code class="descclassname">Visualization.</code><code class="descname">get_HF_analytical_solution_footprint</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>plot_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#get_HF_analytical_solution_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.get_HF_analytical_solution_footprint" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function returns footprint of the analytical solution in the form of patches</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_analytical_solution">
 <code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>projection='2D'</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>contours_at=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_analytical_solution_at_point">
-<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_at_point</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_at_point" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="Visualization.plot_analytical_solution_slice">
-<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em>, <em>plt_top_view=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots slice of the given analytical solution. It can be used to compare simulation results by
 superimposing on the figure obtained from the slice plot function.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -91,7 +94,10 @@ superimposing on the figure obtained from the slice plot function.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>regime</strong> (<em>string</em>) – <p>– the string specifying the limiting case solution to be plotted. The available options are:</p>
+<li><strong>regime</strong> (<em>string</em>) – <dl class="docutils">
+<dt>– the string specifying the limiting case solution to be plotted. The</dt>
+<dd>available options are.</dd>
+</dl>
 <table border="1" class="docutils">
 <colgroup>
 <col width="22%" />
@@ -133,26 +139,211 @@ superimposing on the figure obtained from the slice plot function.</p>
 </tbody>
 </table>
 </li>
-<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. Possible options are:</li>
-<li><strong>mat_prop</strong> – </li>
-<li><strong>inj_prop</strong> – </li>
-<li><strong>mesh</strong> – </li>
-<li><strong>fluid_prop</strong> – </li>
-<li><strong>fig</strong> – </li>
-<li><strong>point1</strong> – </li>
-<li><strong>point2</strong> – </li>
-<li><strong>time_srs</strong> – </li>
-<li><strong>length_srs</strong> – </li>
-<li><strong>h</strong> – </li>
-<li><strong>samp_cell</strong> – </li>
-<li><strong>plot_prop</strong> – </li>
-<li><strong>labels</strong> – </li>
-<li><strong>gamma</strong> – </li>
-<li><strong>plt_top_view</strong> – </li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. Possible options are ‘w’, ‘width’ or ‘p’,
+‘pressure’.</li>
+<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the MaterialProperties object giving the material properties.</li>
+<li><strong>inj_prop</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – the InjectionProperties object giving the injection properties.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
+<li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
+<li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection.</li>
+<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+be the radius of the fracture in the case of a radial fractures,
+length of the fracture in case of height contained fractures and the
+length of the minor axis in case of elliptical fractures.</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of fracture in case of height contained hydraulic
+fractures</li>
+<li><strong>samp_cell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the cell from where the values of the parameter to be taken. If not
+given, values from the cell containing the injection point is taken</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the aspect ratio, used in the case of elliptical fracture.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_analytical_solution_at_point">
+<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_at_point</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_at_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the given analytical solution at a given point. It can be used to compare simulation results by
+superimposing on the figure obtained from the plot at point function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regime</strong> (<em>string</em>) – <dl class="docutils">
+<dt>– the string specifying the limiting case solution to be plotted. The</dt>
+<dd>available options are.</dd>
+</dl>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">option</th>
+<th class="head">limiting solution</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>’M’</td>
+<td>viscosity storage</td>
+</tr>
+<tr class="row-odd"><td>’Mt’</td>
+<td>viscosity leak-off</td>
+</tr>
+<tr class="row-even"><td>’K’</td>
+<td>toughness storage</td>
+</tr>
+<tr class="row-odd"><td>’Kt’</td>
+<td>toughness leak-off</td>
+</tr>
+<tr class="row-even"><td>’PKN’</td>
+<td>PKN</td>
+</tr>
+<tr class="row-odd"><td>’KGD_K’</td>
+<td>KGD toughness</td>
+</tr>
+<tr class="row-even"><td>’MDR’</td>
+<td>MDR turbulent viscosity</td>
+</tr>
+<tr class="row-odd"><td>’E_K’</td>
+<td>anisotropic toughness</td>
+</tr>
+<tr class="row-even"><td>’E_E’</td>
+<td>anisotropic elasticity</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. Possible options are ‘w’, ‘width’ or ‘p’,
+‘pressure’.</li>
+<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the MaterialProperties object giving the material properties.</li>
+<li><strong>inj_prop</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – the InjectionProperties object giving the injection properties.</li>
+<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
+<li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the solution to be plotted.</li>
+<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+be the radius of the fracture in the case of a radial fractures,
+length of the fracture in case of height contained fractures and the
+length of the minor axis in case of elliptical fractures.</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of fracture in case of height contained hydraulic
+fractures</li>
+<li><strong>samp_cell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the cell from where the values of the parameter to be taken. If not
+given, values from the cell containing the injection point is taken</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the aspect ratio, used in the case of elliptical fracture.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_analytical_solution_slice">
+<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em>, <em>plt_top_view=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots slice of the given analytical solution. It can be used to compare simulation results by
+superimposing on the figure obtained from the slice plot function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regime</strong> (<em>string</em>) – <dl class="docutils">
+<dt>– the string specifying the limiting case solution to be plotted. The</dt>
+<dd>available options are.</dd>
+</dl>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">option</th>
+<th class="head">limiting solution</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>’M’</td>
+<td>viscosity storage</td>
+</tr>
+<tr class="row-odd"><td>’Mt’</td>
+<td>viscosity leak-off</td>
+</tr>
+<tr class="row-even"><td>’K’</td>
+<td>toughness storage</td>
+</tr>
+<tr class="row-odd"><td>’Kt’</td>
+<td>toughness leak-off</td>
+</tr>
+<tr class="row-even"><td>’PKN’</td>
+<td>PKN</td>
+</tr>
+<tr class="row-odd"><td>’KGD_K’</td>
+<td>KGD toughness</td>
+</tr>
+<tr class="row-even"><td>’MDR’</td>
+<td>MDR turbulent viscosity</td>
+</tr>
+<tr class="row-odd"><td>’E_K’</td>
+<td>anisotropic toughness</td>
+</tr>
+<tr class="row-even"><td>’E_E’</td>
+<td>anisotropic elasticity</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. Possible options are ‘w’, ‘width’ or ‘p’,
+‘pressure’.</li>
+<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the MaterialProperties object giving the material properties.</li>
+<li><strong>inj_prop</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – the InjectionProperties object giving the injection properties.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
+<li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
+<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass.</li>
+<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+be the radius of the fracture in the case of a radial fractures,
+length of the fracture in case of height contained fractures and the
+length of the minor axis in case of elliptical fractures.</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of fracture in case of height contained hydraulic
+fractures</li>
+<li><strong>samp_cell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the cell from where the values of the parameter to be taken. If not
+given, values from the cell containing the injection point is taken</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the aspect ratio, used in the case of elliptical fracture.</li>
+<li><strong>plt_top_view</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, top view will be plotted also</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
 </td>
 </tr>
 </tbody>
@@ -161,8 +352,86 @@ superimposing on the figure obtained from the slice plot function.</p>
 
 <dl class="function">
 <dt id="Visualization.plot_footprint_analytical">
-<code class="descclassname">Visualization.</code><code class="descname">plot_footprint_analytical</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>color='b'</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_footprint_analytical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_footprint_analytical" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">Visualization.</code><code class="descname">plot_footprint_analytical</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_footprint_analytical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_footprint_analytical" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots footprint of the analytical solution fracture. It can be used to compare simulation results by
+superimposing on the figure obtained from the footprint plot.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regime</strong> (<em>string</em>) – <dl class="docutils">
+<dt>– the string specifying the limiting case solution to be plotted. The</dt>
+<dd>available options are.</dd>
+</dl>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="78%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">option</th>
+<th class="head">limiting solution</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>’M’</td>
+<td>viscosity storage</td>
+</tr>
+<tr class="row-odd"><td>’Mt’</td>
+<td>viscosity leak-off</td>
+</tr>
+<tr class="row-even"><td>’K’</td>
+<td>toughness storage</td>
+</tr>
+<tr class="row-odd"><td>’Kt’</td>
+<td>toughness leak-off</td>
+</tr>
+<tr class="row-even"><td>’PKN’</td>
+<td>PKN</td>
+</tr>
+<tr class="row-odd"><td>’KGD_K’</td>
+<td>KGD toughness</td>
+</tr>
+<tr class="row-even"><td>’MDR’</td>
+<td>MDR turbulent viscosity</td>
+</tr>
+<tr class="row-odd"><td>’E_K’</td>
+<td>anisotropic toughness</td>
+</tr>
+<tr class="row-even"><td>’E_E’</td>
+<td>anisotropic elasticity</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the MaterialProperties object giving the material properties.</li>
+<li><strong>inj_prop</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – the InjectionProperties object giving the injection properties.</li>
+<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
+<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+be the radius of the fracture in the case of a radial fractures,
+length of the fracture in case of height contained fractures and the
+length of the minor axis in case of elliptical fractures.</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of fracture in case of height contained hydraulic
+fractures</li>
+<li><strong>samp_cell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the cell from where the values of the parameter to be taken. If not
+given, values from the cell containing the injection point is taken.</li>
+<li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the aspect ratio, used in the case of elliptical fracture.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_fracture_list">
@@ -260,13 +529,13 @@ time.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
 are evaluated on the cell edges instead of cell center. It can have a
-value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</li>
 <li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
-<li><strong>plot_cell_center</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the discrete values at the cell centers will be plot. In this
+<li><strong>plot_cell_center</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the discrete values at the cell centers will be plotted. In this
 case, the slice passing through the center of the cell containing
-point1 will be taken. The slice of will be made according to the
-given orientation (see orientation). If False, the values will be
-interpolated on the line joining the given two points.</li>
+point1 will be taken. The slice will be made according to the given
+orientation (see orientation). If False, the values will be interpolated
+on the line joining the given two points.</li>
 <li><strong>orientation</strong> (<em>string</em>) – – the orientation according to which the slice is made in the case the
 plotted values are not interpolated and are taken at the cell centers.
 Any of the four (‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’)
@@ -300,11 +569,9 @@ orientation.</p>
 <li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
 <li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point from which the slice should pass.</li>
-<li><strong>orientation</strong> (<em>string</em>) – <p>– the orientation according to which the slice is made. Any of the four
-(‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’) orientations</p>
-<blockquote>
-<div>can be used.</div></blockquote>
-</li>
+<li><strong>orientation</strong> (<em>string</em>) – – the orientation according to which the slice is made. Any of the four
+(‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’) orientations
+can be used.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
@@ -342,7 +609,7 @@ centers.</p>
 <li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
 <li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
-<li><strong>point1</strong> – – the right point from which the slice should pass.</li>
+<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
@@ -458,12 +725,41 @@ plotted.</li>
 <dl class="function">
 <dt id="Visualization.plot_scale_3D">
 <code class="descclassname">Visualization.</code><code class="descname">plot_scale_3D</code><span class="sig-paren">(</span><em>fracture</em>, <em>fig=None</em>, <em>plot_prop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_scale_3D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_scale_3D" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function plots lines with dimensions on the 3D fracture plot.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_slice_3D">
 <code class="descclassname">Visualization.</code><code class="descname">plot_slice_3D</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point1=None</em>, <em>point2=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>label=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_slice_3D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_slice_3D" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function plots the fracture on a given slice of the domain in 3D. Two points are to be given that will be
+joined to form the slice. The values on the slice are interpolated from the values available on the cell
+centers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
+<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+<li><strong>label</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the label of plotted line to be used for legend.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_variable_vs_time">
@@ -495,7 +791,8 @@ plotted.</li>
 <dl class="function">
 <dt id="Visualization.save_images_to_video">
 <code class="descclassname">Visualization.</code><code class="descname">save_images_to_video</code><span class="sig-paren">(</span><em>image_folder</em>, <em>video_name='movie'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#save_images_to_video"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.save_images_to_video" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function makes a video from the images in the given folder.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="Visualization.text3d">

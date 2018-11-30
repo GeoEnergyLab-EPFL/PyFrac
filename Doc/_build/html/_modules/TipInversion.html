@@ -88,11 +88,20 @@
     <span class="c1"># return wEltRibbon - c ** (1 / (2 + n)) * Eprime ** -(1 / (2 + n)) * dist ** (2 / (2 + n)) * (</span>
     <span class="c1">#                                     (dist - DistLstTSEltRibbon) / dt) ** ((2 - n) / (2 + n)) / beta_mdr</span>
 
-    <span class="n">Lt</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span> <span class="p">((</span><span class="n">dist</span> <span class="o">-</span> <span class="n">DistLstTSEltRibbon</span><span class="p">)</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">Eprime</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="n">alpha_n</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">/</span> <span class="mf">2.7</span>
-    <span class="n">beta_n</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="o">-</span><span class="n">alpha_n</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">alpha_n</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="c1"># Lt = (c * ((dist - DistLstTSEltRibbon) / dt)**(2 - n) / Eprime)**(1 / (n))</span>
+    <span class="c1"># alpha_n = 2 / 2.7</span>
+    <span class="c1"># beta_n = (2 * (n + 1)**2 * np.tan(-alpha_n * np.pi) / n)**(alpha_n / 2)</span>
+    <span class="c1"># return wEltRibbon - Lt * beta_n * (dist/Lt) ** (2 / (n + 2))</span>
 
-    <span class="k">return</span> <span class="n">wEltRibbon</span> <span class="o">-</span> <span class="n">Lt</span> <span class="o">*</span> <span class="n">beta_n</span> <span class="o">*</span> <span class="n">dist</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span></div>
+    <span class="c1"># l_mk = Kprime**6 / Eprime**4 / ((dist - DistLstTSEltRibbon) / dt)**2 / muPrime**2</span>
+    <span class="c1"># omega = wEltRibbon / l_mk</span>
+    <span class="c1"># el = dist / l_mk</span>
+    <span class="c1"># Re_mk = 12 * density * Kprime**4 / Eprime**3 / muPrime**2</span>
+    <span class="c1">#</span>
+    <span class="c1"># return omega - 1.44018 * Re_mk**0.111111 * el**0.740741</span>
+
+    <span class="k">return</span> <span class="n">wEltRibbon</span> <span class="o">-</span><span class="p">(</span><span class="mf">1.89812</span> <span class="o">*</span> <span class="n">dist</span> <span class="o">**</span> <span class="mf">0.740741</span> <span class="o">*</span> <span class="p">((</span><span class="n">dist</span> <span class="o">-</span> <span class="n">DistLstTSEltRibbon</span><span class="p">)</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.481481</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="n">muPrime</span><span class="o">**</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">density</span> <span class="o">**</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.37037</span><span class="p">)</span> <span class="o">/</span> <span class="n">Eprime</span> <span class="o">**</span> <span class="mf">0.37037</span></div>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 

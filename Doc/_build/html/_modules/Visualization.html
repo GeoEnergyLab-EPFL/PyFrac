@@ -260,20 +260,20 @@
 <span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
 <span class="sd">        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
 <span class="sd">                                                are evaluated on the cell edges instead of cell center. It can have a</span>
-<span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</span>
 <span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
-<span class="sd">        plot_cell_center (bool):            -- if True, the discrete values at the cell centers will be plot. In this</span>
+<span class="sd">        plot_cell_center (bool):            -- if True, the discrete values at the cell centers will be plotted. In this</span>
 <span class="sd">                                                case, the slice passing through the center of the cell containing</span>
-<span class="sd">                                                point1 will be taken. The slice of will be made according to the</span>
-<span class="sd">                                                given orientation (see orientation). If False, the values will be</span>
-<span class="sd">                                                interpolated on the line joining the given two points.</span>
+<span class="sd">                                                point1 will be taken. The slice will be made according to the given</span>
+<span class="sd">                                                orientation (see orientation). If False, the values will be interpolated</span>
+<span class="sd">                                                on the line joining the given two points.</span>
 <span class="sd">        orientation (string):               -- the orientation according to which the slice is made in the case the</span>
 <span class="sd">                                               plotted values are not interpolated and are taken at the cell centers.</span>
 <span class="sd">                                               Any of the four (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;)</span>
 <span class="sd">                                               orientation can be used.</span>
 <span class="sd">        extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme</span>
-<span class="sd">                                                points of the plotted slice. These points can be used to plot analytical</span>
-<span class="sd">                                                solution.</span>
+<span class="sd">                                               points of the plotted slice. These points can be used to plot analytical</span>
+<span class="sd">                                               solution.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
@@ -749,7 +749,7 @@
 <span class="sd">        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.</span>
 <span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
 <span class="sd">        point1 (list or ndarray):           -- the left point from which the slice should pass.</span>
-<span class="sd">        point1 (list or ndarray):           -- the right point from which the slice should pass.</span>
+<span class="sd">        point2 (list or ndarray):           -- the right point from which the slice should pass.</span>
 <span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
 <span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
 <span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
@@ -912,8 +912,8 @@
 <span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
 <span class="sd">        point (list or ndarray):            -- the point from which the slice should pass.</span>
 <span class="sd">        orientation (string):               -- the orientation according to which the slice is made. Any of the four</span>
-<span class="sd">                                                (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;) orientations</span>
-<span class="sd">                                                 can be used.</span>
+<span class="sd">                                               (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;) orientations</span>
+<span class="sd">                                               can be used.</span>
 <span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
 <span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
 <span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
@@ -1071,7 +1071,8 @@
 <span class="sd">    superimposing on the figure obtained from the slice plot function.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        regime (string): -- the string specifying the limiting case solution to be plotted. The available options are:</span>
+<span class="sd">        regime (string):                        -- the string specifying the limiting case solution to be plotted. The</span>
+<span class="sd">                                                   available options are.</span>
 
 <span class="sd">            ========    ============================</span>
 <span class="sd">            option      limiting solution</span>
@@ -1087,24 +1088,32 @@
 <span class="sd">            &#39;E_E&#39;       anisotropic elasticity</span>
 <span class="sd">            ========    ============================</span>
 
-<span class="sd">        variable (string):                  -- the variable to be plotted. Possible options are:</span>
+<span class="sd">        variable (string):                      -- the variable to be plotted. Possible options are &#39;w&#39;, &#39;width&#39; or &#39;p&#39;,</span>
+<span class="sd">                                                   &#39;pressure&#39;.</span>
+<span class="sd">        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.</span>
+<span class="sd">        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.</span>
+<span class="sd">        mesh (CartesianMesh):                   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.</span>
+<span class="sd">        fig (figure):                           -- figure object to superimpose the image.</span>
+<span class="sd">        point1 (list or ndarray):               -- the left point from which the slice should pass.</span>
+<span class="sd">        point2 (list or ndarray):               -- the right point from which the slice should pass.</span>
+<span class="sd">        time_srs (list of ndarray):             -- the times at which the analytical solution is to be plotted.</span>
+<span class="sd">        length_srs (list of ndarray):           -- the length at which the analytical solution is to be plotted. It will</span>
+<span class="sd">                                                    be the radius of the fracture in the case of a radial fractures,</span>
+<span class="sd">                                                    length of the fracture in case of height contained fractures and the</span>
+<span class="sd">                                                    length of the minor axis in case of elliptical fractures.</span>
+<span class="sd">        h (float):                              -- the height of fracture in case of height contained hydraulic</span>
+<span class="sd">                                                   fractures</span>
+<span class="sd">        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not</span>
+<span class="sd">                                                   given, values from the cell containing the injection point is taken</span>
+<span class="sd">        plot_prop (PlotProperties):             -- the properties to be used for the plot.</span>
+<span class="sd">        labels (LabelProperties):               -- the labels to be used for the plot.</span>
+<span class="sd">        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.</span>
+<span class="sd">        plt_top_view (bool):                    -- if True, top view will be plotted also</span>
 
-<span class="sd">        mat_prop:</span>
-<span class="sd">    :param inj_prop:</span>
-<span class="sd">    :param mesh:</span>
-<span class="sd">    :param fluid_prop:</span>
-<span class="sd">    :param fig:</span>
-<span class="sd">    :param point1:</span>
-<span class="sd">    :param point2:</span>
-<span class="sd">    :param time_srs:</span>
-<span class="sd">    :param length_srs:</span>
-<span class="sd">    :param h:</span>
-<span class="sd">    :param samp_cell:</span>
-<span class="sd">    :param plot_prop:</span>
-<span class="sd">    :param labels:</span>
-<span class="sd">    :param gamma:</span>
-<span class="sd">    :param plt_top_view:</span>
-<span class="sd">    :return:</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                               -- A Figure object that can be used superimpose further plots.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
@@ -1192,8 +1201,55 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="plot_analytical_solution_at_point"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution_at_point">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution_at_point</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                <span class="n">point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_analytical_solution_at_point"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution_at_point">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution_at_point</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the given analytical solution at a given point. It can be used to compare simulation results by</span>
+<span class="sd">    superimposing on the figure obtained from the plot at point function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        regime (string):                        -- the string specifying the limiting case solution to be plotted. The</span>
+<span class="sd">                                                   available options are.</span>
+
+<span class="sd">            ========    ============================</span>
+<span class="sd">            option      limiting solution</span>
+<span class="sd">            ========    ============================</span>
+<span class="sd">            &#39;M&#39;         viscosity storage</span>
+<span class="sd">            &#39;Mt&#39;        viscosity leak-off</span>
+<span class="sd">            &#39;K&#39;         toughness storage</span>
+<span class="sd">            &#39;Kt&#39;        toughness leak-off</span>
+<span class="sd">            &#39;PKN&#39;       PKN</span>
+<span class="sd">            &#39;KGD_K&#39;     KGD toughness</span>
+<span class="sd">            &#39;MDR&#39;       MDR turbulent viscosity</span>
+<span class="sd">            &#39;E_K&#39;       anisotropic toughness</span>
+<span class="sd">            &#39;E_E&#39;       anisotropic elasticity</span>
+<span class="sd">            ========    ============================</span>
+
+<span class="sd">        variable (string):                      -- the variable to be plotted. Possible options are &#39;w&#39;, &#39;width&#39; or &#39;p&#39;,</span>
+<span class="sd">                                                   &#39;pressure&#39;.</span>
+<span class="sd">        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.</span>
+<span class="sd">        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.</span>
+<span class="sd">        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.</span>
+<span class="sd">        fig (figure):                           -- figure object to superimpose the image.</span>
+<span class="sd">        point (list or ndarray):                -- the point at which the solution to be plotted.</span>
+<span class="sd">        time_srs (list of ndarray):             -- the times at which the analytical solution is to be plotted.</span>
+<span class="sd">        length_srs (list of ndarray):           -- the length at which the analytical solution is to be plotted. It will</span>
+<span class="sd">                                                    be the radius of the fracture in the case of a radial fractures,</span>
+<span class="sd">                                                    length of the fracture in case of height contained fractures and the</span>
+<span class="sd">                                                    length of the minor axis in case of elliptical fractures.</span>
+<span class="sd">        h (float):                              -- the height of fracture in case of height contained hydraulic</span>
+<span class="sd">                                                   fractures</span>
+<span class="sd">        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not</span>
+<span class="sd">                                                   given, values from the cell containing the injection point is taken</span>
+<span class="sd">        plot_prop (PlotProperties):             -- the properties to be used for the plot.</span>
+<span class="sd">        labels (LabelProperties):               -- the labels to be used for the plot.</span>
+<span class="sd">        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                               -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
@@ -1216,9 +1272,11 @@
                                                         <span class="n">mat_prop</span><span class="p">,</span>
                                                         <span class="n">inj_prop</span><span class="p">,</span>
                                                         <span class="n">fluid_prop</span><span class="o">=</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                        <span class="n">length_srs</span><span class="o">=</span><span class="n">length_srs</span><span class="p">,</span>
                                                         <span class="n">time_srs</span><span class="o">=</span><span class="n">time_srs</span><span class="p">,</span>
                                                         <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
-                                                        <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">)</span>
+                                                        <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">,</span>
+                                                        <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">analytical_list</span><span class="p">)):</span>
         <span class="n">analytical_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/=</span> <span class="n">labels</span><span class="o">.</span><span class="n">unitConversion</span>
@@ -1253,6 +1311,7 @@
 
 
 <div class="viewcode-block" id="plot_scale_3D"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_scale_3D">[docs]</a><span class="k">def</span> <span class="nf">plot_scale_3D</span><span class="p">(</span><span class="n">fracture</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This function plots lines with dimensions on the 3D fracture plot.&quot;&quot;&quot;</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Plotting scale...&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1325,7 +1384,26 @@
 
 <div class="viewcode-block" id="plot_slice_3D"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_slice_3D">[docs]</a><span class="k">def</span> <span class="nf">plot_slice_3D</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots the fracture on a given slice of the domain in 3D. Two points are to be given that will be</span>
+<span class="sd">    joined to form the slice. The values on the slice are interpolated from the values available on the cell</span>
+<span class="sd">    centers.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.</span>
+<span class="sd">        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.</span>
+<span class="sd">        point1 (list or ndarray):           -- the left point from which the slice should pass.</span>
+<span class="sd">        point2 (list or ndarray):           -- the right point from which the slice should pass.</span>
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.</span>
+<span class="sd">        label (LabelProperties):            -- the label of plotted line to be used for legend.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Plotting slice in 3D...&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1360,14 +1438,56 @@
     <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">var_value</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">var_value</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">fig</span></div>
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
 <div class="viewcode-block" id="plot_footprint_analytical"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_footprint_analytical">[docs]</a><span class="k">def</span> <span class="nf">plot_footprint_analytical</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                              <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                              <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots footprint of the analytical solution fracture. It can be used to compare simulation results by</span>
+<span class="sd">    superimposing on the figure obtained from the footprint plot.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        regime (string):                        -- the string specifying the limiting case solution to be plotted. The</span>
+<span class="sd">                                                   available options are.</span>
+
+<span class="sd">            ========    ============================</span>
+<span class="sd">            option      limiting solution</span>
+<span class="sd">            ========    ============================</span>
+<span class="sd">            &#39;M&#39;         viscosity storage</span>
+<span class="sd">            &#39;Mt&#39;        viscosity leak-off</span>
+<span class="sd">            &#39;K&#39;         toughness storage</span>
+<span class="sd">            &#39;Kt&#39;        toughness leak-off</span>
+<span class="sd">            &#39;PKN&#39;       PKN</span>
+<span class="sd">            &#39;KGD_K&#39;     KGD toughness</span>
+<span class="sd">            &#39;MDR&#39;       MDR turbulent viscosity</span>
+<span class="sd">            &#39;E_K&#39;       anisotropic toughness</span>
+<span class="sd">            &#39;E_E&#39;       anisotropic elasticity</span>
+<span class="sd">            ========    ============================</span>
+
+<span class="sd">        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.</span>
+<span class="sd">        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.</span>
+<span class="sd">        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.</span>
+<span class="sd">        time_srs (list of ndarray):             -- the times at which the analytical solution is to be plotted.</span>
+<span class="sd">        length_srs (list of ndarray):           -- the length at which the analytical solution is to be plotted. It will</span>
+<span class="sd">                                                    be the radius of the fracture in the case of a radial fractures,</span>
+<span class="sd">                                                    length of the fracture in case of height contained fractures and the</span>
+<span class="sd">                                                    length of the minor axis in case of elliptical fractures.</span>
+<span class="sd">        h (float):                              -- the height of fracture in case of height contained hydraulic</span>
+<span class="sd">                                                   fractures</span>
+<span class="sd">        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not</span>
+<span class="sd">                                                   given, values from the cell containing the injection point is taken.</span>
+<span class="sd">        fig (figure):                           -- figure object to superimpose the image.</span>
+<span class="sd">        plot_prop (PlotProperties):             -- the properties to be used for the plot.</span>
+<span class="sd">        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                               -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting analytical footprint...&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1378,7 +1498,6 @@
 
     <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
-        <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColorAnal</span> <span class="o">=</span> <span class="n">color</span>
 
     <span class="n">footprint_patches</span> <span class="o">=</span> <span class="n">get_HF_analytical_solution_footprint</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
                                          <span class="n">mat_prop</span><span class="p">,</span>
@@ -1403,6 +1522,55 @@
 <div class="viewcode-block" id="plot_analytical_solution"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function plots slice of the given analytical solution. It can be used to compare simulation results by</span>
+<span class="sd">    superimposing on the figure obtained from the slice plot function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        regime (string):                        -- the string specifying the limiting case solution to be plotted. The</span>
+<span class="sd">                                                   available options are.</span>
+
+<span class="sd">            ========    ============================</span>
+<span class="sd">            option      limiting solution</span>
+<span class="sd">            ========    ============================</span>
+<span class="sd">            &#39;M&#39;         viscosity storage</span>
+<span class="sd">            &#39;Mt&#39;        viscosity leak-off</span>
+<span class="sd">            &#39;K&#39;         toughness storage</span>
+<span class="sd">            &#39;Kt&#39;        toughness leak-off</span>
+<span class="sd">            &#39;PKN&#39;       PKN</span>
+<span class="sd">            &#39;KGD_K&#39;     KGD toughness</span>
+<span class="sd">            &#39;MDR&#39;       MDR turbulent viscosity</span>
+<span class="sd">            &#39;E_K&#39;       anisotropic toughness</span>
+<span class="sd">            &#39;E_E&#39;       anisotropic elasticity</span>
+<span class="sd">            ========    ============================</span>
+
+<span class="sd">        variable (string):                      -- the variable to be plotted. Possible options are &#39;w&#39;, &#39;width&#39; or &#39;p&#39;,</span>
+<span class="sd">                                                   &#39;pressure&#39;.</span>
+<span class="sd">        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.</span>
+<span class="sd">        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.</span>
+<span class="sd">        mesh (CartesianMesh):                   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.</span>
+<span class="sd">        fig (figure):                           -- figure object to superimpose the image.</span>
+<span class="sd">        projection (string):                    -- a string specifying the projection.</span>
+<span class="sd">        time_srs (list of ndarray):             -- the times at which the analytical solution is to be plotted.</span>
+<span class="sd">        length_srs (list of ndarray):           -- the length at which the analytical solution is to be plotted. It will</span>
+<span class="sd">                                                    be the radius of the fracture in the case of a radial fractures,</span>
+<span class="sd">                                                    length of the fracture in case of height contained fractures and the</span>
+<span class="sd">                                                    length of the minor axis in case of elliptical fractures.</span>
+<span class="sd">        h (float):                              -- the height of fracture in case of height contained hydraulic</span>
+<span class="sd">                                                   fractures</span>
+<span class="sd">        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not</span>
+<span class="sd">                                                   given, values from the cell containing the injection point is taken</span>
+<span class="sd">        plot_prop (PlotProperties):             -- the properties to be used for the plot.</span>
+<span class="sd">        labels (LabelProperties):               -- the labels to be used for the plot.</span>
+<span class="sd">        contours_at (list):                     -- the values at which the contours are to be plotted.</span>
+<span class="sd">        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                               -- A Figure object that can be used superimpose further plots.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting analytical &quot;</span> <span class="o">+</span> <span class="n">variable</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">regime</span> <span class="o">+</span> <span class="s2">&quot; solution...&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
@@ -1525,6 +1693,7 @@
 
 <div class="viewcode-block" id="get_HF_analytical_solution_footprint"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.get_HF_analytical_solution_footprint">[docs]</a><span class="k">def</span> <span class="nf">get_HF_analytical_solution_footprint</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">plot_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                          <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This function returns footprint of the analytical solution in the form of patches&quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Time series is to be provided.&quot;</span><span class="p">)</span>
@@ -1601,21 +1770,33 @@
                                 <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                 <span class="n">plot_non_zero</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="n">Interval</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">Repeat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function plays an animation of the evolution of fracture with time. See the arguments list for options</span>
+<span class="sd">    This function plays an animation of the evolution of fracture with time.</span>
 
-<span class="sd">    Arguments:</span>
-<span class="sd">        address (string):               the folder containing the fracture files</span>
-<span class="sd">        time_period (float):            the output time period after which the next available fracture will be plotted.</span>
-<span class="sd">                                        This is the minimum time between two ploted fractures and can be used to avoid</span>
-<span class="sd">                                        clutter.</span>
-<span class="sd">        colormap (matplotlib colormap): the color map used to plot</span>
-<span class="sd">        edge_color (matplotlib colors): the color used to plot the grid lines</span>
-<span class="sd">        Interval (float):               time in milliseconds between the frames of animation</span>
-<span class="sd">        Repeat (boolean):               True will play the animation in a loop</span>
-<span class="sd">        maxFiles (int):                 the maximum no. of files to be loaded</span>
+<span class="sd">    Args:</span>
+<span class="sd">        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with</span>
+<span class="sd">                                                    time.</span>
+<span class="sd">        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                                :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">        mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.</span>
+<span class="sd">        projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`</span>
+<span class="sd">                                                for the supported projections for each of the supprted variable. If not</span>
+<span class="sd">                                                provided, the default will be used.</span>
+<span class="sd">        elements (ndarray):                 -- the elements to be plotted.</span>
+<span class="sd">        backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.</span>
+<span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+
+<span class="sd">        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                                are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">        contours_at (list):                 -- the values at which the contours are to be plotted.</span>
+<span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
+<span class="sd">        plot_non_zero (bool):               -- if true, only non-zero values will be plotted.</span>
+<span class="sd">        interval (float):                   -- time interval between two frames.</span>
+<span class="sd">        Repeat (bool):                      -- if True, the animation will be played in a loop.</span>
+<span class="sd">        save (bool):                        -- if True, the animation will be saved in the form of a video</span>
+<span class="sd">        address (string):                   -- the address where to save the file.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
 
@@ -1801,7 +1982,7 @@
 
 
 <div class="viewcode-block" id="save_images_to_video"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.save_images_to_video">[docs]</a><span class="k">def</span> <span class="nf">save_images_to_video</span><span class="p">(</span><span class="n">image_folder</span><span class="p">,</span> <span class="n">video_name</span><span class="o">=</span><span class="s1">&#39;movie&#39;</span><span class="p">):</span>
-
+    <span class="sd">&quot;&quot;&quot; This function makes a video from the images in the given folder.&quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">cv2</span>
     <span class="kn">import</span> <span class="nn">os</span>
 
