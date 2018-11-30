@@ -198,9 +198,14 @@
             <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
             <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
 
-    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;pressure&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;fluid pressure&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;pf&#39;</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
-            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">pFluid</span><span class="p">)</span>
+            <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;Net pressure&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;pn&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+            <span class="n">variable_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">pNet</span><span class="p">)</span>
             <span class="n">time_srs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;front velocity&#39;</span> <span class="ow">or</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span>

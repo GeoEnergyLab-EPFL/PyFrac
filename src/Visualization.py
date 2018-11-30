@@ -35,20 +35,27 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
     the form of a list of Fracture objects.
 
     Args:
-    fracture_list (list): -- the list of Fracture objects giving the evolution of fracture with time.
-    variable (string):  -- the variable to be plotted. See :py:data:`supported_variables` of the :py:mod:`Labels` module for a list of supported variables
-    mat_properties (MaterialProperties): -- the material properties. It is mainly used to colormap the mesh.
-    projection (string): -- a string specifying the projection. See :py:data:`supported_projections` for the supported projections for each of the supprted variable. If not provided, the default will be used
-    elements (ndarray): -- the elements to be plotted.
-    backGround_param (string): -- the parameter according to which the the mesh will be colormapped.
-    plot_prop (PlotProperties): -- the properties to be used for the plot.
-    fig (Figure): -- the figure to superimpose on. New figure will be made if not provided.
-    edge (int): -- the edge of the cell that will be plotted. This is for variables that are evaluated on the cell edges instead of cell center. It can have a value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
-    contours_at (list): -- the values at which the contours are to be plotted.
-    labels (LabelProperties): -- the labels to be used for the plot.
-    plot_non_zero (bool): -- if true, only non-zero values will be plotted.
+        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with
+                                                    time.
+        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the
+                                                :py:mod:`Labels` module for a list of supported variables.
+        mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.
+        projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`
+                                                for the supported projections for each of the supprted variable. If not
+                                                provided, the default will be used.
+        elements (ndarray):                 -- the elements to be plotted.
+        backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
+                                                are evaluated on the cell edges instead of cell center. It can have a
+                                                value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
+        contours_at (list):                 -- the values at which the contours are to be plotted.
+        labels (LabelProperties):           -- the labels to be used for the plot.
+        plot_non_zero (bool):               -- if true, only non-zero values will be plotted.
 
     Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
     print("Plotting " + variable + '...')
@@ -197,7 +204,42 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
                              fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal',
                              extreme_points=None):
+    """
+    This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be
+    joined to form the slice. The values on the slice are either interpolated from the values available on the cell
+    centers. Exact values on the cell centers can also be plotted.
 
+    Args:
+        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with
+                                                time.
+        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the
+                                                :py:mod:`Labels` module for a list of supported variables.
+        point1 (list or ndarray):           -- the left point from which the slice should pass [x, y].
+        point1 (list or ndarray):           -- the right point from which the slice should pass [x, y].
+        projection (string):                -- a string specifying the projection. It can either '3D' or '2D'.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
+                                                are evaluated on the cell edges instead of cell center. It can have a
+                                                value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
+        labels (LabelProperties):           -- the labels to be used for the plot.
+        plot_cell_center (bool):            -- if True, the discrete values at the cell centers will be plotted. In this
+                                                case, the slice passing through the center of the cell containing
+                                                point1 will be taken. The slice will be made according to the given
+                                                orientation (see orientation). If False, the values will be interpolated
+                                                on the line joining the given two points.
+        orientation (string):               -- the orientation according to which the slice is made in the case the
+                                               plotted values are not interpolated and are taken at the cell centers.
+                                               Any of the four ('vertical', 'horizontal', 'ascending' and 'descending')
+                                               orientation can be used.
+        extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme
+                                               points of the plotted slice. These points can be used to plot analytical
+                                               solution.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -314,7 +356,26 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
 
 def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plot_prop=None, fig=None,
                              edge=4, labels=None):
+    """
+    This function plots the fracture evolution on a given point.
 
+    Args:
+        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with
+                                                time.
+        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the
+                                                :py:mod:`Labels` module for a list of supported variables.
+        point (list or ndarray):            -- the point at which the given variable is plotted against time [x, y].
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
+                                                are evaluated on the cell edges instead of cell center. It can have a
+                                                value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
+        labels (LabelProperties):           -- the labels to be used for the plot.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -379,6 +440,21 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
 
 
 def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label=None):
+    """
+    This function plots a given list of values against time.
+
+    Args:
+        time_list (list or array):      -- the list of times.
+        value_list (list or array):     -- the list of values.
+        fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):     -- the properties to be used for the plot.
+        label (string):                 -- the label given to the plot line.
+
+    Returns:
+        (Figure):                       -- A Figure object that can be used superimpose further plots.
+
+    """
+
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -420,17 +496,20 @@ def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label
 def plot_fracture_variable_as_image(var_value, mesh, fig=None, plot_prop=None, elements=None, vmin=None,
                                     vmax=None, plt_colorbar=True):
     """
-    This function plots the contours of the fracture width in millimeters.
+    This function plots the 2D fracture variable in the form of a colormap.
 
-    Arguments:
-        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.
-        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.
-        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.
-        line_color (color)          -- the color of the contour line (e.g. 'r' will plot in red).
-        contours_at (ndarray)       -- a list of fracture widths to plot contours at.
-
+    Args:
+        var_value (ndarray):                -- a ndarray of the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        elements (ndarray):                 -- the elements to be plotted.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        plt_colorbar (bool):                -- if True, colorbar will be plotted.
     Returns:
-         Fig
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
     """
 
     if elements is not None:
@@ -484,17 +563,20 @@ def plot_fracture_variable_as_image(var_value, mesh, fig=None, plot_prop=None, e
 def plot_fracture_variable_as_surface(var_value, mesh, fig=None, plot_prop=None, plot_colorbar=True, elements=None,
                                       vmin=None, vmax=None):
     """
-    This function plots the contours of the fracture width in millimeters.
+    This function plots the 2D fracture variable in the form of a surface.
 
-    Arguments:
-        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.
-        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.
-        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.
-        line_color (color)          -- the color of the contour line (e.g. 'r' will plot in red).
-        contours_at (ndarray)       -- a list of fracture widths to plot contours at.
-
+    Args:
+        var_value (ndarray):                -- a ndarray of the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        elements (ndarray):                 -- the elements to be plotted.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        plt_colorbar (bool):                -- if True, colorbar will be plotted.
     Returns:
-         Fig
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
     """
 
     if fig is None:
@@ -546,17 +628,22 @@ def plot_fracture_variable_as_surface(var_value, mesh, fig=None, plot_prop=None,
 def plot_fracture_variable_as_contours(var_value, mesh, fig=None, plot_prop=None, plt_backGround=True,
                                        plt_colorbar=True, contours_at=None, vmin=None, vmax=None):
     """
-    This function plots the contours of the fracture width in millimeters.
+    This function plots the contours of the 2D fracture variable.
 
-    Arguments:
-        fracture (Fracture):        -- the fracture object for which the fracture width is to be plotted.
-        fig (figure)                -- figure to superimpose. A new figure will be created if not provided.
-        bck_colMap (Colormaps)      -- colormap for the fracture width shown in the background.
-        line_color (color)          -- the color of the contour line (e.g. 'r' will plot in red).
-        contours_at (ndarray)       -- a list of fracture widths to plot contours at.
+    Args:
+        var_value (ndarray):                -- a ndarray of the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        plt_backGround(bool):               -- if True, the colormap of the variable will also be plotted.
+        plt_colorbar (bool):                -- if True, colorbar will be plotted.
+        contours_at (list or ndarray):      -- the values at which the countours are to be plotted.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
 
     Returns:
-         Fig
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
     """
 
     if fig is None:
@@ -614,6 +701,29 @@ def plot_fracture_variable_as_contours(var_value, mesh, fig=None, plot_prop=None
 
 def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, fig=None, plot_prop=None, vmin=None,
                                      vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True):
+    """
+    This function plots the fracture on a given slice of the domain. Two points are to be given that will be
+    joined to form the slice. The values on the slice are interpolated from the values available on the cell
+    centers.
+
+    Args:
+        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        point1 (list or ndarray):           -- the left point from which the slice should pass [x, y].
+        point2 (list or ndarray):           -- the right point from which the slice should pass [x, y].
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        plt_colorbar (bool):                -- if True, colorbar will be plotted.
+        labels (LabelProperties):           -- the labels to be used for the plot.
+        plt_2D_image (bool):                -- if True, a subplot showing the colormap and the slice will also be
+                                                plotted.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
 
     print("Plotting slice...")
     if plt_2D_image:
@@ -753,6 +863,34 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
                                 extreme_points=None):
+    """
+    This function plots the fracture on a given slice of the domain. A points along with the direction of the slice is
+    given to form the slice. The slice is made from the center of the cell containing the given point along the given
+    orientation.
+
+    Args:
+        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        point (list or ndarray):            -- the point from which the slice should pass [x, y].
+        orientation (string):               -- the orientation according to which the slice is made. Any of the four
+                                               ('vertical', 'horizontal', 'ascending' and 'descending') orientations
+                                               can be used.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        plt_colorbar (bool):                -- if True, colorbar will be plotted.
+        labels (LabelProperties):           -- the labels to be used for the plot.
+        plt_2D_image (bool):                -- if True, a subplot showing the colormap and the slice will also be
+                                                plotted.
+        extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme
+                                                points of the plotted slice. These points can be used to plot analytical
+                                                solution.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
 
     print("Plotting slice...")
     if plt_2D_image:
@@ -889,6 +1027,55 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
 def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
                              point1=None, point2=None, time_srs=None, length_srs=None, h=None, samp_cell=None,
                              plot_prop=None, labels=None, gamma=None, plt_top_view=False):
+    """
+    This function plots slice of the given analytical solution. It can be used to compare simulation results by
+    superimposing on the figure obtained from the slice plot function.
+
+    Args:
+        regime (string):                        -- the string specifying the limiting case solution to be plotted. The
+                                                   available options are.
+
+            ========    ============================
+            option      limiting solution
+            ========    ============================
+            'M'         viscosity storage
+            'Mt'        viscosity leak-off
+            'K'         toughness storage
+            'Kt'        toughness leak-off
+            'PKN'       PKN
+            'KGD_K'     KGD toughness
+            'MDR'       MDR turbulent viscosity
+            'E_K'       anisotropic toughness
+            'E_E'       anisotropic elasticity
+            ========    ============================
+
+        variable (string):                      -- the variable to be plotted. Possible options are 'w', 'width' or 'p',
+                                                   'pressure'.
+        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.
+        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.
+        mesh (CartesianMesh):                   -- a CartesianMesh class object describing the grid.
+        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.
+        fig (figure):                           -- figure object to superimpose the image.
+        point1 (list or ndarray):               -- the left point from which the slice should pass [x, y].
+        point2 (list or ndarray):               -- the right point from which the slice should pass [x, y].
+        time_srs (list or ndarray):             -- the times at which the analytical solution is to be plotted.
+        length_srs (list or ndarray):           -- the length at which the analytical solution is to be plotted. It will
+                                                    be the radius of the fracture in the case of a radial fractures,
+                                                    length of the fracture in case of height contained fractures and the
+                                                    length of the minor axis in case of elliptical fractures.
+        h (float):                              -- the height of fracture in case of height contained hydraulic
+                                                   fractures
+        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not
+                                                   given, values from the cell containing the injection point is taken
+        plot_prop (PlotProperties):             -- the properties to be used for the plot.
+        labels (LabelProperties):               -- the labels to be used for the plot.
+        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.
+        plt_top_view (bool):                    -- if True, top view will be plotted also
+
+    Returns:
+        (Figure):                               -- A Figure object that can be used superimpose further plots.
+
+    """
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -975,8 +1162,55 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, fluid_prop=None, fig=None,
-                                point=None, time_srs=None, h=None, samp_cell=None, plot_prop=None, labels=None):
+def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, fluid_prop=None, fig=None, point=None,
+                                      time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
+                                      labels=None, gamma=None):
+    """
+    This function plots the given analytical solution at a given point. It can be used to compare simulation results by
+    superimposing on the figure obtained from the plot at point function.
+
+    Args:
+        regime (string):                        -- the string specifying the limiting case solution to be plotted. The
+                                                   available options are.
+
+            ========    ============================
+            option      limiting solution
+            ========    ============================
+            'M'         viscosity storage
+            'Mt'        viscosity leak-off
+            'K'         toughness storage
+            'Kt'        toughness leak-off
+            'PKN'       PKN
+            'KGD_K'     KGD toughness
+            'MDR'       MDR turbulent viscosity
+            'E_K'       anisotropic toughness
+            'E_E'       anisotropic elasticity
+            ========    ============================
+
+        variable (string):                      -- the variable to be plotted. Possible options are 'w', 'width' or 'p',
+                                                   'pressure'.
+        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.
+        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.
+        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.
+        fig (figure):                           -- figure object to superimpose the image.
+        point (list or ndarray):                -- the point at which the solution to be plotted [x, y].
+        time_srs (list or ndarray):             -- the times at which the analytical solution is to be plotted.
+        length_srs (list or ndarray):           -- the length at which the analytical solution is to be plotted. It will
+                                                    be the radius of the fracture in the case of a radial fractures,
+                                                    length of the fracture in case of height contained fractures and the
+                                                    length of the minor axis in case of elliptical fractures.
+        h (float):                              -- the height of fracture in case of height contained hydraulic
+                                                   fractures
+        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not
+                                                   given, values from the cell containing the injection point is taken
+        plot_prop (PlotProperties):             -- the properties to be used for the plot.
+        labels (LabelProperties):               -- the labels to be used for the plot.
+        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.
+
+    Returns:
+        (Figure):                               -- A Figure object that can be used superimpose further plots.
+
+    """
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -999,9 +1233,11 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
                                                         mat_prop,
                                                         inj_prop,
                                                         fluid_prop=fluid_prop,
+                                                        length_srs=length_srs,
                                                         time_srs=time_srs,
                                                         h=h,
-                                                        samp_cell=samp_cell)
+                                                        samp_cell=samp_cell,
+                                                        gamma=gamma)
 
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
@@ -1036,6 +1272,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
 
 def plot_scale_3D(fracture, fig=None, plot_prop=None):
+    """ This function plots lines with dimensions on the 3D fracture plot."""
 
     print('Plotting scale...')
     if fig is None:
@@ -1108,7 +1345,26 @@ def plot_scale_3D(fracture, fig=None, plot_prop=None):
 
 def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop=None, vmin=None, vmax=None,
                   label=None):
+    """
+    This function plots the fracture on a given slice of the domain in 3D. Two points are to be given that will be
+    joined to form the slice. The values on the slice are interpolated from the values available on the cell
+    centers.
 
+    Args:
+        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        point1 (list or ndarray):           -- the left point from which the slice should pass [x, y].
+        point2 (list or ndarray):           -- the right point from which the slice should pass [x, y].
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        label (LabelProperties):            -- the label of plotted line to be used for legend.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
     print('Plotting slice in 3D...')
 
     if fig is None:
@@ -1143,14 +1399,56 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
     if vmin is None and vmax is None:
         vmin, vmax = np.min(var_value), np.max(var_value)
     ax.set_zlim(vmin, vmax)
+
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_srs=None, h=None, samp_cell=None,
-                              fig=None, plot_prop=None, color='b', gamma=None):
+                              fig=None, plot_prop=None, gamma=None):
+    """
+    This function plots footprint of the analytical solution fracture. It can be used to compare simulation results by
+    superimposing on the figure obtained from the footprint plot.
 
+    Args:
+        regime (string):                        -- the string specifying the limiting case solution to be plotted. The
+                                                   available options are.
+
+            ========    ============================
+            option      limiting solution
+            ========    ============================
+            'M'         viscosity storage
+            'Mt'        viscosity leak-off
+            'K'         toughness storage
+            'Kt'        toughness leak-off
+            'PKN'       PKN
+            'KGD_K'     KGD toughness
+            'MDR'       MDR turbulent viscosity
+            'E_K'       anisotropic toughness
+            'E_E'       anisotropic elasticity
+            ========    ============================
+
+        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.
+        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.
+        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.
+        time_srs (list or ndarray):             -- the times at which the analytical solution is to be plotted.
+        length_srs (list or ndarray):           -- the length at which the analytical solution is to be plotted. It will
+                                                    be the radius of the fracture in the case of a radial fractures,
+                                                    length of the fracture in case of height contained fractures and the
+                                                    length of the minor axis in case of elliptical fractures.
+        h (float):                              -- the height of fracture in case of height contained hydraulic
+                                                   fractures
+        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not
+                                                   given, values from the cell containing the injection point is taken.
+        fig (figure):                           -- figure object to superimpose the image.
+        plot_prop (PlotProperties):             -- the properties to be used for the plot.
+        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.
+
+    Returns:
+        (Figure):                               -- A Figure object that can be used superimpose further plots.
+
+    """
     print("Plotting analytical footprint...")
 
     if fig is None:
@@ -1161,7 +1459,6 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
 
     if plot_prop is None:
         plot_prop = PlotProperties()
-        plot_prop.lineColorAnal = color
 
     footprint_patches = get_HF_analytical_solution_footprint(regime,
                                          mat_prop,
@@ -1186,6 +1483,55 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
 def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fluid_prop=None, fig=None,
                              projection='2D', time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
                              labels=None, contours_at=None, gamma=None):
+    """
+    This function plots slice of the given analytical solution. It can be used to compare simulation results by
+    superimposing on the figure obtained from the slice plot function.
+
+    Args:
+        regime (string):                        -- the string specifying the limiting case solution to be plotted. The
+                                                   available options are.
+
+            ========    ============================
+            option      limiting solution
+            ========    ============================
+            'M'         viscosity storage
+            'Mt'        viscosity leak-off
+            'K'         toughness storage
+            'Kt'        toughness leak-off
+            'PKN'       PKN
+            'KGD_K'     KGD toughness
+            'MDR'       MDR turbulent viscosity
+            'E_K'       anisotropic toughness
+            'E_E'       anisotropic elasticity
+            ========    ============================
+
+        variable (string):                      -- the variable to be plotted. Possible options are 'w', 'width' or 'p',
+                                                   'pressure'.
+        mat_prop (MaterialProperties):          -- the MaterialProperties object giving the material properties.
+        inj_prop (InjectionProperties):         -- the InjectionProperties object giving the injection properties.
+        mesh (CartesianMesh):                   -- a CartesianMesh class object describing the grid.
+        fluid_prop( FluidProperties):           -- the FluidProperties object giving the fluid properties.
+        fig (figure):                           -- figure object to superimpose the image.
+        projection (string):                    -- a string specifying the projection.
+        time_srs (list or ndarray):             -- the times at which the analytical solution is to be plotted.
+        length_srs (list or ndarray):           -- the length at which the analytical solution is to be plotted. It will
+                                                    be the radius of the fracture in the case of a radial fractures,
+                                                    length of the fracture in case of height contained fractures and the
+                                                    length of the minor axis in case of elliptical fractures.
+        h (float):                              -- the height of fracture in case of height contained hydraulic
+                                                   fractures
+        samp_cell (int):                        -- the cell from where the values of the parameter to be taken. If not
+                                                   given, values from the cell containing the injection point is taken
+        plot_prop (PlotProperties):             -- the properties to be used for the plot.
+        labels (LabelProperties):               -- the labels to be used for the plot.
+        contours_at (list):                     -- the values at which the contours are to be plotted.
+        gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.
+
+
+    Returns:
+        (Figure):                               -- A Figure object that can be used superimpose further plots.
+
+    """
 
     print("Plotting analytical " + variable + " " + regime + " solution...")
     if variable not in supported_variables:
@@ -1308,6 +1654,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
 def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, fluid_prop=None, time_srs=None,
                                          h=None, samp_cell=None, gamma=None):
+    """ This function returns footprint of the analytical solution in the form of patches"""
 
     if time_srs is None:
         raise ValueError("Time series is to be provided.")
@@ -1384,21 +1731,33 @@ def animate_simulation_results(fracture_list, variable='width', mat_properties=N
                                 backGround_param=None, plot_prop=None, edge=4, contours_at=None, labels=None,
                                 plot_non_zero=True,  Interval=400, Repeat=None, save=False, address=None):
     """
-    This function plays an animation of the evolution of fracture with time. See the arguments list for options
+    This function plays an animation of the evolution of fracture with time.
 
-    Arguments:
-        address (string):               the folder containing the fracture files
-        time_period (float):            the output time period after which the next available fracture will be plotted.
-                                        This is the minimum time between two ploted fractures and can be used to avoid
-                                        clutter.
-        colormap (matplotlib colormap): the color map used to plot
-        edge_color (matplotlib colors): the color used to plot the grid lines
-        Interval (float):               time in milliseconds between the frames of animation
-        Repeat (boolean):               True will play the animation in a loop
-        maxFiles (int):                 the maximum no. of files to be loaded
+    Args:
+        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with
+                                                    time.
+        variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the
+                                                :py:mod:`Labels` module for a list of supported variables.
+        mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.
+        projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`
+                                                for the supported projections for each of the supprted variable. If not
+                                                provided, the default will be used.
+        elements (ndarray):                 -- the elements to be plotted.
+        backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+
+        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
+                                                are evaluated on the cell edges instead of cell center. It can have a
+                                                value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
+        contours_at (list):                 -- the values at which the contours are to be plotted.
+        labels (LabelProperties):           -- the labels to be used for the plot.
+        plot_non_zero (bool):               -- if true, only non-zero values will be plotted.
+        interval (float):                   -- time interval between two frames.
+        Repeat (bool):                      -- if True, the animation will be played in a loop.
+        save (bool):                        -- if True, the animation will be saved in the form of a video
+        address (string):                   -- the address where to save the file.
 
     """
-
     if plot_prop is None:
         plot_prop = PlotProperties()
 
@@ -1584,7 +1943,7 @@ def to_precision(x,p):
 
 
 def save_images_to_video(image_folder, video_name='movie'):
-
+    """ This function makes a video from the images in the given folder."""
     import cv2
     import os
 

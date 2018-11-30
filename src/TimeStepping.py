@@ -646,7 +646,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                         timeStep - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5 - (Fr_lstTmStp.time -
                         Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5) * Fr_lstTmStp.mesh.EltArea
 
-    w_n_plus1, p_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                         sim_properties,
                                                         fluid_properties,
                                                         mat_properties,
@@ -682,7 +682,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
     Fr_kplus1.time += timeStep
     Fr_kplus1.w = w_n_plus1
-    Fr_kplus1.p = p_n_plus1
+    Fr_kplus1.pFluid = pf_n_plus1
+    Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
+    Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
     Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
@@ -1014,7 +1016,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if sim_properties.substitutePressure:
             # pressure evaluated by dot product of width and elasticity matrix
             p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-            p[EltCrack_k] = np.dot(C[np.ix_(EltCrack_k, EltCrack_k)], w[EltCrack_k])
+            p[EltCrack_k] = np.dot(C[np.ix_(EltCrack_k, EltCrack_k)], w[EltCrack_k]) + mat_properties.SigmaO[EltCrack_k]
             p[EltTip] = sol[Fr_lstTmStp.EltChannel.size:]
         else:
             n_w = len(to_solve) + len(neg_km1)
@@ -1336,7 +1338,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             exitstatus = 13
             return exitstatus, None
 
-    w_n_plus1, p_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                       sim_properties,
                                                       fluid_properties,
                                                       mat_properties,
@@ -1371,7 +1373,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
     Fr_kplus1.w = w_n_plus1
-    Fr_kplus1.p = p_n_plus1
+    Fr_kplus1.pFluid = pf_n_plus1
+    Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
+    Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
     Fr_kplus1.time += timeStep
     Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]

@@ -67,11 +67,10 @@
 <span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="k">import</span> <span class="o">*</span>
 
 
-<div class="viewcode-block" id="Fracture"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture">[docs]</a><span class="k">class</span> <span class="nc">Fracture</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot; Class defining propagating fracture;</span>
+<div class="viewcode-block" id="Fracture"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture">[docs]</a><span class="k">class</span> <span class="nc">Fracture</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Class defining propagating fracture.</span>
 
 <span class="sd">    Args:</span>
-
 <span class="sd">        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
 <span class="sd">        init_param (tuple):     -- a tuple with the initialization parameters. The number of parameters depends</span>
 <span class="sd">                                   on the initialization type given by the first element of the tuple.</span>
@@ -126,50 +125,44 @@
 <span class="sd">                                                       parameters to be used in the simulation.</span>
 
 <span class="sd">    Attributes:</span>
-
-<span class="sd">        w (ndarray) :          -- fracture opening (width)</span>
-<span class="sd">        p (ndarray):           -- fracture pressure</span>
-<span class="sd">        time (float):                -- time since the start of injection</span>
-<span class="sd">        EltChannel (ndarray):    -- list of cells currently in the channel region</span>
-<span class="sd">        EltCrack (ndarray):      -- list of cells currently in the crack region</span>
-<span class="sd">        EltRibbon (ndarray):     -- list of cells currently in the Ribbon region</span>
-<span class="sd">        EltTip (ndarray):        -- list of cells currently in the Tip region</span>
-<span class="sd">        v (ndarray):           -- propagation velocity for each cell in the tip cells</span>
-<span class="sd">        alpha (ndarray):       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,</span>
+<span class="sd">        w (ndarray) :               -- fracture opening (width)</span>
+<span class="sd">        pFluid (ndarray):           -- the fluid pressure in the fracture.</span>
+<span class="sd">        pNet (ndarray):             -- the net pressure in the fracture.</span>
+<span class="sd">        time (float):               -- time since the start of injection</span>
+<span class="sd">        EltChannel (ndarray):       -- list of cells currently in the channel region</span>
+<span class="sd">        EltCrack (ndarray):         -- list of cells currently in the crack region</span>
+<span class="sd">        EltRibbon (ndarray):        -- list of cells currently in the Ribbon region</span>
+<span class="sd">        EltTip (ndarray):           -- list of cells currently in the Tip region</span>
+<span class="sd">        v (ndarray):                -- propagation velocity for each cell in the tip cells</span>
+<span class="sd">        alpha (ndarray):            -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,</span>
 <span class="sd">                                       Computation Methods Appl. Mech)</span>
-<span class="sd">        l (ndarray):           -- length of perpendicular on the fracture front</span>
+<span class="sd">        l (ndarray):                -- length of perpendicular on the fracture front</span>
 <span class="sd">                                       (see Pierce 2015, Computation Methods Appl. Mech)</span>
-<span class="sd">        ZeroVertex (ndarray):  -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,</span>
+<span class="sd">        ZeroVertex (ndarray):       -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,</span>
 <span class="sd">                                       where 0 signify bottom left, 1 signifying bottom right, 2 signifying top</span>
 <span class="sd">                                       right and 3 signifying top left vertex)</span>
-<span class="sd">        FillF (ndarray):       -- filling fraction of each tip cell</span>
-<span class="sd">        CellStatus (ndarray):    -- specifies which region each element currently belongs to</span>
-<span class="sd">        initRad (float):             -- starting radius</span>
-<span class="sd">        initTime (float):            -- starting time</span>
-<span class="sd">        sgndDist (ndarray):    -- signed minimun distance from fracture front of each cell in the domain</span>
-<span class="sd">        Q (ndarray-float):           -- injection rate into each cell of the domain</span>
-<span class="sd">        FractEvol (ndarray):   -- array containing the coordinates of the individual fracture front lines;</span>
+<span class="sd">        FillF (ndarray):            -- filling fraction of each tip cell</span>
+<span class="sd">        CellStatus (ndarray):       -- specifies which region each element currently belongs to</span>
+<span class="sd">        initRad (float):            -- starting radius</span>
+<span class="sd">        initTime (float):           -- starting time</span>
+<span class="sd">        sgndDist (ndarray):         -- signed minimun distance from fracture front of each cell in the domain</span>
+<span class="sd">        Q (ndarray-float):          -- injection rate into each cell of the domain</span>
+<span class="sd">        FractEvol (ndarray):        -- array containing the coordinates of the individual fracture front lines;</span>
 <span class="sd">                                       used for printing fracture evolution through time</span>
-<span class="sd">        InCrack (ndarray):       -- array specifying whether the cell is inside or outside the fracture.</span>
-<span class="sd">        FractureVolume (float):      -- fracture volume</span>
-<span class="sd">        muPrime (ndarray):           -- local viscosity parameter</span>
-<span class="sd">        Ffront (ndarray):            -- a list containing the intersection of the front and grid lines for the tip</span>
+<span class="sd">        InCrack (ndarray):          -- array specifying whether the cell is inside or outside the fracture.</span>
+<span class="sd">        FractureVolume (float):     -- fracture volume</span>
+<span class="sd">        muPrime (ndarray):          -- local viscosity parameter</span>
+<span class="sd">        Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip</span>
 <span class="sd">                                       cells.</span>
-<span class="sd">        regime (ndarray):            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,</span>
+<span class="sd">        regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,</span>
 <span class="sd">                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018)</span>
-<span class="sd">        ReynoldsNumber (ndarray):    -- the reynolds number at each edge of the cells in the fracture. The</span>
+<span class="sd">        ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The</span>
 <span class="sd">                                       arrangement is left, right, bottom, top.</span>
-<span class="sd">        fluidFlux (ndarray):         -- the fluid flux at each edge of the cells in the fracture. The arrangement is</span>
+<span class="sd">        fluidFlux (ndarray):        -- the fluid flux at each edge of the cells in the fracture. The arrangement is</span>
 <span class="sd">                                       left, right, bottom, top.</span>
-<span class="sd">        fluidVelocity (ndarray):     -- the fluid velocity at each edge of the cells in the fracture. The</span>
+<span class="sd">        fluidVelocity (ndarray):    -- the fluid velocity at each edge of the cells in the fracture. The</span>
 <span class="sd">                                       arrangement is left, right, bottom, top.</span>
 
-<span class="sd">    functions:</span>
-<span class="sd">        __init__                    Initialize the fracture according to the given initialization parameters.</span>
-<span class="sd">        plot_fracture               plot given variable of the fracture</span>
-<span class="sd">        PrintFractureTrace:         plot current regions and front position of the fracture</span>
-
-<span class="sd">            </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">init_param</span><span class="p">,</span> <span class="n">solid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">injection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simulProp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -178,55 +171,49 @@
 <span class="sd">        Args:</span>
 <span class="sd">            Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
 <span class="sd">            init_param (tuple)     -- a tuple with the initialization parameters. The number of parameters depends</span>
-<span class="sd">                                      on the initialization type given by the first element of the tuple.</span>
-<span class="sd">                                            In case the first element (init_param[0], see below for possible options) is</span>
-<span class="sd">                                            &#39;PKN&#39;, the tuple should contain the following parameters in order:</span>
-<span class="sd">                                                2. given_type   -- the type of the given value (see below for possible</span>
-<span class="sd">                                                                   options).</span>
-<span class="sd">                                                3. given_value  -- the value at which the fracture is initialized.</span>
-<span class="sd">                                                4. -h           -- the height of the PKN fracture.</span>
+<span class="sd">                                   on the initialization type given by the first element of the tuple.</span>
 
-<span class="sd">                                            In case the first element (init_param[0]) is &#39;M&#39;, &#39;Mt&#39;, &#39;K&#39;, &#39;Kt&#39;, &#39;MDR&#39; or &#39;E&#39;,</span>
-<span class="sd">                                            the tuple should contain the following parameters in order:</span>
-<span class="sd">                                                2. given_type   -- the type of the given value (see below for possible</span>
-<span class="sd">                                                                   options).</span>
-<span class="sd">                                                3. given_value  -- the value at which the fracture is initialized.</span>
+<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;M&#39;, &#39;Mt&#39;, &#39;K&#39;, &#39;Kt&#39; or &#39;MDR&#39;,</span>
+<span class="sd">                                    the tuple should contain the following parameters in order:</span>
+<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
+<span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
+<span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
 
-<span class="sd">                                            In case the first element (init_param[0]) is &#39;G&#39;, the tuple should</span>
-<span class="sd">                                            contain the following parameters in order:</span>
-<span class="sd">                                                2. surv_cells   -- list of the survey cells giving distance from the</span>
-<span class="sd">                                                                   fracture front.</span>
-<span class="sd">                                                3. inner_cells  -- the cells enclosed by the survey cells inside the</span>
-<span class="sd">                                                                   fracture.</span>
-<span class="sd">                                                4. surv_dist    -- the dist of the survey cells from the fracture front.</span>
-<span class="sd">                                                5. w            -- the array giving the width to be initialized for</span>
-<span class="sd">                                                                   each of the mesh cell. It can be &#39;None&#39; if not</span>
-<span class="sd">                                                                   available.</span>
-<span class="sd">                                                6. p            -- the array giving the pressure to be initialized for</span>
-<span class="sd">                                                                   each of the mesh cell. It can be &#39;None&#39; if not</span>
-<span class="sd">                                                                   available.</span>
-<span class="sd">                                                7. C            -- the elasticity influence matrix.</span>
-<span class="sd">                                                8. volume       -- total volume of the fracture. It can be &#39;None&#39; if not</span>
-<span class="sd">                                                                   available.</span>
-<span class="sd">                                                9. vel          -- vel of the propagating front. Maximum of the given</span>
-<span class="sd">                                                                   velocity will be used to calculate the time step.</span>
+<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;G&#39;, the tuple should</span>
+<span class="sd">                                    contain the following parameters in order:</span>
+<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
+<span class="sd">                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture front.</span>
+<span class="sd">                                        3. (ndarray)    -- the cells enclosed by the survey cells inside the fracture.</span>
+<span class="sd">                                        4. (ndarray)    -- the dist of the survey cells from the fracture front.</span>
+<span class="sd">                                        5. (ndarray)    -- the array giving the width to be initialized for each of the mesh cell. It can be &#39;None&#39; if not available.</span>
+<span class="sd">                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of the mesh cell. It can be &#39;None&#39; if not available.</span>
+<span class="sd">                                        7. (ndarray)    -- the elasticity influence matrix.</span>
+<span class="sd">                                        8. (ndarray)    -- total volume of the fracture. It can be &#39;None&#39; if not available.</span>
+<span class="sd">                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity will be used to calculate the time step.</span>
 
-<span class="sd">                                            The fracture can be initialized according to the following regimes</span>
-<span class="sd">                                            (specified by the first element of the init_param tuple):</span>
-<span class="sd">                                                &#39;M&#39;     -- radial fracture in viscosity dominated regime</span>
-<span class="sd">                                                &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off</span>
-<span class="sd">                                                &#39;K&#39;     -- radial fracture in toughness dominated regime</span>
-<span class="sd">                                                &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off</span>
-<span class="sd">                                                &#39;E&#39;     -- elliptical fracture in toughness dominated regime</span>
-<span class="sd">                                                &#39;PKN&#39;   -- PKN fracture</span>
-<span class="sd">                                                &#39;G&#39;     -- flexible, general purpose initialization</span>
+<span class="sd">                                    -- In case the first element (init_param[0], see below for possible options)</span>
+<span class="sd">                                    is &#39;PKN&#39;, the tuple should contain the following parameters in order:</span>
+<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
+<span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
+<span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
+<span class="sd">                                        4. (float)      -- the height of the PKN fracture.</span>
 
-<span class="sd">                                            given_type can be one of the following:</span>
-<span class="sd">                                                &#39;time&#39;  -- time at which the fracture is to be initialized.</span>
-<span class="sd">                                                &#39;length&#39;-- the length parameter. It will be treated as the fracture</span>
-<span class="sd">                                                           radius, the minor axis length and the fracture length for the</span>
-<span class="sd">                                                           cases of a radial fracture, an elliptical fracture and a PKN</span>
-<span class="sd">                                                           fracture respectively.</span>
+<span class="sd">                                    The fracture can be initialized according to the following regimes</span>
+<span class="sd">                                    (specified by the first element of the init_param tuple):</span>
+<span class="sd">                                        | &#39;M&#39;     -- radial fracture in viscosity dominated regime</span>
+<span class="sd">                                        | &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off</span>
+<span class="sd">                                        | &#39;K&#39;     -- radial fracture in toughness dominated regime</span>
+<span class="sd">                                        | &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off</span>
+<span class="sd">                                        | &#39;E&#39;     -- elliptical fracture in toughness dominated regime</span>
+<span class="sd">                                        | &#39;PKN&#39;   -- PKN fracture</span>
+<span class="sd">                                        | &#39;G&#39;     -- flexible, general purpose initialization</span>
+
+<span class="sd">                                    given_type can be one of the following:</span>
+<span class="sd">                                        &#39;time&#39;      -- time at which the fracture is to be initialized.</span>
+<span class="sd">                                        &#39;length&#39;    -- the length parameter. It will be treated as the fracture</span>
+<span class="sd">                                                   radius, the minor axis length and the fracture length for the</span>
+<span class="sd">                                                   cases of a radial fracture, an elliptical fracture and a PKN</span>
+<span class="sd">                                                   fracture respectively.</span>
 
 <span class="sd">            solid (MaterialProperties object)           -- the MaterialProperties object giving the material properties.</span>
 <span class="sd">            fluid (FluidProperties object)              -- the FluidProperties object giving the fluid properties.</span>
@@ -278,7 +265,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The initial value can only be of type time (&#39;time&#39;) or length (&#39;length&#39;)&quot;</span><span class="p">)</span>
 
             <span class="c1"># get analytical solution</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">actvElts</span> <span class="o">=</span> <span class="n">HF_analytical_sol</span><span class="p">(</span><span class="n">init_type</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pNet</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">actvElts</span> <span class="o">=</span> <span class="n">HF_analytical_sol</span><span class="p">(</span><span class="n">init_type</span><span class="p">,</span>
                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
                                                                       <span class="n">solid</span><span class="o">.</span><span class="n">Eprime</span><span class="p">,</span>
                                                                       <span class="n">injection</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
@@ -332,7 +319,7 @@
                                                                                 <span class="n">surv_dist</span><span class="p">)</span>
         <span class="c1"># for general purpose initialization</span>
         <span class="k">if</span> <span class="n">init_type</span> <span class="ow">is</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">get_width_pressure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pNet</span> <span class="o">=</span> <span class="n">get_width_pressure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">,</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">FillF</span><span class="p">,</span>
@@ -357,6 +344,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">vel</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">EltTip</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="p">),</span> <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">vel</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pFluid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pFluid</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pNet</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">+</span> <span class="n">solid</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sgndDist_last</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeStep_last</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="c1"># setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)</span>

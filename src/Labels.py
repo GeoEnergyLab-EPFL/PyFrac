@@ -12,8 +12,10 @@ Fig_labels = {
     'time': 'Time',
     'w': 'Fracture Width',
     'width': 'Fracture Width',
-    'p': 'Pressure',
-    'pressure': 'Pressure',
+    'pf': 'Fluid Pressure',
+    'fluid pressure': 'Fluid Pressure',
+    'pn': 'Net Pressure',
+    'net pressure': 'Net Pressure',
     'front velocity': 'Front Velocity',
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
@@ -47,8 +49,10 @@ labels = {
     'time': 'time',
     'w': 'width',
     'width': 'width',
-    'p': 'pressure',
-    'pressure': 'pressure',
+    'pf': 'pressure',
+    'fluid pressure': 'pressure',
+    'pn': 'pressure',
+    'net pressure': 'pressure',
     'front velocity': 'front velocity',
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
@@ -82,8 +86,10 @@ units = {
     'time': '($s$)',
     'w': ' ($mm$)',
     'width': ' ($mm$)',
-    'p': ' ($MPa$)',
-    'pressure': ' ($MPa$)',
+    'pf': ' ($MPa$)',
+    'fluid pressure': ' ($MPa$)',
+    'pn': ' ($MPa$)',
+    'net pressure': ' ($MPa$)',
     'front velocity': ' ($m/s$)',
     'v': ' ($m/s$)',
     'Reynolds number': '',
@@ -117,8 +123,10 @@ unit_conversion = {
     'time': 1,
     'w': 1.e-3,
     'width': 1.e-3,
-    'p': 1.e6,
-    'pressure': 1.e6,
+    'pf': 1.e6,
+    'fluid pressure': 1.e6,
+    'pn': 1.e6,
+    'net pressure': 1.e6,
     'front velocity': 1.,
     'v': 1.,
     'Reynolds number': 1.,
@@ -148,8 +156,8 @@ unit_conversion = {
 }
 
 
-supported_variables = ['w', 'width', 'p', 'pressure', 'front velocity', 'v',
-                       'Reynolds number', 'Re', 'fluid flux', 'ff',
+supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'Net pressure',
+                       'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
                        'fluid velocity', 'fv', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
@@ -181,7 +189,8 @@ required_string = {
 
 err_msg_variable = 'Given variable is not supported. Select one of the following:\n' \
                     '-- \'w\' or \'width\'\n' \
-                    '-- \'p\' or \'pressure\'\n' \
+                    '-- \'pf\' or \'fluid pressure\'\n' \
+                    '-- \'pn\' or \'net pressure\'\n' \
                     '-- \'Re\' or \'Reynolds number\'\n' \
                     '-- \'v\' or \'front velocity\'\n' \
                     '-- \'ff\' or \'fluid flux\'\n' \
@@ -200,8 +209,10 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
     'width': ['2D_clrmap', '2D_contours', '3D'],
-    'p': ['2D_clrmap', '2D_contours', '3D'],
-    'pressure': ['2D_clrmap', '2D_contours', '3D'],
+    'pf': ['2D_clrmap', '2D_contours', '3D'],
+    'fluid pressure': ['2D_clrmap', '2D_contours', '3D'],
+    'pn': ['2D_clrmap', '2D_contours', '3D'],
+    'net pressure': ['2D_clrmap', '2D_contours', '3D'],
     'front velocity': ['2D_clrmap', '2D_contours'],
     'v': ['2D_clrmap', '2D_contours'],
     'Reynolds number': ['2D_clrmap', '2D_contours', '3D'],

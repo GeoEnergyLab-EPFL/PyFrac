@@ -147,8 +147,8 @@ superimposing on the figure obtained from the slice plot function.</p>
 <li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
 <li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
 <li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection.</li>
-<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
-<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+<li><strong>time_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
 be the radius of the fracture in the case of a radial fractures,
 length of the fracture in case of height contained fractures and the
 length of the minor axis in case of elliptical fractures.</li>
@@ -234,9 +234,9 @@ superimposing on the figure obtained from the plot at point function.</p>
 <li><strong>inj_prop</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – the InjectionProperties object giving the injection properties.</li>
 <li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
 <li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
-<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the solution to be plotted.</li>
-<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
-<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the solution to be plotted [x, y].</li>
+<li><strong>time_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
 be the radius of the fracture in the case of a radial fractures,
 length of the fracture in case of height contained fractures and the
 length of the minor axis in case of elliptical fractures.</li>
@@ -322,10 +322,10 @@ superimposing on the figure obtained from the slice plot function.</p>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
 <li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
-<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
-<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass.</li>
-<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
-<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass [x, y].</li>
+<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass [x, y].</li>
+<li><strong>time_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
 be the radius of the fracture in the case of a radial fractures,
 length of the fracture in case of height contained fractures and the
 length of the minor axis in case of elliptical fractures.</li>
@@ -408,8 +408,8 @@ superimposing on the figure obtained from the footprint plot.</p>
 <li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the MaterialProperties object giving the material properties.</li>
 <li><strong>inj_prop</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – the InjectionProperties object giving the injection properties.</li>
 <li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – the FluidProperties object giving the fluid properties.</li>
-<li><strong>time_srs</strong> (<em>list of ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
-<li><strong>length_srs</strong> (<em>list of ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
+<li><strong>time_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the times at which the analytical solution is to be plotted.</li>
+<li><strong>length_srs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the length at which the analytical solution is to be plotted. It will
 be the radius of the fracture in the case of a radial fractures,
 length of the fracture in case of height contained fractures and the
 length of the minor axis in case of elliptical fractures.</li>
@@ -487,7 +487,7 @@ value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;aver
 time.</li>
 <li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
 <a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
-<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the given variable is plotted against time.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the given variable is plotted against time [x, y].</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
@@ -522,8 +522,8 @@ centers. Exact values on the cell centers can also be plotted.</p>
 time.</li>
 <li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
 <a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
-<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
-<li><strong>point1</strong> – – the right point from which the slice should pass.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass [x, y].</li>
+<li><strong>point1</strong> – – the right point from which the slice should pass [x, y].</li>
 <li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection. It can either ‘3D’ or ‘2D’.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
@@ -568,7 +568,7 @@ orientation.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
-<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point from which the slice should pass.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point from which the slice should pass [x, y].</li>
 <li><strong>orientation</strong> (<em>string</em>) – – the orientation according to which the slice is made. Any of the four
 (‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’) orientations
 can be used.</li>
@@ -608,8 +608,8 @@ centers.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
-<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
-<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass [x, y].</li>
+<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass [x, y].</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
@@ -741,8 +741,8 @@ centers.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>var_value</strong> (<em>ndarray</em>) – – a ndarray with the length of the number of cells in the mesh.</li>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
-<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass.</li>
-<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass [x, y].</li>
+<li><strong>point2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the right point from which the slice should pass [x, y].</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>

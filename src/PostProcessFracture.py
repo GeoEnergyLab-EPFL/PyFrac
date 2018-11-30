@@ -159,9 +159,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
             variable_list.append(i.w)
             time_srs.append(i.time)
 
-    elif variable is 'pressure' or variable is 'p':
+    elif variable is 'fluid pressure' or variable is 'pf':
         for i in fracture_list:
-            variable_list.append(i.p)
+            variable_list.append(i.pFluid)
+            time_srs.append(i.time)
+
+    elif variable is 'Net pressure' or variable is 'pn':
+        for i in fracture_list:
+            variable_list.append(i.pNet)
             time_srs.append(i.time)
 
     elif variable is 'front velocity' or variable is 'v':

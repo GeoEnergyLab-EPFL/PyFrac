@@ -45,7 +45,7 @@ All rights reserved. See the LICENSE.TXT file for more details.</p>
 <dt id="Fracture.Fracture">
 <em class="property">class </em><code class="descclassname">Fracture.</code><code class="descname">Fracture</code><span class="sig-paren">(</span><em>Mesh</em>, <em>init_param</em>, <em>solid=None</em>, <em>fluid=None</em>, <em>injection=None</em>, <em>simulProp=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Fracture.html#Fracture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Fracture.Fracture" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Class defining propagating fracture;</p>
+<p>Class defining propagating fracture.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -130,9 +130,15 @@ parameters to be used in the simulation.</li>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Fracture.Fracture.p">
-<code class="descname">p</code><a class="headerlink" href="#Fracture.Fracture.p" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – fracture pressure</p>
+<dt id="Fracture.Fracture.pFluid">
+<code class="descname">pFluid</code><a class="headerlink" href="#Fracture.Fracture.pFluid" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the fluid pressure in the fracture.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Fracture.Fracture.pNet">
+<code class="descname">pNet</code><a class="headerlink" href="#Fracture.Fracture.pNet" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ndarray</em> – – the net pressure in the fracture.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -289,12 +295,6 @@ left, right, bottom, top.</p>
 arrangement is left, right, bottom, top.</p>
 </dd></dl>
 
-<dl class="docutils">
-<dt>functions:</dt>
-<dd>__init__                    Initialize the fracture according to the given initialization parameters.
-plot_fracture               plot given variable of the fracture
-PrintFractureTrace:         plot current regions and front position of the fracture</dd>
-</dl>
 <dl class="method">
 <dt id="Fracture.Fracture.SaveFracture">
 <code class="descname">SaveFracture</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Fracture.html#Fracture.SaveFracture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Fracture.Fracture.SaveFracture" title="Permalink to this definition">¶</a></dt>

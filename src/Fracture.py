@@ -28,11 +28,10 @@ from scipy.interpolate import griddata
 from src.Visualization import *
 
 
-class Fracture():
-    """ Class defining propagating fracture;
+class Fracture:
+    """ Class defining propagating fracture.
 
     Args:
-
         Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
         init_param (tuple):     -- a tuple with the initialization parameters. The number of parameters depends
                                    on the initialization type given by the first element of the tuple.
@@ -87,50 +86,44 @@ class Fracture():
                                                        parameters to be used in the simulation.
 
     Attributes:
-
-        w (ndarray) :          -- fracture opening (width)
-        p (ndarray):           -- fracture pressure
-        time (float):                -- time since the start of injection
-        EltChannel (ndarray):    -- list of cells currently in the channel region
-        EltCrack (ndarray):      -- list of cells currently in the crack region
-        EltRibbon (ndarray):     -- list of cells currently in the Ribbon region
-        EltTip (ndarray):        -- list of cells currently in the Tip region
-        v (ndarray):           -- propagation velocity for each cell in the tip cells
-        alpha (ndarray):       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,
+        w (ndarray) :               -- fracture opening (width)
+        pFluid (ndarray):           -- the fluid pressure in the fracture.
+        pNet (ndarray):             -- the net pressure in the fracture.
+        time (float):               -- time since the start of injection
+        EltChannel (ndarray):       -- list of cells currently in the channel region
+        EltCrack (ndarray):         -- list of cells currently in the crack region
+        EltRibbon (ndarray):        -- list of cells currently in the Ribbon region
+        EltTip (ndarray):           -- list of cells currently in the Tip region
+        v (ndarray):                -- propagation velocity for each cell in the tip cells
+        alpha (ndarray):            -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,
                                        Computation Methods Appl. Mech)
-        l (ndarray):           -- length of perpendicular on the fracture front
+        l (ndarray):                -- length of perpendicular on the fracture front
                                        (see Pierce 2015, Computation Methods Appl. Mech)
-        ZeroVertex (ndarray):  -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,
+        ZeroVertex (ndarray):       -- Vertex from which the perpendicular is drawn (can have value from 0 to 3,
                                        where 0 signify bottom left, 1 signifying bottom right, 2 signifying top
                                        right and 3 signifying top left vertex)
-        FillF (ndarray):       -- filling fraction of each tip cell
-        CellStatus (ndarray):    -- specifies which region each element currently belongs to
-        initRad (float):             -- starting radius
-        initTime (float):            -- starting time
-        sgndDist (ndarray):    -- signed minimun distance from fracture front of each cell in the domain
-        Q (ndarray-float):           -- injection rate into each cell of the domain
-        FractEvol (ndarray):   -- array containing the coordinates of the individual fracture front lines;
+        FillF (ndarray):            -- filling fraction of each tip cell
+        CellStatus (ndarray):       -- specifies which region each element currently belongs to
+        initRad (float):            -- starting radius
+        initTime (float):           -- starting time
+        sgndDist (ndarray):         -- signed minimun distance from fracture front of each cell in the domain
+        Q (ndarray-float):          -- injection rate into each cell of the domain
+        FractEvol (ndarray):        -- array containing the coordinates of the individual fracture front lines;
                                        used for printing fracture evolution through time
-        InCrack (ndarray):       -- array specifying whether the cell is inside or outside the fracture.
-        FractureVolume (float):      -- fracture volume
-        muPrime (ndarray):           -- local viscosity parameter
-        Ffront (ndarray):            -- a list containing the intersection of the front and grid lines for the tip
+        InCrack (ndarray):          -- array specifying whether the cell is inside or outside the fracture.
+        FractureVolume (float):     -- fracture volume
+        muPrime (ndarray):          -- local viscosity parameter
+        Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
                                        cells.
-        regime (ndarray):            -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
+        regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
                                        and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
-        ReynoldsNumber (ndarray):    -- the reynolds number at each edge of the cells in the fracture. The
+        ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
-        fluidFlux (ndarray):         -- the fluid flux at each edge of the cells in the fracture. The arrangement is
+        fluidFlux (ndarray):        -- the fluid flux at each edge of the cells in the fracture. The arrangement is
                                        left, right, bottom, top.
-        fluidVelocity (ndarray):     -- the fluid velocity at each edge of the cells in the fracture. The
+        fluidVelocity (ndarray):    -- the fluid velocity at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
 
-    functions:
-        __init__                    Initialize the fracture according to the given initialization parameters.
-        plot_fracture               plot given variable of the fracture
-        PrintFractureTrace:         plot current regions and front position of the fracture
-
-            
     """
 
     def __init__(self, Mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
@@ -139,55 +132,49 @@ class Fracture():
         Args:
             Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
             init_param (tuple)     -- a tuple with the initialization parameters. The number of parameters depends
-                                      on the initialization type given by the first element of the tuple.
-                                            In case the first element (init_param[0], see below for possible options) is
-                                            'PKN', the tuple should contain the following parameters in order:
-                                                2. given_type   -- the type of the given value (see below for possible
-                                                                   options).
-                                                3. given_value  -- the value at which the fracture is initialized.
-                                                4. -h           -- the height of the PKN fracture.
+                                   on the initialization type given by the first element of the tuple.
 
-                                            In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt', 'MDR' or 'E',
-                                            the tuple should contain the following parameters in order:
-                                                2. given_type   -- the type of the given value (see below for possible
-                                                                   options).
-                                                3. given_value  -- the value at which the fracture is initialized.
+                                    -- In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt' or 'MDR',
+                                    the tuple should contain the following parameters in order:
+                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        2. (string)     -- the type of the given value (see below for possible options).
+                                        3. (float)      -- the value at which the fracture is initialized.
 
-                                            In case the first element (init_param[0]) is 'G', the tuple should
-                                            contain the following parameters in order:
-                                                2. surv_cells   -- list of the survey cells giving distance from the
-                                                                   fracture front.
-                                                3. inner_cells  -- the cells enclosed by the survey cells inside the
-                                                                   fracture.
-                                                4. surv_dist    -- the dist of the survey cells from the fracture front.
-                                                5. w            -- the array giving the width to be initialized for
-                                                                   each of the mesh cell. It can be 'None' if not
-                                                                   available.
-                                                6. p            -- the array giving the pressure to be initialized for
-                                                                   each of the mesh cell. It can be 'None' if not
-                                                                   available.
-                                                7. C            -- the elasticity influence matrix.
-                                                8. volume       -- total volume of the fracture. It can be 'None' if not
-                                                                   available.
-                                                9. vel          -- vel of the propagating front. Maximum of the given
-                                                                   velocity will be used to calculate the time step.
+                                    -- In case the first element (init_param[0]) is 'G', the tuple should
+                                    contain the following parameters in order:
+                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture front.
+                                        3. (ndarray)    -- the cells enclosed by the survey cells inside the fracture.
+                                        4. (ndarray)    -- the dist of the survey cells from the fracture front.
+                                        5. (ndarray)    -- the array giving the width to be initialized for each of the mesh cell. It can be 'None' if not available.
+                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of the mesh cell. It can be 'None' if not available.
+                                        7. (ndarray)    -- the elasticity influence matrix.
+                                        8. (ndarray)    -- total volume of the fracture. It can be 'None' if not available.
+                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity will be used to calculate the time step.
 
-                                            The fracture can be initialized according to the following regimes
-                                            (specified by the first element of the init_param tuple):
-                                                'M'     -- radial fracture in viscosity dominated regime
-                                                'Mt'    -- radial fracture in viscosity dominated regime with leak-off
-                                                'K'     -- radial fracture in toughness dominated regime
-                                                'Kt'    -- radial fracture in toughness dominated regime with leak-off
-                                                'E'     -- elliptical fracture in toughness dominated regime
-                                                'PKN'   -- PKN fracture
-                                                'G'     -- flexible, general purpose initialization
+                                    -- In case the first element (init_param[0], see below for possible options)
+                                    is 'PKN', the tuple should contain the following parameters in order:
+                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        2. (string)     -- the type of the given value (see below for possible options).
+                                        3. (float)      -- the value at which the fracture is initialized.
+                                        4. (float)      -- the height of the PKN fracture.
 
-                                            given_type can be one of the following:
-                                                'time'  -- time at which the fracture is to be initialized.
-                                                'length'-- the length parameter. It will be treated as the fracture
-                                                           radius, the minor axis length and the fracture length for the
-                                                           cases of a radial fracture, an elliptical fracture and a PKN
-                                                           fracture respectively.
+                                    The fracture can be initialized according to the following regimes
+                                    (specified by the first element of the init_param tuple):
+                                        | 'M'     -- radial fracture in viscosity dominated regime
+                                        | 'Mt'    -- radial fracture in viscosity dominated regime with leak-off
+                                        | 'K'     -- radial fracture in toughness dominated regime
+                                        | 'Kt'    -- radial fracture in toughness dominated regime with leak-off
+                                        | 'E'     -- elliptical fracture in toughness dominated regime
+                                        | 'PKN'   -- PKN fracture
+                                        | 'G'     -- flexible, general purpose initialization
+
+                                    given_type can be one of the following:
+                                        'time'      -- time at which the fracture is to be initialized.
+                                        'length'    -- the length parameter. It will be treated as the fracture
+                                                   radius, the minor axis length and the fracture length for the
+                                                   cases of a radial fracture, an elliptical fracture and a PKN
+                                                   fracture respectively.
 
             solid (MaterialProperties object)           -- the MaterialProperties object giving the material properties.
             fluid (FluidProperties object)              -- the FluidProperties object giving the fluid properties.
@@ -239,7 +226,7 @@ class Fracture():
                 raise ValueError("The initial value can only be of type time ('time') or length ('length')")
 
             # get analytical solution
-            self.time, self.initRad, self.p, self.w, vel, actvElts = HF_analytical_sol(init_type,
+            self.time, self.initRad, self.pNet, self.w, vel, actvElts = HF_analytical_sol(init_type,
                                                                       self.mesh,
                                                                       solid.Eprime,
                                                                       injection.injectionRate[1,0],
@@ -293,7 +280,7 @@ class Fracture():
                                                                                 surv_dist)
         # for general purpose initialization
         if init_type is 'G':
-            self.w, self.p = get_width_pressure(self.mesh,
+            self.w, self.pNet = get_width_pressure(self.mesh,
                                                 self.EltCrack,
                                                 self.EltTip,
                                                 self.FillF,
@@ -318,6 +305,9 @@ class Fracture():
             self.v = vel * np.ones((self.EltTip.size, ), )
         else:
             self.v = vel
+
+        self.pFluid = np.zeros((self.mesh.NumberOfElts,))
+        self.pFluid[self.EltCrack] = self.pNet[self.EltCrack] + solid.SigmaO[self.EltCrack]
         self.sgndDist_last = None
         self.timeStep_last = None
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
