@@ -830,6 +830,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                            C,
                                                            timeStep,
                                                            Qin,
+                                                           mat_properties.SigmaO,
                                                            Fr_lstTmStp.mesh.EltArea,
                                                            LkOff,
                                                            Fr_lstTmStp.mesh.volWeights,

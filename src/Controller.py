@@ -254,6 +254,8 @@ class Controller:
         f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
         f.close()
 
+        plt.close('all')
+
         if self.sim_prop.collectPerfData:
             with open(self.sim_prop.get_outputFolder() + "perf_data.dat", 'wb') as output:
                 dill.dump(self.perfData, output, -1)

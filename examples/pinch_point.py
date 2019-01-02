@@ -13,7 +13,7 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(0.15, 0.2, 41, 61)
+Mesh = CartesianMesh(0.15, 0.2, 41, 75)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio

@@ -9,11 +9,13 @@
     <title>CartesianMesh module &#8212; PyFrac 1.0.1 documentation</title>
     <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
@@ -64,71 +66,159 @@ fracture solver.</li>
 <dl class="attribute">
 <dt>
 <code class="descname">Lx,Ly</code></dt>
-<dd><p><em>float</em> – – length of the domain in x and y directions respectively. The rectangular domain
+<dd><p>– length of the domain in x and y directions respectively. The rectangular domain
 have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
 the positive and negative halves are included.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
 <code class="descname">nx,ny</code></dt>
-<dd><p><em>int</em> – – number of elements in x and y directions respectively.</p>
+<dd><p>– number of elements in x and y directions respectively.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
 <code class="descname">hx,hy</code></dt>
-<dd><p><em>float</em> – – grid spacing in x and y directions respectively.</p>
+<dd><p>– grid spacing in x and y directions respectively.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.VertexCoor">
 <code class="descname">VertexCoor</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.VertexCoor" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – [x,y] Coordinates of the vertices.</p>
+<dd><p>– [x,y] Coordinates of the vertices.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.CenterCoor">
 <code class="descname">CenterCoor</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.CenterCoor" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – [x,y] coordinates of the center of the elements.</p>
+<dd><p>– [x,y] coordinates of the center of the elements.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.NumberOfElts">
 <code class="descname">NumberOfElts</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.NumberOfElts" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – – total number of elements in the mesh.</p>
+<dd><p>– total number of elements in the mesh.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.EltArea">
 <code class="descname">EltArea</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.EltArea" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – – area of each element.</p>
+<dd><p>– area of each element.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.Connectivity">
 <code class="descname">Connectivity</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.Connectivity" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – connectivity array giving four vertices of an element in the following order
+<dd><p>– connectivity array giving four vertices of an element in the following order
 [bottom left, bottom right, top right, top left]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.NeiElements">
 <code class="descname">NeiElements</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.NeiElements" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – Giving four neighboring elements with the following order:[left, right,
+<dd><p>– Giving four neighboring elements with the following order:[left, right,
 bottom, up].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.distCenter">
 <code class="descname">distCenter</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.distCenter" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the distance of the cells from the center.</p>
+<dd><p>– the distance of the cells from the center.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.CenterElts">
 <code class="descname">CenterElts</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.CenterElts" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the element in the center (the cell with the injection point).</p>
+<dd><p>– the element in the center (the cell with the injection point).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <div class="admonition note">
@@ -138,47 +228,103 @@ bottom, up].</p>
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.corresponding">
 <code class="descname">corresponding</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.corresponding" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the index of the corresponding symmetric cells in the set of active cells
+<dd><p>– the index of the corresponding symmetric cells in the set of active cells
 (activeSymtrc) for each cell in the mesh.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.symmetricElts">
 <code class="descname">symmetricElts</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.symmetricElts" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the set of four symmetric cells in the mesh for each of the cell.</p>
+<dd><p>– the set of four symmetric cells in the mesh for each of the cell.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.activeSymtrc">
 <code class="descname">activeSymtrc</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.activeSymtrc" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the set of cells that are active in the mesh. Only these cells will be solved
+<dd><p>– the set of cells that are active in the mesh. Only these cells will be solved
 and the solution will be replicated in the symmetric cells.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.posQdrnt">
 <code class="descname">posQdrnt</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.posQdrnt" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the set of elements in the positive quadrant not including the boundaries.</p>
+<dd><p>– the set of elements in the positive quadrant not including the boundaries.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.boundary_x">
 <code class="descname">boundary_x</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.boundary_x" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the elements intersecting the positive x-axis line.</p>
+<dd><p>– the elements intersecting the positive x-axis line.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.boundary_y">
 <code class="descname">boundary_y</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.boundary_y" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the elements intersecting the positive y-axis line.</p>
+<dd><p>– the elements intersecting the positive y-axis line.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="CartesianMesh.CartesianMesh.volWeights">
 <code class="descname">volWeights</code><a class="headerlink" href="#CartesianMesh.CartesianMesh.volWeights" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the weights of the active elements in the volume of the fracture. The cells in the
+<dd><p>– the weights of the active elements in the volume of the fracture. The cells in the
 positive quadrant, the boundaries and the injection cell have the weights of 4, 2
 and 1 respectively.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -391,7 +537,7 @@ material properties.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

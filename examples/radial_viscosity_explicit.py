@@ -19,7 +19,7 @@ Mesh = CartesianMesh(0.3, 0.3, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 0.5e6                        # fracture toughness
+K_Ic = 0.5                          # fracture toughness
 
 # material properties
 Solid = MaterialProperties(Mesh,
@@ -63,7 +63,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+# controller.run()
 
 
 ####################
@@ -83,10 +83,10 @@ Fig_R = plot_fracture_list(Fr_list,
                            variable='d_mean',
                            plot_prop=plot_prop)
 # plot analytical radius
-Fig_R = plot_analytical_solution('M',
-                                 'd_mean',
-                                 Solid,
-                                 Injection,
+Fig_R = plot_analytical_solution(regime='M',
+                                 variable='d_mean',
+                                 mat_prop=Solid,
+                                 inj_prop=Injection,
                                  fluid_prop=Fluid,
                                  time_srs=time_srs,
                                  fig=Fig_R)
@@ -146,7 +146,8 @@ Fig_WS = plot_analytical_solution_slice('M',
                                         fig=Fig_WS,
                                         time_srs=time_srs,
                                         point1=ext_pnts[0],
-                                        point2=ext_pnts[1])
+                                        point2=ext_pnts[1],
+                                        plt_top_view=True)
 
 #plotting in 3D
 Fig_Fr = plot_fracture_list(Fr_list,

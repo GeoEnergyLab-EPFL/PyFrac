@@ -30,7 +30,7 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -114,7 +114,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         except FileNotFoundError:
             break
 
-        fileNo+=1
+        fileNo += step_size
 
         if 1. - next_t / ff.time >= -0.001:
             # if the current fracture time has advanced the output time period
@@ -304,8 +304,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                                                         variable,
                                                         edge=edge)
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-                      'front_dist_mean', 'd_mean'):
+    if variable in unidimensional_variables:
         return_list = var_values
     else:
         for i in range(len(fracture_list)):
@@ -325,6 +324,127 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
         return return_list, time_list
     else:
         return return_list
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_variable_slice_interpolated(var_value, mesh, point1=None, point2=None):
+
+    if not isinstance(var_value, np.ndarray):
+        raise ValueError("Variable value should be provided in the form of numpy array with the size equal to the "
+                         "number of elements in the mesh!")
+    elif var_value.size != mesh.NumberOfElts:
+        raise ValueError("Given array is not equal to the number of elements in mesh!")
+
+    if point1 is None:
+        point1 = np.array([-mesh.Lx, 0.])
+    if point2 is None:
+        point2 = np.array([mesh.Lx, 0.])
+
+    # the code below find the extreme points of the line joining the two given points with the current mesh
+    if point2[0] == point1[0]:
+        point1[1] = -mesh.Ly
+        point2[1] = mesh.Ly
+    elif point2[1] == point1[1]:
+        point1[0] = -mesh.Lx
+        point2[0] = mesh.Lx
+    else:
+        slope = (point2[1] - point1[1]) / (point2[0] - point1[0])
+        y_intrcpt_lft = slope * (-mesh.Lx - point1[0]) + point1[1]
+        y_intrcpt_rgt = slope * (mesh.Lx - point1[0]) + point1[1]
+        x_intrcpt_btm = (-mesh.Ly - point1[1]) / slope + point1[0]
+        x_intrcpt_top = (mesh.Ly - point1[1]) / slope + point1[0]
+
+        if abs(y_intrcpt_lft) < mesh.Ly:
+            point1[0] = -mesh.Lx
+            point1[1] = y_intrcpt_lft
+        if y_intrcpt_lft > mesh.Ly:
+            point1[0] = x_intrcpt_top
+            point1[1] = mesh.Ly
+        if y_intrcpt_lft < -mesh.Ly:
+            point1[0] = x_intrcpt_btm
+            point1[1] = -mesh.Ly
+
+        if abs(y_intrcpt_rgt) < mesh.Ly:
+            point2[0] = mesh.Lx
+            point2[1] = y_intrcpt_rgt
+        if y_intrcpt_rgt > mesh.Ly:
+            point2[0] = x_intrcpt_top
+            point2[1] = mesh.Ly
+        if y_intrcpt_rgt < -mesh.Ly:
+            point2[0] = x_intrcpt_btm
+            point2[1] = -mesh.Ly
+
+    sampling_points = np.hstack((np.linspace(point1[0], point2[0], 105).reshape((105, 1)),
+                                 np.linspace(point1[1], point2[1], 105).reshape((105, 1))))
+
+    value_samp_points = griddata(mesh.CenterCoor,
+                                 var_value,
+                                 sampling_points,
+                                 method='linear',
+                                 fill_value=np.nan)
+
+    sampling_line_lft = ((sampling_points[:52, 0] - sampling_points[52, 0]) ** 2 +
+                         (sampling_points[:52, 1] - sampling_points[52, 1]) ** 2) ** 0.5
+    sampling_line_rgt = ((sampling_points[52:, 0] - sampling_points[52, 0]) ** 2 +
+                         (sampling_points[52:, 1] - sampling_points[52, 1]) ** 2) ** 0.5
+    sampling_line = np.concatenate((-sampling_line_lft, sampling_line_rgt))
+
+    return value_samp_points, sampling_line
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orientation='horizontal'):
+
+    if not isinstance(var_value, np.ndarray):
+        raise ValueError("Variable value should be provided in the form of numpy array with the size equal to the "
+                         "number of elements in the mesh!")
+    elif var_value.size != mesh.NumberOfElts:
+        raise ValueError("Given array is not equal to the number of elements in mesh!")
+
+    if point is None:
+        point = np.array([0., 0.])
+    if orientation not in ('horizontal', 'vertical', 'increasing', 'decreasing'):
+        raise ValueError("Given orientation is not supported. Possible options:\n 'horizontal', 'vertical',"
+                         " 'increasing', 'decreasing'")
+
+    zero_cell = mesh.locate_element(point[0], point[1])
+    if zero_cell == np.nan:
+        raise ValueError("The given point does not lie in the grid!")
+
+    if orientation is 'vertical':
+        sampling_cells = np.hstack((np.arange(zero_cell, 0, -mesh.nx)[::-1],
+                                    np.arange(zero_cell, mesh.NumberOfElts, mesh.nx)))
+    elif orientation is 'horizontal':
+        sampling_cells = np.arange(zero_cell // mesh.nx * mesh.nx, (zero_cell // mesh.nx + 1) * mesh.nx)
+
+    elif orientation is 'increasing':
+        bottom_half = np.arange(zero_cell, 0, -mesh.nx - 1)
+        bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] >
+                                                      mesh.CenterCoor[zero_cell, 0])[0])
+        top_half = np.arange(zero_cell, mesh.NumberOfElts, mesh.nx + 1)
+        top_half = np.delete(top_half, np.where(mesh.CenterCoor[top_half, 0] <
+                                                mesh.CenterCoor[zero_cell, 0])[0])
+        sampling_cells = np.hstack((bottom_half[::-1], top_half))
+
+    elif orientation is 'decreasing':
+        bottom_half = np.arange(zero_cell, 0, -mesh.nx + 1)
+        bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] <
+                                                      mesh.CenterCoor[zero_cell, 0])[0])
+        top_half = np.arange(zero_cell, mesh.NumberOfElts, mesh.nx - 1)
+        top_half = np.delete(top_half, np.where(mesh.CenterCoor[top_half, 0] >
+                                                      mesh.CenterCoor[zero_cell, 0])[0])
+        sampling_cells = np.hstack((bottom_half[::-1], top_half))
+
+    sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
+                    (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
+
+    # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
+    # analytical solution plots.
+    sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
+
+    return var_value[sampling_cells], sampling_line, sampling_cells
 
 
 #-----------------------------------------------------------------------------------------------------------------------

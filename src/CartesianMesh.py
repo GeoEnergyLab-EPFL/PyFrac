@@ -474,7 +474,7 @@ class CartesianMesh:
                                                elements will be plotted.
 
         Returns:
-            (Figure):                       -- A Figure object to superimpose.
+            (Figure):                       -- A Figure object that can be used superimpose further plots.
 
         """
 

@@ -211,7 +211,7 @@ def friction_factor_MDR(ReNum, roughness):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def friction_factor_vector(Re,roughness):
+def friction_factor_vector(Re, roughness):
     """
     Vector version of the friction_factor function (see the documentation of the friction_factor function)  
     """

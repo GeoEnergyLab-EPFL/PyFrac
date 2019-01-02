@@ -456,13 +456,16 @@ def MakeEquationSystem_ViscousFluid(solk, interItr, *args):
                          np.dot(C[np.ix_(active, EltCrack)], wLastTS[EltCrack]) - \
                          np.dot(C[np.ix_(active, to_impose)], imposed_val - wLastTS[to_impose]) - \
                          np.dot(C[np.ix_(active, active)], wc - wLastTS[active])
-                            # + pfLastTS[to_solve]
+                         # + pfLastTS[to_solve]
 
-    S[ch_p_row_no] = dt * Q[to_solve] / Mesh.EltArea - LeakOff_cp[to_solve] / Mesh.EltArea + dt * G[to_solve]# + dt * cond.dot(pfLastTS[EltCrack_R])
+    S[ch_p_row_no] = dt * Q[to_solve] / Mesh.EltArea - LeakOff_cp[to_solve] / Mesh.EltArea + \
+                        dt * G[to_solve]# + dt * cond.dot(pfLastTS[EltCrack_R])
 
-    S[act_p_row_no] = dt * Q[active] / Mesh.EltArea - LeakOff_cp[active] / Mesh.EltArea - (wc - wLastTS[active]) + dt * G[active]  # + dt * cond.dot(pfLastTS[EltCrack_R])
+    S[act_p_row_no] = dt * Q[active] / Mesh.EltArea - LeakOff_cp[active] / Mesh.EltArea - \
+                        (wc - wLastTS[active]) + dt * G[active]  # + dt * cond.dot(pfLastTS[EltCrack_R])
 
-    S[tip_p_row_no] = dt * Q[to_impose] / Mesh.EltArea - LeakOff_cp[to_impose] / Mesh.EltArea - (imposed_val - wLastTS[to_impose]) + dt * G[to_impose]  # + dt * cond.dot(pfLastTS[EltCrack_R])
+    S[tip_p_row_no] = dt * Q[to_impose] / Mesh.EltArea - LeakOff_cp[to_impose] / Mesh.EltArea - \
+                        (imposed_val - wLastTS[to_impose]) + dt * G[to_impose]  # + dt * cond.dot(pfLastTS[EltCrack_R])
 
     # indices of solved width, pressure and traction in the solution
     indices = []
@@ -609,7 +612,7 @@ def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loa
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, C, dt, Q, ElemArea, lkOff):
+def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, sigma_o, C, dt, Q, ElemArea, lkOff):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The the volume of the
@@ -622,7 +625,7 @@ def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, C, d
     A = np.vstack((A, np.ones((1, EltChannel.size + 1), dtype=np.float64)))
     A[-1,-1] = 0
 
-    S = -np.dot(Ccc,w_lst_tmstp[EltChannel]) - np.dot(Cct,wTip)
+    S = - sigma_o[EltChannel] - np.dot(Ccc,w_lst_tmstp[EltChannel]) - np.dot(Cct,wTip)
     S = np.append(S, sum(Q) * dt / ElemArea - (sum(wTip)-sum(w_lst_tmstp[EltTip])) - np.sum(lkOff))
 
     return A, S
@@ -641,7 +644,7 @@ def Elastohydrodynamic_ResidualFun(solk, *args, interItr=None):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel_sym, EltTip_sym, C_s, dt, Q,
+def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel_sym, EltTip_sym, C_s, dt, Q, sigma_o,
                                                           ElemArea, LkOff, vol_weights, sym_elements, dwTip):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
@@ -657,7 +660,7 @@ def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel
     weights = np.concatenate((weights, np.array([0.0])))
     A = np.vstack((A, weights))
 
-    S = -np.dot(Ccc, w_lst_tmstp[sym_elements[EltChannel_sym]]) - np.dot(Cct, wTip_sym)
+    S = - sigma_o[EltChannel_sym] - np.dot(Ccc, w_lst_tmstp[sym_elements[EltChannel_sym]]) - np.dot(Cct, wTip_sym)
     S = np.append(S, np.sum(Q) * dt / ElemArea - np.sum(dwTip) - np.sum(LkOff))
 
     return A, S

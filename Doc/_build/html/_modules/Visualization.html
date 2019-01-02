@@ -9,11 +9,13 @@
     <title>Visualization &#8212; PyFrac 1.0.1 documentation</title>
     <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
@@ -451,24 +453,24 @@
     <span class="k">if</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">plotLegend</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
-    <span class="n">labels_2D</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D_clrmap&#39;</span><span class="p">)</span>
-    <span class="n">labels_2D</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;Sampling Point&#39;</span>
-    <span class="n">fig_image</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-                       <span class="n">variable</span><span class="o">=</span><span class="n">variable</span><span class="p">,</span>
-                       <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D_clrmap&#39;</span><span class="p">,</span>
-                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                       <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
-                       <span class="n">labels</span><span class="o">=</span><span class="n">labels_2D</span><span class="p">)</span>
-
     <span class="n">plot_prop_fp</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">(</span><span class="n">line_color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
     <span class="n">labels_fp</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D&#39;</span><span class="p">)</span>
     <span class="n">labels_fp</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
     <span class="n">fig_image</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
                                    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
-                                   <span class="n">fig</span><span class="o">=</span><span class="n">fig_image</span><span class="p">,</span>
                                    <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
                                    <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop_fp</span><span class="p">,</span>
                                    <span class="n">labels</span><span class="o">=</span><span class="n">labels_fp</span><span class="p">)</span>
+
+    <span class="n">labels_2D</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D_clrmap&#39;</span><span class="p">)</span>
+    <span class="n">labels_2D</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;Sampling Point&#39;</span>
+    <span class="n">fig_image</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="n">fracture_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                       <span class="n">variable</span><span class="o">=</span><span class="n">variable</span><span class="p">,</span>
+                       <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D_clrmap&#39;</span><span class="p">,</span>
+                       <span class="n">fig</span><span class="o">=</span><span class="n">fig_image</span><span class="p">,</span>
+                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                       <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
+                       <span class="n">labels</span><span class="o">=</span><span class="n">labels_2D</span><span class="p">)</span>
 
     <span class="n">ax_image</span> <span class="o">=</span> <span class="n">fig_image</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">ax_image</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="s1">&#39;ko&#39;</span><span class="p">)</span>
@@ -500,33 +502,38 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
 
+    <span class="k">if</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">plotLegend</span> <span class="ow">and</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">label_copy</span> <span class="o">=</span> <span class="n">label</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">label_copy</span> <span class="o">=</span> <span class="kc">None</span>
+
     <span class="k">if</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">graphScaling</span> <span class="ow">is</span> <span class="s1">&#39;linear&#39;</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_list</span><span class="p">,</span>
                 <span class="n">value_list</span><span class="p">,</span>
                 <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineStyle</span><span class="p">,</span>
                 <span class="n">color</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span><span class="p">,</span>
-                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label_copy</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">graphScaling</span> <span class="ow">is</span> <span class="s1">&#39;loglog&#39;</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">time_list</span><span class="p">,</span>
                   <span class="n">value_list</span><span class="p">,</span>
                   <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineStyle</span><span class="p">,</span>
                   <span class="n">color</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span><span class="p">,</span>
-                  <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                  <span class="n">label</span><span class="o">=</span><span class="n">label_copy</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">graphScaling</span> <span class="ow">is</span> <span class="s1">&#39;semilogx&#39;</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">semilogx</span><span class="p">(</span><span class="n">time_list</span><span class="p">,</span>
                     <span class="n">value_list</span><span class="p">,</span>
                     <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineStyle</span><span class="p">,</span>
                     <span class="n">color</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span><span class="p">,</span>
-                    <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                    <span class="n">label</span><span class="o">=</span><span class="n">label_copy</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">graphScaling</span> <span class="ow">is</span> <span class="s1">&#39;semilogy&#39;</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">time_list</span><span class="p">,</span>
                     <span class="n">value_list</span><span class="p">,</span>
                     <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineStyle</span><span class="p">,</span>
                     <span class="n">color</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span><span class="p">,</span>
-                    <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                    <span class="n">label</span><span class="o">=</span><span class="n">label_copy</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Graph scaling type not supported&quot;</span><span class="p">)</span>
 
@@ -1022,7 +1029,7 @@
     <span class="n">sampling_len</span> <span class="o">=</span> <span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> \
                    <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">sampling_cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
 
-    <span class="c1"># making x-axis centered at zero for the 1D slice. Neccessary to have same reference with different meshes and</span>
+    <span class="c1"># making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and</span>
     <span class="c1"># analytical solution plots.</span>
     <span class="n">sampling_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">sampling_len</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sampling_cells</span><span class="p">))</span> <span class="o">-</span> <span class="n">sampling_len</span> <span class="o">/</span> <span class="mi">2</span>
 
@@ -1065,7 +1072,7 @@
 
 <div class="viewcode-block" id="plot_analytical_solution_slice"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution_slice">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution_slice</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                             <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_top_view</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                             <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_top_view</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function plots slice of the given analytical solution. It can be used to compare simulation results by</span>
 <span class="sd">    superimposing on the figure obtained from the slice plot function.</span>
@@ -1683,7 +1690,7 @@
         <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">colorbarLabel</span> <span class="o">+</span> <span class="s1">&#39; analytical&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;2D&#39;</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;footprint&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;footprint&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">plot_prop_cp</span><span class="o">.</span><span class="n">plotLegend</span><span class="p">:</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">fig</span></div>
@@ -1857,7 +1864,7 @@
 
 
 <div class="viewcode-block" id="text3d"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.text3d">[docs]</a><span class="k">def</span> <span class="nf">text3d</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xyz</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plots the string &#39;s&#39; on the axes &#39;ax&#39;, with position &#39;xyz&#39;, size &#39;size&#39;,</span>
 <span class="sd">    and rotation angle &#39;angle&#39;.  &#39;zdir&#39; gives the axis which is to be treated</span>
 <span class="sd">    as the third dimension.  usetex is a boolean indicating whether the string</span>
@@ -1865,7 +1872,8 @@
 <span class="sd">    are passed on to transform_path.</span>
 
 <span class="sd">    Note: zdir affects the interpretation of xyz.</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">xyz</span>
     <span class="k">if</span> <span class="n">zdir</span> <span class="o">==</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span>
         <span class="n">xy1</span><span class="p">,</span> <span class="n">z1</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">y</span>
@@ -1918,7 +1926,7 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="to_precision"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.to_precision">[docs]</a><span class="k">def</span> <span class="nf">to_precision</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+<div class="viewcode-block" id="to_precision"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.to_precision">[docs]</a><span class="k">def</span> <span class="nf">to_precision</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    returns a string representation of x formatted with a precision of p</span>
 
@@ -2042,7 +2050,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

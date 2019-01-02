@@ -54,8 +54,6 @@ Fr = Fracture(Mesh,
               Injection,
               simulProp)
 
-Fr.plot_fracture_slice(variable='width', point1=[-0.1, 0], point2=[0.1, 0])
-
 # create a Controller
 controller = Controller(Fr,
                         Solid,
@@ -65,7 +63,6 @@ controller = Controller(Fr,
 
 # run the simulation
 controller.run()
-
 
 ####################
 # plotting results #
@@ -106,7 +103,7 @@ Fig_w = plot_analytical_solution_at_point('K',
                                           time_srs=time_srs,
                                           fig=Fig_w)
 
-time_srs = np.e ** np.linspace(np.log(1), np.log(1e5), 8)
+time_srs = np.geomspace(1, 1e5, 8)
 Fr_list, properties = load_fractures(address=".\\Data\\K_radial_symmetric",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,

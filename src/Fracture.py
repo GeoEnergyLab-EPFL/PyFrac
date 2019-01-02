@@ -170,11 +170,8 @@ class Fracture:
                                         | 'G'     -- flexible, general purpose initialization
 
                                     given_type can be one of the following:
-                                        'time'      -- time at which the fracture is to be initialized.
-                                        'length'    -- the length parameter. It will be treated as the fracture
-                                                   radius, the minor axis length and the fracture length for the
-                                                   cases of a radial fracture, an elliptical fracture and a PKN
-                                                   fracture respectively.
+                                        | 'time'    -- time at which the fracture is to be initialized.
+                                        | 'length'  -- the length parameter. It will be treated as the fracture radius, the minor axis length and the fracture length for the cases of a radial fracture, an elliptical fracture and a PKN fracture respectively.
 
             solid (MaterialProperties object)           -- the MaterialProperties object giving the material properties.
             fluid (FluidProperties object)              -- the FluidProperties object giving the fluid properties.

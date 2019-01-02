@@ -9,11 +9,13 @@
     <title>Post-processing and Visualization &#8212; PyFrac 1.0.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Examples" href="Examples.html" />
@@ -197,10 +199,11 @@
                                  <span class="n">fig</span><span class="o">=</span><span class="n">Fig_R</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The function <a class="reference internal" href="doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable" title="PostProcessFracture.get_fracture_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.get_fracture_variable()</span></code></a> provides a list of the values of the required variable. Here, we have used it to get a list of times at which the solution is available in the fracture list. This list, along with the material, fluid and injection properties are then given to the <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.plot_analytical_solution()</span></code> function to plot the analytical solution. Just as the case of a single fracture, the evolution of a fracture long a slice of the domain can also be plotted. Let us plot the fracture width evolution along a vertical slice passing through the injection point. Unlike the previous example where the solution was interpolated between the evaluated solution on the line joining the two given points, here we will plot the value of the solution at the cell centers. This can be done by enabling the plot_cell_center argument. Below, we plot the width at cell centers along the vertical line passing through the center of the cell containing our point.</p>
+<p>The function <a class="reference internal" href="doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable" title="PostProcessFracture.get_fracture_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.get_fracture_variable()</span></code></a> provides a list of the values of the required variable. Here, we have used it to get a list of times at which the solution is available in the fracture list. This list, along with the material, fluid and injection properties are then given to the <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.plot_analytical_solution()</span></code> function to plot the analytical solution at the given times. Just like the case of a single fracture, the evolution of a fracture along a slice of the domain can also be plotted. Let us plot the fracture width evolution along a vertical slice passing through the injection point. Unlike the previous example where the solution was interpolated between the evaluated solution on the line joining the two given points, here we will plot the discrete values of the solution evaluated at the cell centers. This can be done by enabling the plot_cell_center argument. Below, we plot the width at cell centers along the vertical line passing through the center of the cell containing our point.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="kn">import</span> <span class="n">plot_fracture_list_slice</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<span class="n">time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">geomspace</span><span class="p">(</span><span class="mf">4e-3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)</span>
+<span class="n">time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">geomspace</span><span class="p">(</span><span class="mf">2e-3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 <span class="n">Fr_list</span><span class="p">,</span> <span class="n">properties</span> <span class="o">=</span> <span class="n">load_fractures</span><span class="p">(</span><span class="n">sim_name</span><span class="o">=</span><span class="s2">&quot;radial&quot;</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="n">time_srs</span><span class="p">)</span>
 
 <span class="c1"># plot slice</span>
@@ -239,7 +242,7 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Post-processing and Visualization</a><ul>
 <li><a class="reference internal" href="#plotting-a-fracture">Plotting a Fracture</a></li>
@@ -297,7 +300,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

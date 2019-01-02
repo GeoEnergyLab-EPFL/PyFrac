@@ -13,7 +13,7 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 41, 30)
+Mesh = CartesianMesh(17, 4, 51, 21)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -43,7 +43,6 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 # simulation properties
 simulProp = SimulationProperties()
 simulProp.finalTime = 50.           # the time at which the simulation stops
-simulProp.outputEveryTS = 2         # the fracture file will be saved after every 2 time steps
 simulProp.bckColor = 'sigma0'       # setting the parameter according to which the mesh is color coded
 simulProp.set_outputFolder(".\\Data\\confined_propagation")
 simulProp.plotFigure = True         # the fracture footprint will be plotted during the simulation
@@ -89,7 +88,7 @@ animate_simulation_results(Fr_list,
 
 # loading simulation results
 Fr_list, properties = load_fractures(address=".\\Data\\confined_propagation",
-                                     time_srs=np.linspace(1, 50, 5))
+                                     time_srs=np.linspace(1, 50, 6))
 
 #plotting in 3D
 Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh

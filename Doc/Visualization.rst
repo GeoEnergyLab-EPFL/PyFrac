@@ -143,13 +143,14 @@ PyFrac provides the capability to plot analytical solutions available in a numbe
                                      time_srs=time_srs,
                                      fig=Fig_R)
 
-The function :py:func:`PostProcessFracture.get_fracture_variable` provides a list of the values of the required variable. Here, we have used it to get a list of times at which the solution is available in the fracture list. This list, along with the material, fluid and injection properties are then given to the :py:func:`PostProcessFracture.plot_analytical_solution` function to plot the analytical solution. Just as the case of a single fracture, the evolution of a fracture long a slice of the domain can also be plotted. Let us plot the fracture width evolution along a vertical slice passing through the injection point. Unlike the previous example where the solution was interpolated between the evaluated solution on the line joining the two given points, here we will plot the value of the solution at the cell centers. This can be done by enabling the plot_cell_center argument. Below, we plot the width at cell centers along the vertical line passing through the center of the cell containing our point.
+The function :py:func:`PostProcessFracture.get_fracture_variable` provides a list of the values of the required variable. Here, we have used it to get a list of times at which the solution is available in the fracture list. This list, along with the material, fluid and injection properties are then given to the :py:func:`PostProcessFracture.plot_analytical_solution` function to plot the analytical solution at the given times. Just like the case of a single fracture, the evolution of a fracture along a slice of the domain can also be plotted. Let us plot the fracture width evolution along a vertical slice passing through the injection point. Unlike the previous example where the solution was interpolated between the evaluated solution on the line joining the two given points, here we will plot the discrete values of the solution evaluated at the cell centers. This can be done by enabling the plot_cell_center argument. Below, we plot the width at cell centers along the vertical line passing through the center of the cell containing our point.
 
 .. code-block:: python
 
     from src.Visualization import plot_fracture_list_slice
+    import numpy as np
 
-    time_srs = np.geomspace(4e-3, 1, 5, base=np.e)
+    time_srs = np.geomspace(2e-3, 1, 5)
     Fr_list, properties = load_fractures(sim_name="radial", time_srs=time_srs)
 
     # plot slice
@@ -162,7 +163,7 @@ The function :py:func:`PostProcessFracture.get_fracture_variable` provides a lis
                                       plot_cell_center=True,
                                       extreme_points=ext_pnts)
 
-In the above code, we first load the state of the fracture at five equidistant times. The fracture list is then passed to the :py:func:`Visualization.plot_fracture_list_slice` which plots the slice of the domain passing through the given point. To compare the solution, we can also plot slice of the analytical solution. We have passed an empty array to the slice plotting function which will be written by the extreme points on the mesh along the slice, which can be used to plot the analytical solution slice.
+In the above code, we first load the state of the fracture at five equidistant times in geometric space. The fracture list is then passed to the :py:func:`Visualization.plot_fracture_list_slice` which plots the slice of the domain passing through the given point. To compare the solution, we can also plot slice of the analytical solution. We have passed an empty array to the slice plotting function which will be written by the extreme points on the mesh along the slice, which can be used to plot the analytical solution slice.
 
 .. code-block:: python
 

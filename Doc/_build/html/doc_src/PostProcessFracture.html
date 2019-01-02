@@ -9,11 +9,13 @@
     <title>PostProcessFracture module &#8212; PyFrac 1.0.1 documentation</title>
     <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
@@ -63,8 +65,18 @@
 <dd></dd></dl>
 
 <dl class="function">
+<dt id="PostProcessFracture.get_fracture_variable_slice_cell_center">
+<code class="descclassname">PostProcessFracture.</code><code class="descname">get_fracture_variable_slice_cell_center</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point=None</em>, <em>orientation='horizontal'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#get_fracture_variable_slice_cell_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.get_fracture_variable_slice_cell_center" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="PostProcessFracture.get_fracture_variable_slice_interpolated">
+<code class="descclassname">PostProcessFracture.</code><code class="descname">get_fracture_variable_slice_interpolated</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point1=None</em>, <em>point2=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#get_fracture_variable_slice_interpolated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.get_fracture_variable_slice_interpolated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
 <dt id="PostProcessFracture.load_fractures">
-<code class="descclassname">PostProcessFracture.</code><code class="descname">load_fractures</code><span class="sig-paren">(</span><em>address=None</em>, <em>sim_name='simulation'</em>, <em>time_period=0.0</em>, <em>time_srs=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#load_fractures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.load_fractures" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">PostProcessFracture.</code><code class="descname">load_fractures</code><span class="sig-paren">(</span><em>address=None</em>, <em>sim_name='simulation'</em>, <em>time_period=0.0</em>, <em>time_srs=None</em>, <em>step_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#load_fractures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.load_fractures" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function returns a list of the fractures. If address and simulation name are not provided, results from the
 default address and having the default name will be loaded.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -138,7 +150,7 @@ will be loaded.</li>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

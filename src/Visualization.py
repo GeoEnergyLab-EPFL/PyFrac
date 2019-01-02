@@ -412,24 +412,24 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
     if plot_prop.plotLegend:
         ax.legend()
 
-    labels_2D = LabelProperties(variable, 'whole mesh', '2D_clrmap')
-    labels_2D.figLabel = 'Sampling Point'
-    fig_image = plot_fracture_list([fracture_list[-1]],
-                       variable=variable,
-                       projection='2D_clrmap',
-                       plot_prop=plot_prop,
-                       edge=edge,
-                       labels=labels_2D)
-
     plot_prop_fp = PlotProperties(line_color='k')
     labels_fp = LabelProperties('footprint', 'whole mesh', '2D')
     labels_fp.figLabel = ''
     fig_image = plot_fracture_list([fracture_list[-1]],
                                    variable='footprint',
-                                   fig=fig_image,
                                    projection='2D',
                                    plot_prop=plot_prop_fp,
                                    labels=labels_fp)
+
+    labels_2D = LabelProperties(variable, 'whole mesh', '2D_clrmap')
+    labels_2D.figLabel = 'Sampling Point'
+    fig_image = plot_fracture_list([fracture_list[-1]],
+                       variable=variable,
+                       projection='2D_clrmap',
+                       fig=fig_image,
+                       plot_prop=plot_prop,
+                       edge=edge,
+                       labels=labels_2D)
 
     ax_image = fig_image.get_axes()[0]
     ax_image.plot([point[0]], [point[1]], 'ko')
@@ -461,33 +461,38 @@ def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label
     else:
         ax = fig.get_axes()[0]
 
+    if plot_prop.plotLegend and label is not None:
+        label_copy = label
+    else:
+        label_copy = None
+
     if plot_prop.graphScaling is 'linear':
         ax.plot(time_list,
                 value_list,
                 plot_prop.lineStyle,
                 color=plot_prop.lineColor,
-                label=label)
+                label=label_copy)
 
     elif plot_prop.graphScaling is 'loglog':
         ax.loglog(time_list,
                   value_list,
                   plot_prop.lineStyle,
                   color=plot_prop.lineColor,
-                  label=label)
+                  label=label_copy)
 
     elif plot_prop.graphScaling is 'semilogx':
         ax.semilogx(time_list,
                     value_list,
                     plot_prop.lineStyle,
                     color=plot_prop.lineColor,
-                    label=label)
+                    label=label_copy)
 
     elif plot_prop.graphScaling is 'semilogy':
         ax.semilogy(time_list,
                     value_list,
                     plot_prop.lineStyle,
                     color=plot_prop.lineColor,
-                    label=label)
+                    label=label_copy)
     else:
         raise ValueError("Graph scaling type not supported")
 
@@ -983,7 +988,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
                    (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
 
-    # making x-axis centered at zero for the 1D slice. Neccessary to have same reference with different meshes and
+    # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
     # analytical solution plots.
     sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
 
@@ -1644,7 +1649,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         cb.set_label(labels.colorbarLabel + ' analytical')
     elif projection is '2D':
         ax.set_title(labels.figLabel)
-        if variable not in ('footprint'):
+        if variable not in ('footprint') and plot_prop_cp.plotLegend:
             ax.legend()
 
     return fig
@@ -1818,7 +1823,7 @@ def update(frame, *args):
 
 
 def text3d(ax, xyz, s, zdir="z", size=None, angle=0, usetex=False, **kwargs):
-    '''
+    """
     Plots the string 's' on the axes 'ax', with position 'xyz', size 'size',
     and rotation angle 'angle'.  'zdir' gives the axis which is to be treated
     as the third dimension.  usetex is a boolean indicating whether the string
@@ -1826,7 +1831,8 @@ def text3d(ax, xyz, s, zdir="z", size=None, angle=0, usetex=False, **kwargs):
     are passed on to transform_path.
 
     Note: zdir affects the interpretation of xyz.
-    '''
+    """
+
     x, y, z = xyz
     if zdir == "y":
         xy1, z1 = (x, z), y
@@ -1879,7 +1885,7 @@ def zoom_factory(ax,base_scale = 2.):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def to_precision(x,p):
+def to_precision(x, p):
     """
     returns a string representation of x formatted with a precision of p
 

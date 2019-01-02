@@ -156,6 +156,11 @@ def VolumeTriangle(dist, *param):
         Vel ** 3 + 464660.73424811783 * dist ** 2 * Eprime ** 8 * Kprime ** 3 * muPrime ** 4 * Vel ** 4 + 5.7316896e7
         * dist ** 2.5 * Eprime ** 10 * muPrime ** 5 * Vel ** 5))) / (Eprime ** 11 * muPrime ** 5 * Vel ** 5)
 
+    elif 'MDR' in regime:
+        density = 1000
+        return (0.0885248 * dist ** 2.74074 * em * Vel ** 0.481481 * muPrime ** 0.259259 * density ** 0.111111
+         ) / Eprime ** 0.37037
+
 
 def Area(dist, *param):
     """Gives Area under the tip depending on the regime identifier ;  
@@ -204,6 +209,12 @@ def Area(dist, *param):
                 374.12297443487745 * dist * Eprime ** 4 * Kprime ** 3 * muPrime ** 2 * Vel ** 2) + (
                 81648. * dist ** 1.5 * Eprime ** 6 * muPrime ** 3 * Vel ** 3)))) / (
                 Eprime ** 7 * muPrime ** 3 * Vel ** 3)
+
+    elif 'MDR' in regime:
+        density = 1000
+        return (0.242623 * dist ** 1.74074 * Vel ** 0.481481 * muPrime ** 0.259259 * density ** 0.111111
+         ) / Eprime ** 0.37037
+
 
 
 def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None,

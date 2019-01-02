@@ -528,7 +528,7 @@ class SimulationProperties:
     # setter and getter functions
 
     def set_tipAsymptote(self, tip_asymptote):
-        tipAssymptOptions = ("K", "M", "Mt", "U", "MK")
+        tipAssymptOptions = ("K", "M", "Mt", "U", "MK", "MDR", "M_MDR")
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote
         else: # error

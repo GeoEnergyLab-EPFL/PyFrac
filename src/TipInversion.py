@@ -37,6 +37,31 @@ def TipAsym_viscStor_Res(dist, *args):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def TipAsym_MDR_Res(dist, *args):
+    """Residual function for viscosity dominate regime, without leak off"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    density = 1000
+
+    return wEltRibbon - (1.89812 * dist ** 0.740741 * ((dist - DistLstTSEltRibbon) / dt) ** 0.481481 * (
+                muPrime ** 0.7 * density ** 0.3) ** 0.37037) / Eprime ** 0.37037
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_M_MDR_Res(dist, *args):
+    """Residual function for viscosity dominate regime, without leak off"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    density = 1000
+    Vel = (dist - DistLstTSEltRibbon) / dt
+
+    return wEltRibbon - 3.14735 * dist ** (2/3) * ((dist - DistLstTSEltRibbon) / dt) ** (1/3) * muPrime ** (1/3) * (1 +
+    0.255286 * dist ** 0.2 * Vel ** 0.4 * density ** 0.3 / (Eprime ** 0.1 * muPrime ** 0.2)) ** 0.37037 / Eprime**(1/3)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 def TipAsym_viscLeakOff_Res(dist, *args):
     """Residual function for viscosity dominated regime, with leak off"""
 
@@ -195,7 +220,7 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprime_k=None):
+def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprime_k=None, density=None):
     """ 
     Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in
     the ribbon cells.
@@ -224,6 +249,8 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
 
     if simParmtrs.get_tipAsymptote() == 'U':
         ResFunc = TipAsym_Universal_zrthOrder_Res
+    elif simParmtrs.get_tipAsymptote() == 'K':
+        return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
     elif simParmtrs.get_tipAsymptote() == 'Kt':
         raise ValueError("Tip inversion with Kt regime is yet to be implemented")
     elif simParmtrs.get_tipAsymptote() == 'M':
@@ -232,9 +259,10 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
         ResFunc = TipAsym_viscLeakOff_Res
     elif simParmtrs.get_tipAsymptote() == 'MK':
         ResFunc = TipAsym_MK_zrthOrder_Res
-    elif simParmtrs.get_tipAsymptote() == 'K':
-        return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
-
+    elif simParmtrs.get_tipAsymptote() == 'MDR':
+        ResFunc = TipAsym_MDR_Res
+    elif simParmtrs.get_tipAsymptote() == 'M_MDR':
+        ResFunc = TipAsym_M_MDR_Res
 
     # checking propagation condition
     stagnant = np.where(Kprime * (-frac.sgndDist[frac.EltRibbon])**0.5 / (

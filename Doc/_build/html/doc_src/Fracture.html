@@ -9,11 +9,13 @@
     <title>Fracture module &#8212; PyFrac 1.0.1 documentation</title>
     <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
@@ -126,173 +128,389 @@ parameters to be used in the simulation.</li>
 <dl class="attribute">
 <dt id="Fracture.Fracture.w">
 <code class="descname">w</code><a class="headerlink" href="#Fracture.Fracture.w" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – fracture opening (width)</p>
+<dd><p>– fracture opening (width)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.pFluid">
 <code class="descname">pFluid</code><a class="headerlink" href="#Fracture.Fracture.pFluid" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the fluid pressure in the fracture.</p>
+<dd><p>– the fluid pressure in the fracture.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.pNet">
 <code class="descname">pNet</code><a class="headerlink" href="#Fracture.Fracture.pNet" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the net pressure in the fracture.</p>
+<dd><p>– the net pressure in the fracture.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.time">
 <code class="descname">time</code><a class="headerlink" href="#Fracture.Fracture.time" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – – time since the start of injection</p>
+<dd><p>– time since the start of injection</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.EltChannel">
 <code class="descname">EltChannel</code><a class="headerlink" href="#Fracture.Fracture.EltChannel" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – list of cells currently in the channel region</p>
+<dd><p>– list of cells currently in the channel region</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.EltCrack">
 <code class="descname">EltCrack</code><a class="headerlink" href="#Fracture.Fracture.EltCrack" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – list of cells currently in the crack region</p>
+<dd><p>– list of cells currently in the crack region</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.EltRibbon">
 <code class="descname">EltRibbon</code><a class="headerlink" href="#Fracture.Fracture.EltRibbon" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – list of cells currently in the Ribbon region</p>
+<dd><p>– list of cells currently in the Ribbon region</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.EltTip">
 <code class="descname">EltTip</code><a class="headerlink" href="#Fracture.Fracture.EltTip" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – list of cells currently in the Tip region</p>
+<dd><p>– list of cells currently in the Tip region</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.v">
 <code class="descname">v</code><a class="headerlink" href="#Fracture.Fracture.v" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – propagation velocity for each cell in the tip cells</p>
+<dd><p>– propagation velocity for each cell in the tip cells</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.alpha">
 <code class="descname">alpha</code><a class="headerlink" href="#Fracture.Fracture.alpha" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – angle prescribed by perpendicular on the fracture front (see Pierce 2015,
+<dd><p>– angle prescribed by perpendicular on the fracture front (see Pierce 2015,
 Computation Methods Appl. Mech)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.l">
 <code class="descname">l</code><a class="headerlink" href="#Fracture.Fracture.l" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – length of perpendicular on the fracture front
+<dd><p>– length of perpendicular on the fracture front
 (see Pierce 2015, Computation Methods Appl. Mech)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.ZeroVertex">
 <code class="descname">ZeroVertex</code><a class="headerlink" href="#Fracture.Fracture.ZeroVertex" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – Vertex from which the perpendicular is drawn (can have value from 0 to 3,
+<dd><p>– Vertex from which the perpendicular is drawn (can have value from 0 to 3,
 where 0 signify bottom left, 1 signifying bottom right, 2 signifying top
 right and 3 signifying top left vertex)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.FillF">
 <code class="descname">FillF</code><a class="headerlink" href="#Fracture.Fracture.FillF" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – filling fraction of each tip cell</p>
+<dd><p>– filling fraction of each tip cell</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.CellStatus">
 <code class="descname">CellStatus</code><a class="headerlink" href="#Fracture.Fracture.CellStatus" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – specifies which region each element currently belongs to</p>
+<dd><p>– specifies which region each element currently belongs to</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.initRad">
 <code class="descname">initRad</code><a class="headerlink" href="#Fracture.Fracture.initRad" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – – starting radius</p>
+<dd><p>– starting radius</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.initTime">
 <code class="descname">initTime</code><a class="headerlink" href="#Fracture.Fracture.initTime" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – – starting time</p>
+<dd><p>– starting time</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.sgndDist">
 <code class="descname">sgndDist</code><a class="headerlink" href="#Fracture.Fracture.sgndDist" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – signed minimun distance from fracture front of each cell in the domain</p>
+<dd><p>– signed minimun distance from fracture front of each cell in the domain</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.Q">
 <code class="descname">Q</code><a class="headerlink" href="#Fracture.Fracture.Q" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray-float</em> – – injection rate into each cell of the domain</p>
+<dd><p>– injection rate into each cell of the domain</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray-float</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.FractEvol">
 <code class="descname">FractEvol</code><a class="headerlink" href="#Fracture.Fracture.FractEvol" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – array containing the coordinates of the individual fracture front lines;
+<dd><p>– array containing the coordinates of the individual fracture front lines;
 used for printing fracture evolution through time</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.InCrack">
 <code class="descname">InCrack</code><a class="headerlink" href="#Fracture.Fracture.InCrack" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – array specifying whether the cell is inside or outside the fracture.</p>
+<dd><p>– array specifying whether the cell is inside or outside the fracture.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.FractureVolume">
 <code class="descname">FractureVolume</code><a class="headerlink" href="#Fracture.Fracture.FractureVolume" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – – fracture volume</p>
+<dd><p>– fracture volume</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.muPrime">
 <code class="descname">muPrime</code><a class="headerlink" href="#Fracture.Fracture.muPrime" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – local viscosity parameter</p>
+<dd><p>– local viscosity parameter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.Ffront">
 <code class="descname">Ffront</code><a class="headerlink" href="#Fracture.Fracture.Ffront" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – a list containing the intersection of the front and grid lines for the tip
+<dd><p>– a list containing the intersection of the front and grid lines for the tip
 cells.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.regime">
 <code class="descname">regime</code><a class="headerlink" href="#Fracture.Fracture.regime" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
+<dd><p>– the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
 and 1 is fully viscosity dominated; See Zia and Lecampion 2018)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.ReynoldsNumber">
 <code class="descname">ReynoldsNumber</code><a class="headerlink" href="#Fracture.Fracture.ReynoldsNumber" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the reynolds number at each edge of the cells in the fracture. The
+<dd><p>– the reynolds number at each edge of the cells in the fracture. The
 arrangement is left, right, bottom, top.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.fluidFlux">
 <code class="descname">fluidFlux</code><a class="headerlink" href="#Fracture.Fracture.fluidFlux" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the fluid flux at each edge of the cells in the fracture. The arrangement is
+<dd><p>– the fluid flux at each edge of the cells in the fracture. The arrangement is
 left, right, bottom, top.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="Fracture.Fracture.fluidVelocity">
 <code class="descname">fluidVelocity</code><a class="headerlink" href="#Fracture.Fracture.fluidVelocity" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>ndarray</em> – – the fluid velocity at each edge of the cells in the fracture. The
+<dd><p>– the fluid velocity at each edge of the cells in the fracture. The
 arrangement is left, right, bottom, top.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -427,7 +645,7 @@ elasticity matrix, the properties objects are also re-adjusted according to the 
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
     </div>
   </body>
 </html>

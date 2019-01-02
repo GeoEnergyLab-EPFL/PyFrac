@@ -53,7 +53,7 @@ simulProp.plotFigure = True           # plot figure while the simulation runs
 simulProp.symmetric = True            # set the fracture to symmetric
 
 # initializing fracture
-minor_axis = 12.
+minor_axis = 15.
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
 init_param = ("E_K", "length", minor_axis, gamma)
 
@@ -75,7 +75,6 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-
 ####################
 # plotting results #
 ####################
@@ -83,7 +82,7 @@ controller.run()
 # loading simulation results
 time_srs = 2 ** np.linspace(np.log2(40), np.log2(5000), 8)
 Fr_list, properties = load_fractures(address=".\\Data\\toughness_jump",
-                                    simulation='anisotropic_toughness_jump',
+                                    sim_name ='anisotropic_toughness_jump',
                                     time_srs=time_srs)
 # plotting footprint
 Fig_FP = plot_fracture_list(Fr_list,
@@ -117,7 +116,7 @@ Fig_FP = plot_analytical_solution('E_K',
 
 # loading all fractures
 Fr_list, properties = load_fractures(address=".\\Data\\toughness_jump",
-                                     simulation='anisotropic_toughness_jump')
+                                     sim_name='anisotropic_toughness_jump')
 plot_prop = PlotProperties(line_style='.-',
                            graph_scaling='semilogx')
 Fig_len_a = plot_fracture_list(Fr_list,
