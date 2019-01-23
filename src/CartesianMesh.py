@@ -247,7 +247,9 @@ class CartesianMesh:
         Args:
             material_prop (MaterialProperties):  -- a MaterialProperties class object
             backGround_param (string):           -- the cells of the grid will be color coded according to the value
-                                                    of the parameter given by this argument.
+                                                    of the parameter given by this argument. Possible options are
+                                                    'sigma0' for confining stress, 'K1c' for fracture toughness and
+                                                    'Cl' for leak off.
             fig (Figure):                        -- A figure object to superimpose.
             plot_prop (PlotProperties):          -- A PlotProperties object giving the properties to be utilized for
                                                     the plot.
@@ -314,7 +316,9 @@ class CartesianMesh:
         Args:
             material_prop (MaterialProperties):  -- a MaterialProperties class object
             backGround_param (string):           -- the cells of the grid will be color coded according to the value
-                                                    of the parameter given by this argument.
+                                                    of the parameter given by this argument. Possible options are
+                                                    'sigma0' for confining stress, 'K1c' for fracture toughness and
+                                                    'Cl' for leak off.
             fig (Figure):                        -- A figure object to superimpose.
             plot_prop (PlotProperties):          -- A PlotProperties object giving the properties to be utilized for
                                                     the plot.
