@@ -135,7 +135,9 @@ class Controller:
             print("Making elasticity matrix...")
             if self.sim_prop.symmetric:
                 if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
-                    raise ValueError("Symmetric fracture for TI material is not yet supported")
+                    raise ValueError("Symmetric fracture for TI material is not yet supported!")
+                elif not self.sim_prop.get_volumeControl():
+                    raise ValueError("Symmetric fracture is only supported for inviscid fluid yet!")
                 else:
                     self.C = load_isotropic_elasticity_matrix_symmetric(self.fracture.mesh,
                                                                         self.solid_prop.Eprime)
