@@ -47,7 +47,7 @@ simulProp.finalTime = 500               # the time at which the simulation stops
 simulProp.set_volumeControl(True)       # to set up the solver in volume control mode (inviscid fluid)
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
-simulProp.set_outputFolder(".\\Data\\ellipse") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
 simulProp.plotFigure = True
 simulProp.plotAnalytical = True
@@ -85,7 +85,7 @@ controller.run()
 
 # loading simulation results
 time_srs = np.linspace(1, 500, 8)
-Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
+Fr_list, properties = load_fractures(address="./Data/ellipse",
                                     simulation='anisotropic_toughness_benchmark',
                                     time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -110,7 +110,7 @@ Fig_FP = plot_analytical_solution('E_K',
 
 # loading fractures
 time_srs = 2 ** np.linspace(np.log2(3), np.log2(500), 5)
-Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
+Fr_list, properties = load_fractures(address="./Data/ellipse",
                                             simulation='anisotropic_toughness_benchmark',
                                             time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -132,7 +132,7 @@ Fig_w_slice = plot_analytical_solution_slice('E_K',
                                              time_srs=time_srs)
 
 # loading all fractures
-Fr_list, properties = load_fractures(address=".\\Data\\ellipse",
+Fr_list, properties = load_fractures(address="./Data/ellipse",
                                      simulation='anisotropic_toughness_benchmark')
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')

@@ -388,10 +388,10 @@ class Controller:
                     plot_prop = PlotProperties()
 
                     if self.Figures[indx]:
-                        ax = self.Figures[indx].get_axes()[0]
+                        ax = self.Figures[indx].get_axes()[0]   # save axes from last figure
                         plt.figure(self.Figures[indx].number)
-                        plt.clf()
-                        self.Figures[indx].add_axes(ax)
+                        plt.clf()                               # clear figure
+                        self.Figures[indx].add_axes(ax)         # add axis to the figure
 
                     if plt_var is 'footprint':
                         # footprint is plotted if variable to plot is not given
@@ -450,12 +450,12 @@ class Controller:
                                                                                 plot_prop=plot_prop,
                                                                                 plot_mesh=False,
                                                                                 print_number=False)
-
+                # plot the figure
                 plt.ion()
-                plt.pause(0.5)
+                plt.pause(0.1)
                 print("Done! ")
                 if self.sim_prop.blockFigure:
-                    input("Press [enter] to continue.")
+                    input("Press any key to continue.")
 
             # save fracture to disk
             if self.sim_prop.saveToDisk:

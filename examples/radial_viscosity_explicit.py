@@ -40,7 +40,7 @@ simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with th
 simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
 simulProp.outputTimePeriod = 1e-4       # to save after every time step
 simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
-simulProp.set_outputFolder(".\\Data\\M_radial_explicit") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
 
 # initialization parameters
 initRad = 0.1
@@ -63,7 +63,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+# controller.run()
 
 
 ####################
@@ -71,7 +71,7 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit")       # load all fractures
+Fr_list, properties = load_fractures(address="./Data/M_radial_explicit")       # load all fractures
 time_srs = get_fracture_variable(Fr_list,                                        # list of times
                                  variable='time')
 
@@ -106,7 +106,7 @@ Fig_w = plot_analytical_solution_at_point('M',
 
 
 time_srs = np.linspace(1, 1e5, 5)
-Fr_list, properties = load_fractures(address=".\\Data\\M_radial_explicit",
+Fr_list, properties = load_fractures(address="./Data/M_radial_explicit",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')

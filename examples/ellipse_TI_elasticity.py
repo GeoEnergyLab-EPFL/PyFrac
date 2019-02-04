@@ -93,9 +93,9 @@ simulProp.remeshFactor = 1.5            # the factor by which the mesh will be c
 simulProp.set_volumeControl(True)       # assume inviscid fluid
 simulProp.explicitProjection = True     # do not iterate on projection to find propagation direction
 simulProp.aspectRatio = gamma           # aspect ratio of the fracture
-simulProp.set_outputFolder(".\\data\\TI_elasticity_ellipse")
+simulProp.set_outputFolder("./data/TI_elasticity_ellipse")
 simulProp.set_simulation_name('TI_ellasticy_benchmark')
-simulProp.TI_KernelExecPath = '..\\src_TI_Kernel\\' # path to the executable that calculates TI kernel
+simulProp.TI_KernelExecPath = '../src_TI_Kernel/' # path to the executable that calculates TI kernel
 simulProp.verbosity = 2
 
 
@@ -155,7 +155,7 @@ controller.run()
 
 # loading simulation results
 time_srs = 2 ** np.linspace(np.log2(0.38), np.log2(74), 10)
-Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
+Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
                                             simulation='TI_ellasticy_benchmark',
                                             time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -179,7 +179,7 @@ Fig_FP = plot_analytical_solution('E_E',
                                   gamma=gamma)
 
 time_srs = 2 ** np.linspace(np.log2(0.38), np.log2(74), 5)
-Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
+Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
                                             simulation='TI_ellasticy_benchmark',
                                             time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -204,7 +204,7 @@ Fig_w_slice = plot_analytical_solution_slice('E_E',
                                              gamma=gamma)
 
 
-Fr_list, properties = load_fractures(address='.\\data\\TI_elasticity_ellipse',
+Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
                                             simulation='TI_ellasticy_benchmark')
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')

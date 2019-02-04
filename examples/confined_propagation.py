@@ -44,7 +44,7 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 simulProp = SimulationProperties()
 simulProp.finalTime = 50.           # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'       # setting the parameter according to which the mesh is color coded
-simulProp.set_outputFolder(".\\Data\\confined_propagation")
+simulProp.set_outputFolder("./Data/confined_propagation")
 simulProp.plotFigure = True         # the fracture footprint will be plotted during the simulation
 
 # initializing fracture
@@ -75,7 +75,7 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\Data\\confined_propagation",
+Fr_list, properties = load_fractures(address="./Data/confined_propagation",
                                      time_srs=np.linspace(1, 50, 12))
 
 # animate results
@@ -87,7 +87,7 @@ animate_simulation_results(Fr_list,
 
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\Data\\confined_propagation",
+Fr_list, properties = load_fractures(address="./Data/confined_propagation",
                                      time_srs=np.linspace(1, 50, 6))
 
 #plotting in 3D

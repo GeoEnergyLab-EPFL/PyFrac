@@ -47,7 +47,7 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 5000            # the time at which the simulation stops
 simulProp.set_volumeControl(True)     # to set up the solver in volume control mode (inviscid fluid)
 simulProp.tolFractFront = 4e-3        # increase tolerance for the anisotropic case
-simulProp.set_outputFolder(".\\Data\\toughness_jump") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/toughness_jump") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_jump')
 simulProp.plotFigure = True           # plot figure while the simulation runs
 simulProp.symmetric = True            # set the fracture to symmetric
@@ -81,7 +81,7 @@ controller.run()
 
 # loading simulation results
 time_srs = 2 ** np.linspace(np.log2(40), np.log2(5000), 8)
-Fr_list, properties = load_fractures(address=".\\Data\\toughness_jump",
+Fr_list, properties = load_fractures(address="./Data/toughness_jump",
                                     sim_name ='anisotropic_toughness_jump',
                                     time_srs=time_srs)
 # plotting footprint
@@ -115,7 +115,7 @@ Fig_FP = plot_analytical_solution('E_K',
                                   time_srs=[Fr_list[-1].time])
 
 # loading all fractures
-Fr_list, properties = load_fractures(address=".\\Data\\toughness_jump",
+Fr_list, properties = load_fractures(address="./Data/toughness_jump",
                                      sim_name='anisotropic_toughness_jump')
 plot_prop = PlotProperties(line_style='.-',
                            graph_scaling='semilogx')

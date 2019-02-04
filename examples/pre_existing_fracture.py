@@ -37,7 +37,7 @@ Fluid = FluidProperties(viscosity=viscosity)
 simulProp = SimulationProperties()
 simulProp.finalTime = 50                        # the time at which the simulation stops
 simulProp.outputEveryTS = 2                     # the fracture file will be saved after every 2 time steps
-simulProp.set_outputFolder(".\\Data\\star")     # the address of the output folder
+simulProp.set_outputFolder("./Data/star")     # the address of the output folder
 simulProp.fixedTmStp = np.asarray([[2e-4, 1.], [1., None]]) # list giving the time steps to adopt at the given times
 simulProp.plotFigure = True                     # the fracture footprint will be plotted during the simulation
 
@@ -81,7 +81,7 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(address=".\\Data\\star")
+Fr_list, properties = load_fractures(address="./Data/star")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 
@@ -98,7 +98,7 @@ Fig_FP = plot_analytical_solution(regime='K',
                                  time_srs=time_srs)
 
 # loading five fractures from the simulation separated with equal time period
-Fr_list, properties = load_fractures(address=".\\Data\\star",
+Fr_list, properties = load_fractures(address="./Data/star",
                                      time_srs=np.linspace(0, 50, 5))
 # getting exact time of the loaded fractures
 time_srs = get_fracture_variable(Fr_list,

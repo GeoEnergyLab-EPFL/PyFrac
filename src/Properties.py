@@ -567,20 +567,9 @@ class SimulationProperties:
     def set_outputFolder(self, output_address):
         # check operating system to get appropriate slash in the address
 
-        import sys
-        if "win32" in sys.platform or "win64" in sys.platform:
-            slash = "\\"
-        else:
-            slash = "/"
-
+        slash = '/'
         if output_address is not None:
             self.saveToDisk = True
-            if "\\" in output_address:
-                if slash != "\\":
-                    raise SystemExit('Windows style slash in the given address on linux system.')
-            elif "/" in output_address:
-                if slash != "/":
-                    raise SystemExit('linux style slash in the given address on windows system!')
 
             if output_address[-1] is slash:
                 output_address = output_address[:-1]

@@ -39,7 +39,7 @@ Fluid = FluidProperties(viscosity=viscosity)
 simulProp = SimulationProperties()
 simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
-simulProp.set_outputFolder(".\\Data\\MtoK_leakoff") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/MtoK_leakoff") # the disk address where the files are saved
 
 # initializing fracture
 initTime = 0.5
@@ -70,7 +70,7 @@ controller.run()
 ####################
 
 # loading simulation results
-Fr_list, properties = load_fractures(".\\Data\\MtoK_leakoff")
+Fr_list, properties = load_fractures("./Data/MtoK_leakoff")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 

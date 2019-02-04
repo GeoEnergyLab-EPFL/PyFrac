@@ -37,7 +37,7 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 simulProp = SimulationProperties()
 simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.saveRegime = True             # enable saving the regime
-simulProp.set_outputFolder(".\\Data\\MtoK") #the folder where the results are saved
+simulProp.set_outputFolder("./Data/MtoK") #the folder where the results are saved
 simulProp.frontAdvancing = 'explicit'
 
 # initializing fracture
@@ -69,7 +69,7 @@ controller.run()
 ####################
 
 # loading 8 fractures between 0.134s and 1e7s spaced with equal time periods
-Fr_list, properties = load_fractures(".\\Data\\MtoK",
+Fr_list, properties = load_fractures("./Data/MtoK",
                                      time_srs=np.linspace(0.134, 1e7, 8))
 # getting exact time of the loaded fractures to be used to compare analytical solution
 time_srs = get_fracture_variable(Fr_list,
@@ -89,7 +89,7 @@ Fig_FP = plot_analytical_solution(regime="K",
                                   fig=Fig_FP,
                                   time_srs=time_srs)
 # plotting radius
-Fr_list, properties = load_fractures(".\\Data\\MtoK")
+Fr_list, properties = load_fractures("./Data/MtoK")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
 

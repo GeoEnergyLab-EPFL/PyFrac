@@ -47,7 +47,7 @@ simulProp = SimulationProperties()
 simulProp.outputTimePeriod = 0.1        # Setting it small so the file is saved after every time step
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
 simulProp.frontAdvancing = 'explicit'
-simulProp.set_outputFolder('.\\Data\\Wu_et_al')
+simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 
 # initializing fracture
@@ -85,7 +85,7 @@ with open('./wu_et_al_data.csv', 'r') as f:
 ####################
 
 # plotting fracture footprint
-Fr_list, properties = load_fractures(address='.\\Data\\Wu_et_al',
+Fr_list, properties = load_fractures(address='./Data/Wu_et_al',
                                      time_srs=simulProp.get_solTimeSeries())
 Fig = plot_fracture_list(Fr_list,
                          variable='mesh',

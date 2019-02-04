@@ -52,7 +52,7 @@ Fluid = FluidProperties(viscosity=1.)
 simulProp = SimulationProperties()
 simulProp.finalTime = 0.05              # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
-simulProp.set_outputFolder('.\\Data\\pinch_point')
+simulProp.set_outputFolder('./Data/pinch_point')
 simulProp.plotFigure = True             # the fracture footprint will be plotted during the simulation
 
 # initializing fracture
@@ -83,7 +83,7 @@ controller.run()
 ####################
 
 # loading results
-Fr_list, properties = load_fractures(address='.\\Data\\pinch_point')
+Fr_list, properties = load_fractures(address='./Data/pinch_point')
 
 # plotting fracture width slice for last six time steps
 plt_prop = PlotProperties(line_style='.-')
