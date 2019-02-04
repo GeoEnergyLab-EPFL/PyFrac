@@ -56,9 +56,11 @@ class Controller:
        self.perfData = []
        self.lastSavedFile = 0
        self.lastSavedTime = -1e99
-       self.Figure = None
        self.TmStpCount = 0
        self.chkPntReattmpts = 0
+
+       # make a list of Nones with the size of the number of variables to plot during simulation
+       self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
 
        # Find the times where any parameter changes. These times will be added to the time series where the solution is
        # required to ensure the exact time is hit during time stepping and the change is applied at the correct time.
@@ -339,18 +341,16 @@ class Controller:
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-
     def output(self, Fr_advanced):
         """
-        This function plot the fracture footprint and/or save file to disk according to the given time period.
+        This function plot the fracture footprint and/or save file to disk according to the parameters set in the
+        simulation properties.
 
         Arguments:
-            Fr_lstTmStp (Fracture object):                      fracture from last time step
             Fr_advanced (Fracture object):                      fracture after time step advancing
-            simulation_parameters (SimulationParameters object): simulation parameters
-            material_properties (MaterialProperties object):    Material properties
 
         Returns:
+
         """
 
         out_TP_exceeded = False
@@ -373,8 +373,8 @@ class Controller:
                 in_plot_every_TS = True
 
         if self.sim_prop.outputTimePeriod is None and \
-           self.sim_prop.get_solTimeSeries() is None and \
-           self.sim_prop.outputEveryTS is None:
+                self.sim_prop.get_solTimeSeries() is None and \
+                self.sim_prop.outputEveryTS is None:
             in_plot_every_TS = True
 
         if out_TP_exceeded or in_req_TS or in_plot_every_TS:
@@ -383,79 +383,79 @@ class Controller:
 
             # plot fracture footprint
             if self.sim_prop.plotFigure:
-                if not self.sim_prop.blockFigure:
-                    plt.close()
+                for indx, plt_var in enumerate(self.sim_prop.plotVar):
+                    print("Plotting solution at " + repr(Fr_advanced.time) + "...")
+                    plot_prop = PlotProperties()
 
-                print("Plotting solution at " + repr(Fr_advanced.time) + "...")
-                plot_prop = PlotProperties()
+                    if self.Figures[indx]:
+                        ax = self.Figures[indx].get_axes()[0]
+                        plt.figure(self.Figures[indx].number)
+                        plt.clf()
+                        self.Figures[indx].add_axes(ax)
 
-                if self.sim_prop.plotVar is None or self.sim_prop.plotVar is 'footprint':
-                    # footprint is plotted if variable to plot is not given
-                    plot_prop.lineColor = 'b'
-                    if self.sim_prop.plotAnalytical:
-                        self.Figure = plot_footprint_analytical(self.sim_prop.analyticalSol,
-                                                          self.solid_prop,
-                                                          self.injection_prop,
-                                                          self.fluid_prop,
-                                                          [Fr_advanced.time],
-                                                          h=self.sim_prop.height,
-                                                          samp_cell=None,
-                                                          plot_prop=plot_prop,
-                                                          gamma=self.sim_prop.aspectRatio)
+                    if plt_var is 'footprint':
+                        # footprint is plotted if variable to plot is not given
+                        plot_prop.lineColor = 'b'
+                        if self.sim_prop.plotAnalytical:
+                            self.Figures[indx] = plot_footprint_analytical(self.sim_prop.analyticalSol,
+                                                                           self.solid_prop,
+                                                                           self.injection_prop,
+                                                                           self.fluid_prop,
+                                                                           [Fr_advanced.time],
+                                                                           h=self.sim_prop.height,
+                                                                           samp_cell=None,
+                                                                           plot_prop=plot_prop,
+                                                                           gamma=self.sim_prop.aspectRatio)
+
+                        self.Figures[indx] = Fr_advanced.plot_fracture(variable='mesh',
+                                                                       mat_properties=self.solid_prop,
+                                                                       projection='2D',
+                                                                       backGround_param=self.sim_prop.bckColor,
+                                                                       fig=self.Figures[indx],
+                                                                       plot_prop=plot_prop)
+
+                        plot_prop.lineColor = 'k'
+                        self.Figures[indx] = Fr_advanced.plot_fracture(variable='footprint',
+                                                                       projection='2D',
+                                                                       fig=self.Figures[indx],
+                                                                       plot_prop=plot_prop)
+
                     else:
-                        self.Figure = None
+                        if self.sim_prop.plotAnalytical:
+                            self.Figures[indx] = plot_analytical_solution(regime=self.sim_prop.analyticalSol,
+                                                                          variable=plt_var,
+                                                                          mat_prop=self.solid_prop,
+                                                                          inj_prop=self.injection_prop,
+                                                                          fluid_prop=self.fluid_prop,
+                                                                          time_srs=[Fr_advanced.time],
+                                                                          h=self.sim_prop.height,
+                                                                          gamma=self.sim_prop.aspectRatio)
 
-                    self.Figure = Fr_advanced.plot_fracture(variable='mesh',
-                                                            mat_properties=self.solid_prop,
-                                                            projection='2D',
-                                                            backGround_param=self.sim_prop.bckColor,
-                                                            fig=self.Figure,
-                                                            plot_prop=plot_prop)
+                        fig_labels = LabelProperties(plt_var, 'whole mesh', '2D')
+                        fig_labels.figLabel = ''
+                        self.Figures[indx] = Fr_advanced.plot_fracture(variable='footprint',
+                                                                       projection='2D',
+                                                                       fig=self.Figures[indx],
+                                                                       labels=fig_labels)
 
-                    plot_prop.lineColor = 'k'
-                    self.Figure = Fr_advanced.plot_fracture(variable='footprint',
-                                                            projection='2D',
-                                                            fig=self.Figure,
-                                                            plot_prop=plot_prop)
-
+                        self.Figures[indx] = Fr_advanced.plot_fracture(variable=plt_var,
+                                                                       projection=self.sim_prop.plotProj,
+                                                                       mat_properties=self.solid_prop,
+                                                                       fig=self.Figures[indx])
+                    # plotting closed cells
                     if len(Fr_advanced.closed) > 0:
                         plot_prop.lineColor = 'r'
-                        self.Figure = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
-                                                                         fig=self.Figure,
-                                                                         plot_prop=plot_prop,
-                                                                         plot_mesh=False)
-                else:
-                    if self.sim_prop.plotAnalytical:
-                        self.Figure = plot_analytical_solution(regime=self.sim_prop.analyticalSol,
-                                                              variable=self.sim_prop.plotVar,
-                                                              mat_prop=self.solid_prop,
-                                                              inj_prop=self.injection_prop,
-                                                              fluid_prop=self.fluid_prop,
-                                                              time_srs=[Fr_advanced.time],
-                                                              h=self.sim_prop.height,
-                                                              gamma=self.sim_prop.aspectRatio)
-                    else:
-                        self.Figure = None
+                        self.Figures[indx] = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
+                                                                                fig=self.Figures[indx],
+                                                                                plot_prop=plot_prop,
+                                                                                plot_mesh=False,
+                                                                                print_number=False)
 
-                    fig_labels = LabelProperties(self.sim_prop.plotVar, 'whole mesh', '2D')
-                    fig_labels.figLabel = ''
-                    self.Figure = Fr_advanced.plot_fracture(variable='footprint',
-                                                            projection='2D',
-                                                            fig=self.Figure,
-                                                            labels=fig_labels)
-
-                    self.Figure = Fr_advanced.plot_fracture(variable=self.sim_prop.plotVar,
-                                                            projection=self.sim_prop.plotProj,
-                                                            mat_properties=self.solid_prop,
-                                                            fig=self.Figure)
-
-
-                if self.sim_prop.blockFigure:
-                    plt.show(block=True)
-                else:
-                    plt.show(block=False)
-                    plt.pause(0.5)
+                plt.ion()
+                plt.pause(0.5)
                 print("Done! ")
+                if self.sim_prop.blockFigure:
+                    input("Press [enter] to continue.")
 
             # save fracture to disk
             if self.sim_prop.saveToDisk:
@@ -466,20 +466,16 @@ class Controller:
                 self.lastSavedFile += 1
                 print("Done! ")
 
-
-#-----------------------------------------------------------------------------------------------------------------------
+    #-----------------------------------------------------------------------------------------------------------------------
 
     def get_time_step(self):
         """
         This function calculate the appropriate time step.
 
         Arguments:
-            Frac (Fracture)     -- fracture from the last time step
-            pre_factor (float)  -- the pre-factor to be multiplied to the time step evaluated with the maximum propagation
-                                   velocity from the last time step.
 
         Returns:
-            time_step (float)   -- the appropriate time step
+            TimeStep (float)   -- the appropriate time step
         """
 
         time_step_given = False
