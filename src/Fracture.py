@@ -354,7 +354,8 @@ class Fracture:
 
 
     def plot_fracture(self, variable='complete', mat_properties=None, projection='3D', elements=None,
-                       backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None):
+                      backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None,
+                      plot_non_zero = True):
         """
         Plots the given parameter of the specified cells.
         
@@ -410,7 +411,6 @@ class Fracture:
                                      labels=labels)
             variable = 'width'
 
-        plot_non_zero = True
         if projection is '3D':
             plot_non_zero = False
 

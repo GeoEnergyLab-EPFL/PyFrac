@@ -452,7 +452,7 @@ class Controller:
                                                                                 print_number=False)
                 # plot the figure
                 plt.ion()
-                plt.pause(0.1)
+                plt.pause(1.0)
                 print("Done! ")
                 if self.sim_prop.blockFigure:
                     input("Press any key to continue.")

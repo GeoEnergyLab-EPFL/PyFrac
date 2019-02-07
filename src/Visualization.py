@@ -1732,11 +1732,12 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def animate_simulation_results(fracture_list, variable='width', mat_properties=None, projection='3D', elements=None,
-                                backGround_param=None, plot_prop=None, edge=4, contours_at=None, labels=None,
-                                plot_non_zero=True,  Interval=400, Repeat=None, save=False, address=None):
+def animate_simulation_results(fracture_list, variable='footprint', projection=None, elements=None,
+                                 plot_prop=None, edge=4, contours_at=None, labels=None, mat_properties=None,
+                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.25):
     """
-    This function plays an animation of the evolution of fracture with time.
+    This function plots the fracture evolution with time. The state of the fracture at different times is provided in
+    the form of a list of Fracture objects.
 
     Args:
         fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with
@@ -1750,77 +1751,94 @@ def animate_simulation_results(fracture_list, variable='width', mat_properties=N
         elements (ndarray):                 -- the elements to be plotted.
         backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.
         plot_prop (PlotProperties):         -- the properties to be used for the plot.
-
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
         edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
                                                 are evaluated on the cell edges instead of cell center. It can have a
                                                 value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
         contours_at (list):                 -- the values at which the contours are to be plotted.
         labels (LabelProperties):           -- the labels to be used for the plot.
         plot_non_zero (bool):               -- if true, only non-zero values will be plotted.
-        interval (float):                   -- time interval between two frames.
-        Repeat (bool):                      -- if True, the animation will be played in a loop.
-        save (bool):                        -- if True, the animation will be saved in the form of a video
-        address (string):                   -- the address where to save the file.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    if plot_prop is None:
-        plot_prop = PlotProperties()
 
-    fig = plot_fracture_list(fracture_list,
-                                variable='mesh',
-                                projection=projection,
-                                elements=elements,
-                                plot_prop=plot_prop,
-                                backGround_param=backGround_param,
-                                mat_properties=mat_properties,
-                                labels=labels)
+    if not isinstance(variable, list):
+        variable = [variable]
+    figures = [None for i in range(len(variable))]
 
-    args = (fracture_list, variable, mat_properties, projection, elements,
-            backGround_param, plot_prop, edge, contours_at, labels, fig, plot_non_zero)
-    # animate fracture
-    movie = animation.FuncAnimation(fig,
-                              update,
-                              fargs=args,
-                              frames=len(fracture_list),
-                              interval=Interval,
-                              repeat=Repeat,
-                              repeat_delay=1000)
-    if save:
-        if address is None:
-            raise ValueError("Please provide the address to save the video file")
-        Writer = animation.writers['ffmpeg']
-        writer = Writer(metadata={'copyright':'EPFL - GeoEnergy Lab'})
-        movie.save(address + 'Footprint-evol.mp4', writer=writer)
-    else:
-        plt.show()
+    for fracture in fracture_list:
+        for indx, plt_var in enumerate(variable):
+            print("Plotting solution at " + repr(fracture.time) + "...")
+            if plot_prop is None:
+                plot_prop = PlotProperties()
+
+
+            if figures[indx]:
+                ax = figures[indx].get_axes()[0]  # save axes from last figure
+                plt.figure(figures[indx].number)
+                plt.clf()  # clear figure
+                figures[indx].add_axes(ax)  # add axis to the figure
+
+            if plt_var is 'footprint':
+                figures[indx] = fracture.plot_fracture(variable='mesh',
+                                                       mat_properties=mat_properties,
+                                                       projection=projection,
+                                                       backGround_param=backGround_param,
+                                                       fig=figures[indx],
+                                                       plot_prop=plot_prop,
+                                                       )
+
+                plot_prop.lineColor = 'k'
+                figures[indx] = fracture.plot_fracture(variable='footprint',
+                                                       projection=projection,
+                                                       fig=figures[indx],
+                                                       plot_prop=plot_prop,
+                                                       labels=labels)
+
+            else:
+                fp_projection = '2D'
+                if projection is not None:
+                    if '2D' in projection:
+                        fp_projection = '2D'
+                    else:
+                        fp_projection = '3D'
+                fig_labels = LabelProperties(plt_var, 'whole mesh', fp_projection)
+                fig_labels.figLabel = ''
+
+                figures[indx] = fracture.plot_fracture(variable='footprint',
+                                                       projection=fp_projection,
+                                                       fig=figures[indx],
+                                                       labels=fig_labels)
+
+                figures[indx] = fracture.plot_fracture(variable=plt_var,
+                                                       projection=projection,
+                                                       elements=elements,
+                                                       mat_properties=mat_properties,
+                                                       fig=figures[indx],
+                                                       plot_prop=plot_prop,
+                                                       edge=edge,
+                                                       contours_at=contours_at,
+                                                       labels=labels,
+                                                       plot_non_zero=plot_non_zero)
+            # plotting closed cells
+            if len(fracture.closed) > 0:
+                plot_prop.lineColor = 'r'
+                figures[indx] = fracture.mesh.identify_elements(fracture.closed,
+                                                                        fig=figures[indx],
+                                                                        plot_prop=plot_prop,
+                                                                        plot_mesh=False,
+                                                                        print_number=False)
+        # plot the figure
+        plt.ion()
+        plt.pause(pause_time)
+        print("Done! ")
+        if block_figure:
+            input("Press any key to continue.")
+
 
 #-----------------------------------------------------------------------------------------------------------------------
-
-def update(frame, *args):
-    """
-    This function update the frames to be used in the animation.
-
-    """
-
-    (fracture_list, variable, mat_properties, projection, elements,
-     backGround_param, plot_prop, edge, contours_at, labels, fig, plot_non_zero) = args
-
-    ffi = fracture_list[frame]
-    labels = LabelProperties(variable, 'whole mesh', projection)
-    labels.figLabel = 't = ' + to_precision(ffi.time, plot_prop.dispPrecision) + "($s$)"
-    ffi.plot_fracture(variable=variable,
-                      mat_properties=mat_properties,
-                      projection=projection,
-                      elements=elements,
-                      backGround_param=backGround_param,
-                      plot_prop=plot_prop,
-                      fig=fig,
-                      edge=edge,
-                      contours_at=contours_at,
-                      labels=labels)
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 
 def text3d(ax, xyz, s, zdir="z", size=None, angle=0, usetex=False, **kwargs):
     """
