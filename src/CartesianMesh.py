@@ -290,12 +290,12 @@ class CartesianMesh:
         if material_prop is not None and backGround_param is not None:
             min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
                                                                                         backGround_param)
-            # plotting color bar
-            sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
-                                       norm=plt.Normalize(vmin=min_value, vmax=max_value))
-            sm._A = []
-            clr_bar = plt.colorbar(sm, alpha=0.65)
-            clr_bar.set_label(parameter)
+            # # plotting color bar
+            # sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
+            #                            norm=plt.Normalize(vmin=min_value, vmax=max_value))
+            # sm._A = []
+            # clr_bar = plt.colorbar(sm, alpha=0.65)
+            # clr_bar.set_label(parameter)
         else:
             colors = np.full((self.NumberOfElts,), 0.5)
 

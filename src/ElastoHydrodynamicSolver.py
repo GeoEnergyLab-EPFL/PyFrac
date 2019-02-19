@@ -866,7 +866,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
             norm_tr = 0.
         norm = (norm_w + norm_p + norm_tr) / 3
         converged = (norm_w <= Tol and norm_p <= 1e-3 and norm_tr <= 1e-5)
-        
+
         normlist.append(norm)
 
         # todo !!! Hack: Consider coverged if norm grows and last norm is less than 1e-4

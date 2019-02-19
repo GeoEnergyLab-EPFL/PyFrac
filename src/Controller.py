@@ -529,7 +529,7 @@ class Controller:
             TS_inj_cell = min(self.fracture.mesh.hx, self.fracture.mesh.hy) / vel_injection[0]
 
             TimeStep = self.sim_prop.tmStpPrefactor * min(TS_cell_length, TS_fracture_length,
-                                                          10 * TS_fluid_vel, 10 * TS_inj_cell)
+                                                          5 * TS_fluid_vel, 5 * TS_inj_cell)
 
 
         # in case of fracture not propagating
