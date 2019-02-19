@@ -464,7 +464,7 @@ class CartesianMesh:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-    def identify_elements(self, elements, fig=None, plot_prop=None, plot_mesh=True):
+    def identify_elements(self, elements, fig=None, plot_prop=None, plot_mesh=True, print_number=True):
         """
         This functions identify the given set of elements by highlighting them on the grid. the function plots
         the grid and the given set of elements.
@@ -505,10 +505,11 @@ class CartesianMesh:
                             facecolors='none')
         ax.add_collection(p)
 
-        # print Element numbers on the plot for elements to be identified
-        for i in range(len(elements)):
-            ax.text(self.CenterCoor[elements[i], 0] - self.hx / 4, self.CenterCoor[elements[i], 1] -
-                    self.hy / 4, repr(elements[i]), fontsize=plot_prop.textSize)
+        if print_number:
+            # print Element numbers on the plot for elements to be identified
+            for i in range(len(elements)):
+                ax.text(self.CenterCoor[elements[i], 0] - self.hx / 4, self.CenterCoor[elements[i], 1] -
+                        self.hy / 4, repr(elements[i]), fontsize=plot_prop.textSize)
 
         return fig
 

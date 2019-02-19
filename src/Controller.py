@@ -510,15 +510,27 @@ class Controller:
             dist_Inj_pnt = (tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + self.fracture.l
             # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current
             # maximum length
-            TS_cell_length = min(abs(0.08 * self.sim_prop.tmStpPrefactor * dist_Inj_pnt / self.fracture.v))
+            TS_cell_length = min(abs(0.08 * dist_Inj_pnt / self.fracture.v))
 
             # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step.
             # e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the
             # cell width in either x or y direction depending on which is smaller.
-            TS_fracture_length = self.sim_prop.tmStpPrefactor * min(self.fracture.mesh.hx, self.fracture.mesh.hy
+            TS_fracture_length = min(self.fracture.mesh.hx, self.fracture.mesh.hy
                                                             ) / np.max(self.fracture.v)
 
-            TimeStep = min(TS_cell_length, TS_fracture_length)
+            TS_fluid_vel = min(self.fracture.mesh.hx, self.fracture.mesh.hy) \
+                            / np.nanmax(abs(self.fracture.fluidVelocity))
+
+            # index of current time in the time series (first row) of the injection rate array
+            indxCurTime = max(np.where(self.fracture.time >= self.injection_prop.injectionRate[0, :])[0])
+            currentRate = abs(self.injection_prop.injectionRate[1, indxCurTime])  # current injection rate
+            vel_injection = currentRate / (2 * (self.fracture.mesh.hx + self.fracture.mesh.hy) *
+                                           self.fracture.w[self.fracture.mesh.CenterElts])
+            TS_inj_cell = min(self.fracture.mesh.hx, self.fracture.mesh.hy) / vel_injection[0]
+
+            TimeStep = self.sim_prop.tmStpPrefactor * min(TS_cell_length, TS_fracture_length,
+                                                          10 * TS_fluid_vel, 10 * TS_inj_cell)
+
 
         # in case of fracture not propagating
         if TimeStep <= 0 or np.isinf(TimeStep):

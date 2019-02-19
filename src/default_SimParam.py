@@ -23,7 +23,7 @@ max_reattemps = 8                       # maximum reattempts in case of time ste
 reattempt_factor = 0.8                  # the factor by which time step is reduced on reattempts
 
 # output
-plot_figure = False                     # if True, figure will be plotted after the given time period
+plot_figure = True                      # if True, figure will be plotted after the given time period
 save_to_disk = True                     # if True, fracture will be saved after the given time period
 output_folder = None                    # the address to save the output data
 plot_analytical = False                 # if True, analytical solution will also be plotted

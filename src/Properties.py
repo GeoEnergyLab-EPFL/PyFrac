@@ -207,7 +207,7 @@ class FluidProperties:
        Methods:
        """
 
-    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False):
+    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0):
         """
         Constructor function.
 
@@ -247,6 +247,8 @@ class FluidProperties:
         else:
             # error
             raise ValueError('Invalid turbulence flag. Can be either True or False')
+
+        self.compressibility = compressibility
 
 
 # --------------------------------------------------------------------------------------------------------
