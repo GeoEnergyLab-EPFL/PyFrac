@@ -17,6 +17,7 @@ final_time = None                       # time to stop the propagation
 maximum_steps = 2000                    # maximum time steps
 timeStep_limit = None                   # limit for the time step
 fixed_time_step = None                  # constant time step
+TS_from_fluid = False                   # if true, the fluid velocity will also be taken into account for time step
 
 # time step re-attempt
 max_reattemps = 8                       # maximum reattempts in case of time step failure

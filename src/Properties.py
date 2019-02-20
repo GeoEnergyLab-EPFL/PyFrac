@@ -470,6 +470,7 @@ class SimulationProperties:
         self.set_solTimeSeries(simul_param.req_sol_at)
         self.timeStepLimit = simul_param.timeStep_limit
         self.fixedTmStp = simul_param.fixed_time_step
+        self.TSFromFluid = simul_param.TS_from_fluid
         if isinstance(self.fixedTmStp, np.ndarray):
             if self.fixedTmStp.shape[0] != 2:
                 raise ValueError('Invalid fixed time step. The list should have 2 rows (to specify time and '

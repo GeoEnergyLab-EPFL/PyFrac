@@ -528,6 +528,9 @@ class Controller:
                                            self.fracture.w[self.fracture.mesh.CenterElts])
             TS_inj_cell = min(self.fracture.mesh.hx, self.fracture.mesh.hy) / vel_injection[0]
 
+            if not self.sim_prop.TSFromFluid:
+                TS_inj_cell = np.inf
+                TS_fluid_vel = np.inf
             TimeStep = self.sim_prop.tmStpPrefactor * min(TS_cell_length, TS_fracture_length,
                                                           5 * TS_fluid_vel, 5 * TS_inj_cell)
 
