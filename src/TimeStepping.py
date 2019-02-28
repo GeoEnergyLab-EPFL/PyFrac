@@ -793,6 +793,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.Tarrival = Tarrival_k
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
+    Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
 
     # setting leak off
     Fr_kplus1.LkOff_vol[Fr_kplus1.EltChannel] = 2 * mat_properties.Cprime[Fr_kplus1.EltChannel] * (
@@ -854,7 +855,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 #-----------------------------------------------------------------------------------------------------------------------
 
 def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,
-                         FillFrac_k, EltCrack_k, InCrack_k, LkOff, wTip, timeStep, Qin, perfNode, Vel_k):
+                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel):
 
     if sim_properties.get_volumeControl():
 
@@ -880,7 +881,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             EltTip_sym = np.unique(EltTip_sym)
 
             FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), )
-            FillF_mesh[EltTip] = FillFrac_k
+            FillF_mesh[EltTip] = FillFrac
             FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]]
             partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
 
@@ -933,7 +934,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             #  tip correction. This is done to avoid copying the full elasticity matrix.
 
             # filling fraction correction for element in the tip region
-            FillF = FillFrac_k[partlyFilledTip]
+            FillF = FillFrac[partlyFilledTip]
             for e in range(0, len(partlyFilledTip)):
                 r = FillF[e] - .25
                 if r < 0.1:
@@ -981,7 +982,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             w[EltTip] = wTip
 
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts, ), dtype=np.float64)
-        p[EltCrack_k] = sol[-1]
+        p[EltCrack] = sol[-1]
 
         return_data = (None, np.asarray([]))
         return w, p, return_data
@@ -996,9 +997,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             wguess[EltTip] = wTip
 
             vk = velocity(wguess,
-                          EltCrack_k,
+                          EltCrack,
                           Fr_lstTmStp.mesh,
-                          InCrack_k,
+                          InCrack,
                           Fr_lstTmStp.muPrime,
                           C,
                           mat_properties.SigmaO)
@@ -1013,52 +1014,54 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         neg = np.array([], dtype=int)
         non_neg = False
-        to_solve = np.setdiff1d(EltCrack_k, EltTip)
+        to_solve = np.setdiff1d(EltCrack, EltTip)
 
         # adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also
         # solved for the stagnant tip cells as compared to tip cells which are moving.
-        stagnant_tip = np.where(Vel_k < 1e-10)[0]
+        stagnant_tip = np.where(Vel < 1e-10)[0]
         to_impose = np.delete(EltTip, stagnant_tip)
         imposed_val = np.delete(wTip, stagnant_tip)
         to_solve = np.append(to_solve, EltTip[stagnant_tip])
+        wc_to_impose = []
 
         # Making and sloving the system of equations. The width constraint is checked. If active, system is remade with
         # the oonstraint imposed and is resolved.
         while not non_neg > 0:
-            to_solve = np.setdiff1d(to_solve, neg, assume_unique=True)
+            to_solve_k = np.setdiff1d(to_solve, neg, assume_unique=True)
 
             arg = (
-                to_solve,
+                to_solve_k,
                 to_impose,
                 Fr_lstTmStp.w,
                 Fr_lstTmStp.pFluid,
                 imposed_val,
-                EltCrack_k,
+                EltCrack,
                 Fr_lstTmStp.mesh,
                 timeStep,
                 Qin,
                 C,
                 Fr_lstTmStp.muPrime,
                 fluid_properties.density,
-                InCrack_k,
+                InCrack,
                 LkOff,
                 mat_properties.SigmaO,
                 fluid_properties.turbulence,
                 mat_properties.grainSize,
                 sim_properties.gravity,
                 neg,
-                mat_properties.wc,
+                wc_to_impose,
                 fluid_properties.compressibility)
 
             if sim_properties.substitutePressure:
                 sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
-                guess = np.zeros((len(EltCrack_k), ), float)
-                guess[np.arange(len(to_solve))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                                * np.ones((len(to_solve),), float)
+                guess = np.zeros((len(EltCrack), ), float)
+                guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                                * np.ones((len(to_solve_k),), float)
             else:
                 sys_fun = MakeEquationSystem_ViscousFluid
-                guess = 1e6 * np.ones((len(to_solve) + len(to_impose) + len(neg),), dtype=np.float64)
-                guess[np.arange(len(to_solve))] = timeStep * sum(Qin) / len(to_solve) * np.ones((len(to_solve),), float)
+                guess = 1e6 * np.ones((len(to_solve_k) + len(to_impose) + len(neg),), dtype=np.float64)
+                guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / len(to_solve_k) *\
+                                                    np.ones((len(to_solve_k),), float)
 
             typValue = np.copy(guess)
             sol, v_k = Picard_Newton(None,
@@ -1075,24 +1078,47 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 return np.nan, np.nan, (np.nan, np.nan)
 
             w = np.copy(Fr_lstTmStp.w)
-            w[to_solve] += sol[:len(to_solve)]
+            w[to_solve_k] += sol[:len(to_solve_k)]
             w[to_impose] = imposed_val
-            w[neg] = mat_properties.wc
+            w[neg] = wc_to_impose
 
             neg_km1 = np.copy(neg)
-            new_neg = to_solve[np.where(w[to_solve] < mat_properties.wc)[0]]
-            new_neg = np.setdiff1d(new_neg, neg)
-            if len(new_neg) == 0:
-                non_neg = True
-            else:
-                if sim_properties.frontAdvancing is not 'implicit':
-                    print('Width is getting extremely small. Starting again ...')
-                    sim_properties.frontAdvancing = 'implicit'
-                    return np.nan, np.nan, (np.nan, np.nan)
+            wc_km1 = np.copy(wc_to_impose)
+            below_wc_now = np.where(w[to_solve_k] < mat_properties.wc)[0]
+            if len(below_wc_now) > 0:
+                # for cells where max width in w history is greater than wc
+                wHst_above_wc = np.where(Fr_lstTmStp.wHist[to_solve_k] >= mat_properties.wc)[0]
+                impose_wc_at = np.intersect1d(wHst_above_wc, below_wc_now)
 
-                # sim_properties.substitutePressure = False
-                neg = np.concatenate((neg, new_neg))
-                print('Width has gone down to negative value. Imposing constraint on width...')
+                # for cells with max width in w history less than wc
+                wHst_below_wc = np.where(Fr_lstTmStp.wHist[to_solve_k] < mat_properties.wc)[0]
+                dwdt_neg = np.where(w[to_solve_k] <= Fr_lstTmStp.w[to_solve_k])[0]
+                impose_wHist_at = np.intersect1d(wHst_below_wc, dwdt_neg)
+                # impose_wHist_at = np.asarray([], dtype=int)
+
+                neg_k = to_solve_k[np.concatenate((impose_wc_at, impose_wHist_at))]
+                wc_k = np.full((len(impose_wc_at) + len(impose_wHist_at),), mat_properties.wc, dtype=np.float64)
+                wc_k[len(impose_wc_at):] = Fr_lstTmStp.wHist[to_solve_k[impose_wHist_at]]
+
+                new_neg = np.setdiff1d(neg_k, neg)
+                if len(new_neg) == 0:
+                    non_neg = True
+                else:
+                    if sim_properties.frontAdvancing is not 'implicit':
+                        print('Changing front advancing scheme to implicit due to width going negative...')
+                        sim_properties.frontAdvancing = 'implicit'
+                        return np.nan, np.nan, (np.nan, np.nan)
+
+                    # sim_properties.substitutePressure = False
+                    neg = np.hstack((neg_km1, new_neg))
+                    new_wc = np.asarray([], dtype=np.float64)
+                    for i in new_neg:
+                        new_wc = np.append(new_wc, wc_k[np.where(neg_k == i)[0]])
+                    # wc_to_impose = np.hstack((wc_km1, new_wc))
+                    wc_to_impose = np.full((len(neg)), mat_properties.wc, dtype=np.float64)
+                    print('Width has gone down to negative value. Imposing constraint on width...')
+            else:
+                non_neg = True
 
         if perfNode_Picard is not None:
             perfNode_Picard.CpuTime_end = time.time()
@@ -1101,15 +1127,15 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if sim_properties.substitutePressure:
             # pressure evaluated by dot product of width and elasticity matrix
             pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-            pf[to_solve] = np.dot(C[np.ix_(to_solve, EltCrack_k)], w[EltCrack_k]) + mat_properties.SigmaO[to_solve]
-            pf[neg_km1] = sol[len(to_solve):len(to_solve) + len(neg_km1)]
-            pf[to_impose] = sol[len(to_solve) + len(neg_km1):]
+            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+            pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+            pf[to_impose] = sol[len(to_solve_k) + len(neg_km1):]
         else:
-            n_w = len(to_solve) + len(neg_km1)
+            n_w = len(to_solve_k) + len(neg_km1)
             pf = np.zeros(len(w))
-            pf[to_solve] = sol[n_w:n_w + len(to_solve)]
-            pf[neg_km1] = sol[n_w + len(to_solve):n_w + len(to_solve) + len(neg_km1)]
-            pf[to_impose] = sol[n_w + len(to_solve) + len(neg_km1): n_w + len(to_solve) + len(neg_km1) + len(to_impose)]
+            pf[to_solve_k] = sol[n_w:n_w + len(to_solve_k)]
+            pf[neg_km1] = sol[n_w + len(to_solve_k):n_w + len(to_solve_k) + len(neg_km1)]
+            pf[to_impose] = sol[n_w + len(to_solve_k) + len(neg_km1): n_w + len(to_solve_k) + len(neg_km1) + len(to_impose)]
 
         return_data = (vk, neg_km1)
         return w, pf, return_data
@@ -1482,6 +1508,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.process_fracture_front()
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
     Fr_kplus1.Tarrival = Tarrival_k
+    Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
 
     if sim_properties.verbosity > 1:
         print("Solved...\nFinding velocity of front...")

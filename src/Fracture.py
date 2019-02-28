@@ -316,6 +316,7 @@ class Fracture:
         self.injectedVol = np.sum(self.w) * Mesh.EltArea
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
+        self.wHist = np.copy(self.w)
 
         self.process_fracture_front()
 
@@ -693,6 +694,7 @@ class Fracture:
         enclosing[:, 7] = self.mesh.NeiElements[enclosing[:, 3], 1]
 
         if factor == 2.:
+            # finding the intersecting cells
             intersecting = np.array([], dtype=int)
             for i in range(-int(((self.mesh.ny - 1) / 2 + 1) / 2) + 1, int(((self.mesh.ny - 1) / 2 + 1) / 2)):
                 center = self.mesh.CenterElts[0] + i * self.mesh.nx
@@ -719,10 +721,27 @@ class Fracture:
                                         + np.sum(self.LkOff_vol[enclosing[corresponding, :4]] / 2, axis=1) +
                                         np.sum(self.LkOff_vol[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
 
+            wHist_coarse = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
+            wHist_coarse[intersecting] = (self.wHist[corresponding]
+                                      + np.sum(self.wHist[enclosing[corresponding, :4]] / 2, axis=1) +
+                                      np.sum(self.wHist[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
+
 
         else:
             w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
                                 self.w[self.EltChannel],
+                                coarse_mesh.CenterCoor,
+                                method='linear',
+                                fill_value=0.)
+
+            LkOff_vol = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                self.LkOff_vol[self.EltChannel],
+                                coarse_mesh.CenterCoor,
+                                method='linear',
+                                fill_value=0.)
+
+            wHist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                self.wHist[self.EltChannel],
                                 coarse_mesh.CenterCoor,
                                 method='linear',
                                 fill_value=0.)
@@ -799,7 +818,8 @@ class Fracture:
         Fr_coarse.efficiency = (Fr_coarse.injectedVol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack]))\
                                / Fr_coarse.injectedVol
         Fr_coarse.time = self.time
-        Fr_coarse.closed = self.closed
+        Fr_coarse.closed = np.asarray([])
+        Fr_coarse.wHist = wHist_coarse
 
         # update the saved properties
         if sim_prop.saveToDisk:

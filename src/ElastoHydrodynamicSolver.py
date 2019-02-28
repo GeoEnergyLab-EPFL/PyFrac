@@ -528,8 +528,9 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     wcNplusOne = np.copy(wLastTS)
     wcNplusOne[to_solve] += solk[:len(to_solve)]
     wcNplusOne[to_impose] = imposed_val
-    wcNplusOne[active] = wc
-    wcNplusOne[np.where(wcNplusOne < wc)[0]] = wc
+    if len(wc) > 0:
+        wcNplusOne[active] = wc
+        wcNplusOne[to_solve[np.where(wcNplusOne[to_solve] <= 0)[0]]] = np.min(wc)
     vkm1 = interItr
 
     wcNplusHalf = (wLastTS + wcNplusOne) / 2
@@ -867,6 +868,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
         norm = (norm_w + norm_p + norm_tr) / 3
         converged = (norm_w <= Tol and norm_p <= 1e-3 and norm_tr <= 1e-5)
 
+        # print(repr(norm_w), repr(norm_p), repr(norm_tr))
         normlist.append(norm)
 
         # todo !!! Hack: Consider coverged if norm grows and last norm is less than 1e-4
