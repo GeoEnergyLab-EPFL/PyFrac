@@ -70,7 +70,8 @@
 
 
 <div class="viewcode-block" id="Fracture"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture">[docs]</a><span class="k">class</span> <span class="nc">Fracture</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Class defining propagating fracture.</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     Class defining propagating fracture.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
@@ -186,7 +187,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">init_param</span><span class="p">,</span> <span class="n">solid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">injection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simulProp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Initialize the fracture according to the given initialization parameters.</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the fracture according to the given initialization parameters.</span>
 <span class="sd">            </span>
 <span class="sd">        Args:</span>
 <span class="sd">            Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
@@ -232,12 +234,12 @@
 <span class="sd">                                        | &#39;time&#39;    -- time at which the fracture is to be initialized.</span>
 <span class="sd">                                        | &#39;length&#39;  -- the length parameter. It will be treated as the fracture radius, the minor axis length and the fracture length for the cases of a radial fracture, an elliptical fracture and a PKN fracture respectively.</span>
 
-<span class="sd">            solid (MaterialProperties object)           -- the MaterialProperties object giving the material properties.</span>
-<span class="sd">            fluid (FluidProperties object)              -- the FluidProperties object giving the fluid properties.</span>
-<span class="sd">            injection (InjectionProperties object)      -- the InjectionProperties object giving the injection</span>
-<span class="sd">                                                           properties.</span>
-<span class="sd">            simulProp (SimulationParameters object)     -- the SimulationParameters object giving the numerical</span>
-<span class="sd">                                                           parameters to be used in the simulation.</span>
+<span class="sd">            solid (MaterialProperties)           -- the MaterialProperties object giving the material properties.</span>
+<span class="sd">            fluid (FluidProperties)              -- the FluidProperties object giving the fluid properties.</span>
+<span class="sd">            injection (InjectionProperties)      -- the InjectionProperties object giving the injection</span>
+<span class="sd">                                                    properties.</span>
+<span class="sd">            simulProp (SimulationProperties)     -- the SimulationParameters object giving the numerical</span>
+<span class="sd">                                                    parameters to be used in the simulation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># the parameter specifying the type of initialization</span>

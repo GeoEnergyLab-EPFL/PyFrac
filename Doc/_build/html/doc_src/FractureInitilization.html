@@ -133,18 +133,16 @@ lengths of the major and minor axes. A list of all the cells inside the fracture
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – </li>
-<li><strong>a</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>a</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the length of the major axis of the provided ellipse.</li>
+<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the length of the minor axis of the provided ellipse.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><dl class="docutils">
-<dt>surv_cells (ndarray)                – the list of cells on the inside of the perimeter of the given</dt>
-<dd><p class="first last">ellipse.</p>
-</dd>
-</dl>
-<p>inner_cells (ndarray)               – the list of cells inside the given ellipse.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">surv_cells (ndarray)              – the list of cells on the inside of the perimeter of the given                                               ellipse.</div>
+<div class="line">inner_cells (ndarray)             – the list of cells inside the given ellipse.</div>
+</div>
 </p>
 </td>
 </tr>

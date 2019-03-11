@@ -29,7 +29,8 @@ from src.Visualization import *
 
 
 class Fracture:
-    """ Class defining propagating fracture.
+    """
+     Class defining propagating fracture.
 
     Args:
         Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
@@ -145,7 +146,8 @@ class Fracture:
     """
 
     def __init__(self, Mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
-        """ Initialize the fracture according to the given initialization parameters.
+        """
+        Initialize the fracture according to the given initialization parameters.
             
         Args:
             Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
@@ -191,12 +193,12 @@ class Fracture:
                                         | 'time'    -- time at which the fracture is to be initialized.
                                         | 'length'  -- the length parameter. It will be treated as the fracture radius, the minor axis length and the fracture length for the cases of a radial fracture, an elliptical fracture and a PKN fracture respectively.
 
-            solid (MaterialProperties object)           -- the MaterialProperties object giving the material properties.
-            fluid (FluidProperties object)              -- the FluidProperties object giving the fluid properties.
-            injection (InjectionProperties object)      -- the InjectionProperties object giving the injection
-                                                           properties.
-            simulProp (SimulationParameters object)     -- the SimulationParameters object giving the numerical
-                                                           parameters to be used in the simulation.
+            solid (MaterialProperties)           -- the MaterialProperties object giving the material properties.
+            fluid (FluidProperties)              -- the FluidProperties object giving the fluid properties.
+            injection (InjectionProperties)      -- the InjectionProperties object giving the injection
+                                                    properties.
+            simulProp (SimulationProperties)     -- the SimulationParameters object giving the numerical
+                                                    parameters to be used in the simulation.
         """
 
         # the parameter specifying the type of initialization

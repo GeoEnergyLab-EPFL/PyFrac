@@ -17,18 +17,18 @@ from src.Symmetry import *
 
 def get_eliptical_survey_cells(mesh, a, b):
     """
-        This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given
-        lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.
+    This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given
+    lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.
 
-        Arguments:
-            mesh (CartesianMesh object)         -- a CartesianMesh class object describing the grid.
-            a (float)                           -- the length of the major axis of the provided ellipse.
-            b (float)                           -- the length of the minor axis of the provided ellipse.
+    Arguments:
+        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
+        a (float):                          -- the length of the major axis of the provided ellipse.
+        b (float):                          -- the length of the minor axis of the provided ellipse.
 
-        Returns:
-            surv_cells (ndarray)                -- the list of cells on the inside of the perimeter of the given
-                                                   ellipse.
-            inner_cells (ndarray)               -- the list of cells inside the given ellipse.
+    Returns:
+        | surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\
+                                               ellipse.
+        | inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
     # distances of the cell vertices

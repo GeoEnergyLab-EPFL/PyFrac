@@ -22,7 +22,8 @@ import os
 
 class Controller:
     """
-
+    This class describes the controller which takes the given material, fluid, injection and loading properties and
+    advances a given fracture according to the provided simulation properties.
     """
     errorMessages = ("Propagation not attempted!",
                      "Time step successful!",
@@ -41,7 +42,21 @@ class Controller:
                      )
 
     def __init__(self, Fracture, Solid_prop, Fluid_prop, Injection_prop, Sim_prop, Load_prop=None, C=None):
+       """ The constructor of the Controller class.
 
+       Args:
+           Fracture (Fracture):                     -- the fracture to be propagated.
+           Solid_prop (MaterialProperties):         -- the MaterialProperties object giving the material properties.
+           Fluid_prop (FluidProperties):            -- the FluidProperties object giving the fluid properties.
+           Injection_prop (InjectionProperties):    -- the InjectionProperties object giving the injection.
+                                                       properties.
+           Sim_prop (SimulationProperties):         -- the SimulationProperties object giving the numerical
+                                                       parameters to be used in the simulation.
+           Load_prop (LoadingProperties):           -- the LoadingProperties object specifying how the material is
+                                                       mechanically loaded.
+           C (ndarray):                             -- the elasticity matrix.
+
+       """
        self.fracture = Fracture
        self.solid_prop = Solid_prop
        self.fluid_prop = Fluid_prop
@@ -55,7 +70,7 @@ class Controller:
        self.stagnant_TS = None
        self.perfData = []
        self.lastSavedFile = 0
-       self.lastSavedTime = -1e99
+       self.lastSavedTime = np.NINF
        self.TmStpCount = 0
        self.chkPntReattmpts = 0
        self.delta_w = None
@@ -65,7 +80,7 @@ class Controller:
        self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
 
        # Find the times where any parameter changes. These times will be added to the time series where the solution is
-       # required to ensure the exact time is hit during time stepping and the change is applied at the correct time.
+       # required to ensure the time is hit during time stepping and the change is applied at the exact time.
        param_change_at = np.array([], dtype=np.float64)
        if Injection_prop.injectionRate.shape[1] > 1:
            param_change_at = np.hstack((param_change_at, Injection_prop.injectionRate[0]))
@@ -74,6 +89,7 @@ class Controller:
 
        if len(param_change_at) > 0:
             if self.sim_prop.get_solTimeSeries() is not None:
+                # add the times where any parameter changes to the required solution time series
                 sol_time_srs = np.hstack((self.sim_prop.get_solTimeSeries(), param_change_at))
             else:
                 sol_time_srs = param_change_at
@@ -107,7 +123,9 @@ class Controller:
 
     def run(self):
         """
-        This function runs the simulation according to the given parameters.
+        This function runs the simulation according to the parameters given in the properties classes. See especially
+        the documentation of the SimulationProperties class to get details of the parameters controlling the simulation
+        run.
         """
 
         # output initial fracture
@@ -132,7 +150,6 @@ class Controller:
             f = open('log.txt', 'w+')
         from time import gmtime, strftime
         f.write('log file, simulation run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n')
-        # f.close()
 
         # load elasticity matrix
         if self.C is None:
@@ -297,7 +314,7 @@ class Controller:
     def advance_time_step(self, Frac, C, TimeStep, PerfNode=None):
         """
         This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
-        time steps. A system exit is raised after maximum allowed reattempts.
+        time steps.
 
         Arguments:
             Frac (Fracture object):         -- fracture object from the last time step
@@ -306,8 +323,8 @@ class Controller:
             PerfNode (IterationProperties)  -- An IterationProperties instance to store performance data
 
         Return:
-                    exitstatus (int)        -- see documentation for possible values.
-                    Fr (Fracture)           -- fracture after advancing time step.
+            exitstatus (int)        -- see documentation for possible values.
+            Fr (Fracture)           -- fracture after advancing time step.
         """
 
         # loop for reattempting time stepping in case of failure.
@@ -367,12 +384,11 @@ class Controller:
     def output(self, Fr_advanced):
         """
         This function plot the fracture footprint and/or save file to disk according to the parameters set in the
-        simulation properties.
+        simulation properties. See documentation of SimulationProperties class to get the details of parameters which
+        determines when and how the output is made.
 
         Arguments:
-            Fr_advanced (Fracture object):                      fracture after time step advancing
-
-        Returns:
+            Fr_advanced (Fracture object):       -- fracture after time step is advanced.
 
         """
 
@@ -421,14 +437,14 @@ class Controller:
                         plot_prop.lineColor = 'b'
                         if self.sim_prop.plotAnalytical:
                             self.Figures[indx] = plot_footprint_analytical(self.sim_prop.analyticalSol,
-                                                                           self.solid_prop,
-                                                                           self.injection_prop,
-                                                                           self.fluid_prop,
-                                                                           [Fr_advanced.time],
-                                                                           h=self.sim_prop.height,
-                                                                           samp_cell=None,
-                                                                           plot_prop=plot_prop,
-                                                                           gamma=self.sim_prop.aspectRatio)
+                                                                       self.solid_prop,
+                                                                       self.injection_prop,
+                                                                       self.fluid_prop,
+                                                                       [Fr_advanced.time],
+                                                                       h=self.sim_prop.height,
+                                                                       samp_cell=None,
+                                                                       plot_prop=plot_prop,
+                                                                       gamma=self.sim_prop.aspectRatio)
 
                         self.Figures[indx] = Fr_advanced.plot_fracture(variable='mesh',
                                                                        mat_properties=self.solid_prop,
@@ -446,13 +462,13 @@ class Controller:
                     else:
                         if self.sim_prop.plotAnalytical:
                             self.Figures[indx] = plot_analytical_solution(regime=self.sim_prop.analyticalSol,
-                                                                          variable=plt_var,
-                                                                          mat_prop=self.solid_prop,
-                                                                          inj_prop=self.injection_prop,
-                                                                          fluid_prop=self.fluid_prop,
-                                                                          time_srs=[Fr_advanced.time],
-                                                                          h=self.sim_prop.height,
-                                                                          gamma=self.sim_prop.aspectRatio)
+                                                                      variable=plt_var,
+                                                                      mat_prop=self.solid_prop,
+                                                                      inj_prop=self.injection_prop,
+                                                                      fluid_prop=self.fluid_prop,
+                                                                      time_srs=[Fr_advanced.time],
+                                                                      h=self.sim_prop.height,
+                                                                      gamma=self.sim_prop.aspectRatio)
 
                         fig_labels = LabelProperties(plt_var, 'whole mesh', '2D')
                         fig_labels.figLabel = ''

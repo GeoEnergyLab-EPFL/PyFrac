@@ -43,11 +43,13 @@
 <dt id="Controller.Controller">
 <em class="property">class </em><code class="descclassname">Controller.</code><code class="descname">Controller</code><span class="sig-paren">(</span><em>Fracture</em>, <em>Solid_prop</em>, <em>Fluid_prop</em>, <em>Injection_prop</em>, <em>Sim_prop</em>, <em>Load_prop=None</em>, <em>C=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class describes the controller which takes the given material, fluid, injection and loading properties and
+advances a given fracture according to the provided simulation properties.</p>
 <dl class="method">
 <dt id="Controller.Controller.advance_time_step">
 <code class="descname">advance_time_step</code><span class="sig-paren">(</span><em>Frac</em>, <em>C</em>, <em>TimeStep</em>, <em>PerfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.advance_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.advance_time_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller
-time steps. A system exit is raised after maximum allowed reattempts.</p>
+time steps.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -92,22 +94,24 @@ Fr (Fracture)           – fracture after advancing time step.</p>
 <dt id="Controller.Controller.output">
 <code class="descname">output</code><span class="sig-paren">(</span><em>Fr_advanced</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.output" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plot the fracture footprint and/or save file to disk according to the parameters set in the
-simulation properties.</p>
+simulation properties. See documentation of SimulationProperties class to get the details of parameters which
+determines when and how the output is made.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Fr_advanced</strong> (<em>Fracture object</em>) – fracture after time step advancing</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Fr_advanced</strong> (<em>Fracture object</em>) – – fracture after time step is advanced.</td>
 </tr>
 </tbody>
 </table>
-<p>Returns:</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="Controller.Controller.run">
 <code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function runs the simulation according to the given parameters.</p>
+<dd><p>This function runs the simulation according to the parameters given in the properties classes. See especially
+the documentation of the SimulationProperties class to get details of the parameters controlling the simulation
+run.</p>
 </dd></dl>
 
 </dd></dl>

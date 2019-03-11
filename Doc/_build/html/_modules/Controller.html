@@ -63,7 +63,8 @@
 
 <div class="viewcode-block" id="Controller"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller">[docs]</a><span class="k">class</span> <span class="nc">Controller</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-
+<span class="sd">    This class describes the controller which takes the given material, fluid, injection and loading properties and</span>
+<span class="sd">    advances a given fracture according to the provided simulation properties.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">errorMessages</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Propagation not attempted!&quot;</span><span class="p">,</span>
                      <span class="s2">&quot;Time step successful!&quot;</span><span class="p">,</span>
@@ -82,7 +83,21 @@
                      <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Fracture</span><span class="p">,</span> <span class="n">Solid_prop</span><span class="p">,</span> <span class="n">Fluid_prop</span><span class="p">,</span> <span class="n">Injection_prop</span><span class="p">,</span> <span class="n">Sim_prop</span><span class="p">,</span> <span class="n">Load_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot; The constructor of the Controller class.</span>
 
+<span class="sd">       Args:</span>
+<span class="sd">           Fracture (Fracture):                     -- the fracture to be propagated.</span>
+<span class="sd">           Solid_prop (MaterialProperties):         -- the MaterialProperties object giving the material properties.</span>
+<span class="sd">           Fluid_prop (FluidProperties):            -- the FluidProperties object giving the fluid properties.</span>
+<span class="sd">           Injection_prop (InjectionProperties):    -- the InjectionProperties object giving the injection.</span>
+<span class="sd">                                                       properties.</span>
+<span class="sd">           Sim_prop (SimulationProperties):         -- the SimulationProperties object giving the numerical</span>
+<span class="sd">                                                       parameters to be used in the simulation.</span>
+<span class="sd">           Load_prop (LoadingProperties):           -- the LoadingProperties object specifying how the material is</span>
+<span class="sd">                                                       mechanically loaded.</span>
+<span class="sd">           C (ndarray):                             -- the elasticity matrix.</span>
+
+<span class="sd">       &quot;&quot;&quot;</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">Fracture</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span> <span class="o">=</span> <span class="n">Solid_prop</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span> <span class="o">=</span> <span class="n">Fluid_prop</span>
@@ -96,7 +111,7 @@
        <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="o">=</span> <span class="kc">None</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">perfData</span> <span class="o">=</span> <span class="p">[]</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span> <span class="o">=</span> <span class="mi">0</span>
-       <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e99</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NINF</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">=</span> <span class="mi">0</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="o">=</span> <span class="kc">None</span>
@@ -106,7 +121,7 @@
        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">))]</span>
 
        <span class="c1"># Find the times where any parameter changes. These times will be added to the time series where the solution is</span>
-       <span class="c1"># required to ensure the exact time is hit during time stepping and the change is applied at the correct time.</span>
+       <span class="c1"># required to ensure the time is hit during time stepping and the change is applied at the exact time.</span>
        <span class="n">param_change_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
        <span class="k">if</span> <span class="n">Injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
            <span class="n">param_change_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">param_change_at</span><span class="p">,</span> <span class="n">Injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
@@ -115,6 +130,7 @@
 
        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_change_at</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># add the times where any parameter changes to the required solution time series</span>
                 <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">(),</span> <span class="n">param_change_at</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">sol_time_srs</span> <span class="o">=</span> <span class="n">param_change_at</span>
@@ -148,7 +164,9 @@
 
 <div class="viewcode-block" id="Controller.run"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This function runs the simulation according to the given parameters.</span>
+<span class="sd">        This function runs the simulation according to the parameters given in the properties classes. See especially</span>
+<span class="sd">        the documentation of the SimulationProperties class to get details of the parameters controlling the simulation</span>
+<span class="sd">        run.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># output initial fracture</span>
@@ -173,7 +191,6 @@
             <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;log.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span>
         <span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">gmtime</span><span class="p">,</span> <span class="n">strftime</span>
         <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;log file, simulation run at: &#39;</span> <span class="o">+</span> <span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span> <span class="n">gmtime</span><span class="p">())</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="c1"># f.close()</span>
 
         <span class="c1"># load elasticity matrix</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -338,7 +355,7 @@
 <div class="viewcode-block" id="Controller.advance_time_step"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.advance_time_step">[docs]</a>    <span class="k">def</span> <span class="nf">advance_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Frac</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">TimeStep</span><span class="p">,</span> <span class="n">PerfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function advances the fracture by the given time step. In case of failure, reattempts are made with smaller</span>
-<span class="sd">        time steps. A system exit is raised after maximum allowed reattempts.</span>
+<span class="sd">        time steps.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            Frac (Fracture object):         -- fracture object from the last time step</span>
@@ -347,8 +364,8 @@
 <span class="sd">            PerfNode (IterationProperties)  -- An IterationProperties instance to store performance data</span>
 
 <span class="sd">        Return:</span>
-<span class="sd">                    exitstatus (int)        -- see documentation for possible values.</span>
-<span class="sd">                    Fr (Fracture)           -- fracture after advancing time step.</span>
+<span class="sd">            exitstatus (int)        -- see documentation for possible values.</span>
+<span class="sd">            Fr (Fracture)           -- fracture after advancing time step.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># loop for reattempting time stepping in case of failure.</span>
@@ -408,12 +425,11 @@
 <div class="viewcode-block" id="Controller.output"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Fr_advanced</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function plot the fracture footprint and/or save file to disk according to the parameters set in the</span>
-<span class="sd">        simulation properties.</span>
+<span class="sd">        simulation properties. See documentation of SimulationProperties class to get the details of parameters which</span>
+<span class="sd">        determines when and how the output is made.</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            Fr_advanced (Fracture object):                      fracture after time step advancing</span>
-
-<span class="sd">        Returns:</span>
+<span class="sd">            Fr_advanced (Fracture object):       -- fracture after time step is advanced.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 

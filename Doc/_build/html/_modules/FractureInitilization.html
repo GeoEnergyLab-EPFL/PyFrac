@@ -58,18 +58,18 @@
 
 <div class="viewcode-block" id="get_eliptical_survey_cells"><a class="viewcode-back" href="../doc_src/FractureInitilization.html#FractureInitilization.get_eliptical_survey_cells">[docs]</a><span class="k">def</span> <span class="nf">get_eliptical_survey_cells</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given</span>
-<span class="sd">        lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.</span>
+<span class="sd">    This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given</span>
+<span class="sd">    lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.</span>
 
-<span class="sd">        Arguments:</span>
-<span class="sd">            mesh (CartesianMesh object)         -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">            a (float)                           -- the length of the major axis of the provided ellipse.</span>
-<span class="sd">            b (float)                           -- the length of the minor axis of the provided ellipse.</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        a (float):                          -- the length of the major axis of the provided ellipse.</span>
+<span class="sd">        b (float):                          -- the length of the minor axis of the provided ellipse.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            surv_cells (ndarray)                -- the list of cells on the inside of the perimeter of the given</span>
-<span class="sd">                                                   ellipse.</span>
-<span class="sd">            inner_cells (ndarray)               -- the list of cells inside the given ellipse.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        | surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\</span>
+<span class="sd">                                               ellipse.</span>
+<span class="sd">        | inner_cells (ndarray)             -- the list of cells inside the given ellipse.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># distances of the cell vertices</span>
