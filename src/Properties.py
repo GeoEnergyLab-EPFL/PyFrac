@@ -39,9 +39,9 @@ class MaterialProperties:
     Methods:
     """
 
-    def __init__(self, Mesh, Eprime, Toughness=None, Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
+    def __init__(self, Mesh, Eprime, Toughness=0., Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, SigmaO_func = None, Cl_func = None, TI_elasticity=False, Cij = None,
-                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., wc=1e-10):
+                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., wc=1e-6):
         """
         Arguments:
             Eprime (float)          -- plain strain modulus.

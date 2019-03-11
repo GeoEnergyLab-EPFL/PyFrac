@@ -58,6 +58,8 @@ class Controller:
        self.lastSavedTime = -1e99
        self.TmStpCount = 0
        self.chkPntReattmpts = 0
+       self.delta_w = None
+       self.lst_tmStp = None
 
        # make a list of Nones with the size of the number of variables to plot during simulation
        self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
@@ -189,7 +191,8 @@ class Controller:
             # saving the last five steps to restart if required
             if status == 1:
                 print("Time step successful!")
-
+                self.delta_w = Fr_n_pls1.w - self.fracture.w
+                self.lst_tmStp = Fr_n_pls1.time - self.fracture.time
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
                     if Fr_n_pls1.time > self.lastSavedTime:
@@ -204,6 +207,7 @@ class Controller:
                     # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
                     self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_max
                 self.successfulTimeSteps += 1
+
 
             # re-meshing required
             elif status == 12:
@@ -224,6 +228,24 @@ class Controller:
                 else:
                     print("Reached end of the domain. Exiting...")
                     break
+
+            elif status == 14:
+                # index of current time in the time series (first row) of the injection rate array
+                indxCurTime = max(np.where(Fr_n_pls1.time >= self.injection_prop.injectionRate[0, :])[0])
+                CurrentRate = self.injection_prop.injectionRate[1, indxCurTime]  # current injection rate
+                if CurrentRate == 0:
+                    inp = input("Fracture is fully closed. Do you want to jump to the time of next injection? [y/n]")
+                    while inp not in ['y', 'Y', 'n', 'N']:
+                        inp = input("Press y or n")
+                    if inp is 'y' or inp is 'Y':
+                        # index of current time in the time series (first row) of the injection rate array
+                        time_larger = np.where(Fr_n_pls1.time <= self.injection_prop.injectionRate[0, :])[0]
+                        pos_inj = np.where(self.injection_prop.injectionRate[1, :] > 0)[0]
+                        jump_to = min(self.injection_prop.injectionRate[0, np.intersect1d(time_larger, pos_inj)])
+                        Fr_n_pls1.time = jump_to
+                        self.fracture = copy.deepcopy(Fr_n_pls1)
+                    elif inp is 'n' or inp is 'N':
+                        break
 
             else:
                 f.writelines("\n" + self.errorMessages[status])
@@ -258,6 +280,7 @@ class Controller:
         f.writelines("\nnumber of remeshings = " + repr(self.remeshings))
         f.close()
 
+        plt.show(block=False)
         plt.close('all')
 
         if self.sim_prop.collectPerfData:
@@ -329,7 +352,7 @@ class Controller:
                 else:
                     PerfNode_TmStpAtmpt.status = 'failed'
 
-            if status == 1 or status == 12:
+            if status in [1, 12, 14]:
                 break
             else:
                 if self.sim_prop.verbosity > 1:
@@ -452,7 +475,7 @@ class Controller:
                                                                                 print_number=False)
                 # plot the figure
                 plt.ion()
-                plt.pause(1.0)
+                plt.pause(0.01)
                 print("Done! ")
                 if self.sim_prop.blockFigure:
                     input("Press any key to continue.")
@@ -515,25 +538,32 @@ class Controller:
             # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step.
             # e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the
             # cell width in either x or y direction depending on which is smaller.
-            TS_fracture_length = min(self.fracture.mesh.hx, self.fracture.mesh.hy
-                                                            ) / np.max(self.fracture.v)
-
-            TS_fluid_vel = min(self.fracture.mesh.hx, self.fracture.mesh.hy) \
-                            / np.nanmax(abs(self.fracture.fluidVelocity))
+            delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
+            TS_fracture_length = delta_x / np.max(self.fracture.v)
 
             # index of current time in the time series (first row) of the injection rate array
             indxCurTime = max(np.where(self.fracture.time >= self.injection_prop.injectionRate[0, :])[0])
-            currentRate = abs(self.injection_prop.injectionRate[1, indxCurTime])  # current injection rate
-            vel_injection = currentRate / (2 * (self.fracture.mesh.hx + self.fracture.mesh.hy) *
-                                           self.fracture.w[self.fracture.mesh.CenterElts])
-            TS_inj_cell = min(self.fracture.mesh.hx, self.fracture.mesh.hy) / vel_injection[0]
+            currentRate = self.injection_prop.injectionRate[1, indxCurTime]  # current injection rate
+            if currentRate < 0:
+                vel_injection = currentRate / (2 * (self.fracture.mesh.hx + self.fracture.mesh.hy) *
+                                    self.fracture.w[self.fracture.mesh.CenterElts])
+                TS_inj_cell = 3 * delta_x / abs(vel_injection[0])
+            else:
+                # for positive injection, use the increase in total fracture volume criteria
+                TS_inj_cell = 0.07 * sum(self.fracture.w) * self.fracture.mesh.EltArea / abs(currentRate)
 
-            if not self.sim_prop.TSFromFluid:
-                TS_inj_cell = np.inf
-                TS_fluid_vel = np.inf
-            TimeStep = self.sim_prop.tmStpPrefactor * min(TS_cell_length, TS_fracture_length,
-                                                          5 * TS_fluid_vel, 5 * TS_inj_cell)
+            TS_delta_vol = np.inf
+            if self.delta_w is not None:
+                delta_vol = sum(self.delta_w) / sum(self.fracture.w)
+                if delta_vol < 0:
+                    TS_delta_vol = self.lst_tmStp / abs(delta_vol) * 0.05
+                else:
+                    TS_delta_vol = self.lst_tmStp / abs(delta_vol) * 0.12
 
+            TimeStep = self.sim_prop.tmStpPrefactor * min(TS_cell_length,
+                                                          TS_fracture_length,
+                                                          TS_inj_cell,
+                                                          TS_delta_vol)
 
         # in case of fracture not propagating
         if TimeStep <= 0 or np.isinf(TimeStep):

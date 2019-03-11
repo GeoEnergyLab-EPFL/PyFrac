@@ -121,8 +121,12 @@
 </li>
       <li><a href="doc_src/CartesianMesh.html#CartesianMesh.CartesianMesh.CenterElts">CenterElts (CartesianMesh.CartesianMesh attribute)</a>
 </li>
+      <li><a href="doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.check_covergance">check_covergance() (in module ElastoHydrodynamicSolver)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.closed">closed (Fracture.Fracture attribute)</a>
+</li>
       <li><a href="doc_src/CartesianMesh.html#CartesianMesh.CartesianMesh.Connectivity">Connectivity (CartesianMesh.CartesianMesh attribute)</a>
 </li>
       <li><a href="doc_src/anisotropy.html#anisotropy.construct_polygon">construct_polygon() (in module anisotropy)</a>
@@ -233,8 +237,6 @@
 </li>
       <li><a href="doc_src/Fracture.html#Fracture.Fracture.fluidVelocity">fluidVelocity (Fracture.Fracture attribute)</a>
 </li>
-      <li><a href="doc_src/Fracture.html#Fracture.Fracture.FractEvol">FractEvol (Fracture.Fracture attribute)</a>
-</li>
       <li><a href="doc_src/Fracture.html#Fracture.Fracture">Fracture (class in Fracture)</a>
 
       <ul>
@@ -341,6 +343,8 @@
 </li>
       <li><a href="doc_src/Fracture.html#Fracture.Fracture.initTime">initTime (Fracture.Fracture attribute)</a>
 </li>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.injectedVol">injectedVol (Fracture.Fracture attribute)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="doc_src/TimeStepping.html#TimeStepping.injection_extended_footprint">injection_extended_footprint() (in module TimeStepping)</a>
@@ -389,6 +393,8 @@
 </li>
       <li><a href="doc_src/LevelSet.html#module-LevelSet">LevelSet (module)</a>
 </li>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.LKOff_vol">LKOff_vol (Fracture.Fracture attribute)</a>
+</li>
       <li><a href="doc_src/Elasticity.html#Elasticity.load_elasticity_matrix">load_elasticity_matrix() (in module Elasticity)</a>
 </li>
   </ul></td>
@@ -419,7 +425,7 @@
 </li>
       <li><a href="doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid">MakeEquationSystem_ViscousFluid() (in module ElastoHydrodynamicSolver)</a>
 </li>
-      <li><a href="doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.MakeEquationSystem_viscousFluid_pressure_substituted">MakeEquationSystem_viscousFluid_pressure_substituted() (in module ElastoHydrodynamicSolver)</a>
+      <li><a href="doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid_pressure_substituted">MakeEquationSystem_ViscousFluid_pressure_substituted() (in module ElastoHydrodynamicSolver)</a>
 </li>
       <li><a href="doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.MakeEquationSystem_volumeControl">MakeEquationSystem_volumeControl() (in module ElastoHydrodynamicSolver)</a>
 </li>
@@ -621,13 +627,15 @@
 </li>
       <li><a href="doc_src/Properties.html#Properties.SimulationProperties.set_tipAsymptote">set_tipAsymptote() (Properties.SimulationProperties method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="doc_src/Properties.html#Properties.SimulationProperties.set_viscousInjection">set_viscousInjection() (Properties.SimulationProperties method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="doc_src/Properties.html#Properties.SimulationProperties.set_volumeControl">set_volumeControl() (Properties.SimulationProperties method)</a>
 </li>
       <li><a href="doc_src/Fracture.html#Fracture.Fracture.sgndDist">sgndDist (Fracture.Fracture attribute)</a>
+</li>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.sgndDist_last">sgndDist_last (Fracture.Fracture attribute)</a>
 </li>
       <li><a href="doc_src/Properties.html#Properties.SimulationProperties">SimulationProperties (class in Properties)</a>
 </li>
@@ -649,6 +657,10 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.Tarrival">Tarrival (Fracture.Fracture attribute)</a>
+</li>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.TarrvlZrVrtx">TarrvlZrVrtx (Fracture.Fracture attribute)</a>
+</li>
       <li><a href="doc_src/Visualization.html#Visualization.text3d">text3d() (in module Visualization)</a>
 </li>
       <li><a href="doc_src/HFAnalyticalSolutions.html#HFAnalyticalSolutions.TI_Elasticity_elliptical_solution">TI_Elasticity_elliptical_solution() (in module HFAnalyticalSolutions)</a>
@@ -661,18 +673,20 @@
 </li>
       <li><a href="doc_src/TimeStepping.html#TimeStepping.time_step_explicit_front">time_step_explicit_front() (in module TimeStepping)</a>
 </li>
+      <li><a href="doc_src/Fracture.html#Fracture.Fracture.timeStep_last">timeStep_last (Fracture.Fracture attribute)</a>
+</li>
       <li><a href="doc_src/TimeStepping.html#module-TimeStepping">TimeStepping (module)</a>
 </li>
       <li><a href="doc_src/TipInversion.html#TipInversion.TipAsym_M_MDR_Res">TipAsym_M_MDR_Res() (in module TipInversion)</a>
 </li>
       <li><a href="doc_src/TipInversion.html#TipInversion.TipAsym_MDR_Res">TipAsym_MDR_Res() (in module TipInversion)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="doc_src/TipInversion.html#TipInversion.TipAsym_MK_zrthOrder_Res">TipAsym_MK_zrthOrder_Res() (in module TipInversion)</a>
 </li>
       <li><a href="doc_src/TipInversion.html#TipInversion.TipAsym_MTildeK_zrthOrder_Res">TipAsym_MTildeK_zrthOrder_Res() (in module TipInversion)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="doc_src/TipInversion.html#TipInversion.TipAsym_Universal_zrthOrder_Res">TipAsym_Universal_zrthOrder_Res() (in module TipInversion)</a>
 </li>
       <li><a href="doc_src/VolIntegral.html#VolIntegral.TipAsym_UniversalW_delt_Res">TipAsym_UniversalW_delt_Res() (in module VolIntegral)</a>
@@ -701,12 +715,10 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="doc_src/Visualization.html#Visualization.update">update() (in module Visualization)</a>
+      <li><a href="doc_src/LevelSet.html#LevelSet.UpdateLists">UpdateLists() (in module LevelSet)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="doc_src/LevelSet.html#LevelSet.UpdateLists">UpdateLists() (in module LevelSet)</a>
-</li>
       <li><a href="doc_src/Utility.html#module-Utility">Utility (module)</a>
 </li>
   </ul></td>

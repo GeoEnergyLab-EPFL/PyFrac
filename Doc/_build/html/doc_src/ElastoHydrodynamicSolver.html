@@ -45,17 +45,15 @@ Copyright (c) “ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Ener
 See the LICENSE.TXT file for more details.</p>
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.Elastohydrodynamic_ResidualFun">
-<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">Elastohydrodynamic_ResidualFun</code><span class="sig-paren">(</span><em>solk</em>, <em>*args</em>, <em>interItr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#Elastohydrodynamic_ResidualFun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.Elastohydrodynamic_ResidualFun" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function gives the residual of the solution of the current iteration for the viscous fluid, extended footprint
-case.</p>
+<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">Elastohydrodynamic_ResidualFun</code><span class="sig-paren">(</span><em>solk</em>, <em>system_func</em>, <em>*args</em>, <em>interItr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#Elastohydrodynamic_ResidualFun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.Elastohydrodynamic_ResidualFun" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function gives the residual of the solution for the system of equations formed using the given function.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.FiniteDiff_operator_turbulent_implicit">
 <code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">FiniteDiff_operator_turbulent_implicit</code><span class="sig-paren">(</span><em>w</em>, <em>EltCrack</em>, <em>mu</em>, <em>Mesh</em>, <em>InCrack</em>, <em>rho</em>, <em>vkm1</em>, <em>C</em>, <em>sigma0</em>, <em>dgrain</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#FiniteDiff_operator_turbulent_implicit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.FiniteDiff_operator_turbulent_implicit" title="Permalink to this definition">¶</a></dt>
 <dd><p>The function evaluate the finite difference matrix, i.e. the A matrix in the ElastoHydrodynamic equations ( see e.g.
-Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into account. The full evolution of friction
-factor as a function of Reynold’s number and relative roughness is incorporated.</p>
+Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into account.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -65,7 +63,7 @@ factor as a function of Reynold’s number and relative roughness is incorporate
 <li><strong>EltCrack</strong> (<em>ndarray-int</em>) – </li>
 <li><strong>mu</strong> (<em>ndarray-float</em>) – </li>
 <li><strong>Mesh</strong> (<em>CartesianMesh object</em>) – </li>
-<li><strong>InCrack</strong> (<em>ndarray-int</em>) – 1 or 0 respectively</li>
+<li><strong>InCrack</strong> (<em>ndarray-int</em>) – 1 or 0 respectively.</li>
 <li><strong>vkm1</strong> (<em>ndarray-float</em><em>)           </em><em>-- the velocity at cell edges from the previous iteration</em><em> (</em><em>if necessary</em>) – it is used as the starting guess for the implicit solver.</li>
 <li><strong>C</strong> (<em>ndarray-float</em>) – </li>
 <li><strong>sigma0</strong> (<em>ndarrray-float</em>) – </li>
@@ -73,8 +71,8 @@ factor as a function of Reynold’s number and relative roughness is incorporate
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">FinDiffOprtr (ndarray-float)   –  the finite difference matrix.
-vk (ndarray-float)             – the velocity evaluated for current iteration</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">FinDiffOprtr (ndarray-float)   – the finite difference matrix.
+vk (ndarray-float)             – the velocity evaluated for current iteration.</p>
 </td>
 </tr>
 </tbody>
@@ -84,24 +82,27 @@ vk (ndarray-float)             – the velocity evaluated for current iteration<
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.Gravity_term">
 <code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">Gravity_term</code><span class="sig-paren">(</span><em>w</em>, <em>EltCrack</em>, <em>muPrime</em>, <em>Mesh</em>, <em>InCrack</em>, <em>density</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#Gravity_term"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.Gravity_term" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function returns the gravity term (G in Zia and Lecampion 2019).
-:param w:
-:type w: ndarray-float
-:param EltCrack:
-:type EltCrack: ndarray-int
-:param muPrime:
-:type muPrime: ndarray-float)        – the scaled local viscosity of the injected fluid (12 * viscosity
-:param Mesh:
-:type Mesh: CartesianMesh object
-:param InCrack: 1 or 0 respectively.
-:type InCrack: ndarray-int
-:param density:
-:type density: float</p>
+<dd><p>This function returns the gravity term (G in Zia and Lecampion 2019).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">G (ndarray-float)              – the matrix with the gravity terms.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>w</strong> (<em>ndarray</em>) – – the width of the trial fracture.</li>
+<li><strong>EltCrack</strong> (<em>ndarray</em>) – – the list of elements inside the fracture.</li>
+<li><strong>muPrime</strong> (<em>ndarray</em>) – – the scaled local viscosity of the injected fluid (12 * viscosity)</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the mesh.</li>
+<li><strong>InCrack</strong> (<em>ndarray</em>) – – An array specifying whether elements are inside the fracture or not with
+1 or 0 respectively.</li>
+<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the density of the fluid.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– the matrix with the gravity terms.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">G (ndarray)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -119,44 +120,107 @@ vk (ndarray-float)             – the velocity evaluated for current iteration<
 <dd><p>This function makes the linearized system of equations to be solved by a linear system solver. The system is
 assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
 description of the ILSA algorithm) as of the last time step. The cells where width constraint is active are solved
-for traction and pressure seperately.</p>
+for traction and pressure separately.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>sol_k</strong> (<em>ndarray-float</em>) – fracture front</li>
-<li><strong>vkm1</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function
-EltChannel (ndarray-int)        – list of channel elements
-EltsTipNew (ndarray-int)        – list of new tip elements. This list also contains the elements that has</p>
-<blockquote>
-<div>been fully traversed.</div></blockquote>
-<p>wLastTS (ndarray-float)         – fracture width from the last time step
-wTip (ndarray-float)            – fracture width in the tip elements
-EltCrack (ndarray-int)          – list of elements in the fracture
-Mesh (CartesianMesh object):    – the mesh
-dt (float)                      – the current time step
-Q (float)                       – fluid injection rate at the current time step
-C (ndarray-float)               – the elasticity matrix
-muPrime (ndarray-float)         – 12 time viscosity of the injected fluid
-rho (float)                     – density of the injected fluid
-InCrack (ndarray-float)         – an array with one for all the elements in the fracture and zero for rest
-LeakOff (ndarray-float)         – the leaked off fluid volume for each cell
-sigma0 (ndarray-float)          – the confining stress
-turb (boolean)                  – turbulence will be taken into account if true
-dgrain (float)                  – the grain size of the rock. it will be used to calculate the fracture</p>
-<blockquote>
-<div>roughness.</div></blockquote>
-<p>active (ndarray-int)            – index of cells where the width constraint is active.
-wc (float)                      – critical minimum width</p>
+<li><strong>sol_k</strong> (<em>ndarray</em>) – fracture front.</li>
+<li><strong>interItr</strong> (<em>ndarray</em>) – </li>
+<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function</p>
+<div class="line-block">
+<div class="line">EltChannel (ndarray)          – list of channel elements</div>
+<div class="line">EltsTipNew (ndarray)          – list of new tip elements. This list also contains the elements that has                                                 been fully traversed.</div>
+<div class="line">wLastTS (ndarray)             – fracture width from the last time step</div>
+<div class="line">wTip (ndarray)                – fracture width in the tip elements</div>
+<div class="line">EltCrack (ndarray)            – list of elements in the fracture</div>
+<div class="line">Mesh (CartesianMesh object):  – the mesh</div>
+<div class="line">dt (float)                    – the current time step</div>
+<div class="line">Q (float)                     – fluid injection rate at the current time step</div>
+<div class="line">C (ndarray)                   – the elasticity matrix</div>
+<div class="line">muPrime (ndarray)             – 12 time viscosity of the injected fluid</div>
+<div class="line">rho (float)                   – density of the injected fluid</div>
+<div class="line">InCrack (ndarray)             – an array with one for all the elements in the fracture and zero for rest</div>
+<div class="line">LeakOff (ndarray)             – the leaked off fluid volume for each cell</div>
+<div class="line">sigma0 (ndarray)              – the confining stress</div>
+<div class="line">turb (boolean)                – turbulence will be taken into account if true</div>
+<div class="line">dgrain (float)                – the grain size of the rock. it will be used to calculate the fracture
+roughness.</div>
+<div class="line">active (ndarray)              – index of cells where the width constraint is active.</div>
+<div class="line">wc_to_impose (ndarray)        – the critical minimum width to be imposed in the active width constraint                                                cells</div>
+<div class="line">wc (float)                    – the critical minimum width for the material</div>
+<div class="line">cf (float)                    – fluid compressibility</div>
+</div>
 </li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A (ndarray-float)       – the A matrix (in the system Ax=b) to be solved by a linear system solver.
-S (ndarray-float)       – the b matrix (in the system Ax=b) to be solved by a linear system slover.
-vk (ndarray-float)      – the velocity at cell edges.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">A (ndarray)            – the A matrix (in the system Ax=b) to be solved by a linear system solver.</div>
+<div class="line">S (ndarray)            – the b vector (in the system Ax=b) to be solved by a linear system solver.</div>
+<div class="line">interItr_kp1 (tuple)   – the information transferred between iterations.</div>
+<div class="line">indices (list)         – the list containing 3 arrays giving indices of the cells where the solution is
+obtained for channel, tip and active width constraint cells.</div>
+</div>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid_pressure_substituted">
+<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">MakeEquationSystem_ViscousFluid_pressure_substituted</code><span class="sig-paren">(</span><em>solk</em>, <em>interItr</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#MakeEquationSystem_ViscousFluid_pressure_substituted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid_pressure_substituted" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function makes the linearized system of equations to be solved by a linear system solver. The system is
+assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
+description of the ILSA algorithm). The pressure in the tip cells and the cells where width constraint is active
+are solved separately. The pressure in the channel cells to be solved for change in width is substituted with width
+using the elasticity relation (see Zia and Lecamption 2019).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sol_k</strong> (<em>ndarray</em>) – fracture front.</li>
+<li><strong>interItr</strong> (<em>ndarray</em>) – </li>
+<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function</p>
+<div class="line-block">
+<div class="line">EltChannel (ndarray)          – list of channel elements</div>
+<div class="line">EltsTipNew (ndarray)          – list of new tip elements. This list also contains the elements that has                                                 been fully traversed.</div>
+<div class="line">wLastTS (ndarray)             – fracture width from the last time step</div>
+<div class="line">wTip (ndarray)                – fracture width in the tip elements</div>
+<div class="line">EltCrack (ndarray)            – list of elements in the fracture</div>
+<div class="line">Mesh (CartesianMesh object):  – the mesh</div>
+<div class="line">dt (float)                    – the current time step</div>
+<div class="line">Q (float)                     – fluid injection rate at the current time step</div>
+<div class="line">C (ndarray)                   – the elasticity matrix</div>
+<div class="line">muPrime (ndarray)             – 12 time viscosity of the injected fluid</div>
+<div class="line">rho (float)                   – density of the injected fluid</div>
+<div class="line">InCrack (ndarray)             – an array with one for all the elements in the fracture and zero for rest</div>
+<div class="line">LeakOff (ndarray)             – the leaked off fluid volume for each cell</div>
+<div class="line">sigma0 (ndarray)              – the confining stress</div>
+<div class="line">turb (boolean)                – turbulence will be taken into account if true</div>
+<div class="line">dgrain (float)                – the grain size of the rock. it will be used to calculate the fracture
+roughness.</div>
+<div class="line">active (ndarray)              – index of cells where the width constraint is active.</div>
+<div class="line">wc_to_impose (ndarray)        – the critical minimum width to be imposed in the active width constraint                                                cells</div>
+<div class="line">wc (float)                    – the critical minimum width for the material</div>
+<div class="line">cf (float)                    – fluid compressibility</div>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">A (ndarray)            – the A matrix (in the system Ax=b) to be solved by a linear system solver.</div>
+<div class="line">S (ndarray)            – the b vector (in the system Ax=b) to be solved by a linear system solver.</div>
+<div class="line">interItr_kp1 (tuple)   – the information transferred between iterations.</div>
+<div class="line">indices (list)         – the list containing 3 arrays giving indices of the cells where the solution is
+obtained for channel, tip and active width constraint cells.</div>
+</div>
+</p>
 </td>
 </tr>
 </tbody>
@@ -169,57 +233,6 @@ vk (ndarray-float)      – the velocity at cell edges.</p>
 <dd><p>This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
 with the extended footprint (treating the channel and the extended tip elements distinctly). The given width is
 imposed on the given loaded elements (see Zia and Lecampion 2019)</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ElastoHydrodynamicSolver.MakeEquationSystem_viscousFluid_pressure_substituted">
-<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">MakeEquationSystem_viscousFluid_pressure_substituted</code><span class="sig-paren">(</span><em>solk</em>, <em>interItr</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#MakeEquationSystem_viscousFluid_pressure_substituted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.MakeEquationSystem_viscousFluid_pressure_substituted" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function makes the linearized elasto-hydrodynamic system of equations to be solved by a linear system solver.
-The pressure is back substituted as width using the elasticity relation (see Zia and Lecampion 2019).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>sol_k</strong> (<em>ndarray-float</em>) – fracture front</li>
-<li><strong>interItr</strong> (<em>ndarray-float</em>) – velocity from the last iteration.</li>
-<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function
-EltChannel (ndarray-int)        – list of channel elements
-EltsTipNew (ndarray-int)        – list of new tip elements. This list also contains the elements that has</p>
-<blockquote>
-<div>been fully traversed.</div></blockquote>
-<p>wLastTS (ndarray-float)         – fracture width from the last time step
-wTip (ndarray-float)            – fracture width in the tip elements
-EltCrack (ndarray-int)          – list of elements in the fracture
-Mesh (CartesianMesh object):    – the mesh
-dt (float)                      – the current time step
-Q (float)                       – fluid injection rate at the current time step
-C (ndarray-float)               – the elasticity matrix
-muPrime (ndarray-float)         – 12 time viscosity of the injected fluid
-rho (float)                     – density of the injected fluid
-InCrack (ndarray-float)         – an array with one for all the elements in the fracture and zero for rest
-LeakOff (ndarray-float)         – the leaked off fluid volume for each cell
-sigma0 (ndarray-float)          – the confining stress
-turb (boolean)                  – turbulence will be taken into account if true
-dgrain (float)                  – the grain size of the rock. it will be used to calculate the fracture</p>
-<blockquote>
-<div>roughness.</div></blockquote>
-<p>gravity (boolean)               – flag specifying if the effect of gravity is to be evaluated.</p>
-</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>A (ndarray-float)               – the A matrix (in the system Ax=b) to be solved by a linear system solver.
-S (ndarray-float)               – the b matrix (in the system Ax=b) to be solved by a linear system slover.
-interItr_kp1                    – Any data to be passed to the next iteration. At the moment its the velocity</p>
-<blockquote>
-<div><p>at cell edges.</p>
-</div></blockquote>
-</p>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="function">
@@ -241,33 +254,33 @@ fracture is imposed to be equal to the fluid injected into the fracture (see Zia
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.Picard_Newton">
 <code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">Picard_Newton</code><span class="sig-paren">(</span><em>Res_fun</em>, <em>sys_fun</em>, <em>guess</em>, <em>TypValue</em>, <em>interItr_init</em>, <em>Tol</em>, <em>maxitr</em>, <em>*args</em>, <em>relax=1.0</em>, <em>PicardPerNewton=1000</em>, <em>perf_node=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#Picard_Newton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.Picard_Newton" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mixed Picard Newton solver for nonlinear systems.
-:param Res_fun:
-:type Res_fun: function
-:param sys_fun: of the form Ax=b.
-:type sys_fun: function
-:param guess:
-:type guess: ndarray
-:param TypValue:
-:type TypValue: ndarray
-:param interItr:
-:type interItr: ndarray)      – Initial value of the variable(s
-:param relax:
-:type relax: float
-:param Tol:
-:type Tol: float
-:param maxitr: – Maximum number of iterations.
-:type maxitr: int
-:param args:
-:type args: tuple
-:param PicardPerNewton: iteration.
-:type PicardPerNewton: int</p>
+<dd><p>Mixed Picard Newton solver for nonlinear systems.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">solk (ndarray)      – solution at the end of iteration.
-interItr            – any data passed between iterations.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Res_fun</strong> (<em>function</em>) – – The function calculating the residual.</li>
+<li><strong>sys_fun</strong> (<em>function</em>) – – The function giving the system A, b for the Picard solver to solve the linear system
+of the form Ax=b.</li>
+<li><strong>guess</strong> (<em>ndarray</em>) – – The initial guess.</li>
+<li><strong>TypValue</strong> (<em>ndarray</em>) – – Typical value of the variable to estimate the Epsilon to calculate Jacobian.</li>
+<li><strong>interItr_init</strong> (<em>ndarray</em>) – – Initial value of the variable(s) exchanged between the iterations, if any.</li>
+<li><strong>relax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – The relaxation factor.</li>
+<li><strong>Tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – Tolerance.</li>
+<li><strong>maxitr</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – Maximum number of iterations.</li>
+<li><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) – – arguments given to the residual and systems functions.</li>
+<li><strong>PicardPerNewton</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – For hybrid Picard/Newton solution. Number of picard iterations for every Newton
+iteration.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">solk (ndarray)       – solution at the end of iteration.</div>
+<div class="line">data (tuple)         – any data to be returned</div>
+</div>
+</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -276,25 +289,30 @@ interItr            – any data passed between iterations.</td>
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.Velocity_Residual">
 <code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">Velocity_Residual</code><span class="sig-paren">(</span><em>v</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#Velocity_Residual"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.Velocity_Residual" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function gives the residual of the velocity equation. It is used by the root finder.
-:param v: current velocity guess
-:type v: float
-:param args (: w (float):          width at the given cell edge</p>
-<blockquote>
-<div><p>mu (float):         viscosity at the given cell edge
-rho (float):        density of the injected fluid
-dp (float):         pressure gradient at the given cell edge
-rough (float):      roughness (width / grain size) at the cell center</p>
-<blockquote>
-<div>)</div></blockquote>
-</div></blockquote>
+<dd><p>This function gives the residual of the velocity equation. It is used by the root finder.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">residual of the velocity equation</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – current velocity guess</li>
+<li><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) – <p>– a tuple consisting of the following:</p>
+<div class="line-block">
+<div class="line">w (float)          width at the given cell edge</div>
+<div class="line">mu (float)         viscosity at the given cell edge</div>
+<div class="line">rho (float)        density of the injected fluid</div>
+<div class="line">dp (float)         pressure gradient at the given cell edge</div>
+<div class="line">rough (float)      roughness (width / grain size) at the cell center</div>
+</div>
+</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– residual of the velocity equation</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -308,6 +326,33 @@ elasticity relation for the given fracture width and the poisoille’s Law.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="ElastoHydrodynamicSolver.check_covergance">
+<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">check_covergance</code><span class="sig-paren">(</span><em>solk</em>, <em>solkm1</em>, <em>indices</em>, <em>tol</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#check_covergance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.check_covergance" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function checks for convergence of the solution</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>solk</strong> (<em>ndarray</em>) – </li>
+<li><strong>solkm1</strong> (<em>ndarray</em>) – </li>
+<li><strong>indices</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – for channel, tip and active width constraint cells.</li>
+<li><strong>tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">converged (bool) – True if converged</div>
+<div class="line">norm (float)     – the evaluated norm which is checked against tolerance</div>
+</div>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="ElastoHydrodynamicSolver.findBracket">
 <code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">findBracket</code><span class="sig-paren">(</span><em>func</em>, <em>guess</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#findBracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.findBracket" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function can be used to find bracket for a root finding algorithm.</p>
@@ -316,17 +361,17 @@ elasticity relation for the given fracture width and the poisoille’s Law.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>func</strong> (<em>callable function</em>) – the function giving the residual for which zero is to be found</li>
-<li><strong>guess</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – starting guess</li>
-<li><strong>args</strong> (<em>tupple</em>) – arguments passed to the function</li>
+<li><strong>func</strong> (<em>callable function</em>) – – the function giving the residual for which zero is to be found</li>
+<li><strong>guess</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – starting guess</li>
+<li><strong>args</strong> (<em>tupple</em>) – – arguments passed to the function</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the lower bracket
-float : the higher bracket</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">a (float)                – the lower bracket</div>
+<div class="line">b (float)                – the higher bracket</div>
+</div>
+</p>
 </td>
 </tr>
 </tbody>
@@ -343,15 +388,19 @@ equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated with the lami
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>w</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>EltCrack</strong> (<em>ndarray-int</em>) – </li>
-<li><strong>muPrime</strong> (<em>ndarray-float</em><em>)        </em><em>-- the scaled local viscosity of the injected fluid</em><em> (</em><em>12 * viscosity</em>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh object</em>) – </li>
-<li><strong>InCrack</strong> (<em>ndarray-int</em>) – 1 or 0 respectively.</li>
+<li><strong>w</strong> (<em>ndarray</em>) – – the width of the trial fracture.</li>
+<li><strong>EltCrack</strong> (<em>ndarray</em>) – – the list of elements inside the fracture.</li>
+<li><strong>muPrime</strong> (<em>ndarray</em>) – – the scaled local viscosity of the injected fluid (12 * viscosity).</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the mesh.</li>
+<li><strong>InCrack</strong> (<em>ndarray</em>) – – An array specifying whether elements are inside the fracture or not with
+1 or 0 respectively.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">FinDiffOprtr (ndarray-float)   –  the finite difference matrix.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– the finite difference matrix.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">FinDiffOprtr (ndarray)</p>
 </td>
 </tr>
 </tbody>

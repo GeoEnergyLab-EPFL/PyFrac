@@ -45,13 +45,14 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 reserved. See the LICENSE.TXT file for more details.</p>
 <dl class="function">
 <dt id="Visualization.animate_simulation_results">
-<code class="descclassname">Visualization.</code><code class="descname">animate_simulation_results</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='width'</em>, <em>mat_properties=None</em>, <em>projection='3D'</em>, <em>elements=None</em>, <em>backGround_param=None</em>, <em>plot_prop=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>plot_non_zero=True</em>, <em>Interval=400</em>, <em>Repeat=None</em>, <em>save=False</em>, <em>address=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#animate_simulation_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.animate_simulation_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plays an animation of the evolution of fracture with time.</p>
+<code class="descclassname">Visualization.</code><code class="descname">animate_simulation_results</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='footprint'</em>, <em>projection=None</em>, <em>elements=None</em>, <em>plot_prop=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>mat_properties=None</em>, <em>backGround_param=None</em>, <em>block_figure=False</em>, <em>plot_non_zero=True</em>, <em>pause_time=0.25</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#animate_simulation_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.animate_simulation_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the fracture evolution with time. The state of the fracture at different times is provided in
+the form of a list of Fracture objects.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the list of Fracture objects giving the evolution of fracture with
 time.</li>
 <li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
@@ -63,17 +64,20 @@ provided, the default will be used.</li>
 <li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
 <li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be colormapped.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
 are evaluated on the cell edges instead of cell center. It can have a
 value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
 <li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
 <li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
 <li><strong>plot_non_zero</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, only non-zero values will be plotted.</li>
-<li><strong>interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time interval between two frames.</li>
-<li><strong>Repeat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the animation will be played in a loop.</li>
-<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the animation will be saved in the form of a video</li>
-<li><strong>address</strong> (<em>string</em>) – – the address where to save the file.</li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
 </td>
 </tr>
 </tbody>
@@ -264,7 +268,7 @@ given, values from the cell containing the injection point is taken</li>
 
 <dl class="function">
 <dt id="Visualization.plot_analytical_solution_slice">
-<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em>, <em>plt_top_view=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution_slice</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>point1=None</em>, <em>point2=None</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>gamma=None</em>, <em>plt_top_view=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution_slice" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots slice of the given analytical solution. It can be used to compare simulation results by
 superimposing on the figure obtained from the slice plot function.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -813,12 +817,6 @@ are passed on to transform_path.</p>
 <dd><p>returns a string representation of x formatted with a precision of p</p>
 <p>Based on the webkit javascript implementation taken from here:
 <a class="reference external" href="https://code.google.com/p/webkit-mirror/source/browse/JavaScriptCore/kjs/number_object.cpp">https://code.google.com/p/webkit-mirror/source/browse/JavaScriptCore/kjs/number_object.cpp</a></p>
-</dd></dl>
-
-<dl class="function">
-<dt id="Visualization.update">
-<code class="descclassname">Visualization.</code><code class="descname">update</code><span class="sig-paren">(</span><em>frame</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.update" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function update the frames to be used in the animation.</p>
 </dd></dl>
 
 <dl class="function">

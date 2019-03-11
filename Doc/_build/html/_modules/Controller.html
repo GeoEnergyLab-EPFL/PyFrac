@@ -97,9 +97,13 @@
        <span class="bp">self</span><span class="o">.</span><span class="n">perfData</span> <span class="o">=</span> <span class="p">[]</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span> <span class="o">=</span> <span class="mi">0</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e99</span>
-       <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="kc">None</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">=</span> <span class="mi">0</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="o">=</span> <span class="kc">None</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">=</span> <span class="kc">None</span>
+
+       <span class="c1"># make a list of Nones with the size of the number of variables to plot during simulation</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">))]</span>
 
        <span class="c1"># Find the times where any parameter changes. These times will be added to the time series where the solution is</span>
        <span class="c1"># required to ensure the exact time is hit during time stepping and the change is applied at the correct time.</span>
@@ -176,7 +180,9 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Making elasticity matrix...&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">symmetric</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">TI_elasticity</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">freeSurf</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Symmetric fracture for TI material is not yet supported&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Symmetric fracture for TI material is not yet supported!&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_volumeControl</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Symmetric fracture is only supported for inviscid fluid yet!&quot;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">load_isotropic_elasticity_matrix_symmetric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
                                                                         <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">Eprime</span><span class="p">)</span>
@@ -226,7 +232,8 @@
             <span class="c1"># saving the last five steps to restart if required</span>
             <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time step successful!&quot;</span><span class="p">)</span>
-
+                <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="o">=</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">w</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">=</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
                 <span class="c1"># output</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotFigure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span><span class="p">:</span>
@@ -241,6 +248,7 @@
                     <span class="c1"># set the prefactor to the original value after four time steps (after the 5 time steps back jump)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_max</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+=</span> <span class="mi">1</span>
+
 
             <span class="c1"># re-meshing required</span>
             <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
@@ -261,6 +269,24 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reached end of the domain. Exiting...&quot;</span><span class="p">)</span>
                     <span class="k">break</span>
+
+            <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">14</span><span class="p">:</span>
+                <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
+                <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">CurrentRate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
+                <span class="k">if</span> <span class="n">CurrentRate</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">inp</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Fracture is fully closed. Do you want to jump to the time of next injection? [y/n]&quot;</span><span class="p">)</span>
+                    <span class="k">while</span> <span class="n">inp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">]:</span>
+                        <span class="n">inp</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press y or n&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">inp</span> <span class="ow">is</span> <span class="s1">&#39;y&#39;</span> <span class="ow">or</span> <span class="n">inp</span> <span class="ow">is</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span>
+                        <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
+                        <span class="n">time_larger</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">pos_inj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">jump_to</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">time_larger</span><span class="p">,</span> <span class="n">pos_inj</span><span class="p">)])</span>
+                        <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">jump_to</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">inp</span> <span class="ow">is</span> <span class="s1">&#39;n&#39;</span> <span class="ow">or</span> <span class="n">inp</span> <span class="ow">is</span> <span class="s1">&#39;N&#39;</span><span class="p">:</span>
+                        <span class="k">break</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">errorMessages</span><span class="p">[</span><span class="n">status</span><span class="p">])</span>
@@ -295,6 +321,7 @@
         <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">number of remeshings = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remeshings</span><span class="p">))</span>
         <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">collectPerfData</span><span class="p">:</span>
@@ -366,7 +393,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">PerfNode_TmStpAtmpt</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;failed&#39;</span>
 
-            <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">]:</span>
                 <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -378,18 +405,16 @@
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
-
 <div class="viewcode-block" id="Controller.output"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Fr_advanced</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This function plot the fracture footprint and/or save file to disk according to the given time period.</span>
+<span class="sd">        This function plot the fracture footprint and/or save file to disk according to the parameters set in the</span>
+<span class="sd">        simulation properties.</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            Fr_lstTmStp (Fracture object):                      fracture from last time step</span>
 <span class="sd">            Fr_advanced (Fracture object):                      fracture after time step advancing</span>
-<span class="sd">            simulation_parameters (SimulationParameters object): simulation parameters</span>
-<span class="sd">            material_properties (MaterialProperties object):    Material properties</span>
 
 <span class="sd">        Returns:</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">out_TP_exceeded</span> <span class="o">=</span> <span class="kc">False</span>
@@ -412,8 +437,8 @@
                 <span class="n">in_plot_every_TS</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputTimePeriod</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
-           <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
-           <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_solTimeSeries</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">in_plot_every_TS</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="n">out_TP_exceeded</span> <span class="ow">or</span> <span class="n">in_req_TS</span> <span class="ow">or</span> <span class="n">in_plot_every_TS</span><span class="p">:</span>
@@ -422,79 +447,79 @@
 
             <span class="c1"># plot fracture footprint</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotFigure</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">blockFigure</span><span class="p">:</span>
-                    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">indx</span><span class="p">,</span> <span class="n">plt_var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting solution at &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
+                    <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
 
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting solution at &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
-                <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]:</span>
+                        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>   <span class="c1"># save axes from last figure</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>                               <span class="c1"># clear figure</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>         <span class="c1"># add axis to the figure</span>
 
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span> <span class="ow">is</span> <span class="s1">&#39;footprint&#39;</span><span class="p">:</span>
-                    <span class="c1"># footprint is plotted if variable to plot is not given</span>
-                    <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">plot_footprint_analytical</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
-                                                          <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
-                                                          <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
-                                                          <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
-                                                          <span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
-                                                          <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
-                                                          <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                                          <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                                                          <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">plt_var</span> <span class="ow">is</span> <span class="s1">&#39;footprint&#39;</span><span class="p">:</span>
+                        <span class="c1"># footprint is plotted if variable to plot is not given</span>
+                        <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_footprint_analytical</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
+                                                                           <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                                           <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                                                           <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                                           <span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
+                                                                           <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                                                                           <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                                           <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                                           <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
+                                                                       <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                                       <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
+                                                                       <span class="n">backGround_param</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">bckColor</span><span class="p">,</span>
+                                                                       <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
+
+                        <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
+                                                                       <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
+                                                                       <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
+
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_analytical_solution</span><span class="p">(</span><span class="n">regime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
+                                                                          <span class="n">variable</span><span class="o">=</span><span class="n">plt_var</span><span class="p">,</span>
+                                                                          <span class="n">mat_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                                          <span class="n">inj_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                                                          <span class="n">fluid_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                                          <span class="n">time_srs</span><span class="o">=</span><span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
+                                                                          <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                                                                          <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
 
-                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
-                                                            <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
-                                                            <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
-                                                            <span class="n">backGround_param</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">bckColor</span><span class="p">,</span>
-                                                            <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
-                                                            <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
+                        <span class="n">fig_labels</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">plt_var</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D&#39;</span><span class="p">)</span>
+                        <span class="n">fig_labels</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
+                                                                       <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
+                                                                       <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                                       <span class="n">labels</span><span class="o">=</span><span class="n">fig_labels</span><span class="p">)</span>
 
-                    <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
-                                                            <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
-                                                            <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
-                                                            <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
-
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="n">plt_var</span><span class="p">,</span>
+                                                                       <span class="n">projection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotProj</span><span class="p">,</span>
+                                                                       <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                                       <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+                    <span class="c1"># plotting closed cells</span>
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">identify_elements</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
-                                                                         <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
-                                                                         <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                                                                         <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">plot_analytical_solution</span><span class="p">(</span><span class="n">regime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
-                                                              <span class="n">variable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">,</span>
-                                                              <span class="n">mat_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
-                                                              <span class="n">inj_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
-                                                              <span class="n">fluid_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
-                                                              <span class="n">time_srs</span><span class="o">=</span><span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
-                                                              <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
-                                                              <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="kc">None</span>
-
-                    <span class="n">fig_labels</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D&#39;</span><span class="p">)</span>
-                    <span class="n">fig_labels</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
-                                                            <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span>
-                                                            <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span>
-                                                            <span class="n">labels</span><span class="o">=</span><span class="n">fig_labels</span><span class="p">)</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">Figure</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">,</span>
-                                                            <span class="n">projection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotProj</span><span class="p">,</span>
-                                                            <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
-                                                            <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figure</span><span class="p">)</span>
-
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">blockFigure</span><span class="p">:</span>
-                    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">identify_elements</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
+                                                                                <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                                                <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                                                <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                                                <span class="n">print_number</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="c1"># plot the figure</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done! &quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">blockFigure</span><span class="p">:</span>
+                    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press any key to continue.&quot;</span><span class="p">)</span>
 
             <span class="c1"># save fracture to disk</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
@@ -505,20 +530,16 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done! &quot;</span><span class="p">)</span></div>
 
-
-<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+    <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="Controller.get_time_step"><a class="viewcode-back" href="../doc_src/Controller.html#Controller.Controller.get_time_step">[docs]</a>    <span class="k">def</span> <span class="nf">get_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function calculate the appropriate time step.</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            Frac (Fracture)     -- fracture from the last time step</span>
-<span class="sd">            pre_factor (float)  -- the pre-factor to be multiplied to the time step evaluated with the maximum propagation</span>
-<span class="sd">                                   velocity from the last time step.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            time_step (float)   -- the appropriate time step</span>
+<span class="sd">            TimeStep (float)   -- the appropriate time step</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">time_step_given</span> <span class="o">=</span> <span class="kc">False</span>
@@ -553,15 +574,37 @@
             <span class="n">dist_Inj_pnt</span> <span class="o">=</span> <span class="p">(</span><span class="n">tipVrtxCoord</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">tipVrtxCoord</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">l</span>
             <span class="c1"># the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current</span>
             <span class="c1"># maximum length</span>
-            <span class="n">TS_cell_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">0.08</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*</span> <span class="n">dist_Inj_pnt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">))</span>
+            <span class="n">TS_cell_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">0.08</span> <span class="o">*</span> <span class="n">dist_Inj_pnt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">))</span>
 
             <span class="c1"># the time step evaluated by restricting the fraction of the cell that would be traversed in the time step.</span>
             <span class="c1"># e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the</span>
             <span class="c1"># cell width in either x or y direction depending on which is smaller.</span>
-            <span class="n">TS_fracture_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
-                                                            <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">delta_x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">)</span>
+            <span class="n">TS_fracture_length</span> <span class="o">=</span> <span class="n">delta_x</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">)</span>
 
-            <span class="n">TimeStep</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">TS_cell_length</span><span class="p">,</span> <span class="n">TS_fracture_length</span><span class="p">)</span>
+            <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
+            <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">currentRate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
+            <span class="k">if</span> <span class="n">currentRate</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">vel_injection</span> <span class="o">=</span> <span class="n">currentRate</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">)</span> <span class="o">*</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterElts</span><span class="p">])</span>
+                <span class="n">TS_inj_cell</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">delta_x</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vel_injection</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># for positive injection, use the increase in total fracture volume criteria</span>
+                <span class="n">TS_inj_cell</span> <span class="o">=</span> <span class="mf">0.07</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">currentRate</span><span class="p">)</span>
+
+            <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">delta_vol</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">delta_vol</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_vol</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.05</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_vol</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.12</span>
+
+            <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">TS_cell_length</span><span class="p">,</span>
+                                                          <span class="n">TS_fracture_length</span><span class="p">,</span>
+                                                          <span class="n">TS_inj_cell</span><span class="p">,</span>
+                                                          <span class="n">TS_delta_vol</span><span class="p">)</span>
 
         <span class="c1"># in case of fracture not propagating</span>
         <span class="k">if</span> <span class="n">TimeStep</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">TimeStep</span><span class="p">):</span>

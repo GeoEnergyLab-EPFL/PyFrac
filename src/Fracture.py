@@ -38,25 +38,33 @@ class Fracture:
 
                                     -- In case the first element (init_param[0]) is 'M', 'Mt', 'K', 'Kt' or 'MDR',
                                     the tuple should contain the following parameters in order:
-                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        1. (string):    -- specifying the type of initialization(see below for possible\
+                                         options).
                                         2. (string)     -- the type of the given value (see below for possible options).
                                         3. (float)      -- the value at which the fracture is initialized.
 
                                     -- In case the first element (init_param[0]) is 'G', the tuple should
                                     contain the following parameters in order:
-                                        1. (string)     -- specifying the type of initialization(see below for possible options).
-                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture front.
+                                        1. (string)     -- specifying the type of initialization(see below for possible\
+                                                           options).
+                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture \
+                                                           front.
                                         3. (ndarray)    -- the cells enclosed by the survey cells inside the fracture.
                                         4. (ndarray)    -- the dist of the survey cells from the fracture front.
-                                        5. (ndarray)    -- the array giving the width to be initialized for each of the mesh cell. It can be 'None' if not available.
-                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of the mesh cell. It can be 'None' if not available.
+                                        5. (ndarray)    -- the array giving the width to be initialized for each of the\
+                                                           mesh cell. It can be 'None' if not available.
+                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of \
+                                                           the mesh cell. It can be 'None' if not available.
                                         7. (ndarray)    -- the elasticity influence matrix.
-                                        8. (ndarray)    -- total volume of the fracture. It can be 'None' if not available.
-                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity will be used to calculate the time step.
+                                        8. (ndarray)    -- total volume of the fracture. It can be 'None' if not \
+                                                           available.
+                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity \
+                                                           will be used to calculate the time step.
 
                                     -- In case the first element (init_param[0], see below for possible options)
                                     is 'PKN', the tuple should contain the following parameters in order:
-                                        1. (string)     -- specifying the type of initialization(see below for possible options).
+                                        1. (string)     -- specifying the type of initialization(see below for possible\
+                                                           options).
                                         2. (string)     -- the type of the given value (see below for possible options).
                                         3. (float)      -- the value at which the fracture is initialized.
                                         4. (float)      -- the height of the PKN fracture.
@@ -72,11 +80,11 @@ class Fracture:
                                         | 'G'     -- flexible, general purpose initialization
 
                                     given_type can be one of the following:
-                                        'time'      -- time at which the fracture is to be initialized.
-                                        'length'    -- the length parameter. It will be treated as the fracture
-                                                   radius, the minor axis length and the fracture length for the
-                                                   cases of a radial fracture, an elliptical fracture and a PKN
-                                                   fracture respectively.
+                                        | 'time'      -- time at which the fracture is to be initialized.
+                                        | 'length'    -- the length parameter. It will be treated as the fracture \
+                                                       radius, the minor axis length and the fracture length for the \
+                                                       cases of a radial fracture, an elliptical fracture and a PKN \
+                                                       fracture respectively.
 
         solid (MaterialProperties):           -- the MaterialProperties object giving the material properties.
         fluid (FluidProperties):              -- the FluidProperties object giving the fluid properties.
@@ -108,13 +116,11 @@ class Fracture:
         initTime (float):           -- starting time
         sgndDist (ndarray):         -- signed minimun distance from fracture front of each cell in the domain
         Q (ndarray-float):          -- injection rate into each cell of the domain
-        FractEvol (ndarray):        -- array containing the coordinates of the individual fracture front lines;
-                                       used for printing fracture evolution through time
         InCrack (ndarray):          -- array specifying whether the cell is inside or outside the fracture.
         FractureVolume (float):     -- fracture volume
         muPrime (ndarray):          -- local viscosity parameter
         Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
-                                       cells.
+                                       cells. Each row contains the x and y coordinates of the two points.
         regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
                                        and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
         ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
@@ -123,6 +129,18 @@ class Fracture:
                                        left, right, bottom, top.
         fluidVelocity (ndarray):    -- the fluid velocity at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
+        LKOff_vol (ndarray):        -- total fluid volume leaked off from each of the cell in the mesh
+        Tarrival (ndarray):         -- the arrival time of the fracture front for each of the cell in the domain. It
+                                       is used to evaluate the leak off using Carter's leak off formulation. The time
+                                       is averaged over entering and leaving of the front from a cell.
+        TarrvlZrVrtx (ndarray):     -- the time at which the front crosses the zero vertex. This is used to evaluate
+                                       leak off in tip cells, i.e. for cells where the front has not left the cell.
+        closed (ndarray):           -- the cells which have closed due to leak off or flow back of the fluid.
+        injectedVol (float):        -- the total volume that is injected into the fracture.
+        sgndDist_last (ndarray):    -- the signed distance of the last time step. Used for re-meshing.
+        timeStep_last (float):      -- the last time step. Required for re-meshing.
+
+
 
     """
 
@@ -358,29 +376,32 @@ class Fracture:
                       backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None,
                       plot_non_zero = True):
         """
-        Plots the given parameter of the specified cells.
-        
-        Arguments:
-            elts(string)            -- elements to be printed; possible options:
-                                                complete
-                                                channel
-                                                crack
-                                                ribbon
-            parameter(string)       -- parameter to be ploted; possible options:
-                                                width
-                                                pressure
-                                                viscosity
-                                                footPrint
-                                                mesh
-            analytical (float)      -- radius of fracture footprint calculated analytically. Not plotter if None.
-            identify (ndarray)      -- plot the cells in the provided list with cell number and different color
-                                       to identify. This option can be used in debugging.
-            mat_properties (MaterialProperties)   -- material properties to colorcode the grid according to the given
-                                       parameter in the simulation properties. Can be None.
-            sim_properties (SimulationParameters) -- Simulation paramters to define various plotting parameters. Can be
-                                       None
-            fig (figure)            -- figure object to superimpose the image
+        This function plots the fracture.
 
+        Args:
+            variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the
+                                                    :py:mod:`Labels` module for a list of supported variables.
+            mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.
+            projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`
+                                                    for the supported projections for each of the supprted variable. If
+                                                    not provided, the default will be used.
+            elements (ndarray):                 -- the elements to be plotted.
+            backGround_param (string):          -- the parameter according to which the the mesh will be color-mapped.\
+                                                   Options are listed below:
+                                                        | -- 'confining stress' or 'sigma0'
+                                                        | -- 'fracture toughness' or 'K1c'
+                                                        | -- 'leak off coefficient', 'Cl'
+            plot_prop (PlotProperties):         -- the properties to be used for the plot.
+            fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+            edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
+                                                    are evaluated on the cell edges instead of cell center. It can have a
+                                                    value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
+            contours_at (list):                 -- the values at which the contours are to be plotted.
+            labels (LabelProperties):           -- the labels to be used for the plot.
+            plot_non_zero (bool):               -- if true, only non-zero values will be plotted.
+
+        Returns:
+            (Figure):                           -- A Figure object that can be used superimpose further plots.
         """
 
         if variable in unidimensional_variables:
@@ -436,17 +457,13 @@ class Fracture:
         """
         process fracture front and different regions of the fracture. This function adds the start and endpoints of the
         front lines in each of the tip cell to the Ffront variable of the Fracture class.
-
-        Arguments:
-
-        Returns:
-
         """
+
         # list of points where fracture front is intersecting the grid lines. 
         intrsct1 = np.zeros((2, len(self.l)))
         intrsct2 = np.zeros((2, len(self.l)))
 
-        # todo: commenting print_fracture_trace function
+        # todo: commenting
 
         for i in range(0, len(self.l)):
             if self.alpha[i] != 0 and self.alpha[i] != math.pi / 2: # for angles greater than zero and less than 90 deg
@@ -533,7 +550,37 @@ class Fracture:
     def plot_fracture_slice(self, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
                             fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal'):
         """
+        This function plots the fracture on a given slice of the domain. Two points are to be given that will be
+        joined to form the slice. The values on the slice are interpolated from the values available on the cell
+        centers. Exact values on the cell centers can also be plotted.
 
+        Args:
+            variable (string):              -- the variable to be plotted. See :py:data:`supported_variables` of the
+                                               :py:mod:`Labels` module for a list of supported variables.
+            point1 (list or ndarray):       -- the left point from which the slice should pass [x, y].
+            point1 (list or ndarray):       -- the right point from which the slice should pass [x, y].
+            projection (string):            -- a string specifying the projection. It can either '3D' or '2D'.
+            plot_prop (PlotProperties):     -- the properties to be used for the plot.
+            fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.
+            edge (int):                     -- the edge of the cell that will be plotted. This is for variables that
+                                               are evaluated on the cell edges instead of cell center. It can have a
+                                               value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
+            labels (LabelProperties):       -- the labels to be used for the plot.
+            plot_cell_center (bool):        -- if True, the discrete values at the cell centers will be plotted. In this
+                                               case, the slice passing through the center of the cell containing
+                                               point1 will be taken. The slice will be made according to the given
+                                               orientation (see orientation). If False, the values will be interpolated
+                                               on the line joining the given two points.
+            orientation (string):           -- the orientation according to which the slice is made in the case the
+                                               plotted values are not interpolated and are taken at the cell centers.
+                                               Any of the four ('vertical', 'horizontal', 'ascending' and 'descending')
+                                               orientation can be used.
+            extreme_points (ndarray)        -- An empty array of shape (2, 2). It will be used to return the extreme
+                                               points of the plotted slice. These points can be used to plot analytical
+                                               solution.
+
+        Returns:
+            (Figure):                       -- A Figure object that can be used superimpose further plots.
 
         """
 
@@ -552,12 +599,17 @@ class Fracture:
 # ------------------------------------------------------------------------------------------------------------------
 
     def SaveFracture(self, filename):
+        """ This function saves the fracture object to a file on hard dist using dill module"""
+
         with open(filename, 'wb') as output:
             dill.dump(self, output, -1)
 
 # -----------------------------------------------------------------------------------------------------------------------
 
     def plot_front(self, fig=None, plot_prop=None):
+        """
+        This function plots the front lines in the tip cells of the fracture taken from the fFront variable.
+        """
 
         if fig is None:
             fig = plt.figure()
@@ -598,6 +650,10 @@ class Fracture:
 
 
     def plot_front_3D(self, fig=None, plot_prop=None):
+        """
+        This function plots the front lines with 3D projection in the tip cells of the fracture taken from the fFront
+        variable.
+        """
 
         if fig is None:
             fig = plt.figure()
@@ -642,20 +698,22 @@ class Fracture:
 
     def remesh(self, factor, C, material_prop, fluid_prop, inj_prop, sim_prop):
         """
-        This function compresses the fracture by the given factor once it has reached the end of the mesh. The
-        elasticity matrix, the properties objects are also re-adjusted according to the new mesh.
+        This function compresses the fracture by the given factor once it has reached the end of the mesh. If the
+        compression factor is two, each set of four cells in the fine mesh is replaced by a single cell. The volume of
+        the fracture is conserved upto machine precision. The elasticity matrix and the properties objects are also
+        re-adjusted according to the new mesh.
 
         Arguments:
-            factor (float)      -- the factor by which the domain is to be compressed. For example, a factor of 2 will
+            factor (float):     -- the factor by which the domain is to be compressed. For example, a factor of 2 will
                                    merge the adjacent four cells to a single cell.
-            C (ndarray)         -- the elasticity matrix to be re-evaluated for the new mesh.
-            material_prop       -- the material properties to be re-evaluated for the new mesh.
-            fluid_prop          -- the fluid properties to be re-evaluated for the new mesh.
-            inj_prop            -- the injection properties to be re-evaluated for the new mesh.
-            sim_prop            -- the simulation properties.
+            C (ndarray):        -- the elasticity matrix to be re-evaluated for the new mesh.
+            material_prop:      -- the material properties to be re-evaluated for the new mesh.
+            fluid_prop:         -- the fluid properties to be re-evaluated for the new mesh.
+            inj_prop:           -- the injection properties to be re-evaluated for the new mesh.
+            sim_prop:           -- the simulation properties.
 
         Returns:
-            Fr_coarse           -- the new fracture after remeshing.
+            Fr_coarse           -- the new fracture after re-meshing.
         """
 
         coarse_mesh = CartesianMesh(factor*self.mesh.Lx,
@@ -719,7 +777,7 @@ class Fracture:
             LkOff_vol = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
             LkOff_vol[intersecting] = (self.LkOff_vol[corresponding]
                                         + np.sum(self.LkOff_vol[enclosing[corresponding, :4]] / 2, axis=1) +
-                                        np.sum(self.LkOff_vol[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
+                                        np.sum(self.LkOff_vol[enclosing[corresponding, 4:8]] / 4, axis=1))
 
             wHist_coarse = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
             wHist_coarse[intersecting] = (self.wHist[corresponding]
@@ -734,7 +792,7 @@ class Fracture:
                                 method='linear',
                                 fill_value=0.)
 
-            LkOff_vol = griddata(self.mesh.CenterCoor[self.EltChannel],
+            LkOff_vol = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
                                 self.LkOff_vol[self.EltChannel],
                                 coarse_mesh.CenterCoor,
                                 method='linear',

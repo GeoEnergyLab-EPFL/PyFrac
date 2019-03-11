@@ -163,7 +163,7 @@ The function :py:func:`PostProcessFracture.get_fracture_variable` provides a lis
                                       plot_cell_center=True,
                                       extreme_points=ext_pnts)
 
-In the above code, we first load the state of the fracture at five equidistant times. The fracture list is then passed to the :py:func:`Visualization.plot_fracture_list_slice` which plots the slice of the domain passing through the given point. To compare the solution, we can also plot slice of the analytical solution. We have passed an empty array to the slice plotting function which will be written by the extreme points on the mesh along the slice, which can be used to plot the analytical solution slice.
+In the above code, we first load the state of the fracture at five equidistant times in geometric space. The fracture list is then passed to the :py:func:`Visualization.plot_fracture_list_slice` which plots the slice of the domain passing through the given point. To compare the solution, we can also plot slice of the analytical solution. We have passed an empty array to the slice plotting function which will be written by the extreme points on the mesh along the slice, which can be used to plot the analytical solution slice.
 
 .. code-block:: python
 

@@ -288,7 +288,9 @@
 <span class="sd">        Args:</span>
 <span class="sd">            material_prop (MaterialProperties):  -- a MaterialProperties class object</span>
 <span class="sd">            backGround_param (string):           -- the cells of the grid will be color coded according to the value</span>
-<span class="sd">                                                    of the parameter given by this argument.</span>
+<span class="sd">                                                    of the parameter given by this argument. Possible options are</span>
+<span class="sd">                                                    &#39;sigma0&#39; for confining stress, &#39;K1c&#39; for fracture toughness and</span>
+<span class="sd">                                                    &#39;Cl&#39; for leak off.</span>
 <span class="sd">            fig (Figure):                        -- A figure object to superimpose.</span>
 <span class="sd">            plot_prop (PlotProperties):          -- A PlotProperties object giving the properties to be utilized for</span>
 <span class="sd">                                                    the plot.</span>
@@ -329,12 +331,12 @@
         <span class="k">if</span> <span class="n">material_prop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">backGround_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">min_value</span><span class="p">,</span> <span class="n">max_value</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">colors</span> <span class="o">=</span> <span class="n">process_material_prop_for_display</span><span class="p">(</span><span class="n">material_prop</span><span class="p">,</span>
                                                                                         <span class="n">backGround_param</span><span class="p">)</span>
-            <span class="c1"># plotting color bar</span>
-            <span class="n">sm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">ScalarMappable</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">colorMap</span><span class="p">,</span>
-                                       <span class="n">norm</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">min_value</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">max_value</span><span class="p">))</span>
-            <span class="n">sm</span><span class="o">.</span><span class="n">_A</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">clr_bar</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sm</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.65</span><span class="p">)</span>
-            <span class="n">clr_bar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">parameter</span><span class="p">)</span>
+            <span class="c1"># # plotting color bar</span>
+            <span class="c1"># sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,</span>
+            <span class="c1">#                            norm=plt.Normalize(vmin=min_value, vmax=max_value))</span>
+            <span class="c1"># sm._A = []</span>
+            <span class="c1"># clr_bar = plt.colorbar(sm, alpha=0.65)</span>
+            <span class="c1"># clr_bar.set_label(parameter)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="mf">0.5</span><span class="p">)</span>
 
@@ -355,7 +357,9 @@
 <span class="sd">        Args:</span>
 <span class="sd">            material_prop (MaterialProperties):  -- a MaterialProperties class object</span>
 <span class="sd">            backGround_param (string):           -- the cells of the grid will be color coded according to the value</span>
-<span class="sd">                                                    of the parameter given by this argument.</span>
+<span class="sd">                                                    of the parameter given by this argument. Possible options are</span>
+<span class="sd">                                                    &#39;sigma0&#39; for confining stress, &#39;K1c&#39; for fracture toughness and</span>
+<span class="sd">                                                    &#39;Cl&#39; for leak off.</span>
 <span class="sd">            fig (Figure):                        -- A figure object to superimpose.</span>
 <span class="sd">            plot_prop (PlotProperties):          -- A PlotProperties object giving the properties to be utilized for</span>
 <span class="sd">                                                    the plot.</span>
@@ -501,7 +505,7 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="CartesianMesh.identify_elements"><a class="viewcode-back" href="../doc_src/CartesianMesh.html#CartesianMesh.CartesianMesh.identify_elements">[docs]</a>    <span class="k">def</span> <span class="nf">identify_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="CartesianMesh.identify_elements"><a class="viewcode-back" href="../doc_src/CartesianMesh.html#CartesianMesh.CartesianMesh.identify_elements">[docs]</a>    <span class="k">def</span> <span class="nf">identify_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">print_number</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This functions identify the given set of elements by highlighting them on the grid. the function plots</span>
 <span class="sd">        the grid and the given set of elements.</span>
@@ -542,10 +546,11 @@
                             <span class="n">facecolors</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
 
-        <span class="c1"># print Element numbers on the plot for elements to be identified</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">)):</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">elements</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">elements</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">elements</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">print_number</span><span class="p">:</span>
+            <span class="c1"># print Element numbers on the plot for elements to be identified</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">)):</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">elements</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">elements</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">elements</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">fig</span></div></div>
 
@@ -626,19 +631,19 @@
 
     <span class="n">colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">),),</span> <span class="mf">0.5</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">backGround_param</span> <span class="o">==</span> <span class="s1">&#39;sigma0&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">backGround_param</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;confining stress&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma0&#39;</span><span class="p">]:</span>
         <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e6</span>
         <span class="n">min_value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e6</span>
         <span class="k">if</span> <span class="n">max_value</span> <span class="o">-</span> <span class="n">min_value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">colors</span> <span class="o">=</span> <span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">/</span> <span class="mf">1e6</span> <span class="o">-</span> <span class="n">min_value</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">max_value</span> <span class="o">-</span> <span class="n">min_value</span><span class="p">)</span>
         <span class="n">parameter</span> <span class="o">=</span> <span class="s2">&quot;confining stress ($MPa$)&quot;</span>
-    <span class="k">elif</span> <span class="n">backGround_param</span> <span class="o">==</span> <span class="s1">&#39;K1c&#39;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">backGround_param</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fracture toughness&#39;</span><span class="p">,</span> <span class="s1">&#39;K1c&#39;</span><span class="p">]:</span>
         <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">K1c</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e6</span>
         <span class="n">min_value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">K1c</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e6</span>
         <span class="k">if</span> <span class="n">max_value</span> <span class="o">-</span> <span class="n">min_value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">colors</span> <span class="o">=</span> <span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">K1c</span> <span class="o">/</span> <span class="mf">1e6</span> <span class="o">-</span> <span class="n">min_value</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">max_value</span> <span class="o">-</span> <span class="n">min_value</span><span class="p">)</span>
         <span class="n">parameter</span> <span class="o">=</span> <span class="s2">&quot;fracture toughness ($Mpa\sqrt</span><span class="si">{m}</span><span class="s2">$)&quot;</span>
-    <span class="k">elif</span> <span class="n">backGround_param</span> <span class="o">==</span> <span class="s1">&#39;Cl&#39;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">backGround_param</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;leak off coefficient&#39;</span><span class="p">,</span> <span class="s1">&#39;Cl&#39;</span><span class="p">]:</span>
         <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">Cl</span><span class="p">)</span>
         <span class="n">min_value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">material_prop</span><span class="o">.</span><span class="n">Cl</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">max_value</span> <span class="o">-</span> <span class="n">min_value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>

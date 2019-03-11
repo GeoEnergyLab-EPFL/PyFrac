@@ -79,25 +79,33 @@
 
 <span class="sd">                                    -- In case the first element (init_param[0]) is &#39;M&#39;, &#39;Mt&#39;, &#39;K&#39;, &#39;Kt&#39; or &#39;MDR&#39;,</span>
 <span class="sd">                                    the tuple should contain the following parameters in order:</span>
-<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
+<span class="sd">                                        1. (string):    -- specifying the type of initialization(see below for possible\</span>
+<span class="sd">                                         options).</span>
 <span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
 <span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
 
 <span class="sd">                                    -- In case the first element (init_param[0]) is &#39;G&#39;, the tuple should</span>
 <span class="sd">                                    contain the following parameters in order:</span>
-<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
-<span class="sd">                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture front.</span>
+<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible\</span>
+<span class="sd">                                                           options).</span>
+<span class="sd">                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture \</span>
+<span class="sd">                                                           front.</span>
 <span class="sd">                                        3. (ndarray)    -- the cells enclosed by the survey cells inside the fracture.</span>
 <span class="sd">                                        4. (ndarray)    -- the dist of the survey cells from the fracture front.</span>
-<span class="sd">                                        5. (ndarray)    -- the array giving the width to be initialized for each of the mesh cell. It can be &#39;None&#39; if not available.</span>
-<span class="sd">                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of the mesh cell. It can be &#39;None&#39; if not available.</span>
+<span class="sd">                                        5. (ndarray)    -- the array giving the width to be initialized for each of the\</span>
+<span class="sd">                                                           mesh cell. It can be &#39;None&#39; if not available.</span>
+<span class="sd">                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of \</span>
+<span class="sd">                                                           the mesh cell. It can be &#39;None&#39; if not available.</span>
 <span class="sd">                                        7. (ndarray)    -- the elasticity influence matrix.</span>
-<span class="sd">                                        8. (ndarray)    -- total volume of the fracture. It can be &#39;None&#39; if not available.</span>
-<span class="sd">                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity will be used to calculate the time step.</span>
+<span class="sd">                                        8. (ndarray)    -- total volume of the fracture. It can be &#39;None&#39; if not \</span>
+<span class="sd">                                                           available.</span>
+<span class="sd">                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity \</span>
+<span class="sd">                                                           will be used to calculate the time step.</span>
 
 <span class="sd">                                    -- In case the first element (init_param[0], see below for possible options)</span>
 <span class="sd">                                    is &#39;PKN&#39;, the tuple should contain the following parameters in order:</span>
-<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
+<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible\</span>
+<span class="sd">                                                           options).</span>
 <span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
 <span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
 <span class="sd">                                        4. (float)      -- the height of the PKN fracture.</span>
@@ -113,11 +121,11 @@
 <span class="sd">                                        | &#39;G&#39;     -- flexible, general purpose initialization</span>
 
 <span class="sd">                                    given_type can be one of the following:</span>
-<span class="sd">                                        &#39;time&#39;      -- time at which the fracture is to be initialized.</span>
-<span class="sd">                                        &#39;length&#39;    -- the length parameter. It will be treated as the fracture</span>
-<span class="sd">                                                   radius, the minor axis length and the fracture length for the</span>
-<span class="sd">                                                   cases of a radial fracture, an elliptical fracture and a PKN</span>
-<span class="sd">                                                   fracture respectively.</span>
+<span class="sd">                                        | &#39;time&#39;      -- time at which the fracture is to be initialized.</span>
+<span class="sd">                                        | &#39;length&#39;    -- the length parameter. It will be treated as the fracture \</span>
+<span class="sd">                                                       radius, the minor axis length and the fracture length for the \</span>
+<span class="sd">                                                       cases of a radial fracture, an elliptical fracture and a PKN \</span>
+<span class="sd">                                                       fracture respectively.</span>
 
 <span class="sd">        solid (MaterialProperties):           -- the MaterialProperties object giving the material properties.</span>
 <span class="sd">        fluid (FluidProperties):              -- the FluidProperties object giving the fluid properties.</span>
@@ -149,13 +157,11 @@
 <span class="sd">        initTime (float):           -- starting time</span>
 <span class="sd">        sgndDist (ndarray):         -- signed minimun distance from fracture front of each cell in the domain</span>
 <span class="sd">        Q (ndarray-float):          -- injection rate into each cell of the domain</span>
-<span class="sd">        FractEvol (ndarray):        -- array containing the coordinates of the individual fracture front lines;</span>
-<span class="sd">                                       used for printing fracture evolution through time</span>
 <span class="sd">        InCrack (ndarray):          -- array specifying whether the cell is inside or outside the fracture.</span>
 <span class="sd">        FractureVolume (float):     -- fracture volume</span>
 <span class="sd">        muPrime (ndarray):          -- local viscosity parameter</span>
 <span class="sd">        Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip</span>
-<span class="sd">                                       cells.</span>
+<span class="sd">                                       cells. Each row contains the x and y coordinates of the two points.</span>
 <span class="sd">        regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,</span>
 <span class="sd">                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018)</span>
 <span class="sd">        ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The</span>
@@ -164,6 +170,18 @@
 <span class="sd">                                       left, right, bottom, top.</span>
 <span class="sd">        fluidVelocity (ndarray):    -- the fluid velocity at each edge of the cells in the fracture. The</span>
 <span class="sd">                                       arrangement is left, right, bottom, top.</span>
+<span class="sd">        LKOff_vol (ndarray):        -- total fluid volume leaked off from each of the cell in the mesh</span>
+<span class="sd">        Tarrival (ndarray):         -- the arrival time of the fracture front for each of the cell in the domain. It</span>
+<span class="sd">                                       is used to evaluate the leak off using Carter&#39;s leak off formulation. The time</span>
+<span class="sd">                                       is averaged over entering and leaving of the front from a cell.</span>
+<span class="sd">        TarrvlZrVrtx (ndarray):     -- the time at which the front crosses the zero vertex. This is used to evaluate</span>
+<span class="sd">                                       leak off in tip cells, i.e. for cells where the front has not left the cell.</span>
+<span class="sd">        closed (ndarray):           -- the cells which have closed due to leak off or flow back of the fluid.</span>
+<span class="sd">        injectedVol (float):        -- the total volume that is injected into the fracture.</span>
+<span class="sd">        sgndDist_last (ndarray):    -- the signed distance of the last time step. Used for re-meshing.</span>
+<span class="sd">        timeStep_last (float):      -- the last time step. Required for re-meshing.</span>
+
+
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -357,6 +375,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">InCrack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">InCrack</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wHist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">process_fracture_front</span><span class="p">()</span>
 
@@ -395,31 +414,35 @@
 
 
 <div class="viewcode-block" id="Fracture.plot_fracture"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.plot_fracture">[docs]</a>    <span class="k">def</span> <span class="nf">plot_fracture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span> <span class="n">mat_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3D&#39;</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                       <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                      <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">plot_non_zero</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Plots the given parameter of the specified cells.</span>
-<span class="sd">        </span>
-<span class="sd">        Arguments:</span>
-<span class="sd">            elts(string)            -- elements to be printed; possible options:</span>
-<span class="sd">                                                complete</span>
-<span class="sd">                                                channel</span>
-<span class="sd">                                                crack</span>
-<span class="sd">                                                ribbon</span>
-<span class="sd">            parameter(string)       -- parameter to be ploted; possible options:</span>
-<span class="sd">                                                width</span>
-<span class="sd">                                                pressure</span>
-<span class="sd">                                                viscosity</span>
-<span class="sd">                                                footPrint</span>
-<span class="sd">                                                mesh</span>
-<span class="sd">            analytical (float)      -- radius of fracture footprint calculated analytically. Not plotter if None.</span>
-<span class="sd">            identify (ndarray)      -- plot the cells in the provided list with cell number and different color</span>
-<span class="sd">                                       to identify. This option can be used in debugging.</span>
-<span class="sd">            mat_properties (MaterialProperties)   -- material properties to colorcode the grid according to the given</span>
-<span class="sd">                                       parameter in the simulation properties. Can be None.</span>
-<span class="sd">            sim_properties (SimulationParameters) -- Simulation paramters to define various plotting parameters. Can be</span>
-<span class="sd">                                       None</span>
-<span class="sd">            fig (figure)            -- figure object to superimpose the image</span>
+<span class="sd">        This function plots the fracture.</span>
 
+<span class="sd">        Args:</span>
+<span class="sd">            variable (string):                  -- the variable to be plotted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                                    :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">            mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.</span>
+<span class="sd">            projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`</span>
+<span class="sd">                                                    for the supported projections for each of the supprted variable. If</span>
+<span class="sd">                                                    not provided, the default will be used.</span>
+<span class="sd">            elements (ndarray):                 -- the elements to be plotted.</span>
+<span class="sd">            backGround_param (string):          -- the parameter according to which the the mesh will be color-mapped.\</span>
+<span class="sd">                                                   Options are listed below:</span>
+<span class="sd">                                                        | -- &#39;confining stress&#39; or &#39;sigma0&#39;</span>
+<span class="sd">                                                        | -- &#39;fracture toughness&#39; or &#39;K1c&#39;</span>
+<span class="sd">                                                        | -- &#39;leak off coefficient&#39;, &#39;Cl&#39;</span>
+<span class="sd">            plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
+<span class="sd">            fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">            edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                                    are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                                    value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">            contours_at (list):                 -- the values at which the contours are to be plotted.</span>
+<span class="sd">            labels (LabelProperties):           -- the labels to be used for the plot.</span>
+<span class="sd">            plot_non_zero (bool):               -- if true, only non-zero values will be plotted.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">unidimensional_variables</span><span class="p">:</span>
@@ -451,7 +474,6 @@
                                      <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
             <span class="n">variable</span> <span class="o">=</span> <span class="s1">&#39;width&#39;</span>
 
-        <span class="n">plot_non_zero</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;3D&#39;</span><span class="p">:</span>
             <span class="n">plot_non_zero</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -476,17 +498,13 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        process fracture front and different regions of the fracture. This function adds the start and endpoints of the</span>
 <span class="sd">        front lines in each of the tip cell to the Ffront variable of the Fracture class.</span>
-
-<span class="sd">        Arguments:</span>
-
-<span class="sd">        Returns:</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="c1"># list of points where fracture front is intersecting the grid lines. </span>
         <span class="n">intrsct1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)))</span>
         <span class="n">intrsct2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)))</span>
 
-        <span class="c1"># todo: commenting print_fracture_trace function</span>
+        <span class="c1"># todo: commenting</span>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">)):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span> <span class="c1"># for angles greater than zero and less than 90 deg</span>
@@ -573,7 +591,37 @@
 <div class="viewcode-block" id="Fracture.plot_fracture_slice"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.plot_fracture_slice">[docs]</a>    <span class="k">def</span> <span class="nf">plot_fracture_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                             <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_cell_center</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function plots the fracture on a given slice of the domain. Two points are to be given that will be</span>
+<span class="sd">        joined to form the slice. The values on the slice are interpolated from the values available on the cell</span>
+<span class="sd">        centers. Exact values on the cell centers can also be plotted.</span>
 
+<span class="sd">        Args:</span>
+<span class="sd">            variable (string):              -- the variable to be plotted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                               :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">            point1 (list or ndarray):       -- the left point from which the slice should pass [x, y].</span>
+<span class="sd">            point1 (list or ndarray):       -- the right point from which the slice should pass [x, y].</span>
+<span class="sd">            projection (string):            -- a string specifying the projection. It can either &#39;3D&#39; or &#39;2D&#39;.</span>
+<span class="sd">            plot_prop (PlotProperties):     -- the properties to be used for the plot.</span>
+<span class="sd">            fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">            edge (int):                     -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                               are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                               value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">            labels (LabelProperties):       -- the labels to be used for the plot.</span>
+<span class="sd">            plot_cell_center (bool):        -- if True, the discrete values at the cell centers will be plotted. In this</span>
+<span class="sd">                                               case, the slice passing through the center of the cell containing</span>
+<span class="sd">                                               point1 will be taken. The slice will be made according to the given</span>
+<span class="sd">                                               orientation (see orientation). If False, the values will be interpolated</span>
+<span class="sd">                                               on the line joining the given two points.</span>
+<span class="sd">            orientation (string):           -- the orientation according to which the slice is made in the case the</span>
+<span class="sd">                                               plotted values are not interpolated and are taken at the cell centers.</span>
+<span class="sd">                                               Any of the four (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;)</span>
+<span class="sd">                                               orientation can be used.</span>
+<span class="sd">            extreme_points (ndarray)        -- An empty array of shape (2, 2). It will be used to return the extreme</span>
+<span class="sd">                                               points of the plotted slice. These points can be used to plot analytical</span>
+<span class="sd">                                               solution.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (Figure):                       -- A Figure object that can be used superimpose further plots.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -592,12 +640,17 @@
 <span class="c1"># ------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="Fracture.SaveFracture"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.SaveFracture">[docs]</a>    <span class="k">def</span> <span class="nf">SaveFracture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; This function saves the fracture object to a file on hard dist using dill module&quot;&quot;&quot;</span>
+
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
             <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
 
 <span class="c1"># -----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="Fracture.plot_front"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.plot_front">[docs]</a>    <span class="k">def</span> <span class="nf">plot_front</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function plots the front lines in the tip cells of the fracture taken from the fFront variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -638,6 +691,10 @@
 
 
 <div class="viewcode-block" id="Fracture.plot_front_3D"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.plot_front_3D">[docs]</a>    <span class="k">def</span> <span class="nf">plot_front_3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function plots the front lines with 3D projection in the tip cells of the fracture taken from the fFront</span>
+<span class="sd">        variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -682,20 +739,22 @@
 
 <div class="viewcode-block" id="Fracture.remesh"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">material_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">sim_prop</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This function compresses the fracture by the given factor once it has reached the end of the mesh. The</span>
-<span class="sd">        elasticity matrix, the properties objects are also re-adjusted according to the new mesh.</span>
+<span class="sd">        This function compresses the fracture by the given factor once it has reached the end of the mesh. If the</span>
+<span class="sd">        compression factor is two, each set of four cells in the fine mesh is replaced by a single cell. The volume of</span>
+<span class="sd">        the fracture is conserved upto machine precision. The elasticity matrix and the properties objects are also</span>
+<span class="sd">        re-adjusted according to the new mesh.</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            factor (float)      -- the factor by which the domain is to be compressed. For example, a factor of 2 will</span>
+<span class="sd">            factor (float):     -- the factor by which the domain is to be compressed. For example, a factor of 2 will</span>
 <span class="sd">                                   merge the adjacent four cells to a single cell.</span>
-<span class="sd">            C (ndarray)         -- the elasticity matrix to be re-evaluated for the new mesh.</span>
-<span class="sd">            material_prop       -- the material properties to be re-evaluated for the new mesh.</span>
-<span class="sd">            fluid_prop          -- the fluid properties to be re-evaluated for the new mesh.</span>
-<span class="sd">            inj_prop            -- the injection properties to be re-evaluated for the new mesh.</span>
-<span class="sd">            sim_prop            -- the simulation properties.</span>
+<span class="sd">            C (ndarray):        -- the elasticity matrix to be re-evaluated for the new mesh.</span>
+<span class="sd">            material_prop:      -- the material properties to be re-evaluated for the new mesh.</span>
+<span class="sd">            fluid_prop:         -- the fluid properties to be re-evaluated for the new mesh.</span>
+<span class="sd">            inj_prop:           -- the injection properties to be re-evaluated for the new mesh.</span>
+<span class="sd">            sim_prop:           -- the simulation properties.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            Fr_coarse           -- the new fracture after remeshing.</span>
+<span class="sd">            Fr_coarse           -- the new fracture after re-meshing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">coarse_mesh</span> <span class="o">=</span> <span class="n">CartesianMesh</span><span class="p">(</span><span class="n">factor</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span>
@@ -734,6 +793,7 @@
         <span class="n">enclosing</span><span class="p">[:,</span> <span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">enclosing</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span> <span class="mi">1</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">factor</span> <span class="o">==</span> <span class="mf">2.</span><span class="p">:</span>
+            <span class="c1"># finding the intersecting cells</span>
             <span class="n">intersecting</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">int</span><span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)):</span>
                 <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterElts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span>
@@ -758,12 +818,29 @@
             <span class="n">LkOff_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">coarse_mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
             <span class="n">LkOff_vol</span><span class="p">[</span><span class="n">intersecting</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">corresponding</span><span class="p">]</span>
                                         <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">enclosing</span><span class="p">[</span><span class="n">corresponding</span><span class="p">,</span> <span class="p">:</span><span class="mi">4</span><span class="p">]]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span>
-                                        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">enclosing</span><span class="p">[</span><span class="n">corresponding</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">]]</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span>
+                                        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">enclosing</span><span class="p">[</span><span class="n">corresponding</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">]]</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+            <span class="n">wHist_coarse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">coarse_mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">wHist_coarse</span><span class="p">[</span><span class="n">intersecting</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="n">corresponding</span><span class="p">]</span>
+                                      <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="n">enclosing</span><span class="p">[</span><span class="n">corresponding</span><span class="p">,</span> <span class="p">:</span><span class="mi">4</span><span class="p">]]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span>
+                                      <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="n">enclosing</span><span class="p">[</span><span class="n">corresponding</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">]]</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span>
 
 
         <span class="k">else</span><span class="p">:</span>
             <span class="n">w_coarse</span> <span class="o">=</span> <span class="n">griddata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">],</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">],</span>
+                                <span class="n">coarse_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">,</span>
+                                <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                                <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+
+            <span class="n">LkOff_vol</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">griddata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">],</span>
+                                <span class="n">coarse_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">,</span>
+                                <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                                <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+
+            <span class="n">wHist_coarse</span> <span class="o">=</span> <span class="n">griddata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">],</span>
                                 <span class="n">coarse_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">,</span>
                                 <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
                                 <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
@@ -840,7 +917,8 @@
         <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="n">Fr_coarse</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Fr_coarse</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_coarse</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]))</span>\
                                <span class="o">/</span> <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">injectedVol</span>
         <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
-        <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span>
+        <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
+        <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">wHist</span> <span class="o">=</span> <span class="n">wHist_coarse</span>
 
         <span class="c1"># update the saved properties</span>
         <span class="k">if</span> <span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>

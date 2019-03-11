@@ -1072,7 +1072,7 @@
 
 <div class="viewcode-block" id="plot_analytical_solution_slice"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.plot_analytical_solution_slice">[docs]</a><span class="k">def</span> <span class="nf">plot_analytical_solution_slice</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                              <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length_srs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                             <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_top_view</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                             <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plt_top_view</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function plots slice of the given analytical solution. It can be used to compare simulation results by</span>
 <span class="sd">    superimposing on the figure obtained from the slice plot function.</span>
@@ -1773,11 +1773,12 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="animate_simulation_results"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.animate_simulation_results">[docs]</a><span class="k">def</span> <span class="nf">animate_simulation_results</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">mat_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3D&#39;</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                <span class="n">plot_non_zero</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="n">Interval</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">Repeat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="animate_simulation_results"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.animate_simulation_results">[docs]</a><span class="k">def</span> <span class="nf">animate_simulation_results</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">plot_prop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">contours_at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mat_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">backGround_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block_figure</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plot_non_zero</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pause_time</span><span class="o">=</span><span class="mf">0.25</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function plays an animation of the evolution of fracture with time.</span>
+<span class="sd">    This function plots the fracture evolution with time. The state of the fracture at different times is provided in</span>
+<span class="sd">    the form of a list of Fracture objects.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        fracture_list (list):               -- the list of Fracture objects giving the evolution of fracture with</span>
@@ -1791,77 +1792,94 @@
 <span class="sd">        elements (ndarray):                 -- the elements to be plotted.</span>
 <span class="sd">        backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.</span>
 <span class="sd">        plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
-
+<span class="sd">        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
 <span class="sd">        edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
 <span class="sd">                                                are evaluated on the cell edges instead of cell center. It can have a</span>
 <span class="sd">                                                value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
 <span class="sd">        contours_at (list):                 -- the values at which the contours are to be plotted.</span>
 <span class="sd">        labels (LabelProperties):           -- the labels to be used for the plot.</span>
 <span class="sd">        plot_non_zero (bool):               -- if true, only non-zero values will be plotted.</span>
-<span class="sd">        interval (float):                   -- time interval between two frames.</span>
-<span class="sd">        Repeat (bool):                      -- if True, the animation will be played in a loop.</span>
-<span class="sd">        save (bool):                        -- if True, the animation will be saved in the form of a video</span>
-<span class="sd">        address (string):                   -- the address where to save the file.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
-
-    <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span>
-                                <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
-                                <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
-                                <span class="n">elements</span><span class="o">=</span><span class="n">elements</span><span class="p">,</span>
-                                <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                                <span class="n">backGround_param</span><span class="o">=</span><span class="n">backGround_param</span><span class="p">,</span>
-                                <span class="n">mat_properties</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
-                                <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
-
-    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">projection</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span>
-            <span class="n">backGround_param</span><span class="p">,</span> <span class="n">plot_prop</span><span class="p">,</span> <span class="n">edge</span><span class="p">,</span> <span class="n">contours_at</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">plot_non_zero</span><span class="p">)</span>
-    <span class="c1"># animate fracture</span>
-    <span class="n">movie</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span>
-                              <span class="n">update</span><span class="p">,</span>
-                              <span class="n">fargs</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
-                              <span class="n">frames</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">),</span>
-                              <span class="n">interval</span><span class="o">=</span><span class="n">Interval</span><span class="p">,</span>
-                              <span class="n">repeat</span><span class="o">=</span><span class="n">Repeat</span><span class="p">,</span>
-                              <span class="n">repeat_delay</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">address</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please provide the address to save the video file&quot;</span><span class="p">)</span>
-        <span class="n">Writer</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">writers</span><span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">]</span>
-        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;copyright&#39;</span><span class="p">:</span><span class="s1">&#39;EPFL - GeoEnergy Lab&#39;</span><span class="p">})</span>
-        <span class="n">movie</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">address</span> <span class="o">+</span> <span class="s1">&#39;Footprint-evol.mp4&#39;</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
-
-<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
-
-<div class="viewcode-block" id="update"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.update">[docs]</a><span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function update the frames to be used in the animation.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (Figure):                           -- A Figure object that can be used superimpose further plots.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">projection</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span>
-     <span class="n">backGround_param</span><span class="p">,</span> <span class="n">plot_prop</span><span class="p">,</span> <span class="n">edge</span><span class="p">,</span> <span class="n">contours_at</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">plot_non_zero</span><span class="p">)</span> <span class="o">=</span> <span class="n">args</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">variable</span> <span class="o">=</span> <span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+    <span class="n">figures</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variable</span><span class="p">))]</span>
 
-    <span class="n">ffi</span> <span class="o">=</span> <span class="n">fracture_list</span><span class="p">[</span><span class="n">frame</span><span class="p">]</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="n">projection</span><span class="p">)</span>
-    <span class="n">labels</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;t = &#39;</span> <span class="o">+</span> <span class="n">to_precision</span><span class="p">(</span><span class="n">ffi</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">dispPrecision</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;($s$)&quot;</span>
-    <span class="n">ffi</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="n">variable</span><span class="p">,</span>
-                      <span class="n">mat_properties</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
-                      <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
-                      <span class="n">elements</span><span class="o">=</span><span class="n">elements</span><span class="p">,</span>
-                      <span class="n">backGround_param</span><span class="o">=</span><span class="n">backGround_param</span><span class="p">,</span>
-                      <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                      <span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">,</span>
-                      <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
-                      <span class="n">contours_at</span><span class="o">=</span><span class="n">contours_at</span><span class="p">,</span>
-                      <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span></div>
+    <span class="k">for</span> <span class="n">fracture</span> <span class="ow">in</span> <span class="n">fracture_list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">indx</span><span class="p">,</span> <span class="n">plt_var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variable</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting solution at &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
+
+
+            <span class="k">if</span> <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># save axes from last figure</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>  <span class="c1"># clear figure</span>
+                <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>  <span class="c1"># add axis to the figure</span>
+
+            <span class="k">if</span> <span class="n">plt_var</span> <span class="ow">is</span> <span class="s1">&#39;footprint&#39;</span><span class="p">:</span>
+                <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">fracture</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
+                                                       <span class="n">mat_properties</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
+                                                       <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
+                                                       <span class="n">backGround_param</span><span class="o">=</span><span class="n">backGround_param</span><span class="p">,</span>
+                                                       <span class="n">fig</span><span class="o">=</span><span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                       <span class="p">)</span>
+
+                <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span>
+                <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">fracture</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
+                                                       <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
+                                                       <span class="n">fig</span><span class="o">=</span><span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                       <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fp_projection</span> <span class="o">=</span> <span class="s1">&#39;2D&#39;</span>
+                <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s1">&#39;2D&#39;</span> <span class="ow">in</span> <span class="n">projection</span><span class="p">:</span>
+                        <span class="n">fp_projection</span> <span class="o">=</span> <span class="s1">&#39;2D&#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fp_projection</span> <span class="o">=</span> <span class="s1">&#39;3D&#39;</span>
+                <span class="n">fig_labels</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">plt_var</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="n">fp_projection</span><span class="p">)</span>
+                <span class="n">fig_labels</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+                <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">fracture</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
+                                                       <span class="n">projection</span><span class="o">=</span><span class="n">fp_projection</span><span class="p">,</span>
+                                                       <span class="n">fig</span><span class="o">=</span><span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                       <span class="n">labels</span><span class="o">=</span><span class="n">fig_labels</span><span class="p">)</span>
+
+                <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">fracture</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="n">plt_var</span><span class="p">,</span>
+                                                       <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
+                                                       <span class="n">elements</span><span class="o">=</span><span class="n">elements</span><span class="p">,</span>
+                                                       <span class="n">mat_properties</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
+                                                       <span class="n">fig</span><span class="o">=</span><span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                       <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
+                                                       <span class="n">contours_at</span><span class="o">=</span><span class="n">contours_at</span><span class="p">,</span>
+                                                       <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                                                       <span class="n">plot_non_zero</span><span class="o">=</span><span class="n">plot_non_zero</span><span class="p">)</span>
+            <span class="c1"># plotting closed cells</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fracture</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>
+                <span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">identify_elements</span><span class="p">(</span><span class="n">fracture</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span>
+                                                                        <span class="n">fig</span><span class="o">=</span><span class="n">figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                                        <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                                        <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                                        <span class="n">print_number</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># plot the figure</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="n">pause_time</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done! &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">block_figure</span><span class="p">:</span>
+            <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press any key to continue.&quot;</span><span class="p">)</span></div>
+
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
-
 
 <div class="viewcode-block" id="text3d"><a class="viewcode-back" href="../doc_src/Visualization.html#Visualization.text3d">[docs]</a><span class="k">def</span> <span class="nf">text3d</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xyz</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>

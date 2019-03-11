@@ -170,4 +170,4 @@ Fig_len_b = plot_analytical_solution('E_K',
                                    time_srs=time_srs,
                                    labels=labels)
 
-plt.show()
+plt.show(block=True)

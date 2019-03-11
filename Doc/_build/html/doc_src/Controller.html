@@ -77,18 +77,12 @@ Fr (Fracture)           – fracture after advancing time step.</p>
 <dt id="Controller.Controller.get_time_step">
 <code class="descname">get_time_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.get_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.get_time_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function calculate the appropriate time step.</p>
+<p>Arguments:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Frac</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – </li>
-<li><strong>pre_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – velocity from the last time step.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">time_step (float)   – the appropriate time step</p>
-</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">TimeStep (float)   – the appropriate time step</td>
 </tr>
 </tbody>
 </table>
@@ -97,18 +91,13 @@ Fr (Fracture)           – fracture after advancing time step.</p>
 <dl class="method">
 <dt id="Controller.Controller.output">
 <code class="descname">output</code><span class="sig-paren">(</span><em>Fr_advanced</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Controller.html#Controller.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Controller.Controller.output" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plot the fracture footprint and/or save file to disk according to the given time period.</p>
+<dd><p>This function plot the fracture footprint and/or save file to disk according to the parameters set in the
+simulation properties.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>Fr_lstTmStp</strong> (<em>Fracture object</em>) – fracture from last time step</li>
-<li><strong>Fr_advanced</strong> (<em>Fracture object</em>) – fracture after time step advancing</li>
-<li><strong>simulation_parameters</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
-<li><strong>material_properties</strong> (<em>MaterialProperties object</em>) – Material properties</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Fr_advanced</strong> (<em>Fracture object</em>) – fracture after time step advancing</td>
 </tr>
 </tbody>
 </table>

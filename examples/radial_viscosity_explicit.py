@@ -38,8 +38,7 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 1e5               # the time at which the simulation stops
 simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the viscosity dominated assumption
 simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
-simulProp.outputTimePeriod = 1e-4       # to save after every time step
-simulProp.tmStpPrefactor = 0.5          # decrease the pre-factor due to explicit front tracking
+simulProp.outputEveryTS = 5             # only save after five time steps
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
 
 # initialization parameters

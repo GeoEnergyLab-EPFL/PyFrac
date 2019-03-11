@@ -242,4 +242,4 @@ Fig_len_b = plot_analytical_solution('E_E',
                                    gamma=gamma,
                                    labels=labels)
 
-plt.show()
+plt.show(block=True)

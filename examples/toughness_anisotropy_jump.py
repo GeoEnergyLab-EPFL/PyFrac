@@ -123,4 +123,4 @@ Fig_len_a = plot_fracture_list(Fr_list,
                                 variable='ar',
                                 plot_prop=plot_prop)
 
-plt.show()
+plt.show(block=True)

@@ -148,5 +148,5 @@ Fig_WS = plot_analytical_solution_slice('K',
                                         point2=ext_pnts[1])
 
 
-plt.show()
+plt.show(block=True)
 

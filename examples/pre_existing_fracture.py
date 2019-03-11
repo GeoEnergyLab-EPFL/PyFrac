@@ -19,11 +19,12 @@ Mesh = CartesianMesh(6, 6, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 5e6                          # fracture toughness
+K_Ic = 1e7                          # fracture toughness
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           K_Ic)
+                           K_Ic,
+                           wc=1e-9)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -35,11 +36,11 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 50                        # the time at which the simulation stops
-simulProp.outputEveryTS = 2                     # the fracture file will be saved after every 2 time steps
+simulProp.finalTime = 50                      # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/star")     # the address of the output folder
-simulProp.fixedTmStp = np.asarray([[2e-4, 1.], [1., None]]) # list giving the time steps to adopt at the given times
-simulProp.plotFigure = True                     # the fracture footprint will be plotted during the simulation
+simulProp.fixedTmStp = np.asarray([[2e-4, 1.1, 18], [.5, None, 5]]) # list giving the time steps to adopt at the given times
+simulProp.plotVar = ['w']
+simulProp.maxFrontItrs = 15
 
 # initializing fracture
 initRad = np.pi
@@ -51,7 +52,7 @@ init_param = ('G',              # type of initialization
               inner_cells,      # the cell enclosed by the survey cells
               surv_cells_dist,  # the distance of the survey cells from the front
               None,             # the given width
-              1e4,              # the pressure (uniform in this case)
+              1e3,              # the pressure (uniform in this case)
               C,                # the elasticity matrix
               None,             # the volume of the fracture
               0)                # the velocity of the propagating front (stationary in this case)
@@ -133,5 +134,5 @@ Fig_3D = plot_fracture_list(Fr_list,
                             plot_prop=plot_prop)
 
 
-plt.show()
+plt.show(block=True)
 

@@ -363,7 +363,7 @@ and 1 respectively.</p>
 
 <dl class="method">
 <dt id="CartesianMesh.CartesianMesh.identify_elements">
-<code class="descname">identify_elements</code><span class="sig-paren">(</span><em>elements</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plot_mesh=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.identify_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.identify_elements" title="Permalink to this definition">¶</a></dt>
+<code class="descname">identify_elements</code><span class="sig-paren">(</span><em>elements</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plot_mesh=True</em>, <em>print_number=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CartesianMesh.html#CartesianMesh.identify_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CartesianMesh.CartesianMesh.identify_elements" title="Permalink to this definition">¶</a></dt>
 <dd><p>This functions identify the given set of elements by highlighting them on the grid. the function plots
 the grid and the given set of elements.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -424,7 +424,9 @@ according to the parameter given by the backGround_param argument.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>material_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – a MaterialProperties class object</li>
 <li><strong>backGround_param</strong> (<em>string</em>) – – the cells of the grid will be color coded according to the value
-of the parameter given by this argument.</li>
+of the parameter given by this argument. Possible options are
+‘sigma0’ for confining stress, ‘K1c’ for fracture toughness and
+‘Cl’ for leak off.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – A figure object to superimpose.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – A PlotProperties object giving the properties to be utilized for
 the plot.</li>
@@ -453,7 +455,9 @@ according to the parameter given by the backGround_param argument.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>material_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – a MaterialProperties class object</li>
 <li><strong>backGround_param</strong> (<em>string</em>) – – the cells of the grid will be color coded according to the value
-of the parameter given by this argument.</li>
+of the parameter given by this argument. Possible options are
+‘sigma0’ for confining stress, ‘K1c’ for fracture toughness and
+‘Cl’ for leak off.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – A figure object to superimpose.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – A PlotProperties object giving the properties to be utilized for
 the plot.</li>

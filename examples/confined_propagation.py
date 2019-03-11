@@ -45,7 +45,7 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 50.           # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'       # setting the parameter according to which the mesh is color coded
 simulProp.set_outputFolder("./Data/confined_propagation")
-simulProp.plotFigure = True         # the fracture footprint will be plotted during the simulation
+
 
 # initializing fracture
 initRad = 2.8
@@ -58,7 +58,6 @@ Fr = Fracture(Mesh,
               Fluid,
               Injection,
               simulProp)
-
 
 # create a Controller
 controller = Controller(Fr,
@@ -109,4 +108,4 @@ Fig_Fr = plot_fracture_list(Fr_list,
                             fig=Fig_Fr,
                             plot_prop=plot_prop)
 
-plt.show()
+plt.show(block=True)

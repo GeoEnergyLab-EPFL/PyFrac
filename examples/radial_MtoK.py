@@ -151,4 +151,4 @@ Fig_w = plot_analytical_solution_at_point(regime="K",
                                       time_srs=time_srs,
                                       plot_prop=plot_prop,
                                       labels=label)
-plt.show()
+plt.show(block=True)

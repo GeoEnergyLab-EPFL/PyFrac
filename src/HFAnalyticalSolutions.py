@@ -93,6 +93,9 @@ def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, requi
             0.2225733568270942 * (rho[actvElts] ** 2)) / (var1 ** 0.25925925925925924) - (0.2158763695654084 * (
             rho[actvElts] ** 3)) / (var1 ** 0.25925925925925924) + (0.07471989686220308 * (rho[actvElts] ** 4)) / (
             var1 ** 0.25925925925925924))
+        if np.isinf(p[actvElts]).any():
+            p[p == np.NINF] = min(p[p != np.NINF])
+            p[p == np.Inf] = max(p[p != np.inf])
     else:
         p = None
 
@@ -174,6 +177,9 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
                         ) ** (1 / 3) - 0.0195787 * rho[actvElts] - 0.171565 * rho[actvElts] ** 2 -
                         0.103558 * rho[actvElts] ** 3 + (1 - rho[actvElts]) ** (1 / 3) * np.log(1 / rho[actvElts]))
                        ) / (t ** (1 / 3) * (1 - rho[actvElts]) ** (1 / 3))
+        if np.isinf(p[actvElts]).any():
+            p[p == np.NINF] = min(p[p != np.NINF])
+            p[p == np.Inf] = max(p[p != np.inf])
     else:
         p = None
 
@@ -304,6 +310,10 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
         -1.0882178530759854 + 6.3385626500863985 * var1 - 0.07314343477396379 * rho[actvElts] - 0.21802875891750756
         * rho[actvElts] ** 2 - 0.04996007983993901 * rho[actvElts] ** 3 + 1. * var1 * np.log(1 / rho[actvElts]))) / (
         Q0 ** 0.125 * var1 * t ** 0.1875)
+
+        if np.isinf(p[actvElts]).any():
+            p[p == np.NINF] = min(p[p != np.NINF])
+            p[p == np.Inf] = max(p[p != np.inf])
     else:
         p = None
 

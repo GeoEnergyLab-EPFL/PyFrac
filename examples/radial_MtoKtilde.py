@@ -40,6 +40,7 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder("./Data/MtoK_leakoff") # the disk address where the files are saved
+simulProp.frontAdvancing = 'explicit'
 
 # initializing fracture
 initTime = 0.5
@@ -107,4 +108,4 @@ ax_r = Fig_r.get_axes()[0]
 ax_r.loglog(t, r_analytical, 'r-', label='anlytical radius (Dontsov EV, 2016)')
 ax_r.legend()
 
-plt.show()
+plt.show(block=True)

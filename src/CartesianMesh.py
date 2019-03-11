@@ -590,19 +590,19 @@ def process_material_prop_for_display(material_prop, backGround_param):
 
     colors = np.full((len(material_prop.SigmaO),), 0.5)
 
-    if backGround_param == 'sigma0':
+    if backGround_param in ['confining stress', 'sigma0']:
         max_value = max(material_prop.SigmaO) / 1e6
         min_value = min(material_prop.SigmaO) / 1e6
         if max_value - min_value > 0:
             colors = (material_prop.SigmaO / 1e6 - min_value) / (max_value - min_value)
         parameter = "confining stress ($MPa$)"
-    elif backGround_param == 'K1c':
+    elif backGround_param in ['fracture toughness', 'K1c']:
         max_value = max(material_prop.K1c) / 1e6
         min_value = min(material_prop.K1c) / 1e6
         if max_value - min_value > 0:
             colors = (material_prop.K1c / 1e6 - min_value) / (max_value - min_value)
         parameter = "fracture toughness ($Mpa\sqrt{m}$)"
-    elif backGround_param == 'Cl':
+    elif backGround_param in ['leak off coefficient', 'Cl']:
         max_value = max(material_prop.Cl)
         min_value = min(material_prop.Cl)
         if max_value - min_value > 0:

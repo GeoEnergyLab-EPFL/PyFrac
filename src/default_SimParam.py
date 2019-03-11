@@ -2,7 +2,7 @@
 
 # tolerances
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver
-toleranceEHL = 1.0e-5                   # tolerance for the elastohydrodynamic system solver
+toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration
 
 # max iterations
@@ -34,7 +34,7 @@ plot_eltType = False                    # plot the element type with color coded
 output_time_period = None               # the time period after which the output is generated
 sim_name = None                         # name given to the simulation
 block_figure = False                    # if true, the simulation will proceed after the figure is closed
-output_every_TS = None                  # the number of time steps after which the output is done
+output_every_TS = 1                     # the number of time steps after which the output is done
 plot_var = ['footprint']                # the list of variables to be plotted during simulation
 plot_proj = '2D_clrmap'                 # projection to be plotted with
 
@@ -55,7 +55,7 @@ collect_perf_data = False               # if True, performance data will be coll
 param_from_tip = False                  # set the space dependant tip parameters to be taken from ribbon cell.
 save_ReyNumb = False                    # if True, the Reynold's number at each edge will be saved.
 save_fluid_flux = False                 # if True, the fluid flux at each edge will be saved.
-save_fluid_vel = True                   # if True, the fluid vel at each edge will be saved.
+save_fluid_vel = False                  # if True, the fluid vel at each edge will be saved.
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = './TI_Kernel'     # the folder containing the executable to calculate TI elasticty matrix.
 explict_projection = False              # if True, direction from last time step will be used to evaluate TI parameters

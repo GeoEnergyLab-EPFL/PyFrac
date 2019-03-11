@@ -65,21 +65,22 @@
 
 <div class="viewcode-block" id="attempt_time_step"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.attempt_time_step">[docs]</a><span class="k">def</span> <span class="nf">attempt_time_step</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span> <span class="n">sim_properties</span><span class="p">,</span> <span class="n">inj_properties</span><span class="p">,</span>
                       <span class="n">timeStep</span><span class="p">,</span> <span class="n">perfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; this function attempts to propagate fracture with the given time step. The function injects fluid into the</span>
-<span class="sd">        fracture according to the given front advacning scheme.</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function attempts to propagate fracture with the given time step. The function injects fluid and propagates</span>
+<span class="sd">    the fracture front according to the front advancing scheme given in the simulation properties.</span>
 <span class="sd">    </span>
-<span class="sd">    Arguments:</span>
-<span class="sd">        Frac (Fracture object):                       fracture object from the last time step</span>
-<span class="sd">        C (ndarray-float):                            the elasticity matrix</span>
-<span class="sd">        mat_properties (MaterialProperties object):   material properties</span>
-<span class="sd">        fluid_properties (FluidProperties object):    fluid properties</span>
-<span class="sd">        sim_properties (SimulationParameters object): simulation parameters</span>
-<span class="sd">        inj_properties (InjectionProperties object):  injection properties</span>
-<span class="sd">        timeStep (float):                             time step</span>
+<span class="sd">    Args:</span>
+<span class="sd">        Frac (Fracture):                        -- fracture object from the last time step.</span>
+<span class="sd">        C (ndarray):                            -- the elasticity matrix.</span>
+<span class="sd">        mat_properties (MaterialProperties):    -- material properties.</span>
+<span class="sd">        fluid_properties (FluidProperties):     -- fluid properties.</span>
+<span class="sd">        sim_properties (SimulationProperties):  -- simulation parameters.</span>
+<span class="sd">        inj_properties (InjectionProperties):   -- injection properties.</span>
+<span class="sd">        timeStep (float):                       -- time step.</span>
 <span class="sd">    </span>
-<span class="sd">    Return:</span>
-<span class="sd">        exitstatus (int) -- see documentation for possible values</span>
-<span class="sd">        Fr_k (Fracture)  -- fracture after advancing time step.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        | exitstatus (int)      -- see documentation for possible values.</span>
+<span class="sd">        | Fr_k (Fracture)       -- fracture after advancing time step.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
@@ -152,9 +153,6 @@
                 <span class="n">perfNode</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">Frac</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">timeStep</span>
                 <span class="n">perfNode</span><span class="o">.</span><span class="n">failure_cause</span> <span class="o">=</span> <span class="n">exitstatus</span>
 
-        <span class="k">if</span> <span class="n">exitstatus</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">w_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
-
     <span class="k">elif</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">==</span> <span class="s1">&#39;implicit&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Solving ElastoHydrodynamic equations with same footprint...&#39;</span><span class="p">)</span>
@@ -166,7 +164,7 @@
             <span class="n">perfNode_sameFP</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># width by injecting the fracture with the same foot print (balloon like inflation)</span>
-        <span class="n">exitstatus</span><span class="p">,</span> <span class="n">w_k</span> <span class="o">=</span> <span class="n">injection_same_footprint</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span>
+        <span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_k</span> <span class="o">=</span> <span class="n">injection_same_footprint</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span>
                                                    <span class="n">C</span><span class="p">,</span>
                                                    <span class="n">timeStep</span><span class="p">,</span>
                                                    <span class="n">Qin</span><span class="p">,</span>
@@ -189,14 +187,28 @@
 
     <span class="k">if</span> <span class="n">exitstatus</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="c1"># failed</span>
-        <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_k</span>
+
+    <span class="c1"># Check for the propagation condition with the new width. If the all of the front is stagnant, return fracture as</span>
+    <span class="c1"># final without front iteration.</span>
+    <span class="n">stagnant_crt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">),),</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="c1"># stagnant cells where propagation criteria is not met</span>
+    <span class="n">stagnant_crt</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mat_properties</span><span class="o">.</span><span class="n">Kprime</span><span class="p">[</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">sgndDist</span><span class="p">[</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">])</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">mat_properties</span><span class="o">.</span><span class="n">Eprime</span> <span class="o">*</span> <span class="n">Fr_k</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1"># stagnant cells where fracture is closed</span>
+    <span class="n">stagnant_closed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">),),</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">)):</span>
+        <span class="n">stagnant_closed</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_k</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">Fr_k</span><span class="o">.</span><span class="n">closed</span>
+    <span class="n">stagnant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_or</span><span class="p">(</span><span class="n">stagnant_closed</span><span class="p">,</span> <span class="n">stagnant_crt</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">stagnant</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Fr_k</span>
 
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Starting Fracture Front loop...&#39;</span><span class="p">)</span>
 
     <span class="n">norm</span> <span class="o">=</span> <span class="mf">10.</span>
     <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">Fr_k</span> <span class="o">=</span> <span class="n">Frac</span>
 
     <span class="c1"># Fracture front loop to find the correct front location</span>
     <span class="k">while</span> <span class="n">norm</span> <span class="o">&gt;</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">tolFractFront</span><span class="p">:</span>
@@ -212,7 +224,7 @@
             <span class="n">perfNode_extendedFP</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># find the new footprint and solve the elastohydrodynamic equations to to get the new fracture</span>
-        <span class="p">(</span><span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_k</span><span class="p">)</span> <span class="o">=</span> <span class="n">injection_extended_footprint</span><span class="p">(</span><span class="n">w_k</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_k</span><span class="p">)</span> <span class="o">=</span> <span class="n">injection_extended_footprint</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
                                                           <span class="n">Frac</span><span class="p">,</span>
                                                           <span class="n">C</span><span class="p">,</span>
                                                           <span class="n">timeStep</span><span class="p">,</span>
@@ -223,9 +235,6 @@
                                                           <span class="n">perfNode_extendedFP</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">exitstatus</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="c1"># the new fracture width (notably the new width in the ribbon cells).</span>
-            <span class="n">w_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
-
             <span class="c1"># norm is evaluated by dividing the difference in the area of the tip cells between two successive iterations</span>
             <span class="c1"># with the number of tip cells.</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">((</span><span class="nb">sum</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">FillF</span><span class="p">)</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">fill_frac_last</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">Fr_k</span><span class="o">.</span><span class="n">FillF</span><span class="p">))</span>
@@ -244,7 +253,7 @@
                 <span class="n">perfNode</span><span class="o">.</span><span class="n">failure_cause</span> <span class="o">=</span> <span class="n">exitstatus</span>
 
         <span class="k">if</span> <span class="n">exitstatus</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_k</span>
 
         <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Norm of subsequent filling fraction estimates = &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">norm</span><span class="p">))</span>
@@ -272,19 +281,20 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken</span>
 <span class="sd">    to be the same as in the fracture from the last time step.</span>
-<span class="sd">    Arguments:</span>
-<span class="sd">        Fr_lstTmStp (Fracture object)                      -- fracture object from the last time step</span>
-<span class="sd">        C (ndarray-float)                                  -- the elasticity matrix</span>
-<span class="sd">        timeStep (float)                                   -- time step</span>
-<span class="sd">        Qin (ndarray-float)                                -- current injection rate</span>
-<span class="sd">        mat_properties (MaterialProperties object)         -- material properties</span>
-<span class="sd">        fluid_properties (FluidProperties object)          -- fluid properties</span>
-<span class="sd">        sim_properties (SimulationParameters object)       -- simulation parameters</span>
-<span class="sd">        perfNode (IterationProperties)                     -- a performance node to store performance data</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Fr_lstTmStp (Fracture):                     -- fracture object from the last time step.</span>
+<span class="sd">        C (ndarray):                                -- the elasticity matrix.</span>
+<span class="sd">        timeStep (float):                           -- time step.</span>
+<span class="sd">        Qin (ndarray):                              -- current injection rate.</span>
+<span class="sd">        mat_properties (MaterialProperties):        -- material properties.</span>
+<span class="sd">        fluid_properties (FluidProperties):         -- fluid properties.</span>
+<span class="sd">        sim_properties (SimulationProperties):      -- simulation parameters.</span>
+<span class="sd">        perfNode (IterationProperties):             -- a performance node to store performance data.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        exitstatus (int)            -- exit status</span>
-<span class="sd">        w_k (ndarray-float)         -- width of the fracture after injection with the same footprint</span>
+<span class="sd">        | exitstatus (int)          -- exit status (see the function description below for the possibilities).</span>
+<span class="sd">        | Fr_kplus1 (Fracture)      -- the fracture after injection with the same footprint.</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -310,6 +320,10 @@
         <span class="n">LkOff</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_min_t0</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">-</span>
                                         <span class="n">t_lst_min_t0</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span>
 
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">LkOff</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">13</span>
+        <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
+
     <span class="c1"># solve for width. All of the fracture cells are solved (no tip values are is imposed)</span>
     <span class="n">empty</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
     <span class="n">w_k</span><span class="p">,</span> <span class="n">p_k</span><span class="p">,</span> <span class="n">return_data</span> <span class="o">=</span> <span class="n">solve_width_pressure</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">,</span>
@@ -326,18 +340,74 @@
                                          <span class="n">empty</span><span class="p">,</span>
                                          <span class="n">timeStep</span><span class="p">,</span>
                                          <span class="n">Qin</span><span class="p">,</span>
-                                         <span class="n">perfNode</span><span class="p">)</span>
+                                         <span class="n">perfNode</span><span class="p">,</span>
+                                         <span class="n">empty</span><span class="p">,</span>
+                                         <span class="n">empty</span><span class="p">)</span>
 
     <span class="c1"># check if the solution is valid</span>
-    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">w_k</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">or</span> <span class="p">(</span><span class="n">w_k</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">w_k</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">p_k</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
         <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">5</span>
         <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="n">w_k</span></div>
 
+    <span class="n">Fr_kplus1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">)</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">time</span> <span class="o">+=</span> <span class="n">timeStep</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">w_k</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">pFluid</span> <span class="o">=</span> <span class="n">p_k</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">pNet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,))</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">pNet</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">p_k</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">-</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">return_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">),</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">timeStep_last</span> <span class="o">=</span> <span class="n">timeStep</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">FractureVolume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span><span class="p">)</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span> <span class="o">+=</span> <span class="n">LkOff</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">*</span> <span class="n">timeStep</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]))</span> \
+                           <span class="o">/</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span>
+    <span class="n">fluidVel</span> <span class="o">=</span> <span class="n">return_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">fluid_properties</span><span class="o">.</span><span class="n">turbulence</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span><span class="p">:</span>
+            <span class="n">ReNumb</span><span class="p">,</span> <span class="n">check</span> <span class="o">=</span> <span class="n">turbulence_check_tip</span><span class="p">(</span><span class="n">fluidVel</span><span class="p">,</span> <span class="n">Fr_kplus1</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span> <span class="n">return_ReyNumb</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span><span class="p">:</span>
+                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">ReynoldsNumber</span> <span class="o">=</span> <span class="n">ReNumb</span>
+            <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span><span class="p">:</span>
+                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidFlux</span> <span class="o">=</span> <span class="n">ReNumb</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">/</span> <span class="n">fluid_properties</span><span class="o">.</span><span class="n">density</span> <span class="o">*</span> <span class="n">fluid_properties</span><span class="o">.</span><span class="n">viscosity</span>
+        <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidVel</span><span class="p">:</span>
+            <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidVelocity</span> <span class="o">=</span> <span class="n">fluidVel</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidVel</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span><span class="p">:</span>
+            <span class="n">fluid_flux</span><span class="p">,</span> <span class="n">fluid_vel</span><span class="p">,</span> <span class="n">Rey_num</span> <span class="o">=</span> <span class="n">calculate_fluid_flow_characteristics_laminar</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
+                                                                                          <span class="n">C</span><span class="p">,</span>
+                                                                                          <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">,</span>
+                                                                                          <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                                                                          <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">,</span>
+                                                                                          <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">InCrack</span><span class="p">,</span>
+                                                                                          <span class="n">fluid_properties</span><span class="o">.</span><span class="n">muPrime</span><span class="p">,</span>
+                                                                                          <span class="n">fluid_properties</span><span class="o">.</span><span class="n">density</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span><span class="p">:</span>
+                <span class="n">fflux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+                <span class="n">fflux</span><span class="p">[:,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">fluid_flux</span>
+                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidFlux</span> <span class="o">=</span> <span class="n">fflux</span>
+            <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidVel</span><span class="p">:</span>
+                <span class="n">fvel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+                <span class="n">fvel</span><span class="p">[:,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">fluid_vel</span>
+                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidVelocity</span> <span class="o">=</span> <span class="n">fvel</span>
+            <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span><span class="p">:</span>
+                <span class="n">Rnum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+                <span class="n">Rnum</span><span class="p">[:,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">Rey_num</span>
+                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">ReynoldsNumber</span> <span class="o">=</span> <span class="n">Rnum</span>
+
+    <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">return_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># check if the solution is valid</span>
+
+    <span class="k">if</span> <span class="n">return_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="mi">14</span><span class="p">,</span> <span class="n">Fr_kplus1</span>
+
+    <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_kplus1</span></div>
 
 <span class="c1"># -----------------------------------------------------------------------------------------------------------------------</span>
+
 
 <div class="viewcode-block" id="injection_extended_footprint"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.injection_extended_footprint">[docs]</a><span class="k">def</span> <span class="nf">injection_extended_footprint</span><span class="p">(</span><span class="n">w_k</span><span class="p">,</span> <span class="n">Fr_lstTmStp</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">timeStep</span><span class="p">,</span> <span class="n">Qin</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span>
                                  <span class="n">sim_properties</span><span class="p">,</span> <span class="n">perfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -345,34 +415,37 @@
 <span class="sd">    This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set</span>
 <span class="sd">    (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain</span>
 <span class="sd">    the new fracture width.</span>
-<span class="sd">     </span>
-<span class="sd">    Arguments:</span>
-<span class="sd">        w_k (ndarray-float);                                fracture width from the last iteration</span>
-<span class="sd">        Fr_lstTmStp (Fracture object):                      fracture object from the last time step </span>
-<span class="sd">        C (ndarray-float):                                  the elasticity matrix </span>
-<span class="sd">        timeStep (float):                                   time step </span>
-<span class="sd">        Qin (ndarray-float):                                current injection rate</span>
-<span class="sd">        mat_properties (MaterialProperties object):    material properties</span>
-<span class="sd">        fluid_properties (FluidProperties object):          fluid properties </span>
-<span class="sd">        sim_Parameters (SimulationParameters object):       simulation parameters</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        int:   possible values:</span>
-<span class="sd">                                    0       -- not propagated</span>
-<span class="sd">                                    1       -- iteration successful</span>
-<span class="sd">                                    2       -- evaluated level set is not valid</span>
-<span class="sd">                                    3       -- front is not tracked correctly</span>
-<span class="sd">                                    4       -- evaluated tip volume is not valid</span>
-<span class="sd">                                    5       -- solution of elastohydrodynamic solver is not valid</span>
-<span class="sd">                                    6       -- did not converge after max iterations</span>
-<span class="sd">                                    7       -- tip inversion not successful</span>
-<span class="sd">                                    8       -- Ribbon element not found in the enclosure of a tip cell</span>
-<span class="sd">                                    9       -- Filling fraction not correct</span>
-<span class="sd">                                    10      -- Toughness iteration did not converge</span>
-<span class="sd">                                    11      -- Projection could not be found</span>
-<span class="sd">                                    12      -- Reached end of grid</span>
 
-<span class="sd">        Fracture object:            fracture after advancing time step. </span>
+<span class="sd">    Args:</span>
+<span class="sd">        Fr_lstTmStp (Fracture):                 -- fracture object from the last time step.</span>
+<span class="sd">        C (ndarray):                            -- the elasticity matrix.</span>
+<span class="sd">        timeStep (float):                       -- time step.</span>
+<span class="sd">        Qin (ndarray):                          -- current injection rate.</span>
+<span class="sd">        mat_properties (MaterialProperties):    -- material properties.</span>
+<span class="sd">        fluid_properties (FluidProperties ):    -- fluid properties.</span>
+<span class="sd">        sim_Parameters (SimulationProperties):  -- simulation parameters.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        | exitstatus (int)  possible values are</span>
+
+<span class="sd">        | 0       -- not propagated</span>
+<span class="sd">        | 1       -- iteration successful</span>
+<span class="sd">        | 2       -- evaluated level set is not valid</span>
+<span class="sd">        | 3       -- front is not tracked correctly</span>
+<span class="sd">        | 4       -- evaluated tip volume is not valid</span>
+<span class="sd">        | 5       -- solution of elastohydrodynamic solver is not valid</span>
+<span class="sd">        | 6       -- did not converge after max iterations</span>
+<span class="sd">        | 7       -- tip inversion not successful</span>
+<span class="sd">        | 8       -- ribbon element not found in the enclosure of a tip cell</span>
+<span class="sd">        | 9       -- filling fraction not correct</span>
+<span class="sd">        | 10      -- toughness iteration did not converge</span>
+<span class="sd">        | 11      -- projection could not be found</span>
+<span class="sd">        | 12      -- reached end of grid</span>
+<span class="sd">        | 13      -- leak off can&#39;t be evaluated</span>
+<span class="sd">        | 14      -- fracture fully closed</span>
+
+<span class="sd">        | Fracture:            fracture after advancing time step.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">itr</span> <span class="o">=</span> <span class="mi">0</span>
@@ -421,7 +494,7 @@
             <span class="n">Eprime_k</span> <span class="o">=</span> <span class="n">TI_plain_strain_modulus</span><span class="p">(</span><span class="n">alpha_ribbon_k</span><span class="p">,</span>
                                                <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cij</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Eprime_k</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">13</span>
+                <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">11</span>
                 <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">Eprime_k</span> <span class="o">=</span> <span class="kc">None</span>
@@ -687,6 +760,10 @@
                         <span class="n">timeStep</span> <span class="o">-</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">Tarrival</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span> <span class="o">-</span> <span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span>
                         <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">Tarrival</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span>
 
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">LkOff</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">13</span>
+        <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
+
     <span class="n">w_n_plus1</span><span class="p">,</span> <span class="n">pf_n_plus1</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">solve_width_pressure</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">,</span>
                                                         <span class="n">sim_properties</span><span class="p">,</span>
                                                         <span class="n">fluid_properties</span><span class="p">,</span>
@@ -701,23 +778,29 @@
                                                         <span class="n">wTip</span><span class="p">,</span>
                                                         <span class="n">timeStep</span><span class="p">,</span>
                                                         <span class="n">Qin</span><span class="p">,</span>
-                                                        <span class="n">perfNode</span><span class="p">)</span>
+                                                        <span class="n">perfNode</span><span class="p">,</span>
+                                                        <span class="n">Vel_k</span><span class="p">,</span>
+                                                        <span class="n">corr_ribbon</span><span class="p">)</span>
 
     <span class="c1"># check if the new width is valid</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">w_n_plus1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Picard iteration did not converged. Trying to solve pressure and width seperately...&quot;</span><span class="p">)</span>
-        <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">5</span>
         <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="n">fluidVel</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="c1"># setting arrival time for fully traversed tip elements (new channel elements)</span>
     <span class="n">Tarrival_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">Tarrival</span><span class="p">)</span>
-    <span class="n">new_channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FillFrac_k</span><span class="o">&gt;</span><span class="mf">0.9999</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">max_Tarrival</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">Tarrival_k</span><span class="p">)</span>
+    <span class="n">nc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">EltChannel_k</span><span class="p">,</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">)</span>
+    <span class="n">new_channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nc</span><span class="p">:</span>
+        <span class="n">new_channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_channel</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">EltsTipNew</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">t_enter</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">timeStep</span> <span class="o">-</span> <span class="n">l_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span> <span class="o">/</span> <span class="n">Vel_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span>
     <span class="n">max_l</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">alpha_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">])</span> <span class="o">+</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hy</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">alpha_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">])</span>
     <span class="n">t_leave</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">timeStep</span> <span class="o">-</span> <span class="p">(</span><span class="n">l_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_l</span><span class="p">)</span> <span class="o">/</span> <span class="n">Vel_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span>
-    <span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_enter</span> <span class="o">+</span> <span class="n">t_leave</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_enter</span> <span class="o">+</span> <span class="n">t_leave</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">to_correct</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]]</span> <span class="o">&lt;</span> <span class="n">max_Tarrival</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">[</span><span class="n">to_correct</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">max_Tarrival</span>
 
     <span class="c1"># the fracture to be returned for k plus 1 iteration</span>
     <span class="n">Fr_kplus1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">)</span>
@@ -726,7 +809,6 @@
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">pFluid</span> <span class="o">=</span> <span class="n">pf_n_plus1</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">pNet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,))</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">pNet</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">pf_n_plus1</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">]</span> <span class="o">-</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">]</span>
-    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">FillF</span> <span class="o">=</span> <span class="n">FillFrac_k</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">]</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span> <span class="o">=</span> <span class="n">EltChannel_k</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span> <span class="o">=</span> <span class="n">EltTip_k</span>
@@ -745,25 +827,18 @@
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">Tarrival</span> <span class="o">=</span> <span class="n">Tarrival_k</span>
     <span class="n">new_tip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">TarrvlZrVrtx</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">TarrvlZrVrtx</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">[</span><span class="n">new_tip</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">new_tip</span><span class="p">]</span> <span class="o">/</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">new_tip</span><span class="p">]</span>
-
-    <span class="c1"># setting leak off</span>
-    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
-                            <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">Tarrival</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span>
-    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">*</span> <span class="n">Integral_over_cell</span><span class="p">(</span>
-                                                                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span>
-                                                                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span>
-                                                                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">l</span><span class="p">,</span>
-                                                                <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
-                                                                <span class="s1">&#39;Lk&#39;</span><span class="p">,</span>
-                                                                <span class="n">mat_prop</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
-                                                                <span class="n">frac</span><span class="o">=</span><span class="n">Fr_kplus1</span><span class="p">,</span>
-                                                                <span class="n">Vel</span><span class="o">=</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-                                                                <span class="n">dt</span><span class="o">=</span><span class="mf">1.e20</span><span class="p">,</span>
-                                                                <span class="n">arrival_t</span><span class="o">=</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">TarrvlZrVrtx</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">])</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">wHist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">wHist</span><span class="p">)</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">tip_neg_rib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+    <span class="c1"># adding tip cells with closed corresponding ribbon cells to the list of closed cells</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">corr_ribbon</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span> <span class="ow">and</span> <span class="n">elem</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="n">tip_neg_rib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tip_neg_rib</span><span class="p">,</span> <span class="n">elem</span><span class="p">)</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span> <span class="n">tip_neg_rib</span><span class="p">)</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span> <span class="o">+=</span> <span class="n">LkOff</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">*</span> <span class="n">timeStep</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]))</span>\
                            <span class="o">/</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span>
-
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveRegime</span><span class="p">:</span>
         <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">regime</span> <span class="o">=</span> <span class="n">regime</span>
 
@@ -800,13 +875,20 @@
                 <span class="n">Rnum</span><span class="p">[:,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">Rey_num</span>
                 <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">ReynoldsNumber</span> <span class="o">=</span> <span class="n">Rnum</span>
 
+    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="mi">14</span><span class="p">,</span> <span class="n">Fr_kplus1</span>
+
     <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_kplus1</span></div>
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="solve_width_pressure"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.solve_width_pressure">[docs]</a><span class="k">def</span> <span class="nf">solve_width_pressure</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">,</span> <span class="n">sim_properties</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">EltTip</span><span class="p">,</span> <span class="n">partlyFilledTip</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span>
-                         <span class="n">FillFrac_k</span><span class="p">,</span> <span class="n">EltCrack_k</span><span class="p">,</span> <span class="n">InCrack_k</span><span class="p">,</span> <span class="n">LkOff</span><span class="p">,</span> <span class="n">wTip</span><span class="p">,</span> <span class="n">timeStep</span><span class="p">,</span> <span class="n">Qin</span><span class="p">,</span> <span class="n">perfNode</span><span class="p">):</span>
+                         <span class="n">FillFrac</span><span class="p">,</span> <span class="n">EltCrack</span><span class="p">,</span> <span class="n">InCrack</span><span class="p">,</span> <span class="n">LkOff</span><span class="p">,</span> <span class="n">wTip</span><span class="p">,</span> <span class="n">timeStep</span><span class="p">,</span> <span class="n">Qin</span><span class="p">,</span> <span class="n">perfNode</span><span class="p">,</span> <span class="n">Vel</span><span class="p">,</span> <span class="n">corr_ribbon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow</span>
+<span class="sd">    equations. The system of equations are formed according to the type of solver given in the simulation properties.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">get_volumeControl</span><span class="p">():</span>
 
@@ -832,12 +914,12 @@
             <span class="n">EltTip_sym</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">)</span>
 
             <span class="n">FillF_mesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,</span> <span class="p">),</span> <span class="p">)</span>
-            <span class="n">FillF_mesh</span><span class="p">[</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">FillFrac_k</span>
+            <span class="n">FillF_mesh</span><span class="p">[</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">FillFrac</span>
             <span class="n">FillF_sym</span> <span class="o">=</span> <span class="n">FillF_mesh</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">activeSymtrc</span><span class="p">[</span><span class="n">EltTip_sym</span><span class="p">]]</span>
             <span class="n">partlyFilledTip_sym</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FillF_sym</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-            <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">],</span>
-                                <span class="n">EltTip_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">])]</span>  <span class="c1"># keeping the tip element entries to restore current</span>
+            <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">],</span>
+                                <span class="n">EltTip_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">])])</span>  <span class="c1"># keeping the tip element entries to restore current</span>
 
             <span class="c1"># filling fraction correction for element in the tip region</span>
             <span class="n">FillF</span> <span class="o">=</span> <span class="n">FillF_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">]</span>
@@ -880,12 +962,12 @@
 
             <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">],</span>  <span class="n">EltTip_sym</span><span class="p">[</span><span class="n">partlyFilledTip_sym</span><span class="p">])]</span> <span class="o">=</span> <span class="n">C_EltTip</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">],</span>
-                                <span class="n">EltTip</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">])]</span>  <span class="c1"># keeping the tip element entries to restore current</span>
+            <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">],</span>
+                                <span class="n">EltTip</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">])])</span>  <span class="c1"># keeping the tip element entries to restore current</span>
             <span class="c1">#  tip correction. This is done to avoid copying the full elasticity matrix.</span>
 
             <span class="c1"># filling fraction correction for element in the tip region</span>
-            <span class="n">FillF</span> <span class="o">=</span> <span class="n">FillFrac_k</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">]</span>
+            <span class="n">FillF</span> <span class="o">=</span> <span class="n">FillFrac</span><span class="p">[</span><span class="n">partlyFilledTip</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">partlyFilledTip</span><span class="p">)):</span>
                 <span class="n">r</span> <span class="o">=</span> <span class="n">FillF</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">-</span> <span class="o">.</span><span class="mi">25</span>
                 <span class="k">if</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
@@ -903,6 +985,7 @@
                                                            <span class="n">wTip</span><span class="p">,</span>
                                                            <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
                                                            <span class="n">EltTip</span><span class="p">,</span>
+                                                           <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">,</span>
                                                            <span class="n">C</span><span class="p">,</span>
                                                            <span class="n">timeStep</span><span class="p">,</span>
                                                            <span class="n">Qin</span><span class="p">,</span>
@@ -932,41 +1015,28 @@
             <span class="n">w</span><span class="p">[</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">wTip</span>
 
         <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="n">p</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">p</span><span class="p">[</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-        <span class="n">return_data</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([]))</span>
+        <span class="n">return_data</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([]),</span> <span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">w</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">return_data</span>
 
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">get_viscousInjection</span><span class="p">():</span>
 
-        <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span><span class="p">:</span>
-            <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">EltTip</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
-            <span class="n">guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span> <span class="o">=</span> <span class="n">timeStep</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">/</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="o">.</span><span class="n">size</span> \
-                                                            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">guess</span> <span class="o">=</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">EltTip</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
-            <span class="n">guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span> <span class="o">=</span> <span class="n">timeStep</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">/</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="o">.</span><span class="n">size</span> \
-                                                            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
         <span class="c1"># velocity at the cell edges evaluated with the guess width. Used as guess</span>
         <span class="c1"># values for the implicit velocity solver.</span>
         <span class="n">vk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fluid_properties</span><span class="o">.</span><span class="n">turbulence</span><span class="p">:</span>
             <span class="n">wguess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
-            <span class="n">wguess</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">=</span> <span class="n">wguess</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">+</span> <span class="n">guess</span><span class="p">[</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
             <span class="n">wguess</span><span class="p">[</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">wTip</span>
 
             <span class="n">vk</span> <span class="o">=</span> <span class="n">velocity</span><span class="p">(</span><span class="n">wguess</span><span class="p">,</span>
-                          <span class="n">EltCrack_k</span><span class="p">,</span>
+                          <span class="n">EltCrack</span><span class="p">,</span>
                           <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
-                          <span class="n">InCrack_k</span><span class="p">,</span>
+                          <span class="n">InCrack</span><span class="p">,</span>
                           <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">muPrime</span><span class="p">,</span>
                           <span class="n">C</span><span class="p">,</span>
                           <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">)</span>
 
-        <span class="c1"># typical value for pressure</span>
-        <span class="n">typValue</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">guess</span><span class="p">)</span>
-        <span class="n">typValue</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">EltTip</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">1e5</span>
 
         <span class="k">if</span> <span class="n">perfNode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">perfNode</span><span class="o">.</span><span class="n">iterations</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -977,46 +1047,82 @@
 
         <span class="n">neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">non_neg</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">to_solve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">EltCrack</span><span class="p">,</span> <span class="n">EltTip</span><span class="p">)</span> <span class="c1"># only taking channel elements to solve</span>
 
+        <span class="c1"># adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also</span>
+        <span class="c1"># solved for the stagnant tip cells as compared to tip cells which are moving.</span>
+        <span class="n">stagnant_tip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Vel</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">to_impose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">EltTip</span><span class="p">,</span> <span class="n">stagnant_tip</span><span class="p">)</span>
+        <span class="n">imposed_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">wTip</span><span class="p">,</span> <span class="n">stagnant_tip</span><span class="p">)</span>
+        <span class="n">to_solve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">EltTip</span><span class="p">[</span><span class="n">stagnant_tip</span><span class="p">])</span>
+        <span class="n">wc_to_impose</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">fully_closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">corr_ribb_flag</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="c1"># Making and sloving the system of equations. The width constraint is checked. If active, system is remade with</span>
         <span class="c1"># the oonstraint imposed and is resolved.</span>
         <span class="k">while</span> <span class="ow">not</span> <span class="n">non_neg</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">to_solve_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">neg</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-            <span class="n">to_solve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span> <span class="n">neg</span><span class="p">)</span>
-            <span class="n">to_impose</span> <span class="o">=</span> <span class="n">EltTip</span>
-            <span class="n">imposed_val</span> <span class="o">=</span> <span class="n">wTip</span>
+            <span class="c1"># the code below finds the tip cells with corresponding ribbon cells closed and add them in the list</span>
+            <span class="c1"># of elements to be solved.</span>
+            <span class="n">toImp_neg_rib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_impose</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">corr_ribb_flag</span><span class="p">:</span>
+                    <span class="c1"># do it once</span>
+                    <span class="n">tip_sorted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">EltTip</span><span class="p">)</span>
+                    <span class="n">to_impose_pstn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">EltTip</span><span class="p">[</span><span class="n">tip_sorted</span><span class="p">],</span> <span class="n">to_impose</span><span class="p">)</span>
+                    <span class="n">ind_toImps_tip</span> <span class="o">=</span> <span class="n">tip_sorted</span><span class="p">[</span><span class="n">to_impose_pstn</span><span class="p">]</span>
+                    <span class="n">corr_ribbon_TI</span> <span class="o">=</span> <span class="n">corr_ribbon</span><span class="p">[</span><span class="n">ind_toImps_tip</span><span class="p">]</span>
+                    <span class="n">corr_ribb_flag</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">to_impose</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">corr_ribbon_TI</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">neg</span><span class="p">:</span>
+                        <span class="n">toImp_neg_rib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toImp_neg_rib</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="n">to_solve_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">to_impose</span><span class="p">[</span><span class="n">toImp_neg_rib</span><span class="p">],</span> <span class="n">neg</span><span class="p">))</span>
+            <span class="n">to_impose_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_impose</span><span class="p">,</span> <span class="n">toImp_neg_rib</span><span class="p">)</span>
+            <span class="n">imposed_val_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">imposed_val</span><span class="p">,</span> <span class="n">toImp_neg_rib</span><span class="p">)</span>
 
             <span class="n">arg</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">to_solve</span><span class="p">,</span>
-                <span class="n">to_impose</span><span class="p">,</span>
+                <span class="n">to_solve_k</span><span class="p">,</span>
+                <span class="n">to_impose_k</span><span class="p">,</span>
                 <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
-                <span class="n">imposed_val</span><span class="p">,</span>
-                <span class="n">EltCrack_k</span><span class="p">,</span>
+                <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">pFluid</span><span class="p">,</span>
+                <span class="n">imposed_val_k</span><span class="p">,</span>
+                <span class="n">EltCrack</span><span class="p">,</span>
                 <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
                 <span class="n">timeStep</span><span class="p">,</span>
                 <span class="n">Qin</span><span class="p">,</span>
                 <span class="n">C</span><span class="p">,</span>
                 <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">muPrime</span><span class="p">,</span>
                 <span class="n">fluid_properties</span><span class="o">.</span><span class="n">density</span><span class="p">,</span>
-                <span class="n">InCrack_k</span><span class="p">,</span>
+                <span class="n">InCrack</span><span class="p">,</span>
                 <span class="n">LkOff</span><span class="p">,</span>
                 <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">,</span>
                 <span class="n">fluid_properties</span><span class="o">.</span><span class="n">turbulence</span><span class="p">,</span>
                 <span class="n">mat_properties</span><span class="o">.</span><span class="n">grainSize</span><span class="p">,</span>
                 <span class="n">sim_properties</span><span class="o">.</span><span class="n">gravity</span><span class="p">,</span>
                 <span class="n">neg</span><span class="p">,</span>
-                <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">)</span>
+                <span class="n">wc_to_impose</span><span class="p">,</span>
+                <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">,</span>
+                <span class="n">fluid_properties</span><span class="o">.</span><span class="n">compressibility</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span><span class="p">:</span>
-                <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_viscousFluid_pressure_substituted</span>
+                <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted</span>
+                <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">EltCrack</span><span class="p">),</span> <span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="n">guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">))]</span> <span class="o">=</span> <span class="n">timeStep</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">/</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="o">.</span><span class="n">size</span> \
+                                                                <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">),),</span> <span class="nb">float</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid</span>
+                <span class="n">guess</span> <span class="o">=</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_impose_k</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg</span><span class="p">),),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                <span class="n">guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">))]</span> <span class="o">=</span> <span class="n">timeStep</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">*</span>\
+                                                    <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">),),</span> <span class="nb">float</span><span class="p">)</span>
 
+            <span class="n">typValue</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">guess</span><span class="p">)</span>
+            <span class="n">inter_itr_init</span> <span class="o">=</span> <span class="p">(</span><span class="n">vk</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span>
             <span class="n">sol</span><span class="p">,</span> <span class="n">v_k</span> <span class="o">=</span> <span class="n">Picard_Newton</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span>
                                    <span class="n">sys_fun</span><span class="p">,</span>
                                    <span class="n">guess</span><span class="p">,</span>
                                    <span class="n">typValue</span><span class="p">,</span>
-                                   <span class="n">vk</span><span class="p">,</span>
+                                   <span class="n">inter_itr_init</span><span class="p">,</span>
                                    <span class="n">sim_properties</span><span class="o">.</span><span class="n">toleranceEHL</span><span class="p">,</span>
                                    <span class="n">sim_properties</span><span class="o">.</span><span class="n">maxSolverItrs</span><span class="p">,</span>
                                    <span class="o">*</span><span class="n">arg</span><span class="p">,</span>
@@ -1026,30 +1132,46 @@
                 <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
 
             <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
-            <span class="n">w</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sol</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)]</span>
-            <span class="n">w</span><span class="p">[</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">wTip</span>
-            <span class="n">w</span><span class="p">[</span><span class="n">neg</span><span class="p">]</span> <span class="o">=</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span>
+            <span class="n">w</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sol</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)]</span>
+            <span class="n">w</span><span class="p">[</span><span class="n">to_impose_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">imposed_val_k</span>
+            <span class="n">w</span><span class="p">[</span><span class="n">neg</span><span class="p">]</span> <span class="o">=</span> <span class="n">wc_to_impose</span>
 
             <span class="n">neg_km1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">neg</span><span class="p">)</span>
-            <span class="n">new_neg</span> <span class="o">=</span> <span class="n">to_solve</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.98</span> <span class="o">*</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
-            <span class="n">new_neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">new_neg</span><span class="p">,</span> <span class="n">neg</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_neg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">non_neg</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;implicit&#39;</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Width is getting extremely small. Starting again without substituting pressure with&#39;</span>
-                          <span class="s1">&#39; width...&#39;</span><span class="p">)</span>
-                    <span class="n">sim_properties</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="s1">&#39;implicit&#39;</span>
-                    <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">wc_km1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">wc_to_impose</span><span class="p">)</span>
+            <span class="n">below_wc_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">below_wc_k</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># for cells where max width in w history is greater than wc</span>
+                <span class="n">wHst_above_wc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">impose_wc_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">wHst_above_wc</span><span class="p">,</span> <span class="n">below_wc_k</span><span class="p">)</span>
 
-                <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="c1"># changing length of guess</span>
-                <span class="n">guess</span> <span class="o">=</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">EltTip</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
-                <span class="n">guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span> <span class="o">=</span> <span class="n">timeStep</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">/</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="o">.</span><span class="n">size</span> \
-                                                                <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
-                <span class="n">neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">neg</span><span class="p">,</span> <span class="n">new_neg</span><span class="p">))</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Width has gone down to negative value. Imposing constraint on width...&#39;</span><span class="p">)</span>
+                <span class="c1"># for cells with max width in w history less than wc</span>
+                <span class="n">wHst_below_wc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">dwdt_neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">impose_wHist_at</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">wHst_below_wc</span><span class="p">,</span> <span class="n">dwdt_neg</span><span class="p">)</span>
+
+                <span class="n">neg_k</span> <span class="o">=</span> <span class="n">to_solve_k</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">impose_wc_at</span><span class="p">,</span> <span class="n">impose_wHist_at</span><span class="p">))]</span>
+                <span class="c1"># the corresponding values of width to be imposed in cells where width constraint is active</span>
+                <span class="n">wc_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">impose_wc_at</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">impose_wHist_at</span><span class="p">),),</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">wc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                <span class="n">wc_k</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">impose_wc_at</span><span class="p">):]</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">wHist</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">[</span><span class="n">impose_wHist_at</span><span class="p">]]</span>
+
+                <span class="n">new_neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">neg_k</span><span class="p">,</span> <span class="n">neg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_neg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">non_neg</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;implicit&#39;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Changing front advancing scheme to implicit due to width going negative...&#39;</span><span class="p">)</span>
+                        <span class="n">sim_properties</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="s1">&#39;implicit&#39;</span>
+                        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+                    <span class="c1"># cumulatively add the cells with active width constraint</span>
+                    <span class="n">neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">neg_km1</span><span class="p">,</span> <span class="n">new_neg</span><span class="p">))</span>
+                    <span class="n">new_wc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">new_neg</span><span class="p">:</span>
+                        <span class="n">new_wc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_wc</span><span class="p">,</span> <span class="n">wc_k</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">neg_k</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span>
+                    <span class="n">wc_to_impose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">wc_km1</span><span class="p">,</span> <span class="n">new_wc</span><span class="p">))</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Iterating on cells with active width constraint...&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">non_neg</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="n">perfNode_Picard</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">perfNode_Picard</span><span class="o">.</span><span class="n">CpuTime_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
@@ -1057,18 +1179,22 @@
 
         <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span><span class="p">:</span>
             <span class="c1"># pressure evaluated by dot product of width and elasticity matrix</span>
-            <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-            <span class="n">p</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltCrack_k</span><span class="p">,</span> <span class="n">EltCrack_k</span><span class="p">)],</span> <span class="n">w</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">])</span> <span class="o">+</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">[</span><span class="n">EltCrack_k</span><span class="p">]</span>
-            <span class="n">p</span><span class="p">[</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="o">.</span><span class="n">size</span><span class="p">:]</span>
+            <span class="n">pf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">,</span> <span class="n">EltCrack</span><span class="p">)],</span> <span class="n">w</span><span class="p">[</span><span class="n">EltCrack</span><span class="p">])</span> <span class="o">+</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span>
+            <span class="n">pf</span><span class="p">[</span><span class="n">neg_km1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">):</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)]</span>
+            <span class="n">pf</span><span class="p">[</span><span class="n">to_impose_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">):]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">n_w</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)</span>
-            <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
-            <span class="n">p</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">n_w</span><span class="p">:</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)]</span>
-            <span class="n">p</span><span class="p">[</span><span class="n">neg_km1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">):</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)]</span>
-            <span class="n">p</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">):</span> <span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_impose</span><span class="p">)]</span>
+            <span class="n">n_w</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)</span>
+            <span class="n">pf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
+            <span class="n">pf</span><span class="p">[</span><span class="n">to_solve_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">n_w</span><span class="p">:</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)]</span>
+            <span class="n">pf</span><span class="p">[</span><span class="n">neg_km1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">):</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)]</span>
+            <span class="n">pf</span><span class="p">[</span><span class="n">to_impose_k</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">):</span> <span class="n">n_w</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_km1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_impose_k</span><span class="p">)]</span>
 
-        <span class="n">return_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">vk</span><span class="p">,</span> <span class="n">neg_km1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">w</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">return_data</span></div>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">):</span>
+            <span class="n">fully_closed</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">return_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">vk</span><span class="p">,</span> <span class="n">neg_km1</span><span class="p">,</span> <span class="n">fully_closed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">w</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">return_data</span></div>
 
 
 <div class="viewcode-block" id="turbulence_check_tip"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.turbulence_check_tip">[docs]</a><span class="k">def</span> <span class="nf">turbulence_check_tip</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">Fr</span><span class="p">,</span> <span class="n">fluid</span><span class="p">,</span> <span class="n">return_ReyNumb</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -1077,16 +1203,16 @@
 <span class="sd">    and the tip cells are turbulent (i.e. the Reynolds number is greater than 2100).</span>
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
-<span class="sd">        vel (ndarray-float):                    the array giving velocity of each edge of the cells in domain </span>
-<span class="sd">        Fr (Fracture object):                   the fracture object to be checked</span>
-<span class="sd">        fluid (FluidProperties object):         fluid properties object </span>
-<span class="sd">        return_ReyNumb (boolean, default False): if true, Reynolds number at all cell edges will be returned </span>
+<span class="sd">        vel (ndarray-float):            -- the array giving velocity of each edge of the cells in domain</span>
+<span class="sd">        Fr (Fracture object):           -- the fracture object to be checked</span>
+<span class="sd">        fluid (FluidProperties):        -- fluid properties object</span>
+<span class="sd">        return_ReyNumb (boolean):       -- if True, Reynolds number at all cell edges will also be returned</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        ndarray-float:      Reynolds number of all the cells in the domain; row-wise in the following order : 0--left,</span>
-<span class="sd">                            1--right, 2--bottom, 3--top</span>
-<span class="sd">        boolean             true if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds number</span>
-<span class="sd">                            is more than 2100)</span>
+<span class="sd">        | Re (ndarray)     -- Reynolds number of all the cells in the domain; row-wise in the following order, 0--left,\</span>
+<span class="sd">                              1--right, 2--bottom, 3--top.</span>
+<span class="sd">        | boolean          -- True if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds \</span>
+<span class="sd">                               number is more than 2100).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># width at the adges by averaging</span>
     <span class="n">wLftEdge</span> <span class="o">=</span> <span class="p">(</span><span class="n">Fr</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">Fr</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">+</span> <span class="n">Fr</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">Fr</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span> <span class="o">/</span> <span class="mi">2</span>
@@ -1128,38 +1254,39 @@
 <div class="viewcode-block" id="time_step_explicit_front"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.time_step_explicit_front">[docs]</a><span class="k">def</span> <span class="nf">time_step_explicit_front</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">timeStep</span><span class="p">,</span> <span class="n">Qin</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span> <span class="n">sim_properties</span><span class="p">,</span>
                              <span class="n">perfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set</span>
-<span class="sd">    (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain</span>
-<span class="sd">    the new fracture width.</span>
+<span class="sd">    This function advances the fracture front in an explicit manner by propagating it with the velocity from the last</span>
+<span class="sd">    time step (see Zia and Lecampion 2019 for details).</span>
 
-<span class="sd">    Arguments:</span>
-<span class="sd">        w_k (ndarray-float);                                fracture width from the last iteration</span>
-<span class="sd">        Fr_lstTmStp (Fracture object):                      fracture object from the last time step</span>
-<span class="sd">        C (ndarray-float):                                  the elasticity matrix</span>
-<span class="sd">        timeStep (float):                                   time step</span>
-<span class="sd">        Qin (ndarray-float):                                current injection rate</span>
-<span class="sd">        mat_properties (MaterialProperties object):    material properties</span>
-<span class="sd">        fluid_properties (FluidProperties object):          fluid properties</span>
-<span class="sd">        sim_Parameters (SimulationParameters object):       simulation parameters</span>
+<span class="sd">    Args:</span>
+<span class="sd">        Fr_lstTmStp (Fracture):                 -- fracture object from the last time step.</span>
+<span class="sd">        C (ndarray):                            -- the elasticity matrix.</span>
+<span class="sd">        timeStep (float):                       -- time step.</span>
+<span class="sd">        Qin (ndarray):                          -- current injection rate.</span>
+<span class="sd">        mat_properties (MaterialProperties):    -- material properties.</span>
+<span class="sd">        fluid_properties (FluidProperties ):    -- fluid properties.</span>
+<span class="sd">        sim_Parameters (SimulationProperties):  -- simulation parameters.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        int:   possible values:</span>
-<span class="sd">                                    0       -- not propagated</span>
-<span class="sd">                                    1       -- iteration successful</span>
-<span class="sd">                                    2       -- evaluated level set is not valid</span>
-<span class="sd">                                    3       -- front is not tracked correctly</span>
-<span class="sd">                                    4       -- evaluated tip volume is not valid</span>
-<span class="sd">                                    5       -- solution of elastohydrodynamic solver is not valid</span>
-<span class="sd">                                    6       -- did not converge after max iterations</span>
-<span class="sd">                                    7       -- tip inversion not successful</span>
-<span class="sd">                                    8       -- Ribbon element not found in the enclosure of a tip cell</span>
-<span class="sd">                                    9       -- Filling fraction not correct</span>
-<span class="sd">                                    10      -- Toughness iteration did not converge</span>
-<span class="sd">                                    11      -- Projection could not be found</span>
-<span class="sd">                                    12      -- Reached end of grid</span>
-<span class="sd">                                    13      -- Leak off can&#39;t be evaluated</span>
+<span class="sd">        | exitstatus (int)  possible values are</span>
 
-<span class="sd">        Fracture object:            fracture after advancing time step.</span>
+<span class="sd">        | 0       -- not propagated</span>
+<span class="sd">        | 1       -- iteration successful</span>
+<span class="sd">        | 2       -- evaluated level set is not valid</span>
+<span class="sd">        | 3       -- front is not tracked correctly</span>
+<span class="sd">        | 4       -- evaluated tip volume is not valid</span>
+<span class="sd">        | 5       -- solution of elastohydrodynamic solver is not valid</span>
+<span class="sd">        | 6       -- did not converge after max iterations</span>
+<span class="sd">        | 7       -- tip inversion not successful</span>
+<span class="sd">        | 8       -- ribbon element not found in the enclosure of a tip cell</span>
+<span class="sd">        | 9       -- filling fraction not correct</span>
+<span class="sd">        | 10      -- toughness iteration did not converge</span>
+<span class="sd">        | 11      -- projection could not be found</span>
+<span class="sd">        | 12      -- reached end of grid</span>
+<span class="sd">        | 13      -- leak off can&#39;t be evaluated</span>
+<span class="sd">        | 14      -- fracture fully closed</span>
+
+<span class="sd">        | Fracture:            fracture after advancing time step.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">sgndDist_k</span> <span class="o">=</span> <span class="mf">1e50</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>  <span class="c1"># Initializing the cells with maximum</span>
@@ -1233,8 +1360,6 @@
         <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">9</span>
         <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
 
-    <span class="k">if</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">timeStep</span> <span class="o">&gt;</span> <span class="mi">70</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">()</span>
     <span class="c1"># todo: some of the list are redundant to calculate on each iteration</span>
     <span class="c1"># Evaluate the element lists for the trial fracture front</span>
     <span class="p">(</span><span class="n">EltChannel_k</span><span class="p">,</span>
@@ -1394,23 +1519,29 @@
                                                       <span class="n">wTip</span><span class="p">,</span>
                                                       <span class="n">timeStep</span><span class="p">,</span>
                                                       <span class="n">Qin</span><span class="p">,</span>
-                                                      <span class="n">perfNode</span><span class="p">)</span>
+                                                      <span class="n">perfNode</span><span class="p">,</span>
+                                                      <span class="n">Vel_k</span><span class="p">,</span>
+                                                      <span class="n">corr_ribbon</span><span class="p">)</span>
 
     <span class="c1"># check if the new width is valid</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">w_n_plus1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Picard iteration did not converged. Pressure and width will be solved separately in next attempt...&quot;</span><span class="p">)</span>
-        <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">5</span>
         <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="n">fluidVel</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="c1"># setting arrival time for fully traversed tip elements (new channel elements)</span>
     <span class="n">Tarrival_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">Tarrival</span><span class="p">)</span>
-    <span class="n">new_channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FillFrac_k</span> <span class="o">&gt;</span> <span class="mf">0.9999</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">max_Tarrival</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">Tarrival_k</span><span class="p">)</span>
+    <span class="n">nc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">EltChannel_k</span><span class="p">,</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">)</span>
+    <span class="n">new_channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nc</span><span class="p">:</span>
+        <span class="n">new_channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_channel</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">EltsTipNew</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">t_enter</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">timeStep</span> <span class="o">-</span> <span class="n">l_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span> <span class="o">/</span> <span class="n">Vel_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span>
     <span class="n">max_l</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">alpha_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">])</span> <span class="o">+</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">hy</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">alpha_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">])</span>
     <span class="n">t_leave</span> <span class="o">=</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">timeStep</span> <span class="o">-</span> <span class="p">(</span><span class="n">l_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span> <span class="o">-</span> <span class="n">max_l</span><span class="p">)</span> <span class="o">/</span> <span class="n">Vel_k</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]</span>
     <span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_enter</span> <span class="o">+</span> <span class="n">t_leave</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">to_correct</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">]]</span> <span class="o">&lt;</span> <span class="n">max_Tarrival</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">Tarrival_k</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">[</span><span class="n">new_channel</span><span class="p">[</span><span class="n">to_correct</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">max_Tarrival</span>
 
     <span class="c1"># the fracture to be returned for k plus 1 iteration</span>
     <span class="n">Fr_kplus1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_lstTmStp</span><span class="p">)</span>
@@ -1432,6 +1563,7 @@
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">process_fracture_front</span><span class="p">()</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">FractureVolume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span><span class="p">)</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">Tarrival</span> <span class="o">=</span> <span class="n">Tarrival_k</span>
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">wHist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">wHist</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solved...</span><span class="se">\n</span><span class="s2">Finding velocity of front...&quot;</span><span class="p">)</span>
@@ -1480,7 +1612,7 @@
             <span class="n">Eprime_k</span> <span class="o">=</span> <span class="n">TI_plain_strain_modulus</span><span class="p">(</span><span class="n">alpha_ribbon_k</span><span class="p">,</span>
                                                <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cij</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Eprime_k</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">13</span>
+                <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">11</span>
                 <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">Eprime_k</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1561,22 +1693,7 @@
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">timeStep_last</span> <span class="o">=</span> <span class="n">timeStep</span>
     <span class="n">new_tip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">TarrvlZrVrtx</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">TarrvlZrVrtx</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">[</span><span class="n">new_tip</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">new_tip</span><span class="p">]</span> <span class="o">/</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">new_tip</span><span class="p">]</span>
-
-    <span class="c1"># setting leak off</span>
-    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
-            <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">Tarrival</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">])</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span>
-    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mat_properties</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">]</span> <span class="o">*</span> <span class="n">Integral_over_cell</span><span class="p">(</span>
-                                                                    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span>
-                                                                    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span>
-                                                                    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">l</span><span class="p">,</span>
-                                                                    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
-                                                                    <span class="s1">&#39;Lk&#39;</span><span class="p">,</span>
-                                                                    <span class="n">mat_prop</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
-                                                                    <span class="n">frac</span><span class="o">=</span><span class="n">Fr_kplus1</span><span class="p">,</span>
-                                                                    <span class="n">Vel</span><span class="o">=</span><span class="n">Vel_k</span><span class="p">,</span>
-                                                                    <span class="n">dt</span><span class="o">=</span><span class="mf">1.e20</span><span class="p">,</span>
-                                                                    <span class="n">arrival_t</span><span class="o">=</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">TarrvlZrVrtx</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltTip</span><span class="p">])</span>
-
+    <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span> <span class="o">+=</span> <span class="n">LkOff</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">*</span> <span class="n">timeStep</span>
     <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">efficiency</span> <span class="o">=</span> <span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">LkOff_vol</span><span class="p">[</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]))</span> \
                            <span class="o">/</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">injectedVol</span>
@@ -1624,6 +1741,9 @@
                 <span class="n">Rnum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
                 <span class="n">Rnum</span><span class="p">[:,</span> <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">]</span> <span class="o">=</span> <span class="n">Rey_num</span>
                 <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">ReynoldsNumber</span> <span class="o">=</span> <span class="n">Rnum</span>
+
+    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="mi">14</span><span class="p">,</span> <span class="n">Fr_kplus1</span>
 
     <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="n">Fr_kplus1</span></div>

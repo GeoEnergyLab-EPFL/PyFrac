@@ -13,13 +13,12 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(0.13, 0.17, 51, 67)
+Mesh = CartesianMesh(0.065, 0.085, 31, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e9                  # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
-K_Ic = 10000                        # set toughness to a very low value
 
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
@@ -32,8 +31,8 @@ def sigmaO_func(x, y):
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           K_Ic,
-                           SigmaO_func=sigmaO_func)
+                           SigmaO_func=sigmaO_func,
+                           wc=1e-8)
 
 # injection parameters
 Q0 = np.asarray([[0, 31, 151], [0.0009e-6, 0.0065e-6, 0.0023e-6]])
@@ -44,14 +43,13 @@ Fluid = FluidProperties(viscosity=30)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.outputTimePeriod = 0.1        # Setting it small so the file is saved after every time step
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
 simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 
 # initializing fracture
-initRad = 0.014
+initRad = 0.019
 init_param = ('M', "length", initRad)
 
 # creating fracture object
@@ -110,4 +108,4 @@ black_patch = mpatches.mlines.Line2D([], [], color='darkmagenta', label='numeric
 plt.legend(handles=[blue_patch, black_patch])
 ax.set_ylim(-170e-3, 50e-3,)
 
-plt.show()
+plt.show(block=True)

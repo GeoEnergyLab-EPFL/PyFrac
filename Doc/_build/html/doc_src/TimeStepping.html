@@ -42,27 +42,28 @@
 <dl class="function">
 <dt id="TimeStepping.attempt_time_step">
 <code class="descclassname">TimeStepping.</code><code class="descname">attempt_time_step</code><span class="sig-paren">(</span><em>Frac</em>, <em>C</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>inj_properties</em>, <em>timeStep</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#attempt_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.attempt_time_step" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>this function attempts to propagate fracture with the given time step. The function injects fluid into the</dt>
-<dd>fracture according to the given front advacning scheme.</dd>
-</dl>
+<dd><p>This function attempts to propagate fracture with the given time step. The function injects fluid and propagates
+the fracture front according to the front advancing scheme given in the simulation properties.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Frac</strong> (<em>Fracture object</em>) – fracture object from the last time step</li>
-<li><strong>C</strong> (<em>ndarray-float</em>) – the elasticity matrix</li>
-<li><strong>mat_properties</strong> (<em>MaterialProperties object</em>) – material properties</li>
-<li><strong>fluid_properties</strong> (<em>FluidProperties object</em>) – fluid properties</li>
-<li><strong>sim_properties</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
-<li><strong>inj_properties</strong> (<em>InjectionProperties object</em>) – injection properties</li>
-<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
+<li><strong>Frac</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – fracture object from the last time step.</li>
+<li><strong>C</strong> (<em>ndarray</em>) – – the elasticity matrix.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – material properties.</li>
+<li><strong>fluid_properties</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – fluid properties.</li>
+<li><strong>sim_properties</strong> (<a class="reference internal" href="Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><em>SimulationProperties</em></a>) – – simulation parameters.</li>
+<li><strong>inj_properties</strong> (<a class="reference internal" href="Properties.html#Properties.InjectionProperties" title="Properties.InjectionProperties"><em>InjectionProperties</em></a>) – – injection properties.</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time step.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">exitstatus (int) – see documentation for possible values
-Fr_k (Fracture)  – fracture after advancing time step.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">exitstatus (int)      – see documentation for possible values.</div>
+<div class="line">Fr_k (Fracture)       – fracture after advancing time step.</div>
+</div>
+</p>
 </td>
 </tr>
 </tbody>
@@ -80,39 +81,40 @@ the new fracture width.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>w_k</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>Fr_lstTmStp</strong> (<em>Fracture object</em>) – fracture object from the last time step</li>
-<li><strong>C</strong> (<em>ndarray-float</em>) – the elasticity matrix</li>
-<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
-<li><strong>Qin</strong> (<em>ndarray-float</em>) – current injection rate</li>
-<li><strong>mat_properties</strong> (<em>MaterialProperties object</em>) – material properties</li>
-<li><strong>fluid_properties</strong> (<em>FluidProperties object</em>) – fluid properties</li>
-<li><strong>sim_Parameters</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
+<li><strong>Fr_lstTmStp</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – fracture object from the last time step.</li>
+<li><strong>C</strong> (<em>ndarray</em>) – – the elasticity matrix.</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time step.</li>
+<li><strong>Qin</strong> (<em>ndarray</em>) – – current injection rate.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – material properties.</li>
+<li><strong>fluid_properties</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – fluid properties.</li>
+<li><strong>sim_Parameters</strong> (<a class="reference internal" href="Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><em>SimulationProperties</em></a>) – – simulation parameters.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>possible values:</dt>
-<dd><p class="first last">0       – not propagated
-1       – iteration successful
-2       – evaluated level set is not valid
-3       – front is not tracked correctly
-4       – evaluated tip volume is not valid
-5       – solution of elastohydrodynamic solver is not valid
-6       – did not converge after max iterations
-7       – tip inversion not successful
-8       – Ribbon element not found in the enclosure of a tip cell
-9       – Filling fraction not correct
-10      – Toughness iteration did not converge
-11      – Projection could not be found
-12      – Reached end of grid</p>
-</dd>
-</dl>
-<p>Fracture object:            fracture after advancing time step.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">exitstatus (int)  possible values are</div>
+</div>
+<div class="line-block">
+<div class="line">0       – not propagated</div>
+<div class="line">1       – iteration successful</div>
+<div class="line">2       – evaluated level set is not valid</div>
+<div class="line">3       – front is not tracked correctly</div>
+<div class="line">4       – evaluated tip volume is not valid</div>
+<div class="line">5       – solution of elastohydrodynamic solver is not valid</div>
+<div class="line">6       – did not converge after max iterations</div>
+<div class="line">7       – tip inversion not successful</div>
+<div class="line">8       – ribbon element not found in the enclosure of a tip cell</div>
+<div class="line">9       – filling fraction not correct</div>
+<div class="line">10      – toughness iteration did not converge</div>
+<div class="line">11      – projection could not be found</div>
+<div class="line">12      – reached end of grid</div>
+<div class="line">13      – leak off can’t be evaluated</div>
+<div class="line">14      – fracture fully closed</div>
+</div>
+<div class="line-block">
+<div class="line">Fracture:            fracture after advancing time step.</div>
+</div>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></p>
 </td>
 </tr>
 </tbody>
@@ -123,29 +125,29 @@ the new fracture width.</p>
 <dt id="TimeStepping.injection_same_footprint">
 <code class="descclassname">TimeStepping.</code><code class="descname">injection_same_footprint</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>C</em>, <em>timeStep</em>, <em>Qin</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#injection_same_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.injection_same_footprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
-to be the same as in the fracture from the last time step.
-:param Fr_lstTmStp:
-:type Fr_lstTmStp: Fracture object
-:param C:
-:type C: ndarray-float
-:param timeStep:
-:type timeStep: float
-:param Qin:
-:type Qin: ndarray-float
-:param mat_properties:
-:type mat_properties: MaterialProperties object
-:param fluid_properties:
-:type fluid_properties: FluidProperties object
-:param sim_properties:
-:type sim_properties: SimulationParameters object
-:param perfNode:
-:type perfNode: IterationProperties</p>
+to be the same as in the fracture from the last time step.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">exitstatus (int)            – exit status
-w_k (ndarray-float)         – width of the fracture after injection with the same footprint</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Fr_lstTmStp</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – fracture object from the last time step.</li>
+<li><strong>C</strong> (<em>ndarray</em>) – – the elasticity matrix.</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time step.</li>
+<li><strong>Qin</strong> (<em>ndarray</em>) – – current injection rate.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – material properties.</li>
+<li><strong>fluid_properties</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – fluid properties.</li>
+<li><strong>sim_properties</strong> (<a class="reference internal" href="Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><em>SimulationProperties</em></a>) – – simulation parameters.</li>
+<li><strong>perfNode</strong> (<a class="reference internal" href="Properties.html#Properties.IterationProperties" title="Properties.IterationProperties"><em>IterationProperties</em></a>) – – a performance node to store performance data.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">exitstatus (int)          – exit status (see the function description below for the possibilities).</div>
+<div class="line">Fr_kplus1 (Fracture)      – the fracture after injection with the same footprint.</div>
+</div>
+</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -153,54 +155,55 @@ w_k (ndarray-float)         – width of the fracture after injection with the s
 
 <dl class="function">
 <dt id="TimeStepping.solve_width_pressure">
-<code class="descclassname">TimeStepping.</code><code class="descname">solve_width_pressure</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>sim_properties</em>, <em>fluid_properties</em>, <em>mat_properties</em>, <em>EltTip</em>, <em>partlyFilledTip</em>, <em>C</em>, <em>FillFrac_k</em>, <em>EltCrack_k</em>, <em>InCrack_k</em>, <em>LkOff</em>, <em>wTip</em>, <em>timeStep</em>, <em>Qin</em>, <em>perfNode</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#solve_width_pressure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.solve_width_pressure" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">TimeStepping.</code><code class="descname">solve_width_pressure</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>sim_properties</em>, <em>fluid_properties</em>, <em>mat_properties</em>, <em>EltTip</em>, <em>partlyFilledTip</em>, <em>C</em>, <em>FillFrac</em>, <em>EltCrack</em>, <em>InCrack</em>, <em>LkOff</em>, <em>wTip</em>, <em>timeStep</em>, <em>Qin</em>, <em>perfNode</em>, <em>Vel</em>, <em>corr_ribbon</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#solve_width_pressure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.solve_width_pressure" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow
+equations. The system of equations are formed according to the type of solver given in the simulation properties.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="TimeStepping.time_step_explicit_front">
 <code class="descclassname">TimeStepping.</code><code class="descname">time_step_explicit_front</code><span class="sig-paren">(</span><em>Fr_lstTmStp</em>, <em>C</em>, <em>timeStep</em>, <em>Qin</em>, <em>mat_properties</em>, <em>fluid_properties</em>, <em>sim_properties</em>, <em>perfNode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/TimeStepping.html#time_step_explicit_front"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TimeStepping.time_step_explicit_front" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
-(fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
-the new fracture width.</p>
+<dd><p>This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
+time step (see Zia and Lecampion 2019 for details).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>w_k</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>Fr_lstTmStp</strong> (<em>Fracture object</em>) – fracture object from the last time step</li>
-<li><strong>C</strong> (<em>ndarray-float</em>) – the elasticity matrix</li>
-<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – time step</li>
-<li><strong>Qin</strong> (<em>ndarray-float</em>) – current injection rate</li>
-<li><strong>mat_properties</strong> (<em>MaterialProperties object</em>) – material properties</li>
-<li><strong>fluid_properties</strong> (<em>FluidProperties object</em>) – fluid properties</li>
-<li><strong>sim_Parameters</strong> (<em>SimulationParameters object</em>) – simulation parameters</li>
+<li><strong>Fr_lstTmStp</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – – fracture object from the last time step.</li>
+<li><strong>C</strong> (<em>ndarray</em>) – – the elasticity matrix.</li>
+<li><strong>timeStep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time step.</li>
+<li><strong>Qin</strong> (<em>ndarray</em>) – – current injection rate.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – material properties.</li>
+<li><strong>fluid_properties</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – fluid properties.</li>
+<li><strong>sim_Parameters</strong> (<a class="reference internal" href="Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><em>SimulationProperties</em></a>) – – simulation parameters.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>possible values:</dt>
-<dd><p class="first last">0       – not propagated
-1       – iteration successful
-2       – evaluated level set is not valid
-3       – front is not tracked correctly
-4       – evaluated tip volume is not valid
-5       – solution of elastohydrodynamic solver is not valid
-6       – did not converge after max iterations
-7       – tip inversion not successful
-8       – Ribbon element not found in the enclosure of a tip cell
-9       – Filling fraction not correct
-10      – Toughness iteration did not converge
-11      – Projection could not be found
-12      – Reached end of grid
-13      – Leak off can’t be evaluated</p>
-</dd>
-</dl>
-<p>Fracture object:            fracture after advancing time step.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">exitstatus (int)  possible values are</div>
+</div>
+<div class="line-block">
+<div class="line">0       – not propagated</div>
+<div class="line">1       – iteration successful</div>
+<div class="line">2       – evaluated level set is not valid</div>
+<div class="line">3       – front is not tracked correctly</div>
+<div class="line">4       – evaluated tip volume is not valid</div>
+<div class="line">5       – solution of elastohydrodynamic solver is not valid</div>
+<div class="line">6       – did not converge after max iterations</div>
+<div class="line">7       – tip inversion not successful</div>
+<div class="line">8       – ribbon element not found in the enclosure of a tip cell</div>
+<div class="line">9       – filling fraction not correct</div>
+<div class="line">10      – toughness iteration did not converge</div>
+<div class="line">11      – projection could not be found</div>
+<div class="line">12      – reached end of grid</div>
+<div class="line">13      – leak off can’t be evaluated</div>
+<div class="line">14      – fracture fully closed</div>
+</div>
+<div class="line-block">
+<div class="line">Fracture:            fracture after advancing time step.</div>
+</div>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></p>
 </td>
 </tr>
 </tbody>
@@ -217,25 +220,18 @@ and the tip cells are turbulent (i.e. the Reynolds number is greater than 2100).
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>vel</strong> (<em>ndarray-float</em>) – the array giving velocity of each edge of the cells in domain</li>
-<li><strong>Fr</strong> (<em>Fracture object</em>) – the fracture object to be checked</li>
-<li><strong>fluid</strong> (<em>FluidProperties object</em>) – fluid properties object</li>
-<li><strong>return_ReyNumb</strong> (<em>boolean</em><em>, </em><em>default False</em>) – if true, Reynolds number at all cell edges will be returned</li>
+<li><strong>vel</strong> (<em>ndarray-float</em>) – – the array giving velocity of each edge of the cells in domain</li>
+<li><strong>Fr</strong> (<em>Fracture object</em>) – – the fracture object to be checked</li>
+<li><strong>fluid</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – – fluid properties object</li>
+<li><strong>return_ReyNumb</strong> (<em>boolean</em>) – – if True, Reynolds number at all cell edges will also be returned</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>Reynolds number of all the cells in the domain; row-wise in the following order <span class="classifier-delimiter">:</span> <span class="classifier">0–left,</span></dt>
-<dd><p class="first last">1–right, 2–bottom, 3–top</p>
-</dd>
-<dt>boolean             true if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds number</dt>
-<dd><p class="first last">is more than 2100)</p>
-</dd>
-</dl>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
+<div class="line">Re (ndarray)     – Reynolds number of all the cells in the domain; row-wise in the following order, 0–left,                              1–right, 2–bottom, 3–top.</div>
+<div class="line">boolean          – True if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds                                number is more than 2100).</div>
+</div>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray-float</p>
 </td>
 </tr>
 </tbody>

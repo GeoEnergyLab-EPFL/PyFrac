@@ -80,9 +80,9 @@
 <span class="sd">    Methods:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Toughness</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cl</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">SigmaO</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">K1c_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Toughness</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">Cl</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">SigmaO</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">K1c_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">anisotropic_K1c</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SigmaO_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Cl_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TI_elasticity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">wc</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">):</span>
+                 <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">wc</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Arguments:</span>
 <span class="sd">            Eprime (float)          -- plain strain modulus.</span>
@@ -248,7 +248,7 @@
 <span class="sd">       Methods:</span>
 <span class="sd">       &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">rheology</span><span class="o">=</span><span class="s2">&quot;Newtonian&quot;</span><span class="p">,</span> <span class="n">turbulence</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">rheology</span><span class="o">=</span><span class="s2">&quot;Newtonian&quot;</span><span class="p">,</span> <span class="n">turbulence</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">compressibility</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Constructor function.</span>
 
@@ -287,7 +287,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">turbulence</span> <span class="o">=</span> <span class="n">turbulence</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># error</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid turbulence flag. Can be either True or False&#39;</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid turbulence flag. Can be either True or False&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">compressibility</span> <span class="o">=</span> <span class="n">compressibility</span></div>
 
 
 <span class="c1"># --------------------------------------------------------------------------------------------------------</span>
@@ -509,6 +511,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_solTimeSeries</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">req_sol_at</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeStepLimit</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">timeStep_limit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">fixed_time_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TSFromFluid</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">TS_from_fluid</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid fixed time step. The list should have 2 rows (to specify time and &#39;</span>
@@ -608,20 +611,9 @@
 <div class="viewcode-block" id="SimulationProperties.set_outputFolder"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_outputFolder">[docs]</a>    <span class="k">def</span> <span class="nf">set_outputFolder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_address</span><span class="p">):</span>
         <span class="c1"># check operating system to get appropriate slash in the address</span>
 
-        <span class="kn">import</span> <span class="nn">sys</span>
-        <span class="k">if</span> <span class="s2">&quot;win32&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="ow">or</span> <span class="s2">&quot;win64&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>
-            <span class="n">slash</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">slash</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span>
-
+        <span class="n">slash</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span>
         <span class="k">if</span> <span class="n">output_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">saveToDisk</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">output_address</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">slash</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;Windows style slash in the given address on linux system.&#39;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">output_address</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">slash</span> <span class="o">!=</span> <span class="s2">&quot;/&quot;</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s1">&#39;linux style slash in the given address on windows system!&#39;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">output_address</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="n">slash</span><span class="p">:</span>
                 <span class="n">output_address</span> <span class="o">=</span> <span class="n">output_address</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
