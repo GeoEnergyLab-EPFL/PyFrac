@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -827,6 +828,7 @@
             <span class="n">perf_node</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span>
             <span class="n">perf_node</span><span class="o">.</span><span class="n">normList</span> <span class="o">=</span> <span class="n">normlist</span>
 
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Converged after &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; iterations&quot;</span><span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">interItr</span>
     <span class="k">return</span> <span class="n">solk</span><span class="p">,</span> <span class="n">data</span></div>
 
@@ -890,11 +892,6 @@
         <span class="n">norm_tr</span> <span class="o">=</span> <span class="mf">0.</span>
     <span class="n">norm</span> <span class="o">=</span> <span class="p">(</span><span class="n">norm_w</span> <span class="o">+</span> <span class="n">norm_p</span> <span class="o">+</span> <span class="n">norm_tr</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span>
     <span class="n">converged</span> <span class="o">=</span> <span class="p">(</span><span class="n">norm_w</span> <span class="o">&lt;=</span> <span class="n">tol</span> <span class="ow">and</span> <span class="n">norm_p</span> <span class="o">&lt;=</span> <span class="n">tol</span> <span class="ow">and</span> <span class="n">norm_tr</span> <span class="o">&lt;=</span> <span class="n">tol</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">norm_w</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">()</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">norm_w</span><span class="p">),</span> <span class="nb">repr</span><span class="p">(</span><span class="n">norm_p</span><span class="p">),</span> <span class="nb">repr</span><span class="p">(</span><span class="n">norm_tr</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">converged</span><span class="p">,</span> <span class="n">norm</span></div>
 
@@ -1039,7 +1036,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

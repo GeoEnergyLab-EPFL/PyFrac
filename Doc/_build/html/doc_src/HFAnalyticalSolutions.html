@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -47,51 +48,57 @@ See the LICENSE.TXT file for more details.</p>
 notably for</p>
 <blockquote>
 <div><ul class="simple">
-<li>planar radial fracture with constant injection rate</li>
-<li>height contained fracture</li>
+<li>planar radial fracture with constant injection rate.</li>
+<li>height contained fractures.</li>
 </ul>
 </div></blockquote>
 <dl class="function">
 <dt id="HFAnalyticalSolutions.HF_analytical_sol">
-<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">HF_analytical_sol</code><span class="sig-paren">(</span><em>regime</em>, <em>mesh</em>, <em>Eprime</em>, <em>Q0</em>, <em>muPrime=None</em>, <em>Kprime=None</em>, <em>Cprime=None</em>, <em>length=None</em>, <em>t=None</em>, <em>Kc_1=None</em>, <em>h=None</em>, <em>density=None</em>, <em>Cij=None</em>, <em>gamma=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#HF_analytical_sol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.HF_analytical_sol" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">HF_analytical_sol</code><span class="sig-paren">(</span><em>regime</em>, <em>mesh</em>, <em>Eprime</em>, <em>Q0</em>, <em>inj_point=None</em>, <em>muPrime=None</em>, <em>Kprime=None</em>, <em>Cprime=None</em>, <em>length=None</em>, <em>t=None</em>, <em>Kc_1=None</em>, <em>h=None</em>, <em>density=None</em>, <em>Cij=None</em>, <em>gamma=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#HF_analytical_sol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.HF_analytical_sol" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function provides the analytical solution for the given parameters according to the given propagation regime</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>regime</strong> (<em>string</em>) – <ul>
-<li>K  (toughness dominated regime, without leak off)</li>
-<li>M  (viscosity dominated regime, without leak off)</li>
-<li>Kt (viscosity dominated regime , with leak off)</li>
-<li>Mt (viscosity dominated regime , with leak off)</li>
-<li>PKN (height contained hydraulic fracture with PKN geometry)</li>
-<li>E (elliptical fracture propagating in toughness dominated regime).</li>
-</ul>
-</li>
-<li><strong>mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)         </em><em>-- the fracture toughness</em><em> (</em><em>K'</em>) – </li>
-<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – axis in the case of elliptical fracture and the fracture radius in all of the rest).</li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Kp_perp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>regime</strong> (<em>string</em>) – – the propagation regime. Possible options are:
+- K  (toughness dominated regime, without leak off).
+- M  (viscosity dominated regime, without leak off).
+- Kt (viscosity dominated regime , with leak off).
+- Mt (viscosity dominated regime , with leak off).
+- PKN (height contained hydraulic fracture with PKN geometry).
+- KGD_K (The classical KGD solution in toughness dominated regime.)
+- E_K (elliptical fracture propagating in toughness dominated regime). The solution                                            is equivalent to a particular anisotropic toughness case described in                                            Zia and Lecampion, 2018.)
+- E_E (the elliptical solution with transverse isotropic material properties; see                                           Moukhtari and Lecampion, 2019.)
+- MDR (viscosity dominated solution for turbulent flow. The friction factor is                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).</li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain modulus.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
+<li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the injection point if not at the center(0,0). It should be a list or and numpy array
+of size 2, giving the x and y coordiantes of the injection point.</li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity.</li>
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness (K’) along the minor axis.</li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 2*C, where C is the Carter’s leak off coefficient.</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given length dimension (fracture length in the case of PKN, length of the minor
+axis in the case of elliptical fracture and the fracture radius in all of the rest).</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
+<li><strong>Kp_perp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the major axis.</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the PKN fracture.</li>
+<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the density of the injected fluid.</li>
+<li><strong>Cij</strong> (<em>ndarray</em>) – – the transverse isotropic stiffness matrix (in the canonical basis).</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – aspect ratio of the elliptical fracture in the anisotropic cases.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>t (float)              – time at which the fracture reaches the given length.
-r (float)              – length of the fracture at the given time (fracture length in the case of PKN, length</p>
-<blockquote>
-<div><p>of the minor axis in the case of elliptical fracture and the fracture radius in all
-of the rest).</p>
-</div></blockquote>
-<p>p (ndarray-float)      – pressure at each cell at the given time.
-w (ndarray-float)      – width at each cell at the given time.
-v (float)              – propagation velocity.
-actvElts (ndarray)     – list of cells inside the fracture at the given time.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)              – time at which the fracture reaches the given length.</li>
+<li>r (float)              – length of the fracture at the given time (fracture length in the case of PKN,                                     length of the minor axis in the case of elliptical fracture and the fracture radius                                    in all of the rest).</li>
+<li>p (ndarray-float)      – pressure at each cell at the given time.</li>
+<li>w (ndarray-float)      – width at each cell at the given time.</li>
+<li>v (float)              – propagation velocity.</li>
+<li>actvElts (ndarray)     – list of cells inside the fracture at the given time.</li>
+</ul>
 </p>
 </td>
 </tr>
@@ -109,22 +116,26 @@ time or length. The solution does not take leak off into account.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>KPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)         </em><em>-- 4*</em><em>(</em><em>2/pi</em>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)         </em><em>-- the height of the KGD fracture</em><em> (</em><em>it should be much longer then length</em>) – </li>
-<li><strong>ell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
+<li><strong>KPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness.</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the KGD fracture (it should be much longer then length).</li>
+<li><strong>ell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – length of fracture.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)              – time at which the fracture reaches the given length.
-ell (float)            – length of the fracture at the given time
-p (ndarray-float)      – pressure at each cell at the given time
-w (ndarray-float)      – width at each cell at the given time
-v (float)              – propagation velocity
-actvElts (ndarray)     – list of cells inside the KGD fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)              – time at which the fracture reaches the given length.</li>
+<li>ell (float)            – length of the fracture at the given time.</li>
+<li>p (ndarray-float)      – pressure at each cell at the given time.</li>
+<li>w (ndarray-float)      – width at each cell at the given time.</li>
+<li>v (float)              – propagation velocity.</li>
+<li>actvElts (ndarray)     – list of cells inside the KGD fracture at the given time.</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -141,22 +152,28 @@ radius.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)      </em><em>-- 4*</em><em>(</em><em>2/pi</em>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – be provided</li>
-<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – be provided</li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus</li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 2*C, where C is the Carter’s leak off coefficient</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated. Either of the time or radius can
+be provided</li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated. Either of the time or radius can
+be provided</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)           – time at which the fracture reaches the given radius.
-R (float)           – radius of the fracture at the given time.
-p (ndarray)         – pressure at each cell when the fracture has propagated to the given radius
-w (ndarray)         – width opening at each cell when the fracture has propagated to the given radius or time
-v (float)           – fracture propagation velocity
-actvElts (ndarray)  – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)           – time at which the fracture reaches the given radius.</li>
+<li>R (float)           – radius of the fracture at the given time.</li>
+<li>p (ndarray)         – pressure at each cell when the fracture has propagated to the given radius</li>
+<li>w (ndarray)         – width opening at each cell when the fracture has propagated to the given radius or time</li>
+<li>v (float)           – fracture propagation velocity</li>
+<li>actvElts (ndarray)  – list of cells inside the fracture at the given time</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -173,21 +190,25 @@ solution does not take leak off into account.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em>)          </em><em>-- 4*</em><em>(</em><em>2/pi</em>) – </li>
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time since the start of the injection.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)               – time at which the fracture reaches the given radius.
-R (float)               – radius of the fracture at the given time.
-p (ndarray)             – pressure at each cell when the fracture has propagated to the given radius
-w (ndarray)             – width opening at each cell when the fracture has propagated to the given radius or time
-v (float)               – fracture propagation velocity
-actvElts (ndarray)      – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)               – time at which the fracture reaches the given radius.</li>
+<li>R (float)               – radius of the fracture at the given time.</li>
+<li>p (ndarray)             – pressure at each cell when the fracture has propagated to the given radius</li>
+<li>w (ndarray)             – width opening at each cell when the fracture has propagated to the given radius or time</li>
+<li>v (float)               – fracture propagation velocity</li>
+<li>actvElts (ndarray)      – list of cells inside the fracture at the given time</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -198,28 +219,33 @@ actvElts (ndarray)      – list of cells inside the fracture at the given time<
 <dt id="HFAnalyticalSolutions.MDR_M_vertex_solution">
 <code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">MDR_M_vertex_solution</code><span class="sig-paren">(</span><em>Eprime</em>, <em>Q0</em>, <em>density</em>, <em>visc</em>, <em>Mesh</em>, <em>R=None</em>, <em>t=None</em>, <em>required='111111'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#MDR_M_vertex_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.MDR_M_vertex_solution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime
-propagation, given fracture radius or the time since the start of the injection. The solution does not take leak off into account.</p>
+propagation, given fracture radius or the time since the start of the injection. The solution does not take leak
+off into account.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>visc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
+<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – fluid density.</li>
+<li><strong>visc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – fluid viscosity.</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time since the start of the injection.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)            – time at which the fracture reaches the given radius.
-R (float)            – radius of the fracture at the given time.
-p (ndarray)          – pressure at each cell when the fracture has propagated to the given radius
-w (ndarray)          – width opening at each cell when the fracture has propagated to the given radius or time
-v (float)            – fracture propagation velocity
-actvElts (ndarray)   – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)            – time at which the fracture reaches the given radius.</li>
+<li>R (float)            – radius of the fracture at the given time.</li>
+<li>p (ndarray)          – pressure at each cell when the fracture has propagated to the given radius.</li>
+<li>w (ndarray)          – width opening at each cell when the fracture has propagated to the given radius or                                 time.</li>
+<li>v (float)            – fracture propagation velocity.</li>
+<li>actvElts (ndarray)   – list of cells inside the fracture at the given time.</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -236,21 +262,25 @@ since the start of the injection. The solution does not take leak off into accou
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity.</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time since the start of the injection.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)            – time at which the fracture reaches the given radius.
-R (float)            – radius of the fracture at the given time.
-p (ndarray)          – pressure at each cell when the fracture has propagated to the given radius
-w (ndarray)          – width opening at each cell when the fracture has propagated to the given radius or time
-v (float)            – fracture propagation velocity
-actvElts (ndarray)   – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)            – time at which the fracture reaches the given radius.</li>
+<li>R (float)            – radius of the fracture at the given time.</li>
+<li>p (ndarray)          – pressure at each cell when the fracture has propagated to the given radius</li>
+<li>w (ndarray)          – width opening at each cell when the fracture has propagated to the given radius or time</li>
+<li>v (float)            – fracture propagation velocity</li>
+<li>actvElts (ndarray)   – list of cells inside the fracture at the given time</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -267,21 +297,25 @@ takes leak off into account.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus</li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 2*C, where C is the Carter’s leak off coefficient</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)               – time at which the fracture reaches the given radius.
-R (float)               – radius of the fracture at the given time.
-p (ndarray)             – pressure at each cell when the fracture has propagated to the given radius
-w (ndarray)             – width opening at each cell when the fracture has propagated to the given radius or time
-v (float)               – fracture propagation velocity
-actvElts (ndarray)      – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)               – time at which the fracture reaches the given radius.</li>
+<li>R (float)               – radius of the fracture at the given time.</li>
+<li>p (ndarray)             – pressure at each cell when the fracture has propagated to the given radius</li>
+<li>w (ndarray)             – width opening at each cell when the fracture has propagated to the given radius or time</li>
+<li>v (float)               – fracture propagation velocity</li>
+<li>actvElts (ndarray)      – list of cells inside the fracture at the given time</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -298,21 +332,26 @@ does not take leak off into account.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the PKN fracture</li>
+<li><strong>ell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – length of the PKN fracture, should be much more than height.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)              – time at which the fracture reaches the given length.
-ell (float)            – length of the fracture at the given time
-p (ndarray-float)      – pressure at each cell at the given time
-w (ndarray-float)      – width at each cell at the given time
-v (float)              – propagation velocity
-actvElts (ndarray)     – list of cells inside the PKN fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)              – time at which the fracture reaches the given length.</li>
+<li>ell (float)            – length of the fracture at the given time</li>
+<li>p (ndarray-float)      – pressure at each cell at the given time</li>
+<li>w (ndarray-float)      – width at each cell at the given time</li>
+<li>v (float)              – propagation velocity</li>
+<li>actvElts (ndarray)     – list of cells inside the PKN fracture at the given time</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -329,15 +368,24 @@ IJF, 2018).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>a</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – </li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – aspect ratio of the elliptical fracture in the anisotropic cases.</li>
+<li><strong>Cij</strong> (<em>ndarray</em>) – – the transverse isotropic stiffness matrix (in the canonical basis).</li>
+<li><strong>Kc3</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the minor axis.</li>
+<li><strong>Ep3</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the effective (see Moukhtari and Lecampion, 2019) elasticity along the minor axis.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
+<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given minor axis length.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>w (ndarray-float)      – width at each cell at the given time</p>
-<p>actvElts (ndarray)     – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)              – time at which the fracture reaches the given length.</li>
+<li>b (float)              – length of the minor axix of the elliptical fracture at the given time.</li>
+<li>p (ndarray-float)      – pressure at each cell at the given time.</li>
+<li>w (ndarray-float)      – width at each cell at the given time.</li>
+<li>actvElts (ndarray)     – list of cells inside the fracture at the given time.</li>
+</ul>
 </p>
 </td>
 </tr>
@@ -360,22 +408,26 @@ IJF, 2018).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>KIc_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>KIc_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – </li>
-<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>KIc_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the minor axis.</li>
+<li><strong>KIc_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the major axis.</li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain modulus.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given minor axis length.</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">t (float)              – time at which the fracture reaches the given length.
-b (float)              – length of the fracture at the given time
-p (ndarray-float)      – pressure at each cell at the given time
-w (ndarray-float)      – width at each cell at the given time
-v (float)              – propagation velocity
-actvElts (ndarray)     – list of cells inside the fracture at the given time</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)              – time at which the fracture reaches the given length.</li>
+<li>b (float)              – length of the minor axix of the elliptical fracture at the given time.</li>
+<li>p (ndarray-float)      – pressure at each cell at the given time.</li>
+<li>w (ndarray-float)      – width at each cell at the given time.</li>
+<li>v (float)              – propagation velocity of the fracture along the minor axis.</li>
+<li>actvElts (ndarray)     – list of cells inside the fracture at the given time.</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -385,7 +437,96 @@ actvElts (ndarray)     – list of cells inside the fracture at the given time</
 <dl class="function">
 <dt id="HFAnalyticalSolutions.get_fracture_dimensions_analytical">
 <code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">get_fracture_dimensions_analytical</code><span class="sig-paren">(</span><em>regime</em>, <em>t</em>, <em>Eprime</em>, <em>Q0</em>, <em>muPrime=None</em>, <em>Kprime=None</em>, <em>Cprime=None</em>, <em>Kc_1=None</em>, <em>h=None</em>, <em>density=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#get_fracture_dimensions_analytical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.get_fracture_dimensions_analytical" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function gives the length of the fracture along the x and y axes propagating in the given regime at the given
+time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regime</strong> (<em>string</em>) – <p>– the propagation regime.
+Possible options are:</p>
+<blockquote>
+<div><ul>
+<li>K  (toughness dominated regime, without leak off).</li>
+<li>M  (viscosity dominated regime, without leak off).</li>
+<li>Kt (viscosity dominated regime , with leak off).</li>
+<li>Mt (viscosity dominated regime , with leak off).</li>
+<li>PKN (height contained hydraulic fracture with PKN geometry).</li>
+<li>E (elliptical fracture propagating in toughness dominated regime).</li>
+<li>MDR (viscosity dominated solution for turbulent flow. The friction factor is                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).</li>
+</ul>
+</div></blockquote>
+</li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain modulus.</li>
+<li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
+<li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the injection point if not at the center(0,0). It should be a list or and numpy array
+of size 2, giving the x and y coordiantes of the injection point.</li>
+<li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity.</li>
+<li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness (K’) along the minor axis.</li>
+<li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 2*C, where C is the Carter’s leak off coefficient.</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given length dimension (fracture length in the case of PKN, length of the minor
+axis in the case of elliptical fracture and the fracture radius in all of the rest).</li>
+<li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
+<li><strong>Kp_perp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the major axis.</li>
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the PKN fracture.</li>
+<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the density of the injected fluid.</li>
+<li><strong>Cij</strong> (<em>ndarray</em>) – – the transverse isotropic stiffness matrix (in the canonical basis).</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – aspect ratio of the elliptical fracture in the anisotropic cases.</li>
+<li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>t (float)              – time at which the fracture reaches the given length.</li>
+<li>r (float)              – length of the fracture at the given time (fracture length in the case of PKN,                                     length of the minor axis in the case of elliptical fracture and the fracture radius                                    in all of the rest).</li>
+<li>p (ndarray-float)      – pressure at each cell at the given time.</li>
+<li>w (ndarray-float)      – width at each cell at the given time.</li>
+<li>v (float)              – propagation velocity.</li>
+<li>actvElts (ndarray)     – list of cells inside the fracture at the given time.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="HFAnalyticalSolutions.shift_injection_point">
+<code class="descclassname">HFAnalyticalSolutions.</code><code class="descname">shift_injection_point</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>mesh</em>, <em>variable=None</em>, <em>active_elts=None</em>, <em>fill=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/HFAnalyticalSolutions.html#shift_injection_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#HFAnalyticalSolutions.shift_injection_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function gives the shifted variable array and the corresponding cells after the origin is shifted to the
+given point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>variable</strong> (<em>ndarray</em>) – – the fracture variable to be shifted. This should be on 1d array with the size of the
+mesh. If not provided, a dummy array with the value of the fill (last argument) will
+be returned.</li>
+<li><strong>active_elts</strong> (<em>ndarray</em>) – – the elements which are part of the fracture. Only these cells will be shifted
+according to the new injection point. In other words, the cells for which
+the corresponding cells are to be evaluated.</li>
+<li><strong>fill</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fill value which will be inserted onto the cells which has no corresponding
+elements in the non-shifted mesh.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>shifted_actv (ndarray)– the corresponding cells in the shifted mesh.</li>
+<li>shifted_var (ndarray) – the shifted given variable array. If the array is not provided, a dummy                                   array with the value of the fill (last argument) will be returned.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </div>
 
@@ -432,7 +573,7 @@ actvElts (ndarray)     – list of cells inside the fracture at the given time</
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

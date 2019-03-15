@@ -38,16 +38,11 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         timeStep (float):                       -- time step.
     
     Returns:
-        | exitstatus (int)      -- see documentation for possible values.
-        | Fr_k (Fracture)       -- fracture after advancing time step.
+        - exitstatus (int)      -- see documentation for possible values.
+        - Fr_k (Fracture)       -- fracture after advancing time step.
     """
 
-    # index of current time in the time series (first row) of the injection rate array
-    indxCurTime = max(np.where(Frac.time >= inj_properties.injectionRate[0, :])[0])
-    CurrentRate = inj_properties.injectionRate[1, indxCurTime]  # current injection rate
-
-    Qin = np.zeros((Frac.mesh.NumberOfElts), float)
-    Qin[inj_properties.source_location] = CurrentRate # current injection over the domain
+    Qin = inj_properties.get_injection_rate(Frac.time, Frac.mesh)
 
     if sim_properties.frontAdvancing == 'explicit':
 
@@ -530,10 +525,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # the elements which are fully filled after the front is moved outward)
     if sim_properties.projMethod is 'ILSA_orig':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front(sgndDist_k,
-                                                                       Fr_lstTmStp.EltChannel,
-                                                                       Fr_lstTmStp.mesh)
+                                                                 front_region,
+                                                                 Fr_lstTmStp.EltChannel,
+                                                                 Fr_lstTmStp.mesh)
     elif sim_properties.projMethod is 'LS_grad':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front_LS_gradient(sgndDist_k,
+                                                                       front_region,
                                                                        Fr_lstTmStp.EltChannel,
                                                                        Fr_lstTmStp.mesh)
 
@@ -1226,25 +1223,25 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         sim_Parameters (SimulationProperties):  -- simulation parameters.
 
     Returns:
-        | exitstatus (int)  possible values are
+        - exitstatus (int)  possible values are
 
-        | 0       -- not propagated
-        | 1       -- iteration successful
-        | 2       -- evaluated level set is not valid
-        | 3       -- front is not tracked correctly
-        | 4       -- evaluated tip volume is not valid
-        | 5       -- solution of elastohydrodynamic solver is not valid
-        | 6       -- did not converge after max iterations
-        | 7       -- tip inversion not successful
-        | 8       -- ribbon element not found in the enclosure of a tip cell
-        | 9       -- filling fraction not correct
-        | 10      -- toughness iteration did not converge
-        | 11      -- projection could not be found
-        | 12      -- reached end of grid
-        | 13      -- leak off can't be evaluated
-        | 14      -- fracture fully closed
+            | 0       -- not propagated
+            | 1       -- iteration successful
+            | 2       -- evaluated level set is not valid
+            | 3       -- front is not tracked correctly
+            | 4       -- evaluated tip volume is not valid
+            | 5       -- solution of elastohydrodynamic solver is not valid
+            | 6       -- did not converge after max iterations
+            | 7       -- tip inversion not successful
+            | 8       -- ribbon element not found in the enclosure of a tip cell
+            | 9       -- filling fraction not correct
+            | 10      -- toughness iteration did not converge
+            | 11      -- projection could not be found
+            | 12      -- reached end of grid
+            | 13      -- leak off can't be evaluated
+            | 14      -- fracture fully closed
 
-        | Fracture:            fracture after advancing time step.
+        - Fracture:            fracture after advancing time step.
 
     """
 
@@ -1275,12 +1272,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # the elements which are fully filled after the front is moved outward)
     if sim_properties.projMethod is 'ILSA_orig':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front(sgndDist_k,
-                                                                       Fr_lstTmStp.EltChannel,
-                                                                       Fr_lstTmStp.mesh)
+                                                                front_region,
+                                                                Fr_lstTmStp.EltChannel,
+                                                                Fr_lstTmStp.mesh)
     elif sim_properties.projMethod is 'LS_grad':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front_LS_gradient(sgndDist_k,
-                                                                       Fr_lstTmStp.EltChannel,
-                                                                       Fr_lstTmStp.mesh)
+                                                                front_region,
+                                                                Fr_lstTmStp.EltChannel,
+                                                                Fr_lstTmStp.mesh)
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"

@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -52,7 +53,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Polygon</span>
+<span class="c1"># from matplotlib.patches import Polygon</span>
 <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="k">import</span> <span class="n">to_rgb</span>
 <span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">mpatches</span>
 <span class="kn">from</span> <span class="nn">matplotlib.collections</span> <span class="k">import</span> <span class="n">PatchCollection</span>
@@ -69,27 +70,27 @@
 <span class="sd">    The constructor creates a uniform Cartesian mesh centered at (0,0) and having the dimensions of [-Lx,Lx]*[-Ly,Ly].</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        nx,ny (int):        -- number of elements in x and y directions respectively.</span>
-<span class="sd">        Lx,Ly (float):      -- lengths in x and y directions respectively.</span>
-<span class="sd">        symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for symmetric</span>
-<span class="sd">                                fracture solver.</span>
+<span class="sd">        nx,ny (int):                -- number of elements in x and y directions respectively.</span>
+<span class="sd">        Lx,Ly (float):              -- lengths in x and y directions respectively.</span>
+<span class="sd">        symmetric (bool):           -- if true, additional variables (see list of attributes) will be evaluated for symmetric</span>
+<span class="sd">                                       fracture solver.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        Lx,Ly (float):           -- length of the domain in x and y directions respectively. The rectangular domain</span>
-<span class="sd">                                    have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both</span>
-<span class="sd">                                    the positive and negative halves are included.</span>
-<span class="sd">        nx,ny (int):             -- number of elements in x and y directions respectively.</span>
-<span class="sd">        hx,hy (float):           -- grid spacing in x and y directions respectively.</span>
-<span class="sd">        VertexCoor  (ndarray):   -- [x,y] Coordinates of the vertices.</span>
-<span class="sd">        CenterCoor  (ndarray):   -- [x,y] coordinates of the center of the elements.</span>
-<span class="sd">        NumberOfElts (int):      -- total number of elements in the mesh.</span>
-<span class="sd">        EltArea (float):         -- area of each element.</span>
-<span class="sd">        Connectivity (ndarray):  -- connectivity array giving four vertices of an element in the following order</span>
-<span class="sd">                                    [bottom left, bottom right, top right, top left]</span>
-<span class="sd">        NeiElements (ndarray):   -- Giving four neighboring elements with the following order:[left, right,</span>
-<span class="sd">                                    bottom, up].</span>
-<span class="sd">        distCenter (ndarray):    -- the distance of the cells from the center.</span>
-<span class="sd">        CenterElts (ndarray):    -- the element in the center (the cell with the injection point).</span>
+<span class="sd">        Lx,Ly (float):              -- length of the domain in x and y directions respectively. The rectangular domain</span>
+<span class="sd">                                       have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both</span>
+<span class="sd">                                       the positive and negative halves are included.</span>
+<span class="sd">        nx,ny (int):                -- number of elements in x and y directions respectively.</span>
+<span class="sd">        hx,hy (float):              -- grid spacing in x and y directions respectively.</span>
+<span class="sd">        VertexCoor  (ndarray):      -- [x,y] Coordinates of the vertices.</span>
+<span class="sd">        CenterCoor  (ndarray):      -- [x,y] coordinates of the center of the elements.</span>
+<span class="sd">        NumberOfElts (int):         -- total number of elements in the mesh.</span>
+<span class="sd">        EltArea (float):            -- area of each element.</span>
+<span class="sd">        Connectivity (ndarray):     -- connectivity array giving four vertices of an element in the following order</span>
+<span class="sd">                                       [bottom left, bottom right, top right, top left]</span>
+<span class="sd">        NeiElements (ndarray):      -- Giving four neighboring elements with the following order:[left, right,</span>
+<span class="sd">                                       bottom, up].</span>
+<span class="sd">        distCenter (ndarray):       -- the distance of the cells from the center.</span>
+<span class="sd">        CenterElts (ndarray):       -- the element in the center (the cell with the injection point).</span>
 
 <span class="sd">    Note:</span>
 <span class="sd">        The attributes below are only evaluated if symmetric solver is used.</span>
@@ -138,7 +139,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">=</span> <span class="n">ny</span><span class="o">+</span><span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">=</span> <span class="n">ny</span>
-
 
         <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Lx</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Ly</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
@@ -312,7 +312,7 @@
         <span class="c1"># add rectangle for each cell</span>
         <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
-            <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:],</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">polygon</span> <span class="o">=</span> <span class="n">mpatches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:],</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="kc">True</span><span class="p">)</span>
             <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -536,7 +536,7 @@
         <span class="c1"># add rectangle for each cell</span>
         <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
-            <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:],</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">polygon</span> <span class="o">=</span> <span class="n">mpatches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:],</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="kc">True</span><span class="p">)</span>
             <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
 
         <span class="n">p</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span>
@@ -691,7 +691,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

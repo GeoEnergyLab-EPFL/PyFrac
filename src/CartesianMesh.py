@@ -11,7 +11,7 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
+# from matplotlib.patches import Polygon
 from matplotlib.colors import to_rgb
 import matplotlib.patches as mpatches
 from matplotlib.collections import PatchCollection
@@ -28,27 +28,27 @@ class CartesianMesh:
     The constructor creates a uniform Cartesian mesh centered at (0,0) and having the dimensions of [-Lx,Lx]*[-Ly,Ly].
 
     Args:
-        nx,ny (int):        -- number of elements in x and y directions respectively.
-        Lx,Ly (float):      -- lengths in x and y directions respectively.
-        symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for symmetric
-                                fracture solver.
+        nx,ny (int):                -- number of elements in x and y directions respectively.
+        Lx,Ly (float):              -- lengths in x and y directions respectively.
+        symmetric (bool):           -- if true, additional variables (see list of attributes) will be evaluated for symmetric
+                                       fracture solver.
 
     Attributes:
-        Lx,Ly (float):           -- length of the domain in x and y directions respectively. The rectangular domain
-                                    have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
-                                    the positive and negative halves are included.
-        nx,ny (int):             -- number of elements in x and y directions respectively.
-        hx,hy (float):           -- grid spacing in x and y directions respectively.
-        VertexCoor  (ndarray):   -- [x,y] Coordinates of the vertices.
-        CenterCoor  (ndarray):   -- [x,y] coordinates of the center of the elements.
-        NumberOfElts (int):      -- total number of elements in the mesh.
-        EltArea (float):         -- area of each element.
-        Connectivity (ndarray):  -- connectivity array giving four vertices of an element in the following order
-                                    [bottom left, bottom right, top right, top left]
-        NeiElements (ndarray):   -- Giving four neighboring elements with the following order:[left, right,
-                                    bottom, up].
-        distCenter (ndarray):    -- the distance of the cells from the center.
-        CenterElts (ndarray):    -- the element in the center (the cell with the injection point).
+        Lx,Ly (float):              -- length of the domain in x and y directions respectively. The rectangular domain
+                                       have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
+                                       the positive and negative halves are included.
+        nx,ny (int):                -- number of elements in x and y directions respectively.
+        hx,hy (float):              -- grid spacing in x and y directions respectively.
+        VertexCoor  (ndarray):      -- [x,y] Coordinates of the vertices.
+        CenterCoor  (ndarray):      -- [x,y] coordinates of the center of the elements.
+        NumberOfElts (int):         -- total number of elements in the mesh.
+        EltArea (float):            -- area of each element.
+        Connectivity (ndarray):     -- connectivity array giving four vertices of an element in the following order
+                                       [bottom left, bottom right, top right, top left]
+        NeiElements (ndarray):      -- Giving four neighboring elements with the following order:[left, right,
+                                       bottom, up].
+        distCenter (ndarray):       -- the distance of the cells from the center.
+        CenterElts (ndarray):       -- the element in the center (the cell with the injection point).
 
     Note:
         The attributes below are only evaluated if symmetric solver is used.
@@ -97,7 +97,6 @@ class CartesianMesh:
             self.ny = ny+1
         else:
             self.ny = ny
-
 
         self.hx = 2. * Lx / (self.nx - 1)
         self.hy = 2. * Ly / (self.ny - 1)
@@ -271,7 +270,7 @@ class CartesianMesh:
         # add rectangle for each cell
         patches = []
         for i in range(self.NumberOfElts):
-            polygon = Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
+            polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
             patches.append(polygon)
 
         if plot_prop is None:
@@ -495,7 +494,7 @@ class CartesianMesh:
         # add rectangle for each cell
         patches = []
         for i in elements:
-            polygon = Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
+            polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
             patches.append(polygon)
 
         p = PatchCollection(patches,

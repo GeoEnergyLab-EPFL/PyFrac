@@ -15,66 +15,6 @@ import copy
 from src.TipInversion import TipAsymInversion
 
 
-def radius_level_set(xy, R):
-    """
-    signed distance from a circle; (<0 inside circle , >0 outside, - zero at the circle)
-    Arguments:
-        xy (ndarray-flat):      array with x and y coordinate values of the cell centers. The x coordinates are given in
-                                the frist column and y coordinate is given in the second column
-        R (float):              radius of the circle
-    
-    Returns:
-        ndarray-float:          signed distance from the given circle for each cell given row wise by the argument xy
-    """
-    if len(xy) > 2:
-        # for arrays
-        return np.linalg.norm(xy, 2, 1) - R  # norm(xy)=(x^2+y^2)^1/2    -R
-    else:
-        # for single entries
-        return np.linalg.norm(xy, 2) - R
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def PrintDomain(Matrix, mesh, Elem = None):
-    """
-    3D plot of all elements given in the form of a list;
-    Arguments:
-        Elem(ndarray-int):          list of elements to be plotted
-        Matrix(ndarray-float):      values to be plotted, should be equal in size to the first argument(Elem)
-        mesh(CartesianMesh object): mesh object
-    """
-    if Elem == None:
-        Elem = np.arange(mesh.NumberOfElts)
-
-    tmp = np.zeros((mesh.NumberOfElts,))
-    tmp[Elem] = Matrix
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    ax.plot_trisurf(mesh.CenterCoor[:, 0], mesh.CenterCoor[:, 1], tmp, cmap=cm.jet, linewidth=0.2)
-    plt.show()
-    plt.pause(0.01)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-def plot_Reynolds_number(Fr, ReyNum, edge):
-
-
-    figr = plt.figure()
-    ax = figr.add_subplot(111)
-    ReMesh = np.resize(ReyNum[edge, :], (Fr.mesh.ny, Fr.mesh.nx))
-    x = np.linspace(-Fr.mesh.Lx, Fr.mesh.Lx, Fr.mesh.nx)
-    y = np.linspace(-Fr.mesh.Ly, Fr.mesh.Ly, Fr.mesh.ny)
-    xv, yv = np.meshgrid(x, y)
-    # cax = ax.contourf(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])
-    cax = ax.matshow(ReMesh)
-    figr.colorbar(cax)
-    plt.title("Reynolds number")
-    plt.show()
-
-    return figr
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 def plot_as_matrix(data, mesh, fig=None):
 
     if fig is None:

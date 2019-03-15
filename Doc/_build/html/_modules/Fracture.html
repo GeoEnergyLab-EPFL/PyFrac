@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -54,8 +55,7 @@
 <span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
 <span class="kn">import</span> <span class="nn">dill</span>
 
-<span class="c1"># local import ....</span>
-
+<span class="c1"># local import</span>
 <span class="kn">from</span> <span class="nn">src.Utility</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.HFAnalyticalSolutions</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.LevelSet</span> <span class="k">import</span> <span class="o">*</span>
@@ -78,15 +78,17 @@
 <span class="sd">        init_param (tuple):     -- a tuple with the initialization parameters. The number of parameters depends</span>
 <span class="sd">                                   on the initialization type given by the first element of the tuple.</span>
 
-<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;M&#39;, &#39;Mt&#39;, &#39;K&#39;, &#39;Kt&#39; or &#39;MDR&#39;,</span>
-<span class="sd">                                    the tuple should contain the following parameters in order:</span>
+<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;M&#39;, &#39;Mt&#39;, &#39;K&#39;, &#39;Kt&#39; or &#39;MDR&#39;, \</span>
+<span class="sd">                                       the tuple should contain the following parameters in order:</span>
+
 <span class="sd">                                        1. (string):    -- specifying the type of initialization(see below for possible\</span>
 <span class="sd">                                         options).</span>
 <span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
 <span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
 
-<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;G&#39;, the tuple should</span>
-<span class="sd">                                    contain the following parameters in order:</span>
+<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;G&#39;, the tuple should contain the \</span>
+<span class="sd">                                       following parameters in order:</span>
+
 <span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible\</span>
 <span class="sd">                                                           options).</span>
 <span class="sd">                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture \</span>
@@ -103,27 +105,30 @@
 <span class="sd">                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity \</span>
 <span class="sd">                                                           will be used to calculate the time step.</span>
 
-<span class="sd">                                    -- In case the first element (init_param[0], see below for possible options)</span>
-<span class="sd">                                    is &#39;PKN&#39;, the tuple should contain the following parameters in order:</span>
+<span class="sd">                                    -- In case the first element (init_param[0], see below for possible options) is \</span>
+<span class="sd">                                       &#39;PKN&#39;, the tuple should contain the following parameters in order:</span>
+
 <span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible\</span>
 <span class="sd">                                                           options).</span>
 <span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
 <span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
 <span class="sd">                                        4. (float)      -- the height of the PKN fracture.</span>
 
-<span class="sd">                                    The fracture can be initialized according to the following regimes</span>
-<span class="sd">                                    (specified by the first element of the init_param tuple):</span>
-<span class="sd">                                        | &#39;M&#39;     -- radial fracture in viscosity dominated regime</span>
-<span class="sd">                                        | &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off</span>
-<span class="sd">                                        | &#39;K&#39;     -- radial fracture in toughness dominated regime</span>
-<span class="sd">                                        | &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off</span>
-<span class="sd">                                        | &#39;E&#39;     -- elliptical fracture in toughness dominated regime</span>
-<span class="sd">                                        | &#39;PKN&#39;   -- PKN fracture</span>
-<span class="sd">                                        | &#39;G&#39;     -- flexible, general purpose initialization</span>
+<span class="sd">                                    The fracture can be initialized according to the following regimes (specified by \</span>
+<span class="sd">                                    the first element of the init_param tuple):</span>
+
+<span class="sd">                                        - &#39;M&#39;     -- radial fracture in viscosity dominated regime</span>
+<span class="sd">                                        - &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off</span>
+<span class="sd">                                        - &#39;K&#39;     -- radial fracture in toughness dominated regime</span>
+<span class="sd">                                        - &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off</span>
+<span class="sd">                                        - &#39;E&#39;     -- elliptical fracture in toughness dominated regime</span>
+<span class="sd">                                        - &#39;PKN&#39;   -- PKN fracture</span>
+<span class="sd">                                        - &#39;G&#39;     -- flexible, general purpose initialization</span>
 
 <span class="sd">                                    given_type can be one of the following:</span>
-<span class="sd">                                        | &#39;time&#39;      -- time at which the fracture is to be initialized.</span>
-<span class="sd">                                        | &#39;length&#39;    -- the length parameter. It will be treated as the fracture \</span>
+
+<span class="sd">                                        - &#39;time&#39;      -- time at which the fracture is to be initialized.</span>
+<span class="sd">                                        - &#39;length&#39;    -- the length parameter. It will be treated as the fracture \</span>
 <span class="sd">                                                       radius, the minor axis length and the fracture length for the \</span>
 <span class="sd">                                                       cases of a radial fracture, an elliptical fracture and a PKN \</span>
 <span class="sd">                                                       fracture respectively.</span>
@@ -189,57 +194,7 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">init_param</span><span class="p">,</span> <span class="n">solid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">injection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simulProp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the fracture according to the given initialization parameters.</span>
-<span class="sd">            </span>
-<span class="sd">        Args:</span>
-<span class="sd">            Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">            init_param (tuple)     -- a tuple with the initialization parameters. The number of parameters depends</span>
-<span class="sd">                                   on the initialization type given by the first element of the tuple.</span>
 
-<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;M&#39;, &#39;Mt&#39;, &#39;K&#39;, &#39;Kt&#39; or &#39;MDR&#39;,</span>
-<span class="sd">                                    the tuple should contain the following parameters in order:</span>
-<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
-<span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
-<span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
-
-<span class="sd">                                    -- In case the first element (init_param[0]) is &#39;G&#39;, the tuple should</span>
-<span class="sd">                                    contain the following parameters in order:</span>
-<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
-<span class="sd">                                        2. (ndarray)    -- list of the survey cells giving distance from the fracture front.</span>
-<span class="sd">                                        3. (ndarray)    -- the cells enclosed by the survey cells inside the fracture.</span>
-<span class="sd">                                        4. (ndarray)    -- the dist of the survey cells from the fracture front.</span>
-<span class="sd">                                        5. (ndarray)    -- the array giving the width to be initialized for each of the mesh cell. It can be &#39;None&#39; if not available.</span>
-<span class="sd">                                        6. (ndarray)    -- the array giving the pressure to be initialized for each of the mesh cell. It can be &#39;None&#39; if not available.</span>
-<span class="sd">                                        7. (ndarray)    -- the elasticity influence matrix.</span>
-<span class="sd">                                        8. (ndarray)    -- total volume of the fracture. It can be &#39;None&#39; if not available.</span>
-<span class="sd">                                        9. (ndarray)    -- vel of the propagating front. Maximum of the given velocity will be used to calculate the time step.</span>
-
-<span class="sd">                                    -- In case the first element (init_param[0], see below for possible options)</span>
-<span class="sd">                                    is &#39;PKN&#39;, the tuple should contain the following parameters in order:</span>
-<span class="sd">                                        1. (string)     -- specifying the type of initialization(see below for possible options).</span>
-<span class="sd">                                        2. (string)     -- the type of the given value (see below for possible options).</span>
-<span class="sd">                                        3. (float)      -- the value at which the fracture is initialized.</span>
-<span class="sd">                                        4. (float)      -- the height of the PKN fracture.</span>
-
-<span class="sd">                                    The fracture can be initialized according to the following regimes</span>
-<span class="sd">                                    (specified by the first element of the init_param tuple):</span>
-<span class="sd">                                        | &#39;M&#39;     -- radial fracture in viscosity dominated regime</span>
-<span class="sd">                                        | &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off</span>
-<span class="sd">                                        | &#39;K&#39;     -- radial fracture in toughness dominated regime</span>
-<span class="sd">                                        | &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off</span>
-<span class="sd">                                        | &#39;E&#39;     -- elliptical fracture in toughness dominated regime</span>
-<span class="sd">                                        | &#39;PKN&#39;   -- PKN fracture</span>
-<span class="sd">                                        | &#39;G&#39;     -- flexible, general purpose initialization</span>
-
-<span class="sd">                                    given_type can be one of the following:</span>
-<span class="sd">                                        | &#39;time&#39;    -- time at which the fracture is to be initialized.</span>
-<span class="sd">                                        | &#39;length&#39;  -- the length parameter. It will be treated as the fracture radius, the minor axis length and the fracture length for the cases of a radial fracture, an elliptical fracture and a PKN fracture respectively.</span>
-
-<span class="sd">            solid (MaterialProperties)           -- the MaterialProperties object giving the material properties.</span>
-<span class="sd">            fluid (FluidProperties)              -- the FluidProperties object giving the fluid properties.</span>
-<span class="sd">            injection (InjectionProperties)      -- the InjectionProperties object giving the injection</span>
-<span class="sd">                                                    properties.</span>
-<span class="sd">            simulProp (SimulationProperties)     -- the SimulationParameters object giving the numerical</span>
-<span class="sd">                                                    parameters to be used in the simulation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># the parameter specifying the type of initialization</span>
@@ -272,7 +227,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">Mesh</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">init_type</span> <span class="ow">is</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">init_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span>
 
             <span class="k">if</span> <span class="n">given_type</span> <span class="ow">is</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span>
                 <span class="n">length</span> <span class="o">=</span> <span class="kc">None</span>
@@ -288,6 +243,7 @@
                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
                                                                       <span class="n">solid</span><span class="o">.</span><span class="n">Eprime</span><span class="p">,</span>
                                                                       <span class="n">injection</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                                                                      <span class="n">inj_point</span><span class="o">=</span><span class="n">injection</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">,</span>
                                                                       <span class="n">muPrime</span><span class="o">=</span><span class="n">fluid</span><span class="o">.</span><span class="n">muPrime</span><span class="p">,</span>
                                                                       <span class="n">Kprime</span><span class="o">=</span><span class="n">solid</span><span class="o">.</span><span class="n">Kprime</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterElts</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
                                                                       <span class="n">Cprime</span><span class="o">=</span><span class="n">solid</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterElts</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
@@ -303,8 +259,9 @@
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The radius of the radial fracture is larger than domain!&quot;</span><span class="p">)</span>
                 <span class="c1"># survey cells and their distances from the front</span>
                 <span class="n">surv_cells</span><span class="p">,</span> <span class="n">inner_cells</span> <span class="o">=</span> <span class="n">get_eliptical_survey_cells</span><span class="p">(</span><span class="n">Mesh</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span><span class="p">)</span>
-                <span class="n">surv_dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span> <span class="o">-</span> <span class="p">(</span><span class="n">Mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">surv_cells</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span>
-                                                                            <span class="n">surv_cells</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
+
+                <span class="n">surv_dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span> <span class="o">-</span> <span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">surv_cells</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span>
+                                           <span class="o">+</span><span class="p">(</span><span class="n">Mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">surv_cells</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
             <span class="k">elif</span> <span class="n">init_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;E_E&#39;</span><span class="p">,</span> <span class="s1">&#39;E_K&#39;</span><span class="p">):</span>
                 <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span> <span class="o">*</span> <span class="n">gamma</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initRad</span> <span class="o">&gt;</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">Ly</span> <span class="ow">or</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">:</span>
@@ -331,11 +288,23 @@
                     <span class="nb">abs</span><span class="p">(</span><span class="n">Mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">inner_cells</span><span class="p">[</span><span class="n">ribbon_y</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="mi">1</span><span class="p">]))</span>
                 <span class="n">inner_cells</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inner_cells</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">surv_cells</span><span class="p">]</span>
 
+            <span class="k">if</span> <span class="n">injection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">surv_cells</span><span class="p">,</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">shift_injection_point</span><span class="p">(</span><span class="n">injection</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                        <span class="n">injection</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                                        <span class="n">actv</span><span class="o">=</span><span class="n">surv_cells</span><span class="p">)</span>
+
+                <span class="n">inner_cells</span><span class="p">,</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">shift_injection_point</span><span class="p">(</span><span class="n">injection</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                        <span class="n">injection</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                                        <span class="n">actv</span><span class="o">=</span><span class="n">inner_cells</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EltTip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EltCrack</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EltRibbon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ZeroVertex</span><span class="p">,</span> \
         <span class="bp">self</span><span class="o">.</span><span class="n">CellStatus</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">FillF</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sgndDist</span> <span class="o">=</span> <span class="n">generate_footprint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
                                                                                 <span class="n">surv_cells</span><span class="p">,</span>
                                                                                 <span class="n">inner_cells</span><span class="p">,</span>
-                                                                                <span class="n">surv_dist</span><span class="p">)</span>
+                                                                                <span class="n">surv_dist</span><span class="p">,</span>
+                                                                                <span class="n">inj_point</span><span class="o">=</span><span class="n">injection</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">)</span>
         <span class="c1"># for general purpose initialization</span>
         <span class="k">if</span> <span class="n">init_type</span> <span class="ow">is</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pNet</span> <span class="o">=</span> <span class="n">get_width_pressure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
@@ -353,11 +322,8 @@
             <span class="k">if</span> <span class="n">volume</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">injection</span> <span class="o">!=</span><span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">injection</span> <span class="o">!=</span><span class="kc">None</span> <span class="ow">and</span> <span class="n">init_type</span> <span class="ow">is</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">volume</span><span class="o">/</span><span class="n">injection</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># set time to zero if mechanical loading is creating the fracture</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="k">if</span> <span class="n">vel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">vel</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">EltTip</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="p">),</span> <span class="p">)</span>
@@ -431,14 +397,17 @@
 <span class="sd">            elements (ndarray):                 -- the elements to be plotted.</span>
 <span class="sd">            backGround_param (string):          -- the parameter according to which the the mesh will be color-mapped.\</span>
 <span class="sd">                                                   Options are listed below:</span>
-<span class="sd">                                                        | -- &#39;confining stress&#39; or &#39;sigma0&#39;</span>
-<span class="sd">                                                        | -- &#39;fracture toughness&#39; or &#39;K1c&#39;</span>
-<span class="sd">                                                        | -- &#39;leak off coefficient&#39;, &#39;Cl&#39;</span>
+
+<span class="sd">                                                        - &#39;confining stress&#39; or &#39;sigma0&#39;</span>
+<span class="sd">                                                        - &#39;fracture toughness&#39; or &#39;K1c&#39;</span>
+<span class="sd">                                                        - &#39;leak off coefficient&#39;, &#39;Cl&#39;</span>
 <span class="sd">            plot_prop (PlotProperties):         -- the properties to be used for the plot.</span>
-<span class="sd">            fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.</span>
+<span class="sd">            fig (Figure):                       -- the figure to superimpose on. New figure will be made if not</span>
+<span class="sd">                                                   provided.</span>
 <span class="sd">            edge (int):                         -- the edge of the cell that will be plotted. This is for variables that</span>
-<span class="sd">                                                    are evaluated on the cell edges instead of cell center. It can have a</span>
-<span class="sd">                                                    value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">                                                    are evaluated on the cell edges instead of cell center. It can have</span>
+<span class="sd">                                                    a value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top,</span>
+<span class="sd">                                                    4-&gt;average).</span>
 <span class="sd">            contours_at (list):                 -- the values at which the contours are to be plotted.</span>
 <span class="sd">            labels (LabelProperties):           -- the labels to be used for the plot.</span>
 <span class="sd">            plot_non_zero (bool):               -- if true, only non-zero values will be plotted.</span>
@@ -451,10 +420,13 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The variable does not vary spatially!&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">variable</span> <span class="ow">is</span> <span class="s1">&#39;complete&#39;</span><span class="p">:</span>
+            <span class="n">proj</span> <span class="o">=</span> <span class="s1">&#39;3D&#39;</span>
+            <span class="k">if</span> <span class="s1">&#39;2D&#39;</span> <span class="ow">in</span> <span class="n">projection</span><span class="p">:</span>
+                <span class="n">proj</span> <span class="o">=</span> <span class="s1">&#39;2D&#39;</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="bp">self</span><span class="p">],</span>
                                        <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
                                        <span class="n">mat_properties</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
-                                       <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
+                                       <span class="n">projection</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span>
                                        <span class="n">elements</span><span class="o">=</span><span class="n">elements</span><span class="p">,</span>
                                        <span class="n">backGround_param</span><span class="o">=</span><span class="n">backGround_param</span><span class="p">,</span>
                                        <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
@@ -462,11 +434,10 @@
                                        <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
                                        <span class="n">contours_at</span><span class="o">=</span><span class="n">contours_at</span><span class="p">,</span>
                                        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
-
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_fracture_list</span><span class="p">([</span><span class="bp">self</span><span class="p">],</span>
                                      <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;footprint&#39;</span><span class="p">,</span>
                                      <span class="n">mat_properties</span><span class="o">=</span><span class="n">mat_properties</span><span class="p">,</span>
-                                     <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span>
+                                     <span class="n">projection</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span>
                                      <span class="n">elements</span><span class="o">=</span><span class="n">elements</span><span class="p">,</span>
                                      <span class="n">backGround_param</span><span class="o">=</span><span class="n">backGround_param</span><span class="p">,</span>
                                      <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
@@ -739,7 +710,7 @@
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
-<div class="viewcode-block" id="Fracture.remesh"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">material_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">sim_prop</span><span class="p">):</span>
+<div class="viewcode-block" id="Fracture.remesh"><a class="viewcode-back" href="../doc_src/Fracture.html#Fracture.Fracture.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">coarse_mesh</span><span class="p">,</span> <span class="n">material_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">sim_prop</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function compresses the fracture by the given factor once it has reached the end of the mesh. If the</span>
 <span class="sd">        compression factor is two, each set of four cells in the fine mesh is replaced by a single cell. The volume of</span>
@@ -747,23 +718,17 @@
 <span class="sd">        re-adjusted according to the new mesh.</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            factor (float):     -- the factor by which the domain is to be compressed. For example, a factor of 2 will</span>
-<span class="sd">                                   merge the adjacent four cells to a single cell.</span>
-<span class="sd">            C (ndarray):        -- the elasticity matrix to be re-evaluated for the new mesh.</span>
-<span class="sd">            material_prop:      -- the material properties to be re-evaluated for the new mesh.</span>
-<span class="sd">            fluid_prop:         -- the fluid properties to be re-evaluated for the new mesh.</span>
-<span class="sd">            inj_prop:           -- the injection properties to be re-evaluated for the new mesh.</span>
-<span class="sd">            sim_prop:           -- the simulation properties.</span>
+<span class="sd">            factor (float):         -- the factor by which the domain is to be compressed. For example, a factor of 2</span>
+<span class="sd">                                        will merge the adjacent four cells to a single cell.</span>
+<span class="sd">            C (ndarray):            -- the elasticity matrix to be re-evaluated for the new mesh.</span>
+<span class="sd">            material_prop:          -- the material properties to be re-evaluated for the new mesh.</span>
+<span class="sd">            fluid_prop:             -- the fluid properties to be re-evaluated for the new mesh.</span>
+<span class="sd">            inj_prop:               -- the injection properties to be re-evaluated for the new mesh.</span>
+<span class="sd">            sim_prop:               -- the simulation properties.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            Fr_coarse           -- the new fracture after re-meshing.</span>
+<span class="sd">            Fr_coarse (Fracture):   -- the new fracture after re-meshing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">coarse_mesh</span> <span class="o">=</span> <span class="n">CartesianMesh</span><span class="p">(</span><span class="n">factor</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span>
-                                    <span class="n">factor</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span><span class="p">,</span>
-                                    <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span>
-                                    <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span>
-                                    <span class="n">symmetric</span><span class="o">=</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">symmetric</span><span class="p">)</span>
 
         <span class="c1"># interpolate the level set by first advancing and then interpolating</span>
         <span class="n">SolveFMM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sgndDist</span><span class="p">,</span>
@@ -872,9 +837,6 @@
                      <span class="bp">self</span><span class="o">.</span><span class="n">FractureVolume</span><span class="p">,</span>
                      <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
 
-        <span class="c1"># re-meshing of the material properties</span>
-        <span class="n">material_prop</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">coarse_mesh</span><span class="p">)</span>
-
         <span class="n">Fr_coarse</span> <span class="o">=</span> <span class="n">Fracture</span><span class="p">(</span><span class="n">coarse_mesh</span><span class="p">,</span>
                             <span class="n">init_data</span><span class="p">,</span>
                             <span class="n">solid</span><span class="o">=</span><span class="n">material_prop</span><span class="p">,</span>
@@ -922,12 +884,6 @@
         <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
         <span class="n">Fr_coarse</span><span class="o">.</span><span class="n">wHist</span> <span class="o">=</span> <span class="n">wHist_coarse</span>
 
-        <span class="c1"># update the saved properties</span>
-        <span class="k">if</span> <span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
-            <span class="n">prop</span> <span class="o">=</span> <span class="p">(</span><span class="n">material_prop</span><span class="p">,</span> <span class="n">fluid_prop</span><span class="p">,</span> <span class="n">inj_prop</span><span class="p">,</span> <span class="n">sim_prop</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
-                <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
         <span class="k">return</span> <span class="n">Fr_coarse</span></div></div>
 </pre></div>
 
@@ -967,7 +923,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

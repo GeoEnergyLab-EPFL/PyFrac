@@ -30,9 +30,11 @@ def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
     """
 
     # reconstruct front to get tip cells from the given level set
+
     (elt_tip, l_tip, alpha_tip, CellStatus) = reconstruct_front_LS_gradient(sgnd_dist,
-                                                                            channel_elts,
-                                                                            mesh)
+                                                            np.setdiff1d(np.arange(mesh.NeiElements,), channel_elts),
+                                                            channel_elts,
+                                                            mesh)
     # get the filling fraction to find partially filled tip cells
     FillFrac = Integral_over_cell(elt_tip,
                                   alpha_tip,

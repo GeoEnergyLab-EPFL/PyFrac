@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -58,17 +59,17 @@ All rights reserved. See the LICENSE.TXT file for more details.</p>
 <li><strong>init_param</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) – <p>– a tuple with the initialization parameters. The number of parameters depends
 on the initialization type given by the first element of the tuple.</p>
 <blockquote>
-<div>– In case the first element (init_param[0]) is ‘M’, ‘Mt’, ‘K’, ‘Kt’ or ‘MDR’,
-the tuple should contain the following parameters in order:<blockquote>
+<div>– In case the first element (init_param[0]) is ‘M’, ‘Mt’, ‘K’, ‘Kt’ or ‘MDR’,                                        the tuple should contain the following parameters in order:<blockquote>
 <div><ol class="arabic">
 <li>(string):    – specifying the type of initialization(see below for possible                                         options).</li>
 <li>(string)     – the type of the given value (see below for possible options).</li>
 <li>(float)      – the value at which the fracture is initialized.</li>
 </ol>
 </div></blockquote>
-<p>– In case the first element (init_param[0]) is ‘G’, the tuple should
-contain the following parameters in order:</p>
+<p class="attribution">&mdash;In case the first element (init_param[0]) is ‘G’, the tuple should contain the                                        following parameters in order:</p>
+</div></blockquote>
 <blockquote>
+<div><blockquote>
 <div><ol class="arabic">
 <li>(string)     – specifying the type of initialization(see below for possible                                                           options).</li>
 <li>(ndarray)    – list of the survey cells giving distance from the fracture                                                            front.</li>
@@ -81,9 +82,10 @@ contain the following parameters in order:</p>
 <li>(ndarray)    – vel of the propagating front. Maximum of the given velocity                                                            will be used to calculate the time step.</li>
 </ol>
 </div></blockquote>
-<p>– In case the first element (init_param[0], see below for possible options)
-is ‘PKN’, the tuple should contain the following parameters in order:</p>
+<p class="attribution">&mdash;In case the first element (init_param[0], see below for possible options) is                                        ‘PKN’, the tuple should contain the following parameters in order:</p>
+</div></blockquote>
 <blockquote>
+<div><blockquote>
 <div><ol class="arabic">
 <li>(string)     – specifying the type of initialization(see below for possible                                                           options).</li>
 <li>(string)     – the type of the given value (see below for possible options).</li>
@@ -91,27 +93,25 @@ is ‘PKN’, the tuple should contain the following parameters in order:</p>
 <li>(float)      – the height of the PKN fracture.</li>
 </ol>
 </div></blockquote>
-<p>The fracture can be initialized according to the following regimes
-(specified by the first element of the init_param tuple):</p>
+<p>The fracture can be initialized according to the following regimes (specified by                                     the first element of the init_param tuple):</p>
 <blockquote>
-<div><div class="line-block">
-<div class="line">’M’     – radial fracture in viscosity dominated regime</div>
-<div class="line">’Mt’    – radial fracture in viscosity dominated regime with leak-off</div>
-<div class="line">’K’     – radial fracture in toughness dominated regime</div>
-<div class="line">’Kt’    – radial fracture in toughness dominated regime with leak-off</div>
-<div class="line">’E’     – elliptical fracture in toughness dominated regime</div>
-<div class="line">’PKN’   – PKN fracture</div>
-<div class="line">’G’     – flexible, general purpose initialization</div>
-</div>
+<div><ul>
+<li>’M’     – radial fracture in viscosity dominated regime</li>
+<li>’Mt’    – radial fracture in viscosity dominated regime with leak-off</li>
+<li>’K’     – radial fracture in toughness dominated regime</li>
+<li>’Kt’    – radial fracture in toughness dominated regime with leak-off</li>
+<li>’E’     – elliptical fracture in toughness dominated regime</li>
+<li>’PKN’   – PKN fracture</li>
+<li>’G’     – flexible, general purpose initialization</li>
+</ul>
 </div></blockquote>
-<dl class="docutils">
-<dt>given_type can be one of the following:</dt>
-<dd><div class="first last line-block">
-<div class="line">’time’      – time at which the fracture is to be initialized.</div>
-<div class="line">’length’    – the length parameter. It will be treated as the fracture                                                        radius, the minor axis length and the fracture length for the                                                        cases of a radial fracture, an elliptical fracture and a PKN                                                        fracture respectively.</div>
-</div>
-</dd>
-</dl>
+<p>given_type can be one of the following:</p>
+<blockquote>
+<div><ul>
+<li>’time’      – time at which the fracture is to be initialized.</li>
+<li>’length’    – the length parameter. It will be treated as the fracture                                                        radius, the minor axis length and the fracture length for the                                                        cases of a radial fracture, an elliptical fracture and a PKN                                                        fracture respectively.</li>
+</ul>
+</div></blockquote>
 </div></blockquote>
 </li>
 <li><strong>solid</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the MaterialProperties object giving the material properties.</li>
@@ -621,15 +621,20 @@ leak off in tip cells, i.e. for cells where the front has not left the cell.</p>
 for the supported projections for each of the supprted variable. If
 not provided, the default will be used.</li>
 <li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
-<li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be color-mapped.                                                   Options are listed below:
-| – ‘confining stress’ or ‘sigma0’
-| – ‘fracture toughness’ or ‘K1c’
-| – ‘leak off coefficient’, ‘Cl’</li>
+<li><strong>backGround_param</strong> (<em>string</em>) – <p>– the parameter according to which the the mesh will be color-mapped.                                                   Options are listed below:</p>
+<ul>
+<li>’confining stress’ or ‘sigma0’</li>
+<li>’fracture toughness’ or ‘K1c’</li>
+<li>’leak off coefficient’, ‘Cl’</li>
+</ul>
+</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
-<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not
+provided.</li>
 <li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
-are evaluated on the cell edges instead of cell center. It can have a
-value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+are evaluated on the cell edges instead of cell center. It can have
+a value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top,
+4-&gt;average).</li>
 <li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
 <li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
 <li><strong>plot_non_zero</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, only non-zero values will be plotted.</li>
@@ -714,7 +719,7 @@ front lines in each of the tip cell to the Ffront variable of the Fracture class
 
 <dl class="method">
 <dt id="Fracture.Fracture.remesh">
-<code class="descname">remesh</code><span class="sig-paren">(</span><em>factor</em>, <em>C</em>, <em>material_prop</em>, <em>fluid_prop</em>, <em>inj_prop</em>, <em>sim_prop</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Fracture.html#Fracture.remesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Fracture.Fracture.remesh" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remesh</code><span class="sig-paren">(</span><em>factor</em>, <em>C</em>, <em>coarse_mesh</em>, <em>material_prop</em>, <em>fluid_prop</em>, <em>inj_prop</em>, <em>sim_prop</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Fracture.html#Fracture.remesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Fracture.Fracture.remesh" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function compresses the fracture by the given factor once it has reached the end of the mesh. If the
 compression factor is two, each set of four cells in the fine mesh is replaced by a single cell. The volume of
 the fracture is conserved upto machine precision. The elasticity matrix and the properties objects are also
@@ -724,8 +729,8 @@ re-adjusted according to the new mesh.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the factor by which the domain is to be compressed. For example, a factor of 2 will
-merge the adjacent four cells to a single cell.</li>
+<li><strong>factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the factor by which the domain is to be compressed. For example, a factor of 2
+will merge the adjacent four cells to a single cell.</li>
 <li><strong>C</strong> (<em>ndarray</em>) – – the elasticity matrix to be re-evaluated for the new mesh.</li>
 <li><strong>material_prop</strong> – – the material properties to be re-evaluated for the new mesh.</li>
 <li><strong>fluid_prop</strong> – – the fluid properties to be re-evaluated for the new mesh.</li>
@@ -734,7 +739,10 @@ merge the adjacent four cells to a single cell.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Fr_coarse           – the new fracture after re-meshing.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– the new fracture after re-meshing.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Fr_coarse (<a class="reference internal" href="#Fracture.Fracture" title="Fracture.Fracture">Fracture</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -788,7 +796,7 @@ merge the adjacent four cells to a single cell.</li>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

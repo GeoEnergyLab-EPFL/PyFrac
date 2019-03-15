@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -39,13 +40,14 @@
           <div class="body" role="main">
             
   <h1>Source code for Properties</h1><div class="highlight"><pre>
-<span></span><span class="c1">#</span>
-<span class="c1"># This file is part of PyFrac.</span>
-<span class="c1">#</span>
-<span class="c1"># Created by Haseeb Zia on 03.04.17.</span>
-<span class="c1"># Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.</span>
-<span class="c1">#  All rights reserved. See the LICENSE.TXT file for more details.</span>
-<span class="c1">#</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file is part of PyFrac.</span>
+
+<span class="sd">Created by Haseeb Zia on 03.04.17.</span>
+<span class="sd">Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.</span>
+<span class="sd">All rights reserved. See the LICENSE.TXT file for more details.</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -57,56 +59,70 @@
 
 <div class="viewcode-block" id="MaterialProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.MaterialProperties">[docs]</a><span class="k">class</span> <span class="nc">MaterialProperties</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Class defining the Material properties of the solid</span>
+<span class="sd">    Class defining the Material properties of the solid.</span>
 
-<span class="sd">    Instance variables:</span>
-<span class="sd">        Eprime (float)       -- plain strain modulus</span>
-<span class="sd">        K1c (ndarray)        -- Linear-Elastic Plane-Strain Toughness for each cell</span>
-<span class="sd">        Kprime (ndarray)     -- 4*(2/pi)**0.5 * K1c</span>
-<span class="sd">        Cl (float)           -- Carter&#39;s leak off coefficient</span>
-<span class="sd">        Cprime (ndarray)     -- 2 * Carter&#39;s leak off coefficient</span>
-<span class="sd">        SigmaO (ndarray)     -- in-situ stress field</span>
-<span class="sd">        grainSize (float)    -- the grain size of the rock; used to calculate the relative roughness.</span>
-<span class="sd">        anisotropic (bool)   -- if True, the toughness is considered anisotropic.</span>
-<span class="sd">        K1cFunc (function)   -- the function giving the toughness on the domain. It takes one argument (angle) in</span>
-<span class="sd">                                case of anisotropic toughness and two arguments (x, y) in case of hetrogenous</span>
-<span class="sd">                                toughness. The function is also used to get the toughness if the domain is remeshed.</span>
-<span class="sd">        SigmaOFunc (function)-- the function giving the in-situ stress on the domain. It should takes two arguments</span>
-<span class="sd">                                (x, y) to give the stress on these coordinates. It is also used to get the</span>
-<span class="sd">                                stress if the domain is remeshed.</span>
-<span class="sd">        ClFunc (function)    -- the function giving the in Carter&#39;s leak off coefficient on the domain. It should</span>
-<span class="sd">                                takes two arguments (x, y) to give the coefficient on these coordinates. It is also</span>
-<span class="sd">                                used to get the leak off coefficient if the domain is remeshed.</span>
-<span class="sd">    Methods:</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        Mesh (CartesianMesh):           -- the CartesianMesh object describing the mesh.</span>
+<span class="sd">        Eprime (float):                 -- plain strain modulus.</span>
+<span class="sd">        Toughness (float):              -- Linear-Elastic Plane-Strain Fracture Toughness.</span>
+<span class="sd">        Carters_coef (float):           -- Carter&#39;s leak off coefficient.</span>
+<span class="sd">        confining_stress (ndarray):     -- in-situ confining stress field normal to fracture surface.</span>
+<span class="sd">        grain_size (float):             -- the grain size of the rock; used to calculate the relative roughness.</span>
+<span class="sd">        K1c_func (function):            -- the function giving the toughness on the domain. It takes one argument</span>
+<span class="sd">                                           (angle) in case of anisotropic toughness and two arguments (x, y) in case</span>
+<span class="sd">                                           of heterogeneous toughness. The function is also used to get the</span>
+<span class="sd">                                           toughness if the domain is re-meshed.</span>
+<span class="sd">        anisotropic_K1c (bool):         -- flag to specify if the fracture toughness is anisotropic.</span>
+<span class="sd">        confining_stress_func (function):-- the function giving the in-situ stress on the domain. It should takes</span>
+<span class="sd">                                           two arguments (x, y) to give the stress on these coordinates. It is also</span>
+<span class="sd">                                           used to get the stress if the domain is re-meshed.</span>
+<span class="sd">        Carters_coef_func (function):   -- the function giving the in Carter&#39;s leak off coefficient on the domain.</span>
+<span class="sd">                                           It should takes two arguments (x, y) to give the coefficient on these</span>
+<span class="sd">                                           coordinates. It is also used to get the leak off coefficient if the</span>
+<span class="sd">                                           domain is re-meshed.</span>
+<span class="sd">        TI_elasticity(bool):            -- if True, the medium is elastic transverse isotropic.</span>
+<span class="sd">        Cij(ndarray):                   -- the transverse isotropic stiffness matrix (in the canonical basis); needs to</span>
+<span class="sd">                                           be provided if TI_elasticity=True.</span>
+<span class="sd">        free_surf (bool):               -- the free surface flag. True if the effect of free surface is to be taken</span>
+<span class="sd">                                           into account.</span>
+<span class="sd">        free_surf_depth (float):        -- the depth of the fracture from the free surface.</span>
+<span class="sd">        TI_plane_angle (float):         -- the angle of the plane of the fracture with respect to the free surface.</span>
+<span class="sd">        minimum_width (float):          -- minimum width corresponding to the asperity of the material.</span>
+
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        Eprime (float):             -- plain strain modulus.</span>
+<span class="sd">        K1c (ndarray):              -- Linear-Elastic Plane-Strain Toughness for each cell.</span>
+<span class="sd">        Kprime (ndarray):           -- 4*(2/pi)**0.5 * K1c.</span>
+<span class="sd">        Cl (float):                 -- Carter&#39;s leak off coefficient.</span>
+<span class="sd">        Cprime (ndarray):           -- 2 * Carter&#39;s leak off coefficient.</span>
+<span class="sd">        SigmaO (ndarray):           -- in-situ confining stress field normal to fracture surface.</span>
+<span class="sd">        grainSize (float):          -- the grain size of the rock; used to calculate the relative roughness.</span>
+<span class="sd">        anisotropic_K1c (bool):     -- if True, the toughness is considered anisotropic.</span>
+<span class="sd">        Kc1 (float):                -- the fracture toughness along the x-axis, in case it is anisotropic.</span>
+<span class="sd">        TI_elasticity (bool):       -- the flag specifying transverse isotropic elasticity.</span>
+<span class="sd">        Cij (ndarray):              -- the transverse isotropic stiffness matrix (in the canonical basis).</span>
+<span class="sd">        freeSurf (bool):            -- if True, the effect of free surface is to be taken into account.</span>
+<span class="sd">        FreeSurfDepth (float):      -- the depth of the fracture from the free surface.</span>
+<span class="sd">        TI_PlaneAngle (float):      -- the angle of the plane of the fracture with respect to the free surface.</span>
+<span class="sd">        K1cFunc (function):         -- the function giving the toughness on the domain. It takes one argument (angle) in</span>
+<span class="sd">                                        case of anisotropic toughness and two arguments (x, y) in case of hetrogenous</span>
+<span class="sd">                                        toughness. The function is also used to get the toughness if the domain is</span>
+<span class="sd">                                        re-meshed.</span>
+<span class="sd">        SigmaOFunc (function):      -- the function giving the in-situ stress on the domain. It should takes two</span>
+<span class="sd">                                        arguments(x, y) to give the stress on these coordinates. It is also used to get</span>
+<span class="sd">                                        the confining stress if the domain is re-meshed.</span>
+<span class="sd">        ClFunc (function):          -- the function giving the in Carter&#39;s leak off coefficient on the domain. It should</span>
+<span class="sd">                                        takes two arguments (x, y) to give the coefficient on these coordinates. It is</span>
+<span class="sd">                                        also used to get the leak off coefficient if the domain is re-meshed.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Toughness</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">Cl</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">SigmaO</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">K1c_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">anisotropic_K1c</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SigmaO_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Cl_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TI_elasticity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">wc</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Toughness</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">Carters_coef</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">confining_stress</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">K1c_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">anisotropic_K1c</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">confining_stress_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Carters_coef_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TI_elasticity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">minimum_width</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Arguments:</span>
-<span class="sd">            Eprime (float)          -- plain strain modulus.</span>
-<span class="sd">            Toughness (float)       -- Linear-Elastic Plane-Strain Fracture Toughness.</span>
-<span class="sd">            Cl (float)              -- Carter&#39;s leak off coefficient.</span>
-<span class="sd">            SigmaO (ndarray)        -- in-situ stress field.</span>
-<span class="sd">            grainSize (float)       -- the grain size of the rock; used to calculate the relative roughness.</span>
-<span class="sd">            anisotropic (bool)      -- flag to specify if the fracture toughness is anisotropic.</span>
-<span class="sd">            K1c_perp (float)        -- the fracture toughness in the direction of x-axis.</span>
-<span class="sd">            anisotropic_flag(bool)  -- if True, the toughness is considered anisotropic.</span>
-<span class="sd">            K1c_func (function)     -- the function giving the toughness on the domain. It takes one argument (angle) in</span>
-<span class="sd">                                       case of anisotropic toughness and two arguments (x, y) in case of hetrogenous</span>
-<span class="sd">                                       toughness. The function is also used to get the toughness if the domain is remeshed.</span>
-<span class="sd">            SigmaO_func (function)  -- the function giving the in situ stress on the domain. It should takes two</span>
-<span class="sd">                                       arguments (x, y) to give the stress on these coordinates. It is also used to get</span>
-<span class="sd">                                       the stress if the domain is remeshed.</span>
-<span class="sd">            Cl_func (function)      -- the function giving the in Carter&#39;s leak off coefficient on the domain. It</span>
-<span class="sd">                                       should takes two arguments (x, y) to give the coefficient on these coordinates.</span>
-<span class="sd">                                       It is also used to get the leak off coefficient if the domain is remeshed.</span>
-<span class="sd">            TI_elasticity(bool)     -- if True, the medium is elastic transverse isotropic.</span>
-<span class="sd">            Cij(Ndarray-float)      -- the TI stiffness matrix (in the canonical basis) is provided when</span>
-<span class="sd">                                       TI_elasticity=true.</span>
-<span class="sd">            wc (float)              -- minimum width corresponding to the asperity of the material.</span>
-
+<span class="sd">        The constructor function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Eprime</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
@@ -126,25 +142,25 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">K1c</span> <span class="o">=</span> <span class="n">Toughness</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">Kprime</span> <span class="o">=</span> <span class="p">(</span><span class="mi">32</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">Toughness</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Cl</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
-            <span class="k">if</span> <span class="n">Cl</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">Cl</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Cl</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Carters_coef</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">if</span> <span class="n">Carters_coef</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">Carters_coef</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Carters_coef</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Error in the size of Leak-Off coefficient input!&#39;</span><span class="p">)</span>
                 <span class="k">return</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">Cl</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Cl</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span> <span class="o">=</span> <span class="n">Carters_coef</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Cprime</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">Carters_coef</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">SigmaO</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
-            <span class="k">if</span> <span class="n">SigmaO</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">SigmaO</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">confining_stress</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
+            <span class="k">if</span> <span class="n">confining_stress</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">:</span>  <span class="c1"># check if size equal to the mesh size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">confining_stress</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Error in the size of Sigma input!&#39;</span><span class="p">)</span>
                 <span class="k">return</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">SigmaO</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SigmaO</span> <span class="o">=</span> <span class="n">confining_stress</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">grainSize</span> <span class="o">=</span> <span class="n">grain_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic_K1c</span> <span class="o">=</span> <span class="n">anisotropic_K1c</span>
@@ -186,24 +202,24 @@
 
 
         <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span> <span class="o">=</span> <span class="n">K1c_func</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">SigmaOFunc</span> <span class="o">=</span> <span class="n">SigmaO_func</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ClFunc</span> <span class="o">=</span> <span class="n">Cl_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SigmaOFunc</span> <span class="o">=</span> <span class="n">confining_stress_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ClFunc</span> <span class="o">=</span> <span class="n">Carters_coef_func</span>
 
         <span class="c1"># overriding with the values evaluated by the given functions</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">K1c_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">SigmaO_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Cl_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">K1c_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">confining_stress_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Carters_coef_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">Mesh</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">wc</span> <span class="o">=</span> <span class="n">wc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wc</span> <span class="o">=</span> <span class="n">minimum_width</span>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 <div class="viewcode-block" id="MaterialProperties.remesh"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.MaterialProperties.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This function evaluate the toughness, confining stress and leak off coefficient according to the given mesh</span>
+<span class="sd">        This function evaluates the toughness, confining stress and leak off coefficient on the given mesh using the</span>
+<span class="sd">        functions provided in the MaterialProperties object. It should be evaluated each time re-meshing is done.</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            mesh (CartesianMesh)        -- the CartesianMesh object describing the new mesh</span>
+<span class="sd">            mesh (CartesianMesh):        -- the CartesianMesh object describing the new mesh.</span>
 
-<span class="sd">        Returns:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">K1cFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic_K1c</span><span class="p">:</span>
@@ -234,32 +250,36 @@
 
 <div class="viewcode-block" id="FluidProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.FluidProperties">[docs]</a><span class="k">class</span> <span class="nc">FluidProperties</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">       Class defining the fluid properties</span>
+<span class="sd">    Class defining the fluid properties.</span>
 
-<span class="sd">       Instance variables:</span>
-<span class="sd">            viscosity (ndarray)     -- Viscosity of the fluid (note its different from local viscosity, see</span>
-<span class="sd">                                       fracture class for local viscosity)</span>
-<span class="sd">            rheology (string)       -- string specifying rheology of the fluid. Possible options:</span>
-<span class="sd">                                         - &quot;Newtonian&quot;</span>
-<span class="sd">                                         - &quot;non-Newtonian&quot;</span>
-<span class="sd">            muPrime (float)         -- 12 * viscosity (// plates viscosity factor)</span>
-<span class="sd">            density (float)         -- density of the fluid</span>
-<span class="sd">            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account</span>
-<span class="sd">       Methods:</span>
-<span class="sd">       &quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        viscosity (ndarray):     -- viscosity of the fluid (note its different from local viscosity, see</span>
+<span class="sd">                                    fracture class for local viscosity)</span>
+<span class="sd">        density (float):         -- density of the fluid</span>
+<span class="sd">        rheology (string):       -- string specifying rheology of the fluid. Possible options:</span>
+
+<span class="sd">                                     - &quot;Newtonian&quot;</span>
+<span class="sd">                                     - &quot;non-Newtonian&quot;</span>
+<span class="sd">        turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account</span>
+<span class="sd">        compressibility (float): -- the compressibility of the fluid.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        viscosity (ndarray):     -- Viscosity of the fluid (note its different from local viscosity, see</span>
+<span class="sd">                                    fracture class for local viscosity).</span>
+<span class="sd">        muPrime (float):         -- 12 * viscosity (parallel plates viscosity factor).</span>
+<span class="sd">        rheology (string):       -- string specifying rheology of the fluid. Possible options:</span>
+<span class="sd">                                     - &quot;Newtonian&quot;</span>
+<span class="sd">                                     - &quot;non-Newtonian&quot;</span>
+<span class="sd">        density (float):         -- density of the fluid.</span>
+<span class="sd">        turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account.</span>
+<span class="sd">        compressibility (float): -- the compressibility of the fluid.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">rheology</span><span class="o">=</span><span class="s2">&quot;Newtonian&quot;</span><span class="p">,</span> <span class="n">turbulence</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">compressibility</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Constructor function.</span>
 
-<span class="sd">        Instance variables:</span>
-<span class="sd">            viscosity (ndarray)     -- viscosity of the fluid (note its different from local viscosity, see</span>
-<span class="sd">                                       fracture class for local viscosity)</span>
-<span class="sd">            density (float)         -- density of the fluid</span>
-<span class="sd">            rheology (string)       -- string specifying rheology of the fluid. Possible options:</span>
-<span class="sd">                                         - &quot;Newtonian&quot;</span>
-<span class="sd">                                         - &quot;non-Newtonian&quot;</span>
-<span class="sd">            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">viscosity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># uniform viscosity</span>
@@ -295,26 +315,38 @@
 <span class="c1"># --------------------------------------------------------------------------------------------------------</span>
 <div class="viewcode-block" id="InjectionProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.InjectionProperties">[docs]</a><span class="k">class</span> <span class="nc">InjectionProperties</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Class defining the injection schedule</span>
+<span class="sd">    Class defining the injection parameters.</span>
 
-<span class="sd">        instance variables:</span>
-<span class="sd">            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection</span>
-<span class="sd">                                            rates (row 1).</span>
-<span class="sd">            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate</span>
-<span class="sd">                                            of the injection point coordinates.</span>
-<span class="sd">            source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        rate (ndarray):               -- array specifying the time series (row 0) and the corresponding injection</span>
+<span class="sd">                                         rates (row 1). The times are instant where the injection rate changes.</span>
+
+<span class="sd">                                         Attention:</span>
+<span class="sd">                                            The first time should be zero. The corresponding injection rate would</span>
+<span class="sd">                                            be taken for initialization of the fracture with an analytical solution.</span>
+<span class="sd">        mesh (CartesianMesh):         -- the CartesianMesh object defining mesh.</span>
+<span class="sd">        source_coordinates (ndarray): -- lists or ndarray with a length of 2, specifying the x and y coordinates</span>
+<span class="sd">                                         of the injection point coordinates.</span>
+<span class="sd">        source_func (function):       -- the source function providing the injection rate. The function should take</span>
+<span class="sd">                                         the x and y coordinates and provide the injection rate at those coordiantes</span>
+<span class="sd">                                         at the given time. It should be able to be called with three parameters</span>
+<span class="sd">                                         (x, y, time).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection</span>
+<span class="sd">                                         rates (row 1). This would be ignored it sourceFunc is provided.</span>
+<span class="sd">        sourceCoordinates (ndarray):  -- array with a single row and two columns specifying the x and y coordinate</span>
+<span class="sd">                                         of the injection point coordinates.</span>
+<span class="sd">        sourceElem (ndarray):         -- the element(s) where the fluid is injected in the cartesian mesh.</span>
+<span class="sd">        sourceFunc (function):        -- the source function providing the injection rate. The function should take</span>
+<span class="sd">                                         the x and y coordinates and provide the injection rate at those coordinates</span>
+<span class="sd">                                         at the given time. It should be able to be called with three parameters</span>
+<span class="sd">                                         (x, y, time).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">source_coordinates</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">source_coordinates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The constructor of the InjectionProperties class.</span>
-
-<span class="sd">        Arguments:</span>
-<span class="sd">            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection</span>
-<span class="sd">                                            rates (row 1).</span>
-<span class="sd">            Mesh (CartesianMesh)         -- the CartesianMesh object defining mesh.</span>
-<span class="sd">            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate</span>
-<span class="sd">                                            of the injection point coordinates.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
@@ -329,17 +361,57 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">rate</span><span class="p">]])</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">source_coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable source location not yet supported!&quot;</span><span class="p">)</span>
-            <span class="c1"># if len(source_coordinates) == 2:</span>
-            <span class="c1">#     self.source_coordinates = source_coordinates</span>
-            <span class="c1"># else:</span>
-            <span class="c1">#     # error</span>
-            <span class="c1">#     raise ValueError(&#39;Invalid source coordinates. Correct format: a numpy array with a single row&#39;</span>
-            <span class="c1">#                      &#39; and two columns to \n specify x and y coordinate of the source e.g.&#39;</span>
-            <span class="c1">#                      &#39; np.array([x_coordinate, y_coordinate])&#39;)</span>
-        <span class="n">source_coordinates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source_location</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="n">source_coordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">source_coordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+        <span class="k">if</span> <span class="n">source_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_coordinates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="n">source_coordinates</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># error</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid source coordinates. Correct format: a list or numpy array with a single row&#39;</span>
+                                 <span class="s1">&#39; and two columns to </span><span class="se">\n</span><span class="s1"> specify x and y coordinate of the source e.g.&#39;</span>
+                                 <span class="s1">&#39; np.array([x_coordinate, y_coordinate])&#39;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sourceFunc</span> <span class="o">=</span> <span class="n">source_func</span>
+
+    <span class="c1">#-------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="InjectionProperties.get_injection_rate"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.InjectionProperties.get_injection_rate">[docs]</a>    <span class="k">def</span> <span class="nf">get_injection_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; This function gives the current injection rate at all of the cells in the domain.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            time (float):           -- the time at which the injection rate is required.</span>
+<span class="sd">            mesh (CartesianMesh):   -- the CartesianMesh object describing the mesh.</span>
+
+<span class="sd">        returns:</span>
+<span class="sd">            Qin (ndarray):          -- an numpy array of the size of the mesh with injection rates in each of the cell</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Qin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceFunc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
+            <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">CurrentRate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
+            <span class="n">Qin</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">]</span> <span class="o">=</span> <span class="n">CurrentRate</span>  <span class="c1"># point source</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+                <span class="n">Qin</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceFunc</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">time</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Qin</span></div>
+
+    <span class="c1">#-------------------------------------------------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="InjectionProperties.remesh"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.InjectionProperties.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mesh</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; This function is called every time the domian is remeshed.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            new_mesh (CartesianMesh):   -- the CartesianMesh object describing the new coarse mesh.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="n">new_mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div></div>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 
@@ -347,8 +419,8 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class defining the mechanical loading properties</span>
 
-<span class="sd">        Instance variables:</span>
-<span class="sd">            EltLoaded (ndarray)   -- array of elements that are loaded.</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            EltLoaded (ndarray):  -- array of elements that are loaded.</span>
 <span class="sd">            displ_rate (float):   -- the rate at which the elements in the EltLoaded list are displaced due to the</span>
 <span class="sd">                                     applied mechanical loading</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -377,102 +449,108 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class defining the simulation properties.</span>
 
-<span class="sd">        instance variables</span>
-<span class="sd">            tolFractFront (float)       -- tolerance for the fracture front loop.</span>
-<span class="sd">            toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.</span>
-<span class="sd">            toleranceProjection (float) -- tolerance for projection iteration for anisotropic case</span>
-<span class="sd">            maxFrontItr (int)           -- maximum iterations to for the fracture front loop.</span>
-<span class="sd">            maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton</span>
-<span class="sd">                                           hybrid) in this case.</span>
-<span class="sd">            maximumItrEHL (int)         -- maximum number of iterations for the Elastohydrodynamic solver.</span>
-<span class="sd">            maxToughnessItr (int)       -- maximum toughness loop iterations.</span>
-<span class="sd">            tmStpPrefactor (float)      -- factor for time-step adaptivity.</span>
-<span class="sd">            maxTimeSteps (integer)      -- maximum number of time steps.</span>
-<span class="sd">            tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.</span>
-<span class="sd">            finalTime (float)           -- time where the simulation ends.</span>
-<span class="sd">            timeStepLimit (float)       -- limit above which time step will not exceed.</span>
-<span class="sd">            maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller</span>
-<span class="sd">                                           time step will be attempted the given number of times.</span>
-<span class="sd">            reAttemptFactor (float)     -- the factor by which time step is reduced on reattempts.</span>
-<span class="sd">            plotFigure (boolean)        -- flag specifying to plot fracture trace after the given time period.</span>
-<span class="sd">            saveToDisk (boolean)        -- flag specifying to save fracture to dist after the given time period.</span>
-<span class="sd">            plotAnalytical (boolean)    -- if true, analytical solution will also be plotted along with the computed</span>
-<span class="sd">                                           solution.</span>
-<span class="sd">            analyticalSol (String)      -- the analytical solution of the radial fracture to be plotted on the</span>
-<span class="sd">                                           fracture. Possible options:</span>
-<span class="sd">                                                - K  (toughness dominated regime, without leak off)</span>
-<span class="sd">                                                - Kt (toughness dominated regime , with leak off)</span>
-<span class="sd">                                                - M  (viscosity dominated regime, without leak off)</span>
-<span class="sd">                                                - Mt (viscosity dominated regime , with leak off)</span>
-<span class="sd">                                                - E  (elliptical, toughness dominated without leak off)</span>
-<span class="sd">            bckColor (String)           -- the string specifying the parameter according to which the background of the</span>
-<span class="sd">                                           domain is color coded. Possible options</span>
-<span class="sd">                                                - sigma0 (confining stress)</span>
-<span class="sd">                                                - K1c (fracture toughness)</span>
-<span class="sd">                                                - Cl (leak-off coefficient)</span>
-<span class="sd">            plotEltType (boolean)       -- if True, the type of element will be spedified with color coded dots(channel,</span>
-<span class="sd">                                           ribbon or tip).</span>
-<span class="sd">            utputTimePeriod (float)    -- the time period after which the output file is written or the</span>
-<span class="sd">                                           figures are plotted.</span>
-<span class="sd">            tipAsymptote (string)       -- propagation regime. Possible options:</span>
-<span class="sd">                                                - K  (toughness dominated regime, without leak off)</span>
-<span class="sd">                                                - M  (viscosity dominated regime, without leak off)</span>
-<span class="sd">                                                - Mt (viscosity dominated regime , with leak off)</span>
-<span class="sd">                                                - U  (Universal regime accommodating viscosity, toughness</span>
-<span class="sd">                                                     and leak off (see Donstov and Pierce, 2017))</span>
-<span class="sd">                                                - MK (viscosity to toughness transition regime)</span>
-<span class="sd">            saveRegime (boolean)        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be</span>
-<span class="sd">                                           saved.</span>
-<span class="sd">            verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently</span>
-<span class="sd">                                           two levels 1 and 2 are supported).</span>
-<span class="sd">            enableRemeshing (bool)      -- if True, the computational domain will be compressed by the factor given by</span>
-<span class="sd">                                           by the variable remeshFactor after the fracture front reaches the end of the</span>
-<span class="sd">                                           domain.</span>
-<span class="sd">            remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.</span>
-<span class="sd">            frontAdvancing (string)     -- The type of front advancing to be done. Possible options are:</span>
-<span class="sd">                                                -- explicit</span>
-<span class="sd">                                                -- semi-implicit</span>
-<span class="sd">                                                -- implicit</span>
-<span class="sd">            gravity (bool)              -- if True, the effect of gravity will be taken into account.</span>
-<span class="sd">            collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.</span>
-<span class="sd">            paramFromTip (bool)     -- if True, the space dependant parameters such as toughness and leak-off</span>
-<span class="sd">                                           coefficients will be taken from the tip by projections instead of taking them</span>
-<span class="sd">                                           from the ribbon cell center. The numerical scheme as a result will become</span>
-<span class="sd">                                           unstable due to the complexities in finding the projection</span>
-<span class="sd">            saveReynNumb (boolean)      -- if True, the Reynold&#39;s number at each edge of the cells inside the fracture</span>
-<span class="sd">                                           will be saved.</span>
-<span class="sd">            saveFluidFlux (boolean)     -- if True, the fluid flux at each edge of the cells inside the fracture</span>
-<span class="sd">                                           will be saved.</span>
-<span class="sd">            saveFluidVel (boolean)     -- if True, the fluid velocity at each edge of the cells inside the fracture</span>
-<span class="sd">                                           will be saved.</span>
-<span class="sd">            TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic</span>
-<span class="sd">                                           kernel or kernel with free surface.</span>
-<span class="sd">            projMethod (string)         -- the method by which the angle prescribed by the projections onto the front</span>
-<span class="sd">                                            are evaluated. Possible options are:</span>
-<span class="sd">                                                -- &#39;ILSA_orig&#39; (the method described in the original ILSA scheme)</span>
-<span class="sd">                                                -- &#39;LS_grad&#39; (using gradient of the level set)</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        address (str)                -- the folder where the simulation parameters file is located. The file must be</span>
+<span class="sd">                                        named &#39;simul_param&#39;. For the description of the arguments and there default</span>
+<span class="sd">                                        values, see the py:module::default_SimParam .</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        tolFractFront (float):       -- tolerance for the fracture front loop.</span>
+<span class="sd">        toleranceEHL (float):        -- tolerance for the Elastohydrodynamic solver.</span>
+<span class="sd">        toleranceProjection (float): -- tolerance for projection iteration for anisotropic case</span>
+<span class="sd">        maxFrontItr (int):           -- maximum iterations to for the fracture front loop.</span>
+<span class="sd">        maxSolverItr (int):          -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this</span>
+<span class="sd">                                        case.</span>
+<span class="sd">        maximumItrEHL (int):         -- maximum number of iterations for the Elastohydrodynamic solver.</span>
+<span class="sd">        maxToughnessItr (int):       -- maximum toughness loop iterations.</span>
+<span class="sd">        tmStpPrefactor (float):      -- factor for time-step adaptivity.</span>
+<span class="sd">        maxTimeSteps (integer):      -- maximum number of time steps.</span>
+<span class="sd">        tmStpPrefactor_max (float):  -- used in the case of re-attempt from five steps back.</span>
+<span class="sd">        finalTime (float):           -- time where the simulation ends.</span>
+<span class="sd">        timeStepLimit (float):       -- limit above which time step will not exceed.</span>
+<span class="sd">        maxReattempts (int):         -- maximum number of reattempts in case of failure of a time step. A smaller</span>
+<span class="sd">                                        time step will be attempted the given number of times.</span>
+<span class="sd">        reAttemptFactor (float):     -- the factor by which time step is reduced on reattempts.</span>
+<span class="sd">        plotFigure (boolean):        -- flag specifying to plot fracture trace after the given time period.</span>
+<span class="sd">        saveToDisk (boolean):        -- flag specifying to save fracture to dist after the given time period.</span>
+<span class="sd">        plotAnalytical (boolean):    -- if true, analytical solution will also be plotted along with the computed</span>
+<span class="sd">                                       solution.</span>
+<span class="sd">        analyticalSol (String):      -- the analytical solution of the radial fracture to be plotted on the fracture. \</span>
+<span class="sd">                                        Possible options:</span>
 
-<span class="sd">        private variables:</span>
-<span class="sd">            __out_file_address (string) -- disk address of the files to be saved. If not given, a new</span>
-<span class="sd">                                           ./Data/&quot;tim stamp&quot; folder will be automatically created.</span>
-<span class="sd">            __solTimeSeries (ndarray)   -- time series where the solution is required. The time stepping would be</span>
-<span class="sd">                                           adjusted to get solution exactly at the given times.</span>
-<span class="sd">            __dryCrack_mechLoading(bool)-- if True, the mechanical loading solver will be used.</span>
-<span class="sd">            __viscousInjection (bool)   -- if True, the the solver will also take the fluid viscosity into account.</span>
-<span class="sd">            __volumeControl (bool)      -- if True, the the volume control solver will be used.</span>
-<span class="sd">            __simName (str)             -- the name of the simulation.</span>
-<span class="sd">            __timeStamp (str)           -- the time at which the simulation properties was created.</span>
+<span class="sd">                                            - K  (toughness dominated regime, without leak off)</span>
+<span class="sd">                                            - Kt (toughness dominated regime , with leak off)</span>
+<span class="sd">                                            - M  (viscosity dominated regime, without leak off)</span>
+<span class="sd">                                            - Mt (viscosity dominated regime , with leak off)</span>
+<span class="sd">                                            - E  (elliptical, toughness dominated without leak off)</span>
+<span class="sd">        bckColor (String):           -- the string specifying the parameter according to which the background of the\</span>
+<span class="sd">                                        domain is color coded. Possible options:</span>
+
+<span class="sd">                                            - sigma0 (confining stress)</span>
+<span class="sd">                                            - K1c (fracture toughness)</span>
+<span class="sd">                                            - Cl (leak-off coefficient)</span>
+<span class="sd">        plotEltType (boolean):       -- if True, the type of element will be spedified with color coded dots(channel,</span>
+<span class="sd">                                        ribbon or tip).</span>
+<span class="sd">        outputTimePeriod (float):    -- the time period after which the output file is written or the</span>
+<span class="sd">                                        figures are plotted.</span>
+<span class="sd">        tipAsymptote (string):       -- propagation regime. possible options are:</span>
+
+<span class="sd">                                            - K  (toughness dominated regime, without leak off)</span>
+<span class="sd">                                            - M  (viscosity dominated regime, without leak off)</span>
+<span class="sd">                                            - Mt (viscosity dominated regime , with leak off)</span>
+<span class="sd">                                            - U  (Universal regime accommodating viscosity, toughness\</span>
+<span class="sd">                                                 and leak off (see Donstov and Pierce, 2017))</span>
+<span class="sd">                                            - MK (viscosity to toughness transition regime)</span>
+<span class="sd">        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be</span>
+<span class="sd">                                        saved.</span>
+<span class="sd">        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently</span>
+<span class="sd">                                        two levels 1 and 2 are supported).</span>
+<span class="sd">        enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by</span>
+<span class="sd">                                        by the variable remeshFactor after the fracture front reaches the end of the</span>
+<span class="sd">                                        domain.</span>
+<span class="sd">        remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.</span>
+<span class="sd">        frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:</span>
+<span class="sd">                                            - explicit</span>
+<span class="sd">                                            - semi-implicit</span>
+<span class="sd">                                            - implicit</span>
+<span class="sd">        gravity (bool):              -- if True, the effect of gravity will be taken into account.</span>
+<span class="sd">        collectPerfData (bool):      -- if True, the performance data will be collected in the form of a tree.</span>
+<span class="sd">        paramFromTip (bool):         -- if True, the space dependant parameters such as toughness and leak-off</span>
+<span class="sd">                                        coefficients will be taken from the tip by projections instead of taking them</span>
+<span class="sd">                                        from the ribbon cell center. The numerical scheme as a result will become</span>
+<span class="sd">                                        unstable due to the complexities in finding the projection</span>
+<span class="sd">        saveReynNumb (boolean):      -- if True, the Reynold&#39;s number at each edge of the cells inside the fracture</span>
+<span class="sd">                                        will be saved.</span>
+<span class="sd">        saveFluidFlux (boolean):     -- if True, the fluid flux at each edge of the cells inside the fracture</span>
+<span class="sd">                                        will be saved.</span>
+<span class="sd">        saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture</span>
+<span class="sd">                                        will be saved.</span>
+<span class="sd">        TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic</span>
+<span class="sd">                                       kernel or kernel with free surface.</span>
+<span class="sd">        projMethod (string):         -- the method by which the angle prescribed by the projections onto the front</span>
+<span class="sd">                                        are evaluated. Possible options are:</span>
+<span class="sd">                                            - &#39;ILSA_orig&#39; (the method described in the original ILSA scheme)</span>
+<span class="sd">                                            - &#39;LS_grad&#39; (using gradient of the level set)</span>
+<span class="sd">        Attention:</span>
+<span class="sd">            These attributes below are private:</span>
+
+<span class="sd">        __out_file_address (string): -- disk address of the files to be saved. If not given, a new\</span>
+<span class="sd">                                                  ./Data/&quot;tim stamp&quot; folder will be automatically created.</span>
+<span class="sd">        __solTimeSeries (ndarray):   -- time series where the solution is required. The time stepping would \</span>
+<span class="sd">                                                   be adjusted to get solution exactly at the given times.</span>
+<span class="sd">        __dryCrack_mechLoading(bool):-- if True, the mechanical loading solver will be used.</span>
+<span class="sd">        __viscousInjection (bool):   -- if True, the the solver will also take the fluid viscosity into \</span>
+<span class="sd">                                                  account.</span>
+<span class="sd">        __volumeControl (bool):      -- if True, the the volume control solver will be used.</span>
+<span class="sd">        __simName (string):          -- the name of the simulation.</span>
+<span class="sd">        __timeStamp (string):        -- the time at which the simulation properties was created.</span>
 
 <span class="sd">            </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The constructor of the SimulationParameters class. See documentation of the class.</span>
 
-<span class="sd">        Arguments:</span>
-<span class="sd">            address (str)               -- the folder where the simulation parameters file is located. The file must be</span>
-<span class="sd">                                           name &#39;simul_param&#39;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="kn">import</span> <span class="nn">sys</span>
@@ -807,7 +885,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

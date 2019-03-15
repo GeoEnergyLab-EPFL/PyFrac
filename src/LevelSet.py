@@ -12,12 +12,12 @@ import numpy as np
 import warnings
 from scipy.optimize import fsolve
 
-def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
+def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
     """
     solve Eikonal equation to get level set.
 
     Arguments:
-        InitlevelSet (ndarray-float)        -- level set to be evaluated and updated.
+        levelSet (ndarray-float):       -- level set to be evaluated and updated.
         EltRibbon (ndarray-int):            -- cells with given distance from the front.
         EltChannel (ndarray-int):           -- cells enclosed by the given cells
         mesh (CartesianMesh object):        -- mesh object
@@ -27,20 +27,21 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
                                                is to be evaluated
 
     Returns:
-        Does not return anything. The InitlevelSet is updated in place.
+        Note:
+            Does not return anything. The levelSet is updated in place.
     """
 
     # for Elements radialy outward from ribbon cells
     Alive = np.copy(EltRibbon)
     NarrowBand = np.copy(EltRibbon)
-    FarAway = np.copy(farAwayPstv)
+    FarAway = np.setdiff1d(farAwayPstv, NarrowBand)
     # the maximum distance any point can have from another in the current mesh. This distance is used to detect the
     # cells that are not yet traversed, i.e. having infinity distance
     maxdist = 4 * (mesh.Lx ** 2 + mesh.Ly ** 2) ** 0.5
 
     while NarrowBand.size > 0:
 
-        Smallest = int(NarrowBand[InitlevelSet[NarrowBand.astype(int)].argmin()])
+        Smallest = int(NarrowBand[levelSet[NarrowBand.astype(int)].argmin()])
         neighbors = mesh.NeiElements[Smallest]
 
         for neighbor in neighbors:
@@ -49,8 +50,8 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
                     NarrowBand = np.append(NarrowBand, neighbor)
                     FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
 
-                NeigxMin = min(InitlevelSet[mesh.NeiElements[neighbor, 0]], InitlevelSet[mesh.NeiElements[neighbor, 1]])
-                NeigyMin = min(InitlevelSet[mesh.NeiElements[neighbor, 2]], InitlevelSet[mesh.NeiElements[neighbor, 3]])
+                NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
+                NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
                 beta = mesh.hx / mesh.hy
                 delT = NeigyMin - NeigxMin
 
@@ -58,39 +59,40 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
                 theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5  # it goes to nan for fully
                 # horizontal or fully vertical perpendiculars on the front
 
-                if not np.isnan((NeigxMin + beta * NeigyMin + theta) / (1 + beta ** 2)):
-                    InitlevelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
+                if not np.isnan(theta):
+                    levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
                 else:  # the angle is either 0 or 90 degrees
                     # vertical propagation direction.
                     if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
-                        InitlevelSet[neighbor] = NeigyMin + mesh.hy
+                        levelSet[neighbor] = NeigyMin + mesh.hy
                     # horizontal propagation direction.
                     if NeigyMin > maxdist:
-                        InitlevelSet[neighbor] = NeigxMin + mesh.hx
+                        levelSet[neighbor] = NeigxMin + mesh.hx
 
         Alive = np.append(Alive, Smallest)
-        NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
+        NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest)[0])
 
-    if (InitlevelSet[farAwayPstv] >= 1e50).any():
-        unevaluated = np.where(InitlevelSet[farAwayPstv] >= 1e50)[0]
+    if (levelSet[farAwayPstv] >= 1e50).any():
+        unevaluated = np.where(levelSet[farAwayPstv] >= 1e50)[0]
 
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayPstv[unevaluated[i]]]
-            Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
-            guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
-            InitlevelSet[farAwayPstv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
+            Eikargs = (levelSet[neighbors[0]], levelSet[neighbors[1]], levelSet[neighbors[2]],
+                       levelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the Eikonal equation function
+            guess = np.max(levelSet[neighbors])  # initial starting guess for the numerical solver
+            levelSet[farAwayPstv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
 
 
     # for elements radialy inward from ribbon cells. The sign of the level set values(tip asymptote) in the ribbon cells
     # is inverted to run the fast marching algorithm. The sign is finally inverted back to assign the value in the level
     # set to be returned.
-    if len(farAwayNgtv)>0:
+    if len(farAwayNgtv) > 0:
         RibbonInwardElts = np.setdiff1d(EltChannel, EltRibbon)
         positive_levelSet = 1e50 * np.ones((mesh.NumberOfElts,), np.float64)
-        positive_levelSet[EltRibbon] = -InitlevelSet[EltRibbon]
+        positive_levelSet[EltRibbon] = -levelSet[EltRibbon]
         Alive = np.copy(EltRibbon)
         NarrowBand = np.copy(EltRibbon)
-        FarAway = np.copy(farAwayNgtv)
+        FarAway = np.setdiff1d(farAwayNgtv, NarrowBand)
 
         while NarrowBand.size > 0:
 
@@ -128,34 +130,35 @@ def SolveFMM(InitlevelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv
             NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
 
         # assigning adjusted value to the level set to be returned
-        InitlevelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
+        levelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 
 
-    if (abs(InitlevelSet[farAwayNgtv]) >= 1e50).any():
-        unevaluated = np.where(abs(InitlevelSet[farAwayNgtv]) >= 1e50)[0]
+    if (abs(levelSet[farAwayNgtv]) >= 1e50).any():
+        unevaluated = np.where(abs(levelSet[farAwayNgtv]) >= 1e50)[0]
 
         for i in range(len(unevaluated)):
             neighbors = mesh.NeiElements[farAwayNgtv[unevaluated[i]]]
-            Eikargs = (InitlevelSet[neighbors[0]], InitlevelSet[neighbors[1]], InitlevelSet[neighbors[2]], InitlevelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikinal equation function
-            guess = np.max(InitlevelSet[neighbors])  # initial starting guess for the numerical solver
-            InitlevelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
+            Eikargs = (levelSet[neighbors[0]], levelSet[neighbors[1]], levelSet[neighbors[2]],
+                       levelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikonal equation function
+            guess = np.max(levelSet[neighbors])  # initial starting guess for the numerical solver
+            levelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def reconstruct_front(dist, EltChannel, mesh):
+def reconstruct_front(dist, bandElts, EltChannel, mesh):
     """
     Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
     perpendicular. The angle is calculated using the formulation given by Pierce and Detournay 2008.
     
     Arguments:
-        dist (ndarray-float): the signed distance of the cells from the fracture front
-        EltChannel (ndarray-int): list of Channel elements
-        mesh (CartesianMesh object): the mesh of the fracture
+        dist (ndarray):         -- the signed distance of the cells from the fracture front.
+        EltChannel (ndarray):   -- list of Channel elements.
+        mesh (CartesianMesh):   -- the mesh of the fracture.
     """
 
     # Elements that are not in channel
-    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), EltChannel)
+    EltRest = np.setdiff1d(bandElts, EltChannel)
     ElmntTip = np.asarray([], int)
     l = np.asarray([])
     alpha = np.asarray([])
@@ -190,6 +193,7 @@ def reconstruct_front(dist, EltChannel, mesh):
             elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 1e-6:
                 a2 = 0.
 
+            #todo hack!!!
             # checks to remove numerical noise in angle calculation
             if a2 >= 0 and a2 <= np.pi / 2:
                 alpha = np.append(alpha, a2)
@@ -231,19 +235,19 @@ def reconstruct_front(dist, EltChannel, mesh):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def reconstruct_front_LS_gradient(dist, EltChannel, mesh):
+def reconstruct_front_LS_gradient(dist, EltBand, EltChannel, mesh):
     """
     Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
     perpendicular. The angle is calculated from the gradient of the level set.
 
     Arguments:
-        dist (ndarray-float): the signed distance of the cells from the fracture front
-        EltChannel (ndarray-int): list of Channel elements
-        mesh (CartesianMesh object): the mesh of the fracture
+        dist (ndarray):         -- the signed distance of the cells from the fracture front.
+        EltChannel (ndarray):   -- list of Channel elements.
+        mesh (CartesianMesh):   -- the mesh of the fracture.
     """
 
     # Elements that are not in channel
-    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), EltChannel)
+    EltRest = np.setdiff1d(EltBand, EltChannel)
     ElmntTip = np.asarray([], int)
     l = np.asarray([])
     alpha = np.asarray([])
@@ -324,22 +328,22 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     partially filled and fully filled elements. The function update lists accordingly.
     
     Arguments:
-        EltsChannel (ndarray-int):      channel elements list
-        EltsTipNew (ndarray-int):       list of the new tip elements, including fully filled cells that were tip cells
-                                        in the last time step
-        FillFrac (ndarray-float):       filling fraction of the new tip cells
-        levelSet (ndarray-float):       current level set
-        mesh (CartesianMesh object):    the mesh of the fracture
+        EltsChannel (ndarray):      -- channel elements list.
+        EltsTipNew (ndarray):       -- list of the new tip elements, including fully filled cells that were tip
+                                       cells in the last time step.
+        FillFrac (ndarray):         -- filling fraction of the new tip cells.
+        levelSet (ndarray):         -- current level set.
+        mesh (CartesianMesh):       -- the mesh of the fracture.
         
     Returns:
-        (ndarray-int):                  new channel elements list
-        (ndarray-int):                  new tip elements list
-        (ndarray-int):                  new crack elements list
-        (ndarray-int):                  new ribbon elements list
-        (ndarray-int):                  list specifying the zero vertex of the tip cells. (can have value from 0 to 3,
-                                        where 0 signify bottom left, 1 signifying bottom right, 2 signifying top right
-                                        and 3 signifying top left vertex)
-        (ndarray-int):                  specifies which region each element currently belongs to
+        - eltsChannel (ndarray):    -- new channel elements list.
+        - eltsTip (ndarray):        -- new tip elements list.
+        - eltsCrack(ndarray):       -- new crack elements list.
+        - eltsRibbon (ndarray):     -- new ribbon elements list.
+        - zeroVrtx (ndarray):       -- list specifying the zero vertex of the tip cells. (can have value from 0 to\
+                                       3, where 0 signify bottom left, 1 signifying bottom right, 2 signifying top\
+                                       right and 3 signifying top left vertex).
+        - CellStatusNew (ndarray):  -- specifies which region each element currently belongs to.
     """
 
     # new tip elements contain only the partially filled elements

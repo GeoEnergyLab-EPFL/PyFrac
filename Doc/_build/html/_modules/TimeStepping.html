@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -61,7 +62,7 @@
 <span class="kn">from</span> <span class="nn">src.Properties</span> <span class="k">import</span> <span class="n">IterationProperties</span>
 <span class="kn">from</span> <span class="nn">src.anisotropy</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">time</span>
-
+<span class="kn">import</span> <span class="nn">skfmm</span>
 
 <div class="viewcode-block" id="attempt_time_step"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.attempt_time_step">[docs]</a><span class="k">def</span> <span class="nf">attempt_time_step</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span> <span class="n">sim_properties</span><span class="p">,</span> <span class="n">inj_properties</span><span class="p">,</span>
                       <span class="n">timeStep</span><span class="p">,</span> <span class="n">perfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -79,16 +80,11 @@
 <span class="sd">        timeStep (float):                       -- time step.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        | exitstatus (int)      -- see documentation for possible values.</span>
-<span class="sd">        | Fr_k (Fracture)       -- fracture after advancing time step.</span>
+<span class="sd">        - exitstatus (int)      -- see documentation for possible values.</span>
+<span class="sd">        - Fr_k (Fracture)       -- fracture after advancing time step.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
-    <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Frac</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="n">inj_properties</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">CurrentRate</span> <span class="o">=</span> <span class="n">inj_properties</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
-
-    <span class="n">Qin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Frac</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
-    <span class="n">Qin</span><span class="p">[</span><span class="n">inj_properties</span><span class="o">.</span><span class="n">source_location</span><span class="p">]</span> <span class="o">=</span> <span class="n">CurrentRate</span> <span class="c1"># current injection over the domain</span>
+    <span class="n">Qin</span> <span class="o">=</span> <span class="n">inj_properties</span><span class="o">.</span><span class="n">get_injection_rate</span><span class="p">(</span><span class="n">Frac</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">Frac</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">==</span> <span class="s1">&#39;explicit&#39;</span><span class="p">:</span>
 
@@ -571,10 +567,12 @@
     <span class="c1"># the elements which are fully filled after the front is moved outward)</span>
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">projMethod</span> <span class="ow">is</span> <span class="s1">&#39;ILSA_orig&#39;</span><span class="p">:</span>
         <span class="n">EltsTipNew</span><span class="p">,</span> <span class="n">l_k</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="n">CellStatus</span> <span class="o">=</span> <span class="n">reconstruct_front</span><span class="p">(</span><span class="n">sgndDist_k</span><span class="p">,</span>
-                                                                       <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
-                                                                       <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
+                                                                 <span class="n">front_region</span><span class="p">,</span>
+                                                                 <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
+                                                                 <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">projMethod</span> <span class="ow">is</span> <span class="s1">&#39;LS_grad&#39;</span><span class="p">:</span>
         <span class="n">EltsTipNew</span><span class="p">,</span> <span class="n">l_k</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="n">CellStatus</span> <span class="o">=</span> <span class="n">reconstruct_front_LS_gradient</span><span class="p">(</span><span class="n">sgndDist_k</span><span class="p">,</span>
+                                                                       <span class="n">front_region</span><span class="p">,</span>
                                                                        <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
                                                                        <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
 
@@ -1267,25 +1265,25 @@
 <span class="sd">        sim_Parameters (SimulationProperties):  -- simulation parameters.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        | exitstatus (int)  possible values are</span>
+<span class="sd">        - exitstatus (int)  possible values are</span>
 
-<span class="sd">        | 0       -- not propagated</span>
-<span class="sd">        | 1       -- iteration successful</span>
-<span class="sd">        | 2       -- evaluated level set is not valid</span>
-<span class="sd">        | 3       -- front is not tracked correctly</span>
-<span class="sd">        | 4       -- evaluated tip volume is not valid</span>
-<span class="sd">        | 5       -- solution of elastohydrodynamic solver is not valid</span>
-<span class="sd">        | 6       -- did not converge after max iterations</span>
-<span class="sd">        | 7       -- tip inversion not successful</span>
-<span class="sd">        | 8       -- ribbon element not found in the enclosure of a tip cell</span>
-<span class="sd">        | 9       -- filling fraction not correct</span>
-<span class="sd">        | 10      -- toughness iteration did not converge</span>
-<span class="sd">        | 11      -- projection could not be found</span>
-<span class="sd">        | 12      -- reached end of grid</span>
-<span class="sd">        | 13      -- leak off can&#39;t be evaluated</span>
-<span class="sd">        | 14      -- fracture fully closed</span>
+<span class="sd">            | 0       -- not propagated</span>
+<span class="sd">            | 1       -- iteration successful</span>
+<span class="sd">            | 2       -- evaluated level set is not valid</span>
+<span class="sd">            | 3       -- front is not tracked correctly</span>
+<span class="sd">            | 4       -- evaluated tip volume is not valid</span>
+<span class="sd">            | 5       -- solution of elastohydrodynamic solver is not valid</span>
+<span class="sd">            | 6       -- did not converge after max iterations</span>
+<span class="sd">            | 7       -- tip inversion not successful</span>
+<span class="sd">            | 8       -- ribbon element not found in the enclosure of a tip cell</span>
+<span class="sd">            | 9       -- filling fraction not correct</span>
+<span class="sd">            | 10      -- toughness iteration did not converge</span>
+<span class="sd">            | 11      -- projection could not be found</span>
+<span class="sd">            | 12      -- reached end of grid</span>
+<span class="sd">            | 13      -- leak off can&#39;t be evaluated</span>
+<span class="sd">            | 14      -- fracture fully closed</span>
 
-<span class="sd">        | Fracture:            fracture after advancing time step.</span>
+<span class="sd">        - Fracture:            fracture after advancing time step.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1316,12 +1314,14 @@
     <span class="c1"># the elements which are fully filled after the front is moved outward)</span>
     <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">projMethod</span> <span class="ow">is</span> <span class="s1">&#39;ILSA_orig&#39;</span><span class="p">:</span>
         <span class="n">EltsTipNew</span><span class="p">,</span> <span class="n">l_k</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="n">CellStatus</span> <span class="o">=</span> <span class="n">reconstruct_front</span><span class="p">(</span><span class="n">sgndDist_k</span><span class="p">,</span>
-                                                                       <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
-                                                                       <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
+                                                                <span class="n">front_region</span><span class="p">,</span>
+                                                                <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
+                                                                <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">projMethod</span> <span class="ow">is</span> <span class="s1">&#39;LS_grad&#39;</span><span class="p">:</span>
         <span class="n">EltsTipNew</span><span class="p">,</span> <span class="n">l_k</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="n">CellStatus</span> <span class="o">=</span> <span class="n">reconstruct_front_LS_gradient</span><span class="p">(</span><span class="n">sgndDist_k</span><span class="p">,</span>
-                                                                       <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
-                                                                       <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
+                                                                <span class="n">front_region</span><span class="p">,</span>
+                                                                <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltChannel</span><span class="p">,</span>
+                                                                <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">EltsTipNew</span><span class="p">,</span> <span class="n">front_region</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
         <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;The tip elements are not in the band. Increase the size of the band for FMM to evaluate&quot;</span>
@@ -1786,7 +1786,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

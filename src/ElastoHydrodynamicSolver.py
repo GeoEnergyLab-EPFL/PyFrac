@@ -786,6 +786,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
             perf_node.iterations = k - 1
             perf_node.normList = normlist
 
+    print("Converged after " + repr(k) + " iterations")
     data = interItr
     return solk, data
 
@@ -849,11 +850,6 @@ def check_covergance(solk, solkm1, indices, tol):
         norm_tr = 0.
     norm = (norm_w + norm_p + norm_tr) / 3
     converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
-
-    if np.isnan(norm_w):
-        print()
-
-    print(repr(norm_w), repr(norm_p), repr(norm_tr))
 
     return converged, norm
 

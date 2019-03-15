@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -51,6 +52,7 @@
 <span class="kn">from</span> <span class="nn">src.Properties</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.Elasticity</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.HFAnalyticalSolutions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">src.CartesianMesh</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.TimeStepping</span> <span class="k">import</span> <span class="n">attempt_time_step</span>
 <span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="k">import</span> <span class="n">plot_footprint_analytical</span><span class="p">,</span> <span class="n">plot_analytical_solution</span>
 <span class="kn">from</span> <span class="nn">src.Symmetry</span> <span class="k">import</span> <span class="n">load_isotropic_elasticity_matrix_symmetric</span>
@@ -266,18 +268,30 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_max</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+=</span> <span class="mi">1</span>
 
-
             <span class="c1"># re-meshing required</span>
             <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">enableRemeshing</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Remeshing...&quot;</span><span class="p">)</span>
+                    <span class="n">coarse_mesh</span> <span class="o">=</span> <span class="n">CartesianMesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span>
+                                                <span class="n">symmetric</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">symmetric</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">coarse_mesh</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">coarse_mesh</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">,</span>
+                                    <span class="n">coarse_mesh</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="p">)</span>
+                    <span class="c1"># update the saved properties</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
+                        <span class="n">prop</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="p">)</span>
+                        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
+                            <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">remeshings</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done!&quot;</span><span class="p">)</span>
 
@@ -292,6 +306,7 @@
                 <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
                 <span class="n">CurrentRate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
                 <span class="k">if</span> <span class="n">CurrentRate</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
                     <span class="n">inp</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Fracture is fully closed. Do you want to jump to the time of next injection? [y/n]&quot;</span><span class="p">)</span>
                     <span class="k">while</span> <span class="n">inp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">]:</span>
                         <span class="n">inp</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press y or n&quot;</span><span class="p">)</span>
@@ -301,9 +316,9 @@
                         <span class="n">pos_inj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
                         <span class="n">jump_to</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">time_larger</span><span class="p">,</span> <span class="n">pos_inj</span><span class="p">)])</span>
                         <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">jump_to</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
                     <span class="k">elif</span> <span class="n">inp</span> <span class="ow">is</span> <span class="s1">&#39;n&#39;</span> <span class="ow">or</span> <span class="n">inp</span> <span class="ow">is</span> <span class="s1">&#39;N&#39;</span><span class="p">:</span>
                         <span class="k">break</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">errorMessages</span><span class="p">[</span><span class="n">status</span><span class="p">])</span>
@@ -478,14 +493,14 @@
                         <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_footprint_analytical</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
-                                                                           <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
-                                                                           <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
-                                                                           <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
-                                                                           <span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
-                                                                           <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
-                                                                           <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                                                           <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                                                                           <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
+                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                                       <span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
+                                                                       <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                                                                       <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                                       <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
+                                                                       <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
                                                                        <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
@@ -503,13 +518,13 @@
                     <span class="k">else</span><span class="p">:</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotAnalytical</span><span class="p">:</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_analytical_solution</span><span class="p">(</span><span class="n">regime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">analyticalSol</span><span class="p">,</span>
-                                                                          <span class="n">variable</span><span class="o">=</span><span class="n">plt_var</span><span class="p">,</span>
-                                                                          <span class="n">mat_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
-                                                                          <span class="n">inj_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
-                                                                          <span class="n">fluid_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
-                                                                          <span class="n">time_srs</span><span class="o">=</span><span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
-                                                                          <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
-                                                                          <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
+                                                                      <span class="n">variable</span><span class="o">=</span><span class="n">plt_var</span><span class="p">,</span>
+                                                                      <span class="n">mat_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
+                                                                      <span class="n">inj_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                                                      <span class="n">fluid_prop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                                      <span class="n">time_srs</span><span class="o">=</span><span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
+                                                                      <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                                                                      <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
 
                         <span class="n">fig_labels</span> <span class="o">=</span> <span class="n">LabelProperties</span><span class="p">(</span><span class="n">plt_var</span><span class="p">,</span> <span class="s1">&#39;whole mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;2D&#39;</span><span class="p">)</span>
                         <span class="n">fig_labels</span><span class="o">.</span><span class="n">figLabel</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
@@ -607,7 +622,7 @@
                 <span class="n">TS_inj_cell</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">delta_x</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vel_injection</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># for positive injection, use the increase in total fracture volume criteria</span>
-                <span class="n">TS_inj_cell</span> <span class="o">=</span> <span class="mf">0.07</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">currentRate</span><span class="p">)</span>
+                <span class="n">TS_inj_cell</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">currentRate</span><span class="p">)</span>
 
             <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -627,8 +642,19 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The fracture front seems to be stagnant and no time step is available. Provide a &quot;</span>
-                                 <span class="s2">&quot;fixed time step at this time.&quot;</span><span class="p">)</span>
+                <span class="n">TS_obtained</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The fracture front is stagnant and there is no injection. In these conditions, &quot;</span>
+                        <span class="s2">&quot;there is no criterion to calculate time step size.&quot;</span><span class="p">)</span>
+                <span class="k">while</span> <span class="ow">not</span> <span class="n">TS_obtained</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">inp</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter the time step size(seconds) you would like to try:&quot;</span><span class="p">)</span>
+                        <span class="n">TimeStep</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+                        <span class="n">TS_obtained</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
+
+
 
         <span class="c1"># to get the solution at the times given in time series or final time</span>
         <span class="n">next_in_TS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span>
@@ -691,7 +717,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

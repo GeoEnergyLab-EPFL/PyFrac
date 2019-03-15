@@ -1,10 +1,11 @@
-#
-# This file is part of PyFrac.
-#
-# Created by Haseeb Zia on 03.04.17.
-# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
-#  All rights reserved. See the LICENSE.TXT file for more details.
-#
+# -*- coding: utf-8 -*-
+"""
+This file is part of PyFrac.
+
+Created by Haseeb Zia on 03.04.17.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
+"""
 
 import math
 import numpy as np
@@ -16,56 +17,70 @@ from src.Labels import *
 
 class MaterialProperties:
     """
-    Class defining the Material properties of the solid
+    Class defining the Material properties of the solid.
 
-    Instance variables:
-        Eprime (float)       -- plain strain modulus
-        K1c (ndarray)        -- Linear-Elastic Plane-Strain Toughness for each cell
-        Kprime (ndarray)     -- 4*(2/pi)**0.5 * K1c
-        Cl (float)           -- Carter's leak off coefficient
-        Cprime (ndarray)     -- 2 * Carter's leak off coefficient
-        SigmaO (ndarray)     -- in-situ stress field
-        grainSize (float)    -- the grain size of the rock; used to calculate the relative roughness.
-        anisotropic (bool)   -- if True, the toughness is considered anisotropic.
-        K1cFunc (function)   -- the function giving the toughness on the domain. It takes one argument (angle) in
-                                case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
-                                toughness. The function is also used to get the toughness if the domain is remeshed.
-        SigmaOFunc (function)-- the function giving the in-situ stress on the domain. It should takes two arguments
-                                (x, y) to give the stress on these coordinates. It is also used to get the
-                                stress if the domain is remeshed.
-        ClFunc (function)    -- the function giving the in Carter's leak off coefficient on the domain. It should
-                                takes two arguments (x, y) to give the coefficient on these coordinates. It is also
-                                used to get the leak off coefficient if the domain is remeshed.
-    Methods:
+    Arguments:
+        Mesh (CartesianMesh):           -- the CartesianMesh object describing the mesh.
+        Eprime (float):                 -- plain strain modulus.
+        Toughness (float):              -- Linear-Elastic Plane-Strain Fracture Toughness.
+        Carters_coef (float):           -- Carter's leak off coefficient.
+        confining_stress (ndarray):     -- in-situ confining stress field normal to fracture surface.
+        grain_size (float):             -- the grain size of the rock; used to calculate the relative roughness.
+        K1c_func (function):            -- the function giving the toughness on the domain. It takes one argument
+                                           (angle) in case of anisotropic toughness and two arguments (x, y) in case
+                                           of heterogeneous toughness. The function is also used to get the
+                                           toughness if the domain is re-meshed.
+        anisotropic_K1c (bool):         -- flag to specify if the fracture toughness is anisotropic.
+        confining_stress_func (function):-- the function giving the in-situ stress on the domain. It should takes
+                                           two arguments (x, y) to give the stress on these coordinates. It is also
+                                           used to get the stress if the domain is re-meshed.
+        Carters_coef_func (function):   -- the function giving the in Carter's leak off coefficient on the domain.
+                                           It should takes two arguments (x, y) to give the coefficient on these
+                                           coordinates. It is also used to get the leak off coefficient if the
+                                           domain is re-meshed.
+        TI_elasticity(bool):            -- if True, the medium is elastic transverse isotropic.
+        Cij(ndarray):                   -- the transverse isotropic stiffness matrix (in the canonical basis); needs to
+                                           be provided if TI_elasticity=True.
+        free_surf (bool):               -- the free surface flag. True if the effect of free surface is to be taken
+                                           into account.
+        free_surf_depth (float):        -- the depth of the fracture from the free surface.
+        TI_plane_angle (float):         -- the angle of the plane of the fracture with respect to the free surface.
+        minimum_width (float):          -- minimum width corresponding to the asperity of the material.
+
+
+    Attributes:
+        Eprime (float):             -- plain strain modulus.
+        K1c (ndarray):              -- Linear-Elastic Plane-Strain Toughness for each cell.
+        Kprime (ndarray):           -- 4*(2/pi)**0.5 * K1c.
+        Cl (float):                 -- Carter's leak off coefficient.
+        Cprime (ndarray):           -- 2 * Carter's leak off coefficient.
+        SigmaO (ndarray):           -- in-situ confining stress field normal to fracture surface.
+        grainSize (float):          -- the grain size of the rock; used to calculate the relative roughness.
+        anisotropic_K1c (bool):     -- if True, the toughness is considered anisotropic.
+        Kc1 (float):                -- the fracture toughness along the x-axis, in case it is anisotropic.
+        TI_elasticity (bool):       -- the flag specifying transverse isotropic elasticity.
+        Cij (ndarray):              -- the transverse isotropic stiffness matrix (in the canonical basis).
+        freeSurf (bool):            -- if True, the effect of free surface is to be taken into account.
+        FreeSurfDepth (float):      -- the depth of the fracture from the free surface.
+        TI_PlaneAngle (float):      -- the angle of the plane of the fracture with respect to the free surface.
+        K1cFunc (function):         -- the function giving the toughness on the domain. It takes one argument (angle) in
+                                        case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
+                                        toughness. The function is also used to get the toughness if the domain is
+                                        re-meshed.
+        SigmaOFunc (function):      -- the function giving the in-situ stress on the domain. It should takes two
+                                        arguments(x, y) to give the stress on these coordinates. It is also used to get
+                                        the confining stress if the domain is re-meshed.
+        ClFunc (function):          -- the function giving the in Carter's leak off coefficient on the domain. It should
+                                        takes two arguments (x, y) to give the coefficient on these coordinates. It is
+                                        also used to get the leak off coefficient if the domain is re-meshed.
+
     """
 
-    def __init__(self, Mesh, Eprime, Toughness=0., Cl=0., SigmaO=0., grain_size=0., K1c_func=None,
-                 anisotropic_K1c=False, SigmaO_func = None, Cl_func = None, TI_elasticity=False, Cij = None,
-                 free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., wc=1e-6):
+    def __init__(self, Mesh, Eprime, Toughness=0., Carters_coef=0., confining_stress=0., grain_size=0., K1c_func=None,
+                 anisotropic_K1c=False, confining_stress_func = None, Carters_coef_func = None, TI_elasticity=False,
+                 Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6):
         """
-        Arguments:
-            Eprime (float)          -- plain strain modulus.
-            Toughness (float)       -- Linear-Elastic Plane-Strain Fracture Toughness.
-            Cl (float)              -- Carter's leak off coefficient.
-            SigmaO (ndarray)        -- in-situ stress field.
-            grainSize (float)       -- the grain size of the rock; used to calculate the relative roughness.
-            anisotropic (bool)      -- flag to specify if the fracture toughness is anisotropic.
-            K1c_perp (float)        -- the fracture toughness in the direction of x-axis.
-            anisotropic_flag(bool)  -- if True, the toughness is considered anisotropic.
-            K1c_func (function)     -- the function giving the toughness on the domain. It takes one argument (angle) in
-                                       case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
-                                       toughness. The function is also used to get the toughness if the domain is remeshed.
-            SigmaO_func (function)  -- the function giving the in situ stress on the domain. It should takes two
-                                       arguments (x, y) to give the stress on these coordinates. It is also used to get
-                                       the stress if the domain is remeshed.
-            Cl_func (function)      -- the function giving the in Carter's leak off coefficient on the domain. It
-                                       should takes two arguments (x, y) to give the coefficient on these coordinates.
-                                       It is also used to get the leak off coefficient if the domain is remeshed.
-            TI_elasticity(bool)     -- if True, the medium is elastic transverse isotropic.
-            Cij(Ndarray-float)      -- the TI stiffness matrix (in the canonical basis) is provided when
-                                       TI_elasticity=true.
-            wc (float)              -- minimum width corresponding to the asperity of the material.
-
+        The constructor function
         """
 
         if isinstance(Eprime, np.ndarray):  # check if float or ndarray
@@ -85,25 +100,25 @@ class MaterialProperties:
             self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
             self.Kprime = (32 / math.pi) ** 0.5 * Toughness * np.ones((Mesh.NumberOfElts,), float)
 
-        if isinstance(Cl, np.ndarray):  # check if float or ndarray
-            if Cl.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
-                self.Cl = Cl
-                self.Cprime = 2. * Cl
+        if isinstance(Carters_coef, np.ndarray):  # check if float or ndarray
+            if Carters_coef.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.Cl = Carters_coef
+                self.Cprime = 2. * Carters_coef
             else:
                 raise ValueError('Error in the size of Leak-Off coefficient input!')
                 return
         else:
-            self.Cl = Cl
-            self.Cprime = 2. * Cl * np.ones((Mesh.NumberOfElts,), float)
+            self.Cl = Carters_coef
+            self.Cprime = 2. * Carters_coef * np.ones((Mesh.NumberOfElts,), float)
 
-        if isinstance(SigmaO, np.ndarray):  # check if float or ndarray
-            if SigmaO.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
-                self.SigmaO = SigmaO
+        if isinstance(confining_stress, np.ndarray):  # check if float or ndarray
+            if confining_stress.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.SigmaO = confining_stress
             else:
                 raise ValueError('Error in the size of Sigma input!')
                 return
         else:
-            self.SigmaO = SigmaO * np.ones((Mesh.NumberOfElts,), float)
+            self.SigmaO = confining_stress * np.ones((Mesh.NumberOfElts,), float)
 
         self.grainSize = grain_size
         self.anisotropic_K1c = anisotropic_K1c
@@ -145,24 +160,24 @@ class MaterialProperties:
 
 
         self.K1cFunc = K1c_func
-        self.SigmaOFunc = SigmaO_func
-        self.ClFunc = Cl_func
+        self.SigmaOFunc = confining_stress_func
+        self.ClFunc = Carters_coef_func
 
         # overriding with the values evaluated by the given functions
-        if (K1c_func is not None) or (SigmaO_func is not None) or (Cl_func is not None):
+        if (K1c_func is not None) or (confining_stress_func is not None) or (Carters_coef_func is not None):
             self.remesh(Mesh)
 
-        self.wc = wc
+        self.wc = minimum_width
 
 # ----------------------------------------------------------------------------------------------------------------------
     def remesh(self, mesh):
         """
-        This function evaluate the toughness, confining stress and leak off coefficient according to the given mesh
+        This function evaluates the toughness, confining stress and leak off coefficient on the given mesh using the
+        functions provided in the MaterialProperties object. It should be evaluated each time re-meshing is done.
 
         Arguments:
-            mesh (CartesianMesh)        -- the CartesianMesh object describing the new mesh
+            mesh (CartesianMesh):        -- the CartesianMesh object describing the new mesh.
 
-        Returns:
         """
 
         if self.K1cFunc is not None and not self.anisotropic_K1c:
@@ -193,32 +208,36 @@ class MaterialProperties:
 
 class FluidProperties:
     """
-       Class defining the fluid properties
+    Class defining the fluid properties.
 
-       Instance variables:
-            viscosity (ndarray)     -- Viscosity of the fluid (note its different from local viscosity, see
-                                       fracture class for local viscosity)
-            rheology (string)       -- string specifying rheology of the fluid. Possible options:
-                                         - "Newtonian"
-                                         - "non-Newtonian"
-            muPrime (float)         -- 12 * viscosity (// plates viscosity factor)
-            density (float)         -- density of the fluid
-            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account
-       Methods:
-       """
+    Arguments:
+        viscosity (ndarray):     -- viscosity of the fluid (note its different from local viscosity, see
+                                    fracture class for local viscosity)
+        density (float):         -- density of the fluid
+        rheology (string):       -- string specifying rheology of the fluid. Possible options:
+
+                                     - "Newtonian"
+                                     - "non-Newtonian"
+        turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account
+        compressibility (float): -- the compressibility of the fluid.
+
+    Attributes:
+        viscosity (ndarray):     -- Viscosity of the fluid (note its different from local viscosity, see
+                                    fracture class for local viscosity).
+        muPrime (float):         -- 12 * viscosity (parallel plates viscosity factor).
+        rheology (string):       -- string specifying rheology of the fluid. Possible options:
+                                     - "Newtonian"
+                                     - "non-Newtonian"
+        density (float):         -- density of the fluid.
+        turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account.
+        compressibility (float): -- the compressibility of the fluid.
+
+    """
 
     def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0):
         """
         Constructor function.
 
-        Instance variables:
-            viscosity (ndarray)     -- viscosity of the fluid (note its different from local viscosity, see
-                                       fracture class for local viscosity)
-            density (float)         -- density of the fluid
-            rheology (string)       -- string specifying rheology of the fluid. Possible options:
-                                         - "Newtonian"
-                                         - "non-Newtonian"
-            turbulence (bool)       -- turbulence flag. If true, turbulence will be taken into account
         """
         if viscosity is None:
             # uniform viscosity
@@ -254,26 +273,38 @@ class FluidProperties:
 # --------------------------------------------------------------------------------------------------------
 class InjectionProperties:
     """
-        Class defining the injection schedule
+    Class defining the injection parameters.
 
-        instance variables:
-            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection
-                                            rates (row 1).
-            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate
-                                            of the injection point coordinates.
-            source_location (ndarray)    -- the element(s) where the fluid is injected in the cartesian mesh.
+    Arguments:
+        rate (ndarray):               -- array specifying the time series (row 0) and the corresponding injection
+                                         rates (row 1). The times are instant where the injection rate changes.
+
+                                         Attention:
+                                            The first time should be zero. The corresponding injection rate would
+                                            be taken for initialization of the fracture with an analytical solution.
+        mesh (CartesianMesh):         -- the CartesianMesh object defining mesh.
+        source_coordinates (ndarray): -- lists or ndarray with a length of 2, specifying the x and y coordinates
+                                         of the injection point coordinates.
+        source_func (function):       -- the source function providing the injection rate. The function should take
+                                         the x and y coordinates and provide the injection rate at those coordiantes
+                                         at the given time. It should be able to be called with three parameters
+                                         (x, y, time).
+
+    Attributes:
+        injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection
+                                         rates (row 1). This would be ignored it sourceFunc is provided.
+        sourceCoordinates (ndarray):  -- array with a single row and two columns specifying the x and y coordinate
+                                         of the injection point coordinates.
+        sourceElem (ndarray):         -- the element(s) where the fluid is injected in the cartesian mesh.
+        sourceFunc (function):        -- the source function providing the injection rate. The function should take
+                                         the x and y coordinates and provide the injection rate at those coordinates
+                                         at the given time. It should be able to be called with three parameters
+                                         (x, y, time).
     """
 
-    def __init__(self, rate, Mesh, source_coordinates=None ):
+    def __init__(self, rate, mesh, source_coordinates=None, source_func=None):
         """
         The constructor of the InjectionProperties class.
-
-        Arguments:
-            injectionRate (ndarray)      -- array specifying the time series (row 0) and the corresponding injection
-                                            rates (row 1).
-            Mesh (CartesianMesh)         -- the CartesianMesh object defining mesh.
-            source_coordinates (ndarray) -- array with a single row and two columns specifying the x and y coordinate
-                                            of the injection point coordinates.
         """
 
         if isinstance(rate, np.ndarray):
@@ -288,17 +319,57 @@ class InjectionProperties:
         else:
             self.injectionRate = np.asarray([[0], [rate]])
 
-        if not source_coordinates is None:
-            raise ValueError("Variable source location not yet supported!")
-            # if len(source_coordinates) == 2:
-            #     self.source_coordinates = source_coordinates
-            # else:
-            #     # error
-            #     raise ValueError('Invalid source coordinates. Correct format: a numpy array with a single row'
-            #                      ' and two columns to \n specify x and y coordinate of the source e.g.'
-            #                      ' np.array([x_coordinate, y_coordinate])')
-        source_coordinates = [0., 0.]
-        self.source_location = Mesh.locate_element(source_coordinates[0], source_coordinates[1])
+        if source_coordinates is not None:
+            if len(source_coordinates) == 2:
+                self.sourceCoordinates = source_coordinates
+            else:
+                # error
+                raise ValueError('Invalid source coordinates. Correct format: a list or numpy array with a single row'
+                                 ' and two columns to \n specify x and y coordinate of the source e.g.'
+                                 ' np.array([x_coordinate, y_coordinate])')
+
+        else:
+            self.sourceCoordinates = [0., 0.]
+
+        self.sourceElem = mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
+        self.sourceFunc = source_func
+
+    #-------------------------------------------------------------------------------------------------------------------
+
+    def get_injection_rate(self, time, mesh):
+        """ This function gives the current injection rate at all of the cells in the domain.
+
+        Arguments:
+            time (float):           -- the time at which the injection rate is required.
+            mesh (CartesianMesh):   -- the CartesianMesh object describing the mesh.
+
+        returns:
+            Qin (ndarray):          -- an numpy array of the size of the mesh with injection rates in each of the cell
+
+        """
+
+        Qin = np.zeros((mesh.NumberOfElts), float)
+        if self.sourceFunc is None:
+            # index of current time in the time series (first row) of the injection rate array
+            indxCurTime = max(np.where(time >= self.injectionRate[0, :])[0])
+            CurrentRate = self.injectionRate[1, indxCurTime]  # current injection rate
+            Qin[self.sourceElem] = CurrentRate  # point source
+        else:
+            for i in range(mesh.NumberOfElts):
+                Qin[i] = self.sourceFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], time)
+
+        return Qin
+
+    #-------------------------------------------------------------------------------------------------------------------
+
+    def remesh(self, new_mesh):
+        """ This function is called every time the domian is remeshed.
+
+        Arguments:
+            new_mesh (CartesianMesh):   -- the CartesianMesh object describing the new coarse mesh.
+        """
+
+        self.sourceElem = new_mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -306,8 +377,8 @@ class LoadingProperties:
     """
         Class defining the mechanical loading properties
 
-        Instance variables:
-            EltLoaded (ndarray)   -- array of elements that are loaded.
+        Attributes:
+            EltLoaded (ndarray):  -- array of elements that are loaded.
             displ_rate (float):   -- the rate at which the elements in the EltLoaded list are displaced due to the
                                      applied mechanical loading
     """
@@ -336,102 +407,108 @@ class SimulationProperties:
     """
     Class defining the simulation properties.
 
-        instance variables
-            tolFractFront (float)       -- tolerance for the fracture front loop.
-            toleranceEHL (float)        -- tolerance for the Elastohydrodynamic solver.
-            toleranceProjection (float) -- tolerance for projection iteration for anisotropic case
-            maxFrontItr (int)           -- maximum iterations to for the fracture front loop.
-            maxSolverItr (int)          -- maximum iterations for the EHL iterative solver (Picard-Newton
-                                           hybrid) in this case.
-            maximumItrEHL (int)         -- maximum number of iterations for the Elastohydrodynamic solver.
-            maxToughnessItr (int)       -- maximum toughness loop iterations.
-            tmStpPrefactor (float)      -- factor for time-step adaptivity.
-            maxTimeSteps (integer)      -- maximum number of time steps.
-            tmStpPrefactor_max (float)  -- used in the case of re-attempt from five steps back.
-            finalTime (float)           -- time where the simulation ends.
-            timeStepLimit (float)       -- limit above which time step will not exceed.
-            maxReattempts (int)         -- maximum number of reattempts in case of failure of a time step. A smaller
-                                           time step will be attempted the given number of times.
-            reAttemptFactor (float)     -- the factor by which time step is reduced on reattempts.
-            plotFigure (boolean)        -- flag specifying to plot fracture trace after the given time period.
-            saveToDisk (boolean)        -- flag specifying to save fracture to dist after the given time period.
-            plotAnalytical (boolean)    -- if true, analytical solution will also be plotted along with the computed
-                                           solution.
-            analyticalSol (String)      -- the analytical solution of the radial fracture to be plotted on the
-                                           fracture. Possible options:
-                                                - K  (toughness dominated regime, without leak off)
-                                                - Kt (toughness dominated regime , with leak off)
-                                                - M  (viscosity dominated regime, without leak off)
-                                                - Mt (viscosity dominated regime , with leak off)
-                                                - E  (elliptical, toughness dominated without leak off)
-            bckColor (String)           -- the string specifying the parameter according to which the background of the
-                                           domain is color coded. Possible options
-                                                - sigma0 (confining stress)
-                                                - K1c (fracture toughness)
-                                                - Cl (leak-off coefficient)
-            plotEltType (boolean)       -- if True, the type of element will be spedified with color coded dots(channel,
-                                           ribbon or tip).
-            utputTimePeriod (float)    -- the time period after which the output file is written or the
-                                           figures are plotted.
-            tipAsymptote (string)       -- propagation regime. Possible options:
-                                                - K  (toughness dominated regime, without leak off)
-                                                - M  (viscosity dominated regime, without leak off)
-                                                - Mt (viscosity dominated regime , with leak off)
-                                                - U  (Universal regime accommodating viscosity, toughness
-                                                     and leak off (see Donstov and Pierce, 2017))
-                                                - MK (viscosity to toughness transition regime)
-            saveRegime (boolean)        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
-                                           saved.
-            verbosity (int)             -- the level of details about the ongoing simulation to be plotted (currently
-                                           two levels 1 and 2 are supported).
-            enableRemeshing (bool)      -- if True, the computational domain will be compressed by the factor given by
-                                           by the variable remeshFactor after the fracture front reaches the end of the
-                                           domain.
-            remeshFactor (float)        -- the factor by which the domain is compressed on re-meshing.
-            frontAdvancing (string)     -- The type of front advancing to be done. Possible options are:
-                                                -- explicit
-                                                -- semi-implicit
-                                                -- implicit
-            gravity (bool)              -- if True, the effect of gravity will be taken into account.
-            collectPerfData (bool)      -- if True, the performance data will be collected in the form of a tree.
-            paramFromTip (bool)     -- if True, the space dependant parameters such as toughness and leak-off
-                                           coefficients will be taken from the tip by projections instead of taking them
-                                           from the ribbon cell center. The numerical scheme as a result will become
-                                           unstable due to the complexities in finding the projection
-            saveReynNumb (boolean)      -- if True, the Reynold's number at each edge of the cells inside the fracture
-                                           will be saved.
-            saveFluidFlux (boolean)     -- if True, the fluid flux at each edge of the cells inside the fracture
-                                           will be saved.
-            saveFluidVel (boolean)     -- if True, the fluid velocity at each edge of the cells inside the fracture
-                                           will be saved.
-            TI_KernelExecPath (string)  -- the folder containing the executable to calculate transverse isotropic
-                                           kernel or kernel with free surface.
-            projMethod (string)         -- the method by which the angle prescribed by the projections onto the front
-                                            are evaluated. Possible options are:
-                                                -- 'ILSA_orig' (the method described in the original ILSA scheme)
-                                                -- 'LS_grad' (using gradient of the level set)
+    Arguments:
+        address (str)                -- the folder where the simulation parameters file is located. The file must be
+                                        named 'simul_param'. For the description of the arguments and there default
+                                        values, see the py:module::default_SimParam .
+    Attributes:
+        tolFractFront (float):       -- tolerance for the fracture front loop.
+        toleranceEHL (float):        -- tolerance for the Elastohydrodynamic solver.
+        toleranceProjection (float): -- tolerance for projection iteration for anisotropic case
+        maxFrontItr (int):           -- maximum iterations to for the fracture front loop.
+        maxSolverItr (int):          -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
+                                        case.
+        maximumItrEHL (int):         -- maximum number of iterations for the Elastohydrodynamic solver.
+        maxToughnessItr (int):       -- maximum toughness loop iterations.
+        tmStpPrefactor (float):      -- factor for time-step adaptivity.
+        maxTimeSteps (integer):      -- maximum number of time steps.
+        tmStpPrefactor_max (float):  -- used in the case of re-attempt from five steps back.
+        finalTime (float):           -- time where the simulation ends.
+        timeStepLimit (float):       -- limit above which time step will not exceed.
+        maxReattempts (int):         -- maximum number of reattempts in case of failure of a time step. A smaller
+                                        time step will be attempted the given number of times.
+        reAttemptFactor (float):     -- the factor by which time step is reduced on reattempts.
+        plotFigure (boolean):        -- flag specifying to plot fracture trace after the given time period.
+        saveToDisk (boolean):        -- flag specifying to save fracture to dist after the given time period.
+        plotAnalytical (boolean):    -- if true, analytical solution will also be plotted along with the computed
+                                       solution.
+        analyticalSol (String):      -- the analytical solution of the radial fracture to be plotted on the fracture. \
+                                        Possible options:
 
-        private variables:
-            __out_file_address (string) -- disk address of the files to be saved. If not given, a new
-                                           ./Data/"tim stamp" folder will be automatically created.
-            __solTimeSeries (ndarray)   -- time series where the solution is required. The time stepping would be
-                                           adjusted to get solution exactly at the given times.
-            __dryCrack_mechLoading(bool)-- if True, the mechanical loading solver will be used.
-            __viscousInjection (bool)   -- if True, the the solver will also take the fluid viscosity into account.
-            __volumeControl (bool)      -- if True, the the volume control solver will be used.
-            __simName (str)             -- the name of the simulation.
-            __timeStamp (str)           -- the time at which the simulation properties was created.
+                                            - K  (toughness dominated regime, without leak off)
+                                            - Kt (toughness dominated regime , with leak off)
+                                            - M  (viscosity dominated regime, without leak off)
+                                            - Mt (viscosity dominated regime , with leak off)
+                                            - E  (elliptical, toughness dominated without leak off)
+        bckColor (String):           -- the string specifying the parameter according to which the background of the\
+                                        domain is color coded. Possible options:
+
+                                            - sigma0 (confining stress)
+                                            - K1c (fracture toughness)
+                                            - Cl (leak-off coefficient)
+        plotEltType (boolean):       -- if True, the type of element will be spedified with color coded dots(channel,
+                                        ribbon or tip).
+        outputTimePeriod (float):    -- the time period after which the output file is written or the
+                                        figures are plotted.
+        tipAsymptote (string):       -- propagation regime. possible options are:
+
+                                            - K  (toughness dominated regime, without leak off)
+                                            - M  (viscosity dominated regime, without leak off)
+                                            - Mt (viscosity dominated regime , with leak off)
+                                            - U  (Universal regime accommodating viscosity, toughness\
+                                                 and leak off (see Donstov and Pierce, 2017))
+                                            - MK (viscosity to toughness transition regime)
+        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
+                                        saved.
+        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
+                                        two levels 1 and 2 are supported).
+        enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by
+                                        by the variable remeshFactor after the fracture front reaches the end of the
+                                        domain.
+        remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.
+        frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
+                                            - explicit
+                                            - semi-implicit
+                                            - implicit
+        gravity (bool):              -- if True, the effect of gravity will be taken into account.
+        collectPerfData (bool):      -- if True, the performance data will be collected in the form of a tree.
+        paramFromTip (bool):         -- if True, the space dependant parameters such as toughness and leak-off
+                                        coefficients will be taken from the tip by projections instead of taking them
+                                        from the ribbon cell center. The numerical scheme as a result will become
+                                        unstable due to the complexities in finding the projection
+        saveReynNumb (boolean):      -- if True, the Reynold's number at each edge of the cells inside the fracture
+                                        will be saved.
+        saveFluidFlux (boolean):     -- if True, the fluid flux at each edge of the cells inside the fracture
+                                        will be saved.
+        saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture
+                                        will be saved.
+        TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
+                                       kernel or kernel with free surface.
+        projMethod (string):         -- the method by which the angle prescribed by the projections onto the front
+                                        are evaluated. Possible options are:
+                                            - 'ILSA_orig' (the method described in the original ILSA scheme)
+                                            - 'LS_grad' (using gradient of the level set)
+        Attention:
+            These attributes below are private:
+
+        __out_file_address (string): -- disk address of the files to be saved. If not given, a new\
+                                                  ./Data/"tim stamp" folder will be automatically created.
+        __solTimeSeries (ndarray):   -- time series where the solution is required. The time stepping would \
+                                                   be adjusted to get solution exactly at the given times.
+        __dryCrack_mechLoading(bool):-- if True, the mechanical loading solver will be used.
+        __viscousInjection (bool):   -- if True, the the solver will also take the fluid viscosity into \
+                                                  account.
+        __volumeControl (bool):      -- if True, the the volume control solver will be used.
+        __simName (string):          -- the name of the simulation.
+        __timeStamp (string):        -- the time at which the simulation properties was created.
 
             
     """
 
-    def __init__(self, address = None):
+    def __init__(self, address=None):
         """
         The constructor of the SimulationParameters class. See documentation of the class.
 
-        Arguments:
-            address (str)               -- the folder where the simulation parameters file is located. The file must be
-                                           name 'simul_param'
         """
 
         import sys

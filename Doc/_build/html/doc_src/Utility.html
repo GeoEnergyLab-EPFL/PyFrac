@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -44,18 +45,6 @@
 Copyright (c) “ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory”, 2016-2019. All rights reserved.
 See the LICENSE.TXT file for more details.</p>
 <dl class="function">
-<dt id="Utility.PrintDomain">
-<code class="descclassname">Utility.</code><code class="descname">PrintDomain</code><span class="sig-paren">(</span><em>Matrix</em>, <em>mesh</em>, <em>Elem=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Utility.html#PrintDomain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Utility.PrintDomain" title="Permalink to this definition">¶</a></dt>
-<dd><p>3D plot of all elements given in the form of a list;
-:param Elem: list of elements to be plotted
-:type Elem: ndarray-int
-:param Matrix: values to be plotted, should be equal in size to the first argument(Elem)
-:type Matrix: ndarray-float
-:param mesh: mesh object
-:type mesh: CartesianMesh object</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="Utility.ReadFracture">
 <code class="descclassname">Utility.</code><code class="descname">ReadFracture</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Utility.html#ReadFracture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Utility.ReadFracture" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -66,35 +55,9 @@ See the LICENSE.TXT file for more details.</p>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="Utility.plot_Reynolds_number">
-<code class="descclassname">Utility.</code><code class="descname">plot_Reynolds_number</code><span class="sig-paren">(</span><em>Fr</em>, <em>ReyNum</em>, <em>edge</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Utility.html#plot_Reynolds_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Utility.plot_Reynolds_number" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
 <dt id="Utility.plot_as_matrix">
 <code class="descclassname">Utility.</code><code class="descname">plot_as_matrix</code><span class="sig-paren">(</span><em>data</em>, <em>mesh</em>, <em>fig=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Utility.html#plot_as_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Utility.plot_as_matrix" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
-
-<dl class="function">
-<dt id="Utility.radius_level_set">
-<code class="descclassname">Utility.</code><code class="descname">radius_level_set</code><span class="sig-paren">(</span><em>xy</em>, <em>R</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Utility.html#radius_level_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Utility.radius_level_set" title="Permalink to this definition">¶</a></dt>
-<dd><p>signed distance from a circle; (&lt;0 inside circle , &gt;0 outside, - zero at the circle)
-:param xy: array with x and y coordinate values of the cell centers. The x coordinates are given in</p>
-<blockquote>
-<div>the frist column and y coordinate is given in the second column</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – radius of the circle</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">signed distance from the given circle for each cell given row wise by the argument xy</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">ndarray-float</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
 
 <dl class="function">
 <dt id="Utility.save_images_to_video">
@@ -146,7 +109,7 @@ See the LICENSE.TXT file for more details.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

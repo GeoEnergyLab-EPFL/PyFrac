@@ -10,6 +10,7 @@
 from src.Properties import *
 from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
+from src.CartesianMesh import *
 from src.TimeStepping import attempt_time_step
 from src.Visualization import plot_footprint_analytical, plot_analytical_solution
 from src.Symmetry import load_isotropic_elasticity_matrix_symmetric
@@ -225,18 +226,30 @@ class Controller:
                     self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_max
                 self.successfulTimeSteps += 1
 
-
             # re-meshing required
             elif status == 12:
                 if self.sim_prop.enableRemeshing:
                     self.C *= 1 / self.sim_prop.remeshFactor
                     print("Remeshing...")
+                    coarse_mesh = CartesianMesh(self.sim_prop.remeshFactor * self.fracture.mesh.Lx,
+                                                self.sim_prop.remeshFactor * self.fracture.mesh.Ly,
+                                                self.fracture.mesh.nx,
+                                                self.fracture.mesh.ny,
+                                                symmetric=self.sim_prop.symmetric)
+                    self.solid_prop.remesh(coarse_mesh)
+                    self.injection_prop.remesh(coarse_mesh)
                     self.fracture = self.fracture.remesh(self.sim_prop.remeshFactor,
                                     self.C,
+                                    coarse_mesh,
                                     self.solid_prop,
                                     self.fluid_prop,
                                     self.injection_prop,
                                     self.sim_prop)
+                    # update the saved properties
+                    if self.sim_prop.saveToDisk:
+                        prop = (self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
+                        with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
+                            dill.dump(prop, output, -1)
                     self.remeshings += 1
                     print("Done!")
 
@@ -251,6 +264,7 @@ class Controller:
                 indxCurTime = max(np.where(Fr_n_pls1.time >= self.injection_prop.injectionRate[0, :])[0])
                 CurrentRate = self.injection_prop.injectionRate[1, indxCurTime]  # current injection rate
                 if CurrentRate == 0:
+                    self.output(Fr_n_pls1)
                     inp = input("Fracture is fully closed. Do you want to jump to the time of next injection? [y/n]")
                     while inp not in ['y', 'Y', 'n', 'N']:
                         inp = input("Press y or n")
@@ -260,9 +274,9 @@ class Controller:
                         pos_inj = np.where(self.injection_prop.injectionRate[1, :] > 0)[0]
                         jump_to = min(self.injection_prop.injectionRate[0, np.intersect1d(time_larger, pos_inj)])
                         Fr_n_pls1.time = jump_to
-                        self.fracture = copy.deepcopy(Fr_n_pls1)
                     elif inp is 'n' or inp is 'N':
                         break
+                self.fracture = copy.deepcopy(Fr_n_pls1)
 
             else:
                 f.writelines("\n" + self.errorMessages[status])
@@ -566,7 +580,7 @@ class Controller:
                 TS_inj_cell = 3 * delta_x / abs(vel_injection[0])
             else:
                 # for positive injection, use the increase in total fracture volume criteria
-                TS_inj_cell = 0.07 * sum(self.fracture.w) * self.fracture.mesh.EltArea / abs(currentRate)
+                TS_inj_cell = 0.1 * sum(self.fracture.w) * self.fracture.mesh.EltArea / abs(currentRate)
 
             TS_delta_vol = np.inf
             if self.delta_w is not None:
@@ -586,8 +600,19 @@ class Controller:
             if self.stagnant_TS is not None:
                 TimeStep = self.stagnant_TS
             else:
-                raise ValueError("The fracture front seems to be stagnant and no time step is available. Provide a "
-                                 "fixed time step at this time.")
+                TS_obtained = False
+                print("The fracture front is stagnant and there is no injection. In these conditions, "
+                        "there is no criterion to calculate time step size.")
+                while not TS_obtained:
+                    try:
+                        inp = input("Enter the time step size(seconds) you would like to try:")
+                        TimeStep = float(inp)
+                        TS_obtained = True
+                    except ValueError:
+                        pass
+
+
+
 
         # to get the solution at the times given in time series or final time
         next_in_TS = self.sim_prop.finalTime

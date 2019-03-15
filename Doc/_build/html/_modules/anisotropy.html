@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -71,9 +72,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># reconstruct front to get tip cells from the given level set</span>
+
     <span class="p">(</span><span class="n">elt_tip</span><span class="p">,</span> <span class="n">l_tip</span><span class="p">,</span> <span class="n">alpha_tip</span><span class="p">,</span> <span class="n">CellStatus</span><span class="p">)</span> <span class="o">=</span> <span class="n">reconstruct_front_LS_gradient</span><span class="p">(</span><span class="n">sgnd_dist</span><span class="p">,</span>
-                                                                            <span class="n">channel_elts</span><span class="p">,</span>
-                                                                            <span class="n">mesh</span><span class="p">)</span>
+                                                            <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">,),</span> <span class="n">channel_elts</span><span class="p">),</span>
+                                                            <span class="n">channel_elts</span><span class="p">,</span>
+                                                            <span class="n">mesh</span><span class="p">)</span>
     <span class="c1"># get the filling fraction to find partially filled tip cells</span>
     <span class="n">FillFrac</span> <span class="o">=</span> <span class="n">Integral_over_cell</span><span class="p">(</span><span class="n">elt_tip</span><span class="p">,</span>
                                   <span class="n">alpha_tip</span><span class="p">,</span>
@@ -811,7 +814,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

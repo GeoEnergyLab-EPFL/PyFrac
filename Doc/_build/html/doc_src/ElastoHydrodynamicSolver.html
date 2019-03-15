@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -91,7 +92,7 @@ vk (ndarray-float)             – the velocity evaluated for current iteration.
 <li><strong>w</strong> (<em>ndarray</em>) – – the width of the trial fracture.</li>
 <li><strong>EltCrack</strong> (<em>ndarray</em>) – – the list of elements inside the fracture.</li>
 <li><strong>muPrime</strong> (<em>ndarray</em>) – – the scaled local viscosity of the injected fluid (12 * viscosity)</li>
-<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the mesh.</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – the mesh.</li>
 <li><strong>InCrack</strong> (<em>ndarray</em>) – – An array specifying whether elements are inside the fracture or not with
 1 or 0 respectively.</li>
 <li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the density of the fluid.</li>
@@ -391,7 +392,7 @@ equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated with the lami
 <li><strong>w</strong> (<em>ndarray</em>) – – the width of the trial fracture.</li>
 <li><strong>EltCrack</strong> (<em>ndarray</em>) – – the list of elements inside the fracture.</li>
 <li><strong>muPrime</strong> (<em>ndarray</em>) – – the scaled local viscosity of the injected fluid (12 * viscosity).</li>
-<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the mesh.</li>
+<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – the mesh.</li>
 <li><strong>InCrack</strong> (<em>ndarray</em>) – – An array specifying whether elements are inside the fracture or not with
 1 or 0 respectively.</li>
 </ul>
@@ -465,7 +466,7 @@ elasticity relation for the given fracture width.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

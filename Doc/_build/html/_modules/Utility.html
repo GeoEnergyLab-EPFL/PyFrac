@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -55,66 +56,6 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">src.TipInversion</span> <span class="k">import</span> <span class="n">TipAsymInversion</span>
 
-
-<div class="viewcode-block" id="radius_level_set"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.radius_level_set">[docs]</a><span class="k">def</span> <span class="nf">radius_level_set</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="n">R</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    signed distance from a circle; (&lt;0 inside circle , &gt;0 outside, - zero at the circle)</span>
-<span class="sd">    Arguments:</span>
-<span class="sd">        xy (ndarray-flat):      array with x and y coordinate values of the cell centers. The x coordinates are given in</span>
-<span class="sd">                                the frist column and y coordinate is given in the second column</span>
-<span class="sd">        R (float):              radius of the circle</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        ndarray-float:          signed distance from the given circle for each cell given row wise by the argument xy</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="c1"># for arrays</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">R</span>  <span class="c1"># norm(xy)=(x^2+y^2)^1/2    -R</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># for single entries</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">R</span></div>
-
-<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
-
-<div class="viewcode-block" id="PrintDomain"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.PrintDomain">[docs]</a><span class="k">def</span> <span class="nf">PrintDomain</span><span class="p">(</span><span class="n">Matrix</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">Elem</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    3D plot of all elements given in the form of a list;</span>
-<span class="sd">    Arguments:</span>
-<span class="sd">        Elem(ndarray-int):          list of elements to be plotted</span>
-<span class="sd">        Matrix(ndarray-float):      values to be plotted, should be equal in size to the first argument(Elem)</span>
-<span class="sd">        mesh(CartesianMesh object): mesh object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">Elem</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">Elem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">)</span>
-
-    <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,))</span>
-    <span class="n">tmp</span><span class="p">[</span><span class="n">Elem</span><span class="p">]</span> <span class="o">=</span> <span class="n">Matrix</span>
-    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot_trisurf</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cm</span><span class="o">.</span><span class="n">jet</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span></div>
-
-
-<span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
-<div class="viewcode-block" id="plot_Reynolds_number"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.plot_Reynolds_number">[docs]</a><span class="k">def</span> <span class="nf">plot_Reynolds_number</span><span class="p">(</span><span class="n">Fr</span><span class="p">,</span> <span class="n">ReyNum</span><span class="p">,</span> <span class="n">edge</span><span class="p">):</span>
-
-
-    <span class="n">figr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="n">ax</span> <span class="o">=</span> <span class="n">figr</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
-    <span class="n">ReMesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">ReyNum</span><span class="p">[</span><span class="n">edge</span><span class="p">,</span> <span class="p">:],</span> <span class="p">(</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">))</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">nx</span><span class="p">)</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span><span class="p">,</span> <span class="n">Fr</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">ny</span><span class="p">)</span>
-    <span class="n">xv</span><span class="p">,</span> <span class="n">yv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-    <span class="c1"># cax = ax.contourf(xv, yv, ReMesh, levels=[0, 100, 2100, 10000])</span>
-    <span class="n">cax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">ReMesh</span><span class="p">)</span>
-    <span class="n">figr</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Reynolds number&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
-    <span class="k">return</span> <span class="n">figr</span></div>
-
-<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="plot_as_matrix"><a class="viewcode-back" href="../doc_src/Utility.html#Utility.plot_as_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_as_matrix</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
@@ -223,7 +164,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

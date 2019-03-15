@@ -470,7 +470,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     else:
         density = None
 
-    if regime in ('M', 'MDR'):
+    if regime in ['M', 'MDR']:
         if fluid_prop is None:
             raise ValueError('Fluid properties required for \'M\' type analytical solution')
         muPrime = fluid_prop.muPrime
@@ -522,7 +522,8 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                         mesh_i,
                                                         mat_prop.Eprime,
                                                         inj_prop.injectionRate[1,0],
-                                                        muPrime,
+                                                        inj_point=inj_prop.sourceCoordinates,
+                                                        muPrime=muPrime,
                                                         Kprime=mat_prop.Kprime[samp_cell],
                                                         Cprime=mat_prop.Cprime[samp_cell],
                                                         length=length,

@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -53,12 +54,12 @@
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="k">import</span> <span class="n">fsolve</span>
 
-<div class="viewcode-block" id="SolveFMM"><a class="viewcode-back" href="../doc_src/LevelSet.html#LevelSet.SolveFMM">[docs]</a><span class="k">def</span> <span class="nf">SolveFMM</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">,</span> <span class="n">EltRibbon</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">farAwayPstv</span><span class="p">,</span> <span class="n">farAwayNgtv</span><span class="p">):</span>
+<div class="viewcode-block" id="SolveFMM"><a class="viewcode-back" href="../doc_src/LevelSet.html#LevelSet.SolveFMM">[docs]</a><span class="k">def</span> <span class="nf">SolveFMM</span><span class="p">(</span><span class="n">levelSet</span><span class="p">,</span> <span class="n">EltRibbon</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">farAwayPstv</span><span class="p">,</span> <span class="n">farAwayNgtv</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    solve Eikonal equation to get level set.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        InitlevelSet (ndarray-float)        -- level set to be evaluated and updated.</span>
+<span class="sd">        levelSet (ndarray-float):       -- level set to be evaluated and updated.</span>
 <span class="sd">        EltRibbon (ndarray-int):            -- cells with given distance from the front.</span>
 <span class="sd">        EltChannel (ndarray-int):           -- cells enclosed by the given cells</span>
 <span class="sd">        mesh (CartesianMesh object):        -- mesh object</span>
@@ -68,20 +69,21 @@
 <span class="sd">                                               is to be evaluated</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Does not return anything. The InitlevelSet is updated in place.</span>
+<span class="sd">        Note:</span>
+<span class="sd">            Does not return anything. The levelSet is updated in place.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># for Elements radialy outward from ribbon cells</span>
     <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
     <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
-    <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">farAwayPstv</span><span class="p">)</span>
+    <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">farAwayPstv</span><span class="p">,</span> <span class="n">NarrowBand</span><span class="p">)</span>
     <span class="c1"># the maximum distance any point can have from another in the current mesh. This distance is used to detect the</span>
     <span class="c1"># cells that are not yet traversed, i.e. having infinity distance</span>
     <span class="n">maxdist</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
 
     <span class="k">while</span> <span class="n">NarrowBand</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 
-        <span class="n">Smallest</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">[</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">NarrowBand</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()])</span>
+        <span class="n">Smallest</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">[</span><span class="n">levelSet</span><span class="p">[</span><span class="n">NarrowBand</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()])</span>
         <span class="n">neighbors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">Smallest</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
@@ -90,8 +92,8 @@
                     <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">)</span>
                     <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">FarAway</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FarAway</span> <span class="o">==</span> <span class="n">neighbor</span><span class="p">))</span>
 
-                <span class="n">NeigxMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
-                <span class="n">NeigyMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">3</span><span class="p">]])</span>
+                <span class="n">NeigxMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+                <span class="n">NeigyMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">3</span><span class="p">]])</span>
                 <span class="n">beta</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
                 <span class="n">delT</span> <span class="o">=</span> <span class="n">NeigyMin</span> <span class="o">-</span> <span class="n">NeigxMin</span>
 
@@ -99,39 +101,40 @@
                 <span class="n">theta</span> <span class="o">=</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">delT</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>  <span class="c1"># it goes to nan for fully</span>
                 <span class="c1"># horizontal or fully vertical perpendiculars on the front</span>
 
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">((</span><span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">theta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)):</span>
-                    <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">theta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+                    <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">theta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>  <span class="c1"># the angle is either 0 or 90 degrees</span>
                     <span class="c1"># vertical propagation direction.</span>
                     <span class="k">if</span> <span class="n">NeigxMin</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>  <span class="c1"># used to check if very large value (level set value for unevaluated elements)</span>
-                        <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
+                        <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
                     <span class="c1"># horizontal propagation direction.</span>
                     <span class="k">if</span> <span class="n">NeigyMin</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>
-                        <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span>
+                        <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span>
 
         <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Alive</span><span class="p">,</span> <span class="n">Smallest</span><span class="p">)</span>
-        <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">NarrowBand</span> <span class="o">==</span> <span class="n">Smallest</span><span class="p">))</span>
+        <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">NarrowBand</span> <span class="o">==</span> <span class="n">Smallest</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="n">unevaluated</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">unevaluated</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unevaluated</span><span class="p">)):</span>
             <span class="n">neighbors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">[</span><span class="n">unevaluated</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span>
-            <span class="n">Eikargs</span> <span class="o">=</span> <span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">)</span>  <span class="c1"># arguments for the eikinal equation function</span>
-            <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">])</span>  <span class="c1"># initial starting guess for the numerical solver</span>
-            <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">[</span><span class="n">unevaluated</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">fsolve</span><span class="p">(</span><span class="n">Eikonal_Res</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">Eikargs</span><span class="p">)</span>  <span class="c1"># numerical solver</span>
+            <span class="n">Eikargs</span> <span class="o">=</span> <span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+                       <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">)</span>  <span class="c1"># arguments for the Eikonal equation function</span>
+            <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">])</span>  <span class="c1"># initial starting guess for the numerical solver</span>
+            <span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">[</span><span class="n">unevaluated</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">fsolve</span><span class="p">(</span><span class="n">Eikonal_Res</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">Eikargs</span><span class="p">)</span>  <span class="c1"># numerical solver</span>
 
 
     <span class="c1"># for elements radialy inward from ribbon cells. The sign of the level set values(tip asymptote) in the ribbon cells</span>
     <span class="c1"># is inverted to run the fast marching algorithm. The sign is finally inverted back to assign the value in the level</span>
     <span class="c1"># set to be returned.</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">farAwayNgtv</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">farAwayNgtv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">RibbonInwardElts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">EltChannel</span><span class="p">,</span> <span class="n">EltRibbon</span><span class="p">)</span>
         <span class="n">positive_levelSet</span> <span class="o">=</span> <span class="mf">1e50</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">EltRibbon</span><span class="p">]</span>
+        <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">levelSet</span><span class="p">[</span><span class="n">EltRibbon</span><span class="p">]</span>
         <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
         <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
-        <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">farAwayNgtv</span><span class="p">)</span>
+        <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">farAwayNgtv</span><span class="p">,</span> <span class="n">NarrowBand</span><span class="p">)</span>
 
         <span class="k">while</span> <span class="n">NarrowBand</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 
@@ -169,34 +172,35 @@
             <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">NarrowBand</span> <span class="o">==</span> <span class="n">Smallest</span><span class="p">))</span>
 
         <span class="c1"># assigning adjusted value to the level set to be returned</span>
-        <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">RibbonInwardElts</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">positive_levelSet</span><span class="p">[</span><span class="n">RibbonInwardElts</span><span class="p">]</span>
+        <span class="n">levelSet</span><span class="p">[</span><span class="n">RibbonInwardElts</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">positive_levelSet</span><span class="p">[</span><span class="n">RibbonInwardElts</span><span class="p">]</span>
 
 
-    <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="n">unevaluated</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">unevaluated</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unevaluated</span><span class="p">)):</span>
             <span class="n">neighbors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">[</span><span class="n">unevaluated</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span>
-            <span class="n">Eikargs</span> <span class="o">=</span> <span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">)</span>  <span class="c1"># arguments for the eikinal equation function</span>
-            <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">InitlevelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">])</span>  <span class="c1"># initial starting guess for the numerical solver</span>
-            <span class="n">InitlevelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">[</span><span class="n">unevaluated</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">fsolve</span><span class="p">(</span><span class="n">Eikonal_Res</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">Eikargs</span><span class="p">)</span>  <span class="c1"># numerical solver</span></div>
+            <span class="n">Eikargs</span> <span class="o">=</span> <span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+                       <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">)</span>  <span class="c1"># arguments for the eikonal equation function</span>
+            <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">neighbors</span><span class="p">])</span>  <span class="c1"># initial starting guess for the numerical solver</span>
+            <span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">[</span><span class="n">unevaluated</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">fsolve</span><span class="p">(</span><span class="n">Eikonal_Res</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">Eikargs</span><span class="p">)</span>  <span class="c1"># numerical solver</span></div>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="reconstruct_front"><a class="viewcode-back" href="../doc_src/LevelSet.html#LevelSet.reconstruct_front">[docs]</a><span class="k">def</span> <span class="nf">reconstruct_front</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+<div class="viewcode-block" id="reconstruct_front"><a class="viewcode-back" href="../doc_src/LevelSet.html#LevelSet.reconstruct_front">[docs]</a><span class="k">def</span> <span class="nf">reconstruct_front</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">bandElts</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the</span>
 <span class="sd">    perpendicular. The angle is calculated using the formulation given by Pierce and Detournay 2008.</span>
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
-<span class="sd">        dist (ndarray-float): the signed distance of the cells from the fracture front</span>
-<span class="sd">        EltChannel (ndarray-int): list of Channel elements</span>
-<span class="sd">        mesh (CartesianMesh object): the mesh of the fracture</span>
+<span class="sd">        dist (ndarray):         -- the signed distance of the cells from the fracture front.</span>
+<span class="sd">        EltChannel (ndarray):   -- list of Channel elements.</span>
+<span class="sd">        mesh (CartesianMesh):   -- the mesh of the fracture.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Elements that are not in channel</span>
-    <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">EltChannel</span><span class="p">)</span>
+    <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">bandElts</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">)</span>
     <span class="n">ElmntTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([],</span> <span class="nb">int</span><span class="p">)</span>
     <span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
     <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
@@ -231,6 +235,7 @@
             <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">dist</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span> <span class="o">/</span> <span class="n">dist</span><span class="p">[</span><span class="n">neighbors</span><span class="p">[</span><span class="mi">3</span><span class="p">]])</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
                 <span class="n">a2</span> <span class="o">=</span> <span class="mf">0.</span>
 
+            <span class="c1">#todo hack!!!</span>
             <span class="c1"># checks to remove numerical noise in angle calculation</span>
             <span class="k">if</span> <span class="n">a2</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">a2</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">a2</span><span class="p">)</span>
@@ -272,19 +277,19 @@
 <span class="c1"># -----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="reconstruct_front_LS_gradient"><a class="viewcode-back" href="../doc_src/LevelSet.html#LevelSet.reconstruct_front_LS_gradient">[docs]</a><span class="k">def</span> <span class="nf">reconstruct_front_LS_gradient</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+<div class="viewcode-block" id="reconstruct_front_LS_gradient"><a class="viewcode-back" href="../doc_src/LevelSet.html#LevelSet.reconstruct_front_LS_gradient">[docs]</a><span class="k">def</span> <span class="nf">reconstruct_front_LS_gradient</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">EltBand</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the</span>
 <span class="sd">    perpendicular. The angle is calculated from the gradient of the level set.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        dist (ndarray-float): the signed distance of the cells from the fracture front</span>
-<span class="sd">        EltChannel (ndarray-int): list of Channel elements</span>
-<span class="sd">        mesh (CartesianMesh object): the mesh of the fracture</span>
+<span class="sd">        dist (ndarray):         -- the signed distance of the cells from the fracture front.</span>
+<span class="sd">        EltChannel (ndarray):   -- list of Channel elements.</span>
+<span class="sd">        mesh (CartesianMesh):   -- the mesh of the fracture.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Elements that are not in channel</span>
-    <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">EltChannel</span><span class="p">)</span>
+    <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">EltBand</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">)</span>
     <span class="n">ElmntTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([],</span> <span class="nb">int</span><span class="p">)</span>
     <span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
     <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([])</span>
@@ -365,22 +370,22 @@
 <span class="sd">    partially filled and fully filled elements. The function update lists accordingly.</span>
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
-<span class="sd">        EltsChannel (ndarray-int):      channel elements list</span>
-<span class="sd">        EltsTipNew (ndarray-int):       list of the new tip elements, including fully filled cells that were tip cells</span>
-<span class="sd">                                        in the last time step</span>
-<span class="sd">        FillFrac (ndarray-float):       filling fraction of the new tip cells</span>
-<span class="sd">        levelSet (ndarray-float):       current level set</span>
-<span class="sd">        mesh (CartesianMesh object):    the mesh of the fracture</span>
+<span class="sd">        EltsChannel (ndarray):      -- channel elements list.</span>
+<span class="sd">        EltsTipNew (ndarray):       -- list of the new tip elements, including fully filled cells that were tip</span>
+<span class="sd">                                       cells in the last time step.</span>
+<span class="sd">        FillFrac (ndarray):         -- filling fraction of the new tip cells.</span>
+<span class="sd">        levelSet (ndarray):         -- current level set.</span>
+<span class="sd">        mesh (CartesianMesh):       -- the mesh of the fracture.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        (ndarray-int):                  new channel elements list</span>
-<span class="sd">        (ndarray-int):                  new tip elements list</span>
-<span class="sd">        (ndarray-int):                  new crack elements list</span>
-<span class="sd">        (ndarray-int):                  new ribbon elements list</span>
-<span class="sd">        (ndarray-int):                  list specifying the zero vertex of the tip cells. (can have value from 0 to 3,</span>
-<span class="sd">                                        where 0 signify bottom left, 1 signifying bottom right, 2 signifying top right</span>
-<span class="sd">                                        and 3 signifying top left vertex)</span>
-<span class="sd">        (ndarray-int):                  specifies which region each element currently belongs to</span>
+<span class="sd">        - eltsChannel (ndarray):    -- new channel elements list.</span>
+<span class="sd">        - eltsTip (ndarray):        -- new tip elements list.</span>
+<span class="sd">        - eltsCrack(ndarray):       -- new crack elements list.</span>
+<span class="sd">        - eltsRibbon (ndarray):     -- new ribbon elements list.</span>
+<span class="sd">        - zeroVrtx (ndarray):       -- list specifying the zero vertex of the tip cells. (can have value from 0 to\</span>
+<span class="sd">                                       3, where 0 signify bottom left, 1 signifying bottom right, 2 signifying top\</span>
+<span class="sd">                                       right and 3 signifying top left vertex).</span>
+<span class="sd">        - CellStatusNew (ndarray):  -- specifies which region each element currently belongs to.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># new tip elements contain only the partially filled elements</span>
@@ -496,7 +501,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

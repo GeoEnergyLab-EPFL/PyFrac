@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -51,14 +52,14 @@ See the LICENSE.TXT file for more details.</p>
 
 <dl class="function">
 <dt id="LevelSet.SolveFMM">
-<code class="descclassname">LevelSet.</code><code class="descname">SolveFMM</code><span class="sig-paren">(</span><em>InitlevelSet</em>, <em>EltRibbon</em>, <em>EltChannel</em>, <em>mesh</em>, <em>farAwayPstv</em>, <em>farAwayNgtv</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/LevelSet.html#SolveFMM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#LevelSet.SolveFMM" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">LevelSet.</code><code class="descname">SolveFMM</code><span class="sig-paren">(</span><em>levelSet</em>, <em>EltRibbon</em>, <em>EltChannel</em>, <em>mesh</em>, <em>farAwayPstv</em>, <em>farAwayNgtv</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/LevelSet.html#SolveFMM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#LevelSet.SolveFMM" title="Permalink to this definition">¶</a></dt>
 <dd><p>solve Eikonal equation to get level set.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>InitlevelSet</strong> (<em>ndarray-float</em>) – </li>
+<li><strong>levelSet</strong> (<em>ndarray-float</em>) – – level set to be evaluated and updated.</li>
 <li><strong>EltRibbon</strong> (<em>ndarray-int</em>) – – cells with given distance from the front.</li>
 <li><strong>EltChannel</strong> (<em>ndarray-int</em>) – – cells enclosed by the given cells</li>
 <li><strong>mesh</strong> (<em>CartesianMesh object</em>) – – mesh object</li>
@@ -69,7 +70,10 @@ is to be evaluated</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Does not return anything. The InitlevelSet is updated in place.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Does not return anything. The levelSet is updated in place.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Note</p>
 </td>
 </tr>
 </tbody>
@@ -86,29 +90,27 @@ partially filled and fully filled elements. The function update lists accordingl
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>EltsChannel</strong> (<em>ndarray-int</em>) – channel elements list</li>
-<li><strong>EltsTipNew</strong> (<em>ndarray-int</em>) – list of the new tip elements, including fully filled cells that were tip cells
-in the last time step</li>
-<li><strong>FillFrac</strong> (<em>ndarray-float</em>) – filling fraction of the new tip cells</li>
-<li><strong>levelSet</strong> (<em>ndarray-float</em>) – current level set</li>
-<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – the mesh of the fracture</li>
+<li><strong>EltsChannel</strong> (<em>ndarray</em>) – – channel elements list.</li>
+<li><strong>EltsTipNew</strong> (<em>ndarray</em>) – – list of the new tip elements, including fully filled cells that were tip
+cells in the last time step.</li>
+<li><strong>FillFrac</strong> (<em>ndarray</em>) – – filling fraction of the new tip cells.</li>
+<li><strong>levelSet</strong> (<em>ndarray</em>) – – current level set.</li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – the mesh of the fracture.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>new channel elements list
-(ndarray-int):                  new tip elements list
-(ndarray-int):                  new crack elements list
-(ndarray-int):                  new ribbon elements list
-(ndarray-int):                  list specifying the zero vertex of the tip cells. (can have value from 0 to 3,</p>
-<blockquote>
-<div><p>where 0 signify bottom left, 1 signifying bottom right, 2 signifying top right
-and 3 signifying top left vertex)</p>
-</div></blockquote>
-<p>(ndarray-int):                  specifies which region each element currently belongs to</p>
-</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– new channel elements list.
+- eltsTip (ndarray):        – new tip elements list.
+- eltsCrack(ndarray):       – new crack elements list.
+- eltsRibbon (ndarray):     – new ribbon elements list.
+- zeroVrtx (ndarray):       – list specifying the zero vertex of the tip cells. (can have value from 0 to                                       3, where 0 signify bottom left, 1 signifying bottom right, 2 signifying top                                       right and 3 signifying top left vertex).
+- CellStatusNew (ndarray):  – specifies which region each element currently belongs to.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(ndarray-int)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>eltsChannel (ndarray)</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -117,7 +119,7 @@ and 3 signifying top left vertex)</p>
 
 <dl class="function">
 <dt id="LevelSet.reconstruct_front">
-<code class="descclassname">LevelSet.</code><code class="descname">reconstruct_front</code><span class="sig-paren">(</span><em>dist</em>, <em>EltChannel</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/LevelSet.html#reconstruct_front"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#LevelSet.reconstruct_front" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">LevelSet.</code><code class="descname">reconstruct_front</code><span class="sig-paren">(</span><em>dist</em>, <em>bandElts</em>, <em>EltChannel</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/LevelSet.html#reconstruct_front"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#LevelSet.reconstruct_front" title="Permalink to this definition">¶</a></dt>
 <dd><p>Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
 perpendicular. The angle is calculated using the formulation given by Pierce and Detournay 2008.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -125,9 +127,9 @@ perpendicular. The angle is calculated using the formulation given by Pierce and
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dist</strong> (<em>ndarray-float</em>) – the signed distance of the cells from the fracture front</li>
-<li><strong>EltChannel</strong> (<em>ndarray-int</em>) – list of Channel elements</li>
-<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – the mesh of the fracture</li>
+<li><strong>dist</strong> (<em>ndarray</em>) – – the signed distance of the cells from the fracture front.</li>
+<li><strong>EltChannel</strong> (<em>ndarray</em>) – – list of Channel elements.</li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – the mesh of the fracture.</li>
 </ul>
 </td>
 </tr>
@@ -137,7 +139,7 @@ perpendicular. The angle is calculated using the formulation given by Pierce and
 
 <dl class="function">
 <dt id="LevelSet.reconstruct_front_LS_gradient">
-<code class="descclassname">LevelSet.</code><code class="descname">reconstruct_front_LS_gradient</code><span class="sig-paren">(</span><em>dist</em>, <em>EltChannel</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/LevelSet.html#reconstruct_front_LS_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#LevelSet.reconstruct_front_LS_gradient" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">LevelSet.</code><code class="descname">reconstruct_front_LS_gradient</code><span class="sig-paren">(</span><em>dist</em>, <em>EltBand</em>, <em>EltChannel</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/LevelSet.html#reconstruct_front_LS_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#LevelSet.reconstruct_front_LS_gradient" title="Permalink to this definition">¶</a></dt>
 <dd><p>Track the fracture front, the length of the perpendicular drawn on the fracture and the angle inscribed by the
 perpendicular. The angle is calculated from the gradient of the level set.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -145,9 +147,9 @@ perpendicular. The angle is calculated from the gradient of the level set.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dist</strong> (<em>ndarray-float</em>) – the signed distance of the cells from the fracture front</li>
-<li><strong>EltChannel</strong> (<em>ndarray-int</em>) – list of Channel elements</li>
-<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – the mesh of the fracture</li>
+<li><strong>dist</strong> (<em>ndarray</em>) – – the signed distance of the cells from the fracture front.</li>
+<li><strong>EltChannel</strong> (<em>ndarray</em>) – – list of Channel elements.</li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – the mesh of the fracture.</li>
 </ul>
 </td>
 </tr>
@@ -200,7 +202,7 @@ perpendicular. The angle is calculated from the gradient of the level set.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

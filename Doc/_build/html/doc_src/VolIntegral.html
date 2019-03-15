@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -77,7 +78,7 @@ used in case of 0 or 90 degree angle; can be used for 1d case</p>
 <li><strong>EltTip</strong> (<em>ndarray</em>) – </li>
 <li><strong>alpha</strong> (<em>ndarray</em>) – </li>
 <li><strong>l</strong> (<em>ndarray</em>) – </li>
-<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
+<li><strong>mesh</strong> (<em>CartesianMesh</em>) – </li>
 <li><strong>function</strong> (<em>string</em>) – <dl class="docutils">
 <dt>Possible options are:</dt>
 <dd>’A’  gives the area (fill fraction)
@@ -93,9 +94,9 @@ used in case of 0 or 90 degree angle; can be used for 1d case</p>
 </dd>
 </dl>
 </li>
-<li><strong>frac</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – </li>
-<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – </li>
-<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – </li>
+<li><strong>frac</strong> (<em>Fracture</em>) – </li>
+<li><strong>mat_prop</strong> (<em>MaterialProperties</em>) – </li>
+<li><strong>fluid_prop</strong> (<em>FluidProperties</em>) – </li>
 <li><strong>Vel</strong> (<em>ndarray</em>) – </li>
 <li><strong>Kprime</strong> (<em>ndarray</em>) – taking it from the mat_prop object</li>
 <li><strong>Eprime</strong> (<em>ndarray-float</em>) – – plain strain TI modulus for current iteration. if not given, the Eprime
@@ -194,7 +195,7 @@ is the angle of the perpendicular). The regime variable identifies the propagati
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

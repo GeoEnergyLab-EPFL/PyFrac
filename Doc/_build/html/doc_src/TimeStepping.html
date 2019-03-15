@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -59,10 +60,10 @@ the fracture front according to the front advancing scheme given in the simulati
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
-<div class="line">exitstatus (int)      – see documentation for possible values.</div>
-<div class="line">Fr_k (Fracture)       – fracture after advancing time step.</div>
-</div>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>exitstatus (int)      – see documentation for possible values.</li>
+<li>Fr_k (Fracture)       – fracture after advancing time step.</li>
+</ul>
 </p>
 </td>
 </tr>
@@ -180,10 +181,10 @@ time step (see Zia and Lecampion 2019 for details).</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><div class="line-block">
-<div class="line">exitstatus (int)  possible values are</div>
-</div>
-<div class="line-block">
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul>
+<li><p class="first">exitstatus (int)  possible values are</p>
+<blockquote>
+<div><div class="line-block">
 <div class="line">0       – not propagated</div>
 <div class="line">1       – iteration successful</div>
 <div class="line">2       – evaluated level set is not valid</div>
@@ -200,9 +201,11 @@ time step (see Zia and Lecampion 2019 for details).</p>
 <div class="line">13      – leak off can’t be evaluated</div>
 <div class="line">14      – fracture fully closed</div>
 </div>
-<div class="line-block">
-<div class="line">Fracture:            fracture after advancing time step.</div>
-</div>
+</div></blockquote>
+</li>
+<li><p class="first">Fracture:            fracture after advancing time step.</p>
+</li>
+</ul>
 </p>
 </td>
 </tr>
@@ -283,7 +286,7 @@ and the tip cells are turbulent (i.e. the Reynolds number is greater than 2100).
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

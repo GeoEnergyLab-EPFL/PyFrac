@@ -9,7 +9,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import numpy as np
 import math
-from src.Utility import radius_level_set
+import skfmm
+from src.HFAnalyticalSolutions import shift_injection_point
 from src.LevelSet import SolveFMM, reconstruct_front, UpdateLists
 from src.VolIntegral import Integral_over_cell
 from src.Symmetry import *
@@ -26,62 +27,63 @@ def get_eliptical_survey_cells(mesh, a, b):
         b (float):                          -- the length of the minor axis of the provided ellipse.
 
     Returns:
-        | surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\
+        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\
                                                ellipse.
-        | inner_cells (ndarray)             -- the list of cells inside the given ellipse.
+        - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
     # distances of the cell vertices
-    dist_vertx = (mesh.VertexCoor[:,0]/a)**2 + (mesh.VertexCoor[:,1]/b)**2 - 1.
+    dist_vertx = ((mesh.VertexCoor[:, 0])/ a) ** 2 + ((mesh.VertexCoor[:, 1]) / b) ** 2 - 1.
     # vertices that are inside the ellipse
-    vertices = dist_vertx[mesh.Connectivity]<0
+    vertices = dist_vertx[mesh.Connectivity] < 0
 
     #cells with all four vertices inside
-    log_and = np.logical_and(np.logical_and(vertices[:,0],vertices[:,1]),np.logical_and(vertices[:,2],vertices[:,3]))
-    channel = np.where(log_and)[0]
+    log_and = np.logical_and(np.logical_and(vertices[:, 0], vertices[:, 1]),
+                             np.logical_and(vertices[:, 2],vertices[:, 3]))
 
-    # todo: Hack !!! returning channel cells as inner cells also
-    return channel, channel
+    inner_cells = np.where(log_and)[0]
+    # todo: Hack !!! returning all inner cells as survey cells also
+    surv_cells = np.copy(inner_cells)
+
+    return surv_cells, inner_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
+def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, inj_point):
     """
     This function takes the survey cells and their distances from the front and generate the footprint of a fracture
     using the fast marching method.
 
     Arguments:
-        mesh (CartesianMesh object) -- a CartesianMesh class object describing the grid.
-        surv_cells (ndarray)        -- list of survey cells from which the distances from front are provided
-        inner_region (ndarray)      -- list of cells enclosed by the survey cells
-        dist_surv_cells (ndarray)   -- distances of the provided survey cells from the front
+        mesh (CartesianMesh):       -- a CartesianMesh class object describing the grid.
+        surv_cells (ndarray):       -- list of survey cells from which the distances from front are provided
+        inner_region (ndarray):     -- list of cells enclosed by the survey cells
+        dist_surv_cells (ndarray):  -- distances of the provided survey cells from the front
 
     Returns:
-        EltChannel (ndarray-int)    -- list of cells in the channel region.
-        EltTip (ndarray-int)        -- list of cells in the Tip region.
-        EltCrack (ndarray-int)      -- list of cells in the crack region.
-        EltRibbon (ndarray-int)     -- list of cells in the Ribbon region.
-        ZeroVertex (ndarray-float)  -- Vertex from which the perpendicular is drawn on the front in a cell(can have
-                                       value from 0 to 3, where 0 signify bottom left, 1 signifying bottom right, 2
-                                       signifying top right and 3 signifying top left vertex).
-        CellStatus (ndarray-int)    -- specifies which region each element currently belongs to (0 for Crack, 1 for
-                                       channel, 2 for tip and 3 for ribbon).
-        l (ndarray-float)           -- length of perpendicular on the fracture front (see Pierce 2015, Computation
-                                       Methods Appl. Mech).
-        alpha (ndarray-float)       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,
-                                       Computation Methods Appl. Mech)
-        FillF (ndarray-float)       -- filling fraction of each tip cell.
-        sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.
+        - EltChannel (ndarray-int)    -- list of cells in the channel region.
+        - EltTip (ndarray-int)        -- list of cells in the Tip region.
+        - EltCrack (ndarray-int)      -- list of cells in the crack region.
+        - EltRibbon (ndarray-int)     -- list of cells in the Ribbon region.
+        - ZeroVertex (ndarray-float)  -- Vertex from which the perpendicular is drawn on the front in a cell(can have\
+                                         value from 0 to 3, where 0 signify bottom left, 1 signifying bottom right, 2\
+                                         signifying top right and 3 signifying top left vertex).
+        - CellStatus (ndarray-int)    -- specifies which region each element currently belongs to (0 for Crack, 1 for\
+                                         channel, 2 for tip and 3 for ribbon).
+        - l (ndarray-float)           -- length of perpendicular on the fracture front (see Pierce 2015, Computation\
+                                         Methods Appl. Mech).
+        - alpha (ndarray-float)       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,\
+                                         Computation Methods Appl. Mech)
+        - FillF (ndarray-float)       -- filling fraction of each tip cell.
+        - sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.
     """
 
-    sgndDist = np.full((mesh.NumberOfElts,), 1e10)
+    sgndDist = np.full((mesh.NumberOfElts,), 1e50)
     sgndDist[surv_cells] = -dist_surv_cells
 
     # rest of the cells outside the survey cell ring
-    EltRest = np.arange(mesh.NumberOfElts)
-    for i in range(len(inner_region)):
-        EltRest = np.delete(EltRest, np.where(EltRest == inner_region[i])[0])
+    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region)
 
     # fast marching to get level set
     SolveFMM(sgndDist,
@@ -91,8 +93,9 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
              EltRest,
              inner_region)
 
+    band = np.arange(mesh.NumberOfElts)
     # costruct the front
-    (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, inner_region, mesh)
+    (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, band, inner_region, mesh)
 
     # get the filling fraction of the tip cells
     FillFrac_tmp = Integral_over_cell(EltTip_tmp,
@@ -136,18 +139,18 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
     according to the given elasticity matrix.
 
     Arguments:
-        mesh (CartesianMesh object) -- a CartesianMesh class object describing the grid.
-        EltCrack (ndarray-int)      -- list of cells in the crack region.
-        EltTip (ndarray-int)        -- list of cells in the Tip region.
-        FillFrac (ndarray-float)    -- filling fraction of each tip cell. Used for correction
-        C (ndarray-float)           -- The elasticity matrix
-        w (ndarray-float)           -- the provided width for each cell, can be None if not available.
-        p (ndarray-float)           -- the provided pressure for each cell, can be None if not available.
-        volume (ndarray-float)      -- the volume of the fracture, can be None if not available.
+        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        EltCrack (ndarray):     -- list of cells in the crack region.
+        EltTip (ndarray):       -- list of cells in the Tip region.
+        FillFrac (ndarray):     -- filling fraction of each tip cell. Used for correction.
+        C (ndarray):            -- The elasticity matrix.
+        w (ndarray):            -- the provided width for each cell, can be None if not available.
+        p (ndarray):            -- the provided pressure for each cell, can be None if not available.
+        volume (ndarray):       -- the volume of the fracture, can be None if not available.
 
     Returns:
-        w_calculated (ndarray-float)-- the calculated width
-        p_calculated (ndarray-float)-- the calculated pressure
+        - w_calculated (ndarray)    -- the calculated width.
+        - p_calculated (ndarray)    -- the calculated pressure.
     """
 
     if w is None and p is None and volume is None:
@@ -184,7 +187,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         FillF_sym = FillF_mesh[mesh.activeSymtrc[EltTip_sym]]
         self_infl = self_influence(mesh, Eprime)
 
-        C_EltTip = C[np.ix_(EltTip_sym, EltTip_sym)]  # keeping the tip element entries to restore current tip correction. This is
+        C_EltTip = np.copy(C[np.ix_(EltTip_sym, EltTip_sym)])  # keeping the tip element entries to restore current tip correction. This is
         # done to avoid copying the full elasticity matrix.
 
         # filling fraction correction for element in the tip region
@@ -227,7 +230,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         C[np.ix_(EltTip_sym, EltTip_sym)] = C_EltTip
 
     else:
-        C_EltTip = C[np.ix_(EltTip, EltTip)]  # keeping the tip element entries to restore current tip correction. This is
+        C_EltTip = np.copy(C[np.ix_(EltTip, EltTip)])  # keeping the tip element entries to restore current tip correction. This is
                                               # done to avoid copying the full elasticity matrix.
 
         # filling fraction correction for element in the tip region
@@ -279,19 +282,19 @@ def Distance_ellipse(a, b, x0, y0):
     This function calculates the smallest distance of a point from the given ellipse.
 
     Arguments:
-        a (float)       -- the length of the major axis of the ellipse.
-        b (float)       -- the length of the minor axis of the ellipse.
-        x0 (float)      -- the x coordinate of the point from which the distance is to be found
-        y0 (float)      -- the y coordinate of the point from which the distance is to be found
+        a (float):       -- the length of the major axis of the ellipse.
+        b (float):       -- the length of the minor axis of the ellipse.
+        x0 (float):      -- the x coordinate of the point from which the distance is to be found
+        y0 (float):      -- the y coordinate of the point from which the distance is to be found
 
     Returns:
-        D (float)       -- the shortest distance of the point from the ellipse.
+        D (float):       -- the shortest distance of the point from the ellipse.
     """
 
     # a>b ellipse parameters, (x0,y0) is the center of the cell
     x0 = abs(x0)
     y0 = abs(y0)
-    if (x0<1e-12 and y0<1e-12):
+    if (x0 < 1e-12 and y0 < 1e-12):
         D = b
         xellipse = 0
         yellipse = b

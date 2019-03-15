@@ -9,8 +9,8 @@ See the LICENSE.TXT file for more details.
 
 Hydraulic fracture propagation Analytical solutions
 notably for
- - planar radial fracture with constant injection rate
- - height contained fracture
+    - planar radial fracture with constant injection rate.
+    - height contained fractures.
 """
 
 # imports
@@ -21,29 +21,33 @@ from scipy import special
 import scipy.integrate as integrate
 
 
-#  radial zero toughness turbulent MDR approximation
+
 def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, required='111111'):
     """
-       Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime
-       propagation, given fracture radius or the time since the start of the injection. The solution does not take leak off into account.
+    Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime
+    propagation, given fracture radius or the time since the start of the injection. The solution does not take leak
+    off into account.
 
-       Arguments:
-           Eprime (float)       -- plain strain elastic modulus.
-           Q0 (float)           -- injection rate.
-           density (float)      -- fluid density.
-           visc (float)         -- fluid viscosity.
-           Mesh (CartesianMesh) -- a CartesianMesh class object describing the grid.
-           R (float)            -- the given radius for which the solution is evaluated.
-           t (float)            -- time since the start of the injection.
+    Arguments:
+       Eprime (float):       -- plain strain elastic modulus.
+       Q0 (float):           -- injection rate.
+       density (float):      -- fluid density.
+       visc (float):         -- fluid viscosity.
+       Mesh (CartesianMesh): -- a CartesianMesh class object describing the grid.
+       R (float):            -- the given radius for which the solution is evaluated.
+       t (float):            -- time since the start of the injection.
+       required (string):    -- a mask giving which of the variables are required.
 
-       Returns:
-           t (float)            -- time at which the fracture reaches the given radius.
-           R (float)            -- radius of the fracture at the given time.
-           p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius
-           w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time
-           v (float)            -- fracture propagation velocity
-           actvElts (ndarray)   -- list of cells inside the fracture at the given time
-       """
+    Returns:
+       - t (float)            -- time at which the fracture reaches the given radius.
+       - R (float)            -- radius of the fracture at the given time.
+       - p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius.
+       - w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or\
+                                 time.
+       - v (float)            -- fracture propagation velocity.
+       - actvElts (ndarray)   -- list of cells inside the fracture at the given time.
+
+    """
     fo = 1.78
     gammam= 0.758244
 
@@ -121,20 +125,21 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
     since the start of the injection. The solution does not take leak off into account.
     
     Arguments:
-        Eprime (float)       -- plain strain elastic modulus.
-        Q0 (float)           -- injection rate.
-        muPrime (float)      -- 12*viscosity.
-        Mesh (CartesianMesh) -- a CartesianMesh class object describing the grid.
-        R (float)            -- the given radius for which the solution is evaluated.
-        t (float)            -- time since the start of the injection.
-        
+        Eprime (float):       -- plain strain elastic modulus.
+        Q0 (float):           -- injection rate.
+        muPrime (float):      -- 12*viscosity.
+        Mesh (CartesianMesh): -- a CartesianMesh class object describing the grid.
+        R (float):            -- the given radius for which the solution is evaluated.
+        t (float):            -- time since the start of the injection.
+        required (string):    -- a mask giving which of the variables are required.
+
     Returns:
-        t (float)            -- time at which the fracture reaches the given radius.
-        R (float)            -- radius of the fracture at the given time.
-        p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius
-        w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time
-        v (float)            -- fracture propagation velocity
-        actvElts (ndarray)   -- list of cells inside the fracture at the given time
+        - t (float)            -- time at which the fracture reaches the given radius.
+        - R (float)            -- radius of the fracture at the given time.
+        - p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius
+        - w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time
+        - v (float)            -- fracture propagation velocity
+        - actvElts (ndarray)   -- list of cells inside the fracture at the given time
     """
 
     if R is None and t is None:
@@ -196,20 +201,21 @@ def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None, required='111111
     solution does not take leak off into account.
     
     Arguments:
-        Kprime (float)          -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
-        Eprime (float)          -- plain strain elastic modulus
-        Q0 (float)              -- injection rate
-        Mesh (CartesianMesh)    -- a CartesianMesh class object describing the grid.
-        R (float)               -- the given radius for which the solution is evaluated.
-        t (float)               -- time since the start of the injection.
-    
+        Kprime (float):          -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
+        Eprime (float):          -- plain strain elastic modulus
+        Q0 (float):              -- injection rate
+        Mesh (CartesianMesh):    -- a CartesianMesh class object describing the grid.
+        R (float):               -- the given radius for which the solution is evaluated.
+        t (float):               -- time since the start of the injection.
+        required (string):      -- a mask giving which of the variables are required.
+
     Returns:
-        t (float)               -- time at which the fracture reaches the given radius.
-        R (float)               -- radius of the fracture at the given time.
-        p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius
-        w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time
-        v (float)               -- fracture propagation velocity
-        actvElts (ndarray)      -- list of cells inside the fracture at the given time
+        - t (float)               -- time at which the fracture reaches the given radius.
+        - R (float)               -- radius of the fracture at the given time.
+        - p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius
+        - w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time
+        - v (float)               -- fracture propagation velocity
+        - actvElts (ndarray)      -- list of cells inside the fracture at the given time
     """
 
     if R is None and t is None:
@@ -255,20 +261,21 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
     takes leak off into account.
     
     Arguments:
-        Eprime (float)         -- plain strain elastic modulus
-        Cprime (float)         -- 2*C, where C is the Carter's leak off coefficient
-        Q0 (float)             -- injection rate
-        muPrime (float)        -- 12*viscosity
-        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
-        R (float)              -- the given radius for which the solution is evaluated
-    
+        Eprime (float):         -- plain strain elastic modulus
+        Cprime (float):         -- 2*C, where C is the Carter's leak off coefficient
+        Q0 (float):             -- injection rate
+        muPrime (float):        -- 12*viscosity
+        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        R (float):              -- the given radius for which the solution is evaluated
+        required (string):      -- a mask giving which of the variables are required.
+
     Returns:
-        t (float)               -- time at which the fracture reaches the given radius.
-        R (float)               -- radius of the fracture at the given time.
-        p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius
-        w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time
-        v (float)               -- fracture propagation velocity
-        actvElts (ndarray)      -- list of cells inside the fracture at the given time
+        - t (float)               -- time at which the fracture reaches the given radius.
+        - R (float)               -- radius of the fracture at the given time.
+        - p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius
+        - w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time
+        - v (float)               -- fracture propagation velocity
+        - actvElts (ndarray)      -- list of cells inside the fracture at the given time
     """
 
     if R is None and t is None:
@@ -338,23 +345,24 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, require
     radius.
 
     Arguments:
-        Eprime (float)      -- plain strain elastic modulus
-        Cprime (float)      -- 2*C, where C is the Carter's leak off coefficient
-        Q0 (float)          -- injection rate
-        Kprime (float)      -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
-        Mesh (CartesianMesh)-- a CartesianMesh class object describing the grid.
-        t (float)           -- the given time for which the solution is evaluated. Either of the time or radius can
+        Eprime (float):      -- plain strain elastic modulus
+        Cprime (float):      -- 2*C, where C is the Carter's leak off coefficient
+        Q0 (float):          -- injection rate
+        Kprime (float):      -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
+        Mesh (CartesianMesh):-- a CartesianMesh class object describing the grid.
+        t (float):           -- the given time for which the solution is evaluated. Either of the time or radius can
                                be provided
-        R (float)           -- the given radius for which the solution is evaluated. Either of the time or radius can
+        R (float):           -- the given radius for which the solution is evaluated. Either of the time or radius can
                                be provided
+        required (string):   -- a mask giving which of the variables are required.
 
     Returns:
-        t (float)           -- time at which the fracture reaches the given radius.
-        R (float)           -- radius of the fracture at the given time.
-        p (ndarray)         -- pressure at each cell when the fracture has propagated to the given radius
-        w (ndarray)         -- width opening at each cell when the fracture has propagated to the given radius or time
-        v (float)           -- fracture propagation velocity
-        actvElts (ndarray)  -- list of cells inside the fracture at the given time
+        - t (float)           -- time at which the fracture reaches the given radius.
+        - R (float)           -- radius of the fracture at the given time.
+        - p (ndarray)         -- pressure at each cell when the fracture has propagated to the given radius
+        - w (ndarray)         -- width opening at each cell when the fracture has propagated to the given radius or time
+        - v (float)           -- fracture propagation velocity
+        - actvElts (ndarray)  -- list of cells inside the fracture at the given time
     """
 
 
@@ -407,20 +415,22 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='11111
     does not take leak off into account.
 
     Arguments:
-        Eprime (float)         -- plain strain elastic modulus
-        Q0 (float)             -- injection rate
-        muPrime (float)        -- 12*viscosity
-        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
-        t (float)              -- the given time for which the solution is evaluated
-        h (float)              -- the height of the PKN fracture
+        Eprime (float):         -- plain strain elastic modulus
+        Q0 (float):             -- injection rate
+        muPrime (float):        -- 12*viscosity
+        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        t (float):              -- the given time for which the solution is evaluated
+        h (float):              -- the height of the PKN fracture
+        ell (float):            -- length of the PKN fracture, should be much more than height.
+        required (string):      -- a mask giving which of the variables are required.
 
     Returns:
-        t (float)              -- time at which the fracture reaches the given length.
-        ell (float)            -- length of the fracture at the given time
-        p (ndarray-float)      -- pressure at each cell at the given time
-        w (ndarray-float)      -- width at each cell at the given time
-        v (float)              -- propagation velocity
-        actvElts (ndarray)     -- list of cells inside the PKN fracture at the given time
+        - t (float)              -- time at which the fracture reaches the given length.
+        - ell (float)            -- length of the fracture at the given time
+        - p (ndarray-float)      -- pressure at each cell at the given time
+        - w (ndarray-float)      -- width at each cell at the given time
+        - v (float)              -- propagation velocity
+        - actvElts (ndarray)     -- list of cells inside the PKN fracture at the given time
     """
 
     if ell is None and t is None:
@@ -486,22 +496,22 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None, required=
     time or length. The solution does not take leak off into account.
 
     Arguments:
-        Eprime (float)         -- plain strain elastic modulus
-        Q0 (float)             -- injection rate
-        KPrime (float)         -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
-        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
-        height (float)         -- the height of the KGD fracture (it should be much longer then length)
-        ell (float)            -- length of fracture
-        t (float)              -- the given time for which the solution is evaluated
-
+        Eprime (float):         -- plain strain elastic modulus.
+        Q0 (float):             -- injection rate.
+        KPrime (float):         -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness.
+        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        height (float):         -- the height of the KGD fracture (it should be much longer then length).
+        ell (float):            -- length of fracture.
+        t (float):              -- the given time for which the solution is evaluated.
+        required (string):      -- a mask giving which of the variables are required.
 
     Returns:
-        t (float)              -- time at which the fracture reaches the given length.
-        ell (float)            -- length of the fracture at the given time
-        p (ndarray-float)      -- pressure at each cell at the given time
-        w (ndarray-float)      -- width at each cell at the given time
-        v (float)              -- propagation velocity
-        actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time
+        - t (float)              -- time at which the fracture reaches the given length.
+        - ell (float)            -- length of the fracture at the given time.
+        - p (ndarray-float)      -- pressure at each cell at the given time.
+        - w (ndarray-float)      -- width at each cell at the given time.
+        - v (float)              -- propagation velocity.
+        - actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time.
     """
     # injection rate per unit height in one wing
     Q = Q0 / height
@@ -567,21 +577,22 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
     IJF, 2018).
 
     Arguments:
-        KIc_max (float)        -- the fracture toughness along the minor axis
-        KIc_min (float)        -- the fracture toughness along the major axis
-        Eprime (float)         -- plain strain modulus
-        Q0 (float)             -- injection rate
-        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
-        b (float)              -- the given minor axis length
-        t (float)              -- the given time for which the solution is evaluated
+        KIc_max (float):        -- the fracture toughness along the minor axis.
+        KIc_min (float):        -- the fracture toughness along the major axis.
+        Eprime (float):         -- plain strain modulus.
+        Q0 (float):             -- injection rate.
+        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        b (float):              -- the given minor axis length.
+        t (float):              -- the given time for which the solution is evaluated.
+        required (string):      -- a mask giving which of the variables are required.
 
     Returns:
-        t (float)              -- time at which the fracture reaches the given length.
-        b (float)              -- length of the fracture at the given time
-        p (ndarray-float)      -- pressure at each cell at the given time
-        w (ndarray-float)      -- width at each cell at the given time
-        v (float)              -- propagation velocity
-        actvElts (ndarray)     -- list of cells inside the fracture at the given time
+        - t (float)              -- time at which the fracture reaches the given length.
+        - b (float)              -- length of the minor axix of the elliptical fracture at the given time.
+        - p (ndarray-float)      -- pressure at each cell at the given time.
+        - w (ndarray-float)      -- width at each cell at the given time.
+        - v (float)              -- propagation velocity of the fracture along the minor axis.
+        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
     """
 
     if KIc_min is None:
@@ -630,15 +641,21 @@ def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=
     IJF, 2018).
 
     Arguments:
-        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
-        b (float)              -- the given minor axis length
-        a (float)              -- the given major axis length
-        p (float)              -- pressure
+        mesh (CartesianMesh)    -- a CartesianMesh class object describing the grid.
+        gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.
+        Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).
+        Kc3 (float):            -- the fracture toughness along the minor axis.
+        Ep3 (float):            -- the effective (see Moukhtari and Lecampion, 2019) elasticity along the minor axis.
+        Q0 (float)              -- injection rate.
+        t (float):              -- the given time for which the solution is evaluated.
+        b (float):              -- the given minor axis length.
 
     Returns:
-        w (ndarray-float)      -- width at each cell at the given time
-
-        actvElts (ndarray)     -- list of cells inside the fracture at the given time
+        - t (float)              -- time at which the fracture reaches the given length.
+        - b (float)              -- length of the minor axix of the elliptical fracture at the given time.
+        - p (ndarray-float)      -- pressure at each cell at the given time.
+        - w (ndarray-float)      -- width at each cell at the given time.
+        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
     """
 
     if b is None and t is None:
@@ -725,40 +742,53 @@ def TI_elasticity_sigma(theta, *args):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None, length=None, t=None,
-                      Kc_1=None, h=None, density=None, Cij=None, gamma=None, required='111111'):
+def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kprime=None, Cprime=None, length=None,
+                      t=None, Kc_1=None, h=None, density=None, Cij=None, gamma=None, required='111111'):
     """
     This function provides the analytical solution for the given parameters according to the given propagation regime
 
     Arguments:
-        regime (string)        -- the propagation regime. Possible options:
-                                    - K  (toughness dominated regime, without leak off)
-                                    - M  (viscosity dominated regime, without leak off)
-                                    - Kt (viscosity dominated regime , with leak off)
-                                    - Mt (viscosity dominated regime , with leak off)
-                                    - PKN (height contained hydraulic fracture with PKN geometry)
-                                    - E (elliptical fracture propagating in toughness dominated regime).
-        mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.
-        Eprime (float)         -- plain strain modulus.
-        Q0 (float)             -- injection rate.
-        muPrime (float)        -- 12*viscosity.
-        Kprime (float)         -- the fracture toughness (K') along the minor axis.
-        Cprime (float)         -- 2*C, where C is the Carter's leak off coefficient.
-        length (float)         -- the given length dimension (fracture length in the case of PKN, length of the minor
+        regime (string):        -- the propagation regime. Possible options are:
+                                    - K  (toughness dominated regime, without leak off).
+                                    - M  (viscosity dominated regime, without leak off).
+                                    - Kt (viscosity dominated regime , with leak off).
+                                    - Mt (viscosity dominated regime , with leak off).
+                                    - PKN (height contained hydraulic fracture with PKN geometry).
+                                    - KGD_K (The classical KGD solution in toughness dominated regime.)
+                                    - E_K (elliptical fracture propagating in toughness dominated regime). The solution\
+                                            is equivalent to a particular anisotropic toughness case described in\
+                                            Zia and Lecampion, 2018.)
+                                    - E_E (the elliptical solution with transverse isotropic material properties; see\
+                                           Moukhtari and Lecampion, 2019.)
+                                    - MDR (viscosity dominated solution for turbulent flow. The friction factor is\
+                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).
+        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        Eprime (float):         -- plain strain modulus.
+        Q0 (float):             -- injection rate.
+        inj_point (list):       -- the injection point if not at the center(0,0). It should be a list or and numpy array
+                                   of size 2, giving the x and y coordiantes of the injection point.
+        muPrime (float):        -- 12*viscosity.
+        Kprime (float):         -- the fracture toughness (K') along the minor axis.
+        Cprime (float):         -- 2*C, where C is the Carter's leak off coefficient.
+        length (float):         -- the given length dimension (fracture length in the case of PKN, length of the minor
                                   axis in the case of elliptical fracture and the fracture radius in all of the rest).
-        t (float)              -- the given time for which the solution is evaluated.
-        Kp_perp (float)        -- the fracture toughness along the major axis.
-        h (float)              -- the height of the PKN fracture.
+        t (float):              -- the given time for which the solution is evaluated.
+        Kp_perp (float):        -- the fracture toughness along the major axis.
+        h (float):              -- the height of the PKN fracture.
+        density (float):        -- the density of the injected fluid.
+        Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).
+        gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.
+        required (string):      -- a mask giving which of the variables are required.
 
     Returns:
-        t (float)              -- time at which the fracture reaches the given length.
-        r (float)              -- length of the fracture at the given time (fracture length in the case of PKN, length
-                                  of the minor axis in the case of elliptical fracture and the fracture radius in all
-                                  of the rest).
-        p (ndarray-float)      -- pressure at each cell at the given time.
-        w (ndarray-float)      -- width at each cell at the given time.
-        v (float)              -- propagation velocity.
-        actvElts (ndarray)     -- list of cells inside the fracture at the given time.
+        - t (float)              -- time at which the fracture reaches the given length.
+        - r (float)              -- length of the fracture at the given time (fracture length in the case of PKN, \
+                                    length of the minor axis in the case of elliptical fracture and the fracture radius\
+                                    in all of the rest).
+        - p (ndarray-float)      -- pressure at each cell at the given time.
+        - w (ndarray-float)      -- width at each cell at the given time.
+        - v (float)              -- propagation velocity.
+        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
 
     """
 
@@ -785,6 +815,18 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
         t, r, p, w, v, actvElts = TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc_3, Eprime, Q0, t, length,
                                                                     required)
 
+    # shift injection point
+    if inj_point is not None:
+        if isinstance(inj_point, np.ndarray) or isinstance(inj_point, list):
+            if len(inj_point) != 2:
+                raise ValueError("The injection point should be a list of numpy array of length 2, giving the x and y "
+                                 "coordinates of the injection point!")
+            else:
+                if required[3] is '1':
+                    actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh, w, actv=actvElts, fill=0.)
+                if required[2] is '1':
+                    actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh, p, actv=actvElts, fill=0.)
+            actvElts = actvElts_shft
     return t, r, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -792,6 +834,50 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, muPrime=None, Kprime=None, Cprim
 
 def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None,
                       Kc_1=None, h=None, density=None, gamma=None):
+    """
+    This function gives the length of the fracture along the x and y axes propagating in the given regime at the given
+    time.
+
+    Arguments:
+        regime (string):        -- the propagation regime.
+                                   Possible options are:
+                                    - K  (toughness dominated regime, without leak off).
+                                    - M  (viscosity dominated regime, without leak off).
+                                    - Kt (viscosity dominated regime , with leak off).
+                                    - Mt (viscosity dominated regime , with leak off).
+                                    - PKN (height contained hydraulic fracture with PKN geometry).
+                                    - E (elliptical fracture propagating in toughness dominated regime).
+                                    - MDR (viscosity dominated solution for turbulent flow. The friction factor is\
+                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).
+        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        Eprime (float):         -- plain strain modulus.
+        Q0 (float):             -- injection rate.
+        inj_point (list):       -- the injection point if not at the center(0,0). It should be a list or and numpy array
+                                   of size 2, giving the x and y coordiantes of the injection point.
+        muPrime (float):        -- 12*viscosity.
+        Kprime (float):         -- the fracture toughness (K') along the minor axis.
+        Cprime (float):         -- 2*C, where C is the Carter's leak off coefficient.
+        length (float):         -- the given length dimension (fracture length in the case of PKN, length of the minor
+                                  axis in the case of elliptical fracture and the fracture radius in all of the rest).
+        t (float):              -- the given time for which the solution is evaluated.
+        Kp_perp (float):        -- the fracture toughness along the major axis.
+        h (float):              -- the height of the PKN fracture.
+        density (float):        -- the density of the injected fluid.
+        Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).
+        gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.
+        required (string):      -- a mask giving which of the variables are required.
+
+    Returns:
+        - t (float)              -- time at which the fracture reaches the given length.
+        - r (float)              -- length of the fracture at the given time (fracture length in the case of PKN, \
+                                    length of the minor axis in the case of elliptical fracture and the fracture radius\
+                                    in all of the rest).
+        - p (ndarray-float)      -- pressure at each cell at the given time.
+        - w (ndarray-float)      -- width at each cell at the given time.
+        - v (float)              -- propagation velocity.
+        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
+
+    """
     if regime is 'M':
         x_len = y_len = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
     elif regime is 'K':
@@ -822,3 +908,65 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
         x_len = y_len * gamma
 
     return x_len, y_len
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def shift_injection_point(x, y, mesh, variable=None, active_elts=None, fill=None):
+    """
+    This function gives the shifted variable array and the corresponding cells after the origin is shifted to the
+    given point.
+
+    Args:
+        x (float):
+        y (float):
+        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
+        variable (ndarray):     -- the fracture variable to be shifted. This should be on 1d array with the size of the
+                                   mesh. If not provided, a dummy array with the value of the fill (last argument) will
+                                   be returned.
+        active_elts (ndarray):  -- the elements which are part of the fracture. Only these cells will be shifted
+                                   according to the new injection point. In other words, the cells for which
+                                   the corresponding cells are to be evaluated.
+        fill (float):           -- the fill value which will be inserted onto the cells which has no corresponding
+                                   elements in the non-shifted mesh.
+
+    Returns:
+        - shifted_actv (ndarray)-- the corresponding cells in the shifted mesh.
+        - shifted_var (ndarray) -- the shifted given variable array. If the array is not provided, a dummy\
+                                   array with the value of the fill (last argument) will be returned.
+
+    """
+    inj_elem = mesh.locate_element(x, y)
+
+    if np.isnan(inj_elem):
+        raise ValueError("The injection point is out of the domain covered by mesh!")
+
+    if fill is None:
+        fill = np.nan
+
+    if active_elts is None:
+        actv_given = False
+        active_elts = np.arange(mesh.NumberOfElts)
+    else:
+        actv_given = True
+
+    shifted_actv = active_elts - (mesh.CenterElts - inj_elem)
+
+    # if the active elements are out of the mesh
+    if inj_elem < mesh.CenterElts:
+        to_delete = np.where(shifted_actv < 0)[0]
+    else:
+        to_delete = np.where(shifted_actv > mesh.NumberOfElts - 1)[0]
+
+    if actv_given and len(to_delete) > 0:
+         raise SystemError("The active region goes out of the domain after shifting injection point!")
+
+    shifted_actv = np.delete(shifted_actv, to_delete)
+    active_elts = np.delete(active_elts, to_delete)
+
+    if variable is None:
+        variable = np.full((mesh.NumberOfElts,), fill, dtype=np.float64)
+    shifted_var = np.full((mesh.NumberOfElts,), fill, dtype=np.float64)
+    shifted_var[shifted_actv] = variable[active_elts]
+
+    return shifted_actv, shifted_var

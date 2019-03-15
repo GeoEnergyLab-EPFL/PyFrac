@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -50,7 +51,8 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">src.Utility</span> <span class="k">import</span> <span class="n">radius_level_set</span>
+<span class="kn">import</span> <span class="nn">skfmm</span>
+<span class="kn">from</span> <span class="nn">src.HFAnalyticalSolutions</span> <span class="k">import</span> <span class="n">shift_injection_point</span>
 <span class="kn">from</span> <span class="nn">src.LevelSet</span> <span class="k">import</span> <span class="n">SolveFMM</span><span class="p">,</span> <span class="n">reconstruct_front</span><span class="p">,</span> <span class="n">UpdateLists</span>
 <span class="kn">from</span> <span class="nn">src.VolIntegral</span> <span class="k">import</span> <span class="n">Integral_over_cell</span>
 <span class="kn">from</span> <span class="nn">src.Symmetry</span> <span class="k">import</span> <span class="o">*</span>
@@ -67,62 +69,63 @@
 <span class="sd">        b (float):                          -- the length of the minor axis of the provided ellipse.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        | surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\</span>
+<span class="sd">        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\</span>
 <span class="sd">                                               ellipse.</span>
-<span class="sd">        | inner_cells (ndarray)             -- the list of cells inside the given ellipse.</span>
+<span class="sd">        - inner_cells (ndarray)             -- the list of cells inside the given ellipse.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># distances of the cell vertices</span>
-    <span class="n">dist_vertx</span> <span class="o">=</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">a</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">1.</span>
+    <span class="n">dist_vertx</span> <span class="o">=</span> <span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span><span class="o">/</span> <span class="n">a</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">b</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">1.</span>
     <span class="c1"># vertices that are inside the ellipse</span>
-    <span class="n">vertices</span> <span class="o">=</span> <span class="n">dist_vertx</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">]</span><span class="o">&lt;</span><span class="mi">0</span>
+    <span class="n">vertices</span> <span class="o">=</span> <span class="n">dist_vertx</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span>
 
     <span class="c1">#cells with all four vertices inside</span>
-    <span class="n">log_and</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">vertices</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">vertices</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">vertices</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span><span class="n">vertices</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]))</span>
-    <span class="n">channel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">log_and</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">log_and</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">vertices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span>
+                             <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]))</span>
 
-    <span class="c1"># todo: Hack !!! returning channel cells as inner cells also</span>
-    <span class="k">return</span> <span class="n">channel</span><span class="p">,</span> <span class="n">channel</span></div>
+    <span class="n">inner_cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">log_and</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># todo: Hack !!! returning all inner cells as survey cells also</span>
+    <span class="n">surv_cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">inner_cells</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">surv_cells</span><span class="p">,</span> <span class="n">inner_cells</span></div>
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="generate_footprint"><a class="viewcode-back" href="../doc_src/FractureInitilization.html#FractureInitilization.generate_footprint">[docs]</a><span class="k">def</span> <span class="nf">generate_footprint</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">surv_cells</span><span class="p">,</span> <span class="n">inner_region</span><span class="p">,</span> <span class="n">dist_surv_cells</span><span class="p">):</span>
+<div class="viewcode-block" id="generate_footprint"><a class="viewcode-back" href="../doc_src/FractureInitilization.html#FractureInitilization.generate_footprint">[docs]</a><span class="k">def</span> <span class="nf">generate_footprint</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">surv_cells</span><span class="p">,</span> <span class="n">inner_region</span><span class="p">,</span> <span class="n">dist_surv_cells</span><span class="p">,</span> <span class="n">inj_point</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function takes the survey cells and their distances from the front and generate the footprint of a fracture</span>
 <span class="sd">    using the fast marching method.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        mesh (CartesianMesh object) -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        surv_cells (ndarray)        -- list of survey cells from which the distances from front are provided</span>
-<span class="sd">        inner_region (ndarray)      -- list of cells enclosed by the survey cells</span>
-<span class="sd">        dist_surv_cells (ndarray)   -- distances of the provided survey cells from the front</span>
+<span class="sd">        mesh (CartesianMesh):       -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        surv_cells (ndarray):       -- list of survey cells from which the distances from front are provided</span>
+<span class="sd">        inner_region (ndarray):     -- list of cells enclosed by the survey cells</span>
+<span class="sd">        dist_surv_cells (ndarray):  -- distances of the provided survey cells from the front</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        EltChannel (ndarray-int)    -- list of cells in the channel region.</span>
-<span class="sd">        EltTip (ndarray-int)        -- list of cells in the Tip region.</span>
-<span class="sd">        EltCrack (ndarray-int)      -- list of cells in the crack region.</span>
-<span class="sd">        EltRibbon (ndarray-int)     -- list of cells in the Ribbon region.</span>
-<span class="sd">        ZeroVertex (ndarray-float)  -- Vertex from which the perpendicular is drawn on the front in a cell(can have</span>
-<span class="sd">                                       value from 0 to 3, where 0 signify bottom left, 1 signifying bottom right, 2</span>
-<span class="sd">                                       signifying top right and 3 signifying top left vertex).</span>
-<span class="sd">        CellStatus (ndarray-int)    -- specifies which region each element currently belongs to (0 for Crack, 1 for</span>
-<span class="sd">                                       channel, 2 for tip and 3 for ribbon).</span>
-<span class="sd">        l (ndarray-float)           -- length of perpendicular on the fracture front (see Pierce 2015, Computation</span>
-<span class="sd">                                       Methods Appl. Mech).</span>
-<span class="sd">        alpha (ndarray-float)       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,</span>
-<span class="sd">                                       Computation Methods Appl. Mech)</span>
-<span class="sd">        FillF (ndarray-float)       -- filling fraction of each tip cell.</span>
-<span class="sd">        sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.</span>
+<span class="sd">        - EltChannel (ndarray-int)    -- list of cells in the channel region.</span>
+<span class="sd">        - EltTip (ndarray-int)        -- list of cells in the Tip region.</span>
+<span class="sd">        - EltCrack (ndarray-int)      -- list of cells in the crack region.</span>
+<span class="sd">        - EltRibbon (ndarray-int)     -- list of cells in the Ribbon region.</span>
+<span class="sd">        - ZeroVertex (ndarray-float)  -- Vertex from which the perpendicular is drawn on the front in a cell(can have\</span>
+<span class="sd">                                         value from 0 to 3, where 0 signify bottom left, 1 signifying bottom right, 2\</span>
+<span class="sd">                                         signifying top right and 3 signifying top left vertex).</span>
+<span class="sd">        - CellStatus (ndarray-int)    -- specifies which region each element currently belongs to (0 for Crack, 1 for\</span>
+<span class="sd">                                         channel, 2 for tip and 3 for ribbon).</span>
+<span class="sd">        - l (ndarray-float)           -- length of perpendicular on the fracture front (see Pierce 2015, Computation\</span>
+<span class="sd">                                         Methods Appl. Mech).</span>
+<span class="sd">        - alpha (ndarray-float)       -- angle prescribed by perpendicular on the fracture front (see Pierce 2015,\</span>
+<span class="sd">                                         Computation Methods Appl. Mech)</span>
+<span class="sd">        - FillF (ndarray-float)       -- filling fraction of each tip cell.</span>
+<span class="sd">        - sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">sgndDist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="mf">1e10</span><span class="p">)</span>
+    <span class="n">sgndDist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="mf">1e50</span><span class="p">)</span>
     <span class="n">sgndDist</span><span class="p">[</span><span class="n">surv_cells</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dist_surv_cells</span>
 
     <span class="c1"># rest of the cells outside the survey cell ring</span>
-    <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inner_region</span><span class="p">)):</span>
-        <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">EltRest</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">EltRest</span> <span class="o">==</span> <span class="n">inner_region</span><span class="p">[</span><span class="n">i</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">EltRest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="n">inner_region</span><span class="p">)</span>
 
     <span class="c1"># fast marching to get level set</span>
     <span class="n">SolveFMM</span><span class="p">(</span><span class="n">sgndDist</span><span class="p">,</span>
@@ -132,8 +135,9 @@
              <span class="n">EltRest</span><span class="p">,</span>
              <span class="n">inner_region</span><span class="p">)</span>
 
+    <span class="n">band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">)</span>
     <span class="c1"># costruct the front</span>
-    <span class="p">(</span><span class="n">EltTip_tmp</span><span class="p">,</span> <span class="n">l_tmp</span><span class="p">,</span> <span class="n">alpha_tmp</span><span class="p">,</span> <span class="n">CSt</span><span class="p">)</span> <span class="o">=</span> <span class="n">reconstruct_front</span><span class="p">(</span><span class="n">sgndDist</span><span class="p">,</span> <span class="n">inner_region</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">EltTip_tmp</span><span class="p">,</span> <span class="n">l_tmp</span><span class="p">,</span> <span class="n">alpha_tmp</span><span class="p">,</span> <span class="n">CSt</span><span class="p">)</span> <span class="o">=</span> <span class="n">reconstruct_front</span><span class="p">(</span><span class="n">sgndDist</span><span class="p">,</span> <span class="n">band</span><span class="p">,</span> <span class="n">inner_region</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
 
     <span class="c1"># get the filling fraction of the tip cells</span>
     <span class="n">FillFrac_tmp</span> <span class="o">=</span> <span class="n">Integral_over_cell</span><span class="p">(</span><span class="n">EltTip_tmp</span><span class="p">,</span>
@@ -177,18 +181,18 @@
 <span class="sd">    according to the given elasticity matrix.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        mesh (CartesianMesh object) -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        EltCrack (ndarray-int)      -- list of cells in the crack region.</span>
-<span class="sd">        EltTip (ndarray-int)        -- list of cells in the Tip region.</span>
-<span class="sd">        FillFrac (ndarray-float)    -- filling fraction of each tip cell. Used for correction</span>
-<span class="sd">        C (ndarray-float)           -- The elasticity matrix</span>
-<span class="sd">        w (ndarray-float)           -- the provided width for each cell, can be None if not available.</span>
-<span class="sd">        p (ndarray-float)           -- the provided pressure for each cell, can be None if not available.</span>
-<span class="sd">        volume (ndarray-float)      -- the volume of the fracture, can be None if not available.</span>
+<span class="sd">        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        EltCrack (ndarray):     -- list of cells in the crack region.</span>
+<span class="sd">        EltTip (ndarray):       -- list of cells in the Tip region.</span>
+<span class="sd">        FillFrac (ndarray):     -- filling fraction of each tip cell. Used for correction.</span>
+<span class="sd">        C (ndarray):            -- The elasticity matrix.</span>
+<span class="sd">        w (ndarray):            -- the provided width for each cell, can be None if not available.</span>
+<span class="sd">        p (ndarray):            -- the provided pressure for each cell, can be None if not available.</span>
+<span class="sd">        volume (ndarray):       -- the volume of the fracture, can be None if not available.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        w_calculated (ndarray-float)-- the calculated width</span>
-<span class="sd">        p_calculated (ndarray-float)-- the calculated pressure</span>
+<span class="sd">        - w_calculated (ndarray)    -- the calculated width.</span>
+<span class="sd">        - p_calculated (ndarray)    -- the calculated pressure.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">w</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">volume</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -225,7 +229,7 @@
         <span class="n">FillF_sym</span> <span class="o">=</span> <span class="n">FillF_mesh</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">activeSymtrc</span><span class="p">[</span><span class="n">EltTip_sym</span><span class="p">]]</span>
         <span class="n">self_infl</span> <span class="o">=</span> <span class="n">self_influence</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">)</span>
 
-        <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">,</span> <span class="n">EltTip_sym</span><span class="p">)]</span>  <span class="c1"># keeping the tip element entries to restore current tip correction. This is</span>
+        <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">,</span> <span class="n">EltTip_sym</span><span class="p">)])</span>  <span class="c1"># keeping the tip element entries to restore current tip correction. This is</span>
         <span class="c1"># done to avoid copying the full elasticity matrix.</span>
 
         <span class="c1"># filling fraction correction for element in the tip region</span>
@@ -268,7 +272,7 @@
         <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip_sym</span><span class="p">,</span> <span class="n">EltTip_sym</span><span class="p">)]</span> <span class="o">=</span> <span class="n">C_EltTip</span>
 
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip</span><span class="p">,</span> <span class="n">EltTip</span><span class="p">)]</span>  <span class="c1"># keeping the tip element entries to restore current tip correction. This is</span>
+        <span class="n">C_EltTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltTip</span><span class="p">,</span> <span class="n">EltTip</span><span class="p">)])</span>  <span class="c1"># keeping the tip element entries to restore current tip correction. This is</span>
                                               <span class="c1"># done to avoid copying the full elasticity matrix.</span>
 
         <span class="c1"># filling fraction correction for element in the tip region</span>
@@ -320,19 +324,19 @@
 <span class="sd">    This function calculates the smallest distance of a point from the given ellipse.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        a (float)       -- the length of the major axis of the ellipse.</span>
-<span class="sd">        b (float)       -- the length of the minor axis of the ellipse.</span>
-<span class="sd">        x0 (float)      -- the x coordinate of the point from which the distance is to be found</span>
-<span class="sd">        y0 (float)      -- the y coordinate of the point from which the distance is to be found</span>
+<span class="sd">        a (float):       -- the length of the major axis of the ellipse.</span>
+<span class="sd">        b (float):       -- the length of the minor axis of the ellipse.</span>
+<span class="sd">        x0 (float):      -- the x coordinate of the point from which the distance is to be found</span>
+<span class="sd">        y0 (float):      -- the y coordinate of the point from which the distance is to be found</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        D (float)       -- the shortest distance of the point from the ellipse.</span>
+<span class="sd">        D (float):       -- the shortest distance of the point from the ellipse.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># a&gt;b ellipse parameters, (x0,y0) is the center of the cell</span>
     <span class="n">x0</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
     <span class="n">y0</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y0</span><span class="p">)</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">x0</span><span class="o">&lt;</span><span class="mf">1e-12</span> <span class="ow">and</span> <span class="n">y0</span><span class="o">&lt;</span><span class="mf">1e-12</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">x0</span> <span class="o">&lt;</span> <span class="mf">1e-12</span> <span class="ow">and</span> <span class="n">y0</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">):</span>
         <span class="n">D</span> <span class="o">=</span> <span class="n">b</span>
         <span class="n">xellipse</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">yellipse</span> <span class="o">=</span> <span class="n">b</span>
@@ -417,7 +421,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

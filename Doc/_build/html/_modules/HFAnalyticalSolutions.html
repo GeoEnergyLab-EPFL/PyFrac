@@ -14,7 +14,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -50,8 +51,8 @@
 
 <span class="sd">Hydraulic fracture propagation Analytical solutions</span>
 <span class="sd">notably for</span>
-<span class="sd"> - planar radial fracture with constant injection rate</span>
-<span class="sd"> - height contained fracture</span>
+<span class="sd">    - planar radial fracture with constant injection rate.</span>
+<span class="sd">    - height contained fractures.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="c1"># imports</span>
@@ -62,29 +63,33 @@
 <span class="kn">import</span> <span class="nn">scipy.integrate</span> <span class="k">as</span> <span class="nn">integrate</span>
 
 
-<span class="c1">#  radial zero toughness turbulent MDR approximation</span>
+
 <div class="viewcode-block" id="MDR_M_vertex_solution"><a class="viewcode-back" href="../doc_src/HFAnalyticalSolutions.html#HFAnalyticalSolutions.MDR_M_vertex_solution">[docs]</a><span class="k">def</span> <span class="nf">MDR_M_vertex_solution</span><span class="p">(</span><span class="n">Eprime</span><span class="p">,</span> <span class="n">Q0</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">visc</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="s1">&#39;111111&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">       Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime</span>
-<span class="sd">       propagation, given fracture radius or the time since the start of the injection. The solution does not take leak off into account.</span>
+<span class="sd">    Analytical solution for a radial hydraulic fracture (zero toughness case) in the Max drag reduction flow regime</span>
+<span class="sd">    propagation, given fracture radius or the time since the start of the injection. The solution does not take leak</span>
+<span class="sd">    off into account.</span>
 
-<span class="sd">       Arguments:</span>
-<span class="sd">           Eprime (float)       -- plain strain elastic modulus.</span>
-<span class="sd">           Q0 (float)           -- injection rate.</span>
-<span class="sd">           density (float)      -- fluid density.</span>
-<span class="sd">           visc (float)         -- fluid viscosity.</span>
-<span class="sd">           Mesh (CartesianMesh) -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">           R (float)            -- the given radius for which the solution is evaluated.</span>
-<span class="sd">           t (float)            -- time since the start of the injection.</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">       Eprime (float):       -- plain strain elastic modulus.</span>
+<span class="sd">       Q0 (float):           -- injection rate.</span>
+<span class="sd">       density (float):      -- fluid density.</span>
+<span class="sd">       visc (float):         -- fluid viscosity.</span>
+<span class="sd">       Mesh (CartesianMesh): -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">       R (float):            -- the given radius for which the solution is evaluated.</span>
+<span class="sd">       t (float):            -- time since the start of the injection.</span>
+<span class="sd">       required (string):    -- a mask giving which of the variables are required.</span>
 
-<span class="sd">       Returns:</span>
-<span class="sd">           t (float)            -- time at which the fracture reaches the given radius.</span>
-<span class="sd">           R (float)            -- radius of the fracture at the given time.</span>
-<span class="sd">           p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius</span>
-<span class="sd">           w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time</span>
-<span class="sd">           v (float)            -- fracture propagation velocity</span>
-<span class="sd">           actvElts (ndarray)   -- list of cells inside the fracture at the given time</span>
-<span class="sd">       &quot;&quot;&quot;</span>
+<span class="sd">    Returns:</span>
+<span class="sd">       - t (float)            -- time at which the fracture reaches the given radius.</span>
+<span class="sd">       - R (float)            -- radius of the fracture at the given time.</span>
+<span class="sd">       - p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius.</span>
+<span class="sd">       - w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or\</span>
+<span class="sd">                                 time.</span>
+<span class="sd">       - v (float)            -- fracture propagation velocity.</span>
+<span class="sd">       - actvElts (ndarray)   -- list of cells inside the fracture at the given time.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">fo</span> <span class="o">=</span> <span class="mf">1.78</span>
     <span class="n">gammam</span><span class="o">=</span> <span class="mf">0.758244</span>
 
@@ -162,20 +167,21 @@
 <span class="sd">    since the start of the injection. The solution does not take leak off into account.</span>
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
-<span class="sd">        Eprime (float)       -- plain strain elastic modulus.</span>
-<span class="sd">        Q0 (float)           -- injection rate.</span>
-<span class="sd">        muPrime (float)      -- 12*viscosity.</span>
-<span class="sd">        Mesh (CartesianMesh) -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        R (float)            -- the given radius for which the solution is evaluated.</span>
-<span class="sd">        t (float)            -- time since the start of the injection.</span>
-<span class="sd">        </span>
+<span class="sd">        Eprime (float):       -- plain strain elastic modulus.</span>
+<span class="sd">        Q0 (float):           -- injection rate.</span>
+<span class="sd">        muPrime (float):      -- 12*viscosity.</span>
+<span class="sd">        Mesh (CartesianMesh): -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        R (float):            -- the given radius for which the solution is evaluated.</span>
+<span class="sd">        t (float):            -- time since the start of the injection.</span>
+<span class="sd">        required (string):    -- a mask giving which of the variables are required.</span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)            -- time at which the fracture reaches the given radius.</span>
-<span class="sd">        R (float)            -- radius of the fracture at the given time.</span>
-<span class="sd">        p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius</span>
-<span class="sd">        w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time</span>
-<span class="sd">        v (float)            -- fracture propagation velocity</span>
-<span class="sd">        actvElts (ndarray)   -- list of cells inside the fracture at the given time</span>
+<span class="sd">        - t (float)            -- time at which the fracture reaches the given radius.</span>
+<span class="sd">        - R (float)            -- radius of the fracture at the given time.</span>
+<span class="sd">        - p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius</span>
+<span class="sd">        - w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time</span>
+<span class="sd">        - v (float)            -- fracture propagation velocity</span>
+<span class="sd">        - actvElts (ndarray)   -- list of cells inside the fracture at the given time</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -237,20 +243,21 @@
 <span class="sd">    solution does not take leak off into account.</span>
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
-<span class="sd">        Kprime (float)          -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</span>
-<span class="sd">        Eprime (float)          -- plain strain elastic modulus</span>
-<span class="sd">        Q0 (float)              -- injection rate</span>
-<span class="sd">        Mesh (CartesianMesh)    -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        R (float)               -- the given radius for which the solution is evaluated.</span>
-<span class="sd">        t (float)               -- time since the start of the injection.</span>
-<span class="sd">    </span>
+<span class="sd">        Kprime (float):          -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</span>
+<span class="sd">        Eprime (float):          -- plain strain elastic modulus</span>
+<span class="sd">        Q0 (float):              -- injection rate</span>
+<span class="sd">        Mesh (CartesianMesh):    -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        R (float):               -- the given radius for which the solution is evaluated.</span>
+<span class="sd">        t (float):               -- time since the start of the injection.</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)               -- time at which the fracture reaches the given radius.</span>
-<span class="sd">        R (float)               -- radius of the fracture at the given time.</span>
-<span class="sd">        p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius</span>
-<span class="sd">        w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time</span>
-<span class="sd">        v (float)               -- fracture propagation velocity</span>
-<span class="sd">        actvElts (ndarray)      -- list of cells inside the fracture at the given time</span>
+<span class="sd">        - t (float)               -- time at which the fracture reaches the given radius.</span>
+<span class="sd">        - R (float)               -- radius of the fracture at the given time.</span>
+<span class="sd">        - p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius</span>
+<span class="sd">        - w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time</span>
+<span class="sd">        - v (float)               -- fracture propagation velocity</span>
+<span class="sd">        - actvElts (ndarray)      -- list of cells inside the fracture at the given time</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -296,20 +303,21 @@
 <span class="sd">    takes leak off into account.</span>
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
-<span class="sd">        Eprime (float)         -- plain strain elastic modulus</span>
-<span class="sd">        Cprime (float)         -- 2*C, where C is the Carter&#39;s leak off coefficient</span>
-<span class="sd">        Q0 (float)             -- injection rate</span>
-<span class="sd">        muPrime (float)        -- 12*viscosity</span>
-<span class="sd">        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        R (float)              -- the given radius for which the solution is evaluated</span>
-<span class="sd">    </span>
+<span class="sd">        Eprime (float):         -- plain strain elastic modulus</span>
+<span class="sd">        Cprime (float):         -- 2*C, where C is the Carter&#39;s leak off coefficient</span>
+<span class="sd">        Q0 (float):             -- injection rate</span>
+<span class="sd">        muPrime (float):        -- 12*viscosity</span>
+<span class="sd">        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        R (float):              -- the given radius for which the solution is evaluated</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)               -- time at which the fracture reaches the given radius.</span>
-<span class="sd">        R (float)               -- radius of the fracture at the given time.</span>
-<span class="sd">        p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius</span>
-<span class="sd">        w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time</span>
-<span class="sd">        v (float)               -- fracture propagation velocity</span>
-<span class="sd">        actvElts (ndarray)      -- list of cells inside the fracture at the given time</span>
+<span class="sd">        - t (float)               -- time at which the fracture reaches the given radius.</span>
+<span class="sd">        - R (float)               -- radius of the fracture at the given time.</span>
+<span class="sd">        - p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius</span>
+<span class="sd">        - w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time</span>
+<span class="sd">        - v (float)               -- fracture propagation velocity</span>
+<span class="sd">        - actvElts (ndarray)      -- list of cells inside the fracture at the given time</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -379,23 +387,24 @@
 <span class="sd">    radius.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        Eprime (float)      -- plain strain elastic modulus</span>
-<span class="sd">        Cprime (float)      -- 2*C, where C is the Carter&#39;s leak off coefficient</span>
-<span class="sd">        Q0 (float)          -- injection rate</span>
-<span class="sd">        Kprime (float)      -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</span>
-<span class="sd">        Mesh (CartesianMesh)-- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        t (float)           -- the given time for which the solution is evaluated. Either of the time or radius can</span>
+<span class="sd">        Eprime (float):      -- plain strain elastic modulus</span>
+<span class="sd">        Cprime (float):      -- 2*C, where C is the Carter&#39;s leak off coefficient</span>
+<span class="sd">        Q0 (float):          -- injection rate</span>
+<span class="sd">        Kprime (float):      -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</span>
+<span class="sd">        Mesh (CartesianMesh):-- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        t (float):           -- the given time for which the solution is evaluated. Either of the time or radius can</span>
 <span class="sd">                               be provided</span>
-<span class="sd">        R (float)           -- the given radius for which the solution is evaluated. Either of the time or radius can</span>
+<span class="sd">        R (float):           -- the given radius for which the solution is evaluated. Either of the time or radius can</span>
 <span class="sd">                               be provided</span>
+<span class="sd">        required (string):   -- a mask giving which of the variables are required.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)           -- time at which the fracture reaches the given radius.</span>
-<span class="sd">        R (float)           -- radius of the fracture at the given time.</span>
-<span class="sd">        p (ndarray)         -- pressure at each cell when the fracture has propagated to the given radius</span>
-<span class="sd">        w (ndarray)         -- width opening at each cell when the fracture has propagated to the given radius or time</span>
-<span class="sd">        v (float)           -- fracture propagation velocity</span>
-<span class="sd">        actvElts (ndarray)  -- list of cells inside the fracture at the given time</span>
+<span class="sd">        - t (float)           -- time at which the fracture reaches the given radius.</span>
+<span class="sd">        - R (float)           -- radius of the fracture at the given time.</span>
+<span class="sd">        - p (ndarray)         -- pressure at each cell when the fracture has propagated to the given radius</span>
+<span class="sd">        - w (ndarray)         -- width opening at each cell when the fracture has propagated to the given radius or time</span>
+<span class="sd">        - v (float)           -- fracture propagation velocity</span>
+<span class="sd">        - actvElts (ndarray)  -- list of cells inside the fracture at the given time</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 
@@ -448,20 +457,22 @@
 <span class="sd">    does not take leak off into account.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        Eprime (float)         -- plain strain elastic modulus</span>
-<span class="sd">        Q0 (float)             -- injection rate</span>
-<span class="sd">        muPrime (float)        -- 12*viscosity</span>
-<span class="sd">        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        t (float)              -- the given time for which the solution is evaluated</span>
-<span class="sd">        h (float)              -- the height of the PKN fracture</span>
+<span class="sd">        Eprime (float):         -- plain strain elastic modulus</span>
+<span class="sd">        Q0 (float):             -- injection rate</span>
+<span class="sd">        muPrime (float):        -- 12*viscosity</span>
+<span class="sd">        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        t (float):              -- the given time for which the solution is evaluated</span>
+<span class="sd">        h (float):              -- the height of the PKN fracture</span>
+<span class="sd">        ell (float):            -- length of the PKN fracture, should be much more than height.</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)              -- time at which the fracture reaches the given length.</span>
-<span class="sd">        ell (float)            -- length of the fracture at the given time</span>
-<span class="sd">        p (ndarray-float)      -- pressure at each cell at the given time</span>
-<span class="sd">        w (ndarray-float)      -- width at each cell at the given time</span>
-<span class="sd">        v (float)              -- propagation velocity</span>
-<span class="sd">        actvElts (ndarray)     -- list of cells inside the PKN fracture at the given time</span>
+<span class="sd">        - t (float)              -- time at which the fracture reaches the given length.</span>
+<span class="sd">        - ell (float)            -- length of the fracture at the given time</span>
+<span class="sd">        - p (ndarray-float)      -- pressure at each cell at the given time</span>
+<span class="sd">        - w (ndarray-float)      -- width at each cell at the given time</span>
+<span class="sd">        - v (float)              -- propagation velocity</span>
+<span class="sd">        - actvElts (ndarray)     -- list of cells inside the PKN fracture at the given time</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">ell</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -527,22 +538,22 @@
 <span class="sd">    time or length. The solution does not take leak off into account.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        Eprime (float)         -- plain strain elastic modulus</span>
-<span class="sd">        Q0 (float)             -- injection rate</span>
-<span class="sd">        KPrime (float)         -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</span>
-<span class="sd">        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        height (float)         -- the height of the KGD fracture (it should be much longer then length)</span>
-<span class="sd">        ell (float)            -- length of fracture</span>
-<span class="sd">        t (float)              -- the given time for which the solution is evaluated</span>
-
+<span class="sd">        Eprime (float):         -- plain strain elastic modulus.</span>
+<span class="sd">        Q0 (float):             -- injection rate.</span>
+<span class="sd">        KPrime (float):         -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness.</span>
+<span class="sd">        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        height (float):         -- the height of the KGD fracture (it should be much longer then length).</span>
+<span class="sd">        ell (float):            -- length of fracture.</span>
+<span class="sd">        t (float):              -- the given time for which the solution is evaluated.</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)              -- time at which the fracture reaches the given length.</span>
-<span class="sd">        ell (float)            -- length of the fracture at the given time</span>
-<span class="sd">        p (ndarray-float)      -- pressure at each cell at the given time</span>
-<span class="sd">        w (ndarray-float)      -- width at each cell at the given time</span>
-<span class="sd">        v (float)              -- propagation velocity</span>
-<span class="sd">        actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time</span>
+<span class="sd">        - t (float)              -- time at which the fracture reaches the given length.</span>
+<span class="sd">        - ell (float)            -- length of the fracture at the given time.</span>
+<span class="sd">        - p (ndarray-float)      -- pressure at each cell at the given time.</span>
+<span class="sd">        - w (ndarray-float)      -- width at each cell at the given time.</span>
+<span class="sd">        - v (float)              -- propagation velocity.</span>
+<span class="sd">        - actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># injection rate per unit height in one wing</span>
     <span class="n">Q</span> <span class="o">=</span> <span class="n">Q0</span> <span class="o">/</span> <span class="n">height</span>
@@ -608,21 +619,22 @@
 <span class="sd">    IJF, 2018).</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        KIc_max (float)        -- the fracture toughness along the minor axis</span>
-<span class="sd">        KIc_min (float)        -- the fracture toughness along the major axis</span>
-<span class="sd">        Eprime (float)         -- plain strain modulus</span>
-<span class="sd">        Q0 (float)             -- injection rate</span>
-<span class="sd">        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        b (float)              -- the given minor axis length</span>
-<span class="sd">        t (float)              -- the given time for which the solution is evaluated</span>
+<span class="sd">        KIc_max (float):        -- the fracture toughness along the minor axis.</span>
+<span class="sd">        KIc_min (float):        -- the fracture toughness along the major axis.</span>
+<span class="sd">        Eprime (float):         -- plain strain modulus.</span>
+<span class="sd">        Q0 (float):             -- injection rate.</span>
+<span class="sd">        Mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        b (float):              -- the given minor axis length.</span>
+<span class="sd">        t (float):              -- the given time for which the solution is evaluated.</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)              -- time at which the fracture reaches the given length.</span>
-<span class="sd">        b (float)              -- length of the fracture at the given time</span>
-<span class="sd">        p (ndarray-float)      -- pressure at each cell at the given time</span>
-<span class="sd">        w (ndarray-float)      -- width at each cell at the given time</span>
-<span class="sd">        v (float)              -- propagation velocity</span>
-<span class="sd">        actvElts (ndarray)     -- list of cells inside the fracture at the given time</span>
+<span class="sd">        - t (float)              -- time at which the fracture reaches the given length.</span>
+<span class="sd">        - b (float)              -- length of the minor axix of the elliptical fracture at the given time.</span>
+<span class="sd">        - p (ndarray-float)      -- pressure at each cell at the given time.</span>
+<span class="sd">        - w (ndarray-float)      -- width at each cell at the given time.</span>
+<span class="sd">        - v (float)              -- propagation velocity of the fracture along the minor axis.</span>
+<span class="sd">        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">KIc_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -671,15 +683,21 @@
 <span class="sd">    IJF, 2018).</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        Mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        b (float)              -- the given minor axis length</span>
-<span class="sd">        a (float)              -- the given major axis length</span>
-<span class="sd">        p (float)              -- pressure</span>
+<span class="sd">        mesh (CartesianMesh)    -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.</span>
+<span class="sd">        Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).</span>
+<span class="sd">        Kc3 (float):            -- the fracture toughness along the minor axis.</span>
+<span class="sd">        Ep3 (float):            -- the effective (see Moukhtari and Lecampion, 2019) elasticity along the minor axis.</span>
+<span class="sd">        Q0 (float)              -- injection rate.</span>
+<span class="sd">        t (float):              -- the given time for which the solution is evaluated.</span>
+<span class="sd">        b (float):              -- the given minor axis length.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        w (ndarray-float)      -- width at each cell at the given time</span>
-
-<span class="sd">        actvElts (ndarray)     -- list of cells inside the fracture at the given time</span>
+<span class="sd">        - t (float)              -- time at which the fracture reaches the given length.</span>
+<span class="sd">        - b (float)              -- length of the minor axix of the elliptical fracture at the given time.</span>
+<span class="sd">        - p (ndarray-float)      -- pressure at each cell at the given time.</span>
+<span class="sd">        - w (ndarray-float)      -- width at each cell at the given time.</span>
+<span class="sd">        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">b</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -766,40 +784,53 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="HF_analytical_sol"><a class="viewcode-back" href="../doc_src/HFAnalyticalSolutions.html#HFAnalyticalSolutions.HF_analytical_sol">[docs]</a><span class="k">def</span> <span class="nf">HF_analytical_sol</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Q0</span><span class="p">,</span> <span class="n">muPrime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Kprime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cprime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="n">Kc_1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cij</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="s1">&#39;111111&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="HF_analytical_sol"><a class="viewcode-back" href="../doc_src/HFAnalyticalSolutions.html#HFAnalyticalSolutions.HF_analytical_sol">[docs]</a><span class="k">def</span> <span class="nf">HF_analytical_sol</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Q0</span><span class="p">,</span> <span class="n">inj_point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">muPrime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Kprime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cprime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Kc_1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cij</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="s1">&#39;111111&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function provides the analytical solution for the given parameters according to the given propagation regime</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        regime (string)        -- the propagation regime. Possible options:</span>
-<span class="sd">                                    - K  (toughness dominated regime, without leak off)</span>
-<span class="sd">                                    - M  (viscosity dominated regime, without leak off)</span>
-<span class="sd">                                    - Kt (viscosity dominated regime , with leak off)</span>
-<span class="sd">                                    - Mt (viscosity dominated regime , with leak off)</span>
-<span class="sd">                                    - PKN (height contained hydraulic fracture with PKN geometry)</span>
-<span class="sd">                                    - E (elliptical fracture propagating in toughness dominated regime).</span>
-<span class="sd">        mesh (CartesianMesh)   -- a CartesianMesh class object describing the grid.</span>
-<span class="sd">        Eprime (float)         -- plain strain modulus.</span>
-<span class="sd">        Q0 (float)             -- injection rate.</span>
-<span class="sd">        muPrime (float)        -- 12*viscosity.</span>
-<span class="sd">        Kprime (float)         -- the fracture toughness (K&#39;) along the minor axis.</span>
-<span class="sd">        Cprime (float)         -- 2*C, where C is the Carter&#39;s leak off coefficient.</span>
-<span class="sd">        length (float)         -- the given length dimension (fracture length in the case of PKN, length of the minor</span>
+<span class="sd">        regime (string):        -- the propagation regime. Possible options are:</span>
+<span class="sd">                                    - K  (toughness dominated regime, without leak off).</span>
+<span class="sd">                                    - M  (viscosity dominated regime, without leak off).</span>
+<span class="sd">                                    - Kt (viscosity dominated regime , with leak off).</span>
+<span class="sd">                                    - Mt (viscosity dominated regime , with leak off).</span>
+<span class="sd">                                    - PKN (height contained hydraulic fracture with PKN geometry).</span>
+<span class="sd">                                    - KGD_K (The classical KGD solution in toughness dominated regime.)</span>
+<span class="sd">                                    - E_K (elliptical fracture propagating in toughness dominated regime). The solution\</span>
+<span class="sd">                                            is equivalent to a particular anisotropic toughness case described in\</span>
+<span class="sd">                                            Zia and Lecampion, 2018.)</span>
+<span class="sd">                                    - E_E (the elliptical solution with transverse isotropic material properties; see\</span>
+<span class="sd">                                           Moukhtari and Lecampion, 2019.)</span>
+<span class="sd">                                    - MDR (viscosity dominated solution for turbulent flow. The friction factor is\</span>
+<span class="sd">                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).</span>
+<span class="sd">        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        Eprime (float):         -- plain strain modulus.</span>
+<span class="sd">        Q0 (float):             -- injection rate.</span>
+<span class="sd">        inj_point (list):       -- the injection point if not at the center(0,0). It should be a list or and numpy array</span>
+<span class="sd">                                   of size 2, giving the x and y coordiantes of the injection point.</span>
+<span class="sd">        muPrime (float):        -- 12*viscosity.</span>
+<span class="sd">        Kprime (float):         -- the fracture toughness (K&#39;) along the minor axis.</span>
+<span class="sd">        Cprime (float):         -- 2*C, where C is the Carter&#39;s leak off coefficient.</span>
+<span class="sd">        length (float):         -- the given length dimension (fracture length in the case of PKN, length of the minor</span>
 <span class="sd">                                  axis in the case of elliptical fracture and the fracture radius in all of the rest).</span>
-<span class="sd">        t (float)              -- the given time for which the solution is evaluated.</span>
-<span class="sd">        Kp_perp (float)        -- the fracture toughness along the major axis.</span>
-<span class="sd">        h (float)              -- the height of the PKN fracture.</span>
+<span class="sd">        t (float):              -- the given time for which the solution is evaluated.</span>
+<span class="sd">        Kp_perp (float):        -- the fracture toughness along the major axis.</span>
+<span class="sd">        h (float):              -- the height of the PKN fracture.</span>
+<span class="sd">        density (float):        -- the density of the injected fluid.</span>
+<span class="sd">        Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).</span>
+<span class="sd">        gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        t (float)              -- time at which the fracture reaches the given length.</span>
-<span class="sd">        r (float)              -- length of the fracture at the given time (fracture length in the case of PKN, length</span>
-<span class="sd">                                  of the minor axis in the case of elliptical fracture and the fracture radius in all</span>
-<span class="sd">                                  of the rest).</span>
-<span class="sd">        p (ndarray-float)      -- pressure at each cell at the given time.</span>
-<span class="sd">        w (ndarray-float)      -- width at each cell at the given time.</span>
-<span class="sd">        v (float)              -- propagation velocity.</span>
-<span class="sd">        actvElts (ndarray)     -- list of cells inside the fracture at the given time.</span>
+<span class="sd">        - t (float)              -- time at which the fracture reaches the given length.</span>
+<span class="sd">        - r (float)              -- length of the fracture at the given time (fracture length in the case of PKN, \</span>
+<span class="sd">                                    length of the minor axis in the case of elliptical fracture and the fracture radius\</span>
+<span class="sd">                                    in all of the rest).</span>
+<span class="sd">        - p (ndarray-float)      -- pressure at each cell at the given time.</span>
+<span class="sd">        - w (ndarray-float)      -- width at each cell at the given time.</span>
+<span class="sd">        - v (float)              -- propagation velocity.</span>
+<span class="sd">        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -826,6 +857,18 @@
         <span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">actvElts</span> <span class="o">=</span> <span class="n">TI_Elasticity_elliptical_solution</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">Cij</span><span class="p">,</span> <span class="n">Kc_3</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Q0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span>
                                                                     <span class="n">required</span><span class="p">)</span>
 
+    <span class="c1"># shift injection point</span>
+    <span class="k">if</span> <span class="n">inj_point</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inj_point</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inj_point</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inj_point</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The injection point should be a list of numpy array of length 2, giving the x and y &quot;</span>
+                                 <span class="s2">&quot;coordinates of the injection point!&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">required</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="ow">is</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+                    <span class="n">actvElts_shft</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">shift_injection_point</span><span class="p">(</span><span class="n">inj_point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inj_point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">actv</span><span class="o">=</span><span class="n">actvElts</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">required</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">is</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+                    <span class="n">actvElts_shft</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">shift_injection_point</span><span class="p">(</span><span class="n">inj_point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inj_point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">actv</span><span class="o">=</span><span class="n">actvElts</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="n">actvElts</span> <span class="o">=</span> <span class="n">actvElts_shft</span>
     <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">actvElts</span></div>
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
@@ -833,6 +876,50 @@
 
 <div class="viewcode-block" id="get_fracture_dimensions_analytical"><a class="viewcode-back" href="../doc_src/HFAnalyticalSolutions.html#HFAnalyticalSolutions.get_fracture_dimensions_analytical">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_dimensions_analytical</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Q0</span><span class="p">,</span> <span class="n">muPrime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Kprime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Cprime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">Kc_1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function gives the length of the fracture along the x and y axes propagating in the given regime at the given</span>
+<span class="sd">    time.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        regime (string):        -- the propagation regime.</span>
+<span class="sd">                                   Possible options are:</span>
+<span class="sd">                                    - K  (toughness dominated regime, without leak off).</span>
+<span class="sd">                                    - M  (viscosity dominated regime, without leak off).</span>
+<span class="sd">                                    - Kt (viscosity dominated regime , with leak off).</span>
+<span class="sd">                                    - Mt (viscosity dominated regime , with leak off).</span>
+<span class="sd">                                    - PKN (height contained hydraulic fracture with PKN geometry).</span>
+<span class="sd">                                    - E (elliptical fracture propagating in toughness dominated regime).</span>
+<span class="sd">                                    - MDR (viscosity dominated solution for turbulent flow. The friction factor is\</span>
+<span class="sd">                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).</span>
+<span class="sd">        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        Eprime (float):         -- plain strain modulus.</span>
+<span class="sd">        Q0 (float):             -- injection rate.</span>
+<span class="sd">        inj_point (list):       -- the injection point if not at the center(0,0). It should be a list or and numpy array</span>
+<span class="sd">                                   of size 2, giving the x and y coordiantes of the injection point.</span>
+<span class="sd">        muPrime (float):        -- 12*viscosity.</span>
+<span class="sd">        Kprime (float):         -- the fracture toughness (K&#39;) along the minor axis.</span>
+<span class="sd">        Cprime (float):         -- 2*C, where C is the Carter&#39;s leak off coefficient.</span>
+<span class="sd">        length (float):         -- the given length dimension (fracture length in the case of PKN, length of the minor</span>
+<span class="sd">                                  axis in the case of elliptical fracture and the fracture radius in all of the rest).</span>
+<span class="sd">        t (float):              -- the given time for which the solution is evaluated.</span>
+<span class="sd">        Kp_perp (float):        -- the fracture toughness along the major axis.</span>
+<span class="sd">        h (float):              -- the height of the PKN fracture.</span>
+<span class="sd">        density (float):        -- the density of the injected fluid.</span>
+<span class="sd">        Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).</span>
+<span class="sd">        gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.</span>
+<span class="sd">        required (string):      -- a mask giving which of the variables are required.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - t (float)              -- time at which the fracture reaches the given length.</span>
+<span class="sd">        - r (float)              -- length of the fracture at the given time (fracture length in the case of PKN, \</span>
+<span class="sd">                                    length of the minor axis in the case of elliptical fracture and the fracture radius\</span>
+<span class="sd">                                    in all of the rest).</span>
+<span class="sd">        - p (ndarray-float)      -- pressure at each cell at the given time.</span>
+<span class="sd">        - w (ndarray-float)      -- width at each cell at the given time.</span>
+<span class="sd">        - v (float)              -- propagation velocity.</span>
+<span class="sd">        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;M&#39;</span><span class="p">:</span>
         <span class="n">x_len</span> <span class="o">=</span> <span class="n">y_len</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.6976</span> <span class="o">*</span> <span class="n">Eprime</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">9</span><span class="p">)</span> <span class="o">*</span> <span class="n">Q0</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">t</span> <span class="o">**</span> <span class="p">(</span><span class="mi">4</span> <span class="o">/</span> <span class="mi">9</span><span class="p">))</span> <span class="o">/</span> <span class="n">muPrime</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">9</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">regime</span> <span class="ow">is</span> <span class="s1">&#39;K&#39;</span><span class="p">:</span>
@@ -863,6 +950,68 @@
         <span class="n">x_len</span> <span class="o">=</span> <span class="n">y_len</span> <span class="o">*</span> <span class="n">gamma</span>
 
     <span class="k">return</span> <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span></div>
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="shift_injection_point"><a class="viewcode-back" href="../doc_src/HFAnalyticalSolutions.html#HFAnalyticalSolutions.shift_injection_point">[docs]</a><span class="k">def</span> <span class="nf">shift_injection_point</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">active_elts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function gives the shifted variable array and the corresponding cells after the origin is shifted to the</span>
+<span class="sd">    given point.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (float):</span>
+<span class="sd">        y (float):</span>
+<span class="sd">        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.</span>
+<span class="sd">        variable (ndarray):     -- the fracture variable to be shifted. This should be on 1d array with the size of the</span>
+<span class="sd">                                   mesh. If not provided, a dummy array with the value of the fill (last argument) will</span>
+<span class="sd">                                   be returned.</span>
+<span class="sd">        active_elts (ndarray):  -- the elements which are part of the fracture. Only these cells will be shifted</span>
+<span class="sd">                                   according to the new injection point. In other words, the cells for which</span>
+<span class="sd">                                   the corresponding cells are to be evaluated.</span>
+<span class="sd">        fill (float):           -- the fill value which will be inserted onto the cells which has no corresponding</span>
+<span class="sd">                                   elements in the non-shifted mesh.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - shifted_actv (ndarray)-- the corresponding cells in the shifted mesh.</span>
+<span class="sd">        - shifted_var (ndarray) -- the shifted given variable array. If the array is not provided, a dummy\</span>
+<span class="sd">                                   array with the value of the fill (last argument) will be returned.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inj_elem</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">inj_elem</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The injection point is out of the domain covered by mesh!&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fill</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">if</span> <span class="n">active_elts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">actv_given</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">active_elts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">actv_given</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">shifted_actv</span> <span class="o">=</span> <span class="n">active_elts</span> <span class="o">-</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterElts</span> <span class="o">-</span> <span class="n">inj_elem</span><span class="p">)</span>
+
+    <span class="c1"># if the active elements are out of the mesh</span>
+    <span class="k">if</span> <span class="n">inj_elem</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterElts</span><span class="p">:</span>
+        <span class="n">to_delete</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">shifted_actv</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">to_delete</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">shifted_actv</span> <span class="o">&gt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">actv_given</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_delete</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+         <span class="k">raise</span> <span class="ne">SystemError</span><span class="p">(</span><span class="s2">&quot;The active region goes out of the domain after shifting injection point!&quot;</span><span class="p">)</span>
+
+    <span class="n">shifted_actv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">shifted_actv</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">)</span>
+    <span class="n">active_elts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">active_elts</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">variable</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">variable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">fill</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">shifted_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">fill</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">shifted_var</span><span class="p">[</span><span class="n">shifted_actv</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable</span><span class="p">[</span><span class="n">active_elts</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">shifted_actv</span><span class="p">,</span> <span class="n">shifted_var</span></div>
 </pre></div>
 
           </div>
@@ -901,7 +1050,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Haseeb Zia.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
     </div>
   </body>
 </html>

@@ -118,8 +118,12 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
 
         var_value_tmp = np.copy(var_val_copy)
+        if plot_non_zero:
+            var_value_tmp = var_value_tmp[var_value_tmp != 0]
         vmin, vmax = np.inf, -np.inf
         for i in var_value_tmp:
+            if plot_non_zero:
+                i = i[i != 0]
             i = np.delete(i, np.where(np.isinf(i))[0])
             i = np.delete(i, np.where(np.isnan(i))[0])
             if not (not isinstance(i, float) and len(i) == 0):
