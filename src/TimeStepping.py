@@ -247,8 +247,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         perfNode (IterationProperties):             -- a performance node to store performance data.
         
     Returns:
-        | exitstatus (int)          -- exit status (see the function description below for the possibilities).
-        | Fr_kplus1 (Fracture)      -- the fracture after injection with the same footprint.
+        - exitstatus (int)          -- exit status (see the function description below for the possibilities).
+        - Fr_kplus1 (Fracture)      -- the fracture after injection with the same footprint.
     
     """
 
@@ -380,7 +380,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         sim_Parameters (SimulationProperties):  -- simulation parameters.
 
     Returns:
-        | exitstatus (int)  possible values are
+        - exitstatus (int)  possible values are
 
         | 0       -- not propagated
         | 1       -- iteration successful
@@ -398,7 +398,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         | 13      -- leak off can't be evaluated
         | 14      -- fracture fully closed
 
-        | Fracture:            fracture after advancing time step.
+        - Fracture:            fracture after advancing time step.
 
     """
 
@@ -687,14 +687,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # check if the tip volume has gone into negative
     smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
     if np.asarray(smallNgtvWTip).size > 0:
-        #                    warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+        #      warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
         wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
-
-    if (wTip < 0).any() or sum(wTip)==0.:
+    if (wTip < 0).any() or sum(wTip) == 0.:
         exitstatus = 4
         return exitstatus, None
-
 
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
     if sum(mat_properties.Cprime[EltsTipNew]) > 0:

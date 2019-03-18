@@ -433,21 +433,22 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='11111
         - actvElts (ndarray)     -- list of cells inside the PKN fracture at the given time
     """
 
+    viscosity = muPrime / 12
     if ell is None and t is None:
         raise ValueError("Either the length or the time is required to evaluate the solution.")
     elif ell is None:
         # length of the fracture at the given time
-        ell = (2 * (Q0 / 2) ** 3 * Eprime / np.pi ** 3 / muPrime * 12 / h ** 4) ** (1 / 5) * t ** (4 / 5)
+        ell = 1.001 * (Q0 ** 3 * Eprime * t ** 4 / (4 * np.pi ** 3 * viscosity * h ** 4)) ** (1 / 5)
     elif t is None:
-        t = 2**0.5 * h * ell**(5/4) * np.pi**(3/4) * muPrime**3 / (Eprime**(1/4) * Q0**(3/4))
+        t = 3.333333 * h * (ell**5 * viscosity / (Eprime * Q0**3)) ** (1/4)
 
     x = np.linspace(-ell, ell, int(Mesh.nx))
 
     if required[3] is '1':
-        # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
-        # the power of 1/3 and not evaluate with the series.
-        sol_w = (np.pi ** 3 * muPrime / 12 * (Q0 / 2) ** 2 * (t) / Eprime / h / 2) ** (1 / 5) * 1.32 * (1 - abs(
-                                                                                            x) / ell) ** (1 / 3)
+        # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated
+        # with the power of 1/3 and not evaluate with the series.
+        sol_w = (np.pi ** 3 * viscosity * Q0 ** 2 * t / (Eprime * h * 8)) ** (1 / 5) * 1.326 * (1 - abs(x) /
+                                                                                                ell) ** (1 / 3)
         # interpolation function to calculate width at any length.
         anltcl_w = interpolate.interp1d(x, sol_w)
 
@@ -814,6 +815,8 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         t, r, p, w, v, actvElts = TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc_3, Eprime, Q0, t, length,
                                                                     required)
+    else:
+        raise ValueError("The provided regime is not supported!")
 
     # shift injection point
     if inj_point is not None:
@@ -823,9 +826,11 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
                                  "coordinates of the injection point!")
             else:
                 if required[3] is '1':
-                    actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh, w, actv=actvElts, fill=0.)
+                    actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh,
+                                                             w, active_elts=actvElts, fill=0.)
                 if required[2] is '1':
-                    actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh, p, actv=actvElts, fill=0.)
+                    actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh,
+                                                             p, active_elts=actvElts, fill=0.)
             actvElts = actvElts_shft
     return t, r, p, w, v, actvElts
 
@@ -887,8 +892,8 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
     elif regime is 'Kt':
         x_len = y_len = 2 ** 0.5 * Q0 ** 0.5 * t ** (1 / 4) / Cprime ** 0.5 / np.pi
     elif regime is 'PKN':
-        x_len = (2 * (Q0 / 2) ** 3 * Eprime / np.pi ** 3 / muPrime * 12 / h ** 4) ** (1 / 5) * t ** (4 / 5)
-        y_len = h
+        x_len = 1.001 * (Q0 ** 3 * Eprime * t ** 4 / (4 * np.pi ** 3 * (muPrime / 12) * h ** 4)) ** (1 / 5)
+        y_len = h / 2
     elif regime is 'KGD_K':
         x_len = 0.932388 * (Eprime * Q0 * t / Kprime) ** (2 / 3)
         y_len = h
