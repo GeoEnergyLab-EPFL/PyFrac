@@ -87,15 +87,15 @@ value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;aver
 
 <dl class="function">
 <dt id="Visualization.get_HF_analytical_solution_footprint">
-<code class="descclassname">Visualization.</code><code class="descname">get_HF_analytical_solution_footprint</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>plot_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#get_HF_analytical_solution_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.get_HF_analytical_solution_footprint" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">get_HF_analytical_solution_footprint</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>plot_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>gamma=None</em>, <em>inj_point=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#get_HF_analytical_solution_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.get_HF_analytical_solution_footprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function returns footprint of the analytical solution in the form of patches</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="Visualization.plot_analytical_solution">
 <code class="descclassname">Visualization.</code><code class="descname">plot_analytical_solution</code><span class="sig-paren">(</span><em>regime</em>, <em>variable</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>mesh=None</em>, <em>fluid_prop=None</em>, <em>fig=None</em>, <em>projection='2D'</em>, <em>time_srs=None</em>, <em>length_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>plot_prop=None</em>, <em>labels=None</em>, <em>contours_at=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_analytical_solution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_analytical_solution" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function plots slice of the given analytical solution. It can be used to compare simulation results by
-superimposing on the figure obtained from the slice plot function.</p>
+<dd><p>This function plots the analytical solution according to the given regime. It can be used to compare simulation
+results by superimposing on the figure obtained from the plot function.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -359,7 +359,7 @@ given, values from the cell containing the injection point is taken</li>
 
 <dl class="function">
 <dt id="Visualization.plot_footprint_analytical">
-<code class="descclassname">Visualization.</code><code class="descname">plot_footprint_analytical</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>gamma=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_footprint_analytical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_footprint_analytical" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">plot_footprint_analytical</code><span class="sig-paren">(</span><em>regime</em>, <em>mat_prop</em>, <em>inj_prop</em>, <em>fluid_prop=None</em>, <em>time_srs=None</em>, <em>h=None</em>, <em>samp_cell=None</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>gamma=None</em>, <em>inj_point=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_footprint_analytical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_footprint_analytical" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots footprint of the analytical solution fracture. It can be used to compare simulation results by
 superimposing on the figure obtained from the footprint plot.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -427,6 +427,8 @@ given, values from the cell containing the injection point is taken.</li>
 <li><strong>fig</strong> (<em>figure</em>) – – figure object to superimpose the image.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
 <li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the aspect ratio, used in the case of elliptical fracture.</li>
+<li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – a list of size 2, giving the x and y coordinate of the injection
+point.</li>
 </ul>
 </td>
 </tr>
@@ -456,7 +458,7 @@ time.</li>
 <a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
 <li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the material properties. It is mainly used to colormap the mesh.</li>
 <li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_projections</span></code>
-for the supported projections for each of the supprted variable. If not
+for the supported projections for each of the supported variable. If not
 provided, the default will be used.</li>
 <li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
 <li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be colormapped.</li>
@@ -464,7 +466,7 @@ provided, the default will be used.</li>
 <li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
 are evaluated on the cell edges instead of cell center. It can have a
-value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</li>
 <li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
 <li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
 <li><strong>plot_non_zero</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, only non-zero values will be plotted.</li>
@@ -727,6 +729,12 @@ plotted.</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Visualization.plot_injection_source">
+<code class="descclassname">Visualization.</code><code class="descname">plot_injection_source</code><span class="sig-paren">(</span><em>inj_prop</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_injection_source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_injection_source" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the location of the source.</p>
 </dd></dl>
 
 <dl class="function">

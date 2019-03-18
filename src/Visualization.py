@@ -41,7 +41,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                 :py:mod:`Labels` module for a list of supported variables.
         mat_properties (MaterialProperties):-- the material properties. It is mainly used to colormap the mesh.
         projection (string):                -- a string specifying the projection. See :py:data:`supported_projections`
-                                                for the supported projections for each of the supprted variable. If not
+                                                for the supported projections for each of the supported variable. If not
                                                 provided, the default will be used.
         elements (ndarray):                 -- the elements to be plotted.
         backGround_param (string):          -- the parameter according to which the the mesh will be colormapped.
@@ -49,7 +49,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
         edge (int):                         -- the edge of the cell that will be plotted. This is for variables that
                                                 are evaluated on the cell edges instead of cell center. It can have a
-                                                value from 0 to 4 (0->left, 1->right, 2->bottome, 3->top, 4->average).
+                                                value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
         contours_at (list):                 -- the values at which the contours are to be plotted.
         labels (LabelProperties):           -- the labels to be used for the plot.
         plot_non_zero (bool):               -- if true, only non-zero values will be plotted.

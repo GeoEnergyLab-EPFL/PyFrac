@@ -62,7 +62,7 @@
 <span class="kn">from</span> <span class="nn">src.Properties</span> <span class="k">import</span> <span class="n">IterationProperties</span>
 <span class="kn">from</span> <span class="nn">src.anisotropy</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">skfmm</span>
+
 
 <div class="viewcode-block" id="attempt_time_step"><a class="viewcode-back" href="../doc_src/TimeStepping.html#TimeStepping.attempt_time_step">[docs]</a><span class="k">def</span> <span class="nf">attempt_time_step</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">mat_properties</span><span class="p">,</span> <span class="n">fluid_properties</span><span class="p">,</span> <span class="n">sim_properties</span><span class="p">,</span> <span class="n">inj_properties</span><span class="p">,</span>
                       <span class="n">timeStep</span><span class="p">,</span> <span class="n">perfNode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -289,8 +289,8 @@
 <span class="sd">        perfNode (IterationProperties):             -- a performance node to store performance data.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        | exitstatus (int)          -- exit status (see the function description below for the possibilities).</span>
-<span class="sd">        | Fr_kplus1 (Fracture)      -- the fracture after injection with the same footprint.</span>
+<span class="sd">        - exitstatus (int)          -- exit status (see the function description below for the possibilities).</span>
+<span class="sd">        - Fr_kplus1 (Fracture)      -- the fracture after injection with the same footprint.</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -422,7 +422,7 @@
 <span class="sd">        sim_Parameters (SimulationProperties):  -- simulation parameters.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        | exitstatus (int)  possible values are</span>
+<span class="sd">        - exitstatus (int)  possible values are</span>
 
 <span class="sd">        | 0       -- not propagated</span>
 <span class="sd">        | 1       -- iteration successful</span>
@@ -440,7 +440,7 @@
 <span class="sd">        | 13      -- leak off can&#39;t be evaluated</span>
 <span class="sd">        | 14      -- fracture fully closed</span>
 
-<span class="sd">        | Fracture:            fracture after advancing time step.</span>
+<span class="sd">        - Fracture:            fracture after advancing time step.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -729,14 +729,12 @@
     <span class="c1"># check if the tip volume has gone into negative</span>
     <span class="n">smallNgtvWTip</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">wTip</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">wTip</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">1e-4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">wTip</span><span class="p">)))</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smallNgtvWTip</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="c1">#                    warnings.warn(&quot;Small negative volume integral(s) received, ignoring &quot;+repr(wTip[smallngtvwTip])+&#39; ...&#39;)</span>
+        <span class="c1">#      warnings.warn(&quot;Small negative volume integral(s) received, ignoring &quot;+repr(wTip[smallngtvwTip])+&#39; ...&#39;)</span>
         <span class="n">wTip</span><span class="p">[</span><span class="n">smallNgtvWTip</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">wTip</span><span class="p">[</span><span class="n">smallNgtvWTip</span><span class="p">])</span>
 
-
-    <span class="k">if</span> <span class="p">(</span><span class="n">wTip</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">or</span> <span class="nb">sum</span><span class="p">(</span><span class="n">wTip</span><span class="p">)</span><span class="o">==</span><span class="mf">0.</span><span class="p">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">wTip</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">or</span> <span class="nb">sum</span><span class="p">(</span><span class="n">wTip</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.</span><span class="p">:</span>
         <span class="n">exitstatus</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="k">return</span> <span class="n">exitstatus</span><span class="p">,</span> <span class="kc">None</span>
-
 
     <span class="n">LkOff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">mat_properties</span><span class="o">.</span><span class="n">Cprime</span><span class="p">[</span><span class="n">EltsTipNew</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>

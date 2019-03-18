@@ -79,15 +79,18 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        address (string):               -- the folder address containing the saved files. If it is not provided,</span>
-<span class="sd">                                            simulation from the default folder (_simulation_data_PyFrac) will be loaded.</span>
+<span class="sd">                                           simulation from the default folder (_simulation_data_PyFrac) will be loaded.</span>
 <span class="sd">        sim_name (string):              -- the simulation name from which the fractures are to be loaded. If not</span>
-<span class="sd">                                            provided, simulation with the default name (Simulation) will be loaded.</span>
+<span class="sd">                                           provided, simulation with the default name (Simulation) will be loaded.</span>
 <span class="sd">        time_period (float):            -- time period between two successive fractures to be loaded. if not provided,</span>
-<span class="sd">                                            all fractures will be loaded.</span>
+<span class="sd">                                           all fractures will be loaded.</span>
 <span class="sd">        time_srs (ndarray):             -- if provided, the fracture stored at the closest time after the given times</span>
-<span class="sd">                                            will be loaded.</span>
+<span class="sd">                                           will be loaded.</span>
+<span class="sd">        step_size (int):                -- the number of time steps to skip before loading the next fracture. If not</span>
+<span class="sd">                                           provided, all of the fractures will be loaded.</span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        (list):                         -- a list of fractures.</span>
+<span class="sd">        fracture_list(list):            -- a list of fractures.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -185,7 +188,22 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="get_fracture_variable"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_variable</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This function returns the required variable from a fracture list.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        fracture_list (list):       -- the fracture list from which the variable is to be extracted.</span>
+<span class="sd">        variable (string):          -- the variable to be extracted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                        :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">        edge (int):                 -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                       are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                       value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">        return_time (bool):         -- if True, the times at which the fractures are stored will also be returned.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - variable_list (list)      -- a list containing the extracted variable from each of the fracture. The \</span>
+<span class="sd">                                       dimension and type of each member of the list depends upon the variable type.</span>
+<span class="sd">        - time_srs (list)           -- a list of times at which the fractures are stored.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">variable_list</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">time_srs</span> <span class="o">=</span> <span class="p">[]</span>
@@ -336,6 +354,24 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="get_fracture_variable_at_point"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_variable_at_point</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This function returns the required variable from a fracture list at the given point.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fracture_list (list):       -- the fracture list from which the variable is to be extracted.</span>
+<span class="sd">            variable (string):          -- the variable to be extracted. See :py:data:`supported_variables` of the</span>
+<span class="sd">                                            :py:mod:`Labels` module for a list of supported variables.</span>
+<span class="sd">            point (list or ndarray):    -- the point at which the given variable is plotted against time [x, y].</span>
+<span class="sd">            edge (int):                 -- the edge of the cell that will be plotted. This is for variables that</span>
+<span class="sd">                                           are evaluated on the cell edges instead of cell center. It can have a</span>
+<span class="sd">                                           value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</span>
+<span class="sd">            return_time (bool):         -- if True, the times at which the fractures are stored will also be returned.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            - variable_list (list)      -- a list containing the extracted variable from each of the fracture. The \</span>
+<span class="sd">                                           dimension and type of each member of the list depends upon the variable type.</span>
+<span class="sd">            - time_srs (list)           -- a list of times at which the fractures are stored.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
@@ -371,7 +407,24 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="get_fracture_variable_slice_interpolated"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable_slice_interpolated">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_variable_slice_interpolated</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point2</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns the given fracture variable on a given slice of the domain. Two points are to be given that</span>
+<span class="sd">    will be joined to form the slice. The values on the slice are interpolated from the values available on the cell</span>
+<span class="sd">    centers.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):        -- the value of the variable on each cell of the domain.</span>
+<span class="sd">        mesh (CartesianMesh):       -- the CartesianMesh object describing the mesh.</span>
+<span class="sd">        point1 (list or ndarray):   -- the left point from which the slice should pass [x, y].</span>
+<span class="sd">        point1 (list or ndarray):   -- the right point from which the slice should pass [x, y].</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - value_samp_points (ndarray)   -- the values of the variable at the sampling points given by sampling_line \</span>
+<span class="sd">                                           (see below).</span>
+<span class="sd">        - sampling_line (ndarray)       -- the distance of the point where the value is provided from the center of\</span>
+<span class="sd">                                           the slice.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable value should be provided in the form of numpy array with the size equal to the &quot;</span>
                          <span class="s2">&quot;number of elements in the mesh!&quot;</span><span class="p">)</span>
@@ -438,6 +491,28 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="get_fracture_variable_slice_cell_center"><a class="viewcode-back" href="../doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable_slice_cell_center">[docs]</a><span class="k">def</span> <span class="nf">get_fracture_variable_slice_cell_center</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns the given fracture variable on a given slice of the domain. Two slice is constructed from the</span>
+<span class="sd">    given point and the orientation. The values on the slice are taken from the cell centers.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_value (ndarray):        -- the value of the variable on each cell of the domain.</span>
+<span class="sd">        mesh (CartesianMesh):       -- the CartesianMesh object describing the mesh.</span>
+<span class="sd">        point (list or ndarray):    -- the point from which the slice should pass [x, y]. If it does not lie on a cell</span>
+<span class="sd">                                       center, the closest cell center will be taken. By default, [0., 0.] will be</span>
+<span class="sd">                                       taken.</span>
+<span class="sd">        orientation (string):       -- the orientation according to which the slice is made in the case the</span>
+<span class="sd">                                       plotted values are not interpolated and are taken at the cell centers.</span>
+<span class="sd">                                       Any of the four (&#39;vertical&#39;, &#39;horizontal&#39;, &#39;ascending&#39; and &#39;descending&#39;)</span>
+<span class="sd">                                       orientation can be used.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - var_value (ndarray)       -- the values of the variable at the sampling points given by sampling_line \</span>
+<span class="sd">                                       (see below).</span>
+<span class="sd">        - sampling_line (ndarray)   -- the distance of the point where the value is provided from the center of\</span>
+<span class="sd">                                       the slice.</span>
+<span class="sd">        - sampling_cells (ndarray)  -- the cells on the mesh along with the slice is made.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable value should be provided in the form of numpy array with the size equal to the &quot;</span>

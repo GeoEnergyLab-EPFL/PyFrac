@@ -106,7 +106,7 @@
 <span class="sd">        FreeSurfDepth (float):      -- the depth of the fracture from the free surface.</span>
 <span class="sd">        TI_PlaneAngle (float):      -- the angle of the plane of the fracture with respect to the free surface.</span>
 <span class="sd">        K1cFunc (function):         -- the function giving the toughness on the domain. It takes one argument (angle) in</span>
-<span class="sd">                                        case of anisotropic toughness and two arguments (x, y) in case of hetrogenous</span>
+<span class="sd">                                        case of anisotropic toughness and two arguments (x, y) in case of heterogeneous</span>
 <span class="sd">                                        toughness. The function is also used to get the toughness if the domain is</span>
 <span class="sd">                                        re-meshed.</span>
 <span class="sd">        SigmaOFunc (function):      -- the function giving the in-situ stress on the domain. It should takes two</span>
@@ -253,9 +253,8 @@
 <span class="sd">    Class defining the fluid properties.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        viscosity (ndarray):     -- viscosity of the fluid (note its different from local viscosity, see</span>
-<span class="sd">                                    fracture class for local viscosity)</span>
-<span class="sd">        density (float):         -- density of the fluid</span>
+<span class="sd">        viscosity (ndarray):     -- viscosity of the fluid .</span>
+<span class="sd">        density (float):         -- density of the fluid.</span>
 <span class="sd">        rheology (string):       -- string specifying rheology of the fluid. Possible options:</span>
 
 <span class="sd">                                     - &quot;Newtonian&quot;</span>
@@ -323,28 +322,37 @@
 
 <span class="sd">                                         Attention:</span>
 <span class="sd">                                            The first time should be zero. The corresponding injection rate would</span>
-<span class="sd">                                            be taken for initialization of the fracture with an analytical solution.</span>
+<span class="sd">                                            be taken for initialization of the fracture with an analytical solution,</span>
+<span class="sd">                                            if required.</span>
 <span class="sd">        mesh (CartesianMesh):         -- the CartesianMesh object defining mesh.</span>
-<span class="sd">        source_coordinates (ndarray): -- lists or ndarray with a length of 2, specifying the x and y coordinates</span>
-<span class="sd">                                         of the injection point coordinates.</span>
-<span class="sd">        source_func (function):       -- the source function providing the injection rate. The function should take</span>
-<span class="sd">                                         the x and y coordinates and provide the injection rate at those coordiantes</span>
-<span class="sd">                                         at the given time. It should be able to be called with three parameters</span>
-<span class="sd">                                         (x, y, time).</span>
+<span class="sd">        source_coordinates (ndarray): -- list or ndarray with a length of 2, specifying the x and y coordinates</span>
+<span class="sd">                                         of the injection point. Not used if source_loc_func is provided (See below).</span>
+<span class="sd">        source_loc_func (function):   -- the source location function is used to get the elements in which the fluid is</span>
+<span class="sd">                                         injected. It should take the x and y coordinates and return True or False</span>
+<span class="sd">                                         depending upon if the source is present on these coordinates. This function is</span>
+<span class="sd">                                         evaluated at each of the cell centre coordinates to determine if the cell is</span>
+<span class="sd">                                         a source element. It should have to arguments (x, y) and return True or False.</span>
+<span class="sd">                                         It is also called upon re-meshing to get the source elements on the coarse</span>
+<span class="sd">                                         mesh.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection</span>
-<span class="sd">                                         rates (row 1). This would be ignored it sourceFunc is provided.</span>
+<span class="sd">                                         rates (row 1). The time series provide the time when the injection rate</span>
+<span class="sd">                                         changes.</span>
 <span class="sd">        sourceCoordinates (ndarray):  -- array with a single row and two columns specifying the x and y coordinate</span>
-<span class="sd">                                         of the injection point coordinates.</span>
+<span class="sd">                                         of the injection point coordinates. If there are more than one source elements,</span>
+<span class="sd">                                         the average is taken to get an estimate injection cell at the center.</span>
 <span class="sd">        sourceElem (ndarray):         -- the element(s) where the fluid is injected in the cartesian mesh.</span>
-<span class="sd">        sourceFunc (function):        -- the source function providing the injection rate. The function should take</span>
-<span class="sd">                                         the x and y coordinates and provide the injection rate at those coordinates</span>
-<span class="sd">                                         at the given time. It should be able to be called with three parameters</span>
-<span class="sd">                                         (x, y, time).</span>
+<span class="sd">        sourceElemFunc (function):    -- the source location function is used to get the elements in which the fluid is</span>
+<span class="sd">                                         injected. It should take the x and y coordinates and return True or False</span>
+<span class="sd">                                         depending upon if the source is present on these coordinates. This function is</span>
+<span class="sd">                                         evaluated at each of the cell centre coordinates to determine if the cell is</span>
+<span class="sd">                                         a source element. It should have to arguments (x, y) and return True or False.</span>
+<span class="sd">                                         It is also called upon re-meshing to get the source elements on the coarse</span>
+<span class="sd">                                         mesh.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">source_coordinates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">source_coordinates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_loc_func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The constructor of the InjectionProperties class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -361,20 +369,28 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">rate</span><span class="p">]])</span>
 
-        <span class="k">if</span> <span class="n">source_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_coordinates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="n">source_coordinates</span>
+        <span class="k">if</span> <span class="n">source_loc_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">source_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_coordinates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Setting the source coordinates to the closest cell center...&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># error</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid source coordinates. Correct format: a list or numpy array with a single row&#39;</span>
+                                     <span class="s1">&#39; and two columns to </span><span class="se">\n</span><span class="s1"> specify x and y coordinate of the source e.g.&#39;</span>
+                                     <span class="s1">&#39; np.array([x_coordinate, y_coordinate])&#39;</span><span class="p">)</span>
+
             <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># error</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid source coordinates. Correct format: a list or numpy array with a single row&#39;</span>
-                                 <span class="s1">&#39; and two columns to </span><span class="se">\n</span><span class="s1"> specify x and y coordinate of the source e.g.&#39;</span>
-                                 <span class="s1">&#39; np.array([x_coordinate, y_coordinate])&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
 
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Injection point: &quot;</span> <span class="o">+</span> <span class="s1">&#39;(x, y)= (&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">+</span>
+                                        <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sourceFunc</span> <span class="o">=</span> <span class="n">source_func</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span> <span class="o">=</span> <span class="n">source_loc_func</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">1</span><span class="p">])]</span>
 
     <span class="c1">#-------------------------------------------------------------------------------------------------------------------</span>
 
@@ -391,14 +407,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">Qin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceFunc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># index of current time in the time series (first row) of the injection rate array</span>
-            <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">CurrentRate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
-            <span class="n">Qin</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">]</span> <span class="o">=</span> <span class="n">CurrentRate</span>  <span class="c1"># point source</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
-                <span class="n">Qin</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceFunc</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">time</span><span class="p">)</span>
+        <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">currentRate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">injectionRate</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current injection rate</span>
+        <span class="n">Qin</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">]</span> <span class="o">=</span> <span class="n">currentRate</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">Qin</span></div>
 
@@ -411,7 +422,17 @@
 <span class="sd">            new_mesh (CartesianMesh):   -- the CartesianMesh object describing the new coarse mesh.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="n">new_mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div></div>
+        <span class="c1"># update source elements according to the new mesh.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">actv_cells</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">new_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+                    <span class="n">actv_cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">actv_cells</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;There is no source element to inject. Note that the source element function is &quot;</span>
+                                 <span class="s2">&quot;evaluated at the cell centers to check for source cells.&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="n">actv_cells</span></div></div>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 

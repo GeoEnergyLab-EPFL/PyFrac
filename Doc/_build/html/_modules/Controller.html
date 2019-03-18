@@ -54,7 +54,7 @@
 <span class="kn">from</span> <span class="nn">src.HFAnalyticalSolutions</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.CartesianMesh</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">src.TimeStepping</span> <span class="k">import</span> <span class="n">attempt_time_step</span>
-<span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="k">import</span> <span class="n">plot_footprint_analytical</span><span class="p">,</span> <span class="n">plot_analytical_solution</span>
+<span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="k">import</span> <span class="n">plot_footprint_analytical</span><span class="p">,</span> <span class="n">plot_analytical_solution</span><span class="p">,</span> <span class="n">plot_injection_source</span>
 <span class="kn">from</span> <span class="nn">src.Symmetry</span> <span class="k">import</span> <span class="n">load_isotropic_elasticity_matrix_symmetric</span>
 
 <span class="kn">import</span> <span class="nn">copy</span>
@@ -497,10 +497,12 @@
                                                                        <span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
                                                                        <span class="bp">self</span><span class="o">.</span><span class="n">fluid_prop</span><span class="p">,</span>
                                                                        <span class="p">[</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">time</span><span class="p">],</span>
+                                                                       <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
                                                                        <span class="n">h</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
                                                                        <span class="n">samp_cell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                                                        <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
-                                                                       <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">)</span>
+                                                                       <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">aspectRatio</span><span class="p">,</span>
+                                                                       <span class="n">inj_point</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">)</span>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fr_advanced</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span>
                                                                        <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
@@ -537,6 +539,11 @@
                                                                        <span class="n">projection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotProj</span><span class="p">,</span>
                                                                        <span class="n">mat_properties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
                                                                        <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+                    <span class="c1"># plotting source elements</span>
+                    <span class="n">plot_injection_source</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">injection_prop</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span>
+                                          <span class="n">fig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+
                     <span class="c1"># plotting closed cells</span>
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Fr_advanced</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span>
@@ -605,7 +612,7 @@
             <span class="n">dist_Inj_pnt</span> <span class="o">=</span> <span class="p">(</span><span class="n">tipVrtxCoord</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">tipVrtxCoord</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">l</span>
             <span class="c1"># the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current</span>
             <span class="c1"># maximum length</span>
-            <span class="n">TS_cell_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">0.08</span> <span class="o">*</span> <span class="n">dist_Inj_pnt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">))</span>
+            <span class="n">TS_cell_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">0.2</span> <span class="o">*</span> <span class="n">dist_Inj_pnt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">v</span><span class="p">))</span>
 
             <span class="c1"># the time step evaluated by restricting the fraction of the cell that would be traversed in the time step.</span>
             <span class="c1"># e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the</span>

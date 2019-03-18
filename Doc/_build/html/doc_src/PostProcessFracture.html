@@ -58,22 +58,126 @@
 <dl class="function">
 <dt id="PostProcessFracture.get_fracture_variable">
 <code class="descclassname">PostProcessFracture.</code><code class="descname">get_fracture_variable</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable</em>, <em>edge=4</em>, <em>return_time=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#get_fracture_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.get_fracture_variable" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function returns the required variable from a fracture list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the fracture list from which the variable is to be extracted.</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be extracted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
+<li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
+are evaluated on the cell edges instead of cell center. It can have a
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</li>
+<li><strong>return_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the times at which the fractures are stored will also be returned.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>variable_list (list)      – a list containing the extracted variable from each of the fracture. The                                        dimension and type of each member of the list depends upon the variable type.</li>
+<li>time_srs (list)           – a list of times at which the fractures are stored.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="PostProcessFracture.get_fracture_variable_at_point">
 <code class="descclassname">PostProcessFracture.</code><code class="descname">get_fracture_variable_at_point</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable</em>, <em>point</em>, <em>edge=4</em>, <em>return_time=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#get_fracture_variable_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.get_fracture_variable_at_point" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function returns the required variable from a fracture list at the given point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the fracture list from which the variable is to be extracted.</li>
+<li><strong>variable</strong> (<em>string</em>) – – the variable to be extracted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point at which the given variable is plotted against time [x, y].</li>
+<li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
+are evaluated on the cell edges instead of cell center. It can have a
+value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottom, 3-&gt;top, 4-&gt;average).</li>
+<li><strong>return_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, the times at which the fractures are stored will also be returned.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>variable_list (list)      – a list containing the extracted variable from each of the fracture. The                                            dimension and type of each member of the list depends upon the variable type.</li>
+<li>time_srs (list)           – a list of times at which the fractures are stored.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="PostProcessFracture.get_fracture_variable_slice_cell_center">
 <code class="descclassname">PostProcessFracture.</code><code class="descname">get_fracture_variable_slice_cell_center</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point=None</em>, <em>orientation='horizontal'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#get_fracture_variable_slice_cell_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.get_fracture_variable_slice_cell_center" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function returns the given fracture variable on a given slice of the domain. Two slice is constructed from the
+given point and the orientation. The values on the slice are taken from the cell centers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var_value</strong> (<em>ndarray</em>) – – the value of the variable on each cell of the domain.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the CartesianMesh object describing the mesh.</li>
+<li><strong>point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the point from which the slice should pass [x, y]. If it does not lie on a cell
+center, the closest cell center will be taken. By default, [0., 0.] will be
+taken.</li>
+<li><strong>orientation</strong> (<em>string</em>) – – the orientation according to which the slice is made in the case the
+plotted values are not interpolated and are taken at the cell centers.
+Any of the four (‘vertical’, ‘horizontal’, ‘ascending’ and ‘descending’)
+orientation can be used.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>var_value (ndarray)       – the values of the variable at the sampling points given by sampling_line                                        (see below).</li>
+<li>sampling_line (ndarray)   – the distance of the point where the value is provided from the center of                                       the slice.</li>
+<li>sampling_cells (ndarray)  – the cells on the mesh along with the slice is made.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="PostProcessFracture.get_fracture_variable_slice_interpolated">
 <code class="descclassname">PostProcessFracture.</code><code class="descname">get_fracture_variable_slice_interpolated</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>point1=None</em>, <em>point2=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PostProcessFracture.html#get_fracture_variable_slice_interpolated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PostProcessFracture.get_fracture_variable_slice_interpolated" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This function returns the given fracture variable on a given slice of the domain. Two points are to be given that
+will be joined to form the slice. The values on the slice are interpolated from the values available on the cell
+centers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var_value</strong> (<em>ndarray</em>) – – the value of the variable on each cell of the domain.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the CartesianMesh object describing the mesh.</li>
+<li><strong>point1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the left point from which the slice should pass [x, y].</li>
+<li><strong>point1</strong> – – the right point from which the slice should pass [x, y].</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>value_samp_points (ndarray)   – the values of the variable at the sampling points given by sampling_line                                            (see below).</li>
+<li>sampling_line (ndarray)       – the distance of the point where the value is provided from the center of                                           the slice.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="PostProcessFracture.load_fractures">
@@ -93,13 +197,15 @@ provided, simulation with the default name (Simulation) will be loaded.</li>
 all fractures will be loaded.</li>
 <li><strong>time_srs</strong> (<em>ndarray</em>) – – if provided, the fracture stored at the closest time after the given times
 will be loaded.</li>
+<li><strong>step_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the number of time steps to skip before loading the next fracture. If not
+provided, all of the fractures will be loaded.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– a list of fractures.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">fracture_list(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</p>
 </td>
 </tr>
 </tbody>

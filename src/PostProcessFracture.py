@@ -37,15 +37,18 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
     Args:
         address (string):               -- the folder address containing the saved files. If it is not provided,
-                                            simulation from the default folder (_simulation_data_PyFrac) will be loaded.
+                                           simulation from the default folder (_simulation_data_PyFrac) will be loaded.
         sim_name (string):              -- the simulation name from which the fractures are to be loaded. If not
-                                            provided, simulation with the default name (Simulation) will be loaded.
+                                           provided, simulation with the default name (Simulation) will be loaded.
         time_period (float):            -- time period between two successive fractures to be loaded. if not provided,
-                                            all fractures will be loaded.
+                                           all fractures will be loaded.
         time_srs (ndarray):             -- if provided, the fracture stored at the closest time after the given times
-                                            will be loaded.
+                                           will be loaded.
+        step_size (int):                -- the number of time steps to skip before loading the next fracture. If not
+                                           provided, all of the fractures will be loaded.
+
     Returns:
-        (list):                         -- a list of fractures.
+        fracture_list(list):            -- a list of fractures.
 
     """
 
@@ -143,7 +146,22 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
+    """ This function returns the required variable from a fracture list.
 
+    Args:
+        fracture_list (list):       -- the fracture list from which the variable is to be extracted.
+        variable (string):          -- the variable to be extracted. See :py:data:`supported_variables` of the
+                                        :py:mod:`Labels` module for a list of supported variables.
+        edge (int):                 -- the edge of the cell that will be plotted. This is for variables that
+                                       are evaluated on the cell edges instead of cell center. It can have a
+                                       value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
+        return_time (bool):         -- if True, the times at which the fractures are stored will also be returned.
+
+    Returns:
+        - variable_list (list)      -- a list containing the extracted variable from each of the fracture. The \
+                                       dimension and type of each member of the list depends upon the variable type.
+        - time_srs (list)           -- a list of times at which the fractures are stored.
+    """
 
     variable_list = []
     time_srs = []
@@ -294,6 +312,24 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, return_time=True):
+    """ This function returns the required variable from a fracture list at the given point.
+
+        Args:
+            fracture_list (list):       -- the fracture list from which the variable is to be extracted.
+            variable (string):          -- the variable to be extracted. See :py:data:`supported_variables` of the
+                                            :py:mod:`Labels` module for a list of supported variables.
+            point (list or ndarray):    -- the point at which the given variable is plotted against time [x, y].
+            edge (int):                 -- the edge of the cell that will be plotted. This is for variables that
+                                           are evaluated on the cell edges instead of cell center. It can have a
+                                           value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
+            return_time (bool):         -- if True, the times at which the fractures are stored will also be returned.
+
+        Returns:
+            - variable_list (list)      -- a list containing the extracted variable from each of the fracture. The \
+                                           dimension and type of each member of the list depends upon the variable type.
+            - time_srs (list)           -- a list of times at which the fractures are stored.
+
+    """
 
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
@@ -329,7 +365,24 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_variable_slice_interpolated(var_value, mesh, point1=None, point2=None):
+    """
+    This function returns the given fracture variable on a given slice of the domain. Two points are to be given that
+    will be joined to form the slice. The values on the slice are interpolated from the values available on the cell
+    centers.
 
+    Args:
+        var_value (ndarray):        -- the value of the variable on each cell of the domain.
+        mesh (CartesianMesh):       -- the CartesianMesh object describing the mesh.
+        point1 (list or ndarray):   -- the left point from which the slice should pass [x, y].
+        point1 (list or ndarray):   -- the right point from which the slice should pass [x, y].
+
+    Returns:
+        - value_samp_points (ndarray)   -- the values of the variable at the sampling points given by sampling_line \
+                                           (see below).
+        - sampling_line (ndarray)       -- the distance of the point where the value is provided from the center of\
+                                           the slice.
+
+    """
     if not isinstance(var_value, np.ndarray):
         raise ValueError("Variable value should be provided in the form of numpy array with the size equal to the "
                          "number of elements in the mesh!")
@@ -396,6 +449,28 @@ def get_fracture_variable_slice_interpolated(var_value, mesh, point1=None, point
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orientation='horizontal'):
+    """
+    This function returns the given fracture variable on a given slice of the domain. Two slice is constructed from the
+    given point and the orientation. The values on the slice are taken from the cell centers.
+
+    Args:
+        var_value (ndarray):        -- the value of the variable on each cell of the domain.
+        mesh (CartesianMesh):       -- the CartesianMesh object describing the mesh.
+        point (list or ndarray):    -- the point from which the slice should pass [x, y]. If it does not lie on a cell
+                                       center, the closest cell center will be taken. By default, [0., 0.] will be
+                                       taken.
+        orientation (string):       -- the orientation according to which the slice is made in the case the
+                                       plotted values are not interpolated and are taken at the cell centers.
+                                       Any of the four ('vertical', 'horizontal', 'ascending' and 'descending')
+                                       orientation can be used.
+
+    Returns:
+        - var_value (ndarray)       -- the values of the variable at the sampling points given by sampling_line \
+                                       (see below).
+        - sampling_line (ndarray)   -- the distance of the point where the value is provided from the center of\
+                                       the slice.
+        - sampling_cells (ndarray)  -- the cells on the mesh along with the slice is made.
+    """
 
     if not isinstance(var_value, np.ndarray):
         raise ValueError("Variable value should be provided in the form of numpy array with the size equal to the "

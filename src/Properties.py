@@ -64,7 +64,7 @@ class MaterialProperties:
         FreeSurfDepth (float):      -- the depth of the fracture from the free surface.
         TI_PlaneAngle (float):      -- the angle of the plane of the fracture with respect to the free surface.
         K1cFunc (function):         -- the function giving the toughness on the domain. It takes one argument (angle) in
-                                        case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
+                                        case of anisotropic toughness and two arguments (x, y) in case of heterogeneous
                                         toughness. The function is also used to get the toughness if the domain is
                                         re-meshed.
         SigmaOFunc (function):      -- the function giving the in-situ stress on the domain. It should takes two
@@ -211,9 +211,8 @@ class FluidProperties:
     Class defining the fluid properties.
 
     Arguments:
-        viscosity (ndarray):     -- viscosity of the fluid (note its different from local viscosity, see
-                                    fracture class for local viscosity)
-        density (float):         -- density of the fluid
+        viscosity (ndarray):     -- viscosity of the fluid .
+        density (float):         -- density of the fluid.
         rheology (string):       -- string specifying rheology of the fluid. Possible options:
 
                                      - "Newtonian"
@@ -281,28 +280,37 @@ class InjectionProperties:
 
                                          Attention:
                                             The first time should be zero. The corresponding injection rate would
-                                            be taken for initialization of the fracture with an analytical solution.
+                                            be taken for initialization of the fracture with an analytical solution,
+                                            if required.
         mesh (CartesianMesh):         -- the CartesianMesh object defining mesh.
-        source_coordinates (ndarray): -- lists or ndarray with a length of 2, specifying the x and y coordinates
-                                         of the injection point coordinates.
-        source_func (function):       -- the source function providing the injection rate. The function should take
-                                         the x and y coordinates and provide the injection rate at those coordiantes
-                                         at the given time. It should be able to be called with three parameters
-                                         (x, y, time).
+        source_coordinates (ndarray): -- list or ndarray with a length of 2, specifying the x and y coordinates
+                                         of the injection point. Not used if source_loc_func is provided (See below).
+        source_loc_func (function):   -- the source location function is used to get the elements in which the fluid is
+                                         injected. It should take the x and y coordinates and return True or False
+                                         depending upon if the source is present on these coordinates. This function is
+                                         evaluated at each of the cell centre coordinates to determine if the cell is
+                                         a source element. It should have to arguments (x, y) and return True or False.
+                                         It is also called upon re-meshing to get the source elements on the coarse
+                                         mesh.
 
     Attributes:
         injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection
-                                         rates (row 1). This would be ignored it sourceFunc is provided.
+                                         rates (row 1). The time series provide the time when the injection rate
+                                         changes.
         sourceCoordinates (ndarray):  -- array with a single row and two columns specifying the x and y coordinate
-                                         of the injection point coordinates.
+                                         of the injection point coordinates. If there are more than one source elements,
+                                         the average is taken to get an estimate injection cell at the center.
         sourceElem (ndarray):         -- the element(s) where the fluid is injected in the cartesian mesh.
-        sourceFunc (function):        -- the source function providing the injection rate. The function should take
-                                         the x and y coordinates and provide the injection rate at those coordinates
-                                         at the given time. It should be able to be called with three parameters
-                                         (x, y, time).
+        sourceElemFunc (function):    -- the source location function is used to get the elements in which the fluid is
+                                         injected. It should take the x and y coordinates and return True or False
+                                         depending upon if the source is present on these coordinates. This function is
+                                         evaluated at each of the cell centre coordinates to determine if the cell is
+                                         a source element. It should have to arguments (x, y) and return True or False.
+                                         It is also called upon re-meshing to get the source elements on the coarse
+                                         mesh.
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None, source_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None):
         """
         The constructor of the InjectionProperties class.
         """
@@ -319,7 +327,7 @@ class InjectionProperties:
         else:
             self.injectionRate = np.asarray([[0], [rate]])
 
-        if source_func is None:
+        if source_loc_func is None:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
                     print("Setting the source coordinates to the closest cell center...")
@@ -337,7 +345,7 @@ class InjectionProperties:
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1]) + ')')
             self.sourceElemFunc = None
         else:
-            self.sourceElemFunc = source_func
+            self.sourceElemFunc = source_loc_func
             self.remesh(mesh)
         self.sourceCoordinates = [np.mean(mesh.CenterCoor[self.sourceElem, 0]),
                                   np.mean(mesh.CenterCoor[self.sourceElem, 1])]

@@ -54,9 +54,8 @@ All rights reserved. See the LICENSE.TXT file for more details.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>viscosity</strong> (<em>ndarray</em>) – – viscosity of the fluid (note its different from local viscosity, see
-fracture class for local viscosity)</li>
-<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – density of the fluid</li>
+<li><strong>viscosity</strong> (<em>ndarray</em>) – – viscosity of the fluid .</li>
+<li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – density of the fluid.</li>
 <li><strong>rheology</strong> (<em>string</em>) – <p>– string specifying rheology of the fluid. Possible options:</p>
 <ul>
 <li>”Newtonian”</li>
@@ -161,7 +160,7 @@ fracture class for local viscosity).</p>
 
 <dl class="class">
 <dt id="Properties.InjectionProperties">
-<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">InjectionProperties</code><span class="sig-paren">(</span><em>rate</em>, <em>mesh</em>, <em>source_coordinates=None</em>, <em>source_func=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#InjectionProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.InjectionProperties" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">InjectionProperties</code><span class="sig-paren">(</span><em>rate</em>, <em>mesh</em>, <em>source_coordinates=None</em>, <em>source_loc_func=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#InjectionProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.InjectionProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Class defining the injection parameters.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -174,16 +173,20 @@ rates (row 1). The times are instant where the injection rate changes.</p>
 <div class="admonition attention">
 <p class="first admonition-title">Attention</p>
 <p class="last">The first time should be zero. The corresponding injection rate would
-be taken for initialization of the fracture with an analytical solution.</p>
+be taken for initialization of the fracture with an analytical solution,
+if required.</p>
 </div>
 </li>
 <li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the CartesianMesh object defining mesh.</li>
-<li><strong>source_coordinates</strong> (<em>ndarray</em>) – – lists or ndarray with a length of 2, specifying the x and y coordinates
-of the injection point coordinates.</li>
-<li><strong>source_func</strong> (<em>function</em>) – – the source function providing the injection rate. The function should take
-the x and y coordinates and provide the injection rate at those coordiantes
-at the given time. It should be able to be called with three parameters
-(x, y, time).</li>
+<li><strong>source_coordinates</strong> (<em>ndarray</em>) – – list or ndarray with a length of 2, specifying the x and y coordinates
+of the injection point. Not used if source_loc_func is provided (See below).</li>
+<li><strong>source_loc_func</strong> (<em>function</em>) – – the source location function is used to get the elements in which the fluid is
+injected. It should take the x and y coordinates and return True or False
+depending upon if the source is present on these coordinates. This function is
+evaluated at each of the cell centre coordinates to determine if the cell is
+a source element. It should have to arguments (x, y) and return True or False.
+It is also called upon re-meshing to get the source elements on the coarse
+mesh.</li>
 </ul>
 </td>
 </tr>
@@ -193,7 +196,8 @@ at the given time. It should be able to be called with three parameters
 <dt id="Properties.InjectionProperties.injectionRate">
 <code class="descname">injectionRate</code><a class="headerlink" href="#Properties.InjectionProperties.injectionRate" title="Permalink to this definition">¶</a></dt>
 <dd><p>– array specifying the time series (row 0) and the corresponding injection
-rates (row 1). This would be ignored it sourceFunc is provided.</p>
+rates (row 1). The time series provide the time when the injection rate
+changes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -208,7 +212,8 @@ rates (row 1). This would be ignored it sourceFunc is provided.</p>
 <dt id="Properties.InjectionProperties.sourceCoordinates">
 <code class="descname">sourceCoordinates</code><a class="headerlink" href="#Properties.InjectionProperties.sourceCoordinates" title="Permalink to this definition">¶</a></dt>
 <dd><p>– array with a single row and two columns specifying the x and y coordinate
-of the injection point coordinates.</p>
+of the injection point coordinates. If there are more than one source elements,
+the average is taken to get an estimate injection cell at the center.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -234,12 +239,15 @@ of the injection point coordinates.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Properties.InjectionProperties.sourceFunc">
-<code class="descname">sourceFunc</code><a class="headerlink" href="#Properties.InjectionProperties.sourceFunc" title="Permalink to this definition">¶</a></dt>
-<dd><p>– the source function providing the injection rate. The function should take
-the x and y coordinates and provide the injection rate at those coordinates
-at the given time. It should be able to be called with three parameters
-(x, y, time).</p>
+<dt id="Properties.InjectionProperties.sourceElemFunc">
+<code class="descname">sourceElemFunc</code><a class="headerlink" href="#Properties.InjectionProperties.sourceElemFunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>– the source location function is used to get the elements in which the fluid is
+injected. It should take the x and y coordinates and return True or False
+depending upon if the source is present on these coordinates. This function is
+evaluated at each of the cell centre coordinates to determine if the cell is
+a source element. It should have to arguments (x, y) and return True or False.
+It is also called upon re-meshing to get the source elements on the coarse
+mesh.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -581,7 +589,7 @@ into account.</li>
 <dt id="Properties.MaterialProperties.K1cFunc">
 <code class="descname">K1cFunc</code><a class="headerlink" href="#Properties.MaterialProperties.K1cFunc" title="Permalink to this definition">¶</a></dt>
 <dd><p>– the function giving the toughness on the domain. It takes one argument (angle) in
-case of anisotropic toughness and two arguments (x, y) in case of hetrogenous
+case of anisotropic toughness and two arguments (x, y) in case of heterogeneous
 toughness. The function is also used to get the toughness if the domain is
 re-meshed.</p>
 <table class="docutils field-list" frame="void" rules="none">
