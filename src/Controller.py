@@ -12,7 +12,7 @@ from src.Elasticity import *
 from src.HFAnalyticalSolutions import *
 from src.CartesianMesh import *
 from src.TimeStepping import attempt_time_step
-from src.Visualization import plot_footprint_analytical, plot_analytical_solution
+from src.Visualization import plot_footprint_analytical, plot_analytical_solution, plot_injection_source
 from src.Symmetry import load_isotropic_elasticity_matrix_symmetric
 
 import copy
@@ -455,10 +455,12 @@ class Controller:
                                                                        self.injection_prop,
                                                                        self.fluid_prop,
                                                                        [Fr_advanced.time],
+                                                                       fig=self.Figures[indx],
                                                                        h=self.sim_prop.height,
                                                                        samp_cell=None,
                                                                        plot_prop=plot_prop,
-                                                                       gamma=self.sim_prop.aspectRatio)
+                                                                       gamma=self.sim_prop.aspectRatio,
+                                                                       inj_point=self.injection_prop.sourceCoordinates)
 
                         self.Figures[indx] = Fr_advanced.plot_fracture(variable='mesh',
                                                                        mat_properties=self.solid_prop,
@@ -495,6 +497,11 @@ class Controller:
                                                                        projection=self.sim_prop.plotProj,
                                                                        mat_properties=self.solid_prop,
                                                                        fig=self.Figures[indx])
+                    # plotting source elements
+                    plot_injection_source(self.injection_prop,
+                                          self.fracture.mesh,
+                                          fig=self.Figures[indx])
+
                     # plotting closed cells
                     if len(Fr_advanced.closed) > 0:
                         plot_prop.lineColor = 'r'
@@ -563,7 +570,7 @@ class Controller:
             dist_Inj_pnt = (tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + self.fracture.l
             # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current
             # maximum length
-            TS_cell_length = min(abs(0.08 * dist_Inj_pnt / self.fracture.v))
+            TS_cell_length = min(abs(0.2 * dist_Inj_pnt / self.fracture.v))
 
             # the time step evaluated by restricting the fraction of the cell that would be traversed in the time step.
             # e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half of the

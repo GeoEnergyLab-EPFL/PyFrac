@@ -9,8 +9,6 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import numpy as np
 import math
-import skfmm
-from src.HFAnalyticalSolutions import shift_injection_point
 from src.LevelSet import SolveFMM, reconstruct_front, UpdateLists
 from src.VolIntegral import Integral_over_cell
 from src.Symmetry import *

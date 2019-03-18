@@ -1415,7 +1415,7 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
 
 
 def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_srs=None, h=None, samp_cell=None,
-                              fig=None, plot_prop=None, gamma=None):
+                              fig=None, plot_prop=None, gamma=None, inj_point=None):
     """
     This function plots footprint of the analytical solution fracture. It can be used to compare simulation results by
     superimposing on the figure obtained from the footprint plot.
@@ -1453,6 +1453,8 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
         fig (figure):                           -- figure object to superimpose the image.
         plot_prop (PlotProperties):             -- the properties to be used for the plot.
         gamma (float):                          -- the aspect ratio, used in the case of elliptical fracture.
+        inj_point (list):                       -- a list of size 2, giving the x and y coordinate of the injection
+                                                   point.
 
     Returns:
         (Figure):                               -- A Figure object that can be used superimpose further plots.
@@ -1477,7 +1479,8 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
                                          time_srs=time_srs,
                                          h=h,
                                          samp_cell=samp_cell,
-                                         gamma=gamma)
+                                         gamma=gamma,
+                                         inj_point=inj_point)
 
     for i in footprint_patches:
         ax.add_patch(i)
@@ -1493,8 +1496,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                              projection='2D', time_srs=None, length_srs=None, h=None, samp_cell=None, plot_prop=None,
                              labels=None, contours_at=None, gamma=None):
     """
-    This function plots slice of the given analytical solution. It can be used to compare simulation results by
-    superimposing on the figure obtained from the slice plot function.
+    This function plots the analytical solution according to the given regime. It can be used to compare simulation
+    results by superimposing on the figure obtained from the plot function.
 
     Args:
         regime (string):                        -- the string specifying the limiting case solution to be plotted. The
@@ -1562,7 +1565,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                         samp_cell=samp_cell,
                                         fig=fig,
                                         plot_prop=plot_prop,
-                                        gamma=gamma)
+                                        gamma=gamma,
+                                        inj_point=inj_prop.sourceCoordinates)
     else:
 
         if plot_prop is None:
@@ -1662,7 +1666,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
 
 def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, fluid_prop=None, time_srs=None,
-                                         h=None, samp_cell=None, gamma=None):
+                                         h=None, samp_cell=None, gamma=None, inj_point=None):
     """ This function returns footprint of the analytical solution in the form of patches"""
 
     if time_srs is None:
@@ -1695,6 +1699,8 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
         Kprime = mat_prop.Kprime[samp_cell]
         Cprime = mat_prop.Cprime[samp_cell]
 
+    if regime is 'PKN' and h is None:
+        raise ValueError("Fracture height is required to plot PKN fracture!")
 
     return_pathces = []
     for i in time_srs:
@@ -1710,20 +1716,22 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
                                                           density=density,
                                                           gamma=gamma)
 
+        if inj_point is None:
+            inj_point = [0., 0.]
 
         if regime in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):
-            return_pathces.append(mpatches.Circle((0., 0.),
+            return_pathces.append(mpatches.Circle((inj_point[0], inj_point[1]),
                                    x_len,
                                    edgecolor=plot_prop.lineColorAnal,
                                    facecolor='none'))
         elif regime in ('PKN', 'KGD_K'):
-            return_pathces.append(mpatches.Rectangle(xy=(-x_len, -y_len),
+            return_pathces.append(mpatches.Rectangle(xy=(-x_len + inj_point[0], -y_len + inj_point[1]),
                                       width=2 * x_len,
                                       height=2 * y_len,
                                       edgecolor=plot_prop.lineColorAnal,
                                       facecolor='none'))
         elif regime in ('E_K', 'E_E'):
-            return_pathces.append(mpatches.Ellipse(xy=(0., 0.),
+            return_pathces.append(mpatches.Ellipse(xy=(inj_point[0], inj_point[1]),
                                    width=2 * x_len,
                                    height=2 * y_len,
                                    edgecolor=plot_prop.lineColorAnal,
@@ -1732,6 +1740,27 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
             raise ValueError("Regime not supported.")
 
     return return_pathces
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def plot_injection_source(inj_prop, mesh, fig=None, plot_prop=None):
+    """
+    This function plots the location of the source.
+    """
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    if plot_prop is None:
+        plot_prop = PlotProperties()
+
+    ax.plot(mesh.CenterCoor[inj_prop.sourceElem, 0],
+            mesh.CenterCoor[inj_prop.sourceElem, 1],
+            '.',
+            color=plot_prop.lineColor)
 
 #-----------------------------------------------------------------------------------------------------------------------
 

@@ -159,11 +159,20 @@ class Fracture:
         init_type = init_param[0]
 
         if init_type in ('PKN', 'KGD_K'):
-            (init_type, given_type, given_value, h) = init_param
-            gamma = None
+            if len(init_param) == 4:
+                (init_type, given_type, given_value, h) = init_param
+                gamma = None
+            else:
+                raise ValueError("Four parameters are to be provided for initialization type " + repr(init_type) +
+                                 ". See Fracture class initialization function documentation.")
+
         elif init_type in ('E_E', 'E_K'):
-            (init_type, given_type, given_value, gamma) = init_param
-            h = None
+            if len(init_param) == 4:
+                (init_type, given_type, given_value, gamma) = init_param
+                h = None
+            else:
+                raise ValueError("Four parameters are to be provided for initialization type " + repr(init_type) +
+                             ". See Fracture class initialization function documentation.")
         elif init_type in ('M', 'Mt', 'K', 'Kt', 'MDR'): # radial fracture
             if len(init_param) == 3:
                 (init_type, given_type, given_value) = init_param
@@ -180,7 +189,7 @@ class Fracture:
                                 ". See Fracture class initialization function documentation.")
         else:
             raise ValueError("Given initialization type '" + init_type + "' is not correct. See Fracture class "
-                            "initialization function documentation for possible options.")
+                             "initialization function documentation for possible options.")
 
 
         self.mesh = Mesh
@@ -224,6 +233,8 @@ class Fracture:
                 a = self.initRad * gamma
                 if self.initRad > Mesh.Ly or a > Mesh.Lx:
                     raise ValueError("The axes length of the elliptical fracture is larger than domain!")
+                elif self.initRad < 2 * Mesh.hx or h < 2 * Mesh.hy:
+                    raise ValueError("The fracture is very small compared to the mesh cell size!")
                 surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, a, self.initRad)
                 surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
                 # get minimum distance from center of the survey cells
@@ -233,6 +244,8 @@ class Fracture:
             elif 'PKN' in init_type or 'KGD' in init_type :
                 if self.initRad > Mesh.Lx or h > Mesh.Ly:
                     raise ValueError("The fracture is larger than domain!")
+                elif self.initRad < 2 * Mesh.hx or h < 2 * Mesh.hy:
+                    raise ValueError("The fracture is very small compared to the mesh cell size!")
                 inner_cells = np.intersect1d(np.where(abs(Mesh.CenterCoor[:, 0]) < self.initRad)[0],
                                              np.where(abs(Mesh.CenterCoor[:, 1]) < h / 2)[0])
                 max_x = max(abs(Mesh.CenterCoor[inner_cells, 0]))
@@ -250,12 +263,12 @@ class Fracture:
                 surv_cells, tmp = shift_injection_point(injection.sourceCoordinates[0],
                                                         injection.sourceCoordinates[1],
                                                         self.mesh,
-                                                        actv=surv_cells)
+                                                        active_elts=surv_cells)
 
                 inner_cells, tmp = shift_injection_point(injection.sourceCoordinates[0],
                                                         injection.sourceCoordinates[1],
                                                         self.mesh,
-                                                        actv=inner_cells)
+                                                        active_elts=inner_cells)
 
         self.EltChannel, self.EltTip, self.EltCrack, self.EltRibbon, self.ZeroVertex, \
         self.CellStatus, self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,

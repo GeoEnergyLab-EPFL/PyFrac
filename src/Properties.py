@@ -319,20 +319,28 @@ class InjectionProperties:
         else:
             self.injectionRate = np.asarray([[0], [rate]])
 
-        if source_coordinates is not None:
-            if len(source_coordinates) == 2:
-                self.sourceCoordinates = source_coordinates
+        if source_func is None:
+            if source_coordinates is not None:
+                if len(source_coordinates) == 2:
+                    print("Setting the source coordinates to the closest cell center...")
+                else:
+                    # error
+                    raise ValueError('Invalid source coordinates. Correct format: a list or numpy array with a single row'
+                                     ' and two columns to \n specify x and y coordinate of the source e.g.'
+                                     ' np.array([x_coordinate, y_coordinate])')
+
             else:
-                # error
-                raise ValueError('Invalid source coordinates. Correct format: a list or numpy array with a single row'
-                                 ' and two columns to \n specify x and y coordinate of the source e.g.'
-                                 ' np.array([x_coordinate, y_coordinate])')
+                self.sourceCoordinates = [0., 0.]
 
+            self.sourceElem = [mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])]
+            print("Injection point: " + '(x, y)= (' + repr(mesh.CenterCoor[self.sourceElem, 0]) +
+                                        ',' + repr(mesh.CenterCoor[self.sourceElem, 1]) + ')')
+            self.sourceElemFunc = None
         else:
-            self.sourceCoordinates = [0., 0.]
-
-        self.sourceElem = mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
-        self.sourceFunc = source_func
+            self.sourceElemFunc = source_func
+            self.remesh(mesh)
+        self.sourceCoordinates = [np.mean(mesh.CenterCoor[self.sourceElem, 0]),
+                                  np.mean(mesh.CenterCoor[self.sourceElem, 1])]
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -349,14 +357,9 @@ class InjectionProperties:
         """
 
         Qin = np.zeros((mesh.NumberOfElts), float)
-        if self.sourceFunc is None:
-            # index of current time in the time series (first row) of the injection rate array
-            indxCurTime = max(np.where(time >= self.injectionRate[0, :])[0])
-            CurrentRate = self.injectionRate[1, indxCurTime]  # current injection rate
-            Qin[self.sourceElem] = CurrentRate  # point source
-        else:
-            for i in range(mesh.NumberOfElts):
-                Qin[i] = self.sourceFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], time)
+        indxCurTime = max(np.where(time >= self.injectionRate[0, :])[0])
+        currentRate = self.injectionRate[1, indxCurTime]  # current injection rate
+        Qin[self.sourceElem] = currentRate / len(self.sourceElem)
 
         return Qin
 
@@ -369,7 +372,17 @@ class InjectionProperties:
             new_mesh (CartesianMesh):   -- the CartesianMesh object describing the new coarse mesh.
         """
 
-        self.sourceElem = new_mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
+        # update source elements according to the new mesh.
+        if self.sourceElemFunc is not None:
+            actv_cells = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sourceElemFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                    actv_cells.append(i)
+            if len(actv_cells) == 0:
+                raise ValueError("There is no source element to inject. Note that the source element function is "
+                                 "evaluated at the cell centers to check for source cells.")
+
+            self.sourceElem = actv_cells
 
 # ----------------------------------------------------------------------------------------------------------------------
 
