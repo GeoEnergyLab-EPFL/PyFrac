@@ -31,6 +31,9 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
             Does not return anything. The levelSet is updated in place.
     """
 
+    # todo: This method is very inefficient. There are a number of improvements that can be done for computational
+    #  efficiency
+
     # for Elements radialy outward from ribbon cells
     Alive = np.copy(EltRibbon)
     NarrowBand = np.copy(EltRibbon)

@@ -302,8 +302,8 @@ def findBracket(func, guess,*args):
         args (tupple):              -- arguments passed to the function
 
     Returns:
-         | a (float)                -- the lower bracket
-         | b (float)                -- the higher bracket
+         - a (float)                -- the lower bracket
+         - b (float)                -- the higher bracket
     """
     a = np.finfo(float).eps * guess
     b = max(1000*guess,1)
@@ -331,42 +331,50 @@ def MakeEquationSystem_ViscousFluid(solk, interItr, *args):
     for traction and pressure separately.
 
     Arguments:
-        sol_k (ndarray)               -- the trial change in width and pressure for the current iteration of
-                                         fracture front.
-        interItr (ndarray)            -- the information from the last iteration.
+        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
 
         args (tupple): arguments passed to the function
 
-            | EltChannel (ndarray)          -- list of channel elements
-            | EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
+            Arguments:
+        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
+
+        args (tupple): arguments passed to the function
+
+            - EltChannel (ndarray)          -- list of channel elements
+            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
                                                  been fully traversed.
-            | wLastTS (ndarray)             -- fracture width from the last time step
-            | wTip (ndarray)                -- fracture width in the tip elements
-            | EltCrack (ndarray)            -- list of elements in the fracture
-            | Mesh (CartesianMesh object):  -- the mesh
-            | dt (float)                    -- the current time step
-            | Q (float)                     -- fluid injection rate at the current time step
-            | C (ndarray)                   -- the elasticity matrix
-            | muPrime (ndarray)             -- 12 time viscosity of the injected fluid
-            | rho (float)                   -- density of the injected fluid
-            | InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest
-            | LeakOff (ndarray)             -- the leaked off fluid volume for each cell
-            | sigma0 (ndarray)              -- the confining stress
-            | turb (boolean)                -- turbulence will be taken into account if true
-            | dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture
+            - wLastTS (ndarray)             -- fracture width from the last time step.
+            - wTip (ndarray)                -- fracture width in the tip elements.
+            - EltCrack (ndarray)            -- list of elements in the fracture.
+            - Mesh (CartesianMesh object):  -- the mesh.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
+            - rho (float)                   -- density of the injected fluid.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - sigma0 (ndarray)              -- the confining stress.
+            - turb (boolean)                -- turbulence will be taken into account if true.
+            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
                                                roughness.
-            | active (ndarray)              -- index of cells where the width constraint is active.
-            | wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells
-            | wc (float)                    -- the critical minimum width for the material
-            | cf (float)                    -- fluid compressibility
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
+                                               cells.
+            - wc (float)                    -- the critical minimum width for the material.
+            - cf (float)                    -- fluid compressibility.
+
 
     Returns:
-        | A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
-        | S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        | interItr_kp1 (tuple)   -- the information transferred between iterations.
-        | indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is
-                                   obtained for channel, tip and active width constraint cells.
+        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
+        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
+                                    obtained for channel, tip and active width constraint cells.
 
     """
 
@@ -497,41 +505,41 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     using the elasticity relation (see Zia and Lecamption 2019).
 
     Arguments:
-        sol_k (ndarray)               -- the trial change in width and pressure for the current iteration of
-                                         fracture front.
-        interItr (ndarray)            -- the information from the last iteration.
+        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
 
         args (tupple): arguments passed to the function
 
-            | EltChannel (ndarray)          -- list of channel elements
-            | EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
+            - EltChannel (ndarray)          -- list of channel elements
+            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
                                                  been fully traversed.
-            | wLastTS (ndarray)             -- fracture width from the last time step
-            | wTip (ndarray)                -- fracture width in the tip elements
-            | EltCrack (ndarray)            -- list of elements in the fracture
-            | Mesh (CartesianMesh object):  -- the mesh
-            | dt (float)                    -- the current time step
-            | Q (float)                     -- fluid injection rate at the current time step
-            | C (ndarray)                   -- the elasticity matrix
-            | muPrime (ndarray)             -- 12 time viscosity of the injected fluid
-            | rho (float)                   -- density of the injected fluid
-            | InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest
-            | LeakOff (ndarray)             -- the leaked off fluid volume for each cell
-            | sigma0 (ndarray)              -- the confining stress
-            | turb (boolean)                -- turbulence will be taken into account if true
-            | dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture
+            - wLastTS (ndarray)             -- fracture width from the last time step.
+            - wTip (ndarray)                -- fracture width in the tip elements.
+            - EltCrack (ndarray)            -- list of elements in the fracture.
+            - Mesh (CartesianMesh object):  -- the mesh.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
+            - rho (float)                   -- density of the injected fluid.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - sigma0 (ndarray)              -- the confining stress.
+            - turb (boolean)                -- turbulence will be taken into account if true.
+            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
                                                roughness.
-            | active (ndarray)              -- index of cells where the width constraint is active.
-            | wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells
-            | wc (float)                    -- the critical minimum width for the material
-            | cf (float)                    -- fluid compressibility
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
+                                               cells.
+            - wc (float)                    -- the critical minimum width for the material.
+            - cf (float)                    -- fluid compressibility.
 
     Returns:
-        | A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
-        | S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        | interItr_kp1 (tuple)   -- the information transferred between iterations.
-        | indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is
+        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
+        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
                                    obtained for channel, tip and active width constraint cells.
     """
 
@@ -595,15 +603,15 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr[to_solve, :][:, to_solve] \
-                + sparse.diags([np.full((n_ch, ), cf * wcNplusHalf[to_solve])], [0], format='csr')
+                 + sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
     A[np.ix_(ch_indxs, ch_indxs)] = np.identity(n_ch) - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(ch_indxs, tip_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, to_impose].toarray()
     A[np.ix_(ch_indxs, act_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, active].toarray()
 
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr[to_impose, :][:, to_solve]
-                                       ).dot(C[np.ix_(to_solve, to_solve)])
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[to_impose, :][:, to_impose] -
-                                       sparse.diags([np.full((n_tip, ), cf * wcNplusHalf[to_impose])],
+                                       sparse.diags([np.full((n_tip,), cf * wcNplusHalf[to_impose])],
                                                     [0], format='csr')).toarray()
     A[np.ix_(tip_indxs, act_indxs)] = -dt * FinDiffOprtr[to_impose, :][:, active].toarray()
 
@@ -621,19 +629,18 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                   sigma0[to_solve]
 
     S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
-                    dt * G[to_solve] + \
-                    dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea
+                  dt * G[to_solve] + \
+                  dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea
     S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
-                    dt * FinDiffOprtr[to_impose, :][:, to_solve].dot(pf_ch_prime) - \
-                    cf * wcNplusHalf[to_impose] * pfLastTS[to_impose] + \
-                    dt * G[to_impose] + \
-                    dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
-    S[act_indxs] = -(wc - wLastTS[active]) + \
-                    dt * FinDiffOprtr[active, :][:, to_solve].dot(pf_ch_prime) - \
-                    cf * wcNplusHalf[active] * pfLastTS[active] + \
-                    dt * G[active] + \
-                    dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
-
+                   dt * FinDiffOprtr[to_impose, :][:, to_solve].dot(pf_ch_prime) - \
+                   cf * wcNplusHalf[to_impose] * pfLastTS[to_impose] + \
+                   dt * G[to_impose] + \
+                   dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
+    S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
+                   dt * FinDiffOprtr[active, :][:, to_solve].dot(pf_ch_prime) - \
+                   cf * wcNplusHalf[active] * pfLastTS[active] + \
+                   dt * G[active] + \
+                   dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
 
     # indices of solved width, pressure and traction in the solution
     indices = []
@@ -644,14 +651,188 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     interItr_kp1 = (vk, below_wc)
     return A, S, interItr_kp1, indices
 
+
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, *args):
+    """
+    This function makes the linearized system of equations to be solved by a linear system solver. The system is
+    assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
+    description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is
+    active are solved separately. The pressure in the channel cells to be solved for change in width is substituted
+    with width using the elasticity relation (see Zia and Lecamption 2019).
+
+    Arguments:
+        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
+
+        args (tupple): arguments passed to the function
+
+            Arguments:
+        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
+
+        args (tupple): arguments passed to the function
+
+            - EltChannel (ndarray)          -- list of channel elements
+            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
+                                                 been fully traversed.
+            - wLastTS (ndarray)             -- fracture width from the last time step.
+            - wTip (ndarray)                -- fracture width in the tip elements.
+            - EltCrack (ndarray)            -- list of elements in the fracture.
+            - Mesh (CartesianMesh object):  -- the mesh.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
+            - rho (float)                   -- density of the injected fluid.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - sigma0 (ndarray)              -- the confining stress.
+            - turb (boolean)                -- turbulence will be taken into account if true.
+            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
+                                               roughness.
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
+                                               cells.
+            - wc (float)                    -- the critical minimum width for the material.
+            - cf (float)                    -- fluid compressibility.
+
+
+    Returns:
+        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
+        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
+                                    obtained for channel, tip and active width constraint cells.
+    """
+
+    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
+     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf) = args
+
+    wcNplusOne = np.copy(wLastTS)
+    wcNplusOne[to_solve] += solk[:len(to_solve)]
+    wcNplusOne[to_impose] = imposed_val
+    if len(wc_to_impose) > 0:
+        wcNplusOne[active] = wc_to_impose
+
+    below_wc = np.where(wcNplusOne[to_solve] < wc)[0]
+    below_wc_km1 = interItr[1]
+    below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
+    wcNplusOne[to_solve[below_wc]] = wc
+    vkm1 = interItr[0]
+
+    wcNplusHalf = (wLastTS + wcNplusOne) / 2
+
+    if turb:
+
+        (FinDiffOprtr, vk) = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
+                                                                    EltCrack,
+                                                                    muPrime / 12,
+                                                                    Mesh,
+                                                                    InCrack,
+                                                                    rho,
+                                                                    vkm1,
+                                                                    C,
+                                                                    sigma0,
+                                                                    dgrain)
+    else:
+        FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
+                                                   EltCrack,
+                                                   muPrime,
+                                                   Mesh,
+                                                   InCrack)
+        vk = vkm1
+
+    if gravity:
+        G = Gravity_term(wcNplusOne,
+                         EltCrack,
+                         muPrime,
+                         Mesh,
+                         InCrack,
+                         rho)
+
+    else:
+        G = np.zeros((Mesh.NumberOfElts,))
+
+    n_ch = len(to_solve)
+    n_act = len(active)
+    n_tip = len(imposed_val)
+    n_total = n_ch + n_act + n_tip
+
+    ch_indxs = np.arange(n_ch)
+    act_indxs = n_ch + np.arange(n_act)
+    tip_indxs = n_ch + n_act + np.arange(n_tip)
+
+    A = np.zeros((n_total, n_total), dtype=np.float64)
+
+    ch_AplusCf = dt * FinDiffOprtr[to_solve, :][:, to_solve] \
+                 + sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
+    A[np.ix_(ch_indxs, ch_indxs)] = np.identity(n_ch) - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(ch_indxs, tip_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, to_impose].toarray()
+    A[np.ix_(ch_indxs, act_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, active].toarray()
+
+    A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr[to_impose, :][:, to_solve]
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[to_impose, :][:, to_impose] -
+                                       sparse.diags([np.full((n_tip,), cf * wcNplusHalf[to_impose])],
+                                                    [0], format='csr')).toarray()
+    A[np.ix_(tip_indxs, act_indxs)] = -dt * FinDiffOprtr[to_impose, :][:, active].toarray()
+
+    A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr[active, :][:, to_solve]
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(act_indxs, tip_indxs)] = -dt * FinDiffOprtr[active, :][:, to_impose].toarray()
+    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[active, :][:, active] -
+                                       sparse.diags([np.full((n_act,), cf * wcNplusHalf[active])],
+                                                    [0], format='csr')).toarray()
+
+    S = np.zeros((n_total,), dtype=np.float64)
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], wLastTS[to_solve]) + \
+                  np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
+                  np.dot(C[np.ix_(to_solve, active)], wcNplusOne[active]) + \
+                  sigma0[to_solve]
+
+    S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+                  (dt * FinDiffOprtr[to_solve, :][:, to_impose]).dot(pfLastTS[to_impose]) + \
+                  (dt * FinDiffOprtr[to_solve, :][:, active]).dot(pfLastTS[active]) + \
+                  dt * G[to_solve] + \
+                  dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea \
+                  - cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
+
+    S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
+                   dt * FinDiffOprtr[to_impose, :][:, to_solve].dot(pf_ch_prime) + \
+                   (dt * FinDiffOprtr[to_impose, :][:, to_impose]).dot(pfLastTS[to_impose]) + \
+                   (dt * FinDiffOprtr[to_impose, :][:, active]).dot(pfLastTS[active]) + \
+                   dt * G[to_impose] + \
+                   dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
+
+    S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
+                   dt * FinDiffOprtr[active, :][:, to_solve].dot(pf_ch_prime) + \
+                   (dt * FinDiffOprtr[active, :][:, to_impose]).dot(pfLastTS[to_impose]) + \
+                   (dt * FinDiffOprtr[active, :][:, active]).dot(pfLastTS[active]) + \
+                   dt * G[active] + \
+                   dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
+
+    # indices of solved width, pressure and traction in the solution
+    indices = []
+    indices.append(ch_indxs)
+    indices.append(tip_indxs)
+    indices.append(act_indxs)
+
+    interItr_kp1 = (vk, below_wc)
+    return A, S, interItr_kp1, indices
+
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loaded):
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The given width is
-    imposed on the given loaded elements (see Zia and Lecampion 2019)
+    imposed on the given loaded elements (see Zia and Lecampion 2019).
     """
 
     Ccc = C[np.ix_(EltChannel, EltChannel)]
@@ -744,8 +925,8 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
                                    iteration.
 
     Returns:
-        | solk (ndarray)       -- solution at the end of iteration.
-        | data (tuple)         -- any data to be returned
+        - solk (ndarray)       -- solution at the end of iteration.
+        - data (tuple)         -- any data to be returned
     """
     solk = guess
     k = 1
@@ -828,8 +1009,8 @@ def check_covergance(solk, solkm1, indices, tol):
         tol (float)         -- tolerance
 
     Returns:
-         | converged (bool) -- True if converged
-         | norm (float)     -- the evaluated norm which is checked against tolerance
+         - converged (bool) -- True if converged
+         - norm (float)     -- the evaluated norm which is checked against tolerance
     """
 
     # if delta w is zero in some cells

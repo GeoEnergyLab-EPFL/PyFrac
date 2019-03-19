@@ -440,12 +440,16 @@ class SimulationProperties:
         maxSolverItr (int):          -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
                                         case.
         maximumItrEHL (int):         -- maximum number of iterations for the Elastohydrodynamic solver.
-        maxToughnessItr (int):       -- maximum toughness loop iterations.
+        maxProjItrs (int):           -- maximum iterations for the loop to find projection on the front from ribbon.
         tmStpPrefactor (float):      -- factor for time-step adaptivity.
         maxTimeSteps (integer):      -- maximum number of time steps.
         tmStpPrefactor_max (float):  -- used in the case of re-attempt from five steps back.
         finalTime (float):           -- time where the simulation ends.
         timeStepLimit (float):       -- limit above which time step will not exceed.
+        fixedTmStp (ndarray):        -- a float or an array giving the fixed time step. The array should have two rows,
+                                        with the first row giving the time at which the time step would change and the
+                                        second row giving the corresponding time step. If None is given as time step,
+                                        appropriate time step would be calculated.
         maxReattempts (int):         -- maximum number of reattempts in case of failure of a time step. A smaller
                                         time step will be attempted the given number of times.
         reAttemptFactor (float):     -- the factor by which time step is reduced on reattempts.
@@ -464,21 +468,26 @@ class SimulationProperties:
         bckColor (String):           -- the string specifying the parameter according to which the background of the\
                                         domain is color coded. Possible options:
 
-                                            - sigma0 (confining stress)
-                                            - K1c (fracture toughness)
-                                            - Cl (leak-off coefficient)
-        plotEltType (boolean):       -- if True, the type of element will be spedified with color coded dots(channel,
+                                            - sigma0 or confining stress
+                                            - K1c or fracture toughness
+                                            - Cl or leak-off coefficient
+        plotEltType (boolean):       -- if True, the type of element will be specified with color coded dots(channel,
                                         ribbon or tip).
-        outputTimePeriod (float):    -- the time period after which the output file is written or the
-                                        figures are plotted.
-        tipAsymptote (string):       -- propagation regime. possible options are:
+        outputTimePeriod (float):    -- the time period after which the output file is written or the figures are
+                                        plotted.
+        blockFigure (bool):          -- if True, the plotted figure(s) will be blocked after every time they are
+                                        plotted. The simulation will advance when any key will be pressed from keyboard.
+        outputEveryTS (int):         -- the number of time steps after which the output is done. E.g. a value of 4 will
+                                        result in writing of output file / plotting every four time steps.
+        plotVar (list):              -- a list of variable(s) to be plotted during simulation. The time / time steps
+                                        after which the output is done can be controlled with a number of parameters (
+                                        see above).
+        substitutePressure(bool):    -- a flag specifying the solver to be used. If True, the pressure will be
+                                        substituted in the channel elements (see Zia and Lecampion, 2019).
+        solveDeltaP (bool):          -- a flag specifying the solver to be used. If True, the change in pressure,
+                                        instead of pressure will be solved in the tip cells and the cells where the
+                                        width constraint is active (see Zia and Lecampion, 2019).
 
-                                            - K  (toughness dominated regime, without leak off)
-                                            - M  (viscosity dominated regime, without leak off)
-                                            - Mt (viscosity dominated regime , with leak off)
-                                            - U  (Universal regime accommodating viscosity, toughness\
-                                                 and leak off (see Donstov and Pierce, 2017))
-                                            - MK (viscosity to toughness transition regime)
         saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
                                         saved.
         verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
@@ -489,7 +498,7 @@ class SimulationProperties:
         remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
                                             - explicit
-                                            - semi-implicit
+                                            - predictor-corrector
                                             - implicit
         gravity (bool):              -- if True, the effect of gravity will be taken into account.
         collectPerfData (bool):      -- if True, the performance data will be collected in the form of a tree.
@@ -505,10 +514,23 @@ class SimulationProperties:
                                         will be saved.
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
+        explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
+        symmetric (bool):            -- if True, the four quadrant of the domain will be considered symmetric and only
+                                        one will be solved for. The rest will be replaced by its reflection along the x
+                                        and y axes.
+
+                                        Attention:
+                                            The symmetric fracture is only implemented in the toughness dominated case.\
+                                            Use full domain if viscous fluid is injected.
         projMethod (string):         -- the method by which the angle prescribed by the projections onto the front
                                         are evaluated. Possible options are:
-                                            - 'ILSA_orig' (the method described in the original ILSA scheme)
-                                            - 'LS_grad' (using gradient of the level set)
+                                            - 'ILSA_orig' (the method described in the original ILSA scheme).
+                                            - 'LS_grad' (using gradient of the level set).
+        height (float):             -- this parameters is only used in the case of height contained hydraulic fracture
+                                       plots, e.g. to plot analytical solutions of PKN and KGD fractures.
+        aspectRatio (float):        -- this parameters is only used in the case of elliptical hydraulic fracture
+                                       plots, e.g. to plot analytical solutions of anisotropic toughness or TI
+                                       elasticity.
         Attention:
             These attributes below are private:
 
@@ -522,7 +544,7 @@ class SimulationProperties:
         __volumeControl (bool):      -- if True, the the volume control solver will be used.
         __simName (string):          -- the name of the simulation.
         __timeStamp (string):        -- the time at which the simulation properties was created.
-
+        __tipAsymptote (string):     -- the tip asymptote to be used. Can be modified with the provided function.
             
     """
 
@@ -559,7 +581,7 @@ class SimulationProperties:
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
         self.maxSolverItrs = simul_param.max_solver_itrs
-        self.maxToughnessItrs = simul_param.max_toughness_Itrs
+        self.maxProjItrs = simul_param.max_proj_Itrs
 
         # time and time stepping
         self.maxTimeSteps = simul_param.maximum_steps
@@ -568,7 +590,6 @@ class SimulationProperties:
         self.set_solTimeSeries(simul_param.req_sol_at)
         self.timeStepLimit = simul_param.timeStep_limit
         self.fixedTmStp = simul_param.fixed_time_step
-        self.TSFromFluid = simul_param.TS_from_fluid
         if isinstance(self.fixedTmStp, np.ndarray):
             if self.fixedTmStp.shape[0] != 2:
                 raise ValueError('Invalid fixed time step. The list should have 2 rows (to specify time and '
@@ -591,13 +612,13 @@ class SimulationProperties:
         self.blockFigure = simul_param.block_figure
         self.outputEveryTS = simul_param.output_every_TS
         self.plotVar = simul_param.plot_var
-        self.plotProj = simul_param.plot_proj
 
         # solver type
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
         self.substitutePressure = simul_param.substitute_pressure
+        self.solveDeltaP = simul_param.solve_deltaP
 
         # miscellaneous
         self.verbosity = simul_param.verbosity
@@ -608,6 +629,8 @@ class SimulationProperties:
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.paramFromTip = simul_param.param_from_tip
+        if simul_param.param_from_tip:
+            raise ValueError("Parameters from tip not yet supported!")
         self.saveReynNumb = simul_param.save_ReyNumb
         self.gravity = simul_param.gravity
         self.TI_KernelExecPath = simul_param.TI_Kernel_exec_path
@@ -629,6 +652,19 @@ class SimulationProperties:
     # setter and getter functions
 
     def set_tipAsymptote(self, tip_asymptote):
+        """
+        The function to set up the tip asymptote.
+
+        Arguments:
+            tipAsymptote (string):       -- propagation regime. possible options are:
+
+                                            - K  (toughness dominated regime, without leak off)
+                                            - M  (viscosity dominated regime, without leak off)
+                                            - Mt (viscosity dominated regime , with leak off)
+                                            - U  (Universal regime accommodating viscosity, toughness\
+                                                 and leak off (see Donstov and Pierce, 2017))
+                                            - MK (viscosity to toughness transition regime)
+        """
         tipAssymptOptions = ("K", "M", "Mt", "U", "MK", "MDR", "M_MDR")
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote

@@ -482,12 +482,16 @@
 <span class="sd">        maxSolverItr (int):          -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this</span>
 <span class="sd">                                        case.</span>
 <span class="sd">        maximumItrEHL (int):         -- maximum number of iterations for the Elastohydrodynamic solver.</span>
-<span class="sd">        maxToughnessItr (int):       -- maximum toughness loop iterations.</span>
+<span class="sd">        maxProjItrs (int):           -- maximum iterations for the loop to find projection on the front from ribbon.</span>
 <span class="sd">        tmStpPrefactor (float):      -- factor for time-step adaptivity.</span>
 <span class="sd">        maxTimeSteps (integer):      -- maximum number of time steps.</span>
 <span class="sd">        tmStpPrefactor_max (float):  -- used in the case of re-attempt from five steps back.</span>
 <span class="sd">        finalTime (float):           -- time where the simulation ends.</span>
 <span class="sd">        timeStepLimit (float):       -- limit above which time step will not exceed.</span>
+<span class="sd">        fixedTmStp (ndarray):        -- a float or an array giving the fixed time step. The array should have two rows,</span>
+<span class="sd">                                        with the first row giving the time at which the time step would change and the</span>
+<span class="sd">                                        second row giving the corresponding time step. If None is given as time step,</span>
+<span class="sd">                                        appropriate time step would be calculated.</span>
 <span class="sd">        maxReattempts (int):         -- maximum number of reattempts in case of failure of a time step. A smaller</span>
 <span class="sd">                                        time step will be attempted the given number of times.</span>
 <span class="sd">        reAttemptFactor (float):     -- the factor by which time step is reduced on reattempts.</span>
@@ -506,21 +510,26 @@
 <span class="sd">        bckColor (String):           -- the string specifying the parameter according to which the background of the\</span>
 <span class="sd">                                        domain is color coded. Possible options:</span>
 
-<span class="sd">                                            - sigma0 (confining stress)</span>
-<span class="sd">                                            - K1c (fracture toughness)</span>
-<span class="sd">                                            - Cl (leak-off coefficient)</span>
-<span class="sd">        plotEltType (boolean):       -- if True, the type of element will be spedified with color coded dots(channel,</span>
+<span class="sd">                                            - sigma0 or confining stress</span>
+<span class="sd">                                            - K1c or fracture toughness</span>
+<span class="sd">                                            - Cl or leak-off coefficient</span>
+<span class="sd">        plotEltType (boolean):       -- if True, the type of element will be specified with color coded dots(channel,</span>
 <span class="sd">                                        ribbon or tip).</span>
-<span class="sd">        outputTimePeriod (float):    -- the time period after which the output file is written or the</span>
-<span class="sd">                                        figures are plotted.</span>
-<span class="sd">        tipAsymptote (string):       -- propagation regime. possible options are:</span>
+<span class="sd">        outputTimePeriod (float):    -- the time period after which the output file is written or the figures are</span>
+<span class="sd">                                        plotted.</span>
+<span class="sd">        blockFigure (bool):          -- if True, the plotted figure(s) will be blocked after every time they are</span>
+<span class="sd">                                        plotted. The simulation will advance when any key will be pressed from keyboard.</span>
+<span class="sd">        outputEveryTS (int):         -- the number of time steps after which the output is done. E.g. a value of 4 will</span>
+<span class="sd">                                        result in writing of output file / plotting every four time steps.</span>
+<span class="sd">        plotVar (list):              -- a list of variable(s) to be plotted during simulation. The time / time steps</span>
+<span class="sd">                                        after which the output is done can be controlled with a number of parameters (</span>
+<span class="sd">                                        see above).</span>
+<span class="sd">        substitutePressure(bool):    -- a flag specifying the solver to be used. If True, the pressure will be</span>
+<span class="sd">                                        substituted in the channel elements (see Zia and Lecampion, 2019).</span>
+<span class="sd">        solveDeltaP (bool):          -- a flag specifying the solver to be used. If True, the change in pressure,</span>
+<span class="sd">                                        instead of pressure will be solved in the tip cells and the cells where the</span>
+<span class="sd">                                        width constraint is active (see Zia and Lecampion, 2019).</span>
 
-<span class="sd">                                            - K  (toughness dominated regime, without leak off)</span>
-<span class="sd">                                            - M  (viscosity dominated regime, without leak off)</span>
-<span class="sd">                                            - Mt (viscosity dominated regime , with leak off)</span>
-<span class="sd">                                            - U  (Universal regime accommodating viscosity, toughness\</span>
-<span class="sd">                                                 and leak off (see Donstov and Pierce, 2017))</span>
-<span class="sd">                                            - MK (viscosity to toughness transition regime)</span>
 <span class="sd">        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be</span>
 <span class="sd">                                        saved.</span>
 <span class="sd">        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently</span>
@@ -531,7 +540,7 @@
 <span class="sd">        remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.</span>
 <span class="sd">        frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:</span>
 <span class="sd">                                            - explicit</span>
-<span class="sd">                                            - semi-implicit</span>
+<span class="sd">                                            - predictor-corrector</span>
 <span class="sd">                                            - implicit</span>
 <span class="sd">        gravity (bool):              -- if True, the effect of gravity will be taken into account.</span>
 <span class="sd">        collectPerfData (bool):      -- if True, the performance data will be collected in the form of a tree.</span>
@@ -547,10 +556,23 @@
 <span class="sd">                                        will be saved.</span>
 <span class="sd">        TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic</span>
 <span class="sd">                                       kernel or kernel with free surface.</span>
+<span class="sd">        explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.</span>
+<span class="sd">        symmetric (bool):            -- if True, the four quadrant of the domain will be considered symmetric and only</span>
+<span class="sd">                                        one will be solved for. The rest will be replaced by its reflection along the x</span>
+<span class="sd">                                        and y axes.</span>
+
+<span class="sd">                                        Attention:</span>
+<span class="sd">                                            The symmetric fracture is only implemented in the toughness dominated case.\</span>
+<span class="sd">                                            Use full domain if viscous fluid is injected.</span>
 <span class="sd">        projMethod (string):         -- the method by which the angle prescribed by the projections onto the front</span>
 <span class="sd">                                        are evaluated. Possible options are:</span>
-<span class="sd">                                            - &#39;ILSA_orig&#39; (the method described in the original ILSA scheme)</span>
-<span class="sd">                                            - &#39;LS_grad&#39; (using gradient of the level set)</span>
+<span class="sd">                                            - &#39;ILSA_orig&#39; (the method described in the original ILSA scheme).</span>
+<span class="sd">                                            - &#39;LS_grad&#39; (using gradient of the level set).</span>
+<span class="sd">        height (float):             -- this parameters is only used in the case of height contained hydraulic fracture</span>
+<span class="sd">                                       plots, e.g. to plot analytical solutions of PKN and KGD fractures.</span>
+<span class="sd">        aspectRatio (float):        -- this parameters is only used in the case of elliptical hydraulic fracture</span>
+<span class="sd">                                       plots, e.g. to plot analytical solutions of anisotropic toughness or TI</span>
+<span class="sd">                                       elasticity.</span>
 <span class="sd">        Attention:</span>
 <span class="sd">            These attributes below are private:</span>
 
@@ -564,7 +586,7 @@
 <span class="sd">        __volumeControl (bool):      -- if True, the the volume control solver will be used.</span>
 <span class="sd">        __simName (string):          -- the name of the simulation.</span>
 <span class="sd">        __timeStamp (string):        -- the time at which the simulation properties was created.</span>
-
+<span class="sd">        __tipAsymptote (string):     -- the tip asymptote to be used. Can be modified with the provided function.</span>
 <span class="sd">            </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -601,7 +623,7 @@
         <span class="c1"># max iterations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxFrontItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_front_itrs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxSolverItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_solver_itrs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">maxToughnessItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_toughness_Itrs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxProjItrs</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">max_proj_Itrs</span>
 
         <span class="c1"># time and time stepping</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxTimeSteps</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">maximum_steps</span>
@@ -610,7 +632,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_solTimeSeries</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">req_sol_at</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeStepLimit</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">timeStep_limit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">fixed_time_step</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">TSFromFluid</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">TS_from_fluid</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixedTmStp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid fixed time step. The list should have 2 rows (to specify time and &#39;</span>
@@ -633,13 +654,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">blockFigure</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">block_figure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">outputEveryTS</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">output_every_TS</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">plotVar</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">plot_var</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">plotProj</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">plot_proj</span>
 
         <span class="c1"># solver type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_dryCrack_mechLoading</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">mech_loading</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_viscousInjection</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">viscous_injection</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_volumeControl</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">volume_control</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">substitute_pressure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solveDeltaP</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_deltaP</span>
 
         <span class="c1"># miscellaneous</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">verbosity</span>
@@ -650,6 +671,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">front_advancing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">collectPerfData</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">collect_perf_data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">paramFromTip</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">param_from_tip</span>
+        <span class="k">if</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">param_from_tip</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameters from tip not yet supported!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">saveReynNumb</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">save_ReyNumb</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gravity</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">gravity</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TI_KernelExecPath</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">TI_Kernel_exec_path</span>
@@ -671,6 +694,19 @@
     <span class="c1"># setter and getter functions</span>
 
 <div class="viewcode-block" id="SimulationProperties.set_tipAsymptote"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.set_tipAsymptote">[docs]</a>    <span class="k">def</span> <span class="nf">set_tipAsymptote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tip_asymptote</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function to set up the tip asymptote.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            tipAsymptote (string):       -- propagation regime. possible options are:</span>
+
+<span class="sd">                                            - K  (toughness dominated regime, without leak off)</span>
+<span class="sd">                                            - M  (viscosity dominated regime, without leak off)</span>
+<span class="sd">                                            - Mt (viscosity dominated regime , with leak off)</span>
+<span class="sd">                                            - U  (Universal regime accommodating viscosity, toughness\</span>
+<span class="sd">                                                 and leak off (see Donstov and Pierce, 2017))</span>
+<span class="sd">                                            - MK (viscosity to toughness transition regime)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">tipAssymptOptions</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;Mt&quot;</span><span class="p">,</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span> <span class="s2">&quot;MK&quot;</span><span class="p">,</span> <span class="s2">&quot;MDR&quot;</span><span class="p">,</span> <span class="s2">&quot;M_MDR&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">tip_asymptote</span> <span class="ow">in</span> <span class="n">tipAssymptOptions</span><span class="p">:</span>  <span class="c1"># check if tip asymptote matches any option</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__tipAsymptote</span> <span class="o">=</span> <span class="n">tip_asymptote</span>

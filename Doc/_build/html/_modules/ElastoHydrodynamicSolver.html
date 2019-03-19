@@ -344,8 +344,8 @@
 <span class="sd">        args (tupple):              -- arguments passed to the function</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">         | a (float)                -- the lower bracket</span>
-<span class="sd">         | b (float)                -- the higher bracket</span>
+<span class="sd">         - a (float)                -- the lower bracket</span>
+<span class="sd">         - b (float)                -- the higher bracket</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span> <span class="o">*</span> <span class="n">guess</span>
     <span class="n">b</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1000</span><span class="o">*</span><span class="n">guess</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
@@ -373,42 +373,50 @@
 <span class="sd">    for traction and pressure separately.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        sol_k (ndarray)               -- the trial change in width and pressure for the current iteration of</span>
-<span class="sd">                                         fracture front.</span>
-<span class="sd">        interItr (ndarray)            -- the information from the last iteration.</span>
+<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
+<span class="sd">                                          fracture front.</span>
+<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
 
 <span class="sd">        args (tupple): arguments passed to the function</span>
 
-<span class="sd">            | EltChannel (ndarray)          -- list of channel elements</span>
-<span class="sd">            | EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
+<span class="sd">            Arguments:</span>
+<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
+<span class="sd">                                          fracture front.</span>
+<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
+
+<span class="sd">        args (tupple): arguments passed to the function</span>
+
+<span class="sd">            - EltChannel (ndarray)          -- list of channel elements</span>
+<span class="sd">            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
 <span class="sd">                                                 been fully traversed.</span>
-<span class="sd">            | wLastTS (ndarray)             -- fracture width from the last time step</span>
-<span class="sd">            | wTip (ndarray)                -- fracture width in the tip elements</span>
-<span class="sd">            | EltCrack (ndarray)            -- list of elements in the fracture</span>
-<span class="sd">            | Mesh (CartesianMesh object):  -- the mesh</span>
-<span class="sd">            | dt (float)                    -- the current time step</span>
-<span class="sd">            | Q (float)                     -- fluid injection rate at the current time step</span>
-<span class="sd">            | C (ndarray)                   -- the elasticity matrix</span>
-<span class="sd">            | muPrime (ndarray)             -- 12 time viscosity of the injected fluid</span>
-<span class="sd">            | rho (float)                   -- density of the injected fluid</span>
-<span class="sd">            | InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest</span>
-<span class="sd">            | LeakOff (ndarray)             -- the leaked off fluid volume for each cell</span>
-<span class="sd">            | sigma0 (ndarray)              -- the confining stress</span>
-<span class="sd">            | turb (boolean)                -- turbulence will be taken into account if true</span>
-<span class="sd">            | dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture</span>
+<span class="sd">            - wLastTS (ndarray)             -- fracture width from the last time step.</span>
+<span class="sd">            - wTip (ndarray)                -- fracture width in the tip elements.</span>
+<span class="sd">            - EltCrack (ndarray)            -- list of elements in the fracture.</span>
+<span class="sd">            - Mesh (CartesianMesh object):  -- the mesh.</span>
+<span class="sd">            - dt (float)                    -- the current time step.</span>
+<span class="sd">            - Q (float)                     -- fluid injection rate at the current time step.</span>
+<span class="sd">            - C (ndarray)                   -- the elasticity matrix.</span>
+<span class="sd">            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.</span>
+<span class="sd">            - rho (float)                   -- density of the injected fluid.</span>
+<span class="sd">            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.</span>
+<span class="sd">            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.</span>
+<span class="sd">            - sigma0 (ndarray)              -- the confining stress.</span>
+<span class="sd">            - turb (boolean)                -- turbulence will be taken into account if true.</span>
+<span class="sd">            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\</span>
 <span class="sd">                                               roughness.</span>
-<span class="sd">            | active (ndarray)              -- index of cells where the width constraint is active.</span>
-<span class="sd">            | wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \</span>
-<span class="sd">                                               cells</span>
-<span class="sd">            | wc (float)                    -- the critical minimum width for the material</span>
-<span class="sd">            | cf (float)                    -- fluid compressibility</span>
+<span class="sd">            - active (ndarray)              -- index of cells where the width constraint is active.</span>
+<span class="sd">            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \</span>
+<span class="sd">                                               cells.</span>
+<span class="sd">            - wc (float)                    -- the critical minimum width for the material.</span>
+<span class="sd">            - cf (float)                    -- fluid compressibility.</span>
+
 
 <span class="sd">    Returns:</span>
-<span class="sd">        | A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.</span>
-<span class="sd">        | S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.</span>
-<span class="sd">        | interItr_kp1 (tuple)   -- the information transferred between iterations.</span>
-<span class="sd">        | indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is</span>
-<span class="sd">                                   obtained for channel, tip and active width constraint cells.</span>
+<span class="sd">        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.</span>
+<span class="sd">        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.</span>
+<span class="sd">        - interItr_kp1 (tuple)   -- the information transferred between iterations.</span>
+<span class="sd">        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\</span>
+<span class="sd">                                    obtained for channel, tip and active width constraint cells.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -539,41 +547,41 @@
 <span class="sd">    using the elasticity relation (see Zia and Lecamption 2019).</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        sol_k (ndarray)               -- the trial change in width and pressure for the current iteration of</span>
-<span class="sd">                                         fracture front.</span>
-<span class="sd">        interItr (ndarray)            -- the information from the last iteration.</span>
+<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
+<span class="sd">                                          fracture front.</span>
+<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
 
 <span class="sd">        args (tupple): arguments passed to the function</span>
 
-<span class="sd">            | EltChannel (ndarray)          -- list of channel elements</span>
-<span class="sd">            | EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
+<span class="sd">            - EltChannel (ndarray)          -- list of channel elements</span>
+<span class="sd">            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
 <span class="sd">                                                 been fully traversed.</span>
-<span class="sd">            | wLastTS (ndarray)             -- fracture width from the last time step</span>
-<span class="sd">            | wTip (ndarray)                -- fracture width in the tip elements</span>
-<span class="sd">            | EltCrack (ndarray)            -- list of elements in the fracture</span>
-<span class="sd">            | Mesh (CartesianMesh object):  -- the mesh</span>
-<span class="sd">            | dt (float)                    -- the current time step</span>
-<span class="sd">            | Q (float)                     -- fluid injection rate at the current time step</span>
-<span class="sd">            | C (ndarray)                   -- the elasticity matrix</span>
-<span class="sd">            | muPrime (ndarray)             -- 12 time viscosity of the injected fluid</span>
-<span class="sd">            | rho (float)                   -- density of the injected fluid</span>
-<span class="sd">            | InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest</span>
-<span class="sd">            | LeakOff (ndarray)             -- the leaked off fluid volume for each cell</span>
-<span class="sd">            | sigma0 (ndarray)              -- the confining stress</span>
-<span class="sd">            | turb (boolean)                -- turbulence will be taken into account if true</span>
-<span class="sd">            | dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture</span>
+<span class="sd">            - wLastTS (ndarray)             -- fracture width from the last time step.</span>
+<span class="sd">            - wTip (ndarray)                -- fracture width in the tip elements.</span>
+<span class="sd">            - EltCrack (ndarray)            -- list of elements in the fracture.</span>
+<span class="sd">            - Mesh (CartesianMesh object):  -- the mesh.</span>
+<span class="sd">            - dt (float)                    -- the current time step.</span>
+<span class="sd">            - Q (float)                     -- fluid injection rate at the current time step.</span>
+<span class="sd">            - C (ndarray)                   -- the elasticity matrix.</span>
+<span class="sd">            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.</span>
+<span class="sd">            - rho (float)                   -- density of the injected fluid.</span>
+<span class="sd">            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.</span>
+<span class="sd">            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.</span>
+<span class="sd">            - sigma0 (ndarray)              -- the confining stress.</span>
+<span class="sd">            - turb (boolean)                -- turbulence will be taken into account if true.</span>
+<span class="sd">            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\</span>
 <span class="sd">                                               roughness.</span>
-<span class="sd">            | active (ndarray)              -- index of cells where the width constraint is active.</span>
-<span class="sd">            | wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \</span>
-<span class="sd">                                               cells</span>
-<span class="sd">            | wc (float)                    -- the critical minimum width for the material</span>
-<span class="sd">            | cf (float)                    -- fluid compressibility</span>
+<span class="sd">            - active (ndarray)              -- index of cells where the width constraint is active.</span>
+<span class="sd">            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \</span>
+<span class="sd">                                               cells.</span>
+<span class="sd">            - wc (float)                    -- the critical minimum width for the material.</span>
+<span class="sd">            - cf (float)                    -- fluid compressibility.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        | A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.</span>
-<span class="sd">        | S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.</span>
-<span class="sd">        | interItr_kp1 (tuple)   -- the information transferred between iterations.</span>
-<span class="sd">        | indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is</span>
+<span class="sd">        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.</span>
+<span class="sd">        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.</span>
+<span class="sd">        - interItr_kp1 (tuple)   -- the information transferred between iterations.</span>
+<span class="sd">        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\</span>
 <span class="sd">                                   obtained for channel, tip and active width constraint cells.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -637,15 +645,15 @@
     <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_total</span><span class="p">,</span> <span class="n">n_total</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 
     <span class="n">ch_AplusCf</span> <span class="o">=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span> \
-                <span class="o">+</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_ch</span><span class="p">,</span> <span class="p">),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_solve</span><span class="p">])],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">)</span>
+                 <span class="o">+</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_ch</span><span class="p">,),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_solve</span><span class="p">])],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">)</span>
     <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">,</span> <span class="n">ch_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">n_ch</span><span class="p">)</span> <span class="o">-</span> <span class="n">ch_AplusCf</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)])</span>
     <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">,</span> <span class="n">tip_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
     <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">,</span> <span class="n">act_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
 
     <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">,</span> <span class="n">ch_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span>
-                                       <span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)])</span>
+                                        <span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)])</span>
     <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">,</span> <span class="n">tip_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">]</span> <span class="o">-</span>
-                                       <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_tip</span><span class="p">,</span> <span class="p">),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])],</span>
+                                       <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_tip</span><span class="p">,),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])],</span>
                                                     <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
     <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">,</span> <span class="n">act_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
 
@@ -663,19 +671,18 @@
                   <span class="n">sigma0</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span>
 
     <span class="n">S</span><span class="p">[</span><span class="n">ch_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch_AplusCf</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
+                  <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">+</span> \
+                  <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
     <span class="n">S</span><span class="p">[</span><span class="n">tip_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">imposed_val</span> <span class="o">-</span> <span class="n">wLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">-</span> \
-                    <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">*</span> <span class="n">pfLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
-    <span class="n">S</span><span class="p">[</span><span class="n">act_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">wc</span> <span class="o">-</span> <span class="n">wLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">-</span> \
-                    <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">*</span> <span class="n">pfLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">+</span> \
-                    <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
-
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">-</span> \
+                   <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">*</span> <span class="n">pfLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
+    <span class="n">S</span><span class="p">[</span><span class="n">act_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">wc_to_impose</span> <span class="o">-</span> <span class="n">wLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">-</span> \
+                   <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">*</span> <span class="n">pfLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
 
     <span class="c1"># indices of solved width, pressure and traction in the solution</span>
     <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
@@ -686,14 +693,188 @@
     <span class="n">interItr_kp1</span> <span class="o">=</span> <span class="p">(</span><span class="n">vk</span><span class="p">,</span> <span class="n">below_wc</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">interItr_kp1</span><span class="p">,</span> <span class="n">indices</span></div>
 
+
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP"><a class="viewcode-back" href="../doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP">[docs]</a><span class="k">def</span> <span class="nf">MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP</span><span class="p">(</span><span class="n">solk</span><span class="p">,</span> <span class="n">interItr</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function makes the linearized system of equations to be solved by a linear system solver. The system is</span>
+<span class="sd">    assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see</span>
+<span class="sd">    description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is</span>
+<span class="sd">    active are solved separately. The pressure in the channel cells to be solved for change in width is substituted</span>
+<span class="sd">    with width using the elasticity relation (see Zia and Lecamption 2019).</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
+<span class="sd">                                          fracture front.</span>
+<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
+
+<span class="sd">        args (tupple): arguments passed to the function</span>
+
+<span class="sd">            Arguments:</span>
+<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
+<span class="sd">                                          fracture front.</span>
+<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
+
+<span class="sd">        args (tupple): arguments passed to the function</span>
+
+<span class="sd">            - EltChannel (ndarray)          -- list of channel elements</span>
+<span class="sd">            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
+<span class="sd">                                                 been fully traversed.</span>
+<span class="sd">            - wLastTS (ndarray)             -- fracture width from the last time step.</span>
+<span class="sd">            - wTip (ndarray)                -- fracture width in the tip elements.</span>
+<span class="sd">            - EltCrack (ndarray)            -- list of elements in the fracture.</span>
+<span class="sd">            - Mesh (CartesianMesh object):  -- the mesh.</span>
+<span class="sd">            - dt (float)                    -- the current time step.</span>
+<span class="sd">            - Q (float)                     -- fluid injection rate at the current time step.</span>
+<span class="sd">            - C (ndarray)                   -- the elasticity matrix.</span>
+<span class="sd">            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.</span>
+<span class="sd">            - rho (float)                   -- density of the injected fluid.</span>
+<span class="sd">            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.</span>
+<span class="sd">            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.</span>
+<span class="sd">            - sigma0 (ndarray)              -- the confining stress.</span>
+<span class="sd">            - turb (boolean)                -- turbulence will be taken into account if true.</span>
+<span class="sd">            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\</span>
+<span class="sd">                                               roughness.</span>
+<span class="sd">            - active (ndarray)              -- index of cells where the width constraint is active.</span>
+<span class="sd">            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \</span>
+<span class="sd">                                               cells.</span>
+<span class="sd">            - wc (float)                    -- the critical minimum width for the material.</span>
+<span class="sd">            - cf (float)                    -- fluid compressibility.</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.</span>
+<span class="sd">        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.</span>
+<span class="sd">        - interItr_kp1 (tuple)   -- the information transferred between iterations.</span>
+<span class="sd">        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\</span>
+<span class="sd">                                    obtained for channel, tip and active width constraint cells.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_impose</span><span class="p">,</span> <span class="n">wLastTS</span><span class="p">,</span> <span class="n">pfLastTS</span><span class="p">,</span> <span class="n">imposed_val</span><span class="p">,</span> <span class="n">EltCrack</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">Q</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">muPrime</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span> <span class="n">InCrack</span><span class="p">,</span> <span class="n">LeakOff</span><span class="p">,</span>
+     <span class="n">sigma0</span><span class="p">,</span> <span class="n">turb</span><span class="p">,</span> <span class="n">dgrain</span><span class="p">,</span> <span class="n">gravity</span><span class="p">,</span> <span class="n">active</span><span class="p">,</span> <span class="n">wc_to_impose</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="n">cf</span><span class="p">)</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="n">wcNplusOne</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">wLastTS</span><span class="p">)</span>
+    <span class="n">wcNplusOne</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">+=</span> <span class="n">solk</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)]</span>
+    <span class="n">wcNplusOne</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">=</span> <span class="n">imposed_val</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wc_to_impose</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">wcNplusOne</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">=</span> <span class="n">wc_to_impose</span>
+
+    <span class="n">below_wc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">wcNplusOne</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">wc</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">below_wc_km1</span> <span class="o">=</span> <span class="n">interItr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">below_wc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">below_wc_km1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">below_wc</span><span class="p">,</span> <span class="n">below_wc_km1</span><span class="p">))</span>
+    <span class="n">wcNplusOne</span><span class="p">[</span><span class="n">to_solve</span><span class="p">[</span><span class="n">below_wc</span><span class="p">]]</span> <span class="o">=</span> <span class="n">wc</span>
+    <span class="n">vkm1</span> <span class="o">=</span> <span class="n">interItr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">wcNplusHalf</span> <span class="o">=</span> <span class="p">(</span><span class="n">wLastTS</span> <span class="o">+</span> <span class="n">wcNplusOne</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="k">if</span> <span class="n">turb</span><span class="p">:</span>
+
+        <span class="p">(</span><span class="n">FinDiffOprtr</span><span class="p">,</span> <span class="n">vk</span><span class="p">)</span> <span class="o">=</span> <span class="n">FiniteDiff_operator_turbulent_implicit</span><span class="p">(</span><span class="n">wcNplusOne</span><span class="p">,</span>
+                                                                    <span class="n">EltCrack</span><span class="p">,</span>
+                                                                    <span class="n">muPrime</span> <span class="o">/</span> <span class="mi">12</span><span class="p">,</span>
+                                                                    <span class="n">Mesh</span><span class="p">,</span>
+                                                                    <span class="n">InCrack</span><span class="p">,</span>
+                                                                    <span class="n">rho</span><span class="p">,</span>
+                                                                    <span class="n">vkm1</span><span class="p">,</span>
+                                                                    <span class="n">C</span><span class="p">,</span>
+                                                                    <span class="n">sigma0</span><span class="p">,</span>
+                                                                    <span class="n">dgrain</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">FinDiffOprtr</span> <span class="o">=</span> <span class="n">finiteDiff_operator_laminar</span><span class="p">(</span><span class="n">wcNplusOne</span><span class="p">,</span>
+                                                   <span class="n">EltCrack</span><span class="p">,</span>
+                                                   <span class="n">muPrime</span><span class="p">,</span>
+                                                   <span class="n">Mesh</span><span class="p">,</span>
+                                                   <span class="n">InCrack</span><span class="p">)</span>
+        <span class="n">vk</span> <span class="o">=</span> <span class="n">vkm1</span>
+
+    <span class="k">if</span> <span class="n">gravity</span><span class="p">:</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">Gravity_term</span><span class="p">(</span><span class="n">wcNplusOne</span><span class="p">,</span>
+                         <span class="n">EltCrack</span><span class="p">,</span>
+                         <span class="n">muPrime</span><span class="p">,</span>
+                         <span class="n">Mesh</span><span class="p">,</span>
+                         <span class="n">InCrack</span><span class="p">,</span>
+                         <span class="n">rho</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,))</span>
+
+    <span class="n">n_ch</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_solve</span><span class="p">)</span>
+    <span class="n">n_act</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">active</span><span class="p">)</span>
+    <span class="n">n_tip</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">imposed_val</span><span class="p">)</span>
+    <span class="n">n_total</span> <span class="o">=</span> <span class="n">n_ch</span> <span class="o">+</span> <span class="n">n_act</span> <span class="o">+</span> <span class="n">n_tip</span>
+
+    <span class="n">ch_indxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_ch</span><span class="p">)</span>
+    <span class="n">act_indxs</span> <span class="o">=</span> <span class="n">n_ch</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_act</span><span class="p">)</span>
+    <span class="n">tip_indxs</span> <span class="o">=</span> <span class="n">n_ch</span> <span class="o">+</span> <span class="n">n_act</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_tip</span><span class="p">)</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_total</span><span class="p">,</span> <span class="n">n_total</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="n">ch_AplusCf</span> <span class="o">=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span> \
+                 <span class="o">+</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_ch</span><span class="p">,),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_solve</span><span class="p">])],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">)</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">,</span> <span class="n">ch_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">n_ch</span><span class="p">)</span> <span class="o">-</span> <span class="n">ch_AplusCf</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)])</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">,</span> <span class="n">tip_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">,</span> <span class="n">act_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">,</span> <span class="n">ch_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span>
+                                        <span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)])</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">,</span> <span class="n">tip_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">]</span> <span class="o">-</span>
+                                       <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_tip</span><span class="p">,),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])],</span>
+                                                    <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">,</span> <span class="n">act_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">act_indxs</span><span class="p">,</span> <span class="n">ch_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span>
+                                        <span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)])</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">act_indxs</span><span class="p">,</span> <span class="n">tip_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">act_indxs</span><span class="p">,</span> <span class="n">act_indxs</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">]</span> <span class="o">-</span>
+                                       <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_act</span><span class="p">,),</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">active</span><span class="p">])],</span>
+                                                    <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+
+    <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_total</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">pf_ch_prime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_solve</span><span class="p">)],</span> <span class="n">wLastTS</span><span class="p">[</span><span class="n">to_solve</span><span class="p">])</span> <span class="o">+</span> \
+                  <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">to_impose</span><span class="p">)],</span> <span class="n">imposed_val</span><span class="p">)</span> <span class="o">+</span> \
+                  <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">to_solve</span><span class="p">,</span> <span class="n">active</span><span class="p">)],</span> <span class="n">wcNplusOne</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
+                  <span class="n">sigma0</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span>
+
+    <span class="n">S</span><span class="p">[</span><span class="n">ch_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch_AplusCf</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">+</span> \
+                  <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pfLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])</span> <span class="o">+</span> \
+                  <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_solve</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pfLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
+                  <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">+</span> \
+                  <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> \
+                  <span class="o">-</span> <span class="n">cf</span> <span class="o">*</span> <span class="n">wcNplusHalf</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span> <span class="o">*</span> <span class="n">pfLastTS</span><span class="p">[</span><span class="n">to_solve</span><span class="p">]</span>
+
+    <span class="n">S</span><span class="p">[</span><span class="n">tip_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">imposed_val</span> <span class="o">-</span> <span class="n">wLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">+</span> \
+                   <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pfLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">to_impose</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pfLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">to_impose</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
+
+    <span class="n">S</span><span class="p">[</span><span class="n">act_indxs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">wc_to_impose</span> <span class="o">-</span> <span class="n">wLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_solve</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pf_ch_prime</span><span class="p">)</span> <span class="o">+</span> \
+                   <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">to_impose</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pfLastTS</span><span class="p">[</span><span class="n">to_impose</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">FinDiffOprtr</span><span class="p">[</span><span class="n">active</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">active</span><span class="p">])</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pfLastTS</span><span class="p">[</span><span class="n">active</span><span class="p">])</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">G</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">+</span> \
+                   <span class="n">dt</span> <span class="o">*</span> <span class="n">Q</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span> <span class="o">-</span> <span class="n">LeakOff</span><span class="p">[</span><span class="n">active</span><span class="p">]</span> <span class="o">/</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">EltArea</span>
+
+    <span class="c1"># indices of solved width, pressure and traction in the solution</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch_indxs</span><span class="p">)</span>
+    <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tip_indxs</span><span class="p">)</span>
+    <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">act_indxs</span><span class="p">)</span>
+
+    <span class="n">interItr_kp1</span> <span class="o">=</span> <span class="p">(</span><span class="n">vk</span><span class="p">,</span> <span class="n">below_wc</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">interItr_kp1</span><span class="p">,</span> <span class="n">indices</span></div>
+
+<span class="c1"># -----------------------------------------------------------------------------------------------------------------------</span>
 
 
 <div class="viewcode-block" id="MakeEquationSystem_mechLoading"><a class="viewcode-back" href="../doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.MakeEquationSystem_mechLoading">[docs]</a><span class="k">def</span> <span class="nf">MakeEquationSystem_mechLoading</span><span class="p">(</span><span class="n">wTip</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">,</span> <span class="n">EltTip</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">EltLoaded</span><span class="p">,</span> <span class="n">w_loaded</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function makes the linear system of equations to be solved by a linear system solver. The system is assembled</span>
 <span class="sd">    with the extended footprint (treating the channel and the extended tip elements distinctly). The given width is</span>
-<span class="sd">    imposed on the given loaded elements (see Zia and Lecampion 2019)</span>
+<span class="sd">    imposed on the given loaded elements (see Zia and Lecampion 2019).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">Ccc</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">EltChannel</span><span class="p">,</span> <span class="n">EltChannel</span><span class="p">)]</span>
@@ -786,8 +967,8 @@
 <span class="sd">                                   iteration.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        | solk (ndarray)       -- solution at the end of iteration.</span>
-<span class="sd">        | data (tuple)         -- any data to be returned</span>
+<span class="sd">        - solk (ndarray)       -- solution at the end of iteration.</span>
+<span class="sd">        - data (tuple)         -- any data to be returned</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">solk</span> <span class="o">=</span> <span class="n">guess</span>
     <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span>
@@ -870,8 +1051,8 @@
 <span class="sd">        tol (float)         -- tolerance</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">         | converged (bool) -- True if converged</span>
-<span class="sd">         | norm (float)     -- the evaluated norm which is checked against tolerance</span>
+<span class="sd">         - converged (bool) -- True if converged</span>
+<span class="sd">         - norm (float)     -- the evaluated norm which is checked against tolerance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># if delta w is zero in some cells</span>

@@ -73,6 +73,9 @@
 <span class="sd">            Does not return anything. The levelSet is updated in place.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="c1"># todo: This method is very inefficient. There are a number of improvements that can be done for computational</span>
+    <span class="c1">#  efficiency</span>
+
     <span class="c1"># for Elements radialy outward from ribbon cells</span>
     <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
     <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>

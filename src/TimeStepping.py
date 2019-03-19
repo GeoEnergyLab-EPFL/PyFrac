@@ -77,7 +77,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
         return exitstatus, Fr_k
 
-    elif sim_properties.frontAdvancing == 'semi-implicit':
+    elif sim_properties.frontAdvancing == 'predictor-corrector':
         if sim_properties.verbosity > 1:
             print('Advancing front with velocity from last time-step...')
 
@@ -360,7 +360,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     exitstatus = 1
     return exitstatus, Fr_kplus1
 
-# -----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties,
@@ -406,7 +406,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
 
     # toughness iteration loop
-    while itr < sim_properties.maxToughnessItrs:
+    while itr < sim_properties.maxProjItrs:
 
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
             if sim_properties.projMethod is 'ILSA_orig':
@@ -512,7 +512,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             print("iterating on projection... norm " + repr(norm))
         itr += 1
 
-    # if itr == sim_properties.maxToughnessItrs:
+    # if itr == sim_properties.maxProjItrs:
     #     exitstatus = 10
     #     return exitstatus, None
 
@@ -1060,7 +1060,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 fluid_properties.compressibility)
 
             if sim_properties.substitutePressure:
-                sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
+                if sim_properties.solveDeltaP:
+                    sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
+                else:
+                    sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
                 guess = np.zeros((len(EltCrack), ), float)
                 guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
                                                                 * np.ones((len(to_solve_k),), float)
@@ -1132,11 +1135,15 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             perfNode.subIterations[2].append(perfNode_Picard)
 
         if sim_properties.substitutePressure:
-            # pressure evaluated by dot product of width and elasticity matrix
             pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
-            pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-            pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+            # pressure evaluated by dot product of width and elasticity matrix
+            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
+            if sim_properties.solveDeltaP:
+                pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+            else:
+                pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
         else:
             n_w = len(to_solve_k) + len(neg_km1)
             pf = np.zeros(len(w))
@@ -1526,7 +1533,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     itr = 0
     # toughness iteration loop
-    while itr < sim_properties.maxToughnessItrs:
+    while itr < sim_properties.maxProjItrs:
 
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
             if sim_properties.projMethod is 'ILSA_orig':
@@ -1639,7 +1646,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         itr += 1
 
     #todo Hack!!! keep going if projection does not converge
-    # if itr == sim_properties.maxToughnessItrs:
+    # if itr == sim_properties.maxProjItrs:
     #     exitstatus = 10
     #     return exitstatus, None
 

@@ -344,8 +344,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
         return_list = var_values
     else:
         for i in range(len(fracture_list)):
-            if variable in ('width', 'w', 'pressure', 'p', 'fluid flux', 'ff', 'fluid velocity', \
-                            'fv', 'Reynolds number', 'Re'):
+            if variable in bidimensional_variables:
                 value_point = griddata(fracture_list[i].mesh.CenterCoor,
                                        var_values[i],
                                        point,

@@ -758,9 +758,9 @@ case.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Properties.SimulationProperties.maxToughnessItr">
-<code class="descname">maxToughnessItr</code><a class="headerlink" href="#Properties.SimulationProperties.maxToughnessItr" title="Permalink to this definition">¶</a></dt>
-<dd><p>– maximum toughness loop iterations.</p>
+<dt id="Properties.SimulationProperties.maxProjItrs">
+<code class="descname">maxProjItrs</code><a class="headerlink" href="#Properties.SimulationProperties.maxProjItrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>– maximum iterations for the loop to find projection on the front from ribbon.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -836,6 +836,23 @@ case.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.fixedTmStp">
+<code class="descname">fixedTmStp</code><a class="headerlink" href="#Properties.SimulationProperties.fixedTmStp" title="Permalink to this definition">¶</a></dt>
+<dd><p>– a float or an array giving the fixed time step. The array should have two rows,
+with the first row giving the time at which the time step would change and the
+second row giving the corresponding time step. If None is given as time step,
+appropriate time step would be calculated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">ndarray</td>
 </tr>
 </tbody>
 </table>
@@ -939,9 +956,9 @@ solution.</p>
 <code class="descname">bckColor</code><a class="headerlink" href="#Properties.SimulationProperties.bckColor" title="Permalink to this definition">¶</a></dt>
 <dd><p>– the string specifying the parameter according to which the background of the                                        domain is color coded. Possible options:</p>
 <ul class="simple">
-<li>sigma0 (confining stress)</li>
-<li>K1c (fracture toughness)</li>
-<li>Cl (leak-off coefficient)</li>
+<li>sigma0 or confining stress</li>
+<li>K1c or fracture toughness</li>
+<li>Cl or leak-off coefficient</li>
 </ul>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -956,7 +973,7 @@ solution.</p>
 <dl class="attribute">
 <dt id="Properties.SimulationProperties.plotEltType">
 <code class="descname">plotEltType</code><a class="headerlink" href="#Properties.SimulationProperties.plotEltType" title="Permalink to this definition">¶</a></dt>
-<dd><p>– if True, the type of element will be spedified with color coded dots(channel,
+<dd><p>– if True, the type of element will be specified with color coded dots(channel,
 ribbon or tip).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -971,8 +988,8 @@ ribbon or tip).</p>
 <dl class="attribute">
 <dt id="Properties.SimulationProperties.outputTimePeriod">
 <code class="descname">outputTimePeriod</code><a class="headerlink" href="#Properties.SimulationProperties.outputTimePeriod" title="Permalink to this definition">¶</a></dt>
-<dd><p>– the time period after which the output file is written or the
-figures are plotted.</p>
+<dd><p>– the time period after which the output file is written or the figures are
+plotted.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -984,21 +1001,77 @@ figures are plotted.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Properties.SimulationProperties.tipAsymptote">
-<code class="descname">tipAsymptote</code><a class="headerlink" href="#Properties.SimulationProperties.tipAsymptote" title="Permalink to this definition">¶</a></dt>
-<dd><p>– propagation regime. possible options are:</p>
-<ul class="simple">
-<li>K  (toughness dominated regime, without leak off)</li>
-<li>M  (viscosity dominated regime, without leak off)</li>
-<li>Mt (viscosity dominated regime , with leak off)</li>
-<li>U  (Universal regime accommodating viscosity, toughness                                                 and leak off (see Donstov and Pierce, 2017))</li>
-<li>MK (viscosity to toughness transition regime)</li>
-</ul>
+<dt id="Properties.SimulationProperties.blockFigure">
+<code class="descname">blockFigure</code><a class="headerlink" href="#Properties.SimulationProperties.blockFigure" title="Permalink to this definition">¶</a></dt>
+<dd><p>– if True, the plotted figure(s) will be blocked after every time they are
+plotted. The simulation will advance when any key will be pressed from keyboard.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">string</td>
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.outputEveryTS">
+<code class="descname">outputEveryTS</code><a class="headerlink" href="#Properties.SimulationProperties.outputEveryTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>– the number of time steps after which the output is done. E.g. a value of 4 will
+result in writing of output file / plotting every four time steps.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.plotVar">
+<code class="descname">plotVar</code><a class="headerlink" href="#Properties.SimulationProperties.plotVar" title="Permalink to this definition">¶</a></dt>
+<dd><p>– a list of variable(s) to be plotted during simulation. The time / time steps
+after which the output is done can be controlled with a number of parameters (
+see above).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.substitutePressure">
+<code class="descname">substitutePressure</code><a class="headerlink" href="#Properties.SimulationProperties.substitutePressure" title="Permalink to this definition">¶</a></dt>
+<dd><p>– a flag specifying the solver to be used. If True, the pressure will be
+substituted in the channel elements (see Zia and Lecampion, 2019).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.solveDeltaP">
+<code class="descname">solveDeltaP</code><a class="headerlink" href="#Properties.SimulationProperties.solveDeltaP" title="Permalink to this definition">¶</a></dt>
+<dd><p>– a flag specifying the solver to be used. If True, the change in pressure,
+instead of pressure will be solved in the tip cells and the cells where the
+width constraint is active (see Zia and Lecampion, 2019).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
 </tr>
 </tbody>
 </table>
@@ -1069,7 +1142,7 @@ domain.</p>
 <code class="descname">frontAdvancing</code><a class="headerlink" href="#Properties.SimulationProperties.frontAdvancing" title="Permalink to this definition">¶</a></dt>
 <dd><p>– The type of front advancing to be done. Possible options are:
 - explicit
-- semi-implicit
+- predictor-corrector
 - implicit</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1187,14 +1260,48 @@ kernel or kernel with free surface.</p>
 </dd></dl>
 
 <dl class="attribute">
+<dt id="Properties.SimulationProperties.explicitProjection">
+<code class="descname">explicitProjection</code><a class="headerlink" href="#Properties.SimulationProperties.explicitProjection" title="Permalink to this definition">¶</a></dt>
+<dd><p>– if True, direction from last time step will be used to evaluate TI parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.symmetric">
+<code class="descname">symmetric</code><a class="headerlink" href="#Properties.SimulationProperties.symmetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>– if True, the four quadrant of the domain will be considered symmetric and only
+one will be solved for. The rest will be replaced by its reflection along the x
+and y axes.</p>
+<div class="admonition attention">
+<p class="first admonition-title">Attention</p>
+<p class="last">The symmetric fracture is only implemented in the toughness dominated case.                                            Use full domain if viscous fluid is injected.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="Properties.SimulationProperties.projMethod">
 <code class="descname">projMethod</code><a class="headerlink" href="#Properties.SimulationProperties.projMethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>– the method by which the angle prescribed by the projections onto the front
 are evaluated. Possible options are:</p>
 <blockquote>
 <div><ul class="simple">
-<li>‘ILSA_orig’ (the method described in the original ILSA scheme)</li>
-<li>‘LS_grad’ (using gradient of the level set)</li>
+<li>‘ILSA_orig’ (the method described in the original ILSA scheme).</li>
+<li>‘LS_grad’ (using gradient of the level set).</li>
 </ul>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1202,6 +1309,37 @@ are evaluated. Possible options are:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.height">
+<code class="descname">height</code><a class="headerlink" href="#Properties.SimulationProperties.height" title="Permalink to this definition">¶</a></dt>
+<dd><p>– this parameters is only used in the case of height contained hydraulic fracture
+plots, e.g. to plot analytical solutions of PKN and KGD fractures.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.aspectRatio">
+<code class="descname">aspectRatio</code><a class="headerlink" href="#Properties.SimulationProperties.aspectRatio" title="Permalink to this definition">¶</a></dt>
+<dd><p>– this parameters is only used in the case of elliptical hydraulic fracture
+plots, e.g. to plot analytical solutions of anisotropic toughness or TI
+elasticity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a></td>
 </tr>
 </tbody>
 </table>
@@ -1311,6 +1449,20 @@ are evaluated. Possible options are:</p>
 </table>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.__tipAsymptote">
+<code class="descname">__tipAsymptote</code><a class="headerlink" href="#Properties.SimulationProperties.__tipAsymptote" title="Permalink to this definition">¶</a></dt>
+<dd><p>– the tip asymptote to be used. Can be modified with the provided function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="Properties.SimulationProperties.get_dryCrack_mechLoading">
 <code class="descname">get_dryCrack_mechLoading</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_dryCrack_mechLoading"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_dryCrack_mechLoading" title="Permalink to this definition">¶</a></dt>
@@ -1374,7 +1526,24 @@ are evaluated. Possible options are:</p>
 <dl class="method">
 <dt id="Properties.SimulationProperties.set_tipAsymptote">
 <code class="descname">set_tipAsymptote</code><span class="sig-paren">(</span><em>tip_asymptote</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.set_tipAsymptote"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.set_tipAsymptote" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The function to set up the tip asymptote.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tipAsymptote</strong> (<em>string</em>) – <p>– propagation regime. possible options are:</p>
+<ul class="simple">
+<li>K  (toughness dominated regime, without leak off)</li>
+<li>M  (viscosity dominated regime, without leak off)</li>
+<li>Mt (viscosity dominated regime , with leak off)</li>
+<li>U  (Universal regime accommodating viscosity, toughness                                                 and leak off (see Donstov and Pierce, 2017))</li>
+<li>MK (viscosity to toughness transition regime)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="Properties.SimulationProperties.set_viscousInjection">

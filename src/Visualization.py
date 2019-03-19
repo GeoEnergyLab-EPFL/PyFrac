@@ -383,8 +383,7 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-                    'front_dist_mean', 'd_mean'):
+    if variable in unidimensional_variables:
         raise ValueError("The given variable does not vary spatially.")
 
     if plot_prop is None:

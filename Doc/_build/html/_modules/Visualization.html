@@ -425,8 +425,7 @@
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_min&#39;</span><span class="p">,</span> <span class="s1">&#39;d_min&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_max&#39;</span><span class="p">,</span> <span class="s1">&#39;d_max&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;front_dist_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">unidimensional_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The given variable does not vary spatially.&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
