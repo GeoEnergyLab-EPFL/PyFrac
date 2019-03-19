@@ -78,6 +78,7 @@ class Controller:
        self.lst_tmStp = None
        self.solveDetlaP_cp = self.sim_prop.solveDeltaP
        self.PstvInjJmp = None
+       self.setFigPos = True
 
        # make a list of Nones with the size of the number of variables to plot during simulation
        self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
@@ -529,6 +530,20 @@ class Controller:
                                                                                 plot_prop=plot_prop,
                                                                                 plot_mesh=False,
                                                                                 print_number=False)
+                # set figure position
+                if self.setFigPos:
+                    for i in range(len(self.sim_prop.plotVar)):
+                        plt.figure(i + 1)
+                        mngr = plt.get_current_fig_manager()
+                        x_offset = 650 * i
+                        y_ofset = 50
+                        if i >= 3:
+                            x_offset = (i - 3) * 650
+                            y_ofset = 500
+                        mngr.window.setGeometry(x_offset, y_ofset, 640, 545)
+                    self.setFigPos = False
+
+
                 # plot the figure
                 plt.ion()
                 plt.pause(0.01)
