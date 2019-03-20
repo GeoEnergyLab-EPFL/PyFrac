@@ -43,7 +43,7 @@ Fluid = FluidProperties(viscosity=30)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
+simulProp.bckColor = 'confining stress'           # the parameter according to which the background is color coded
 simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))

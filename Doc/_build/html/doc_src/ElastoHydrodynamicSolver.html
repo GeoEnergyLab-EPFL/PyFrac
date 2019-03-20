@@ -60,20 +60,25 @@ Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into acco
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>w</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>EltCrack</strong> (<em>ndarray-int</em>) – </li>
-<li><strong>mu</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>Mesh</strong> (<em>CartesianMesh object</em>) – </li>
-<li><strong>InCrack</strong> (<em>ndarray-int</em>) – 1 or 0 respectively.</li>
-<li><strong>vkm1</strong> (<em>ndarray-float</em><em>)           </em><em>-- the velocity at cell edges from the previous iteration</em><em> (</em><em>if necessary</em>) – it is used as the starting guess for the implicit solver.</li>
-<li><strong>C</strong> (<em>ndarray-float</em>) – </li>
-<li><strong>sigma0</strong> (<em>ndarrray-float</em>) – </li>
-<li><strong>dgrain</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
+<li><strong>w</strong> (<em>ndarray</em>) – – the width of the trial fracture.</li>
+<li><strong>EltCrack</strong> (<em>ndarray</em>) – – the list of elements inside the fracture</li>
+<li><strong>mu</strong> (<em>ndarray</em>) – – the local viscosity of the injected fluid</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the mesh.</li>
+<li><strong>InCrack</strong> (<em>ndarray</em>) – – an array specifying whether elements are inside the fracture or not with
+1 or 0 respectively.</li>
+<li><strong>vkm1</strong> (<em>ndarray</em>) – – the velocity at cell edges from the previous iteration (if necessary). Here,
+it is used as the starting guess for the implicit solver.</li>
+<li><strong>C</strong> (<em>ndarray</em>) – – the elasticity matrix.</li>
+<li><strong>sigma0</strong> (<em>ndarrray</em>) – – the confining stress.</li>
+<li><strong>dgrain</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the grain size. Used to get the relative roughness.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">FinDiffOprtr (ndarray-float)   – the finite difference matrix.
-vk (ndarray-float)             – the velocity evaluated for current iteration.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>FinDiffOprtr (ndarray)    – the finite difference matrix.</li>
+<li>vk (ndarray)              – the velocity evaluated for current iteration.</li>
+</ul>
+</p>
 </td>
 </tr>
 </tbody>
@@ -130,13 +135,7 @@ for traction and pressure separately.</p>
 <li><strong>sol_k</strong> (<em>ndarray</em>) – – the trial change in width and pressure for the current iteration of
 fracture front.</li>
 <li><strong>interItr</strong> (<em>ndarray</em>) – – the information from the last iteration.</li>
-<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function</p>
-<p>Arguments:</p>
-</li>
-<li><strong>sol_k</strong> – – the trial change in width and pressure for the current iteration of
-fracture front.</li>
-<li><strong>interItr</strong> – – the information from the last iteration.</li>
-<li><strong>args</strong> – <p>arguments passed to the function</p>
+<li><strong>args</strong> (<em>tupple</em>) – <p>– arguments passed to the function. A tuple containing the following in order:</p>
 <ul>
 <li>EltChannel (ndarray)          – list of channel elements</li>
 <li>EltsTipNew (ndarray)          – list of new tip elements. This list also contains the elements that has                                                 been fully traversed.</li>
@@ -192,7 +191,7 @@ using the elasticity relation (see Zia and Lecamption 2019).</p>
 <li><strong>sol_k</strong> (<em>ndarray</em>) – – the trial change in width and pressure for the current iteration of
 fracture front.</li>
 <li><strong>interItr</strong> (<em>ndarray</em>) – – the information from the last iteration.</li>
-<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function</p>
+<li><strong>args</strong> (<em>tupple</em>) – <p>– arguments passed to the function. A tuple containing the following in order:</p>
 <ul>
 <li>EltChannel (ndarray)          – list of channel elements</li>
 <li>EltsTipNew (ndarray)          – list of new tip elements. This list also contains the elements that has                                                 been fully traversed.</li>
@@ -248,13 +247,7 @@ with width using the elasticity relation (see Zia and Lecamption 2019).</p>
 <li><strong>sol_k</strong> (<em>ndarray</em>) – – the trial change in width and pressure for the current iteration of
 fracture front.</li>
 <li><strong>interItr</strong> (<em>ndarray</em>) – – the information from the last iteration.</li>
-<li><strong>args</strong> (<em>tupple</em>) – <p>arguments passed to the function</p>
-<p>Arguments:</p>
-</li>
-<li><strong>sol_k</strong> – – the trial change in width and pressure for the current iteration of
-fracture front.</li>
-<li><strong>interItr</strong> – – the information from the last iteration.</li>
-<li><strong>args</strong> – <p>arguments passed to the function</p>
+<li><strong>args</strong> (<em>tupple</em>) – <p>– arguments passed to the function. A tuple containing the following in order:</p>
 <ul>
 <li>EltChannel (ndarray)          – list of channel elements</li>
 <li>EltsTipNew (ndarray)          – list of new tip elements. This list also contains the elements that has                                                 been fully traversed.</li>
@@ -364,13 +357,13 @@ iteration.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – current velocity guess</li>
 <li><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) – <p>– a tuple consisting of the following:</p>
-<div class="line-block">
-<div class="line">w (float)          width at the given cell edge</div>
-<div class="line">mu (float)         viscosity at the given cell edge</div>
-<div class="line">rho (float)        density of the injected fluid</div>
-<div class="line">dp (float)         pressure gradient at the given cell edge</div>
-<div class="line">rough (float)      roughness (width / grain size) at the cell center</div>
-</div>
+<ul>
+<li>w (float)          width at the given cell edge</li>
+<li>mu (float)         viscosity at the given cell edge</li>
+<li>rho (float)        density of the injected fluid</li>
+<li>dp (float)         pressure gradient at the given cell edge</li>
+<li>rough (float)      roughness (width / grain size) at the cell center</li>
+</ul>
 </li>
 </ul>
 </td>

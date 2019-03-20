@@ -261,6 +261,7 @@ class CartesianMesh:
         if fig is None:
             fig, ax = plt.subplots()
         else:
+            plt.figure(fig.number)
             plt.subplot(111)
             ax = fig.get_axes()[0]
 
@@ -294,7 +295,7 @@ class CartesianMesh:
             sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                        norm=plt.Normalize(vmin=min_value, vmax=max_value))
             sm._A = []
-            clr_bar = fig.colorbar(sm, ax=ax_clrbar, alpha=0.65)
+            clr_bar = fig.colorbar(sm, alpha=0.65)
             clr_bar.set_label(parameter)
 
         else:
@@ -368,10 +369,10 @@ class CartesianMesh:
             edge_color = (rgb_col[0], rgb_col[1], rgb_col[2], 0.2)
             cell = mpatches.Rectangle((self.CenterCoor[i, 0] - self.hx / 2,
                                        self.CenterCoor[i, 1] - self.hy / 2),
-                                      self.hx,
-                                      self.hy,
-                                      ec=edge_color,
-                                      fc=face_color)
+                                       self.hx,
+                                       self.hy,
+                                       ec=edge_color,
+                                       fc=face_color)
             ax.add_patch(cell)
             art3d.pathpatch_2d_to_3d(cell)
 
@@ -610,6 +611,10 @@ def process_material_prop_for_display(material_prop, backGround_param):
             colors = (material_prop.Cl - min_value) / (max_value - min_value)
         parameter = "Leak off coefficient"
     elif backGround_param is not None:
-        raise ValueError("Back ground color identifier not supported!")
+        raise ValueError("Back ground color identifier not supported!\n"
+                         "Select one of the following:\n"
+                         "-- \'confining stress\' or \'sigma0\'\n"
+                         "-- \'fracture toughness\' or \'K1c\'\n"
+                         "-- \'leak off coefficient\' or \'Cl\'")
 
     return min_value, max_value, parameter, colors

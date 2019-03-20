@@ -120,6 +120,7 @@
        <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">=</span> <span class="kc">None</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">solveDetlaP_cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">solveDeltaP</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">PstvInjJmp</span> <span class="o">=</span> <span class="kc">None</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">True</span>
 
        <span class="c1"># make a list of Nones with the size of the number of variables to plot during simulation</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">))]</span>
@@ -502,10 +503,10 @@
                     <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
 
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]:</span>
-                        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>   <span class="c1"># save axes from last figure</span>
+                        <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()</span>   <span class="c1"># save axes from last figure</span>
                         <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-                        <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>                               <span class="c1"># clear figure</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>         <span class="c1"># add axis to the figure</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>                              <span class="c1"># clear figure</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Figures</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>   <span class="c1"># add axis to the figure</span>
 
                     <span class="k">if</span> <span class="n">plt_var</span> <span class="ow">is</span> <span class="s1">&#39;footprint&#39;</span><span class="p">:</span>
                         <span class="c1"># footprint is plotted if variable to plot is not given</span>
@@ -571,6 +572,20 @@
                                                                                 <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
                                                                                 <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                                                                 <span class="n">print_number</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="c1"># set figure position</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">)):</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                        <span class="n">mngr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_current_fig_manager</span><span class="p">()</span>
+                        <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">650</span> <span class="o">*</span> <span class="n">i</span>
+                        <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">50</span>
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                            <span class="n">x_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">650</span>
+                            <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">500</span>
+                        <span class="n">mngr</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x_offset</span><span class="p">,</span> <span class="n">y_ofset</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">545</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">False</span>
+
+
                 <span class="c1"># plot the figure</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>

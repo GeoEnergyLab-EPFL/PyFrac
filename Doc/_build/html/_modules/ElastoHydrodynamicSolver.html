@@ -134,21 +134,21 @@
 <span class="sd">    Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into account.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        w (ndarray-float)              -- the width of the trial fracture.</span>
-<span class="sd">        EltCrack (ndarray-int)         -- the list of elements inside the fracture</span>
-<span class="sd">        mu (ndarray-float)             -- the local viscosity of the injected fluid</span>
-<span class="sd">        Mesh (CartesianMesh object)    -- the mesh.</span>
-<span class="sd">        InCrack (ndarray-int)          -- an array specifying whether elements are inside the fracture or not with</span>
-<span class="sd">                                            1 or 0 respectively.</span>
-<span class="sd">        vkm1 (ndarray-float)           -- the velocity at cell edges from the previous iteration (if necessary). Here,</span>
-<span class="sd">                                            it is used as the starting guess for the implicit solver.</span>
-<span class="sd">        C (ndarray-float)              -- the elasticity matrix.</span>
-<span class="sd">        sigma0 (ndarrray-float)        -- the confining stress.</span>
-<span class="sd">        dgrain (float)                 -- the grain size. Used to get the relative roughness.</span>
+<span class="sd">        w (ndarray):                -- the width of the trial fracture.</span>
+<span class="sd">        EltCrack (ndarray):         -- the list of elements inside the fracture</span>
+<span class="sd">        mu (ndarray):               -- the local viscosity of the injected fluid</span>
+<span class="sd">        Mesh (CartesianMesh):       -- the mesh.</span>
+<span class="sd">        InCrack (ndarray):          -- an array specifying whether elements are inside the fracture or not with</span>
+<span class="sd">                                       1 or 0 respectively.</span>
+<span class="sd">        vkm1 (ndarray):             -- the velocity at cell edges from the previous iteration (if necessary). Here,</span>
+<span class="sd">                                       it is used as the starting guess for the implicit solver.</span>
+<span class="sd">        C (ndarray):                -- the elasticity matrix.</span>
+<span class="sd">        sigma0 (ndarrray):          -- the confining stress.</span>
+<span class="sd">        dgrain (float):             -- the grain size. Used to get the relative roughness.</span>
 <span class="sd">                </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        FinDiffOprtr (ndarray-float)   -- the finite difference matrix.</span>
-<span class="sd">        vk (ndarray-float)             -- the velocity evaluated for current iteration.</span>
+<span class="sd">        - FinDiffOprtr (ndarray)    -- the finite difference matrix.</span>
+<span class="sd">        - vk (ndarray)              -- the velocity evaluated for current iteration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">FinDiffOprtr</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">w</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -312,11 +312,11 @@
 <span class="sd">        v (float):      -- current velocity guess</span>
 <span class="sd">        args (tuple):   -- a tuple consisting of the following:</span>
 
-<span class="sd">                            | w (float)          width at the given cell edge</span>
-<span class="sd">                            | mu (float)         viscosity at the given cell edge</span>
-<span class="sd">                            | rho (float)        density of the injected fluid</span>
-<span class="sd">                            | dp (float)         pressure gradient at the given cell edge</span>
-<span class="sd">                            | rough (float)      roughness (width / grain size) at the cell center</span>
+<span class="sd">                            - w (float)          width at the given cell edge</span>
+<span class="sd">                            - mu (float)         viscosity at the given cell edge</span>
+<span class="sd">                            - rho (float)        density of the injected fluid</span>
+<span class="sd">                            - dp (float)         pressure gradient at the given cell edge</span>
+<span class="sd">                            - rough (float)      roughness (width / grain size) at the cell center</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">         float:       -- residual of the velocity equation</span>
@@ -376,15 +376,7 @@
 <span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
 <span class="sd">                                          fracture front.</span>
 <span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
-
-<span class="sd">        args (tupple): arguments passed to the function</span>
-
-<span class="sd">            Arguments:</span>
-<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
-<span class="sd">                                          fracture front.</span>
-<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
-
-<span class="sd">        args (tupple): arguments passed to the function</span>
+<span class="sd">        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:</span>
 
 <span class="sd">            - EltChannel (ndarray)          -- list of channel elements</span>
 <span class="sd">            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
@@ -550,8 +542,7 @@
 <span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
 <span class="sd">                                          fracture front.</span>
 <span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
-
-<span class="sd">        args (tupple): arguments passed to the function</span>
+<span class="sd">        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:</span>
 
 <span class="sd">            - EltChannel (ndarray)          -- list of channel elements</span>
 <span class="sd">            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
@@ -709,15 +700,7 @@
 <span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
 <span class="sd">                                          fracture front.</span>
 <span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
-
-<span class="sd">        args (tupple): arguments passed to the function</span>
-
-<span class="sd">            Arguments:</span>
-<span class="sd">        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of</span>
-<span class="sd">                                          fracture front.</span>
-<span class="sd">        interItr (ndarray):            -- the information from the last iteration.</span>
-
-<span class="sd">        args (tupple): arguments passed to the function</span>
+<span class="sd">        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:</span>
 
 <span class="sd">            - EltChannel (ndarray)          -- list of channel elements</span>
 <span class="sd">            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\</span>
@@ -742,7 +725,6 @@
 <span class="sd">                                               cells.</span>
 <span class="sd">            - wc (float)                    -- the critical minimum width for the material.</span>
 <span class="sd">            - cf (float)                    -- fluid compressibility.</span>
-
 
 <span class="sd">    Returns:</span>
 <span class="sd">        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.</span>

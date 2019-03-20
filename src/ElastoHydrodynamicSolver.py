@@ -92,21 +92,21 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
     Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into account.
 
     Args:
-        w (ndarray-float)              -- the width of the trial fracture.
-        EltCrack (ndarray-int)         -- the list of elements inside the fracture
-        mu (ndarray-float)             -- the local viscosity of the injected fluid
-        Mesh (CartesianMesh object)    -- the mesh.
-        InCrack (ndarray-int)          -- an array specifying whether elements are inside the fracture or not with
-                                            1 or 0 respectively.
-        vkm1 (ndarray-float)           -- the velocity at cell edges from the previous iteration (if necessary). Here,
-                                            it is used as the starting guess for the implicit solver.
-        C (ndarray-float)              -- the elasticity matrix.
-        sigma0 (ndarrray-float)        -- the confining stress.
-        dgrain (float)                 -- the grain size. Used to get the relative roughness.
+        w (ndarray):                -- the width of the trial fracture.
+        EltCrack (ndarray):         -- the list of elements inside the fracture
+        mu (ndarray):               -- the local viscosity of the injected fluid
+        Mesh (CartesianMesh):       -- the mesh.
+        InCrack (ndarray):          -- an array specifying whether elements are inside the fracture or not with
+                                       1 or 0 respectively.
+        vkm1 (ndarray):             -- the velocity at cell edges from the previous iteration (if necessary). Here,
+                                       it is used as the starting guess for the implicit solver.
+        C (ndarray):                -- the elasticity matrix.
+        sigma0 (ndarrray):          -- the confining stress.
+        dgrain (float):             -- the grain size. Used to get the relative roughness.
                 
     Returns:
-        FinDiffOprtr (ndarray-float)   -- the finite difference matrix.
-        vk (ndarray-float)             -- the velocity evaluated for current iteration.
+        - FinDiffOprtr (ndarray)    -- the finite difference matrix.
+        - vk (ndarray)              -- the velocity evaluated for current iteration.
     """
 
     FinDiffOprtr = sparse.csr_matrix((w.size, w.size), dtype=np.float64)
@@ -270,11 +270,11 @@ def Velocity_Residual(v,*args):
         v (float):      -- current velocity guess
         args (tuple):   -- a tuple consisting of the following:
 
-                            | w (float)          width at the given cell edge
-                            | mu (float)         viscosity at the given cell edge
-                            | rho (float)        density of the injected fluid
-                            | dp (float)         pressure gradient at the given cell edge
-                            | rough (float)      roughness (width / grain size) at the cell center
+                            - w (float)          width at the given cell edge
+                            - mu (float)         viscosity at the given cell edge
+                            - rho (float)        density of the injected fluid
+                            - dp (float)         pressure gradient at the given cell edge
+                            - rough (float)      roughness (width / grain size) at the cell center
 
     Returns:
          float:       -- residual of the velocity equation
@@ -334,15 +334,7 @@ def MakeEquationSystem_ViscousFluid(solk, interItr, *args):
         sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
                                           fracture front.
         interItr (ndarray):            -- the information from the last iteration.
-
-        args (tupple): arguments passed to the function
-
-            Arguments:
-        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
-                                          fracture front.
-        interItr (ndarray):            -- the information from the last iteration.
-
-        args (tupple): arguments passed to the function
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
             - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
@@ -508,8 +500,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
         sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
                                           fracture front.
         interItr (ndarray):            -- the information from the last iteration.
-
-        args (tupple): arguments passed to the function
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
             - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
@@ -667,15 +658,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
         sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
                                           fracture front.
         interItr (ndarray):            -- the information from the last iteration.
-
-        args (tupple): arguments passed to the function
-
-            Arguments:
-        sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of
-                                          fracture front.
-        interItr (ndarray):            -- the information from the last iteration.
-
-        args (tupple): arguments passed to the function
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
             - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
@@ -700,7 +683,6 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                                                cells.
             - wc (float)                    -- the critical minimum width for the material.
             - cf (float)                    -- fluid compressibility.
-
 
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.

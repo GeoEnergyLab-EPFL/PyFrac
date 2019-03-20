@@ -71,7 +71,7 @@ notably for</p>
 - E_K (elliptical fracture propagating in toughness dominated regime). The solution                                            is equivalent to a particular anisotropic toughness case described in                                            Zia and Lecampion, 2018.)
 - E_E (the elliptical solution with transverse isotropic material properties; see                                           Moukhtari and Lecampion, 2019.)
 - MDR (viscosity dominated solution for turbulent flow. The friction factor is                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).</li>
-<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain modulus.</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
 <li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the injection point if not at the center(0,0). It should be a list or and numpy array
@@ -119,7 +119,7 @@ time or length. The solution does not take leak off into account.</p>
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus.</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
 <li><strong>KPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness.</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the KGD fracture (it should be much longer then length).</li>
 <li><strong>ell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – length of fracture.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
@@ -156,7 +156,7 @@ radius.</p>
 <li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 2*C, where C is the Carter’s leak off coefficient</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
 <li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated. Either of the time or radius can
 be provided</li>
 <li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated. Either of the time or radius can
@@ -193,7 +193,7 @@ solution does not take leak off into account.</p>
 <li><strong>Kprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness</li>
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time since the start of the injection.</li>
 <li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
@@ -230,7 +230,7 @@ off into account.</p>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
 <li><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – fluid density.</li>
 <li><strong>visc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – fluid viscosity.</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time since the start of the injection.</li>
 <li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
@@ -265,7 +265,7 @@ since the start of the injection. The solution does not take leak off into accou
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus.</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
 <li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity.</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time since the start of the injection.</li>
 <li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
@@ -301,7 +301,7 @@ takes leak off into account.</p>
 <li><strong>Cprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 2*C, where C is the Carter’s leak off coefficient</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
 <li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>R</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given radius for which the solution is evaluated</li>
 <li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
 </ul>
@@ -335,7 +335,7 @@ does not take leak off into account.</p>
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain elastic modulus</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate</li>
 <li><strong>muPrime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – 12*viscosity</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated</li>
 <li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the PKN fracture</li>
 <li><strong>ell</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – length of the PKN fracture, should be much more than height.</li>
@@ -368,7 +368,7 @@ IJF, 2018).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>mesh</strong> (<em>CartesianMesh</em>) – </li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
 <li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – aspect ratio of the elliptical fracture in the anisotropic cases.</li>
 <li><strong>Cij</strong> (<em>ndarray</em>) – – the transverse isotropic stiffness matrix (in the canonical basis).</li>
 <li><strong>Kc3</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the minor axis.</li>
@@ -412,7 +412,7 @@ IJF, 2018).</p>
 <li><strong>KIc_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the fracture toughness along the major axis.</li>
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain modulus.</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
-<li><strong>Mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given minor axis length.</li>
 <li><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the given time for which the solution is evaluated.</li>
 <li><strong>required</strong> (<em>string</em>) – – a mask giving which of the variables are required.</li>
@@ -458,7 +458,7 @@ Possible options are:</p>
 </ul>
 </div></blockquote>
 </li>
-<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>Eprime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – plain strain modulus.</li>
 <li><strong>Q0</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – injection rate.</li>
 <li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the injection point if not at the center(0,0). It should be a list or and numpy array
@@ -505,7 +505,7 @@ given point.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
 <li><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – </li>
-<li><strong>mesh</strong> (<em>CartesianMesh</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>variable</strong> (<em>ndarray</em>) – – the fracture variable to be shifted. This should be on 1d array with the size of the
 mesh. If not provided, a dummy array with the value of the fill (last argument) will
 be returned.</li>

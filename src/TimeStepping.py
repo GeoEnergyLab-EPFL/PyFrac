@@ -1170,9 +1170,9 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
         return_ReyNumb (boolean):       -- if True, Reynolds number at all cell edges will also be returned
     
     Returns:
-        | Re (ndarray)     -- Reynolds number of all the cells in the domain; row-wise in the following order, 0--left,\
+        - Re (ndarray)     -- Reynolds number of all the cells in the domain; row-wise in the following order, 0--left,\
                               1--right, 2--bottom, 3--top.
-        | boolean          -- True if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds \
+        - boolean          -- True if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds \
                                number is more than 2100).
     """
     # width at the adges by averaging
