@@ -31,8 +31,8 @@ def sigmaO_func(x, y):
 
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           SigmaO_func=sigmaO_func,
-                           wc=1e-8)
+                           confining_stress_func=sigmaO_func,
+                           minimum_width=1e-8)
 
 # injection parameters
 Q0 = np.asarray([[0, 31, 151], [0.0009e-6, 0.0065e-6, 0.0023e-6]])

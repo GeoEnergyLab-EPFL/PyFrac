@@ -461,10 +461,10 @@ class Controller:
                     plot_prop = PlotProperties()
 
                     if self.Figures[indx]:
-                        ax = self.Figures[indx].get_axes()[0]   # save axes from last figure
+                        axes = self.Figures[indx].get_axes()   # save axes from last figure
                         plt.figure(self.Figures[indx].number)
-                        plt.clf()                               # clear figure
-                        self.Figures[indx].add_axes(ax)         # add axis to the figure
+                        plt.clf()                              # clear figure
+                        self.Figures[indx].add_axes(axes[0])   # add axis to the figure
 
                     if plt_var is 'footprint':
                         # footprint is plotted if variable to plot is not given
