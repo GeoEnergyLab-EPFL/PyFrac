@@ -39,7 +39,7 @@ def sigmaO_func(x, y):
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K_Ic,
-                           SigmaO_func=sigmaO_func)
+                           confining_stress_func=sigmaO_func)
 
 # injection parameters
 Q0 = 0.001

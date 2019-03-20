@@ -25,7 +25,7 @@ Cl = 0.5e-6                         # Carter's leak off coefficient
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K1c,
-                           Cl=Cl)
+                           Carters_coef=Cl)
 
 # injection parameters
 Q0 = 0.01  # injection rate

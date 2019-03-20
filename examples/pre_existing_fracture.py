@@ -24,7 +24,7 @@ K_Ic = 1e7                          # fracture toughness
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            K_Ic,
-                           wc=1e-9)
+                           minimum_width=1e-9)
 
 # injection parameters
 Q0 = 0.001  # injection rate

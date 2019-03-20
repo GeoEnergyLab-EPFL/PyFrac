@@ -57,7 +57,6 @@ simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where 
 simulProp.height = 32
 simulProp.gravity = True
 simulProp.bckColor = 'confining stress'
-simulProp.toleranceEHL = 1e-4
 
 # initialization parameters
 initRad = 85
