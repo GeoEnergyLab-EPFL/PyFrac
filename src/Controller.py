@@ -78,7 +78,9 @@ class Controller:
        self.lst_tmStp = None
        self.solveDetlaP_cp = self.sim_prop.solveDeltaP
        self.PstvInjJmp = None
+       self.fullyClosed = False
        self.setFigPos = True
+
 
        # make a list of Nones with the size of the number of variables to plot during simulation
        self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
@@ -230,10 +232,14 @@ class Controller:
 
                 self.successfulTimeSteps += 1
 
-                # resetting the parameters for the fully closed case
-                self.sim_prop.solveDeltaP = self.solveDetlaP_cp
+                # resetting the parameters for closure
+                if self.fullyClosed:
+                    # set to solve for pressure if the fracture was fully closed in last time step and is open now
+                    self.sim_prop.solveDeltaP = False
+                else:
+                    self.sim_prop.solveDeltaP = self.solveDetlaP_cp
                 self.PstvInjJmp = None
-
+                self.fullyClosed = False
             # re-meshing required
             elif status == 12:
                 if self.sim_prop.enableRemeshing:
@@ -271,9 +277,8 @@ class Controller:
                 self.output(Fr_n_pls1)
                 if self.PstvInjJmp is None:
                     inp = input("Fracture is fully closed. Continuing with the simulation may result in non-realistic\n"
-                            "pressures. This can happen because, in the case of a fully closed fracture, the \n"
-                            "pressure gradient is determined by the fluid fluxes which are imposed by the leak-off\n"
-                            "or the flow back.\n\n Do you want to jump to the time of next positive injection? [y/n]")
+                            "pressures (see Zia and Lecampion, 2019).\n\n Do you want to jump to the time of next"
+                            " positive injection? [y/n]")
                     while inp not in ['y', 'Y', 'n', 'N']:
                         inp = input("Press y or n")
 
@@ -295,7 +300,7 @@ class Controller:
                     Fr_n_pls1.time = jump_to
                 elif inp is 'n' or inp is 'N':
                     self.sim_prop.solveDeltaP = True
-
+                self.fullyClosed = True
                 self.fracture = copy.deepcopy(Fr_n_pls1)
 
             else:
@@ -602,17 +607,17 @@ class Controller:
                                                                                          self.fracture.ZeroVertex]]
             # the distance of tip from the injection point in each of the tip cell
             dist_Inj_pnt = (tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + self.fracture.l
-            # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the current
-            # maximum length
 
+            delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             non_zero = np.where(self.fracture.v > 0)[0]
             if len(non_zero) > 0:
+                # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the
+                # current maximum length
                 TS_cell_length = min(abs(0.2 * dist_Inj_pnt[non_zero] / self.fracture.v[non_zero]))
 
                 # the time step evaluated by restricting the fraction of the cell that would be traversed in the time
                 # step. e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half
                 # of the cell width in either x or y direction depending on which is smaller.
-                delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
                 TS_fracture_length = delta_x / np.max(self.fracture.v)
 
             else:

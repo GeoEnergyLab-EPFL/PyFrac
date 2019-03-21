@@ -1075,7 +1075,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             typValue = np.copy(guess)
             inter_itr_init = (vk, np.array([], dtype=int))
-            sol, v_k = Picard_Newton(None,
+            sol, data_Pic = Picard_Newton(None,
                                    sys_fun,
                                    guess,
                                    typValue,
@@ -1122,10 +1122,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
                     # cumulatively add the cells with active width constraint
                     neg = np.hstack((neg_km1, new_neg))
-                    new_wc = np.asarray([], dtype=np.float64)
+                    new_wc = []
                     for i in new_neg:
-                        new_wc = np.append(new_wc, wc_k[np.where(neg_k == i)[0]])
-                    wc_to_impose = np.hstack((wc_km1, new_wc))
+                        new_wc.append(wc_k[np.where(neg_k == i)[0]][0])
+                    wc_to_impose = np.hstack((wc_km1, np.asarray(new_wc)))
                     print('Iterating on cells with active width constraint...')
             else:
                 non_neg = True
@@ -1154,7 +1154,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if len(neg) == len(to_solve):
             fully_closed = True
 
-        return_data = (vk, neg_km1, fully_closed)
+        return_data = (data_Pic, neg_km1, fully_closed)
         return w, pf, return_data
 
 

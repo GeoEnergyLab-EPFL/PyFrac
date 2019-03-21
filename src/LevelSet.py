@@ -17,7 +17,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
     solve Eikonal equation to get level set.
 
     Arguments:
-        levelSet (ndarray-float):       -- level set to be evaluated and updated.
+        levelSet (ndarray-float):           -- level set to be evaluated and updated.
         EltRibbon (ndarray-int):            -- cells with given distance from the front.
         EltChannel (ndarray-int):           -- cells enclosed by the given cells
         mesh (CartesianMesh object):        -- mesh object

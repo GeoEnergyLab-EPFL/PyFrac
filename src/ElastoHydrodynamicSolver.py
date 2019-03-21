@@ -594,14 +594,14 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr[to_solve, :][:, to_solve] \
-                 + sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
+                 - sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
     A[np.ix_(ch_indxs, ch_indxs)] = np.identity(n_ch) - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(ch_indxs, tip_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, to_impose].toarray()
     A[np.ix_(ch_indxs, act_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, active].toarray()
 
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr[to_impose, :][:, to_solve]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[to_impose, :][:, to_impose] -
+    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[to_impose, :][:, to_impose] +
                                        sparse.diags([np.full((n_tip,), cf * wcNplusHalf[to_impose])],
                                                     [0], format='csr')).toarray()
     A[np.ix_(tip_indxs, act_indxs)] = -dt * FinDiffOprtr[to_impose, :][:, active].toarray()
@@ -609,7 +609,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr[active, :][:, to_solve]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(act_indxs, tip_indxs)] = -dt * FinDiffOprtr[active, :][:, to_impose].toarray()
-    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[active, :][:, active] -
+    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[active, :][:, active] +
                                        sparse.diags([np.full((n_act,), cf * wcNplusHalf[active])],
                                                     [0], format='csr')).toarray()
 
@@ -621,14 +621,16 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
     S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
                   dt * G[to_solve] + \
-                  dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea
+                  dt * Q[to_solve] / Mesh.EltArea - \
+                  LeakOff[to_solve] / Mesh.EltArea + \
+                  cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
     S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
-                   dt * FinDiffOprtr[to_impose, :][:, to_solve].dot(pf_ch_prime) - \
+                   dt * FinDiffOprtr[to_impose, :][:, to_solve].dot(pf_ch_prime) + \
                    cf * wcNplusHalf[to_impose] * pfLastTS[to_impose] + \
                    dt * G[to_impose] + \
                    dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
     S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
-                   dt * FinDiffOprtr[active, :][:, to_solve].dot(pf_ch_prime) - \
+                   dt * FinDiffOprtr[active, :][:, to_solve].dot(pf_ch_prime) + \
                    cf * wcNplusHalf[active] * pfLastTS[active] + \
                    dt * G[active] + \
                    dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
@@ -752,14 +754,14 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr[to_solve, :][:, to_solve] \
-                 + sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
+                 - sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
     A[np.ix_(ch_indxs, ch_indxs)] = np.identity(n_ch) - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(ch_indxs, tip_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, to_impose].toarray()
     A[np.ix_(ch_indxs, act_indxs)] = -dt * FinDiffOprtr[to_solve, :][:, active].toarray()
 
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr[to_impose, :][:, to_solve]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[to_impose, :][:, to_impose] -
+    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[to_impose, :][:, to_impose] +
                                        sparse.diags([np.full((n_tip,), cf * wcNplusHalf[to_impose])],
                                                     [0], format='csr')).toarray()
     A[np.ix_(tip_indxs, act_indxs)] = -dt * FinDiffOprtr[to_impose, :][:, active].toarray()
@@ -767,7 +769,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr[active, :][:, to_solve]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(act_indxs, tip_indxs)] = -dt * FinDiffOprtr[active, :][:, to_impose].toarray()
-    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[active, :][:, active] -
+    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[active, :][:, active] +
                                        sparse.diags([np.full((n_act,), cf * wcNplusHalf[active])],
                                                     [0], format='csr')).toarray()
 
@@ -782,7 +784,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                   (dt * FinDiffOprtr[to_solve, :][:, active]).dot(pfLastTS[active]) + \
                   dt * G[to_solve] + \
                   dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea \
-                  - cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
+                  + cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
 
     S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
                    dt * FinDiffOprtr[to_impose, :][:, to_solve].dot(pf_ch_prime) + \
