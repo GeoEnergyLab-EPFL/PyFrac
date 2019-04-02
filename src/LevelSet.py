@@ -88,7 +88,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
         positive_levelSet[EltRibbon] = -levelSet[EltRibbon]
         Alive = EltRibbon.tolist()
         NarrowBand = EltRibbon.tolist()
-        FarAway = np.setdiff1d(farAwayPstv, NarrowBand).tolist()
+        FarAway = np.setdiff1d(farAwayNgtv, NarrowBand).tolist()
 
         while len(NarrowBand) > 0:
 
