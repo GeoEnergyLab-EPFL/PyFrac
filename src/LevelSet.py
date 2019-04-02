@@ -31,27 +31,25 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
             Does not return anything. The levelSet is updated in place.
     """
 
-    # todo: This method is very inefficient. There are a number of improvements that can be done for computational
-    #  efficiency
+    # todo: This method is inefficient. It can be imlpemented with heap for better efficiency
 
     # for Elements radialy outward from ribbon cells
-    Alive = np.copy(EltRibbon)
-    NarrowBand = np.copy(EltRibbon)
-    FarAway = np.setdiff1d(farAwayPstv, NarrowBand)
+    Alive = EltRibbon.tolist()
+    NarrowBand = EltRibbon.tolist()
+    FarAway = np.setdiff1d(farAwayPstv, NarrowBand).tolist()
+
     # the maximum distance any point can have from another in the current mesh. This distance is used to detect the
     # cells that are not yet traversed, i.e. having infinity distance
-    maxdist = 4 * (mesh.Lx ** 2 + mesh.Ly ** 2) ** 0.5
 
-    while NarrowBand.size > 0:
-
-        Smallest = int(NarrowBand[levelSet[NarrowBand.astype(int)].argmin()])
+    while len(NarrowBand) > 0:
+        Smallest = NarrowBand[levelSet[NarrowBand].argmin()]
         neighbors = mesh.NeiElements[Smallest]
 
         for neighbor in neighbors:
             if not neighbor in Alive:
                 if neighbor in FarAway:
-                    NarrowBand = np.append(NarrowBand, neighbor)
-                    FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
+                    NarrowBand.append(neighbor)
+                    FarAway.remove(neighbor)
 
                 NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
                 NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
@@ -59,22 +57,17 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                 delT = NeigyMin - NeigxMin
 
                 warnings.filterwarnings("ignore")
-                theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5  # it goes to nan for fully
-                # horizontal or fully vertical perpendiculars on the front
-
+                theta = (mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2) ** 0.5
                 if not np.isnan(theta):
                     levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
-                else:  # the angle is either 0 or 90 degrees
-                    # vertical propagation direction.
-                    if NeigxMin > maxdist:  # used to check if very large value (level set value for unevaluated elements)
-                        levelSet[neighbor] = NeigyMin + mesh.hy
-                    # horizontal propagation direction.
-                    if NeigyMin > maxdist:
-                        levelSet[neighbor] = NeigxMin + mesh.hx
+                else:  # the distance is to be taken from the horizontal or vertical neighbouring cell as it is the only
+                       # distance available
+                    levelSet[neighbor] = min(NeigyMin + mesh.hy, NeigxMin + mesh.hx)
 
-        Alive = np.append(Alive, Smallest)
-        NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest)[0])
+        Alive.append(Smallest)
+        NarrowBand.remove(Smallest)
 
+    # todo !!! hack - find out why this is required
     if (levelSet[farAwayPstv] >= 1e50).any():
         unevaluated = np.where(levelSet[farAwayPstv] >= 1e50)[0]
 
@@ -93,21 +86,21 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
         RibbonInwardElts = np.setdiff1d(EltChannel, EltRibbon)
         positive_levelSet = 1e50 * np.ones((mesh.NumberOfElts,), np.float64)
         positive_levelSet[EltRibbon] = -levelSet[EltRibbon]
-        Alive = np.copy(EltRibbon)
-        NarrowBand = np.copy(EltRibbon)
-        FarAway = np.setdiff1d(farAwayNgtv, NarrowBand)
+        Alive = EltRibbon.tolist()
+        NarrowBand = EltRibbon.tolist()
+        FarAway = np.setdiff1d(farAwayPstv, NarrowBand).tolist()
 
-        while NarrowBand.size > 0:
+        while len(NarrowBand) > 0:
 
-            Smallest = int(NarrowBand[positive_levelSet[NarrowBand.astype(int)].argmin()])
+            Smallest = NarrowBand[positive_levelSet[NarrowBand].argmin()]
             neighbors = mesh.NeiElements[Smallest]
 
             for neighbor in neighbors:
                 if not neighbor in Alive:
 
                     if neighbor in FarAway:
-                        NarrowBand = np.append(NarrowBand, neighbor)
-                        FarAway = np.delete(FarAway, np.where(FarAway == neighbor))
+                        NarrowBand.append(neighbor)
+                        FarAway.remove(neighbor)
 
                     NeigxMin = min(positive_levelSet[mesh.NeiElements[neighbor, 0]],
                                    positive_levelSet[mesh.NeiElements[neighbor, 1]])
@@ -120,22 +113,17 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
 
                     if not np.isnan((NeigxMin + beta * NeigyMin + theta) / (1 + beta ** 2)):
                         positive_levelSet[neighbor] = (NeigxMin + beta ** 2 * NeigyMin + theta) / (1 + beta ** 2)
-                    else:  # the angle is either 0 or 90 degrees
-                        # vertical propagation direction.
-                        if NeigxMin > maxdist:
-                            # used to check if very large value (level set value for unevaluated elements)
-                            positive_levelSet[neighbor] = NeigyMin + mesh.hy
-                        # horizontal propagation direction.
-                        if NeigyMin > maxdist:
-                            positive_levelSet[neighbor] = NeigxMin + mesh.hx
+                    else:   # the distance is to be taken from the horizontal or vertical neighbouring cell as it is the
+                            # only distance available
+                        positive_levelSet[neighbor] = min(NeigyMin + mesh.hy, NeigxMin + mesh.hx)
 
-            Alive = np.append(Alive, Smallest)
-            NarrowBand = np.delete(NarrowBand, np.where(NarrowBand == Smallest))
+            Alive.append(Smallest)
+            NarrowBand.remove(Smallest)
 
         # assigning adjusted value to the level set to be returned
         levelSet[RibbonInwardElts] = -positive_levelSet[RibbonInwardElts]
 
-
+    # todo !!! hack - find out why this is required
     if (abs(levelSet[farAwayNgtv]) >= 1e50).any():
         unevaluated = np.where(abs(levelSet[farAwayNgtv]) >= 1e50)[0]
 
@@ -156,6 +144,7 @@ def reconstruct_front(dist, bandElts, EltChannel, mesh):
     
     Arguments:
         dist (ndarray):         -- the signed distance of the cells from the fracture front.
+        bandElts (ndarray):     -- the band of elements to which the search is limited.
         EltChannel (ndarray):   -- list of Channel elements.
         mesh (CartesianMesh):   -- the mesh of the fracture.
     """
@@ -245,6 +234,7 @@ def reconstruct_front_LS_gradient(dist, EltBand, EltChannel, mesh):
 
     Arguments:
         dist (ndarray):         -- the signed distance of the cells from the fracture front.
+        bandElts (ndarray):     -- the band of elements to which the search is limited.
         EltChannel (ndarray):   -- list of Channel elements.
         mesh (CartesianMesh):   -- the mesh of the fracture.
     """
@@ -395,11 +385,11 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
         # Assigning zero vertex according to the direction of propagation
         if drctx < 0 and drcty < 0:
             zeroVrtx[i] = 0
-        if drctx > 0 and drcty < 0:
+        elif drctx > 0 and drcty < 0:
             zeroVrtx[i] = 1
-        if drctx < 0 and drcty > 0:
+        elif drctx < 0 and drcty > 0:
             zeroVrtx[i] = 3
-        if drctx > 0 and drcty > 0:
+        elif drctx > 0 and drcty > 0:
             zeroVrtx[i] = 2
 
     eltsRibbon = np.setdiff1d(eltsRibbon, eltsTip)
