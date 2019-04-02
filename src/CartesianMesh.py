@@ -73,8 +73,8 @@ class CartesianMesh:
         Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx, Lx]*[-Ly, Ly].
 
         Args:
-            nx,ny (int)         -- number of elements in x and y directions respectively
-            Lx,Ly (float)       -- lengths in x and y directions respectively
+            nx,ny (int):        -- number of elements in x and y directions respectively
+            Lx,Ly (float):      -- lengths in x and y directions respectively
             symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for
                                     symmetric fracture solver.
 
@@ -173,20 +173,16 @@ class CartesianMesh:
             y (float):  -- the y coordinate of the given point.
 
         Returns:
-            elt (int)   -- the element containing the given coordinates.
+            elt (int):  -- the element containing the given coordinates.
 
         """
 
-        elt = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) <= self.hx/2.+sys.float_info.epsilon)[0],
-                           np.where(abs(self.CenterCoor[:, 1] - y) <= self.hy/2.+sys.float_info.epsilon)[0])
-
-        if elt.size == 0:
+        if abs(x) >= self.Lx + self.hx / 2 or abs(y) >= self.Ly + self.hy / 2:
             return np.nan
-        elif elt.size > 1:
-            # can happen if the point lie on edge
-            print("more than one found!")
 
-        return elt[0]
+        i = (y + self.Ly + self.hy / 2) // self.hy
+        j = (x + self.Lx + self.hx / 2) // self.hx
+        return int(i * self.nx + j)
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -384,6 +380,7 @@ class CartesianMesh:
         ax.grid(False)
         ax.set_frame_on(False)
         ax.set_axis_off()
+        plt.axis('equal')
 
         return fig
 
