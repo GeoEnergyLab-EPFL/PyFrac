@@ -274,6 +274,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (t_min_t0 ** 0.5 -
                                         t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
 
+    LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
+
     if np.isnan(LkOff[Fr_lstTmStp.EltCrack]).any():
         exitstatus = 13
         return exitstatus, None
@@ -487,7 +489,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         # the search region inwards from the front position at last time step
         ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
 
-        # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
+        # SOLVE EIKONAL eq via Fast Marching Method to get the distance from tip for each cell.
         SolveFMM(sgndDist_k,
                  Fr_lstTmStp.EltRibbon,
                  Fr_lstTmStp.EltChannel,
@@ -654,7 +656,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
         # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
         # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
-
         wTip = Integral_over_cell(EltsTipNew,
                               alpha_k,
                               l_k,
@@ -687,7 +688,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # check if the tip volume has gone into negative
     smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
     if np.asarray(smallNgtvWTip).size > 0:
-        #      warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
+        #  warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
         wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
     if (wTip < 0).any() or sum(wTip) == 0.:
@@ -713,6 +714,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((Fr_lstTmStp.time +
                         timeStep - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5 - (Fr_lstTmStp.time -
                         Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5) * Fr_lstTmStp.mesh.EltArea
+
+    # set leak off to zero if pressure below pore pressure
+    LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
 
     if np.isnan(LkOff[EltsTipNew]).any():
         exitstatus = 13
@@ -991,7 +995,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                           C,
                           mat_properties.SigmaO)
 
-
         if perfNode is not None:
             perfNode.iterations += 1
             perfNode_Picard = IterationProperties(itr_type="Picard iteration")
@@ -1005,43 +1008,73 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         # adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also
         # solved for the stagnant tip cells as compared to tip cells which are moving.
-        stagnant_tip = np.where(Vel < 1e-10)[0]
+        if sim_properties.solveStagnantTip:
+            stagnant_tip = np.where(Vel < 1e-10)[0]
+        else:
+            stagnant_tip = []
         to_impose = np.delete(EltTip, stagnant_tip)
         imposed_val = np.delete(wTip, stagnant_tip)
         to_solve = np.append(to_solve, EltTip[stagnant_tip])
+
         wc_to_impose = []
         fully_closed = False
         corr_ribb_flag = False
-        # Making and sloving the system of equations. The width constraint is checked. If active, system is remade with
-        # the oonstraint imposed and is resolved.
+        # Making and solving the system of equations. The width constraint is checked. If active, system is remade with
+        # the constraint imposed and is resolved.
         while not non_neg > 0:
             to_solve_k = np.setdiff1d(to_solve, neg, assume_unique=True)
-
-            # the code below finds the tip cells with corresponding ribbon cells closed and add them in the list
+            to_impose_k = to_impose
+            imposed_val_k = imposed_val
+            # the code below finds the tip cells with corresponding closed ribbon cells and add them in the list
             # of elements to be solved.
-            toImp_neg_rib = np.asarray([], dtype=np.int)
             if len(neg) > 0 and len(to_impose) > 0:
-                if not corr_ribb_flag:
-                    # do it once
-                    tip_sorted = np.argsort(EltTip)
-                    to_impose_pstn = np.searchsorted(EltTip[tip_sorted], to_impose)
-                    ind_toImps_tip = tip_sorted[to_impose_pstn]
-                    corr_ribbon_TI = corr_ribbon[ind_toImps_tip]
-                    corr_ribb_flag = True
-                for i, elem in enumerate(to_impose):
-                    if corr_ribbon_TI[i] in neg:
-                        toImp_neg_rib = np.append(toImp_neg_rib, i)
-            to_solve_k = np.append(to_solve_k, np.setdiff1d(to_impose[toImp_neg_rib], neg))
-            to_impose_k = np.delete(to_impose, toImp_neg_rib)
-            imposed_val_k = np.delete(imposed_val, toImp_neg_rib)
+                if sim_properties.solveTipCorrRib:
+                    if not corr_ribb_flag:
+                        # do it once
+                        tip_sorted = np.argsort(EltTip)
+                        to_impose_pstn = np.searchsorted(EltTip[tip_sorted], to_impose)
+                        ind_toImps_tip = tip_sorted[to_impose_pstn]
+                        corr_ribbon_TI = corr_ribbon[ind_toImps_tip]
+                        corr_ribb_flag = True
+
+                    toImp_neg_rib = np.asarray([], dtype=np.int)
+                    for i, elem in enumerate(to_impose):
+                        if corr_ribbon_TI[i] in neg:
+                            toImp_neg_rib = np.append(toImp_neg_rib, i)
+                    to_solve_k = np.append(to_solve_k, np.setdiff1d(to_impose[toImp_neg_rib], neg))
+                    to_impose_k = np.delete(to_impose, toImp_neg_rib)
+                    imposed_val_k = np.delete(imposed_val, toImp_neg_rib)
+
+            EltCrack_k = np.concatenate((to_solve_k, neg))
+            EltCrack_k = np.concatenate((EltCrack_k, to_impose_k))
+
+            # The code below finds the indices(in the EltCrack list) of the neighbours of all the cells in the crack.
+            # This is done to avoid costly slicing of the large numpy arrays while making the linear system during the
+            # fixed point iterations. For neighbors that are outside the fracture, len(EltCrack) + 1 is returned.
+            corr_nei = np.full((len(EltCrack_k), 4), len(EltCrack_k), dtype=np.int)
+            for i, elem in enumerate(EltCrack_k):
+                corresponding = np.where(EltCrack_k == Fr_lstTmStp.mesh.NeiElements[elem, 0])[0]
+                if len(corresponding) > 0:
+                    corr_nei[i, 0] = corresponding
+                corresponding = np.where(EltCrack_k == Fr_lstTmStp.mesh.NeiElements[elem, 1])[0]
+                if len(corresponding) > 0:
+                    corr_nei[i, 1] = corresponding
+                corresponding = np.where(EltCrack_k == Fr_lstTmStp.mesh.NeiElements[elem, 2])[0]
+                if len(corresponding) > 0:
+                    corr_nei[i, 2] = corresponding
+                corresponding = np.where(EltCrack_k == Fr_lstTmStp.mesh.NeiElements[elem, 3])[0]
+                if len(corresponding) > 0:
+                    corr_nei[i, 3] = corresponding
 
             arg = (
+                # See the documentation of the functions making the linear system for description of the arguments
+                # passed to the Piccard solver.
                 to_solve_k,
                 to_impose_k,
                 Fr_lstTmStp.w,
                 Fr_lstTmStp.pFluid,
                 imposed_val_k,
-                EltCrack,
+                EltCrack_k,
                 Fr_lstTmStp.mesh,
                 timeStep,
                 Qin,
@@ -1057,7 +1090,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 neg,
                 wc_to_impose,
                 mat_properties.wc,
-                fluid_properties.compressibility)
+                fluid_properties.compressibility,
+                corr_nei)
 
             if sim_properties.substitutePressure:
                 if sim_properties.solveDeltaP:
@@ -1066,7 +1100,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
                 guess = np.zeros((len(EltCrack), ), float)
                 guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                                * np.ones((len(to_solve_k),), float)
+                                                    * np.ones((len(to_solve_k),), float)
             else:
                 sys_fun = MakeEquationSystem_ViscousFluid
                 guess = 1e6 * np.ones((2 * len(to_solve_k) + len(to_impose_k) + 2 * len(neg),), dtype=np.float64)
@@ -1149,13 +1183,19 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             pf = np.zeros(len(w))
             pf[to_solve_k] = sol[n_w:n_w + len(to_solve_k)]
             pf[neg_km1] = sol[n_w + len(to_solve_k):n_w + len(to_solve_k) + len(neg_km1)]
-            pf[to_impose_k] = sol[n_w + len(to_solve_k) + len(neg_km1): n_w + len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
+            pf[to_impose_k] = sol[n_w + len(to_solve_k) + len(neg_km1): n_w + len(to_solve_k) + len(neg_km1) +
+                                                                        len(to_impose_k)]
+
+        # larger_pp = np.where(pf[EltCrack] < mat_properties.porePressure)[0]
+        # pf[EltCrack[larger_pp]] = mat_properties.porePressure
 
         if len(neg) == len(to_solve):
             fully_closed = True
 
         return_data = (data_Pic, neg_km1, fully_closed)
         return w, pf, return_data
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
@@ -1210,6 +1250,8 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
         return Re, (ReNum_Ribbon > 2100.).any()
     else:
         return (ReNum_Ribbon > 2100.).any()
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
@@ -1467,6 +1509,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         if np.isnan(LkOff[Fr_lstTmStp.EltChannel]).any():
             exitstatus = 13
             return exitstatus, None
+
+    # set leak off to zero if pressure below pore pressure
+    LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
 
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                       sim_properties,

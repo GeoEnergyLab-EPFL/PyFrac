@@ -8,7 +8,7 @@ toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic s
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
 
 # max iterations
-max_front_itrs = 30                     # maximum iterations for the fracture front.
+max_front_itrs = 15                     # maximum iterations for the fracture front.
 max_solver_itrs = 80                    # maximum iterations for the elastohydrodynamic solver.
 max_proj_Itrs = 10                      # maximum projection iterations.
 
@@ -45,10 +45,12 @@ volume_control = False                  # if True, the volume control solver wil
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
 substitute_pressure = True              # if True, the pressure will be substituted with width to make the EHL system.
 solve_deltaP = True                     # if True, the change in pressure, instead of pressure will be solved.
+solve_stagnant_tip = False              # if True, stagnant tip cells will also be solved for
+solve_tip_corr_rib = True               # if True, the corresponding tip cells to closed ribbon cells will be solved.
 
 # miscellaneous
 tip_asymptote = 'U'                     # the tip_asymptote to be used (see class documentation for details).
-save_regime = True                      # if True, the the regime of the ribbon cells will also be saved.
+save_regime = False                     # if True, the the regime of the ribbon cells will also be saved.
 verbosity = 2                           # the level of details about the ongoing simulation to be plotted.
 enable_remeshing = True                 # if true, computation domain will be remeshed after reaching end of the domain.
 remesh_factor = 2.                      # the factor by which the mesh is compressed.

@@ -75,21 +75,28 @@ class Fracture:
                                     The fracture can be initialized according to the following regimes (specified by \
                                     the first element of the init_param tuple):
 
-                                        - 'M'     -- radial fracture in viscosity dominated regime
-                                        - 'Mt'    -- radial fracture in viscosity dominated regime with leak-off
-                                        - 'K'     -- radial fracture in toughness dominated regime
-                                        - 'Kt'    -- radial fracture in toughness dominated regime with leak-off
-                                        - 'E'     -- elliptical fracture in toughness dominated regime
-                                        - 'PKN'   -- PKN fracture
-                                        - 'G'     -- flexible, general purpose initialization
+                                        - 'M'     -- radial fracture in viscosity dominated regime.
+                                        - 'Mt'    -- radial fracture in viscosity dominated regime with leak-off.
+                                        - 'K'     -- radial fracture in toughness dominated regime.
+                                        - 'Kt'    -- radial fracture in toughness dominated regime with leak-off.
+                                        - 'PKN'   -- PKN fracture.
+                                        - 'E_K'   -- elliptical fracture propagating in toughness dominated regime.\
+                                                     The solution is equivalent to a particular anisotropic toughness \
+                                                     case described in Zia and Lecampion, 2018.
+                                        - 'E_E'   -- the elliptical solution with transverse isotropic material \
+                                                     properties (see Moukhtari and Lecampion, 2019).
+                                        - 'MDR'   -- viscosity dominated solution for turbulent flow. The friction \
+                                                     factor is calculated using MDR asymptote (see Zia and Lecampion\
+                                                     2019).
+                                        - 'G'     -- flexible, general purpose initialization.
 
                                     given_type can be one of the following:
 
                                         - 'time'      -- time at which the fracture is to be initialized.
                                         - 'length'    -- the length parameter. It will be treated as the fracture \
-                                                       radius, the minor axis length and the fracture length for the \
-                                                       cases of a radial fracture, an elliptical fracture and a PKN \
-                                                       fracture respectively.
+                                                         radius, the minor axis length and the fracture length for the \
+                                                         cases of a radial fracture, an elliptical fracture and a PKN \
+                                                         fracture respectively.
 
         solid (MaterialProperties):           -- the MaterialProperties object giving the material properties.
         fluid (FluidProperties):              -- the FluidProperties object giving the fluid properties.
@@ -119,7 +126,7 @@ class Fracture:
         CellStatus (ndarray):       -- specifies which region each element currently belongs to
         initRad (float):            -- starting radius
         initTime (float):           -- starting time
-        sgndDist (ndarray):         -- signed minimun distance from fracture front of each cell in the domain
+        sgndDist (ndarray):         -- signed minimum distance from fracture front of each cell in the domain
         Q (ndarray-float):          -- injection rate into each cell of the domain
         InCrack (ndarray):          -- array specifying whether the cell is inside or outside the fracture.
         FractureVolume (float):     -- fracture volume

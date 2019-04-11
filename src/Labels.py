@@ -14,8 +14,8 @@ Fig_labels = {
     'width': 'Fracture Width',
     'pf': 'Fluid Pressure',
     'fluid pressure': 'Fluid Pressure',
-    'pn': 'Net Pressure',
-    'net pressure': 'Net Pressure',
+    'pn': 'net Pressure',
+    'net pressure': 'net Pressure',
     'front velocity': 'Front Velocity',
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
@@ -41,7 +41,8 @@ Fig_labels = {
     'efficiency': 'Fracture Efficiency',
     'ef': 'Fracture Efficiency',
     'mesh': 'Mesh',
-    'footprint': 'Fracture Footprint'
+    'footprint': 'Fracture Footprint',
+    'surface': 'Fracture Surface'
 }
 
 labels = {
@@ -78,7 +79,8 @@ labels = {
     'efficiency': 'fracture efficiency',
     'ef': 'fracture efficiency',
     'mesh': '',
-    'footprint': ''
+    'footprint': '',
+    'surface': ''
 }
 
 units = {
@@ -115,7 +117,8 @@ units = {
     'efficiency': '',
     'ef': '',
     'mesh': '',
-    'footprint': ''
+    'footprint': '',
+    'surface': ' ($mm$)'
 }
 
 unit_conversion = {
@@ -152,24 +155,25 @@ unit_conversion = {
     'efficiency': 100.,
     'ef': 100.,
     'mesh': None,
-    'footprint': None
+    'footprint': None,
+    'surface': 1.e-3
 }
 
 
-supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'Net pressure',
+supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                        'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
                        'fluid velocity', 'fv', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leaked off', 'lkv', 'leaked off volume',
-                       'ar', 'aspect ratio', 'efficiency', 'ef']
+                       'ar', 'aspect ratio', 'efficiency', 'ef', 'surface']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
                             'efficiency', 'ef', 'aspect ratio', 'ar']
-bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'Net pressure',
+bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                           'fluid velocity', 'fv', 'lk', 'leaked off']
+                           'fluid velocity', 'fv', 'lk', 'leaked off', 'surface']
 
 required_string = {
     't': '100000',
@@ -208,6 +212,7 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'lkv\' or \'leaked off volume\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
                     '-- \'ef\' or \'efficiency\'\n' \
+                    '-- \'surface\''
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -243,7 +248,8 @@ supported_projections ={
     'ar': ['1D'],
     'aspect ratio': ['1D'],
     'efficiency': ['1D'],
-    'ef': ['1D']
+    'ef': ['1D'],
+    'surface': ['3D']
 }
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \

@@ -78,7 +78,8 @@ class MaterialProperties:
 
     def __init__(self, Mesh, Eprime, Toughness=0., Carters_coef=0., confining_stress=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, confining_stress_func = None, Carters_coef_func = None, TI_elasticity=False,
-                 Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6):
+                 Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6,
+                 pore_pressure=-1.e100):
         """
         The constructor function
         """
@@ -168,6 +169,7 @@ class MaterialProperties:
             self.remesh(Mesh)
 
         self.wc = minimum_width
+        self.porePressure = pore_pressure
 
 # ----------------------------------------------------------------------------------------------------------------------
     def remesh(self, mesh):
@@ -301,7 +303,7 @@ class InjectionProperties:
                                          of the injection point coordinates. If there are more than one source elements,
                                          the average is taken to get an estimate injection cell at the center.
         sourceElem (ndarray):         -- the element(s) where the fluid is injected in the cartesian mesh.
-        sourceElemFunc (function):    -- the source location function is used to get the elements in which the fluid is
+        sourceLocFunc (function):     -- the source location function is used to get the elements in which the fluid is
                                          injected. It should take the x and y coordinates and return True or False
                                          depending upon if the source is present on these coordinates. This function is
                                          evaluated at each of the cell centre coordinates to determine if the cell is
@@ -331,22 +333,32 @@ class InjectionProperties:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
                     print("Setting the source coordinates to the closest cell center...")
+                    self.sourceCoordinates = source_coordinates
                 else:
                     # error
-                    raise ValueError('Invalid source coordinates. Correct format: a list or numpy array with a single row'
-                                     ' and two columns to \n specify x and y coordinate of the source e.g.'
+                    raise ValueError('Invalid source coordinates. Correct format: a list or numpy array with a single'
+                                     ' row and two columns to \n specify x and y coordinate of the source e.g.'
                                      ' np.array([x_coordinate, y_coordinate])')
 
             else:
                 self.sourceCoordinates = [0., 0.]
 
             self.sourceElem = [mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])]
+            if np.isnan(self.sourceElem):
+                raise ValueError("The given source location is out of the mesh!")
+            self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
             print("Injection point: " + '(x, y)= (' + repr(mesh.CenterCoor[self.sourceElem, 0]) +
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1]) + ')')
-            self.sourceElemFunc = None
+            self.sourceLocFunc = None
         else:
-            self.sourceElemFunc = source_loc_func
-            self.remesh(mesh)
+            self.sourceLocFunc = source_loc_func
+            self.sourceElem = []
+            for i in range(mesh.NumberOfElts):
+             if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                 self.sourceElem.append(i)
+
+        if len(self.sourceElem) == 0:
+            raise ValueError("No source element found!")
         self.sourceCoordinates = [np.mean(mesh.CenterCoor[self.sourceElem, 0]),
                                   np.mean(mesh.CenterCoor[self.sourceElem, 1])]
 
@@ -373,7 +385,7 @@ class InjectionProperties:
 
     #-------------------------------------------------------------------------------------------------------------------
 
-    def remesh(self, new_mesh):
+    def remesh(self, new_mesh, old_mesh):
         """ This function is called every time the domian is remeshed.
 
         Arguments:
@@ -381,16 +393,12 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        if self.sourceElemFunc is not None:
-            actv_cells = []
-            for i in range(new_mesh.NumberOfElts):
-                if self.sourceElemFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
-                    actv_cells.append(i)
-            if len(actv_cells) == 0:
-                raise ValueError("There is no source element to inject. Note that the source element function is "
-                                 "evaluated at the cell centers to check for source cells.")
+        actv_cells = set()
+        for i in self.sourceElem:
+            actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                      old_mesh.CenterCoor[i, 1]))
 
-            self.sourceElem = actv_cells
+        self.sourceElem = list(actv_cells)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -487,7 +495,11 @@ class SimulationProperties:
         solveDeltaP (bool):          -- a flag specifying the solver to be used. If True, the change in pressure,
                                         instead of pressure will be solved in the tip cells and the cells where the
                                         width constraint is active (see Zia and Lecampion, 2019).
-
+        solveStagnantTip (bool):     -- if True, the stagnant tip cells will also be solved for width. This may result
+                                        in more stable pressure as the elasticity equation will also be solved in those
+                                        cells.
+        solveTipCorrRib (bool):      -- if True, the tip cells corresponding to the closed ribbon cells will also be
+                                        considered as closed and the width will be imposed on them.
         saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
                                         saved.
         verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
@@ -619,6 +631,8 @@ class SimulationProperties:
         self.set_volumeControl(simul_param.volume_control)
         self.substitutePressure = simul_param.substitute_pressure
         self.solveDeltaP = simul_param.solve_deltaP
+        self.solveStagnantTip = simul_param.solve_stagnant_tip
+        self.solveTipCorrRib = simul_param.solve_tip_corr_rib
 
         # miscellaneous
         self.verbosity = simul_param.verbosity
@@ -782,6 +796,9 @@ class IterationProperties:
 class PlotProperties:
     """
     This class stores the parameters used for plotting of the post-processed results
+
+    Arguments:
+
     """
 
     def __init__(self, color_map=None, line_color=None, line_style='-', line_width=1., line_style_anal='--',

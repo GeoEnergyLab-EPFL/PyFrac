@@ -152,7 +152,8 @@ class Controller:
         if self.sim_prop.saveToDisk:
             f = open(self.sim_prop.get_outputFolder() + 'log.txt', 'w+')
         else:
-            os.remove("log.txt")
+            if os.path.exists("log.txt"):
+                os.remove("log.txt")
             f = open('log.txt', 'w+')
         from time import gmtime, strftime
         f.write('log file, simulation run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n')
@@ -251,7 +252,7 @@ class Controller:
                                                 self.fracture.mesh.ny,
                                                 symmetric=self.sim_prop.symmetric)
                     self.solid_prop.remesh(coarse_mesh)
-                    self.injection_prop.remesh(coarse_mesh)
+                    self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
                     self.fracture = self.fracture.remesh(self.sim_prop.remeshFactor,
                                     self.C,
                                     coarse_mesh,
@@ -277,8 +278,8 @@ class Controller:
                 self.output(Fr_n_pls1)
                 if self.PstvInjJmp is None:
                     inp = input("Fracture is fully closed. Continuing with the simulation may result in non-realistic\n"
-                            "pressures (see Zia and Lecampion, 2019).\n\n Do you want to jump to the time of next"
-                            " positive injection? [y/n]")
+                            "pressures due to compressibility(see Zia and Lecampion, 2019).\n\n Do you want to jump to"
+                            " the time of next positive injection? [y/n]")
                     while inp not in ['y', 'Y', 'n', 'N']:
                         inp = input("Press y or n")
 
@@ -529,7 +530,7 @@ class Controller:
 
                     # plotting closed cells
                     if len(Fr_advanced.closed) > 0:
-                        plot_prop.lineColor = 'r'
+                        plot_prop.lineColor = 'limegreen'
                         self.Figures[indx] = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
                                                                                 fig=self.Figures[indx],
                                                                                 plot_prop=plot_prop,
@@ -602,23 +603,29 @@ class Controller:
                                  " corresponding time steps.")
 
         if not time_step_given:
-            # time step is calculated with the current propagation velocity
-            tipVrtxCoord = self.fracture.mesh.VertexCoor[self.fracture.mesh.Connectivity[self.fracture.EltTip,
-                                                                                         self.fracture.ZeroVertex]]
-            # the distance of tip from the injection point in each of the tip cell
-            dist_Inj_pnt = (tipVrtxCoord[:, 0] ** 2 + tipVrtxCoord[:, 1] ** 2) ** 0.5 + self.fracture.l
-
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             non_zero = np.where(self.fracture.v > 0)[0]
+            # time step is calculated with the current propagation velocity
             if len(non_zero) > 0:
-                # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the
-                # current maximum length
-                TS_cell_length = min(abs(0.2 * dist_Inj_pnt[non_zero] / self.fracture.v[non_zero]))
+                if len(self.injection_prop.sourceElem) < 4:
+                    # if point source
+                    tipVrtxCoord = self.fracture.mesh.VertexCoor[self.fracture.mesh.Connectivity[self.fracture.EltTip,
+                                                                                                 self.fracture.ZeroVertex]]
+                    # the distance of tip from the injection point in each of the tip cell
+                    dist_Inj_pnt = ((tipVrtxCoord[:, 0] - self.injection_prop.sourceCoordinates[0]) ** 2 +
+                                    (tipVrtxCoord[:, 1] - self.injection_prop.sourceCoordinates[1]) ** 2) ** 0.5 \
+                                   + self.fracture.l
+
+                    # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the
+                    # current maximum length
+                    TS_fracture_length = min(abs(0.2 * dist_Inj_pnt[non_zero] / self.fracture.v[non_zero]))
+                else:
+                    TS_fracture_length = np.inf
 
                 # the time step evaluated by restricting the fraction of the cell that would be traversed in the time
-                # step. e.g., if the prefactor is 0.5, the tip in the cell with the largest velocity will progress half
+                # step. e.g., if the pre-factor is 0.5, the tip in the cell with the largest velocity will progress half
                 # of the cell width in either x or y direction depending on which is smaller.
-                TS_fracture_length = delta_x / np.max(self.fracture.v)
+                TS_cell_length = delta_x / np.max(self.fracture.v)
 
             else:
                 TS_cell_length = np.inf

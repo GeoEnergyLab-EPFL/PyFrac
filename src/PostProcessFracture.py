@@ -172,7 +172,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
             time_srs.append(i.time)
         return variable_list
 
-    elif variable is 'width' or variable is 'w':
+    elif variable is 'width' or variable is 'w' or variable is 'surface':
         for i in fracture_list:
             variable_list.append(i.w)
             time_srs.append(i.time)
@@ -544,9 +544,9 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     else:
         density = None
 
-    if regime in ['M', 'MDR']:
+    if regime in ['M', 'MDR', 'Mt', 'PKN']:
         if fluid_prop is None:
-            raise ValueError('Fluid properties required for \'M\' type analytical solution')
+            raise ValueError('Fluid properties required for ' + regime + ' type analytical solution')
         muPrime = fluid_prop.muPrime
     else:
         muPrime = None
@@ -574,9 +574,9 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
         else:
             time = None
 
-        if variable in ('time', 't', 'width', 'w', 'pressure', 'p', 'front velocity', 'v'):
+        if variable in ['time', 't', 'width', 'w', 'net pressure', 'pn', 'front velocity', 'v']:
 
-            if mesh is None and variable in ('width', 'w', 'pressure', 'p'):
+            if mesh is None and variable in ['width', 'w', 'net pressure', 'pn']:
                 x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
                                                                                   time_srs[i],
                                                                                   mat_prop,
@@ -640,7 +640,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 else:
                     return_list.append(x_len)
         else:
-            raise ValueError('The variable type is not correct or the anayltical solution not available.')
+            raise ValueError('The variable type is not correct or the analytical solution not available.')
 
     return return_list, mesh_list
 

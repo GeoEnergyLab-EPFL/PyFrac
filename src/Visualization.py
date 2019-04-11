@@ -142,13 +142,25 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                     plot_prop=plot_prop,
                                     label=labels.legend)
 
-    elif variable not in ('mesh', 'footprint'):
+    elif variable not in ['mesh', 'footprint']:
 
         if plot_non_zero:
-            for i in var_val_copy:
-                i[np.where(abs(i) < 1e-16)[0]] = np.nan
+            for indx, value in enumerate(var_val_copy):
+                remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
 
-        if projection is '2D_clrmap':
+        if variable is 'surface':
+            plot_prop.colorMap = 'cool'
+            for i in range(len(var_val_list)):
+                fig = plot_fracture_surface(var_val_copy[i],
+                                            fracture_list[i].mesh,
+                                            fig=fig,
+                                            plot_prop=plot_prop,
+                                            plot_colorbar=False,
+                                            elements=elements,
+                                            vmin=vmin,
+                                            vmax=vmax)
+
+        elif projection is '2D_clrmap':
             for i in range(len(var_val_list)):
                 fig = plot_fracture_variable_as_image(var_val_copy[i],
                                                           fracture_list[i].mesh,
@@ -501,6 +513,9 @@ def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label
 
     return fig
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 def plot_fracture_variable_as_image(var_value, mesh, fig=None, plot_prop=None, elements=None, vmin=None,
                                     vmax=None, plt_colorbar=True):
     """
@@ -615,10 +630,73 @@ def plot_fracture_variable_as_surface(var_value, mesh, fig=None, plot_prop=None,
                           vmin=vmin,
                           vmax=vmax)
 
+    if plot_colorbar:
+        sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
+                                   norm=plt.Normalize(vmin=vmin, vmax=vmax))
+        sm._A = []
+        plt.colorbar(sm, alpha=plot_prop.alpha)
+
+    ax.set_zlim(vmin, vmax)
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def plot_fracture_surface(width, mesh, fig=None, plot_prop=None, plot_colorbar=True, elements=None,
+                                      vmin=None, vmax=None):
+    """
+    This function plots the 2D fracture variable in the form of a surface.
+
+    Args:
+        width (ndarray):                    -- the fracture width.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        elements (ndarray):                 -- the elements to be plotted.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        plt_colorbar (bool):                -- if True, colorbar will be plotted.
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        scale = 1.1
+        zoom_factory(ax, base_scale=scale)
+    else:
+        ax = fig.get_axes()[0]
+
+    if plot_prop is None:
+        plot_prop = PlotProperties()
+
+    if elements is None:
+        elements = np.arange(0, mesh.NumberOfElts)
+
     if vmin is None and vmax is None:
-        var_value = np.delete(var_value, np.where(np.isinf(var_value))[0])
-        var_value = np.delete(var_value, np.where(np.isnan(var_value))[0])
-        vmin, vmax = np.min(var_value), np.max(var_value)
+        width = np.delete(width, np.where(np.isinf(width))[0])
+        width = np.delete(width, np.where(np.isnan(width))[0])
+        vmin, vmax = np.min(width), np.max(width)
+
+    ax.plot_trisurf(mesh.CenterCoor[elements, 0],
+                  mesh.CenterCoor[elements, 1],
+                  width[elements] / 2,
+                  cmap=plot_prop.colorMap,
+                  linewidth=plot_prop.lineWidth,
+                  alpha=plot_prop.alpha,
+                  vmin=vmin,
+                  vmax=vmax)
+
+    ax.plot_trisurf(mesh.CenterCoor[elements, 0],
+                    mesh.CenterCoor[elements, 1],
+                    -width[elements] / 2,
+                    cmap=plot_prop.colorMap,
+                    linewidth=plot_prop.lineWidth,
+                    alpha=plot_prop.alpha,
+                    vmin=vmin,
+                    vmax=vmax)
 
     if plot_colorbar:
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
@@ -2021,3 +2099,18 @@ def save_images_to_video(image_folder, video_name='movie'):
 
     cv2.destroyAllWindows()
     video.release()
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def remove_zeros(var_value, mesh):
+
+    zero = np.full(mesh.NumberOfElts, False, dtype=bool)
+    zero[abs(var_value) < 3 * np.finfo(float).eps] = True
+    for i in range(mesh.NumberOfElts-1):
+        not_left = zero[i] and zero[i + 1]
+        not_right = zero[i] and zero[i - 1]
+        not_bottom = zero[i] and zero[i - mesh.nx]
+        not_top = zero[i] and zero[(i + mesh.nx) % mesh.NumberOfElts]
+        if not_left and not_right and not_bottom and not_top:
+            var_value[i] = np.nan
+    var_value[mesh.NumberOfElts - 1] = np.nan
