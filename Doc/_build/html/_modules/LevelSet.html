@@ -59,7 +59,7 @@
 <span class="sd">    solve Eikonal equation to get level set.</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        levelSet (ndarray-float):       -- level set to be evaluated and updated.</span>
+<span class="sd">        levelSet (ndarray-float):           -- level set to be evaluated and updated.</span>
 <span class="sd">        EltRibbon (ndarray-int):            -- cells with given distance from the front.</span>
 <span class="sd">        EltChannel (ndarray-int):           -- cells enclosed by the given cells</span>
 <span class="sd">        mesh (CartesianMesh object):        -- mesh object</span>
@@ -73,50 +73,43 @@
 <span class="sd">            Does not return anything. The levelSet is updated in place.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># todo: This method is very inefficient. There are a number of improvements that can be done for computational</span>
-    <span class="c1">#  efficiency</span>
+    <span class="c1"># todo: This method is inefficient. It can be imlpemented with heap for better efficiency</span>
 
     <span class="c1"># for Elements radialy outward from ribbon cells</span>
-    <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
-    <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
-    <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">farAwayPstv</span><span class="p">,</span> <span class="n">NarrowBand</span><span class="p">)</span>
+    <span class="n">Alive</span> <span class="o">=</span> <span class="n">EltRibbon</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">EltRibbon</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">farAwayPstv</span><span class="p">,</span> <span class="n">NarrowBand</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
     <span class="c1"># the maximum distance any point can have from another in the current mesh. This distance is used to detect the</span>
     <span class="c1"># cells that are not yet traversed, i.e. having infinity distance</span>
-    <span class="n">maxdist</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">Lx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Ly</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
 
-    <span class="k">while</span> <span class="n">NarrowBand</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-
-        <span class="n">Smallest</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">[</span><span class="n">levelSet</span><span class="p">[</span><span class="n">NarrowBand</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()])</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">Smallest</span> <span class="o">=</span> <span class="n">NarrowBand</span><span class="p">[</span><span class="n">levelSet</span><span class="p">[</span><span class="n">NarrowBand</span><span class="p">]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()]</span>
         <span class="n">neighbors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">Smallest</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">Alive</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">FarAway</span><span class="p">:</span>
-                    <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">)</span>
-                    <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">FarAway</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FarAway</span> <span class="o">==</span> <span class="n">neighbor</span><span class="p">))</span>
+                    <span class="n">NarrowBand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
+                    <span class="n">FarAway</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
 
                 <span class="n">NeigxMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
                 <span class="n">NeigyMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span> <span class="n">levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">3</span><span class="p">]])</span>
-                <span class="n">beta</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
                 <span class="n">delT</span> <span class="o">=</span> <span class="n">NeigyMin</span> <span class="o">-</span> <span class="n">NeigxMin</span>
 
                 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-                <span class="n">theta</span> <span class="o">=</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">delT</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>  <span class="c1"># it goes to nan for fully</span>
-                <span class="c1"># horizontal or fully vertical perpendiculars on the front</span>
-
+                <span class="n">theta</span> <span class="o">=</span> <span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">hx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">delT</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
                     <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">theta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>  <span class="c1"># the angle is either 0 or 90 degrees</span>
-                    <span class="c1"># vertical propagation direction.</span>
-                    <span class="k">if</span> <span class="n">NeigxMin</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>  <span class="c1"># used to check if very large value (level set value for unevaluated elements)</span>
-                        <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
-                    <span class="c1"># horizontal propagation direction.</span>
-                    <span class="k">if</span> <span class="n">NeigyMin</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>
-                        <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># the distance is to be taken from the horizontal or vertical neighbouring cell as it is the only</span>
+                       <span class="c1"># distance available</span>
+                    <span class="n">levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">,</span> <span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">)</span>
 
-        <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Alive</span><span class="p">,</span> <span class="n">Smallest</span><span class="p">)</span>
-        <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">NarrowBand</span> <span class="o">==</span> <span class="n">Smallest</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">Alive</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Smallest</span><span class="p">)</span>
+        <span class="n">NarrowBand</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">Smallest</span><span class="p">)</span>
 
+    <span class="c1"># todo !!! hack - find out why this is required</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
         <span class="n">unevaluated</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayPstv</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -135,21 +128,21 @@
         <span class="n">RibbonInwardElts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">EltChannel</span><span class="p">,</span> <span class="n">EltRibbon</span><span class="p">)</span>
         <span class="n">positive_levelSet</span> <span class="o">=</span> <span class="mf">1e50</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">EltRibbon</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">levelSet</span><span class="p">[</span><span class="n">EltRibbon</span><span class="p">]</span>
-        <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
-        <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">EltRibbon</span><span class="p">)</span>
-        <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">farAwayNgtv</span><span class="p">,</span> <span class="n">NarrowBand</span><span class="p">)</span>
+        <span class="n">Alive</span> <span class="o">=</span> <span class="n">EltRibbon</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">EltRibbon</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">farAwayNgtv</span><span class="p">,</span> <span class="n">NarrowBand</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 
-        <span class="k">while</span> <span class="n">NarrowBand</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 
-            <span class="n">Smallest</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">[</span><span class="n">positive_levelSet</span><span class="p">[</span><span class="n">NarrowBand</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()])</span>
+            <span class="n">Smallest</span> <span class="o">=</span> <span class="n">NarrowBand</span><span class="p">[</span><span class="n">positive_levelSet</span><span class="p">[</span><span class="n">NarrowBand</span><span class="p">]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()]</span>
             <span class="n">neighbors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">Smallest</span><span class="p">]</span>
 
             <span class="k">for</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">Alive</span><span class="p">:</span>
 
                     <span class="k">if</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">FarAway</span><span class="p">:</span>
-                        <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">)</span>
-                        <span class="n">FarAway</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">FarAway</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FarAway</span> <span class="o">==</span> <span class="n">neighbor</span><span class="p">))</span>
+                        <span class="n">NarrowBand</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
+                        <span class="n">FarAway</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
 
                     <span class="n">NeigxMin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">positive_levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span>
                                    <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">[</span><span class="n">neighbor</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
@@ -162,22 +155,17 @@
 
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">((</span><span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">theta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)):</span>
                         <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">theta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># the angle is either 0 or 90 degrees</span>
-                        <span class="c1"># vertical propagation direction.</span>
-                        <span class="k">if</span> <span class="n">NeigxMin</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>
-                            <span class="c1"># used to check if very large value (level set value for unevaluated elements)</span>
-                            <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span>
-                        <span class="c1"># horizontal propagation direction.</span>
-                        <span class="k">if</span> <span class="n">NeigyMin</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>
-                            <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span>
+                    <span class="k">else</span><span class="p">:</span>   <span class="c1"># the distance is to be taken from the horizontal or vertical neighbouring cell as it is the</span>
+                            <span class="c1"># only distance available</span>
+                        <span class="n">positive_levelSet</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">NeigyMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hy</span><span class="p">,</span> <span class="n">NeigxMin</span> <span class="o">+</span> <span class="n">mesh</span><span class="o">.</span><span class="n">hx</span><span class="p">)</span>
 
-            <span class="n">Alive</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Alive</span><span class="p">,</span> <span class="n">Smallest</span><span class="p">)</span>
-            <span class="n">NarrowBand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">NarrowBand</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">NarrowBand</span> <span class="o">==</span> <span class="n">Smallest</span><span class="p">))</span>
+            <span class="n">Alive</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Smallest</span><span class="p">)</span>
+            <span class="n">NarrowBand</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">Smallest</span><span class="p">)</span>
 
         <span class="c1"># assigning adjusted value to the level set to be returned</span>
         <span class="n">levelSet</span><span class="p">[</span><span class="n">RibbonInwardElts</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">positive_levelSet</span><span class="p">[</span><span class="n">RibbonInwardElts</span><span class="p">]</span>
 
-
+    <span class="c1"># todo !!! hack - find out why this is required</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
         <span class="n">unevaluated</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">levelSet</span><span class="p">[</span><span class="n">farAwayNgtv</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mf">1e50</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -198,6 +186,7 @@
 <span class="sd">    </span>
 <span class="sd">    Arguments:</span>
 <span class="sd">        dist (ndarray):         -- the signed distance of the cells from the fracture front.</span>
+<span class="sd">        bandElts (ndarray):     -- the band of elements to which the search is limited.</span>
 <span class="sd">        EltChannel (ndarray):   -- list of Channel elements.</span>
 <span class="sd">        mesh (CartesianMesh):   -- the mesh of the fracture.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -287,6 +276,7 @@
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        dist (ndarray):         -- the signed distance of the cells from the fracture front.</span>
+<span class="sd">        bandElts (ndarray):     -- the band of elements to which the search is limited.</span>
 <span class="sd">        EltChannel (ndarray):   -- list of Channel elements.</span>
 <span class="sd">        mesh (CartesianMesh):   -- the mesh of the fracture.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -437,11 +427,11 @@
         <span class="c1"># Assigning zero vertex according to the direction of propagation</span>
         <span class="k">if</span> <span class="n">drctx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">zeroVrtx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">drctx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">drctx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">zeroVrtx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">drctx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">drctx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">zeroVrtx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-        <span class="k">if</span> <span class="n">drctx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">drctx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">drcty</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">zeroVrtx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
 
     <span class="n">eltsRibbon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">eltsRibbon</span><span class="p">,</span> <span class="n">eltsTip</span><span class="p">)</span>

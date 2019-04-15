@@ -46,39 +46,36 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 reserved. See the LICENSE.TXT file for more details.</p>
 <dl class="function">
 <dt id="Visualization.animate_simulation_results">
-<code class="descclassname">Visualization.</code><code class="descname">animate_simulation_results</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='footprint'</em>, <em>projection=None</em>, <em>elements=None</em>, <em>plot_prop=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>mat_properties=None</em>, <em>backGround_param=None</em>, <em>block_figure=False</em>, <em>plot_non_zero=True</em>, <em>pause_time=0.25</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#animate_simulation_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.animate_simulation_results" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Visualization.</code><code class="descname">animate_simulation_results</code><span class="sig-paren">(</span><em>fracture_list</em>, <em>variable='footprint'</em>, <em>projection=None</em>, <em>elements=None</em>, <em>plot_prop=None</em>, <em>edge=4</em>, <em>contours_at=None</em>, <em>labels=None</em>, <em>mat_properties=None</em>, <em>backGround_param=None</em>, <em>block_figure=False</em>, <em>plot_non_zero=True</em>, <em>pause_time=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#animate_simulation_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.animate_simulation_results" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots the fracture evolution with time. The state of the fracture at different times is provided in
 the form of a list of Fracture objects.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>fracture_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the list of Fracture objects giving the evolution of fracture with
 time.</li>
 <li><strong>variable</strong> (<em>string</em>) – – the variable to be plotted. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_variables</span></code> of the
-<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables.</li>
-<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the material properties. It is mainly used to colormap the mesh.</li>
+<a class="reference internal" href="Labels.html#module-Labels" title="Labels"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Labels</span></code></a> module for a list of supported variables. It can also
+be a list of variables which will be plotted in separate widows.</li>
 <li><strong>projection</strong> (<em>string</em>) – – a string specifying the projection. See <code class="xref py py-data docutils literal notranslate"><span class="pre">supported_projections</span></code>
 for the supported projections for each of the supprted variable. If not
 provided, the default will be used.</li>
 <li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
-<li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be colormapped.</li>
 <li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
-<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
 <li><strong>edge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – – the edge of the cell that will be plotted. This is for variables that
 are evaluated on the cell edges instead of cell center. It can have a
 value from 0 to 4 (0-&gt;left, 1-&gt;right, 2-&gt;bottome, 3-&gt;top, 4-&gt;average).</li>
-<li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
 <li><strong>labels</strong> (<a class="reference internal" href="Properties.html#Properties.LabelProperties" title="Properties.LabelProperties"><em>LabelProperties</em></a>) – – the labels to be used for the plot.</li>
+<li><strong>mat_properties</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – – the material properties. It is mainly used to colormap the mesh.</li>
+<li><strong>backGround_param</strong> (<em>string</em>) – – the parameter according to which the the mesh will be colormapped.</li>
+<li><strong>block_figure</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, a key would be needed to be pressed to proceed to the next
+frame.</li>
+<li><strong>contours_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – – the values at which the contours are to be plotted.</li>
 <li><strong>plot_non_zero</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, only non-zero values will be plotted.</li>
+<li><strong>pause_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – time (in seconds) between two successive updates of frames.</li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
 </td>
 </tr>
 </tbody>
@@ -641,6 +638,36 @@ plotted.</li>
 </dd></dl>
 
 <dl class="function">
+<dt id="Visualization.plot_fracture_surface">
+<code class="descclassname">Visualization.</code><code class="descname">plot_fracture_surface</code><span class="sig-paren">(</span><em>width</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plot_colorbar=True</em>, <em>elements=None</em>, <em>vmin=None</em>, <em>vmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_surface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_surface" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the 2D fracture variable in the form of a surface.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>width</strong> (<em>ndarray</em>) – – the fracture width.</li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – a CartesianMesh object giving the descritization of the domain.</li>
+<li><strong>fig</strong> (<em>Figure</em>) – – the figure to superimpose on. New figure will be made if not provided.</li>
+<li><strong>plot_prop</strong> (<a class="reference internal" href="Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><em>PlotProperties</em></a>) – – the properties to be used for the plot.</li>
+<li><strong>elements</strong> (<em>ndarray</em>) – – the elements to be plotted.</li>
+<li><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the minimum value to be used to colormap and make the colorbar.</li>
+<li><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the maximum value to be used to colormap and make the colorbar.</li>
+<li><strong>plt_colorbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if True, colorbar will be plotted.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">– A Figure object that can be used superimpose further plots.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(Figure)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="Visualization.plot_fracture_variable_as_contours">
 <code class="descclassname">Visualization.</code><code class="descname">plot_fracture_variable_as_contours</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em>, <em>fig=None</em>, <em>plot_prop=None</em>, <em>plt_backGround=True</em>, <em>plt_colorbar=True</em>, <em>contours_at=None</em>, <em>vmin=None</em>, <em>vmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#plot_fracture_variable_as_contours"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.plot_fracture_variable_as_contours" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots the contours of the 2D fracture variable.</p>
@@ -802,6 +829,11 @@ centers.</p>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="function">
+<dt id="Visualization.remove_zeros">
+<code class="descclassname">Visualization.</code><code class="descname">remove_zeros</code><span class="sig-paren">(</span><em>var_value</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Visualization.html#remove_zeros"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Visualization.remove_zeros" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="Visualization.save_images_to_video">

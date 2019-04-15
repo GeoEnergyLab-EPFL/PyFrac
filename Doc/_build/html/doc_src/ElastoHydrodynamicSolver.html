@@ -52,7 +52,7 @@ See the LICENSE.TXT file for more details.</p>
 
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.FiniteDiff_operator_turbulent_implicit">
-<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">FiniteDiff_operator_turbulent_implicit</code><span class="sig-paren">(</span><em>w</em>, <em>EltCrack</em>, <em>mu</em>, <em>Mesh</em>, <em>InCrack</em>, <em>rho</em>, <em>vkm1</em>, <em>C</em>, <em>sigma0</em>, <em>dgrain</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#FiniteDiff_operator_turbulent_implicit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.FiniteDiff_operator_turbulent_implicit" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">FiniteDiff_operator_turbulent_implicit</code><span class="sig-paren">(</span><em>w</em>, <em>EltCrack</em>, <em>mu</em>, <em>Mesh</em>, <em>InCrack</em>, <em>rho</em>, <em>vkm1</em>, <em>C</em>, <em>sigma0</em>, <em>dgrain</em>, <em>to_solve</em>, <em>active</em>, <em>to_impose</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#FiniteDiff_operator_turbulent_implicit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.FiniteDiff_operator_turbulent_implicit" title="Permalink to this definition">¶</a></dt>
 <dd><p>The function evaluate the finite difference matrix, i.e. the A matrix in the ElastoHydrodynamic equations ( see e.g.
 Dontsov and Peirce 2008). The matrix is evaluated by taking turbulence into account.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -157,6 +157,7 @@ fracture front.</li>
 <li>wc_to_impose (ndarray)        – the critical minimum width to be imposed in the active width constraint                                                cells.</li>
 <li>wc (float)                    – the critical minimum width for the material.</li>
 <li>cf (float)                    – fluid compressibility.</li>
+<li>neiInCrack (ndarray)          – an ndarray giving indices(in the EltCrack list) of the neighbours of all                                               the cells in the crack.</li>
 </ul>
 </li>
 </ul>
@@ -182,7 +183,7 @@ fracture front.</li>
 assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
 description of the ILSA algorithm). The pressure in the tip cells and the cells where width constraint is active
 are solved separately. The pressure in the channel cells to be solved for change in width is substituted with width
-using the elasticity relation (see Zia and Lecamption 2019).</p>
+using the elasticity relation (see Zia and Lecampion 2019).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -213,6 +214,7 @@ fracture front.</li>
 <li>wc_to_impose (ndarray)        – the critical minimum width to be imposed in the active width constraint                                                cells.</li>
 <li>wc (float)                    – the critical minimum width for the material.</li>
 <li>cf (float)                    – fluid compressibility.</li>
+<li>neiInCrack (ndarray)          – an ndarray giving indices(in the EltCrack list) of the neighbours of all                                               the cells in the crack.</li>
 </ul>
 </li>
 </ul>
@@ -222,7 +224,7 @@ fracture front.</li>
 <li>A (ndarray)            – the A matrix (in the system Ax=b) to be solved by a linear system solver.</li>
 <li>S (ndarray)            – the b vector (in the system Ax=b) to be solved by a linear system solver.</li>
 <li>interItr_kp1 (tuple)   – the information transferred between iterations.</li>
-<li>indices (list)         – the list containing 3 arrays giving indices of the cells where the solution is                                   obtained for channel, tip and active width constraint cells.</li>
+<li>indices (list)         – the list containing 3 arrays giving indices of the cells where the solution is                                    obtained for channel, tip and active width constraint cells.</li>
 </ul>
 </p>
 </td>
@@ -269,6 +271,7 @@ fracture front.</li>
 <li>wc_to_impose (ndarray)        – the critical minimum width to be imposed in the active width constraint                                                cells.</li>
 <li>wc (float)                    – the critical minimum width for the material.</li>
 <li>cf (float)                    – fluid compressibility.</li>
+<li>neiInCrack (ndarray)          – an ndarray giving indices(in the EltCrack list) of the neighbours of all                                               the cells in the crack.</li>
 </ul>
 </li>
 </ul>
@@ -279,6 +282,63 @@ fracture front.</li>
 <li>S (ndarray)            – the b vector (in the system Ax=b) to be solved by a linear system solver.</li>
 <li>interItr_kp1 (tuple)   – the information transferred between iterations.</li>
 <li>indices (list)         – the list containing 3 arrays giving indices of the cells where the solution is                                    obtained for channel, tip and active width constraint cells.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid_pressure_substituted_sparse">
+<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">MakeEquationSystem_ViscousFluid_pressure_substituted_sparse</code><span class="sig-paren">(</span><em>solk</em>, <em>interItr</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#MakeEquationSystem_ViscousFluid_pressure_substituted_sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.MakeEquationSystem_ViscousFluid_pressure_substituted_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function makes the linearized system of equations to be solved by a linear system solver. The finite difference
+difference opertator is saved as a sparse matrix. The system is assembled with the extended footprint (treating the
+channel and the extended tip elements distinctly; see description of the ILSA algorithm). The pressure in the tip
+cells and the cells where width constraint is active are solved separately. The pressure in the channel cells to be
+solved for change in width is substituted with width using the elasticity relation (see Zia and Lecamption 2019).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sol_k</strong> (<em>ndarray</em>) – – the trial change in width and pressure for the current iteration of
+fracture front.</li>
+<li><strong>interItr</strong> (<em>ndarray</em>) – – the information from the last iteration.</li>
+<li><strong>args</strong> (<em>tupple</em>) – <p>– arguments passed to the function. A tuple containing the following in order:</p>
+<ul>
+<li>EltChannel (ndarray)          – list of channel elements</li>
+<li>EltsTipNew (ndarray)          – list of new tip elements. This list also contains the elements that has                                                 been fully traversed.</li>
+<li>wLastTS (ndarray)             – fracture width from the last time step.</li>
+<li>wTip (ndarray)                – fracture width in the tip elements.</li>
+<li>EltCrack (ndarray)            – list of elements in the fracture.</li>
+<li>Mesh (CartesianMesh object):  – the mesh.</li>
+<li>dt (float)                    – the current time step.</li>
+<li>Q (float)                     – fluid injection rate at the current time step.</li>
+<li>C (ndarray)                   – the elasticity matrix.</li>
+<li>muPrime (ndarray)             – 12 time viscosity of the injected fluid.</li>
+<li>rho (float)                   – density of the injected fluid.</li>
+<li>InCrack (ndarray)             – an array with one for all the elements in the fracture and zero for rest.</li>
+<li>LeakOff (ndarray)             – the leaked off fluid volume for each cell.</li>
+<li>sigma0 (ndarray)              – the confining stress.</li>
+<li>turb (boolean)                – turbulence will be taken into account if true.</li>
+<li>dgrain (float)                – the grain size of the rock. it will be used to calculate the fracture                                               roughness.</li>
+<li>active (ndarray)              – index of cells where the width constraint is active.</li>
+<li>wc_to_impose (ndarray)        – the critical minimum width to be imposed in the active width constraint                                                cells.</li>
+<li>wc (float)                    – the critical minimum width for the material.</li>
+<li>cf (float)                    – fluid compressibility.</li>
+<li>neiInCrack (ndarray)          – an ndarray giving indices(in the EltCrack list) of the neighbours of all                                               the cells in the crack.</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>A (ndarray)            – the A matrix (in the system Ax=b) to be solved by a linear system solver.</li>
+<li>S (ndarray)            – the b vector (in the system Ax=b) to be solved by a linear system solver.</li>
+<li>interItr_kp1 (tuple)   – the information transferred between iterations.</li>
+<li>indices (list)         – the list containing 3 arrays giving indices of the cells where the solution is                                   obtained for channel, tip and active width constraint cells.</li>
 </ul>
 </p>
 </td>
@@ -440,7 +500,7 @@ elasticity relation for the given fracture width and the poisoille’s Law.</p>
 
 <dl class="function">
 <dt id="ElastoHydrodynamicSolver.finiteDiff_operator_laminar">
-<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">finiteDiff_operator_laminar</code><span class="sig-paren">(</span><em>w</em>, <em>EltCrack</em>, <em>muPrime</em>, <em>Mesh</em>, <em>InCrack</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#finiteDiff_operator_laminar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.finiteDiff_operator_laminar" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ElastoHydrodynamicSolver.</code><code class="descname">finiteDiff_operator_laminar</code><span class="sig-paren">(</span><em>w</em>, <em>EltCrack</em>, <em>muPrime</em>, <em>Mesh</em>, <em>InCrack</em>, <em>neiInCrack</em>, <em>sparse=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ElastoHydrodynamicSolver.html#finiteDiff_operator_laminar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ElastoHydrodynamicSolver.finiteDiff_operator_laminar" title="Permalink to this definition">¶</a></dt>
 <dd><p>The function evaluate the finite difference 5 point stencil matrix, i.e. the A matrix in the ElastoHydrodynamic
 equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated with the laminar flow assumption.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -452,8 +512,11 @@ equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated with the lami
 <li><strong>EltCrack</strong> (<em>ndarray</em>) – – the list of elements inside the fracture.</li>
 <li><strong>muPrime</strong> (<em>ndarray</em>) – – the scaled local viscosity of the injected fluid (12 * viscosity).</li>
 <li><strong>Mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – – the mesh.</li>
-<li><strong>InCrack</strong> (<em>ndarray</em>) – – An array specifying whether elements are inside the fracture or not with
+<li><strong>InCrack</strong> (<em>ndarray</em>) – – an array specifying whether elements are inside the fracture or not with
 1 or 0 respectively.</li>
+<li><strong>neiInCrack</strong> (<em>ndarray</em>) – – an ndarray giving indices of the neighbours of all the cells in the crack, in the
+EltCrack list.</li>
+<li><strong>sparse</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – – if true, the finite difference operator will be given as a sparse matrix.</li>
 </ul>
 </td>
 </tr>

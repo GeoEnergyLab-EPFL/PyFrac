@@ -115,8 +115,8 @@
 <span class="sd">        Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx, Lx]*[-Ly, Ly].</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            nx,ny (int)         -- number of elements in x and y directions respectively</span>
-<span class="sd">            Lx,Ly (float)       -- lengths in x and y directions respectively</span>
+<span class="sd">            nx,ny (int):        -- number of elements in x and y directions respectively</span>
+<span class="sd">            Lx,Ly (float):      -- lengths in x and y directions respectively</span>
 <span class="sd">            symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for</span>
 <span class="sd">                                    symmetric fracture solver.</span>
 
@@ -215,20 +215,16 @@
 <span class="sd">            y (float):  -- the y coordinate of the given point.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            elt (int)   -- the element containing the given coordinates.</span>
+<span class="sd">            elt (int):  -- the element containing the given coordinates.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">elt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span><span class="o">/</span><span class="mf">2.</span><span class="o">+</span><span class="n">sys</span><span class="o">.</span><span class="n">float_info</span><span class="o">.</span><span class="n">epsilon</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
-                           <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hy</span><span class="o">/</span><span class="mf">2.</span><span class="o">+</span><span class="n">sys</span><span class="o">.</span><span class="n">float_info</span><span class="o">.</span><span class="n">epsilon</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-
-        <span class="k">if</span> <span class="n">elt</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="mi">2</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ly</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">elif</span> <span class="n">elt</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="c1"># can happen if the point lie on edge</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;more than one found!&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">elt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+        <span class="n">i</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ly</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">hy</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">+</span> <span class="n">j</span><span class="p">)</span></div>
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
@@ -426,6 +422,7 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_frame_on</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">fig</span></div>
 

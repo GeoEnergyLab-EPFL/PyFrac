@@ -96,20 +96,22 @@ on the initialization type given by the first element of the tuple.</p>
 <p>The fracture can be initialized according to the following regimes (specified by                                     the first element of the init_param tuple):</p>
 <blockquote>
 <div><ul>
-<li>’M’     – radial fracture in viscosity dominated regime</li>
-<li>’Mt’    – radial fracture in viscosity dominated regime with leak-off</li>
-<li>’K’     – radial fracture in toughness dominated regime</li>
-<li>’Kt’    – radial fracture in toughness dominated regime with leak-off</li>
-<li>’E’     – elliptical fracture in toughness dominated regime</li>
-<li>’PKN’   – PKN fracture</li>
-<li>’G’     – flexible, general purpose initialization</li>
+<li>’M’     – radial fracture in viscosity dominated regime.</li>
+<li>’Mt’    – radial fracture in viscosity dominated regime with leak-off.</li>
+<li>’K’     – radial fracture in toughness dominated regime.</li>
+<li>’Kt’    – radial fracture in toughness dominated regime with leak-off.</li>
+<li>’PKN’   – PKN fracture.</li>
+<li>’E_K’   – elliptical fracture propagating in toughness dominated regime.                                                     The solution is equivalent to a particular anisotropic toughness                                                      case described in Zia and Lecampion, 2018.</li>
+<li>’E_E’   – the elliptical solution with transverse isotropic material                                                      properties (see Moukhtari and Lecampion, 2019).</li>
+<li>’MDR’   – viscosity dominated solution for turbulent flow. The friction                                                      factor is calculated using MDR asymptote (see Zia and Lecampion                                                     2019).</li>
+<li>’G’     – flexible, general purpose initialization.</li>
 </ul>
 </div></blockquote>
 <p>given_type can be one of the following:</p>
 <blockquote>
 <div><ul>
 <li>’time’      – time at which the fracture is to be initialized.</li>
-<li>’length’    – the length parameter. It will be treated as the fracture                                                        radius, the minor axis length and the fracture length for the                                                        cases of a radial fracture, an elliptical fracture and a PKN                                                        fracture respectively.</li>
+<li>’length’    – the length parameter. It will be treated as the fracture                                                          radius, the minor axis length and the fracture length for the                                                          cases of a radial fracture, an elliptical fracture and a PKN                                                          fracture respectively.</li>
 </ul>
 </div></blockquote>
 </div></blockquote>
@@ -356,7 +358,7 @@ right and 3 signifying top left vertex)</p>
 <dl class="attribute">
 <dt id="Fracture.Fracture.sgndDist">
 <code class="descname">sgndDist</code><a class="headerlink" href="#Fracture.Fracture.sgndDist" title="Permalink to this definition">¶</a></dt>
-<dd><p>– signed minimun distance from fracture front of each cell in the domain</p>
+<dd><p>– signed minimum distance from fracture front of each cell in the domain</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

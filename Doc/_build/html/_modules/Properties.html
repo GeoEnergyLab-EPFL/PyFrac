@@ -120,7 +120,8 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">Eprime</span><span class="p">,</span> <span class="n">Toughness</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">Carters_coef</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">confining_stress</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">K1c_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">anisotropic_K1c</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">confining_stress_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Carters_coef_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">TI_elasticity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">minimum_width</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+                 <span class="n">Cij</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">free_surf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">free_surf_depth</span><span class="o">=</span><span class="mf">1.e300</span><span class="p">,</span> <span class="n">TI_plane_angle</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">minimum_width</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+                 <span class="n">pore_pressure</span><span class="o">=-</span><span class="mf">1.e100</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The constructor function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -210,6 +211,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">Mesh</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">wc</span> <span class="o">=</span> <span class="n">minimum_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">porePressure</span> <span class="o">=</span> <span class="n">pore_pressure</span>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 <div class="viewcode-block" id="MaterialProperties.remesh"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.MaterialProperties.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
@@ -343,7 +345,7 @@
 <span class="sd">                                         of the injection point coordinates. If there are more than one source elements,</span>
 <span class="sd">                                         the average is taken to get an estimate injection cell at the center.</span>
 <span class="sd">        sourceElem (ndarray):         -- the element(s) where the fluid is injected in the cartesian mesh.</span>
-<span class="sd">        sourceElemFunc (function):    -- the source location function is used to get the elements in which the fluid is</span>
+<span class="sd">        sourceLocFunc (function):     -- the source location function is used to get the elements in which the fluid is</span>
 <span class="sd">                                         injected. It should take the x and y coordinates and return True or False</span>
 <span class="sd">                                         depending upon if the source is present on these coordinates. This function is</span>
 <span class="sd">                                         evaluated at each of the cell centre coordinates to determine if the cell is</span>
@@ -373,22 +375,32 @@
             <span class="k">if</span> <span class="n">source_coordinates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_coordinates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Setting the source coordinates to the closest cell center...&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="n">source_coordinates</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1"># error</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid source coordinates. Correct format: a list or numpy array with a single row&#39;</span>
-                                     <span class="s1">&#39; and two columns to </span><span class="se">\n</span><span class="s1"> specify x and y coordinate of the source e.g.&#39;</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid source coordinates. Correct format: a list or numpy array with a single&#39;</span>
+                                     <span class="s1">&#39; row and two columns to </span><span class="se">\n</span><span class="s1"> specify x and y coordinate of the source e.g.&#39;</span>
                                      <span class="s1">&#39; np.array([x_coordinate, y_coordinate])&#39;</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="p">[</span><span class="n">mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The given source location is out of the mesh!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">]</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Injection point: &quot;</span> <span class="o">+</span> <span class="s1">&#39;(x, y)= (&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">+</span>
                                         <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceLocFunc</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span> <span class="o">=</span> <span class="n">source_loc_func</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceLocFunc</span> <span class="o">=</span> <span class="n">source_loc_func</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
+             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceLocFunc</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No source element found!&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sourceCoordinates</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
                                   <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">,</span> <span class="mi">1</span><span class="p">])]</span>
 
@@ -415,7 +427,7 @@
 
     <span class="c1">#-------------------------------------------------------------------------------------------------------------------</span>
 
-<div class="viewcode-block" id="InjectionProperties.remesh"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.InjectionProperties.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mesh</span><span class="p">):</span>
+<div class="viewcode-block" id="InjectionProperties.remesh"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.InjectionProperties.remesh">[docs]</a>    <span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mesh</span><span class="p">,</span> <span class="n">old_mesh</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; This function is called every time the domian is remeshed.</span>
 
 <span class="sd">        Arguments:</span>
@@ -423,16 +435,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># update source elements according to the new mesh.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">actv_cells</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">):</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceElemFunc</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">new_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
-                    <span class="n">actv_cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">actv_cells</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;There is no source element to inject. Note that the source element function is &quot;</span>
-                                 <span class="s2">&quot;evaluated at the cell centers to check for source cells.&quot;</span><span class="p">)</span>
+        <span class="n">actv_cells</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span><span class="p">:</span>
+            <span class="n">actv_cells</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">locate_element</span><span class="p">(</span><span class="n">old_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                                                      <span class="n">old_mesh</span><span class="o">.</span><span class="n">CenterCoor</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="n">actv_cells</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sourceElem</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">actv_cells</span><span class="p">)</span></div></div>
 
 <span class="c1"># ----------------------------------------------------------------------------------------------------------------------</span>
 
@@ -529,7 +537,11 @@
 <span class="sd">        solveDeltaP (bool):          -- a flag specifying the solver to be used. If True, the change in pressure,</span>
 <span class="sd">                                        instead of pressure will be solved in the tip cells and the cells where the</span>
 <span class="sd">                                        width constraint is active (see Zia and Lecampion, 2019).</span>
-
+<span class="sd">        solveStagnantTip (bool):     -- if True, the stagnant tip cells will also be solved for width. This may result</span>
+<span class="sd">                                        in more stable pressure as the elasticity equation will also be solved in those</span>
+<span class="sd">                                        cells.</span>
+<span class="sd">        solveTipCorrRib (bool):      -- if True, the tip cells corresponding to the closed ribbon cells will also be</span>
+<span class="sd">                                        considered as closed and the width will be imposed on them.</span>
 <span class="sd">        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be</span>
 <span class="sd">                                        saved.</span>
 <span class="sd">        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently</span>
@@ -661,6 +673,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_volumeControl</span><span class="p">(</span><span class="n">simul_param</span><span class="o">.</span><span class="n">volume_control</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">substitutePressure</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">substitute_pressure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solveDeltaP</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_deltaP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solveStagnantTip</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_stagnant_tip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solveTipCorrRib</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_tip_corr_rib</span>
 
         <span class="c1"># miscellaneous</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">verbosity</span>
@@ -824,6 +838,9 @@
 <div class="viewcode-block" id="PlotProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.PlotProperties">[docs]</a><span class="k">class</span> <span class="nc">PlotProperties</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class stores the parameters used for plotting of the post-processed results</span>
+
+<span class="sd">    Arguments:</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_style</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">line_style_anal</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span>

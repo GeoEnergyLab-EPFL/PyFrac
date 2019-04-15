@@ -239,8 +239,8 @@ the average is taken to get an estimate injection cell at the center.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Properties.InjectionProperties.sourceElemFunc">
-<code class="descname">sourceElemFunc</code><a class="headerlink" href="#Properties.InjectionProperties.sourceElemFunc" title="Permalink to this definition">¶</a></dt>
+<dt id="Properties.InjectionProperties.sourceLocFunc">
+<code class="descname">sourceLocFunc</code><a class="headerlink" href="#Properties.InjectionProperties.sourceLocFunc" title="Permalink to this definition">¶</a></dt>
 <dd><p>– the source location function is used to get the elements in which the fluid is
 injected. It should take the x and y coordinates and return True or False
 depending upon if the source is present on these coordinates. This function is
@@ -284,7 +284,7 @@ mesh.</p>
 
 <dl class="method">
 <dt id="Properties.InjectionProperties.remesh">
-<code class="descname">remesh</code><span class="sig-paren">(</span><em>new_mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#InjectionProperties.remesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.InjectionProperties.remesh" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remesh</code><span class="sig-paren">(</span><em>new_mesh</em>, <em>old_mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#InjectionProperties.remesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.InjectionProperties.remesh" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is called every time the domian is remeshed.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -350,7 +350,7 @@ applied mechanical loading</p>
 
 <dl class="class">
 <dt id="Properties.MaterialProperties">
-<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">MaterialProperties</code><span class="sig-paren">(</span><em>Mesh</em>, <em>Eprime</em>, <em>Toughness=0.0</em>, <em>Carters_coef=0.0</em>, <em>confining_stress=0.0</em>, <em>grain_size=0.0</em>, <em>K1c_func=None</em>, <em>anisotropic_K1c=False</em>, <em>confining_stress_func=None</em>, <em>Carters_coef_func=None</em>, <em>TI_elasticity=False</em>, <em>Cij=None</em>, <em>free_surf=False</em>, <em>free_surf_depth=1e+300</em>, <em>TI_plane_angle=0.0</em>, <em>minimum_width=1e-06</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#MaterialProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.MaterialProperties" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">MaterialProperties</code><span class="sig-paren">(</span><em>Mesh</em>, <em>Eprime</em>, <em>Toughness=0.0</em>, <em>Carters_coef=0.0</em>, <em>confining_stress=0.0</em>, <em>grain_size=0.0</em>, <em>K1c_func=None</em>, <em>anisotropic_K1c=False</em>, <em>confining_stress_func=None</em>, <em>Carters_coef_func=None</em>, <em>TI_elasticity=False</em>, <em>Cij=None</em>, <em>free_surf=False</em>, <em>free_surf_depth=1e+300</em>, <em>TI_plane_angle=0.0</em>, <em>minimum_width=1e-06</em>, <em>pore_pressure=-1e+100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#MaterialProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.MaterialProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Class defining the Material properties of the solid.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -656,6 +656,7 @@ functions provided in the MaterialProperties object. It should be evaluated each
 <em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">PlotProperties</code><span class="sig-paren">(</span><em>color_map=None</em>, <em>line_color=None</em>, <em>line_style='-'</em>, <em>line_width=1.0</em>, <em>line_style_anal='--'</em>, <em>line_color_anal='r'</em>, <em>interpolation='none'</em>, <em>alpha=0.8</em>, <em>line_width_anal=None</em>, <em>text_size=None</em>, <em>disp_precision=3</em>, <em>mesh_color='yellowgreen'</em>, <em>mesh_edge_color='grey'</em>, <em>mesh_label_color='black'</em>, <em>graph_scaling='linear'</em>, <em>color_maps=None</em>, <em>colors_list=None</em>, <em>plot_legend=True</em>, <em>plot_FP_time=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#PlotProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.PlotProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>This class stores the parameters used for plotting of the post-processed results</p>
+<p>Arguments:</p>
 </dd></dl>
 
 <dl class="class">
@@ -1067,6 +1068,37 @@ substituted in the channel elements (see Zia and Lecampion, 2019).</p>
 <dd><p>– a flag specifying the solver to be used. If True, the change in pressure,
 instead of pressure will be solved in the tip cells and the cells where the
 width constraint is active (see Zia and Lecampion, 2019).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.solveStagnantTip">
+<code class="descname">solveStagnantTip</code><a class="headerlink" href="#Properties.SimulationProperties.solveStagnantTip" title="Permalink to this definition">¶</a></dt>
+<dd><p>– if True, the stagnant tip cells will also be solved for width. This may result
+in more stable pressure as the elasticity equation will also be solved in those
+cells.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Properties.SimulationProperties.solveTipCorrRib">
+<code class="descname">solveTipCorrRib</code><a class="headerlink" href="#Properties.SimulationProperties.solveTipCorrRib" title="Permalink to this definition">¶</a></dt>
+<dd><p>– if True, the tip cells corresponding to the closed ribbon cells will also be
+considered as closed and the width will be imposed on them.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

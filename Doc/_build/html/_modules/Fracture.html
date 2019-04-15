@@ -117,21 +117,28 @@
 <span class="sd">                                    The fracture can be initialized according to the following regimes (specified by \</span>
 <span class="sd">                                    the first element of the init_param tuple):</span>
 
-<span class="sd">                                        - &#39;M&#39;     -- radial fracture in viscosity dominated regime</span>
-<span class="sd">                                        - &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off</span>
-<span class="sd">                                        - &#39;K&#39;     -- radial fracture in toughness dominated regime</span>
-<span class="sd">                                        - &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off</span>
-<span class="sd">                                        - &#39;E&#39;     -- elliptical fracture in toughness dominated regime</span>
-<span class="sd">                                        - &#39;PKN&#39;   -- PKN fracture</span>
-<span class="sd">                                        - &#39;G&#39;     -- flexible, general purpose initialization</span>
+<span class="sd">                                        - &#39;M&#39;     -- radial fracture in viscosity dominated regime.</span>
+<span class="sd">                                        - &#39;Mt&#39;    -- radial fracture in viscosity dominated regime with leak-off.</span>
+<span class="sd">                                        - &#39;K&#39;     -- radial fracture in toughness dominated regime.</span>
+<span class="sd">                                        - &#39;Kt&#39;    -- radial fracture in toughness dominated regime with leak-off.</span>
+<span class="sd">                                        - &#39;PKN&#39;   -- PKN fracture.</span>
+<span class="sd">                                        - &#39;E_K&#39;   -- elliptical fracture propagating in toughness dominated regime.\</span>
+<span class="sd">                                                     The solution is equivalent to a particular anisotropic toughness \</span>
+<span class="sd">                                                     case described in Zia and Lecampion, 2018.</span>
+<span class="sd">                                        - &#39;E_E&#39;   -- the elliptical solution with transverse isotropic material \</span>
+<span class="sd">                                                     properties (see Moukhtari and Lecampion, 2019).</span>
+<span class="sd">                                        - &#39;MDR&#39;   -- viscosity dominated solution for turbulent flow. The friction \</span>
+<span class="sd">                                                     factor is calculated using MDR asymptote (see Zia and Lecampion\</span>
+<span class="sd">                                                     2019).</span>
+<span class="sd">                                        - &#39;G&#39;     -- flexible, general purpose initialization.</span>
 
 <span class="sd">                                    given_type can be one of the following:</span>
 
 <span class="sd">                                        - &#39;time&#39;      -- time at which the fracture is to be initialized.</span>
 <span class="sd">                                        - &#39;length&#39;    -- the length parameter. It will be treated as the fracture \</span>
-<span class="sd">                                                       radius, the minor axis length and the fracture length for the \</span>
-<span class="sd">                                                       cases of a radial fracture, an elliptical fracture and a PKN \</span>
-<span class="sd">                                                       fracture respectively.</span>
+<span class="sd">                                                         radius, the minor axis length and the fracture length for the \</span>
+<span class="sd">                                                         cases of a radial fracture, an elliptical fracture and a PKN \</span>
+<span class="sd">                                                         fracture respectively.</span>
 
 <span class="sd">        solid (MaterialProperties):           -- the MaterialProperties object giving the material properties.</span>
 <span class="sd">        fluid (FluidProperties):              -- the FluidProperties object giving the fluid properties.</span>
@@ -161,7 +168,7 @@
 <span class="sd">        CellStatus (ndarray):       -- specifies which region each element currently belongs to</span>
 <span class="sd">        initRad (float):            -- starting radius</span>
 <span class="sd">        initTime (float):           -- starting time</span>
-<span class="sd">        sgndDist (ndarray):         -- signed minimun distance from fracture front of each cell in the domain</span>
+<span class="sd">        sgndDist (ndarray):         -- signed minimum distance from fracture front of each cell in the domain</span>
 <span class="sd">        Q (ndarray-float):          -- injection rate into each cell of the domain</span>
 <span class="sd">        InCrack (ndarray):          -- array specifying whether the cell is inside or outside the fracture.</span>
 <span class="sd">        FractureVolume (float):     -- fracture volume</span>
