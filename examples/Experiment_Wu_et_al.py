@@ -103,9 +103,31 @@ ax.plot(data[:, 4]*1e-3, -1e-3*data[:, 5], 'k')
 ax.plot(data[:, 6]*1e-3, -1e-3*data[:, 7], 'k')
 ax.plot(data[:, 8]*1e-3, -1e-3*data[:, 9], 'k')
 
-blue_patch = mpatches.mlines.Line2D([], [], color='k', label='experiment (Wu et al. 2008)')
-black_patch = mpatches.mlines.Line2D([], [], color='darkmagenta', label='numerical')
+blue_patch = mpatches.mlines.Line2D([], [], color='k', label='experiment')
+black_patch = mpatches.mlines.Line2D([], [], color='darkmagenta', label='numerical computation')
 plt.legend(handles=[blue_patch, black_patch])
 ax.set_ylim(-170e-3, 50e-3,)
+
+
+#plotting in 3D
+plot_prop_mesh = PlotProperties(disp_precision=2)
+Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
+                            variable='mesh',
+                            projection='3D',
+                            backGround_param='sigma0',
+                            mat_properties=Solid,
+                            plot_prop=plot_prop_mesh)
+
+Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
+                            variable='footprint',
+                            projection='3D',
+                            fig=Fig_Fr)
+
+plot_prop = PlotProperties(alpha=0.6)           #plotting width
+Fig_Fr = plot_fracture_list(Fr_list,
+                            variable='surface',
+                            projection='3D',
+                            fig=Fig_Fr,
+                            plot_prop=plot_prop)
 
 plt.show(block=True)

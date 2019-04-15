@@ -38,14 +38,14 @@ Fluid = FluidProperties(viscosity=viscosity)
 simulProp = SimulationProperties()
 simulProp.finalTime = 50                      # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/star")     # the address of the output folder
-simulProp.fixedTmStp = np.asarray([[2e-4, 1.1, 18], [.5, None, 5]]) # list giving the time steps to adopt at the given times
+simulProp.fixedTmStp = np.asarray([[2e-4,   1.1,    18],  # list giving the time steps to adopt at the given times
+                                   [0.5,    None,   5]])
 simulProp.plotVar = ['w']
-simulProp.maxFrontItrs = 15
 
 # initializing fracture
 initRad = np.pi
 surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, initRad, initRad)
-surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells,0])+2.5 - abs(Mesh.CenterCoor[surv_cells,1])
+surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells,1])
 C = load_elasticity_matrix(Mesh, Eprime)
 init_param = ('G',              # type of initialization
               surv_cells,       # the given survey cells
@@ -128,7 +128,7 @@ Fig_3D = plot_fracture_list(Fr_list,
                             fig=Fig_3D)
 plot_prop = PlotProperties(alpha=0.3)
 Fig_3D = plot_fracture_list(Fr_list,
-                            variable='width',
+                            variable='surface',
                             projection='3D',
                             fig=Fig_3D,
                             plot_prop=plot_prop)

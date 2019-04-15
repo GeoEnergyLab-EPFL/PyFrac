@@ -210,8 +210,6 @@ class Controller:
                     tmStp_perf.status = 'failed'
                 self.perfData.append(tmStp_perf)
 
-
-
             # saving the last five steps to restart if required
             if status == 1:
                 print("Time step successful!")
@@ -530,7 +528,7 @@ class Controller:
 
                     # plotting closed cells
                     if len(Fr_advanced.closed) > 0:
-                        plot_prop.lineColor = 'limegreen'
+                        plot_prop.lineColor = 'orangered'
                         self.Figures[indx] = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
                                                                                 fig=self.Figures[indx],
                                                                                 plot_prop=plot_prop,

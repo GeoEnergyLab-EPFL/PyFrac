@@ -41,6 +41,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
     # the maximum distance any point can have from another in the current mesh. This distance is used to detect the
     # cells that are not yet traversed, i.e. having infinity distance
 
+    beta = mesh.hx / mesh.hy
     while len(NarrowBand) > 0:
         Smallest = NarrowBand[levelSet[NarrowBand].argmin()]
         neighbors = mesh.NeiElements[Smallest]
@@ -53,7 +54,6 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
 
                 NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
                 NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
-                beta = mesh.hx / mesh.hy
                 delT = NeigyMin - NeigxMin
 
                 warnings.filterwarnings("ignore")

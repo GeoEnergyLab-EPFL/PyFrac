@@ -1186,10 +1186,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             pf[to_impose_k] = sol[n_w + len(to_solve_k) + len(neg_km1): n_w + len(to_solve_k) + len(neg_km1) +
                                                                         len(to_impose_k)]
 
-        # larger_pp = np.where(pf[EltCrack] < mat_properties.porePressure)[0]
-        # pf[EltCrack[larger_pp]] = mat_properties.porePressure
-
         if len(neg) == len(to_solve):
+            larger_pp = np.where(pf[EltCrack] < mat_properties.porePressure)[0]
+            pf[EltCrack[larger_pp]] = mat_properties.porePressure
             fully_closed = True
 
         return_data = (data_Pic, neg_km1, fully_closed)

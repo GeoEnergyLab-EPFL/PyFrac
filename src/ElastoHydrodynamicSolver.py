@@ -651,7 +651,6 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-# @profile
 def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     """
     This function makes the linearized system of equations to be solved by a linear system solver. The system is
@@ -754,8 +753,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
-    ch_AplusCf = FinDiffOprtr[np.ix_(ch_indxs, ch_indxs)]
-    ch_AplusCf *= dt
+    ch_AplusCf = dt * FinDiffOprtr[np.ix_(ch_indxs, ch_indxs)]
     ch_AplusCf[ch_indxs, ch_indxs] -= cf * wcNplusHalf[to_solve]
 
     A[np.ix_(ch_indxs, ch_indxs)] = - np.dot(ch_AplusCf, C[np.ix_(to_solve, to_solve)])
@@ -783,7 +781,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                   np.dot(C[np.ix_(to_solve, active)], wcNplusOne[active]) + \
                   sigma0[to_solve]
 
-    S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+    S[ch_indxs] = np.dot(ch_AplusCf, pf_ch_prime) + \
                   dt * G[to_solve] + \
                   dt * Q[to_solve] / Mesh.EltArea - \
                   LeakOff[to_solve] / Mesh.EltArea + \

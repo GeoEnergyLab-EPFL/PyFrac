@@ -13,7 +13,7 @@ from src.Controller import *
 
 
 # creating mesh
-Mesh = CartesianMesh(100, 150, 35, 61)
+Mesh = CartesianMesh(100, 150, 41, 61)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -59,9 +59,8 @@ simulProp.gravity = True
 simulProp.bckColor = 'confining stress'
 
 # initialization parameters
-initRad = 85
+initRad = 80
 init_param = ("PKN", "length", initRad, 32)
-# init_param = ("M", "length", initRad)
 
 # creating fracture object
 Fr = Fracture(Mesh,

@@ -1844,7 +1844,7 @@ def plot_injection_source(inj_prop, mesh, fig=None, plot_prop=None):
 
 def animate_simulation_results(fracture_list, variable='footprint', projection=None, elements=None,
                                  plot_prop=None, edge=4, contours_at=None, labels=None, mat_properties=None,
-                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.25):
+                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.001):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -1878,6 +1878,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
         variable = [variable]
     figures = [None for i in range(len(variable))]
 
+    setFigPos = True
     for fracture in fracture_list:
         for indx, plt_var in enumerate(variable):
             print("Plotting solution at " + repr(fracture.time) + "...")
@@ -1934,19 +1935,33 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        plot_non_zero=plot_non_zero)
             # plotting closed cells
             if len(fracture.closed) > 0:
-                plot_prop.lineColor = 'r'
+                plot_prop.lineColor = 'orangered'
                 figures[indx] = fracture.mesh.identify_elements(fracture.closed,
                                                                         fig=figures[indx],
                                                                         plot_prop=plot_prop,
                                                                         plot_mesh=False,
                                                                         print_number=False)
+
+        # set figure position
+        if setFigPos:
+            for i in range(len(variable)):
+                plt.figure(i + 1)
+                mngr = plt.get_current_fig_manager()
+                x_offset = 650 * i
+                y_ofset = 50
+                if i >= 3:
+                    x_offset = (i - 3) * 650
+                    y_ofset = 500
+                mngr.window.setGeometry(x_offset, y_ofset, 640, 545)
+            setFigPos = False
+
         # plot the figure
         plt.ion()
         plt.pause(pause_time)
         print("Done! ")
         if block_figure:
             input("Press any key to continue.")
-
+    plt.show(block=True)
 
 #-----------------------------------------------------------------------------------------------------------------------
 

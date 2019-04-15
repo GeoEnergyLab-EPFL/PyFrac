@@ -24,7 +24,7 @@ K_Ic = 0.5e6                        # set toughness to a very low value
 def sigmaO_func(x, y):
     """ The function providing the confining stress variation with space"""
 
-    if abs(y)>0.05 and abs(y)<0.07:
+    if abs(y) > 0.05 and abs(y) < 0.07:
         sigma0 = 75.e6
     elif abs(y) < 0.05:
         sigma0 = 5.0e6
@@ -77,7 +77,6 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-
 ####################
 # plotting results #
 ####################
@@ -94,4 +93,4 @@ Fig = plot_fracture_list_slice(Fr_list[-6:],
                                 orientation='vertical',
                                 plot_prop=plt_prop)
 
-plt.show()
+plt.show(block=True)
