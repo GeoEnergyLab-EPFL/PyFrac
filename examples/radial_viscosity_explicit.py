@@ -64,7 +64,6 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-
 ####################
 # plotting results #
 ####################
@@ -161,5 +160,5 @@ Fig_Fr = plot_fracture_list(Fr_list,
                             projection='3D',
                             fig=Fig_Fr)
 
-plt.show()
+plt.show(block=True)
 
