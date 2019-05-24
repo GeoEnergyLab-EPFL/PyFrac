@@ -481,23 +481,28 @@ class CartesianMesh:
 
         """
 
+        if plot_prop is None:
+            plot_prop = PlotProperties()
+
+        if plot_mesh:
+            fig = self.plot(fig=fig)
+
         if fig is None:
             fig, ax = plt.subplots()
         else:
             ax = fig.get_axes()[0]
 
-        if plot_prop is None:
-            plot_prop = PlotProperties()
+        # set the four corners of the rectangular mesh
+        ax.set_xlim([-self.Lx - self.hx / 2, self.Lx + self.hx / 2])
+        ax.set_ylim([-self.Ly - self.hy / 2, self.Ly + self.hy / 2])
 
-        if plot_mesh:
-            self.plot(fig=fig)
         # add rectangle for each cell
-        patches = []
+        patch_list = []
         for i in elements:
             polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
-            patches.append(polygon)
+            patch_list.append(polygon)
 
-        p = PatchCollection(patches,
+        p = PatchCollection(patch_list,
                             cmap=plot_prop.colorMap,
                             edgecolor=plot_prop.lineColor,
                             linewidth=plot_prop.lineWidth,
