@@ -770,8 +770,20 @@ class SimulationProperties:
     def get_timeStamp(self):
         return self.__timeStamp
 
-#-----------------------------------------------------------------------------------------------------------------------
+    def get_time_step_prefactor(self, time):
+        if isinstance(self.tmStpPrefactor, np.ndarray):
+            if self.tmStpPrefactor.shape[0] == 2:
+                indxCurTime = max(np.where(time >= self.tmStpPrefactor[0, :])[0])
+                return self.tmStpPrefactor[1, indxCurTime]  # current pre-factor
+            else:
+                raise ValueError("The time step pre-factor array should have two rows, where each column giving the"
+                                 " time at which the pre-factor is changed in the first rwo, and the corresponding "
+                                 "pre-factor in the second row.")
+        else:
+            return self.tmStpPrefactor
 
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 class IterationProperties:
     """
