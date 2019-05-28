@@ -67,7 +67,7 @@ class Controller:
        self.C = C
        self.fr_queue = [None, None, None, None, None] # queue of fractures from the last five time steps
        self.stepsFromChckPnt = 0
-       self.tmStpPrefactor_max = Sim_prop.tmStpPrefactor
+       self.tmStpPrefactor_copy = copy.copy(Sim_prop.tmStpPrefactor)
        self.stagnant_TS = None
        self.perfData = []
        self.lastSavedFile = 0
@@ -75,11 +75,13 @@ class Controller:
        self.TmStpCount = 0
        self.chkPntReattmpts = 0
        self.delta_w = None
-       self.lst_tmStp = None
+       self.lstTmStp = None
        self.solveDetlaP_cp = self.sim_prop.solveDeltaP
        self.PstvInjJmp = None
        self.fullyClosed = False
        self.setFigPos = True
+       self.lastSuccessfulTS = Fracture.time
+       self.maxTmStp = 0
 
 
        # make a list of Nones with the size of the number of variables to plot during simulation
@@ -179,7 +181,7 @@ class Controller:
                                                               self.solid_prop.Eprime)
             print('Done!')
 
-        # perform first time step with implicit front advancing
+        # perform first time step with implicit front advancing due to non-availability of velocity
         if not self.sim_prop.symmetric:
             if self.sim_prop.frontAdvancing == "semi-implicit":
                 self.sim_prop.frontAdvancing = "implicit"
@@ -210,11 +212,12 @@ class Controller:
                     tmStp_perf.status = 'failed'
                 self.perfData.append(tmStp_perf)
 
-            # saving the last five steps to restart if required
+
             if status == 1:
+            # Successful time step
                 print("Time step successful!")
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
-                self.lst_tmStp = Fr_n_pls1.time - self.fracture.time
+                self.lstTmStp = Fr_n_pls1.time - self.fracture.time
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
                     if Fr_n_pls1.time > self.lastSavedTime:
@@ -223,12 +226,16 @@ class Controller:
                 # add the advanced fracture to the last five fractures list
                 self.fracture = copy.deepcopy(Fr_n_pls1)
                 self.fr_queue[self.successfulTimeSteps % 5] = copy.deepcopy(Fr_n_pls1)
-                self.chkPntReattmpts = 0
-                self.stepsFromChckPnt += 1
-                if self.stepsFromChckPnt % 4 == 0:
-                    # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
-                    self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_max
 
+                if self.fracture.time > self.lastSuccessfulTS:
+                    self.lastSuccessfulTS = self.fracture.time
+                if self.maxTmStp < self.lstTmStp:
+                    self.maxTmStp = self.lstTmStp
+                # put check point reattempts to zero if the simulation has advanced past the time where it failed
+                if Fr_n_pls1.time > self.lastSuccessfulTS + 2 * self.maxTmStp:
+                    self.chkPntReattmpts = 0
+                    # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
+                    self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_copy
                 self.successfulTimeSteps += 1
 
                 # resetting the parameters for closure
@@ -239,8 +246,12 @@ class Controller:
                     self.sim_prop.solveDeltaP = self.solveDetlaP_cp
                 self.PstvInjJmp = None
                 self.fullyClosed = False
-            # re-meshing required
+
+                if self.TmStpCount == self.sim_prop.maxTimeSteps:
+                    print("Max time steps reached!")
+
             elif status == 12:
+                # re-meshing required
                 if self.sim_prop.enableRemeshing:
                     self.C *= 1 / self.sim_prop.remeshFactor
                     print("Remeshing...")
@@ -273,6 +284,7 @@ class Controller:
                     break
 
             elif status == 14:
+                # fracture fully closed
                 self.output(Fr_n_pls1)
                 if self.PstvInjJmp is None:
                     inp = input("Fracture is fully closed. Continuing with the simulation may result in non-realistic\n"
@@ -303,11 +315,12 @@ class Controller:
                 self.fracture = copy.deepcopy(Fr_n_pls1)
 
             else:
+                # time step failed
                 f.writelines("\n" + self.errorMessages[status])
                 f.writelines("\nTime step failed at = " + repr(self.fracture.time))
-
-                self.sim_prop.tmStpPrefactor *= 0.8
-                if self.fr_queue[(self.successfulTimeSteps + 1) % 5 ] == None or self.sim_prop.tmStpPrefactor < 0.1:
+                # check if the queue with last 5 time steps is not empty, or max check points jumps done
+                if self.fr_queue[self.successfulTimeSteps % 5] == None or \
+                   self.chkPntReattmpts == 4:
                     if self.sim_prop.collectPerfData:
                         with open(self.sim_prop.get_outputFolder() + "perf_data.dat", 'wb') as output:
                             dill.dump(self.perfData, output, -1)
@@ -317,11 +330,23 @@ class Controller:
 
                     raise SystemExit("Simulation failed.")
                 else:
+                    # decrease time step pre-factor before taking the next fracture in the queue having last
+                    # five time steps
+                    if isinstance(self.sim_prop.tmStpPrefactor, np.ndarray):
+                        indxCurTime = max(np.where(self.fracture.time >= self.sim_prop.tmStpPrefactor[0, :])[0])
+                        self.sim_prop.tmStpPrefactor[1, indxCurTime] *= 0.8
+                        current_PreFctr = self.sim_prop.tmStpPrefactor[1, indxCurTime]
+                    else:
+                        self.sim_prop.tmStpPrefactor *= 0.8
+                        current_PreFctr = self.sim_prop.tmStpPrefactor
+
                     self.chkPntReattmpts += 1
                     self.fracture = copy.deepcopy(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5])
-                    print("Restarting from the last check point...")
-                    f.writelines("\nRestarting from the last check point...")
-
+                    print("Time step have failed despite of reattempts with slightly smaller/bigger time steps...\n"
+                          "Going " + repr(5 - self.chkPntReattmpts) + " time steps back and re-attempting with the"
+                            " time step pre-factor of " + repr(current_PreFctr))
+                    f.writelines("\nTime step have failed. Going " + repr(6 - self.chkPntReattmpts) + " time steps"
+                                                                                                      " back...")
                     self.failedTimeSteps += 1
 
             self.TmStpCount += 1
@@ -389,6 +414,7 @@ class Controller:
             else:
                 PerfNode_TmStpAtmpt = None
 
+            self.attmptedTimeStep = tmStp_to_attempt
             status, Fr = attempt_time_step(Frac,
                                             C,
                                             self.solid_prop,
@@ -647,19 +673,22 @@ class Controller:
             if self.delta_w is not None:
                 delta_vol = sum(self.delta_w) / sum(self.fracture.w)
                 if delta_vol < 0:
-                    TS_delta_vol = self.lst_tmStp / abs(delta_vol) * 0.05
+                    TS_delta_vol = self.lstTmStp / abs(delta_vol) * 0.05
                 else:
-                    TS_delta_vol = self.lst_tmStp / abs(delta_vol) * 0.12
+                    TS_delta_vol = self.lstTmStp / abs(delta_vol) * 0.12
 
-            TimeStep = self.sim_prop.tmStpPrefactor * min(TS_cell_length,
-                                                          TS_fracture_length,
-                                                          TS_inj_cell,
-                                                          TS_delta_vol)
+            # getting pre-factor for current time
+            current_prefactor = self.sim_prop.get_time_step_prefactor(self.fracture.time)
+            TimeStep = current_prefactor * min(TS_cell_length,
+                                              TS_fracture_length,
+                                              TS_inj_cell,
+                                              TS_delta_vol)
 
         # in case of fracture not propagating
         if TimeStep <= 0 or np.isinf(TimeStep):
             if self.stagnant_TS is not None:
                 TimeStep = self.stagnant_TS
+                self.stagnant_TS = TimeStep * 1.2
             else:
                 TS_obtained = False
                 print("The fracture front is stagnant and there is no injection. In these conditions, "
@@ -672,10 +701,7 @@ class Controller:
                     except ValueError:
                         pass
 
-
-
-
-        # to get the solution at the times given in time series or final time
+        # to get the solution at the times given in time series, any change in parameters or final time
         next_in_TS = self.sim_prop.finalTime
 
         if self.timeToHit is not None:
@@ -690,8 +716,6 @@ class Controller:
         # check if time step would step over the next time in required time series
         if self.fracture.time + TimeStep > next_in_TS:
             TimeStep = next_in_TS - self.fracture.time
-
-        self.stagnant_TS = TimeStep * 1.2
 
         # checking if the time step is above the limit
         if self.sim_prop.timeStepLimit is not None and TimeStep > self.sim_prop.timeStepLimit:
