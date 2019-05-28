@@ -404,3 +404,18 @@ def find_corresponding_ribbon_cell(tip_cells, alpha, zero_vertex, mesh):
                 corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 0]
 
     return corr_ribbon
+
+def leak_off_stagnant_tip(Elts, l, alpha, vrtx_arr_time, current_time, Cprime, time_step, mesh):
+    """
+    This function evaluates leak-off in the tip cells with stagnant front. Its samples the leak-off midway from the
+    zero vertex of the cell to the front and multiply it with the area of the fracture in the cell (filling fraction
+    times the area of the cell).
+    todo: can be more precise
+    """
+
+    arrival_time_mid = (current_time - vrtx_arr_time) / 2
+    t_since_arrival = current_time - arrival_time_mid
+    effective_area = Integral_over_cell(Elts, alpha, l, mesh, 'A')
+    LkOff = 2 * Cprime[Elts] * ((t_since_arrival) ** 0.5 - (t_since_arrival - time_step)** 0.5) * effective_area
+
+    return LkOff

@@ -254,23 +254,19 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltCrack]) > 0.:
-        # Calculate leak-off term for the tip cell
-        LkOff[Fr_lstTmStp.EltTip] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltTip] * Integral_over_cell(
-                                                               Fr_lstTmStp.EltTip,
-                                                               Fr_lstTmStp.alpha,
-                                                               Fr_lstTmStp.l,
-                                                               Fr_lstTmStp.mesh,
-                                                               'Lk',
-                                                               mat_prop=mat_properties,
-                                                               frac=Fr_lstTmStp,
-                                                               Vel=Fr_lstTmStp.v,
-                                                               dt=timeStep,
-                                                               arrival_t=Fr_lstTmStp.TarrvlZrVrtx[Fr_lstTmStp.EltTip])
+        # the tip cells are assumed to be stagnant in same footprint evaluation
+        LkOff[Fr_lstTmStp.EltTip] = leak_off_stagnant_tip(Fr_lstTmStp.EltTip,
+                                                            Fr_lstTmStp.l,
+                                                            Fr_lstTmStp.alpha,
+                                                            Fr_lstTmStp.TarrvlZrVrtx[Fr_lstTmStp.EltTip],
+                                                            Fr_lstTmStp.time + timeStep,
+                                                            mat_properties.Cprime,
+                                                            timeStep,
+                                                            Fr_lstTmStp.mesh)
 
         # Calculate leak-off term for the channel cell
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
         t_min_t0 = t_lst_min_t0 + timeStep
-
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (t_min_t0 ** 0.5 -
                                         t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
 
@@ -315,9 +311,10 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.v = np.zeros((len(Fr_kplus1.EltTip), ), dtype=np.float64)
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * (Fr_kplus1.mesh.EltArea)
-    Fr_kplus1.LkOff_vol += LkOff
+    Fr_kplus1.LkOff = LkOff
+    Fr_kplus1.LkOffTotal += LkOff
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) \
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
     fluidVel = return_data[0]
     if fluid_properties.turbulence:
@@ -481,7 +478,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_properties.tmStpPrefactor * 6.66 * (
+        current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 * (
                                             Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5)[0]
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx**2 +
@@ -714,6 +712,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((Fr_lstTmStp.time +
                         timeStep - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5 - (Fr_lstTmStp.time -
                         Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5) * Fr_lstTmStp.mesh.EltArea
+        if stagnant.any():
+            LkOff[EltsTipNew[stagnant]] = leak_off_stagnant_tip(EltsTipNew[stagnant],
+                                                                l_k[stagnant],
+                                                                alpha_k[stagnant],
+                                                                Fr_lstTmStp.TarrvlZrVrtx[EltsTipNew[stagnant]],
+                                                                Fr_lstTmStp.time + timeStep,
+                                                                mat_properties.Cprime,
+                                                                timeStep,
+                                                                Fr_lstTmStp.mesh)
 
     # set leak off to zero if pressure below pore pressure
     LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
@@ -793,9 +800,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         if corr_ribbon[i] in Fr_kplus1.closed and elem not in Fr_kplus1.closed:
             tip_neg_rib = np.append(tip_neg_rib, elem)
     Fr_kplus1.closed = np.append(Fr_kplus1.closed, tip_neg_rib)
-    Fr_kplus1.LkOff_vol += LkOff
+    Fr_kplus1.LkOff = LkOff
+    Fr_kplus1.LkOffTotal += LkOff
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack]))\
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack]))\
                            / Fr_kplus1.injectedVol
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
@@ -1297,8 +1305,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
                                                                                  Fr_lstTmStp.v)
-
-    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < sim_properties.tmStpPrefactor * 6.66 *(
+    current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 *(
                 Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
@@ -1509,6 +1517,16 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             exitstatus = 13
             return exitstatus, None
 
+        if stagnant.any():
+            LkOff[EltsTipNew[stagnant]] = leak_off_stagnant_tip(EltsTipNew[stagnant],
+                                                                l_k[stagnant],
+                                                                alpha_k[stagnant],
+                                                                Fr_lstTmStp.TarrvlZrVrtx[EltsTipNew[stagnant]],
+                                                                Fr_lstTmStp.time + timeStep,
+                                                                mat_properties.Cprime,
+                                                                timeStep,
+                                                                Fr_lstTmStp.mesh)
+
     # set leak off to zero if pressure below pore pressure
     LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
 
@@ -1647,7 +1665,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        front_region =  np.where(abs(Fr_lstTmStp.sgndDist) < sim_properties.tmStpPrefactor * 6.66 * (
+        current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+        front_region =  np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 * (
                                             Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
         if not np.in1d(Fr_kplus1.EltTip, front_region).any():
@@ -1700,9 +1719,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.timeStep_last = timeStep
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
-    Fr_kplus1.LkOff_vol += LkOff
+    Fr_kplus1.LkOff = LkOff
+    Fr_kplus1.LkOffTotal += LkOff
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOff_vol[Fr_kplus1.EltCrack])) \
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
 
     if sim_properties.saveRegime:
