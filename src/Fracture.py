@@ -315,7 +315,8 @@ class Fracture:
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
         self.Tarrival[self.EltCrack] = self.time
-        self.LkOff_vol = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
+        self.LkOff = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
+        self.LkOffTotal = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
         self.efficiency = 1.
         self.FractureVolume = np.sum(self.w) * Mesh.EltArea
         self.injectedVol = np.sum(self.w) * Mesh.EltArea
@@ -752,7 +753,6 @@ class Fracture:
                 corresponding.append(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
                                                             coarse_mesh.CenterCoor[i, 1]))
 
-
             corresponding = np.asarray(corresponding, dtype=int)
 
             w_coarse = np.zeros((coarse_mesh.NumberOfElts, ), dtype=np.float64)
@@ -760,10 +760,10 @@ class Fracture:
                                         + np.sum(self.w[enclosing[corresponding, :4]] / 2, axis=1) +
                                         np.sum(self.w[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
 
-            LkOff_vol = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
-            LkOff_vol[intersecting] = (self.LkOff_vol[corresponding]
-                                        + np.sum(self.LkOff_vol[enclosing[corresponding, :4]] / 2, axis=1) +
-                                        np.sum(self.LkOff_vol[enclosing[corresponding, 4:8]] / 4, axis=1))
+            LkOff = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
+            LkOff[intersecting] = (self.LkOff[corresponding]
+                                        + np.sum(self.LkOff[enclosing[corresponding, :4]] / 2, axis=1) +
+                                        np.sum(self.LkOff[enclosing[corresponding, 4:8]] / 4, axis=1))
 
             wHist_coarse = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
             wHist_coarse[intersecting] = (self.wHist[corresponding]
@@ -778,8 +778,8 @@ class Fracture:
                                 method='linear',
                                 fill_value=0.)
 
-            LkOff_vol = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
-                                self.LkOff_vol[self.EltChannel],
+            LkOff = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
+                                self.LkOff[self.EltChannel],
                                 coarse_mesh.CenterCoor,
                                 method='linear',
                                 fill_value=0.)
@@ -853,10 +853,27 @@ class Fracture:
                                                             self.Tarrival[self.EltChannel],
                                                             coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
                                                             method='linear')
+        Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                                            self.TarrvlZrVrtx[self.EltChannel],
+                                                            coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
+                                                            method='linear')
 
-        Fr_coarse.LkOff_vol = LkOff_vol
+        # The zero vertex arrival time for the tip elements is taken equal to the corresponding element in the
+        # fine mesh. If not available, average is taken of the enclosing elements
+        for i in Fr_coarse.EltTip:
+            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0], coarse_mesh.CenterCoor[i, 1])
+            if np.isnan(self.TarrvlZrVrtx[corr_tip]):
+                TarrvlZrVrtx = 0
+                cnt = 0
+                for j in range(8):
+                    if not np.isnan(self.TarrvlZrVrtx[enclosing[corr_tip][j]]):
+                        TarrvlZrVrtx += self.TarrvlZrVrtx[enclosing[corr_tip][j]]
+                        cnt += 1
+            Fr_coarse.TarrvlZrVrtx[i] = TarrvlZrVrtx / cnt
+
+        Fr_coarse.LkOff = LkOff
         Fr_coarse.injectedVol = self.injectedVol
-        Fr_coarse.efficiency = (Fr_coarse.injectedVol - sum(Fr_coarse.LkOff_vol[Fr_coarse.EltCrack]))\
+        Fr_coarse.efficiency = (Fr_coarse.injectedVol - sum(Fr_coarse.LkOff[Fr_coarse.EltCrack]))\
                                / Fr_coarse.injectedVol
         Fr_coarse.time = self.time
         Fr_coarse.closed = np.asarray([])

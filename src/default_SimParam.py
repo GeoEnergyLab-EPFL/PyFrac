@@ -8,7 +8,7 @@ toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic s
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
 
 # max iterations
-max_front_itrs = 15                     # maximum iterations for the fracture front.
+max_front_itrs = 25                     # maximum iterations for the fracture front.
 max_solver_itrs = 80                    # maximum iterations for the elastohydrodynamic solver.
 max_proj_Itrs = 10                      # maximum projection iterations.
 
