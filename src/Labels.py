@@ -32,10 +32,10 @@ Fig_labels = {
     'd_mean': 'Mean Distance to Front',
     'V': 'Total Volume',
     'volume': 'Total Volume',
-    'lk': 'Leaked off Volume',
-    'leaked off': 'Leaked off Volume',
-    'lkv': 'Total Leaked of Volume',
-    'leaked off volume': 'Total Leaked of Volume',
+    'lk': 'Leak off',
+    'leak off': 'Leak off',
+    'lkt': 'Total Leaked of Volume',
+    'leaked off total': 'Total Leaked of Volume',
     'ar': 'Aspect Ratio',
     'aspect ratio': 'Aspect Ratio',
     'efficiency': 'Fracture Efficiency',
@@ -70,10 +70,10 @@ labels = {
     'd_mean': '$R_{mean}$',
     'V': 'total volume',
     'volume': 'total volume',
-    'lk': 'leaked off volume',
-    'leaked off': 'leaked off volume',
-    'lkv': 'total leaked off volume',
-    'leaked off volume': 'total leaked off volume',
+    'lk': 'leak off',
+    'leak off': 'leak off',
+    'lkt': 'total leaked off volume',
+    'leaked off total': 'total leaked off volume',
     'ar': 'aspect ratio',
     'aspect ratio': 'aspect ratio',
     'efficiency': 'fracture efficiency',
@@ -109,9 +109,9 @@ units = {
     'V': ' $m^3$',
     'volume': ' $m^3$',
     'lk': ' $m^3$',
-    'leaked off': ' $m^3$',
-    'lkv': ' $m^3$',
-    'leaked off volume': ' $m^3$',
+    'leak off': ' $m^3$',
+    'lkt': ' $m^3$',
+    'leaked off total': ' $m^3$',
     'ar': '',
     'aspect ratio': '',
     'efficiency': '',
@@ -147,9 +147,9 @@ unit_conversion = {
     'V': 1.,
     'volume': 1.,
     'lk': 1.,
-    'leaked off': 1.,
-    'lkv': 1.,
-    'leaked off volume': 1.,
+    'leak off': 1.,
+    'lkt': 1.,
+    'leaked off total': 1.,
     'ar': 1.,
     'aspect ratio': 1.,
     'efficiency': 100.,
@@ -165,15 +165,15 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'fluid velocity', 'fv', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
-                       'V', 'lk', 'leaked off', 'lkv', 'leaked off volume',
+                       'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
-                            'efficiency', 'ef', 'aspect ratio', 'ar']
+                            'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total']
 bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                           'fluid velocity', 'fv', 'lk', 'leaked off', 'surface']
+                           'fluid velocity', 'fv', 'lk', 'leak off', 'surface']
 
 required_string = {
     't': '100000',
@@ -208,8 +208,8 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'mesh\'\n' \
                     '-- \'footprint\'\n' \
                     '-- \'V\' or \'volume\'\n' \
-                    '-- \'lk\' or \'leaked off\'\n' \
-                    '-- \'lkv\' or \'leaked off volume\'\n' \
+                    '-- \'lk\' or \'leak off\'\n' \
+                    '-- \'lkt\' or \'leaked off total\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
                     '-- \'ef\' or \'efficiency\'\n' \
                     '-- \'surface\''
@@ -242,9 +242,9 @@ supported_projections ={
     'volume': ['1D'],
     'V': ['1D'],
     'lk': ['2D_clrmap', '2D_contours', '3D'],
-    'leaked off': ['2D_clrmap', '2D_contours', '3D'],
-    'lkv': ['1D'],
-    'leaked off volume': ['1D'],
+    'leak off': ['2D_clrmap', '2D_contours', '3D'],
+    'lkt': ['1D'],
+    'leaked off total': ['1D'],
     'ar': ['1D'],
     'aspect ratio': ['1D'],
     'efficiency': ['1D'],

@@ -268,14 +268,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
             variable_list.append(i.FractureVolume)
             time_srs.append(i.time)
             
-    elif variable is 'leaked off' or variable is 'lk':
+    elif variable is 'leak off' or variable is 'lk':
         for i in fracture_list:
-            variable_list.append(i.LkOff_vol)
+            variable_list.append(i.LkOff)
             time_srs.append(i.time)
             
     elif variable is 'leaked off volume' or variable is 'lkv':
         for i in fracture_list:
-            variable_list.append(sum(i.LkOff_vol[i.EltCrack]))
+            variable_list.append(sum(i.LkOffTotal[i.EltCrack]))
             time_srs.append(i.time)
             
     elif variable is 'aspect ratio' or variable is 'ar':
