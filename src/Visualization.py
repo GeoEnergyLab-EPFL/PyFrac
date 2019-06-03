@@ -109,8 +109,9 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
     else:
         var_val_list, time_list = get_fracture_variable(fracture_list,
-                                                                    variable,
-                                                                    edge=edge)
+                                                            variable,
+                                                            edge=edge,
+                                                            return_time=True)
 
         var_val_copy = np.copy(var_val_list)
         for i in range(len(var_val_copy)):
@@ -275,8 +276,9 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                 edge=edge,
                                                 return_time=False)
     var_val_list, time_list = get_fracture_variable(fracture_list,
-                                                                variable,
-                                                               edge=edge)
+                                                        variable,
+                                                       edge=edge,
+                                                    return_time=True)
 
     var_val_copy = np.copy(var_val_list)
     for i in range(len(var_val_copy)):
@@ -1301,6 +1303,9 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
+    if time_srs is None and length_srs is None:
+        raise ValueError("Either time series or length series is to be provided!")
+
     if plot_prop is None:
         plot_prop = PlotProperties()
     plot_prop_cp = copy.copy(plot_prop)
@@ -1324,12 +1329,24 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
                                                         h=h,
                                                         samp_cell=samp_cell,
                                                         gamma=gamma)
+    if time_srs is None:
+        time_srs = get_HF_analytical_solution_at_point(regime,
+                                                        't',
+                                                        point,
+                                                        mat_prop,
+                                                        inj_prop,
+                                                        fluid_prop=fluid_prop,
+                                                        length_srs=length_srs,
+                                                        time_srs=time_srs,
+                                                        h=h,
+                                                        samp_cell=samp_cell,
+                                                        gamma=gamma)
 
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
 
-    if variable in ('time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
-                    'front_dist_mean', 'd_mean'):
+    if variable in ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
+                    'front_dist_mean', 'd_mean']:
         print("The given variable does not vary spatially.")
 
     plot_prop_cp.lineColor = plot_prop.lineColorAnal
@@ -1943,22 +1960,22 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                                         print_number=False)
 
         # set figure position
-        if setFigPos:
-            for i in range(len(variable)):
-                plt.figure(i + 1)
-                mngr = plt.get_current_fig_manager()
-                x_offset = 650 * i
-                y_ofset = 50
-                if i >= 3:
-                    x_offset = (i - 3) * 650
-                    y_ofset = 500
-                mngr.window.setGeometry(x_offset, y_ofset, 640, 545)
-            setFigPos = False
+        if 'win' in sys.platform:
+            if setFigPos:
+                for i in range(len(variable)):
+                    plt.figure(i + 1)
+                    mngr = plt.get_current_fig_manager()
+                    x_offset = 650 * i
+                    y_ofset = 50
+                    if i >= 3:
+                        x_offset = (i - 3) * 650
+                        y_ofset = 500
+                    mngr.window.setGeometry(x_offset, y_ofset, 640, 545)
+                setFigPos = False
 
         # plot the figure
         plt.ion()
         plt.pause(pause_time)
-        print("Done! ")
         if block_figure:
             input("Press any key to continue.")
     plt.show(block=True)
