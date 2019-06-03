@@ -316,7 +316,7 @@ class Fracture:
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
         self.Tarrival[self.EltCrack] = self.time
         self.LkOff = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
-        self.LkOffTotal = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
+        self.LkOffTotal = 0.
         self.efficiency = 1.
         self.FractureVolume = np.sum(self.w) * Mesh.EltArea
         self.injectedVol = np.sum(self.w) * Mesh.EltArea
@@ -869,12 +869,14 @@ class Fracture:
                     if not np.isnan(self.TarrvlZrVrtx[enclosing[corr_tip][j]]):
                         TarrvlZrVrtx += self.TarrvlZrVrtx[enclosing[corr_tip][j]]
                         cnt += 1
-            Fr_coarse.TarrvlZrVrtx[i] = TarrvlZrVrtx / cnt
+                Fr_coarse.TarrvlZrVrtx[i] = TarrvlZrVrtx / cnt
+            else:
+                Fr_coarse.TarrvlZrVrtx[i] = self.TarrvlZrVrtx[corr_tip]
 
         Fr_coarse.LkOff = LkOff
+        Fr_coarse.LkOffTotal = self.LkOffTotal
         Fr_coarse.injectedVol = self.injectedVol
-        Fr_coarse.efficiency = (Fr_coarse.injectedVol - sum(Fr_coarse.LkOff[Fr_coarse.EltCrack]))\
-                               / Fr_coarse.injectedVol
+        Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
         Fr_coarse.time = self.time
         Fr_coarse.closed = np.asarray([])
         Fr_coarse.wHist = wHist_coarse
