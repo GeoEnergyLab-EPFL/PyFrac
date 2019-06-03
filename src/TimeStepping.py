@@ -801,10 +801,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             tip_neg_rib = np.append(tip_neg_rib, elem)
     Fr_kplus1.closed = np.append(Fr_kplus1.closed, tip_neg_rib)
     Fr_kplus1.LkOff = LkOff
-    Fr_kplus1.LkOffTotal += LkOff
+    Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack]))\
-                           / Fr_kplus1.injectedVol
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
 
@@ -1122,8 +1121,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                    guess,
                                    typValue,
                                    inter_itr_init,
-                                   sim_properties.toleranceEHL,
-                                   sim_properties.maxSolverItrs,
+                                   sim_properties,
                                    *arg,
                                    perf_node=perfNode_Picard)
 
@@ -1168,7 +1166,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     for i in new_neg:
                         new_wc.append(wc_k[np.where(neg_k == i)[0]][0])
                     wc_to_impose = np.hstack((wc_km1, np.asarray(new_wc)))
-                    print('Iterating on cells with active width constraint...')
+                    if sim_properties.verbosity > 1:
+                        print('Iterating on cells with active width constraint...')
             else:
                 non_neg = True
 
@@ -1195,8 +1194,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                                         len(to_impose_k)]
 
         if len(neg) == len(to_solve):
-            larger_pp = np.where(pf[EltCrack] < mat_properties.porePressure)[0]
-            pf[EltCrack[larger_pp]] = mat_properties.porePressure
+            # larger_pp = np.where(pf[EltCrack] < mat_properties.porePressure)[0]
+            # pf[EltCrack[larger_pp]] = mat_properties.porePressure
             fully_closed = True
 
         return_data = (data_Pic, neg_km1, fully_closed)
@@ -1720,10 +1719,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
     Fr_kplus1.LkOff = LkOff
-    Fr_kplus1.LkOffTotal += LkOff
+    Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
-                           / Fr_kplus1.injectedVol
+    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
 
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts, ), np.nan, dtype=np.float32)

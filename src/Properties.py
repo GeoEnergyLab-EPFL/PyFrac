@@ -444,10 +444,9 @@ class SimulationProperties:
         tolFractFront (float):       -- tolerance for the fracture front loop.
         toleranceEHL (float):        -- tolerance for the Elastohydrodynamic solver.
         toleranceProjection (float): -- tolerance for projection iteration for anisotropic case
-        maxFrontItr (int):           -- maximum iterations to for the fracture front loop.
-        maxSolverItr (int):          -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
+        maxFrontItrs (int):          -- maximum iterations to for the fracture front loop.
+        maxSolverItrs (int):         -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
                                         case.
-        maximumItrEHL (int):         -- maximum number of iterations for the Elastohydrodynamic solver.
         maxProjItrs (int):           -- maximum iterations for the loop to find projection on the front from ribbon.
         tmStpPrefactor (float):      -- factor for time-step adaptivity.
         maxTimeSteps (integer):      -- maximum number of time steps.
@@ -816,7 +815,8 @@ class PlotProperties:
     def __init__(self, color_map=None, line_color=None, line_style='-', line_width=1., line_style_anal='--',
                  line_color_anal='r', interpolation='none', alpha=0.8, line_width_anal=None, text_size=None,
                  disp_precision=3, mesh_color='yellowgreen', mesh_edge_color='grey', mesh_label_color='black',
-                 graph_scaling='linear', color_maps=None, colors_list=None, plot_legend=True, plot_FP_time=True):
+                 graph_scaling='linear', color_maps=None, colors_list=None, plot_legend=True, plot_FP_time=True,
+                 use_tex=False):
 
         self.lineStyle = line_style
         self.lineWidth = line_width
@@ -835,6 +835,7 @@ class PlotProperties:
         self.graphScaling = graph_scaling
         self.plotLegend = plot_legend
         self.PlotFP_Time = plot_FP_time
+        self.useTex = use_tex
         if color_maps is None:
             self.colorMaps = ['cool', 'Wistia', 'summer', 'autumn']
         else:

@@ -820,18 +820,21 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
 
     # shift injection point
     if inj_point is not None:
-        if isinstance(inj_point, np.ndarray) or isinstance(inj_point, list):
-            if len(inj_point) != 2:
-                raise ValueError("The injection point should be a list of numpy array of length 2, giving the x and y "
-                                 "coordinates of the injection point!")
-            else:
-                if required[3] is '1':
-                    actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh,
-                                                             w, active_elts=actvElts, fill=0.)
-                if required[2] is '1':
-                    actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh,
-                                                             p, active_elts=actvElts, fill=0.)
-            actvElts = actvElts_shft
+        shifted_inj_point = inj_point[0] != 0 or inj_point[0] != 0      # injection point is shifted
+        req_w_p = required[3] == '1' or required[2] == '1'              # width or pressure is required
+        if req_w_p and shifted_inj_point:
+            if isinstance(inj_point, np.ndarray) or isinstance(inj_point, list):
+                if len(inj_point) != 2:
+                    raise ValueError("The injection point should be a list of numpy array of length 2, giving the"
+                                     " x and y coordinates of the injection point!")
+                else:
+                    if required[3] is '1':
+                        actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh,
+                                                                 w, active_elts=actvElts, fill=0.)
+                    if required[2] is '1':
+                        actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh,
+                                                                 p, active_elts=actvElts, fill=0.)
+                actvElts = actvElts_shft
     return t, r, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
