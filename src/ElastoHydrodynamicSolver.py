@@ -1047,7 +1047,7 @@ def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr, *args, relax=1.0,
+def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args, relax=1.0,
                   PicardPerNewton=1000, perf_node=None):
     """
     Mixed Picard Newton solver for nonlinear systems.
@@ -1077,7 +1077,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
     newton = 0
     converged = False
 
-    while not converged and k < maxitr:
+    while not converged:
 
         solkm1 = solk
         if k % PicardPerNewton == 0:
@@ -1096,12 +1096,13 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 return solk, None
 
-        converged, norm = check_covergance(solk, solkm1, indices, Tol)
+        converged, norm = check_covergance(solk, solkm1, indices, sim_prop.toleranceEHL)
         normlist.append(norm)
         k = k + 1
 
-        if k == maxitr:  # returns nan as solution if does not converge
-            print('Picard iteration not converged after ' + repr(maxitr) + ' iterations, norm:' + repr(norm))
+        if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
+            print('Picard iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
+                  ' iterations, norm:' + repr(norm))
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             return solk, None
 
@@ -1109,7 +1110,8 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, Tol, maxitr,
             perf_node.iterations = k - 1
             perf_node.normList = normlist
 
-    print("Converged after " + repr(k) + " iterations")
+    if sim_prop.verbosity > 1:
+        print("Converged after " + repr(k) + " iterations")
     data = interItr
     return solk, data
 
