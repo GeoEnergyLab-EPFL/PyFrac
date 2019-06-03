@@ -419,7 +419,7 @@ class CartesianMesh:
                    x_val,
                    zdir="z",
                    size=plot_prop.textSize,
-                   usetex=False,
+                   usetex=plot_prop.useTex,
                    ec="none",
                    fc=edge_color)
 
@@ -436,7 +436,7 @@ class CartesianMesh:
                    y_val,
                    zdir="z",
                    size=plot_prop.textSize,
-                   usetex=False,
+                   usetex=plot_prop.useTex,
                    ec="none",
                    fc=edge_color)
 
@@ -448,7 +448,7 @@ class CartesianMesh:
                'meters',
                zdir="z",
                size=plot_prop.textSize,
-               usetex=False,
+               usetex=plot_prop.useTex,
                ec="none",
                fc=edge_color)
 
@@ -566,7 +566,7 @@ def make_3D_colorbar(mesh, material_prop, backGround_param, ax, plot_prop):
            parameter,
            zdir="z",
            size=plot_prop.textSize,
-           usetex=False,
+           usetex=plot_prop.useTex,
            ec="none",
            fc=txt_color)
     y = [y[0], y[5], y[10]]
@@ -579,7 +579,7 @@ def make_3D_colorbar(mesh, material_prop, backGround_param, ax, plot_prop):
                disp_val,
                zdir="z",
                size=plot_prop.textSize,
-               usetex=False,
+               usetex=plot_prop.useTex,
                ec="none",
                fc=txt_color)
 
