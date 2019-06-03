@@ -145,7 +145,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_variable(fracture_list, variable, edge=4, return_time=True):
+def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     """ This function returns the required variable from a fracture list.
 
     Args:
@@ -337,8 +337,9 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
     return_list = []
 
     var_values, time_list = get_fracture_variable(fracture_list,
-                                                        variable,
-                                                        edge=edge)
+                                                    variable,
+                                                    edge=edge,
+                                                    return_time=True)
 
     if variable in unidimensional_variables:
         return_list = var_values
@@ -595,7 +596,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
             t, r, p, w, v, actvElts = HF_analytical_sol(regime,
                                                         mesh_i,
                                                         mat_prop.Eprime,
-                                                        inj_prop.injectionRate[1,0],
+                                                        inj_prop.injectionRate[1, 0],
                                                         inj_point=inj_prop.sourceCoordinates,
                                                         muPrime=muPrime,
                                                         Kprime=mat_prop.Kprime[samp_cell],
@@ -613,13 +614,13 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 return_list.append(t)
             elif variable is 'width' or variable is 'w':
                 return_list.append(w)
-            elif variable is 'pressure' or variable is 'p':
+            elif variable is 'net pressure' or variable is 'pn':
                 return_list.append(p)
             elif variable is 'front velocity' or variable is 'v':
                 return_list.append(v)
 
-        elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean',
-                          'radius', 'r'):
+        elif variable in ['front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean',
+                          'radius', 'r']:
             x_len, y_len = get_fracture_dimensions_analytical_with_properties(regime,
                                                                               time,
                                                                               mat_prop,
@@ -640,7 +641,15 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 else:
                     return_list.append(x_len)
         else:
-            raise ValueError('The variable type is not correct or the analytical solution not available.')
+            raise ValueError('The variable type is not correct or the analytical solution not available. Select'
+                             ' one of the following:\n'
+                                '-- \'r\' or \'radius\'\n' \
+                                '-- \'w\' or \'width\'\n' \
+                                '-- \'pn\' or \'net pressure\'\n' \
+                                '-- \'v\' or \'front velocity\'\n' \
+                                '-- \'d_min\' or \'front_dist_min\'\n' \
+                                '-- \'d_max\' or \'front_dist_max\'\n' \
+                                '-- \'d_mean\' or \'front_dist_mean\'\n' )
 
     return return_list, mesh_list
 
@@ -658,11 +667,13 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
         srs_length = len(length_srs)
 
     from src.CartesianMesh import CartesianMesh
-    if point == [0., 0.]:
+    if point[0] == 0.:
         mesh_Lx = 1.
-        mesh_Ly = 1.
     else:
         mesh_Lx = 2 * abs(point[0])
+    if point[1] == 0.:
+        mesh_Ly = 1.
+    else:
         mesh_Ly = 2 * abs(point[1])
     mesh = CartesianMesh(mesh_Lx, mesh_Ly, 5, 5)
 
@@ -689,9 +700,10 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
                                                         h=h,
                                                         samp_cell=samp_cell,
                                                         gamma=gamma)
-
-
-        if point == [0., 0.]:
+        if variable in ['front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean',
+                          'radius', 'r', 't', 'time']:
+            values_point.append(value_mesh[0])
+        elif point == [0., 0.]:
             values_point.append(value_mesh[0][mesh_list[0].CenterElts])
         else:
             value_point = value_mesh[0][18]

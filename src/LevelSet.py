@@ -199,9 +199,9 @@ def reconstruct_front(dist, bandElts, EltChannel, mesh):
 
             # !!!Hack. this check of zero or 90 degree angle works better
             warnings.filterwarnings("ignore")
-            if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-6:
+            if abs(1 - dist[neighbors[0]] / dist[neighbors[1]]) < 1e-5:
                 a2 = np.pi / 2
-            elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 1e-6:
+            elif abs(1 - dist[neighbors[2]] / dist[neighbors[3]]) < 1e-5:
                 a2 = 0.
 
             #todo hack!!!
