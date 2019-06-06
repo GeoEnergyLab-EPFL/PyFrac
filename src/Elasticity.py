@@ -33,7 +33,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep):
         x = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
         y = Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[:, 1]
 
-        C[i] = (Ep / (8. * (np.pi))) * (
+        C[i] = (Ep / (8. * np.pi)) * (
                 np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
             np.square(a + x) + np.square(b - y)
         ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(

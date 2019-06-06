@@ -141,6 +141,7 @@ class MaterialProperties:
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
 
         self.TI_elasticity = TI_elasticity
+        self.Cij = Cij
         if TI_elasticity or free_surf:
             if isinstance(Cij, np.ndarray):  # check if float or ndarray
                 if Cij.shape == (6, 6):  # check if size is 6 x 6
@@ -508,9 +509,10 @@ class SimulationProperties:
                                         domain.
         remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
-                                            - explicit
-                                            - predictor-corrector
-                                            - implicit
+
+                                            - 'explicit'
+                                            - 'predictor-corrector'
+                                            - 'implicit'
         gravity (bool):              -- if True, the effect of gravity will be taken into account.
         collectPerfData (bool):      -- if True, the performance data will be collected in the form of a tree.
         paramFromTip (bool):         -- if True, the space dependant parameters such as toughness and leak-off

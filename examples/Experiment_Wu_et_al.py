@@ -49,8 +49,8 @@ simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 
 # initializing fracture
-initRad = 0.019
-init_param = ('M', "length", initRad)
+Fr_geometry = Geometry('radial', radius=0.019)
+init_param = InitializationParameters(Fr_geometry, regime='M')
 
 # creating fracture object
 Fr = Fracture(Mesh,

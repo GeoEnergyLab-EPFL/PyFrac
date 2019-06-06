@@ -74,7 +74,7 @@
     <span class="c1"># reconstruct front to get tip cells from the given level set</span>
 
     <span class="p">(</span><span class="n">elt_tip</span><span class="p">,</span> <span class="n">l_tip</span><span class="p">,</span> <span class="n">alpha_tip</span><span class="p">,</span> <span class="n">CellStatus</span><span class="p">)</span> <span class="o">=</span> <span class="n">reconstruct_front_LS_gradient</span><span class="p">(</span><span class="n">sgnd_dist</span><span class="p">,</span>
-                                                            <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NeiElements</span><span class="p">,),</span> <span class="n">channel_elts</span><span class="p">),</span>
+                                                            <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">NumberOfElts</span><span class="p">,),</span> <span class="n">channel_elts</span><span class="p">),</span>
                                                             <span class="n">channel_elts</span><span class="p">,</span>
                                                             <span class="n">mesh</span><span class="p">)</span>
     <span class="c1"># get the filling fraction to find partially filled tip cells</span>

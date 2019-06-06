@@ -78,7 +78,7 @@ used in case of 0 or 90 degree angle; can be used for 1d case</p>
 <li><strong>EltTip</strong> (<em>ndarray</em>) – </li>
 <li><strong>alpha</strong> (<em>ndarray</em>) – </li>
 <li><strong>l</strong> (<em>ndarray</em>) – </li>
-<li><strong>mesh</strong> (<em>CartesianMesh</em>) – </li>
+<li><strong>mesh</strong> (<a class="reference internal" href="CartesianMesh.html#CartesianMesh.CartesianMesh" title="CartesianMesh.CartesianMesh"><em>CartesianMesh</em></a>) – </li>
 <li><strong>function</strong> (<em>string</em>) – <dl class="docutils">
 <dt>Possible options are:</dt>
 <dd>’A’  gives the area (fill fraction)
@@ -94,9 +94,9 @@ used in case of 0 or 90 degree angle; can be used for 1d case</p>
 </dd>
 </dl>
 </li>
-<li><strong>frac</strong> (<em>Fracture</em>) – </li>
-<li><strong>mat_prop</strong> (<em>MaterialProperties</em>) – </li>
-<li><strong>fluid_prop</strong> (<em>FluidProperties</em>) – </li>
+<li><strong>frac</strong> (<a class="reference internal" href="Fracture.html#Fracture.Fracture" title="Fracture.Fracture"><em>Fracture</em></a>) – </li>
+<li><strong>mat_prop</strong> (<a class="reference internal" href="Properties.html#Properties.MaterialProperties" title="Properties.MaterialProperties"><em>MaterialProperties</em></a>) – </li>
+<li><strong>fluid_prop</strong> (<a class="reference internal" href="Properties.html#Properties.FluidProperties" title="Properties.FluidProperties"><em>FluidProperties</em></a>) – </li>
 <li><strong>Vel</strong> (<em>ndarray</em>) – </li>
 <li><strong>Kprime</strong> (<em>ndarray</em>) – taking it from the mat_prop object</li>
 <li><strong>Eprime</strong> (<em>ndarray-float</em>) – – plain strain TI modulus for current iteration. if not given, the Eprime
@@ -149,6 +149,15 @@ is the angle of the perpendicular). The regime variable identifies the propagati
 <dt id="VolIntegral.find_corresponding_ribbon_cell">
 <code class="descclassname">VolIntegral.</code><code class="descname">find_corresponding_ribbon_cell</code><span class="sig-paren">(</span><em>tip_cells</em>, <em>alpha</em>, <em>zero_vertex</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#find_corresponding_ribbon_cell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.find_corresponding_ribbon_cell" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="function">
+<dt id="VolIntegral.leak_off_stagnant_tip">
+<code class="descclassname">VolIntegral.</code><code class="descname">leak_off_stagnant_tip</code><span class="sig-paren">(</span><em>Elts</em>, <em>l</em>, <em>alpha</em>, <em>vrtx_arr_time</em>, <em>current_time</em>, <em>Cprime</em>, <em>time_step</em>, <em>mesh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/VolIntegral.html#leak_off_stagnant_tip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#VolIntegral.leak_off_stagnant_tip" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function evaluates leak-off in the tip cells with stagnant front. Its samples the leak-off midway from the
+zero vertex of the cell to the front and multiply it with the area of the fracture in the cell (filling fraction
+times the area of the cell).
+todo: can be more precise</p>
+</dd></dl>
 
 </div>
 

@@ -183,7 +183,7 @@ class Controller:
 
         # perform first time step with implicit front advancing due to non-availability of velocity
         if not self.sim_prop.symmetric:
-            if self.sim_prop.frontAdvancing == "semi-implicit":
+            if self.sim_prop.frontAdvancing == "predictor-corrector":
                 self.sim_prop.frontAdvancing = "implicit"
 
         print("Starting time = " + repr(self.fracture.time))

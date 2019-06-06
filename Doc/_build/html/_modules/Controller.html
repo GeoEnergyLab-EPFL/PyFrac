@@ -109,7 +109,7 @@
        <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">C</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="c1"># queue of fractures from the last five time steps</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">stepsFromChckPnt</span> <span class="o">=</span> <span class="mi">0</span>
-       <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_max</span> <span class="o">=</span> <span class="n">Sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">)</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="o">=</span> <span class="kc">None</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">perfData</span> <span class="o">=</span> <span class="p">[]</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedFile</span> <span class="o">=</span> <span class="mi">0</span>
@@ -117,11 +117,13 @@
        <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">=</span> <span class="mi">0</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="o">=</span> <span class="kc">None</span>
-       <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">=</span> <span class="kc">None</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">lstTmStp</span> <span class="o">=</span> <span class="kc">None</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">solveDetlaP_cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">solveDeltaP</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">PstvInjJmp</span> <span class="o">=</span> <span class="kc">None</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">fullyClosed</span> <span class="o">=</span> <span class="kc">False</span>
        <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">True</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">lastSuccessfulTS</span> <span class="o">=</span> <span class="n">Fracture</span><span class="o">.</span><span class="n">time</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">maxTmStp</span> <span class="o">=</span> <span class="mi">0</span>
 
 
        <span class="c1"># make a list of Nones with the size of the number of variables to plot during simulation</span>
@@ -221,9 +223,9 @@
                                                               <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="o">.</span><span class="n">Eprime</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done!&#39;</span><span class="p">)</span>
 
-        <span class="c1"># perform first time step with implicit front advancing</span>
+        <span class="c1"># perform first time step with implicit front advancing due to non-availability of velocity</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">symmetric</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">==</span> <span class="s2">&quot;semi-implicit&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">==</span> <span class="s2">&quot;predictor-corrector&quot;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">frontAdvancing</span> <span class="o">=</span> <span class="s2">&quot;implicit&quot;</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting time = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
@@ -252,11 +254,12 @@
                     <span class="n">tmStp_perf</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;failed&#39;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">perfData</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmStp_perf</span><span class="p">)</span>
 
-            <span class="c1"># saving the last five steps to restart if required</span>
+
             <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># Successful time step</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time step successful!&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="o">=</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">w</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">=</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lstTmStp</span> <span class="o">=</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
                 <span class="c1"># output</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotFigure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">saveToDisk</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastSavedTime</span><span class="p">:</span>
@@ -265,12 +268,16 @@
                 <span class="c1"># add the advanced fracture to the last five fractures list</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">%</span> <span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">stepsFromChckPnt</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stepsFromChckPnt</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="c1"># set the prefactor to the original value after four time steps (after the 5 time steps back jump)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_max</span>
 
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastSuccessfulTS</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lastSuccessfulTS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxTmStp</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstTmStp</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">maxTmStp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstTmStp</span>
+                <span class="c1"># put check point reattempts to zero if the simulation has advanced past the time where it failed</span>
+                <span class="k">if</span> <span class="n">Fr_n_pls1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastSuccessfulTS</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxTmStp</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="c1"># set the prefactor to the original value after four time steps (after the 5 time steps back jump)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor_copy</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+=</span> <span class="mi">1</span>
 
                 <span class="c1"># resetting the parameters for closure</span>
@@ -281,8 +288,12 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">solveDeltaP</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solveDetlaP_cp</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">PstvInjJmp</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">fullyClosed</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="c1"># re-meshing required</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">maxTimeSteps</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Max time steps reached!&quot;</span><span class="p">)</span>
+
             <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+                <span class="c1"># re-meshing required</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">enableRemeshing</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">remeshFactor</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Remeshing...&quot;</span><span class="p">)</span>
@@ -315,6 +326,7 @@
                     <span class="k">break</span>
 
             <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">14</span><span class="p">:</span>
+                <span class="c1"># fracture fully closed</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">PstvInjJmp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">inp</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Fracture is fully closed. Continuing with the simulation may result in non-realistic</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -345,11 +357,12 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Fr_n_pls1</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># time step failed</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">errorMessages</span><span class="p">[</span><span class="n">status</span><span class="p">])</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time step failed at = &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*=</span> <span class="mf">0.8</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">5</span> <span class="p">]</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                <span class="c1"># check if the queue with last 5 time steps is not empty, or max check points jumps done</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">%</span> <span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> \
+                   <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">collectPerfData</span><span class="p">:</span>
                         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_outputFolder</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;perf_data.dat&quot;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
                             <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perfData</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -359,11 +372,23 @@
 
                     <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;Simulation failed.&quot;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># decrease time step pre-factor before taking the next fracture in the queue having last</span>
+                    <span class="c1"># five time steps</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                        <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">0.8</span>
+                        <span class="n">current_PreFctr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*=</span> <span class="mf">0.8</span>
+                        <span class="n">current_PreFctr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span>
+
                     <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fr_queue</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">successfulTimeSteps</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span><span class="p">)</span> <span class="o">%</span> <span class="mi">5</span><span class="p">])</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Restarting from the last check point...&quot;</span><span class="p">)</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Restarting from the last check point...&quot;</span><span class="p">)</span>
-
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time step have failed despite of reattempts with slightly smaller/bigger time steps...</span><span class="se">\n</span><span class="s2">&quot;</span>
+                          <span class="s2">&quot;Going &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="mi">5</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; time steps back and re-attempting with the&quot;</span>
+                            <span class="s2">&quot; time step pre-factor of &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">current_PreFctr</span><span class="p">))</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time step have failed. Going &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="mi">6</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">chkPntReattmpts</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; time steps&quot;</span>
+                                                                                                      <span class="s2">&quot; back...&quot;</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">failedTimeSteps</span> <span class="o">+=</span> <span class="mi">1</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">TmStpCount</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -431,6 +456,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">PerfNode_TmStpAtmpt</span> <span class="o">=</span> <span class="kc">None</span>
 
+            <span class="bp">self</span><span class="o">.</span><span class="n">attmptedTimeStep</span> <span class="o">=</span> <span class="n">tmStp_to_attempt</span>
             <span class="n">status</span><span class="p">,</span> <span class="n">Fr</span> <span class="o">=</span> <span class="n">attempt_time_step</span><span class="p">(</span><span class="n">Frac</span><span class="p">,</span>
                                             <span class="n">C</span><span class="p">,</span>
                                             <span class="bp">self</span><span class="o">.</span><span class="n">solid_prop</span><span class="p">,</span>
@@ -576,18 +602,19 @@
                                                                                 <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">,</span>
                                                                                 <span class="n">plot_mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                                                                 <span class="n">print_number</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="c1"># set figure position</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">)):</span>
-                        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-                        <span class="n">mngr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_current_fig_manager</span><span class="p">()</span>
-                        <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">650</span> <span class="o">*</span> <span class="n">i</span>
-                        <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">50</span>
-                        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-                            <span class="n">x_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">650</span>
-                            <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">500</span>
-                        <span class="n">mngr</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x_offset</span><span class="p">,</span> <span class="n">y_ofset</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">545</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="s1">&#39;win&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>
+                    <span class="c1"># set figure position</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">plotVar</span><span class="p">)):</span>
+                            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                            <span class="n">mngr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_current_fig_manager</span><span class="p">()</span>
+                            <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">650</span> <span class="o">*</span> <span class="n">i</span>
+                            <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">50</span>
+                            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                                <span class="n">x_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">650</span>
+                                <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">500</span>
+                            <span class="n">mngr</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x_offset</span><span class="p">,</span> <span class="n">y_ofset</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">545</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">False</span>
 
 
                 <span class="c1"># plot the figure</span>
@@ -689,19 +716,22 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">delta_vol</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_w</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">delta_vol</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_vol</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.05</span>
+                    <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstTmStp</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_vol</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.05</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lst_tmStp</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_vol</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.12</span>
+                    <span class="n">TS_delta_vol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstTmStp</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_vol</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.12</span>
 
-            <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">tmStpPrefactor</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">TS_cell_length</span><span class="p">,</span>
-                                                          <span class="n">TS_fracture_length</span><span class="p">,</span>
-                                                          <span class="n">TS_inj_cell</span><span class="p">,</span>
-                                                          <span class="n">TS_delta_vol</span><span class="p">)</span>
+            <span class="c1"># getting pre-factor for current time</span>
+            <span class="n">current_prefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">get_time_step_prefactor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="n">TimeStep</span> <span class="o">=</span> <span class="n">current_prefactor</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">TS_cell_length</span><span class="p">,</span>
+                                              <span class="n">TS_fracture_length</span><span class="p">,</span>
+                                              <span class="n">TS_inj_cell</span><span class="p">,</span>
+                                              <span class="n">TS_delta_vol</span><span class="p">)</span>
 
         <span class="c1"># in case of fracture not propagating</span>
         <span class="k">if</span> <span class="n">TimeStep</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">TimeStep</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">TimeStep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="o">=</span> <span class="n">TimeStep</span> <span class="o">*</span> <span class="mf">1.2</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">TS_obtained</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The fracture front is stagnant and there is no injection. In these conditions, &quot;</span>
@@ -714,10 +744,7 @@
                     <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                         <span class="k">pass</span>
 
-
-
-
-        <span class="c1"># to get the solution at the times given in time series or final time</span>
+        <span class="c1"># to get the solution at the times given in time series, any change in parameters or final time</span>
         <span class="n">next_in_TS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">finalTime</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeToHit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -732,8 +759,6 @@
         <span class="c1"># check if time step would step over the next time in required time series</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="n">TimeStep</span> <span class="o">&gt;</span> <span class="n">next_in_TS</span><span class="p">:</span>
             <span class="n">TimeStep</span> <span class="o">=</span> <span class="n">next_in_TS</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">time</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">stagnant_TS</span> <span class="o">=</span> <span class="n">TimeStep</span> <span class="o">*</span> <span class="mf">1.2</span>
 
         <span class="c1"># checking if the time step is above the limit</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">timeStepLimit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">TimeStep</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">timeStepLimit</span><span class="p">:</span>

@@ -41,8 +41,8 @@ simulProp.set_outputFolder("./Data/MtoK") #the folder where the results are save
 simulProp.frontAdvancing = 'explicit'
 
 # initializing fracture
-initRad = 1.5
-init_param = ("M", "length", initRad)
+Fr_geometry = Geometry('radial', radius=1.5)
+init_param = InitializationParameters(Fr_geometry, regime='M')
 
 # creating fracture object
 Fr = Fracture(Mesh,

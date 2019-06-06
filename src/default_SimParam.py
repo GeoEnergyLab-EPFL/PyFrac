@@ -36,7 +36,7 @@ output_time_period = None               # the time period after which the output
 sim_name = None                         # name given to the simulation.
 block_figure = False                    # if true, the simulation will proceed after the figure is closed.
 output_every_TS = 1                     # the number of time steps after which the output is done.
-plot_var = ['footprint']                # the list of variables to be plotted during simulation.
+plot_var = ['w']                        # the list of variables to be plotted during simulation.
 plot_proj = '2D_clrmap'                 # projection to be plotted with.
 
 # type of solver

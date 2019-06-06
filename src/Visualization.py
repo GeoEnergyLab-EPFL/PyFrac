@@ -1705,7 +1705,6 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                         label=labels.legend)
             projection = '2D'
         else:
-            plot_prop_cp.colorMap = plot_prop.colorMapAnal
             if projection is '2D_clrmap':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_image(analytical_list[i],

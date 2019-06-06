@@ -653,7 +653,7 @@ functions provided in the MaterialProperties object. It should be evaluated each
 
 <dl class="class">
 <dt id="Properties.PlotProperties">
-<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">PlotProperties</code><span class="sig-paren">(</span><em>color_map=None</em>, <em>line_color=None</em>, <em>line_style='-'</em>, <em>line_width=1.0</em>, <em>line_style_anal='--'</em>, <em>line_color_anal='r'</em>, <em>interpolation='none'</em>, <em>alpha=0.8</em>, <em>line_width_anal=None</em>, <em>text_size=None</em>, <em>disp_precision=3</em>, <em>mesh_color='yellowgreen'</em>, <em>mesh_edge_color='grey'</em>, <em>mesh_label_color='black'</em>, <em>graph_scaling='linear'</em>, <em>color_maps=None</em>, <em>colors_list=None</em>, <em>plot_legend=True</em>, <em>plot_FP_time=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#PlotProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.PlotProperties" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">Properties.</code><code class="descname">PlotProperties</code><span class="sig-paren">(</span><em>color_map=None</em>, <em>line_color=None</em>, <em>line_style='-'</em>, <em>line_width=1.0</em>, <em>line_style_anal='--'</em>, <em>line_color_anal='r'</em>, <em>interpolation='none'</em>, <em>alpha=0.8</em>, <em>line_width_anal=None</em>, <em>text_size=None</em>, <em>disp_precision=3</em>, <em>mesh_color='yellowgreen'</em>, <em>mesh_edge_color='grey'</em>, <em>mesh_label_color='black'</em>, <em>graph_scaling='linear'</em>, <em>color_maps=None</em>, <em>colors_list=None</em>, <em>plot_legend=True</em>, <em>plot_FP_time=True</em>, <em>use_tex=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#PlotProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.PlotProperties" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>This class stores the parameters used for plotting of the post-processed results</p>
 <p>Arguments:</p>
@@ -716,8 +716,8 @@ values, see the py:module::default_SimParam .</td>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Properties.SimulationProperties.maxFrontItr">
-<code class="descname">maxFrontItr</code><a class="headerlink" href="#Properties.SimulationProperties.maxFrontItr" title="Permalink to this definition">¶</a></dt>
+<dt id="Properties.SimulationProperties.maxFrontItrs">
+<code class="descname">maxFrontItrs</code><a class="headerlink" href="#Properties.SimulationProperties.maxFrontItrs" title="Permalink to this definition">¶</a></dt>
 <dd><p>– maximum iterations to for the fracture front loop.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -730,24 +730,10 @@ values, see the py:module::default_SimParam .</td>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="Properties.SimulationProperties.maxSolverItr">
-<code class="descname">maxSolverItr</code><a class="headerlink" href="#Properties.SimulationProperties.maxSolverItr" title="Permalink to this definition">¶</a></dt>
+<dt id="Properties.SimulationProperties.maxSolverItrs">
+<code class="descname">maxSolverItrs</code><a class="headerlink" href="#Properties.SimulationProperties.maxSolverItrs" title="Permalink to this definition">¶</a></dt>
 <dd><p>– maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
 case.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="Properties.SimulationProperties.maximumItrEHL">
-<code class="descname">maximumItrEHL</code><a class="headerlink" href="#Properties.SimulationProperties.maximumItrEHL" title="Permalink to this definition">¶</a></dt>
-<dd><p>– maximum number of iterations for the Elastohydrodynamic solver.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1172,10 +1158,12 @@ domain.</p>
 <dl class="attribute">
 <dt id="Properties.SimulationProperties.frontAdvancing">
 <code class="descname">frontAdvancing</code><a class="headerlink" href="#Properties.SimulationProperties.frontAdvancing" title="Permalink to this definition">¶</a></dt>
-<dd><p>– The type of front advancing to be done. Possible options are:
-- explicit
-- predictor-corrector
-- implicit</p>
+<dd><p>– The type of front advancing to be done. Possible options are:</p>
+<ul class="simple">
+<li>‘explicit’</li>
+<li>‘predictor-corrector’</li>
+<li>‘implicit’</li>
+</ul>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1518,6 +1506,11 @@ elasticity.</p>
 <dl class="method">
 <dt id="Properties.SimulationProperties.get_timeStamp">
 <code class="descname">get_timeStamp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_timeStamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_timeStamp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Properties.SimulationProperties.get_time_step_prefactor">
+<code class="descname">get_time_step_prefactor</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Properties.html#SimulationProperties.get_time_step_prefactor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Properties.SimulationProperties.get_time_step_prefactor" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">

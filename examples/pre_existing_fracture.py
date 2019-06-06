@@ -38,25 +38,21 @@ Fluid = FluidProperties(viscosity=viscosity)
 simulProp = SimulationProperties()
 simulProp.finalTime = 50                      # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/star")     # the address of the output folder
-simulProp.fixedTmStp = np.asarray([[2e-4,   1.1,    18],  # list giving the time steps to adopt at the given times
-                                   [0.5,    None,   5]])
-simulProp.plotVar = ['w']
 
 # initializing fracture
 initRad = np.pi
-surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, initRad, initRad)
-surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells,1])
-C = load_elasticity_matrix(Mesh, Eprime)
-init_param = ('G',              # type of initialization
-              surv_cells,       # the given survey cells
-              inner_cells,      # the cell enclosed by the survey cells
-              surv_cells_dist,  # the distance of the survey cells from the front
-              None,             # the given width
-              1e3,              # the pressure (uniform in this case)
-              C,                # the elasticity matrix
-              None,             # the volume of the fracture
-              0)                # the velocity of the propagating front (stationary in this case)
+surv_cells, _, inner_cells = get_radial_survey_cells(Mesh, initRad)
+surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells, 1])
+Fr_geometry = Geometry(shape='level set',
+                       survey_cells=surv_cells,
+                       tip_distances=surv_cells_dist,
+                       inner_cells=inner_cells)
 
+C = load_elasticity_matrix(Mesh, Eprime)
+init_param = InitializationParameters(Fr_geometry,
+                                      regime='static',
+                                      net_pressure=1e3,
+                                      elasticity_matrix=C)
 
 # creating fracture object
 Fr = Fracture(Mesh,

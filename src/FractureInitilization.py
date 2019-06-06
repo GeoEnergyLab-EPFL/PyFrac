@@ -9,12 +9,15 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import numpy as np
 import math
+import sys
 from src.LevelSet import SolveFMM, reconstruct_front, UpdateLists
 from src.VolIntegral import Integral_over_cell
+from src.HFAnalyticalSolutions import shift_injection_point
 from src.Symmetry import *
 
 
-def get_eliptical_survey_cells(mesh, a, b):
+
+def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given
     lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.
@@ -23,10 +26,13 @@ def get_eliptical_survey_cells(mesh, a, b):
         mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
         a (float):                          -- the length of the major axis of the provided ellipse.
         b (float):                          -- the length of the minor axis of the provided ellipse.
+        inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
 
     Returns:
         - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given\
                                                ellipse.
+        - surv_dist (ndarray)               -- the list of corresponding distances of the surv_cells to the fracture\
+                                               tip.
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
@@ -38,17 +44,139 @@ def get_eliptical_survey_cells(mesh, a, b):
     #cells with all four vertices inside
     log_and = np.logical_and(np.logical_and(vertices[:, 0], vertices[:, 1]),
                              np.logical_and(vertices[:, 2],vertices[:, 3]))
-
     inner_cells = np.where(log_and)[0]
-    # todo: Hack !!! returning all inner cells as survey cells also
-    surv_cells = np.copy(inner_cells)
+    if len(inner_cells) == 0:
+        raise SystemError("The given ellipse is too small compared to mesh!")
 
-    return surv_cells, inner_cells
+    dist = np.zeros((inner_cells.size,), dtype=np.float64)
+    # get minimum distance from center of the inner cells
+    for i in range(0, inner_cells.size):
+        dist[i] = Distance_ellipse(a,
+                                   b,
+                                   mesh.CenterCoor[inner_cells[i], 0],
+                                   mesh.CenterCoor[inner_cells[i], 1])
+
+    cell_len = (mesh.hx * mesh.hx + mesh.hy * mesh.hy) ** 0.5  # one cell diagonal length
+    ribbon = np.where(dist <= 2 * cell_len)[0]
+    surv_cells = inner_cells[ribbon]
+    surv_dist = dist[ribbon]
+
+    if inj_point is not None:
+        surv_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=surv_cells)
+        inner_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=inner_cells)
+
+    return surv_cells, surv_dist, inner_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, inj_point):
+def get_radial_survey_cells(mesh, r, inj_point=None):
+    """
+    This function would provide the ribbon of cells and their distances to the front on the inside of the perimeter of
+    a circle with the given radius. A list of all the cells inside the fracture is also provided.
+
+    Arguments:
+        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
+        r (float):                          -- the radius of the circle.
+        inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
+
+    Returns:
+        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given circle.
+        - surv_dist (ndarray)               -- the list of corresponding distances of the surv_cells to the fracture\
+                                               tip.
+        - inner_cells (ndarray)             -- the list of cells inside the given circle.
+    """
+
+    # distances of the cell vertices
+    dist_vertx = ((mesh.VertexCoor[:, 0]) / r) ** 2 + ((mesh.VertexCoor[:, 1]) / r) ** 2 - 1.
+    # vertices that are inside the ellipse
+    vertices = dist_vertx[mesh.Connectivity] < 0
+
+    # cells with all four vertices inside
+    log_and = np.logical_and(np.logical_and(vertices[:, 0], vertices[:, 1]),
+                             np.logical_and(vertices[:, 2], vertices[:, 3]))
+
+    inner_cells = np.where(log_and)[0]
+    dist = r - ((mesh.CenterCoor[inner_cells, 0]) ** 2
+                + (mesh.CenterCoor[inner_cells, 1]) ** 2) ** 0.5
+
+    if len(inner_cells) == 0:
+        raise SystemError("The given radius is too small!")
+
+    cell_len = 2 * (mesh.hx * mesh.hx + mesh.hy * mesh.hy) ** 0.5  # one cell diagonal length
+    ribbon = np.where(dist <= cell_len)[0]
+    surv_cells = inner_cells[ribbon]
+    surv_dist = dist[ribbon]
+
+    if inj_point is not None:
+        surv_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=surv_cells)
+        inner_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=inner_cells)
+
+    return surv_cells, surv_dist, inner_cells
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
+    """
+    This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
+    lengths and height. A list of all the cells inside the fracture is also provided.
+
+    Arguments:
+        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
+        length (float):                     -- the half length of the rectangle.
+        inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
+
+    Returns:
+        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given rectangle.
+        - surv_dist (ndarray)               -- the list of corresponding distances of the surv_cells to the fracture\
+                                               tip.
+        - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
+    """
+
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[:, 1]) < height / 2)[0])
+    max_x = max(abs(mesh.CenterCoor[inner_cells, 0]))
+    max_y = max(abs(mesh.CenterCoor[inner_cells, 1]))
+    ribbon_x = np.where(abs(abs(mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_y = np.where(abs(abs(mesh.CenterCoor[inner_cells, 1]) - max_y) < 100 * sys.float_info.epsilon)[0]
+
+    surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
+    surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
+    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]))
+    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]))
+
+    if len(inner_cells) == 0:
+        raise SystemError("The given rectangular region is too small compared to the mesh!")
+
+    if inj_point is not None:
+        surv_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=surv_cells)
+        inner_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=inner_cells)
+
+    return surv_cells, surv_dist, inner_cells
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
     """
     This function takes the survey cells and their distances from the front and generate the footprint of a fracture
     using the fast marching method.
@@ -275,6 +403,9 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 def g(a, b, x0, y0, la):
     return pow(a * x0 / (pow(a, 2) + la), 2) + pow(b * y0 / (pow(b, 2) + la), 2) - 1
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 def Distance_ellipse(a, b, x0, y0):
     """
     This function calculates the smallest distance of a point from the given ellipse.
@@ -289,7 +420,9 @@ def Distance_ellipse(a, b, x0, y0):
         D (float):       -- the shortest distance of the point from the ellipse.
     """
 
+    # todo check! written by Weihan
     # a>b ellipse parameters, (x0,y0) is the center of the cell
+
     x0 = abs(x0)
     y0 = abs(y0)
     if (x0 < 1e-12 and y0 < 1e-12):
@@ -333,9 +466,268 @@ def Distance_ellipse(a, b, x0, y0):
     return D
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 def Distance_square(lx, ly, x, y):
     """
     The shortest distance of a point from a square
     """
 
     return abs(min([lx-x, lx+x, ly-y, ly+y]))
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+class InitializationParameters:
+    """
+    This class store the initialization parameters.
+
+    Args:
+        geometry (Geometry):        -- Geometry class object describing the geometry of the fracture.
+        regime (str):               -- the propagation regime of the fracture. Possible options are the following:
+
+                                        - 'M'     -- radial fracture in viscosity dominated regime.
+                                        - 'Mt'    -- radial fracture in viscosity dominated regime with leak-off.
+                                        - 'K'     -- radial fracture in toughness dominated regime.
+                                        - 'Kt'    -- radial fracture in toughness dominated regime with leak-off.
+                                        - 'PKN'   -- PKN fracture.
+                                        - 'E_K'   -- elliptical fracture propagating in toughness dominated regime.\
+                                                     The solution is equivalent to a particular anisotropic toughness \
+                                                     case described in Zia and Lecampion, 2018.
+                                        - 'E_E'   -- the elliptical solution with transverse isotropic material \
+                                                     properties (see Moukhtari and Lecampion, 2019).
+                                        - 'MDR'   -- viscosity dominated solution for turbulent flow. The friction \
+                                                     factor is calculated using MDR asymptote (see Zia and Lecampion\
+                                                     2019).
+        time (float):                   -- the time since the start of injection.
+        width (ndarray):                -- the initial width of the fracture. The size should be equal to the number of
+                                           elements in the mesh.
+        netPressure (float/ndarray):    -- the initial net pressure of the fracture. It can be either uniform for the static
+                                           fracture or an ndarray.
+        fracture_volume (float):        -- total initial volume of the fracture.
+        tip_velocity (float/ndarray):   -- the velocity of the tip. It can be a float for radial fractures propagating
+                                           with steady velocity or an ndarray equal to the size of tip elements list
+                                           giving velocity of the corresponding tip elements.
+        elasticity_matrix (ndarray):    -- the BEM elasticity matrix. See Zia & Lecampion 2019.
+
+    """
+    def __init__(self, geometry=None, regime='M', time=None, width=None, net_pressure=None, fracture_volume=None,
+                 tip_velocity=None, elasticity_matrix=None):
+        self.geometry = geometry
+        self.regime = regime
+        self.time = time
+        self.width = width
+        self.netPressure = net_pressure
+        self.fractureVolume = fracture_volume
+        self.tipVelocity = tip_velocity
+        self.C = elasticity_matrix
+
+        self.check_consistency()
+
+
+    def check_consistency(self):
+        """
+        This function checks if the given parameters are consistent with each other.
+        """
+
+        compatible_regimes = {
+            'radial': ['M', 'Mt', 'K', 'Kt', 'MDR', 'static'],
+            'height contained': ['PKN', 'KGD_K', 'static'],
+            'elliptical': ['E_E', 'E_K', 'static'],
+            'level set': ['static']
+            }
+
+        try:
+            if self.regime not in compatible_regimes[self.geometry.shape]:
+                err_string = "Initialization is not supported for the given regime and geometrical shape.\nBelow is " \
+                             "the list of compatible regimes and shapes (see documentation for description of " \
+                             "the regimes):\n\n"
+                for keys, values in compatible_regimes.items():
+                    err_string = err_string + repr(keys) + ':\t' + repr(values) + '\n'
+                raise ValueError(err_string)
+        except KeyError:
+            err_string = "The given geometrical shape is not supported!\nSee the list below for supported shapes:\n"
+            for keys, values in compatible_regimes.items():
+                err_string = err_string + repr(keys) + '\n'
+            raise ValueError(err_string)
+
+        errors_analytical = {
+            'radial': "Either time or radius is to be provided for radial fractures!",
+            'height containedPKN': "Either time or length is to be provided for PKN type fractures. The height of the "
+                                   "fracture is required in both cases!",
+            'height containedKGD_K': "Either time or length is to be provided for toughness dominated KGD type "
+                                     "fractures. The height of the fracture is required in both cases!",
+            'ellipticalE_K': "Either time or length of minor axis is required to initialize the elliptical "
+                             "fracture in toughness dominated regime!",
+            'ellipticalE_E': "Either time or minor axis length along with the major to minor axes length ratio (gamma) " 
+                             "is to be provided to initialize in transverse isotropic material!",
+            }
+
+        errors_static = {
+            'radial': "Radius is to be provided for static radial fractures!",
+            'height contained': "Length and height are required to initialize height contained fractures!",
+            'elliptical': "The length of minor axis and the aspect ratio (Geometry.gamma) is required to initialize the"
+                          " static elliptical fracture!",
+            'level set': "To initialize according to a level set, the survey cells (Geometry.surveyCells) and their "
+                         "distances (Geometry.tipDistances) along with \n the cells enclosed by the survey cells"
+                         " (geometry.innerCells) are required!",
+        }
+
+        error = False
+        # checks for analytical solutions
+        if self.regime != 'static':
+            if self.time is None:
+                if self.geometry.shape == 'radial' and self.geometry.radius is None:
+                    raise ValueError(errors_analytical[self.geometry.shape])
+                if self.geometry.shape == 'height contained':
+                    if self.geometry.fractureLength is None or self.geometry.fractureHeight is None:
+                        error = True
+                if self.geometry.shape == 'elliptical':
+                    if self.regime == 'E_K' and self.geometry.minorAxis is None:
+                        error = True
+                    if self.regime == 'E_E':
+                        if self.geometry.minorAxis is None or self.geometry.gamma is None:
+                            error = True
+            else:
+                if self.geometry.shape == 'height contained':
+                    if self.geometry.height is None:
+                        error = True
+                if self.geometry.shape == 'elliptical':
+                    if self.regime == 'E_E' and self.geometry.gamma is None:
+                        error = True
+
+            if error:
+                raise ValueError(errors_analytical[self.geometry.shape + self.regime])
+
+        # checks for static fracture
+        else:
+            if self.geometry.shape == 'radial' and self.geometry.radius is None:
+                error = True
+            elif self.geometry.shape == 'height contained':
+                if self.geometry.fractureLength is None or self.geometry.fractureHeight is None:
+                    error = True
+            elif self.geometry.shape == 'elliptical':
+                if self.geometry.minorAxis is None or self.geometry.gamma is None :
+                    error = True
+            elif self.geometry.shape == 'level set':
+                if self.geometry.surveyCells is None or self.geometry.tipDistances is None or \
+                            self.geometry.innerCells is None:
+                    error = True
+
+            if error:
+                raise ValueError(errors_static[self.geometry.shape])
+
+            if (self.width is None and self.netPressure is None and self.fractureVolume is None) or self.C is None:
+                raise ValueError("The following parameters are required to initialize a static fracture:\n"
+                                 "\t\t -- width or net pressure or total volume of the fracture\n"
+                                 "\t\t -- the elasticity matrix")
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+class Geometry:
+    """
+    This class defines the geometry of the fracture to be initialized.
+
+    Args:
+        shape (string):             -- string giving the geometrical shape of the fracture. Possible options are:
+
+                                        - 'radial'
+                                        - 'height contained'
+                                        - 'elliptical'
+                                        - 'level set'
+        radius (float):             -- the radius of the radial fracture.
+        fracture_length (float):    -- the half length of the fracture.
+        fracture_height (float):    -- the height of the height contained fracture.
+        minor_axis (float):         -- length of minor axis for elliptical fracture shape.
+        gamma (float):              -- ratio of the length of the major axis to the minor axis. It should be more than
+                                        one.
+        survey_cells (ndarray):     -- the cells from which the distances to the fracture tip are provided.
+        tip_distances (ndarray):    -- the minimum distances of the corresponding cells provided in the survey_cells to
+                                       the tip of the fracture.
+        inner_cells (ndarray):      -- the cells enclosed by the cells given in the survey_cells (inclusive). In other
+                                       words, the cells inside the fracture.
+
+    """
+
+    def __init__(self, shape=None, radius=None, fracture_length=None, fracture_height=None, minor_axis=None,
+                 gamma=None, survey_cells=None, tip_distances=None, inner_cells=None):
+        self.shape = shape
+        self.radius = radius
+        self.fractureLength = fracture_length
+        self.fractureHeight = fracture_height
+        self.minorAxis = minor_axis
+        if gamma is not None:
+            if gamma < 1.:
+                raise ValueError("The aspect ratio (ratio of the length of major axis to the minor axis) should be more"
+                                 " than one")
+        self.gamma = gamma
+        self.surveyCells = survey_cells
+        self.tipDistances = tip_distances
+        self.innerCells = inner_cells
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+    def get_length_dimension(self):
+
+        if self.shape == 'radial':
+            length = self.radius
+        elif self.shape == 'elliptical':
+            length = self.minorAxis
+        elif self.shape == 'height contained':
+            length = self.fractureLength
+        return length
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def set_length_dimension(self, length):
+
+        if self.shape == 'radial':
+            self.radius = length
+        elif self.shape == 'elliptical':
+            self.minorAxis = length
+        elif self.shape == 'height contained':
+            self.fractureLength = length
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def get_survey_points(geometry, mesh, source_coord=None):
+    """
+    This function provided the survey cells, corresponding distances to the front and the enclosed cells for the given
+    geometry.
+    """
+
+    if geometry.shape == 'radial':
+        if geometry.radius > min(mesh.Lx, mesh.Ly):
+            raise ValueError("The radius of the radial fracture is larger than domain!")
+        surv_cells, surv_dist, inner_cells = get_radial_survey_cells(mesh,
+                                                                    geometry.radius,
+                                                                    source_coord)
+    elif geometry.shape == 'elliptical':
+        a = geometry.minorAxis * geometry.gamma
+        if geometry.minorAxis > mesh.Ly or a > mesh.Lx:
+            raise ValueError("The axes length of the elliptical fracture is larger than domain!")
+        elif geometry.minorAxis < 2 * mesh.hy:
+            raise ValueError("The fracture is very small compared to the mesh cell size!")
+        surv_cells, surv_dist, inner_cells = get_eliptical_survey_cells(mesh,
+                                                                        a,
+                                                                        geometry.minorAxis,
+                                                                        source_coord)
+    elif geometry.shape == 'height contained':
+        if geometry.fractureLength > mesh.Lx or geometry.fractureHeight > mesh.Ly:
+            raise ValueError("The fracture is larger than domain!")
+        elif geometry.fractureLength < 2 * mesh.hx or geometry.fractureHeight < 2 * mesh.hy:
+            raise ValueError("The fracture is very small compared to the mesh cell size!")
+        surv_cells, surv_dist, inner_cells = get_rectangular_survey_cells(mesh,
+                                                                          geometry.fractureLength,
+                                                                          geometry.fractureHeight,
+                                                                          source_coord)
+    elif geometry.shape == 'level set':
+        surv_cells = geometry.surveyCells
+        surv_dist = geometry.tipDistances
+        inner_cells = geometry.innerCells
+    else:
+        raise ValueError("The given footprint shape is not supported!")
+
+    return surv_cells, surv_dist, inner_cells
+

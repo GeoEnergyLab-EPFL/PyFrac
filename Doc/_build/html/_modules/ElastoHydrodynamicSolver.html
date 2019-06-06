@@ -1089,7 +1089,7 @@
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="Picard_Newton"><a class="viewcode-back" href="../doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.Picard_Newton">[docs]</a><span class="k">def</span> <span class="nf">Picard_Newton</span><span class="p">(</span><span class="n">Res_fun</span><span class="p">,</span> <span class="n">sys_fun</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">TypValue</span><span class="p">,</span> <span class="n">interItr_init</span><span class="p">,</span> <span class="n">Tol</span><span class="p">,</span> <span class="n">maxitr</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">relax</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<div class="viewcode-block" id="Picard_Newton"><a class="viewcode-back" href="../doc_src/ElastoHydrodynamicSolver.html#ElastoHydrodynamicSolver.Picard_Newton">[docs]</a><span class="k">def</span> <span class="nf">Picard_Newton</span><span class="p">(</span><span class="n">Res_fun</span><span class="p">,</span> <span class="n">sys_fun</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">TypValue</span><span class="p">,</span> <span class="n">interItr_init</span><span class="p">,</span> <span class="n">sim_prop</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">relax</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
                   <span class="n">PicardPerNewton</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">perf_node</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Mixed Picard Newton solver for nonlinear systems.</span>
@@ -1119,7 +1119,7 @@
     <span class="n">newton</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">converged</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">while</span> <span class="ow">not</span> <span class="n">converged</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">maxitr</span><span class="p">:</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">converged</span><span class="p">:</span>
 
         <span class="n">solkm1</span> <span class="o">=</span> <span class="n">solk</span>
         <span class="k">if</span> <span class="n">k</span> <span class="o">%</span> <span class="n">PicardPerNewton</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -1138,12 +1138,13 @@
                 <span class="n">solk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">solk</span><span class="p">),),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">solk</span><span class="p">,</span> <span class="kc">None</span>
 
-        <span class="n">converged</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">check_covergance</span><span class="p">(</span><span class="n">solk</span><span class="p">,</span> <span class="n">solkm1</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">Tol</span><span class="p">)</span>
+        <span class="n">converged</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">check_covergance</span><span class="p">(</span><span class="n">solk</span><span class="p">,</span> <span class="n">solkm1</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">sim_prop</span><span class="o">.</span><span class="n">toleranceEHL</span><span class="p">)</span>
         <span class="n">normlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
         <span class="n">k</span> <span class="o">=</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span>
 
-        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">maxitr</span><span class="p">:</span>  <span class="c1"># returns nan as solution if does not converge</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Picard iteration not converged after &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">maxitr</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; iterations, norm:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">norm</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">sim_prop</span><span class="o">.</span><span class="n">maxSolverItrs</span><span class="p">:</span>  <span class="c1"># returns nan as solution if does not converge</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Picard iteration not converged after &#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">sim_prop</span><span class="o">.</span><span class="n">maxSolverItrs</span><span class="p">)</span> <span class="o">+</span> \
+                  <span class="s1">&#39; iterations, norm:&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">norm</span><span class="p">))</span>
             <span class="n">solk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">solk</span><span class="p">),),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">solk</span><span class="p">,</span> <span class="kc">None</span>
 
@@ -1151,7 +1152,8 @@
             <span class="n">perf_node</span><span class="o">.</span><span class="n">iterations</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span>
             <span class="n">perf_node</span><span class="o">.</span><span class="n">normList</span> <span class="o">=</span> <span class="n">normlist</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Converged after &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; iterations&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sim_prop</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Converged after &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; iterations&quot;</span><span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">interItr</span>
     <span class="k">return</span> <span class="n">solk</span><span class="p">,</span> <span class="n">data</span></div>
 

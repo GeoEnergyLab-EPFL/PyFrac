@@ -49,13 +49,12 @@ simulProp.set_volumeControl(True)     # to set up the solver in volume control m
 simulProp.tolFractFront = 4e-3        # increase tolerance for the anisotropic case
 simulProp.set_outputFolder("./Data/toughness_jump") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_jump')
-simulProp.plotFigure = True           # plot figure while the simulation runs
 simulProp.symmetric = True            # set the fracture to symmetric
 
 # initializing fracture
-minor_axis = 15.
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
-init_param = ("E_K", "length", minor_axis, gamma)
+Fr_geometry = Geometry('elliptical', minor_axis=15., gamma=gamma)
+init_param = InitializationParameters(Fr_geometry, regime='E_K')
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -92,6 +91,7 @@ Fig_FP = plot_fracture_list(Fr_list,
                             variable='footprint',
                             projection='2D',
                             fig=Fig_FP)
+
 #plotting toughness dominated radial and elliptical solutions
 plot_prop = PlotProperties(line_color_anal='orange')
 Fig_FP = plot_analytical_solution('K',

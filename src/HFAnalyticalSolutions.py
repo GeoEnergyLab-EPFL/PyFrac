@@ -809,7 +809,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime, Q0, density, muPrime/12., mesh, length, t, required)
     elif regime is 'E_K':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
-        t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution( Kc_3, Kc_1, Eprime, Q0, mesh, length, t,
+        t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution(Kc_3, Kc_1, Eprime, Q0, mesh, length, t,
                                                                              required)
     elif regime is 'E_E':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
@@ -820,7 +820,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
 
     # shift injection point
     if inj_point is not None:
-        shifted_inj_point = inj_point[0] != 0 or inj_point[0] != 0      # injection point is shifted
+        shifted_inj_point = inj_point[0] != 0 or inj_point[1] != 0      # injection point is shifted
         req_w_p = required[3] == '1' or required[2] == '1'              # width or pressure is required
         if req_w_p and shifted_inj_point:
             if isinstance(inj_point, np.ndarray) or isinstance(inj_point, list):
@@ -847,14 +847,18 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
     time.
 
     Arguments:
-        regime (string):        -- the propagation regime.
-                                   Possible options are:
+        regime (string):        -- the propagation regime. Possible options are:
                                     - K  (toughness dominated regime, without leak off).
                                     - M  (viscosity dominated regime, without leak off).
                                     - Kt (viscosity dominated regime , with leak off).
                                     - Mt (viscosity dominated regime , with leak off).
                                     - PKN (height contained hydraulic fracture with PKN geometry).
-                                    - E (elliptical fracture propagating in toughness dominated regime).
+                                    - KGD_K (The classical KGD solution in toughness dominated regime.)
+                                    - E_K (elliptical fracture propagating in toughness dominated regime). The solution\
+                                            is equivalent to a particular anisotropic toughness case described in\
+                                            Zia and Lecampion, 2018.)
+                                    - E_E (the elliptical solution with transverse isotropic material properties; see\
+                                           Moukhtari and Lecampion, 2019.)
                                     - MDR (viscosity dominated solution for turbulent flow. The friction factor is\
                                         calculated using MDR asymptote (see Zia and Lecampion 2019)).
         mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
@@ -954,7 +958,7 @@ def shift_injection_point(x, y, mesh, variable=None, active_elts=None, fill=None
 
     if active_elts is None:
         actv_given = False
-        active_elts = np.arange(mesh.NumberOfElts)
+        active_elts = np.arange(mesh.NumberOfElts, dtype=int)
     else:
         actv_given = True
 

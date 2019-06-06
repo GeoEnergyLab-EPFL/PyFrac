@@ -54,13 +54,14 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 4000               # the time at which the simulation stops
 simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the viscosity dominated assumption
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
-simulProp.height = 32
 simulProp.gravity = True
 simulProp.bckColor = 'confining stress'
 
 # initialization parameters
-initRad = 80
-init_param = ("PKN", "length", initRad, 32)
+Fr_geometry = Geometry(shape='height contained',
+                       fracture_length=80,
+                       fracture_height=35)
+init_param = InitializationParameters(Fr_geometry, regime='PKN')
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -69,7 +70,6 @@ Fr = Fracture(Mesh,
               Fluid,
               Injection,
               simulProp)
-
 
 # create a Controller
 controller = Controller(Fr,

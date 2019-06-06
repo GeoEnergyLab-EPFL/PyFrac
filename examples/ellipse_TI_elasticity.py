@@ -98,37 +98,11 @@ simulProp.set_simulation_name('TI_ellasticy_benchmark')
 simulProp.TI_KernelExecPath = '../src_TI_Kernel/' # path to the executable that calculates TI kernel
 simulProp.verbosity = 2
 
-
-surv_cells, inner_cells = get_eliptical_survey_cells(Mesh, 1.5, 0.75)
-surv_dist = np.zeros((surv_cells.size, ), dtype=np.float64)
-# get minimum distance from center of the survey cells to the ellipse
-for i in range(0, surv_cells.size):
-     surv_dist[i] = Distance_ellipse(1.6,         # length of major axis
-                                     0.8,       # length of minor axis
-                                     Mesh.CenterCoor[surv_cells[i], 0],
-                                     Mesh.CenterCoor[surv_cells[i], 1])
-
-# initializing fracture
-t, b, p, winit, v, actvElts = HF_analytical_sol('E_E',
-                                            Mesh,
-                                            Eprime,
-                                            Q0,
-                                            gamma=2.0,
-                                            Cij=Cij,
-                                            Kprime=(32 / np.pi) ** 0.5 * K1c_func(np.pi / 2),
-                                            length=0.8)
-
-C = load_TI_elasticity_matrix(Mesh, Solid, simulProp)
-
-init_param = ('G',              # type of initialization
-              surv_cells,       # the given survey cells
-              inner_cells,      # the cell enclosed by the fracture
-              surv_dist,        # the distance of the survey cells from the front
-              winit,            # the given width
-              p,                # the pressure (uniform in this case)
-              C,                # the elasticity matrix
-              None,             # the volume of the fracture
-              0)                # the velocity of the propagating front (stationary in this case)
+# initialization parameters
+Fr_geometry = Geometry('elliptical',
+                       minor_axis=0.75,
+                       gamma=gamma)
+init_param = InitializationParameters(Fr_geometry, regime='E_E')
 
 #  creating fracture object
 Fr = Fracture(Mesh,
@@ -143,8 +117,7 @@ controller = Controller(Fr,
                         Solid,
                         Fluid,
                         Injection,
-                        simulProp,
-                        C=C)
+                        simulProp)
 
 #run the simulation
 controller.run()

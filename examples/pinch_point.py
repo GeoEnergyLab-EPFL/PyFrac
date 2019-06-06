@@ -53,11 +53,11 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 0.05              # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'           # the parameter according to which the background is color coded
 simulProp.set_outputFolder('./Data/pinch_point')
-simulProp.plotFigure = True             # the fracture footprint will be plotted during the simulation
+simulProp.plotVar = ['footprint']
 
 # initializing fracture
-initRad = 0.048
-init_param = ('M', "length", initRad)
+Fr_geometry = Geometry('radial', radius=0.048)
+init_param = InitializationParameters(Fr_geometry, regime='M')
 
 # creating fracture object
 Fr = Fracture(Mesh,

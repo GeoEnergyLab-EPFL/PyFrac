@@ -40,11 +40,12 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 1e7               # the time at which the simulation stops
 simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
 simulProp.set_outputFolder("./Data/MtoK_leakoff") # the disk address where the files are saved
-simulProp.frontAdvancing = 'explicit'
+# simulProp.frontAdvancing = 'implicit'
+# simulProp.plotVar = ['w', 'pf', 'lk']
 
 # initializing fracture
-initTime = 0.5
-init_param = ("M", "time", initTime)
+Fr_geometry = Geometry('radial')
+init_param = InitializationParameters(Fr_geometry, regime='M', time=0.5)
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -90,7 +91,7 @@ eff_analytical = np.asarray([0.9923, 0.9904, 0.9880, 0.9850, 0.9812, 0.9765, 0.9
                              0.9142, 0.8944, 0.8706, 0.8423, 0.8089, 0.7700, 0.7256, 0.6757, 0.6209, 0.5622, 0.5011,
                              0.4393, 0.3789, 0.3215, 0.2688, 0.2218, 0.1809, 0.1461, 0.1171])
 ax_eff = Fig_eff.get_axes()[0]
-ax_eff.semilogx(t, eff_analytical, 'r-', label='analytical fracturing efficiency')
+ax_eff.semilogx(t, eff_analytical, 'r-', label='semi-analytical fracturing efficiency')
 ax_eff.legend()
 
 
@@ -105,7 +106,7 @@ r_analytical = np.asarray([0.0035, 0.0046, 0.0059, 0.0076, 0.0099, 0.0128, 0.016
                            0.0581, 0.0744, 0.0951, 0.1212, 0.1539, 0.1948, 0.2454, 0.3075, 0.3831, 0.4742, 0.5829,
                            0.7114, 0.8620, 1.0370, 1.2395, 1.4726, 1.7406, 2.0483, 2.4016])*1e3
 ax_r = Fig_r.get_axes()[0]
-ax_r.loglog(t, r_analytical, 'r-', label='anlytical radius (Dontsov EV, 2016)')
+ax_r.loglog(t, r_analytical, 'r-', label='semi-anlytical radius')
 ax_r.legend()
 
 plt.show(block=True)

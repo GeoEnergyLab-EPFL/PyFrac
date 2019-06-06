@@ -183,6 +183,7 @@
                            <span class="s1">&#39;i.e. the x and y coordinates of a point and return the toughness at this point.&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">TI_elasticity</span> <span class="o">=</span> <span class="n">TI_elasticity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Cij</span> <span class="o">=</span> <span class="n">Cij</span>
         <span class="k">if</span> <span class="n">TI_elasticity</span> <span class="ow">or</span> <span class="n">free_surf</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Cij</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>  <span class="c1"># check if float or ndarray</span>
                 <span class="k">if</span> <span class="n">Cij</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>  <span class="c1"># check if size is 6 x 6</span>
@@ -486,10 +487,9 @@
 <span class="sd">        tolFractFront (float):       -- tolerance for the fracture front loop.</span>
 <span class="sd">        toleranceEHL (float):        -- tolerance for the Elastohydrodynamic solver.</span>
 <span class="sd">        toleranceProjection (float): -- tolerance for projection iteration for anisotropic case</span>
-<span class="sd">        maxFrontItr (int):           -- maximum iterations to for the fracture front loop.</span>
-<span class="sd">        maxSolverItr (int):          -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this</span>
+<span class="sd">        maxFrontItrs (int):          -- maximum iterations to for the fracture front loop.</span>
+<span class="sd">        maxSolverItrs (int):         -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this</span>
 <span class="sd">                                        case.</span>
-<span class="sd">        maximumItrEHL (int):         -- maximum number of iterations for the Elastohydrodynamic solver.</span>
 <span class="sd">        maxProjItrs (int):           -- maximum iterations for the loop to find projection on the front from ribbon.</span>
 <span class="sd">        tmStpPrefactor (float):      -- factor for time-step adaptivity.</span>
 <span class="sd">        maxTimeSteps (integer):      -- maximum number of time steps.</span>
@@ -551,9 +551,10 @@
 <span class="sd">                                        domain.</span>
 <span class="sd">        remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.</span>
 <span class="sd">        frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:</span>
-<span class="sd">                                            - explicit</span>
-<span class="sd">                                            - predictor-corrector</span>
-<span class="sd">                                            - implicit</span>
+
+<span class="sd">                                            - &#39;explicit&#39;</span>
+<span class="sd">                                            - &#39;predictor-corrector&#39;</span>
+<span class="sd">                                            - &#39;implicit&#39;</span>
 <span class="sd">        gravity (bool):              -- if True, the effect of gravity will be taken into account.</span>
 <span class="sd">        collectPerfData (bool):      -- if True, the performance data will be collected in the form of a tree.</span>
 <span class="sd">        paramFromTip (bool):         -- if True, the space dependant parameters such as toughness and leak-off</span>
@@ -810,10 +811,22 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__simName</span></div>
 
 <div class="viewcode-block" id="SimulationProperties.get_timeStamp"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_timeStamp">[docs]</a>    <span class="k">def</span> <span class="nf">get_timeStamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeStamp</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__timeStamp</span></div>
+
+<div class="viewcode-block" id="SimulationProperties.get_time_step_prefactor"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.SimulationProperties.get_time_step_prefactor">[docs]</a>    <span class="k">def</span> <span class="nf">get_time_step_prefactor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">indxCurTime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indxCurTime</span><span class="p">]</span>  <span class="c1"># current pre-factor</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The time step pre-factor array should have two rows, where each column giving the&quot;</span>
+                                 <span class="s2">&quot; time at which the pre-factor is changed in the first rwo, and the corresponding &quot;</span>
+                                 <span class="s2">&quot;pre-factor in the second row.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmStpPrefactor</span></div></div>
+
 
 <span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
-
 
 <div class="viewcode-block" id="IterationProperties"><a class="viewcode-back" href="../doc_src/Properties.html#Properties.IterationProperties">[docs]</a><span class="k">class</span> <span class="nc">IterationProperties</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -846,7 +859,8 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_style</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">line_style_anal</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span>
                  <span class="n">line_color_anal</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">line_width_anal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">text_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">disp_precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">mesh_color</span><span class="o">=</span><span class="s1">&#39;yellowgreen&#39;</span><span class="p">,</span> <span class="n">mesh_edge_color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">mesh_label_color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span>
-                 <span class="n">graph_scaling</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">color_maps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colors_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_FP_time</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                 <span class="n">graph_scaling</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">color_maps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colors_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_FP_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">use_tex</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">lineStyle</span> <span class="o">=</span> <span class="n">line_style</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lineWidth</span> <span class="o">=</span> <span class="n">line_width</span>
@@ -865,6 +879,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">graphScaling</span> <span class="o">=</span> <span class="n">graph_scaling</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">plotLegend</span> <span class="o">=</span> <span class="n">plot_legend</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">PlotFP_Time</span> <span class="o">=</span> <span class="n">plot_FP_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">useTex</span> <span class="o">=</span> <span class="n">use_tex</span>
         <span class="k">if</span> <span class="n">color_maps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">colorMaps</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cool&#39;</span><span class="p">,</span> <span class="s1">&#39;Wistia&#39;</span><span class="p">,</span> <span class="s1">&#39;summer&#39;</span><span class="p">,</span> <span class="s1">&#39;autumn&#39;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>

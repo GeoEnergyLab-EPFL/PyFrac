@@ -151,8 +151,9 @@
 
     <span class="k">else</span><span class="p">:</span>
         <span class="n">var_val_list</span><span class="p">,</span> <span class="n">time_list</span> <span class="o">=</span> <span class="n">get_fracture_variable</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span>
-                                                                    <span class="n">variable</span><span class="p">,</span>
-                                                                    <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">)</span>
+                                                            <span class="n">variable</span><span class="p">,</span>
+                                                            <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
+                                                            <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">var_val_copy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">var_val_list</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">var_val_copy</span><span class="p">)):</span>
@@ -317,8 +318,9 @@
                                                 <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
                                                 <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">var_val_list</span><span class="p">,</span> <span class="n">time_list</span> <span class="o">=</span> <span class="n">get_fracture_variable</span><span class="p">(</span><span class="n">fracture_list</span><span class="p">,</span>
-                                                                <span class="n">variable</span><span class="p">,</span>
-                                                               <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">)</span>
+                                                        <span class="n">variable</span><span class="p">,</span>
+                                                       <span class="n">edge</span><span class="o">=</span><span class="n">edge</span><span class="p">,</span>
+                                                    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">var_val_copy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">var_val_list</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">var_val_copy</span><span class="p">)):</span>
@@ -1343,6 +1345,9 @@
     <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_variables</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg_variable</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">length_srs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either time series or length series is to be provided!&quot;</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
     <span class="n">plot_prop_cp</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">plot_prop</span><span class="p">)</span>
@@ -1366,12 +1371,24 @@
                                                         <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
                                                         <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">,</span>
                                                         <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">time_srs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">time_srs</span> <span class="o">=</span> <span class="n">get_HF_analytical_solution_at_point</span><span class="p">(</span><span class="n">regime</span><span class="p">,</span>
+                                                        <span class="s1">&#39;t&#39;</span><span class="p">,</span>
+                                                        <span class="n">point</span><span class="p">,</span>
+                                                        <span class="n">mat_prop</span><span class="p">,</span>
+                                                        <span class="n">inj_prop</span><span class="p">,</span>
+                                                        <span class="n">fluid_prop</span><span class="o">=</span><span class="n">fluid_prop</span><span class="p">,</span>
+                                                        <span class="n">length_srs</span><span class="o">=</span><span class="n">length_srs</span><span class="p">,</span>
+                                                        <span class="n">time_srs</span><span class="o">=</span><span class="n">time_srs</span><span class="p">,</span>
+                                                        <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span>
+                                                        <span class="n">samp_cell</span><span class="o">=</span><span class="n">samp_cell</span><span class="p">,</span>
+                                                        <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">analytical_list</span><span class="p">)):</span>
         <span class="n">analytical_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/=</span> <span class="n">labels</span><span class="o">.</span><span class="n">unitConversion</span>
 
-    <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_min&#39;</span><span class="p">,</span> <span class="s1">&#39;d_min&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_max&#39;</span><span class="p">,</span> <span class="s1">&#39;d_max&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;front_dist_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">variable</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_min&#39;</span><span class="p">,</span> <span class="s1">&#39;d_min&#39;</span><span class="p">,</span> <span class="s1">&#39;front_dist_max&#39;</span><span class="p">,</span> <span class="s1">&#39;d_max&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;front_dist_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;d_mean&#39;</span><span class="p">]:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The given variable does not vary spatially.&quot;</span><span class="p">)</span>
 
     <span class="n">plot_prop_cp</span><span class="o">.</span><span class="n">lineColor</span> <span class="o">=</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColorAnal</span>
@@ -1730,7 +1747,6 @@
                                         <span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="o">.</span><span class="n">legend</span><span class="p">)</span>
             <span class="n">projection</span> <span class="o">=</span> <span class="s1">&#39;2D&#39;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">plot_prop_cp</span><span class="o">.</span><span class="n">colorMap</span> <span class="o">=</span> <span class="n">plot_prop</span><span class="o">.</span><span class="n">colorMapAnal</span>
             <span class="k">if</span> <span class="n">projection</span> <span class="ow">is</span> <span class="s1">&#39;2D_clrmap&#39;</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">analytical_list</span><span class="p">)):</span>
                     <span class="n">fig</span> <span class="o">=</span> <span class="n">plot_fracture_variable_as_image</span><span class="p">(</span><span class="n">analytical_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
@@ -1985,22 +2001,22 @@
                                                                         <span class="n">print_number</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="c1"># set figure position</span>
-        <span class="k">if</span> <span class="n">setFigPos</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variable</span><span class="p">)):</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-                <span class="n">mngr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_current_fig_manager</span><span class="p">()</span>
-                <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">650</span> <span class="o">*</span> <span class="n">i</span>
-                <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">50</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-                    <span class="n">x_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">650</span>
-                    <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">500</span>
-                <span class="n">mngr</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x_offset</span><span class="p">,</span> <span class="n">y_ofset</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">545</span><span class="p">)</span>
-            <span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="s1">&#39;win&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">setFigPos</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variable</span><span class="p">)):</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">mngr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_current_fig_manager</span><span class="p">()</span>
+                    <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">650</span> <span class="o">*</span> <span class="n">i</span>
+                    <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">50</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="n">x_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">650</span>
+                        <span class="n">y_ofset</span> <span class="o">=</span> <span class="mi">500</span>
+                    <span class="n">mngr</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="n">x_offset</span><span class="p">,</span> <span class="n">y_ofset</span><span class="p">,</span> <span class="mi">640</span><span class="p">,</span> <span class="mi">545</span><span class="p">)</span>
+                <span class="n">setFigPos</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="c1"># plot the figure</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="n">pause_time</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done! &quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">block_figure</span><span class="p">:</span>
             <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press any key to continue.&quot;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>

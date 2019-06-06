@@ -45,11 +45,12 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 50.           # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'       # setting the parameter according to which the mesh is color coded
 simulProp.set_outputFolder("./Data/confined_propagation")
+simulProp.plotVar = ['footprint']
 
 
 # initializing fracture
-initRad = 2.8
-init_param = ('M', "length", initRad)
+Fr_geometry = Geometry('radial', radius=2.8)
+init_param = InitializationParameters(Fr_geometry, regime='M')
 
 # creating fracture object
 Fr = Fracture(Mesh,

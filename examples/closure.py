@@ -40,12 +40,12 @@ Fluid = FluidProperties(viscosity=viscosity, compressibility=1e-10)
 simulProp = SimulationProperties()
 simulProp.finalTime = 2500               # the time at which the simulation stops
 simulProp.set_outputFolder(".\\Data\\closure") # the disk address where the files are saved
-simulProp.plotVar = ['pf', 'w']
+simulProp.plotVar = ['w', 'lk']
 simulProp.tolFractFront = 4e-3
 
 # initializing fracture
-initTime = 20
-init_param = ("M", "time", initTime)
+Fr_geometry = Geometry('radial')
+init_param = InitializationParameters(Fr_geometry, regime='M', time=18)
 
 # #creating fracture object
 Fr = Fracture(Mesh,
@@ -81,8 +81,7 @@ animate_simulation_results(Fr_list,
 # plotting pressure at injection point
 p_prop = PlotProperties(line_style='.', graph_scaling='loglog')
 Fig_p = plot_fracture_list_at_point(Fr_list,
-                   variable='pf',
-                   plot_prop=p_prop)
+                                    variable='pf')
 
 # plotting pressure during initial propagation
 time_srs = np.linspace(21, 200, 6)

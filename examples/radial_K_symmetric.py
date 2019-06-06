@@ -43,8 +43,8 @@ simulProp.bckColor = "K1c"              # setting the parameter according to whi
 
 
 # initializing fracture
-initRad = 0.15
-init_param = ("K", "length", initRad)
+Fr_geometry = Geometry('radial', radius=0.15)
+init_param = InitializationParameters(Fr_geometry, regime='K')
 
 # creating fracture object
 Fr = Fracture(Mesh,

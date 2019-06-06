@@ -42,8 +42,8 @@ simulProp.outputEveryTS = 5             # only save after five time steps
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
 
 # initialization parameters
-initRad = 0.1
-init_param = ("M", "length", initRad)
+Fr_geometry = Geometry('radial', radius=0.1)
+init_param = InitializationParameters(Fr_geometry, regime='M')
 
 # creating fracture object
 Fr = Fracture(Mesh,

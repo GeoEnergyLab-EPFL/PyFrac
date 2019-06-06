@@ -53,11 +53,14 @@ simulProp.plotFigure = True
 simulProp.plotAnalytical = True
 simulProp.analyticalSol = 'E_K'
 simulProp.symmetric = True
+simulProp.plotVar = ['footprint']
 
 # initializing fracture
-minor_axis = 2.
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
-init_param = ("E_K", "length", minor_axis, gamma)
+Fr_geometry = Geometry('elliptical',
+                       minor_axis=2.,
+                       gamma=gamma)
+init_param = InitializationParameters(Fr_geometry, regime='E_K')
 
 # creating fracture object
 Fr = Fracture(Mesh,

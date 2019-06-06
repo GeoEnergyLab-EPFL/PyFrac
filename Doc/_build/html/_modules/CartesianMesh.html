@@ -461,7 +461,7 @@
                    <span class="n">x_val</span><span class="p">,</span>
                    <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span>
                    <span class="n">size</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">,</span>
-                   <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                   <span class="n">usetex</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">useTex</span><span class="p">,</span>
                    <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
                    <span class="n">fc</span><span class="o">=</span><span class="n">edge_color</span><span class="p">)</span>
 
@@ -478,7 +478,7 @@
                    <span class="n">y_val</span><span class="p">,</span>
                    <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span>
                    <span class="n">size</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">,</span>
-                   <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                   <span class="n">usetex</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">useTex</span><span class="p">,</span>
                    <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
                    <span class="n">fc</span><span class="o">=</span><span class="n">edge_color</span><span class="p">)</span>
 
@@ -490,7 +490,7 @@
                <span class="s1">&#39;meters&#39;</span><span class="p">,</span>
                <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span>
                <span class="n">size</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">,</span>
-               <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">usetex</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">useTex</span><span class="p">,</span>
                <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
                <span class="n">fc</span><span class="o">=</span><span class="n">edge_color</span><span class="p">)</span>
 
@@ -523,23 +523,28 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">plot_mesh</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_axes</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">plot_prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">plot_prop</span> <span class="o">=</span> <span class="n">PlotProperties</span><span class="p">()</span>
+        <span class="c1"># set the four corners of the rectangular mesh</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Lx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Ly</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ly</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hy</span> <span class="o">/</span> <span class="mi">2</span><span class="p">])</span>
 
-        <span class="k">if</span> <span class="n">plot_mesh</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">)</span>
         <span class="c1"># add rectangle for each cell</span>
-        <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">patch_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
             <span class="n">polygon</span> <span class="o">=</span> <span class="n">mpatches</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VertexCoor</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Connectivity</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:],</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="kc">True</span><span class="p">)</span>
-            <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
+            <span class="n">patch_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
 
-        <span class="n">p</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">patch_list</span><span class="p">,</span>
                             <span class="n">cmap</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">colorMap</span><span class="p">,</span>
                             <span class="n">edgecolor</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">lineColor</span><span class="p">,</span>
                             <span class="n">linewidth</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">lineWidth</span><span class="p">,</span>
@@ -603,7 +608,7 @@
            <span class="n">parameter</span><span class="p">,</span>
            <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span>
            <span class="n">size</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">,</span>
-           <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+           <span class="n">usetex</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">useTex</span><span class="p">,</span>
            <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
            <span class="n">fc</span><span class="o">=</span><span class="n">txt_color</span><span class="p">)</span>
     <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">10</span><span class="p">]]</span>
@@ -616,7 +621,7 @@
                <span class="n">disp_val</span><span class="p">,</span>
                <span class="n">zdir</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span>
                <span class="n">size</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">textSize</span><span class="p">,</span>
-               <span class="n">usetex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">usetex</span><span class="o">=</span><span class="n">plot_prop</span><span class="o">.</span><span class="n">useTex</span><span class="p">,</span>
                <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
                <span class="n">fc</span><span class="o">=</span><span class="n">txt_color</span><span class="p">)</span></div>
 

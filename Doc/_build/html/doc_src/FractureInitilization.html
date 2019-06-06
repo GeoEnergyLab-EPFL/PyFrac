@@ -76,6 +76,98 @@ All rights reserved. See the LICENSE.TXT file for more details.</p>
 <dd><p>The shortest distance of a point from a square</p>
 </dd></dl>
 
+<dl class="class">
+<dt id="FractureInitilization.Geometry">
+<em class="property">class </em><code class="descclassname">FractureInitilization.</code><code class="descname">Geometry</code><span class="sig-paren">(</span><em>shape=None</em>, <em>radius=None</em>, <em>fracture_length=None</em>, <em>fracture_height=None</em>, <em>minor_axis=None</em>, <em>gamma=None</em>, <em>survey_cells=None</em>, <em>tip_distances=None</em>, <em>inner_cells=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#Geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.Geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class defines the geometry of the fracture to be initialized.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>shape</strong> (<em>string</em>) – <p>– string giving the geometrical shape of the fracture. Possible options are:</p>
+<ul>
+<li>’radial’</li>
+<li>’height contained’</li>
+<li>’elliptical’</li>
+<li>’level set’</li>
+</ul>
+</li>
+<li><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the radius of the radial fracture.</li>
+<li><strong>fracture_length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the half length of the fracture.</li>
+<li><strong>fracture_height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the height of the height contained fracture.</li>
+<li><strong>minor_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – length of minor axis for elliptical fracture shape.</li>
+<li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – ratio of the length of the major axis to the minor axis. It should be more than
+one.</li>
+<li><strong>survey_cells</strong> (<em>ndarray</em>) – – the cells from which the distances to the fracture tip are provided.</li>
+<li><strong>tip_distances</strong> (<em>ndarray</em>) – – the minimum distances of the corresponding cells provided in the survey_cells to
+the tip of the fracture.</li>
+<li><strong>inner_cells</strong> (<em>ndarray</em>) – – the cells enclosed by the cells given in the survey_cells (inclusive). In other
+words, the cells inside the fracture.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="FractureInitilization.Geometry.get_length_dimension">
+<code class="descname">get_length_dimension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#Geometry.get_length_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.Geometry.get_length_dimension" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="FractureInitilization.Geometry.set_length_dimension">
+<code class="descname">set_length_dimension</code><span class="sig-paren">(</span><em>length</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#Geometry.set_length_dimension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.Geometry.set_length_dimension" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="FractureInitilization.InitializationParameters">
+<em class="property">class </em><code class="descclassname">FractureInitilization.</code><code class="descname">InitializationParameters</code><span class="sig-paren">(</span><em>geometry=None</em>, <em>regime='M'</em>, <em>time=None</em>, <em>width=None</em>, <em>net_pressure=None</em>, <em>fracture_volume=None</em>, <em>tip_velocity=None</em>, <em>elasticity_matrix=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#InitializationParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.InitializationParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class store the initialization parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>geometry</strong> (<a class="reference internal" href="#FractureInitilization.Geometry" title="FractureInitilization.Geometry"><em>Geometry</em></a>) – – Geometry class object describing the geometry of the fracture.</li>
+<li><strong>regime</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – <p>– the propagation regime of the fracture. Possible options are the following:</p>
+<ul>
+<li>’M’     – radial fracture in viscosity dominated regime.</li>
+<li>’Mt’    – radial fracture in viscosity dominated regime with leak-off.</li>
+<li>’K’     – radial fracture in toughness dominated regime.</li>
+<li>’Kt’    – radial fracture in toughness dominated regime with leak-off.</li>
+<li>’PKN’   – PKN fracture.</li>
+<li>’E_K’   – elliptical fracture propagating in toughness dominated regime.                                                     The solution is equivalent to a particular anisotropic toughness                                                      case described in Zia and Lecampion, 2018.</li>
+<li>’E_E’   – the elliptical solution with transverse isotropic material                                                      properties (see Moukhtari and Lecampion, 2019).</li>
+<li>’MDR’   – viscosity dominated solution for turbulent flow. The friction                                                      factor is calculated using MDR asymptote (see Zia and Lecampion                                                     2019).</li>
+</ul>
+</li>
+<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the time since the start of injection.</li>
+<li><strong>width</strong> (<em>ndarray</em>) – – the initial width of the fracture. The size should be equal to the number of
+elements in the mesh.</li>
+<li><strong>netPressure</strong> (<em>float/ndarray</em>) – – the initial net pressure of the fracture. It can be either uniform for the static
+fracture or an ndarray.</li>
+<li><strong>fracture_volume</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – total initial volume of the fracture.</li>
+<li><strong>tip_velocity</strong> (<em>float/ndarray</em>) – – the velocity of the tip. It can be a float for radial fractures propagating
+with steady velocity or an ndarray equal to the size of tip elements list
+giving velocity of the corresponding tip elements.</li>
+<li><strong>elasticity_matrix</strong> (<em>ndarray</em>) – – the BEM elasticity matrix. See Zia &amp; Lecampion 2019.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="FractureInitilization.InitializationParameters.check_consistency">
+<code class="descname">check_consistency</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#InitializationParameters.check_consistency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.InitializationParameters.check_consistency" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function checks if the given parameters are consistent with each other.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="function">
 <dt id="FractureInitilization.g">
 <code class="descclassname">FractureInitilization.</code><code class="descname">g</code><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>x0</em>, <em>y0</em>, <em>la</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#g"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.g" title="Permalink to this definition">¶</a></dt>
@@ -83,7 +175,7 @@ All rights reserved. See the LICENSE.TXT file for more details.</p>
 
 <dl class="function">
 <dt id="FractureInitilization.generate_footprint">
-<code class="descclassname">FractureInitilization.</code><code class="descname">generate_footprint</code><span class="sig-paren">(</span><em>mesh</em>, <em>surv_cells</em>, <em>inner_region</em>, <em>dist_surv_cells</em>, <em>inj_point</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#generate_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.generate_footprint" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">FractureInitilization.</code><code class="descname">generate_footprint</code><span class="sig-paren">(</span><em>mesh</em>, <em>surv_cells</em>, <em>inner_region</em>, <em>dist_surv_cells</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#generate_footprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.generate_footprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function takes the survey cells and their distances from the front and generate the footprint of a fracture
 using the fast marching method.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -119,7 +211,7 @@ using the fast marching method.</p>
 
 <dl class="function">
 <dt id="FractureInitilization.get_eliptical_survey_cells">
-<code class="descclassname">FractureInitilization.</code><code class="descname">get_eliptical_survey_cells</code><span class="sig-paren">(</span><em>mesh</em>, <em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#get_eliptical_survey_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.get_eliptical_survey_cells" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">FractureInitilization.</code><code class="descname">get_eliptical_survey_cells</code><span class="sig-paren">(</span><em>mesh</em>, <em>a</em>, <em>b</em>, <em>inj_point=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#get_eliptical_survey_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.get_eliptical_survey_cells" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given
 lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -130,11 +222,13 @@ lengths of the major and minor axes. A list of all the cells inside the fracture
 <li><strong>mesh</strong> (<em>CartesianMesh object</em>) – – a CartesianMesh class object describing the grid.</li>
 <li><strong>a</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the length of the major axis of the provided ellipse.</li>
 <li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the length of the minor axis of the provided ellipse.</li>
+<li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the coordinates [x, y] of the injection point.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
 <li>surv_cells (ndarray)              – the list of cells on the inside of the perimeter of the given                                               ellipse.</li>
+<li>surv_dist (ndarray)               – the list of corresponding distances of the surv_cells to the fracture                                               tip.</li>
 <li>inner_cells (ndarray)             – the list of cells inside the given ellipse.</li>
 </ul>
 </p>
@@ -142,6 +236,69 @@ lengths of the major and minor axes. A list of all the cells inside the fracture
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="FractureInitilization.get_radial_survey_cells">
+<code class="descclassname">FractureInitilization.</code><code class="descname">get_radial_survey_cells</code><span class="sig-paren">(</span><em>mesh</em>, <em>r</em>, <em>inj_point=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#get_radial_survey_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.get_radial_survey_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function would provide the ribbon of cells and their distances to the front on the inside of the perimeter of
+a circle with the given radius. A list of all the cells inside the fracture is also provided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>r</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the radius of the circle.</li>
+<li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the coordinates [x, y] of the injection point.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>surv_cells (ndarray)              – the list of cells on the inside of the perimeter of the given circle.</li>
+<li>surv_dist (ndarray)               – the list of corresponding distances of the surv_cells to the fracture                                               tip.</li>
+<li>inner_cells (ndarray)             – the list of cells inside the given circle.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="FractureInitilization.get_rectangular_survey_cells">
+<code class="descclassname">FractureInitilization.</code><code class="descname">get_rectangular_survey_cells</code><span class="sig-paren">(</span><em>mesh</em>, <em>length</em>, <em>height</em>, <em>inj_point=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#get_rectangular_survey_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.get_rectangular_survey_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
+lengths and height. A list of all the cells inside the fracture is also provided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mesh</strong> (<em>CartesianMesh object</em>) – – a CartesianMesh class object describing the grid.</li>
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – – the half length of the rectangle.</li>
+<li><strong>inj_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em> or </em><em>ndarray</em>) – – the coordinates [x, y] of the injection point.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>surv_cells (ndarray)              – the list of cells on the inside of the perimeter of the given rectangle.</li>
+<li>surv_dist (ndarray)               – the list of corresponding distances of the surv_cells to the fracture                                               tip.</li>
+<li>inner_cells (ndarray)             – the list of cells inside the given ellipse.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="FractureInitilization.get_survey_points">
+<code class="descclassname">FractureInitilization.</code><code class="descname">get_survey_points</code><span class="sig-paren">(</span><em>geometry</em>, <em>mesh</em>, <em>source_coord=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/FractureInitilization.html#get_survey_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#FractureInitilization.get_survey_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function provided the survey cells, corresponding distances to the front and the enclosed cells for the given
+geometry.</p>
 </dd></dl>
 
 <dl class="function">
