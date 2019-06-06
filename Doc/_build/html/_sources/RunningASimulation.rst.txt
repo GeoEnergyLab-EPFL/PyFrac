@@ -55,15 +55,16 @@ Simulation parameters such as the end time, the times at which the solution is r
    simulProp.finalTime = 1                      # the time at which the simulation stops
    simulProp.set_simulation_name("radial")      # name the simulation "radial"
 
-After setting up of the properties, let us set up the initial state of the fracture that is to be propagated. It is done by creating a Fracture object. For this simulation, we set the viscosity dominated analytical solution as the initial state of the fracture. A tuple with the initialization parameters "M" (specifying the viscosity dominated regime), "length" (specifying that the type of the value provided is length) and initRad (the value) is passed to the constructor along with the properties objects that we had instantiated before. For a complete list of options and the ways a fracture can be initialized, see the documentation of the :py:class:`Fracture` class . For this simulation, we start with a fracture with a radius of :math:`0.1\,m`.
+After setting up of the properties, let us set up the initial state of the fracture that is to be propagated. It is done by creating a :py:class:`Fracture` object. For this simulation, we set the viscosity dominated analytical solution as the initial state of the fracture. This is done by first creating a :py:class:`FractureInitialization.Geometry` class object and setting up our initial shape as 'radial' and providing the initial radius. After that, we instantiate a :py:class:`FractureInitialization.InitializationParameters` class object and set the regime in which our initial fracture is propagating as "M" (specifying the viscosity dominated regime). This object along with the properties objects that we had instantiated before are passed to the constructor of the Fracture class. For a complete list of options and the ways a fracture can be initialized, see the documentation of the :py:class:`FractureInitialization.InitializationParameters` class. For this simulation, we start with a fracture with a radius of :math:`0.1\,m`.
 
 .. code-block:: python
 
    from src.Fracture import Fracture
+   from src.FractureInitialization import Geometry, InitializationParameters
 
    # initialization parameters
-   initRad = 0.28
-   init_param = ("M", "length", initRad)
+   Fr_geometry = Geometry('radial', radius=0.25)
+   init_param = InitializationParameters(Fr_geometry, regime='M')
 
    # creating fracture object
    Fr = Fracture(Mesh,

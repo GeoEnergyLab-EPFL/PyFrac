@@ -70,27 +70,29 @@
 <tbody valign="top">
 <tr class="row-even"><td>‘w’ or ‘width’</td>
 </tr>
-<tr class="row-odd"><td>‘p’ or ‘pressure’</td>
+<tr class="row-odd"><td>‘pf’ or ‘fluid pressure’</td>
 </tr>
-<tr class="row-even"><td>‘v’ or ‘front velocity’</td>
+<tr class="row-even"><td>‘pn’ or ‘net pressure’</td>
 </tr>
-<tr class="row-odd"><td>‘Re’ or ‘Reynolds number’</td>
+<tr class="row-odd"><td>‘v’ or ‘front velocity’</td>
 </tr>
-<tr class="row-even"><td>‘ff’ or ‘fluid flux’</td>
+<tr class="row-even"><td>‘Re’ or ‘Reynolds number’</td>
 </tr>
-<tr class="row-odd"><td>‘fv’ or ‘fluid velocity’</td>
+<tr class="row-odd"><td>‘ff’ or ‘fluid flux’</td>
 </tr>
-<tr class="row-even"><td>‘mesh’</td>
+<tr class="row-even"><td>‘fv’ or ‘fluid velocity’</td>
 </tr>
-<tr class="row-odd"><td>‘footprint’</td>
+<tr class="row-odd"><td>‘mesh’</td>
 </tr>
-<tr class="row-even"><td>‘lk’ or ‘leaked off’</td>
+<tr class="row-even"><td>‘footprint’</td>
+</tr>
+<tr class="row-odd"><td>‘lk’ or ‘leak off’</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The variables ‘Reynolds number’, ‘fluid flux’ and ‘fluid velocity’ are not saved by default in the results. Their saving can be enabled using simulation properties. See <code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.SimulationProperties</span></code> for details.</p>
+<p class="last">The variables ‘Reynolds number’, ‘fluid flux’ and ‘fluid velocity’ are not saved by default in the results. Their saving can be enabled using simulation properties. See <a class="reference internal" href="doc_src/Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.SimulationProperties</span></code></a> for details.</p>
 </div>
 <p>For example, to plot fracture footprint in 2D projection, we can do the following:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Fig</span> <span class="o">=</span> <span class="n">Fr</span><span class="o">.</span><span class="n">plot_fracture</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;mesh&#39;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;2D&#39;</span><span class="p">)</span>
@@ -117,17 +119,17 @@
 </div>
 <p>By default, it will be plotted in 2D projection, but 3D projection can also be plotted.</p>
 <a class="reference internal image-reference" href="_images/fracture_slice.png"><img alt="_images/fracture_slice.png" class="align-center" src="_images/fracture_slice.png" style="width: 512.0px; height: 500.8px;" /></a>
-<p>If you want to have more control on your plots, you can use the underlying functions that are used by the <code class="xref py py-func docutils literal notranslate"><span class="pre">Fracture.Fracture.plot_fracture()</span></code> function. Worth mentioning among them are the <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_variable_as_color_map()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_variable_as_contours()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_variable_vs_time()</span></code>. To use these functions, you can load a fracture variable using <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.get_fracture_variable()</span></code> function. See the documentation for more details.</p>
+<p>If you want to have more control on your plots, you can use the underlying functions that are used by the <a class="reference internal" href="doc_src/Fracture.html#Fracture.Fracture.plot_fracture" title="Fracture.Fracture.plot_fracture"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fracture.Fracture.plot_fracture()</span></code></a> function. Worth mentioning among them are the <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_variable_as_color_map()</span></code>, <a class="reference internal" href="doc_src/Visualization.html#Visualization.plot_fracture_variable_as_contours" title="Visualization.plot_fracture_variable_as_contours"><code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_variable_as_contours()</span></code></a> and <a class="reference internal" href="doc_src/Visualization.html#Visualization.plot_variable_vs_time" title="Visualization.plot_variable_vs_time"><code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_variable_vs_time()</span></code></a>. To use these functions, you can load a fracture variable using <a class="reference internal" href="doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable" title="PostProcessFracture.get_fracture_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.get_fracture_variable()</span></code></a> function. See the documentation for more details.</p>
 </div>
 <div class="section" id="plotting-fracture-evolution">
 <h2>Plotting Fracture Evolution<a class="headerlink" href="#plotting-fracture-evolution" title="Permalink to this headline">¶</a></h2>
-<p>The fist step to visualize the fracture evolution is to load the fracture objects at different times from a stored simulation run. <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.load_fractures()</span></code> function will do that for you. You can provide the times at which the state of fracture is to be loaded. The function will return a list of Fracture objects closest to the times given in the time series. It will also return the properties used in the simulation in the form of a tuple consisting of solid, fluid, injection and simulation properties in order. Note that for a time given in the time series, the fracture with the closest and larger time will be returned. Let us load the results from the simulation ran in the <a class="reference internal" href="RunningASimulation.html#run-a-simulation"><span class="std std-ref">Running a Simulation</span></a> section:</p>
+<p>The fist step to visualize the fracture evolution is to load the fracture objects at different times from a stored simulation run. <a class="reference internal" href="doc_src/PostProcessFracture.html#PostProcessFracture.load_fractures" title="PostProcessFracture.load_fractures"><code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.load_fractures()</span></code></a> function will do that for you. You can provide the times at which the state of fracture is to be loaded. The function will return a list of Fracture objects closest to the times given in the time series. It will also return the properties used in the simulation in the form of a tuple consisting of solid, fluid, injection and simulation properties in order. Note that for a time given in the time series, the fracture with the closest and larger time will be returned. Let us load the results from the simulation ran in the <a class="reference internal" href="RunningASimulation.html#run-a-simulation"><span class="std std-ref">Running a Simulation</span></a> section:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.PostProcessFracture</span> <span class="kn">import</span> <span class="n">load_fractures</span>
 
 <span class="n">Fr_list</span><span class="p">,</span> <span class="n">properties</span> <span class="o">=</span> <span class="n">load_fractures</span><span class="p">(</span><span class="n">sim_name</span><span class="o">=</span><span class="s1">&#39;radial&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Note that we have not provided any time series. In this case, all of the fractures will be loaded. Also, since we have not provided any disk address, the results will be loaded from the default folder. If multiple simulations with the same simulation name are found, the most recent run will be loaded. Now let us plot the evolution of the fracture radius of the loaded fractures. We can use the <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_list()</span></code> to do that.</p>
+<p>Note that we have not provided any time series. In this case, all of the fractures will be loaded. Also, since we have not provided any disk address, the results will be loaded from the default folder. If multiple simulations with the same simulation name are found, the most recent run will be loaded. Now let us plot the evolution of the fracture radius of the loaded fractures. We can use the <a class="reference internal" href="doc_src/Visualization.html#Visualization.plot_fracture_list" title="Visualization.plot_fracture_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_list()</span></code></a> to do that.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Properties</span> <span class="kn">import</span> <span class="n">PlotProperties</span>
 <span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="kn">import</span> <span class="n">plot_fracture_list</span>
 
@@ -137,7 +139,7 @@
                            <span class="n">plot_prop</span><span class="o">=</span><span class="n">plot_prop</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The above instructions will instantiate a <code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.PlotProperties</span></code> class object that can be used to specify the properties that are to be used to plot the given variable. The variable ‘d_mean’ here specifies the minimum distance of the front from the injection point. Below is the list of variables that can be plotted.</p>
+<p>The above instructions will instantiate a <a class="reference internal" href="doc_src/Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.PlotProperties</span></code></a> class object that can be used to specify the properties that are to be used to plot the given variable. The variable ‘d_mean’ here specifies the minimum distance of the front from the injection point. Below is the list of variables that can be plotted.</p>
 <table border="1" class="docutils align-center" id="id2">
 <caption><span class="caption-text">supported variables</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
 <colgroup>
@@ -160,7 +162,7 @@
 </tr>
 <tr class="row-odd"><td>‘volume’ or ‘V’</td>
 </tr>
-<tr class="row-even"><td>‘lk’ or ‘leaked off’</td>
+<tr class="row-even"><td>‘lk’ or ‘leak off’</td>
 </tr>
 <tr class="row-odd"><td>‘lkv’ or ‘leaked off volume’</td>
 </tr>
@@ -184,7 +186,7 @@
 </table>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The variables ‘Reynolds number’, ‘fluid flux’ and ‘fluid velocity’ are not saved by default in the results. Their saving can be enabled using simulation properties. See <code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.SimulationProperties</span></code> for details.</p>
+<p class="last">The variables ‘Reynolds number’, ‘fluid flux’ and ‘fluid velocity’ are not saved by default in the results. Their saving can be enabled using simulation properties. See <a class="reference internal" href="doc_src/Properties.html#Properties.SimulationProperties" title="Properties.SimulationProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.SimulationProperties</span></code></a> for details.</p>
 </div>
 <p>PyFrac provides the capability to plot analytical solutions available in a number of limiting regimes. Let us compare the fracture radius we have to a fracture propagating in a toughness dominated regime.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.PostProcessFracture</span> <span class="kn">import</span> <span class="n">get_fracture_variable</span>
@@ -200,7 +202,7 @@
                                  <span class="n">fig</span><span class="o">=</span><span class="n">Fig_R</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The function <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.get_fracture_variable()</span></code> provides a list of the values of the required variable. Here, we have used it to get a list of times at which the solution is available in the fracture list. This list, along with the material, fluid and injection properties are then given to the <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.plot_analytical_solution()</span></code> function to plot the analytical solution at the given times. Just like the case of a single fracture, the evolution of a fracture along a slice of the domain can also be plotted. Let us plot the fracture width evolution along a vertical slice passing through the injection point. Unlike the previous example where the solution was interpolated between the evaluated solution on the line joining the two given points, here we will plot the discrete values of the solution evaluated at the cell centers. This can be done by enabling the plot_cell_center argument. Below, we plot the width at cell centers along the vertical line passing through the center of the cell containing our point.</p>
+<p>The function <a class="reference internal" href="doc_src/PostProcessFracture.html#PostProcessFracture.get_fracture_variable" title="PostProcessFracture.get_fracture_variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.get_fracture_variable()</span></code></a> provides a list of the values of the required variable. Here, we have used it to get a list of times at which the solution is available in the fracture list. This list, along with the material, fluid and injection properties are then given to the <code class="xref py py-func docutils literal notranslate"><span class="pre">PostProcessFracture.plot_analytical_solution()</span></code> function to plot the analytical solution at the given times. Just like the case of a single fracture, the evolution of a fracture along a slice of the domain can also be plotted. Let us plot the fracture width evolution along a vertical slice passing through the injection point. Unlike the previous example where the solution was interpolated between the evaluated solution on the line joining the two given points, here we will plot the discrete values of the solution evaluated at the cell centers. This can be done by enabling the plot_cell_center argument. Below, we plot the width at cell centers along the vertical line passing through the center of the cell containing our point.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="kn">import</span> <span class="n">plot_fracture_list_slice</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
@@ -218,7 +220,7 @@
                                   <span class="n">extreme_points</span><span class="o">=</span><span class="n">ext_pnts</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>In the above code, we first load the state of the fracture at five equidistant times in geometric space. The fracture list is then passed to the <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_list_slice()</span></code> which plots the slice of the domain passing through the given point. To compare the solution, we can also plot slice of the analytical solution. We have passed an empty array to the slice plotting function which will be written by the extreme points on the mesh along the slice, which can be used to plot the analytical solution slice.</p>
+<p>In the above code, we first load the state of the fracture at five equidistant times in geometric space. The fracture list is then passed to the <a class="reference internal" href="doc_src/Visualization.html#Visualization.plot_fracture_list_slice" title="Visualization.plot_fracture_list_slice"><code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_list_slice()</span></code></a> which plots the slice of the domain passing through the given point. To compare the solution, we can also plot slice of the analytical solution. We have passed an empty array to the slice plotting function which will be written by the extreme points on the mesh along the slice, which can be used to plot the analytical solution slice.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">src.Visualization</span> <span class="kn">import</span> <span class="n">plot_analytical_solution_slice</span>
 
 <span class="n">time_srs_loaded</span> <span class="o">=</span> <span class="n">get_fracture_variable</span><span class="p">(</span><span class="n">Fr_list</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">)</span>
@@ -233,7 +235,7 @@
                                         <span class="n">point2</span><span class="o">=</span><span class="n">ext_pnts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Finally, in addition to the slice, solution at a single point can also be plotted using the <code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_list_at_point()</span></code> function. See the documention of the functions for details.</p>
+<p>Finally, in addition to the slice, solution at a single point can also be plotted using the <a class="reference internal" href="doc_src/Visualization.html#Visualization.plot_fracture_list_at_point" title="Visualization.plot_fracture_list_at_point"><code class="xref py py-func docutils literal notranslate"><span class="pre">Visualization.plot_fracture_list_at_point()</span></code></a> function. See the documention of the functions for details.</p>
 </div>
 </div>
 

@@ -26,14 +26,15 @@ You can also provide the quantity you want to plot. The following quantities can
     :header: "supported variables"
 
     'w' or 'width'
-    'p' or 'pressure'
+    'pf' or 'fluid pressure'
+    'pn' or 'net pressure'
     'v' or 'front velocity'
     'Re' or 'Reynolds number'
     'ff' or 'fluid flux'
     'fv' or 'fluid velocity'
     'mesh'
     'footprint'
-    'lk' or 'leaked off'
+    'lk' or 'leak off'
 
 .. note:: The variables 'Reynolds number', 'fluid flux' and 'fluid velocity' are not saved by default in the results. Their saving can be enabled using simulation properties. See :py:class:`Properties.SimulationProperties` for details.
 
@@ -114,7 +115,7 @@ The above instructions will instantiate a :py:class:`Properties.PlotProperties` 
     'mesh'
     'footprint'
     'volume' or 'V'
-    'lk' or 'leaked off'
+    'lk' or 'leak off'
     'lkv' or 'leaked off volume'
     'ar' or 'aspect ratio'
     'efficiency' or 'ef'

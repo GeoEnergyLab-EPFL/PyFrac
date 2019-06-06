@@ -348,8 +348,8 @@ class InjectionProperties:
             if np.isnan(self.sourceElem):
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
-            print("Injection point: " + '(x, y)= (' + repr(mesh.CenterCoor[self.sourceElem, 0]) +
-                                        ',' + repr(mesh.CenterCoor[self.sourceElem, 1]) + ')')
+            print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
+                                        ',' + repr(mesh.CenterCoor[self.sourceElem, 1][0]) + ')')
             self.sourceLocFunc = None
         else:
             self.sourceLocFunc = source_loc_func
