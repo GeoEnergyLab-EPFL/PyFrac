@@ -20,7 +20,7 @@ from src.LevelSet import *
 from src.VolIntegral import *
 from src.Properties import *
 from src.CartesianMesh import *
-from src.FractureInitilization import *
+from src.FractureInitialization import *
 from src.Labels import *
 from src.PostProcessFracture import *
 from scipy.interpolate import griddata
