@@ -600,28 +600,28 @@ class Controller:
         Arguments:
 
         Returns:
-            TimeStep (float)   -- the appropriate time step
+            time_step (float)   -- the appropriate time step.
         """
 
         time_step_given = False
         if self.sim_prop.fixedTmStp is not None:
             # fixed time step
             if isinstance(self.sim_prop.fixedTmStp, float) or isinstance(self.sim_prop.fixedTmStp, int):
-                TimeStep = self.sim_prop.fixedTmStp
+                time_step = self.sim_prop.fixedTmStp
                 time_step_given = True
-            elif isinstance(self.sim_prop.fixedTmStp, np.ndarray) and self.sim_prop.fixedTmStp.shape[0]==2:
+            elif isinstance(self.sim_prop.fixedTmStp, np.ndarray) and self.sim_prop.fixedTmStp.shape[0] == 2:
                 # fixed time step list is given
                 times_past = np.where(self.fracture.time >= self.sim_prop.fixedTmStp[0, :])[0]
                 if len(times_past) > 0:
                     indxCurTime = max(times_past)
                     if self.sim_prop.fixedTmStp[1, indxCurTime] is not None:
                         # time step is not given as None.
-                        TimeStep = self.sim_prop.fixedTmStp[1, indxCurTime]  # current injection rate
+                        time_step = self.sim_prop.fixedTmStp[1, indxCurTime]  # current injection rate
                         time_step_given = True
                     else:
                         time_step_given = False
                 else:
-                    # time step is given as None. In this case time step will be evaluated with front velocity
+                    # time step is given as None. In this case time step will be evaluated with current state
                     time_step_given = False
             else:
                 raise ValueError("Fixed time step can be a float or an ndarray with two rows giving the time and"
@@ -629,21 +629,21 @@ class Controller:
 
         if not time_step_given:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
-            non_zero = np.where(self.fracture.v > 0)[0]
+            non_zero_v = np.where(self.fracture.v > 0)[0]
             # time step is calculated with the current propagation velocity
-            if len(non_zero) > 0:
+            if len(non_zero_v) > 0:
                 if len(self.injection_prop.sourceElem) < 4:
                     # if point source
                     tipVrtxCoord = self.fracture.mesh.VertexCoor[self.fracture.mesh.Connectivity[self.fracture.EltTip,
-                                                                                                 self.fracture.ZeroVertex]]
+                                                                                             self.fracture.ZeroVertex]]
                     # the distance of tip from the injection point in each of the tip cell
                     dist_Inj_pnt = ((tipVrtxCoord[:, 0] - self.injection_prop.sourceCoordinates[0]) ** 2 +
                                     (tipVrtxCoord[:, 1] - self.injection_prop.sourceCoordinates[1]) ** 2) ** 0.5 \
                                    + self.fracture.l
 
-                    # the time step evaluated by restricting the fracture to propagate not more than 8 percent of the
+                    # the time step evaluated by restricting the fracture to propagate not more than 20 percent of the
                     # current maximum length
-                    TS_fracture_length = min(abs(0.2 * dist_Inj_pnt[non_zero] / self.fracture.v[non_zero]))
+                    TS_fracture_length = min(abs(0.2 * dist_Inj_pnt[non_zero_v] / self.fracture.v[non_zero_v]))
                 else:
                     TS_fracture_length = np.inf
 
@@ -656,17 +656,16 @@ class Controller:
                 TS_cell_length = np.inf
                 TS_fracture_length = np.inf
 
-
             # index of current time in the time series (first row) of the injection rate array
-            indxCurTime = max(np.where(self.fracture.time >= self.injection_prop.injectionRate[0, :])[0])
-            currentRate = self.injection_prop.injectionRate[1, indxCurTime]  # current injection rate
-            if currentRate < 0:
-                vel_injection = currentRate / (2 * (self.fracture.mesh.hx + self.fracture.mesh.hy) *
+            indx_cur_time = max(np.where(self.fracture.time >= self.injection_prop.injectionRate[0, :])[0])
+            current_rate = self.injection_prop.injectionRate[1, indx_cur_time]  # current injection rate
+            if current_rate < 0:
+                vel_injection = current_rate / (2 * (self.fracture.mesh.hx + self.fracture.mesh.hy) *
                                     self.fracture.w[self.fracture.mesh.CenterElts])
                 TS_inj_cell = 10 * delta_x / abs(vel_injection[0])
-            elif currentRate > 0:
+            elif current_rate > 0:
                 # for positive injection, use the increase in total fracture volume criteria
-                TS_inj_cell = 0.1 * sum(self.fracture.w) * self.fracture.mesh.EltArea / currentRate
+                TS_inj_cell = 0.1 * sum(self.fracture.w) * self.fracture.mesh.EltArea / current_rate
             else:
                 TS_inj_cell = np.inf
 
@@ -680,16 +679,16 @@ class Controller:
 
             # getting pre-factor for current time
             current_prefactor = self.sim_prop.get_time_step_prefactor(self.fracture.time)
-            TimeStep = current_prefactor * min(TS_cell_length,
+            time_step = current_prefactor * min(TS_cell_length,
                                               TS_fracture_length,
                                               TS_inj_cell,
                                               TS_delta_vol)
 
         # in case of fracture not propagating
-        if TimeStep <= 0 or np.isinf(TimeStep):
+        if time_step <= 0 or np.isinf(time_step):
             if self.stagnant_TS is not None:
-                TimeStep = self.stagnant_TS
-                self.stagnant_TS = TimeStep * 1.2
+                time_step = self.stagnant_TS
+                self.stagnant_TS = time_step * 1.2
             else:
                 TS_obtained = False
                 print("The fracture front is stagnant and there is no injection. In these conditions, "
@@ -697,7 +696,7 @@ class Controller:
                 while not TS_obtained:
                     try:
                         inp = input("Enter the time step size(seconds) you would like to try:")
-                        TimeStep = float(inp)
+                        time_step = float(inp)
                         TS_obtained = True
                     except ValueError:
                         pass
@@ -715,11 +714,17 @@ class Controller:
                              ' is less than initial time.')
 
         # check if time step would step over the next time in required time series
-        if self.fracture.time + TimeStep > next_in_TS:
-            TimeStep = next_in_TS - self.fracture.time
+        if self.fracture.time + time_step > next_in_TS:
+            time_step = next_in_TS - self.fracture.time
+
+        # check if the current time is very close the next time to hit. If yes, set it to the next time to avoid
+        # very small next time step.
+        if next_in_TS - self.fracture.time < 1.05 * time_step:
+            time_step = next_in_TS - self.fracture.time
 
         # checking if the time step is above the limit
-        if self.sim_prop.timeStepLimit is not None and TimeStep > self.sim_prop.timeStepLimit:
-            TimeStep = self.sim_prop.timeStepLimit
+        if self.sim_prop.timeStepLimit is not None and time_step > self.sim_prop.timeStepLimit:
+            print("Evaluated/given time step is more than the time step limit! Limiting time step...")
+            time_step = self.sim_prop.timeStepLimit
 
-        return TimeStep
+        return time_step
