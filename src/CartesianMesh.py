@@ -275,7 +275,7 @@ class CartesianMesh:
             plot_prop = PlotProperties()
             plot_prop.alpha = 0.65
             plot_prop.lineColor = '0.5'
-            plot_prop.lineWidth = 0.5
+            plot_prop.lineWidth = 0.2
 
         p = PatchCollection(patches,
                             cmap=plot_prop.colorMap,

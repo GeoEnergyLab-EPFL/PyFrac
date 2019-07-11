@@ -47,6 +47,7 @@ substitute_pressure = True              # if True, the pressure will be substitu
 solve_deltaP = True                     # if True, the change in pressure, instead of pressure will be solved.
 solve_stagnant_tip = False              # if True, stagnant tip cells will also be solved for
 solve_tip_corr_rib = True               # if True, the corresponding tip cells to closed ribbon cells will be solved.
+solve_sparse = None                     # if True, the fluid conductivity matrix will be made with sparse matrix.
 
 # miscellaneous
 tip_asymptote = 'U'                     # the tip_asymptote to be used (see class documentation for details).

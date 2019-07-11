@@ -119,6 +119,13 @@ class Controller:
            print("Fluid viscosity is zero. Setting solver to volume control...")
            self.sim_prop.set_volumeControl(True)
 
+       # Setting whether sparse matrix is used to make fluid conductivity matrix
+       if Sim_prop.solveSparse is None:
+           if Fracture.mesh.NumberOfElts < 2500:
+               Sim_prop.solveSparse = False
+           else:
+               Sim_prop.solveSparse = True
+
        # basic performance data
        self.remeshings = 0
        self.successfulTimeSteps = 0
@@ -718,7 +725,7 @@ class Controller:
             time_step = next_in_TS - self.fracture.time
 
         # check if the current time is very close the next time to hit. If yes, set it to the next time to avoid
-        # very small next time step.
+        # very small time step in the next time step advance.
         if next_in_TS - self.fracture.time < 1.05 * time_step:
             time_step = next_in_TS - self.fracture.time
 
