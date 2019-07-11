@@ -20,7 +20,7 @@ import dill
 import os
 import re
 import sys
-
+import csv
 
 if 'win32' in sys.platform or 'win64' in sys.platform:
     slash = '\\'
@@ -170,7 +170,6 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
         for i in fracture_list:
             variable_list.append(i.time)
             time_srs.append(i.time)
-        return variable_list
 
     elif variable is 'width' or variable is 'w' or variable is 'surface':
         for i in fracture_list:
@@ -751,4 +750,120 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
 
     return x_len, y_len
 
+
 #-----------------------------------------------------------------------------------------------------------------------
+
+def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=None, edge=4):
+    """ This function writes fracture variable from each fracture in the list as a csv file. The variable from each of
+        the fracture in the list will saved in a row of the csv file. If a variable is bidimensional, a point can be
+        given at which the variable is to be saved.
+
+        Args:
+            file_name (string):         -- the name of the file to be written.
+            fracture_list (list):       -- the fracture list from which the variable is to be extracted.
+            variable (string):          -- the variable to be saved. See :py:data:`supported_variables` of the
+                                            :py:mod:`Labels` module for a list of supported variables.
+            point (list or ndarray):    -- the point in the mesh at which the given variable is saved [x, y]. If the
+                                           point is not given, the variable will be saved on the whole mesh.
+            edge (int):                 -- the edge of the cell that will be saved. This is for variables that
+                                           are evaluated on the cell edges instead of cell center. It can have a
+                                           value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
+
+
+    """
+
+    if variable not in supported_variables:
+        raise ValueError(err_msg_variable)
+
+    return_list = []
+
+    var_values, time_list = get_fracture_variable(fracture_list,
+                                                    variable,
+                                                    edge=edge,
+                                                    return_time=True)
+
+    if point is None:
+        return_list = var_values
+    else:
+        for i in range(len(fracture_list)):
+            value_point = griddata(fracture_list[i].mesh.CenterCoor,
+                                   var_values[i],
+                                   point,
+                                   method='linear',
+                                   fill_value=np.nan)
+            if np.isnan(value_point):
+                print('Point outside fracture.')
+            return_list.append(value_point[0])
+
+    if file_name[-4:] != '.csv':
+        file_name = file_name + '.csv'
+
+    return_list_np = np.asarray(return_list)
+    np.savetxt(file_name, return_list_np, delimiter=',')
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def read_fracture_variable_csv_file(file_name):
+    """ This function returns the required variable from the csv file.
+
+        Args:
+            file_name (string):         -- the name of the file to be written.
+
+        Returns:
+            - variable_list (list)      -- a list containing the extracted variable from each of the fracture. The \
+                                           dimension and type of each member of the list depends upon the variable type.
+
+    """
+
+    if file_name[-4:] != '.csv':
+        file_name = file_name + '.csv'
+
+    return np.genfromtxt(file_name, delimiter=',')
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_extermities_cells(Fr_list):
+    """
+    This function returns the extreme points each of the fracture in the list.
+
+    Args:
+        Fr_list (list):         -- the fracture list
+
+    Returns:
+        extremeties             -- the [left, rigth, bottom, top] extremeties of the each of the fracture in the list.
+
+    """
+    extremities = np.zeros((len(Fr_list), 4), dtype=int)
+
+    for indx, fracture in enumerate(Fr_list):
+        max_intrsct1_x = np.argmax(fracture.Ffront[:, 0])
+        max_intrsct2_x = np.argmax(fracture.Ffront[:, 2])
+        if fracture.Ffront[max_intrsct1_x, 0] > fracture.Ffront[max_intrsct2_x, 2]:
+            extremities[indx, 1] = fracture.EltTip[max_intrsct1_x]
+        else:
+            extremities[indx, 1] = fracture.EltTip[max_intrsct2_x]
+
+        min_intrsct1_x = np.argmin(fracture.Ffront[:, 0])
+        min_intrsct2_x = np.argmin(fracture.Ffront[:, 2])
+        if fracture.Ffront[min_intrsct1_x, 0] < fracture.Ffront[min_intrsct2_x, 2]:
+            extremities[indx, 0] = fracture.EltTip[min_intrsct1_x]
+        else:
+            extremities[indx, 0] = fracture.EltTip[min_intrsct2_x]
+
+        max_intrsct1_y = np.argmax(fracture.Ffront[:, 1])
+        max_intrsct2_y = np.argmax(fracture.Ffront[:, 3])
+        if fracture.Ffront[max_intrsct1_y, 1] > fracture.Ffront[max_intrsct2_y, 3]:
+            extremities[indx, 3] = fracture.EltTip[max_intrsct1_y]
+        else:
+            extremities[indx, 3] = fracture.EltTip[max_intrsct2_y]
+
+        min_intrsct1_y = np.argmin(fracture.Ffront[:, 1])
+        min_intrsct2_y = np.argmin(fracture.Ffront[:, 3])
+        if fracture.Ffront[min_intrsct1_x, 1] < fracture.Ffront[min_intrsct2_x, 3]:
+            extremities[indx, 2] = fracture.EltTip[min_intrsct1_y]
+        else:
+            extremities[indx, 2] = fracture.EltTip[min_intrsct2_y]
+
+    return extremities
