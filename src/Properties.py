@@ -500,6 +500,7 @@ class SimulationProperties:
                                         cells.
         solveTipCorrRib (bool):      -- if True, the tip cells corresponding to the closed ribbon cells will also be
                                         considered as closed and the width will be imposed on them.
+        solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
         saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
                                         saved.
         verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
@@ -634,6 +635,7 @@ class SimulationProperties:
         self.solveDeltaP = simul_param.solve_deltaP
         self.solveStagnantTip = simul_param.solve_stagnant_tip
         self.solveTipCorrRib = simul_param.solve_tip_corr_rib
+        self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
         self.verbosity = simul_param.verbosity

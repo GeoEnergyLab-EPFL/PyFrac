@@ -328,6 +328,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             Fr_kplus1.fluidVelocity = fluidVel
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+            ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
+            # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
                                                                                           C,
                                                                                           mat_properties.SigmaO,
@@ -818,6 +820,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             Fr_kplus1.fluidVelocity = fluidVel
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+            ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
+            # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
                                                               C,
                                                               mat_properties.SigmaO,
@@ -1102,9 +1106,15 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             if sim_properties.substitutePressure:
                 if sim_properties.solveDeltaP:
-                    sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
+                    if sim_properties.solveSparse:
+                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+                    else:
+                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
                 else:
-                    sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
+                    if sim_properties.solveSparse:
+                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_sparse
+                    else:
+                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
                 guess = np.zeros((len(EltCrack), ), float)
                 guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
                                                     * np.ones((len(to_solve_k),), float)
@@ -1745,6 +1755,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             Fr_kplus1.fluidVelocity = fluidVel
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+            ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
+            # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
                                                                       C,
                                                                       mat_properties.SigmaO,
