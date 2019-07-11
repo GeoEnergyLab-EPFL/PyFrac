@@ -663,7 +663,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
     description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is
     active are solved separately. The pressure in the channel cells to be solved for change in width is substituted
-    with width using the elasticity relation (see Zia and Lecamption 2019).
+    with width using the elasticity relation (see Zia and Lecamption 2019). The finite difference difference operator
+    is saved as a sparse matrix.
 
     Arguments:
         sol_k (ndarray):               -- the trial change in width and pressure for the current iteration of

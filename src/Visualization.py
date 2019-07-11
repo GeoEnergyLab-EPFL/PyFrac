@@ -60,6 +60,9 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
     """
     print("Plotting " + variable + '...')
 
+    if not isinstance(fracture_list, list):
+        raise ValueError("The provided fracture_list is not list type object!")
+
     if len(fracture_list) == 0:
         raise ValueError("Provided fracture list is empty!")
 
@@ -477,6 +480,9 @@ def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label
         ax = fig.add_subplot(111)
     else:
         ax = fig.get_axes()[0]
+
+    if plot_prop is None:
+        plot_prop = PlotProperties()
 
     if plot_prop.plotLegend and label is not None:
         label_copy = label
@@ -1736,22 +1742,23 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
     ax.set_title(labels.figLabel)
-    if projection is '3D':
-        ax.set_zlabel(labels.zLabel)
-        sm = plt.cm.ScalarMappable(cmap=plot_prop_cp.colorMap,
-                                   norm=plt.Normalize(vmin=vmin,
-                                                      vmax=vmax))
-        sm._A = []
-        cb = plt.colorbar(sm, alpha=plot_prop_cp.alpha)
-        cb.set_label(labels.colorbarLabel + ' analytical')
-    elif projection in ('2D_clrmap', '2D_contours'):
-        im = ax.images
-        cb = im[-1].colorbar
-        cb.set_label(labels.colorbarLabel + ' analytical')
-    elif projection is '2D':
-        ax.set_title(labels.figLabel)
-        if variable not in ('footprint') and plot_prop_cp.plotLegend:
-            ax.legend()
+    if variable not in ['footprint']:
+        if projection is '3D':
+            ax.set_zlabel(labels.zLabel)
+            sm = plt.cm.ScalarMappable(cmap=plot_prop_cp.colorMap,
+                                       norm=plt.Normalize(vmin=vmin,
+                                                          vmax=vmax))
+            sm._A = []
+            cb = plt.colorbar(sm, alpha=plot_prop_cp.alpha)
+            cb.set_label(labels.colorbarLabel + ' analytical')
+        elif projection in ('2D_clrmap', '2D_contours'):
+            im = ax.images
+            cb = im[-1].colorbar
+            cb.set_label(labels.colorbarLabel + ' analytical')
+        elif projection is '2D':
+            ax.set_title(labels.figLabel)
+            if plot_prop_cp.plotLegend:
+                ax.legend()
 
     return fig
 

@@ -590,6 +590,7 @@ class Fracture:
         if factor == 2.:
             # finding the intersecting cells of the fine and course mesh
             intersecting = np.array([], dtype=int)
+            #todo: write a description, its not readable
             for i in range(-int(((self.mesh.ny - 1) / 2 + 1) / 2) + 1, int(((self.mesh.ny - 1) / 2 + 1) / 2)):
                 center = self.mesh.CenterElts[0] + i * self.mesh.nx
                 row_to_add = np.arange(center - int(((self.mesh.nx - 1) / 2 + 1) / 2) + 1,
@@ -602,7 +603,6 @@ class Fracture:
             for i in intersecting:
                 corresponding.append(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
                                                             coarse_mesh.CenterCoor[i, 1]))
-
             corresponding = np.asarray(corresponding, dtype=int)
 
             # weighted sum to conserve volume upto machine precision
