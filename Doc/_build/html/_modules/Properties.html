@@ -542,6 +542,7 @@
 <span class="sd">                                        cells.</span>
 <span class="sd">        solveTipCorrRib (bool):      -- if True, the tip cells corresponding to the closed ribbon cells will also be</span>
 <span class="sd">                                        considered as closed and the width will be imposed on them.</span>
+<span class="sd">        solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.</span>
 <span class="sd">        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be</span>
 <span class="sd">                                        saved.</span>
 <span class="sd">        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently</span>
@@ -676,6 +677,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">solveDeltaP</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_deltaP</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solveStagnantTip</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_stagnant_tip</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solveTipCorrRib</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_tip_corr_rib</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solveSparse</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">solve_sparse</span>
 
         <span class="c1"># miscellaneous</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">simul_param</span><span class="o">.</span><span class="n">verbosity</span>

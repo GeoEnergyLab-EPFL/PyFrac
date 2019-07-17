@@ -47,7 +47,7 @@
           <div class="body" role="main">
             
   <div class="section" id="post-processing-and-visualization">
-<h1>Post-processing and Visualization<a class="headerlink" href="#post-processing-and-visualization" title="Permalink to this headline">¶</a></h1>
+<span id="postproc-visul"></span><h1>Post-processing and Visualization<a class="headerlink" href="#post-processing-and-visualization" title="Permalink to this headline">¶</a></h1>
 <p>A comprehensive set of post-processing and visualization routines are provided by PyFrac.</p>
 <div class="section" id="plotting-a-fracture">
 <h2>Plotting a Fracture<a class="headerlink" href="#plotting-a-fracture" title="Permalink to this headline">¶</a></h2>
@@ -58,8 +58,7 @@
 <p>With the default options, this function plots the mesh, the footprint and the fracture width with 3D projection. The plot is interactive and can be zoomed in using the mouse wheel.</p>
 <a class="reference internal image-reference" href="_images/default_fracture.png"><img alt="_images/default_fracture.png" class="align-center" src="_images/default_fracture.png" style="width: 512.0px; height: 380.8px;" /></a>
 <p>You can also provide the quantity you want to plot. The following quantities can be plotted:</p>
-<table border="1" class="docutils align-center" id="id1">
-<caption><span class="caption-text">supported variables</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<table border="1" class="docutils align-center">
 <colgroup>
 <col width="100%" />
 </colgroup>
@@ -82,11 +81,11 @@
 </tr>
 <tr class="row-even"><td>‘fv’ or ‘fluid velocity’</td>
 </tr>
-<tr class="row-odd"><td>‘mesh’</td>
-</tr>
-<tr class="row-even"><td>‘footprint’</td>
-</tr>
 <tr class="row-odd"><td>‘lk’ or ‘leak off’</td>
+</tr>
+<tr class="row-even"><td>‘mesh’</td>
+</tr>
+<tr class="row-odd"><td>‘footprint’</td>
 </tr>
 </tbody>
 </table>
@@ -112,7 +111,7 @@
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/width_contours.png"><img alt="_images/width_contours.png" class="align-center" src="_images/width_contours.png" style="width: 512.0px; height: 380.8px;" /></a>
-<p>The above example shows only some basic functionality. For a complete list of available options, see the documentation of the <code class="xref py py-func docutils literal notranslate"><span class="pre">Fracture.plot_fracture()</span></code> function.</p>
+<p>The above example shows only some basic functionality. For a complete list of available options, see the documentation of the <a class="reference internal" href="doc_src/Fracture.html#Fracture.Fracture.plot_fracture" title="Fracture.Fracture.plot_fracture"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fracture.Fracture.plot_fracture()</span></code></a> function.</p>
 <p>Apart from plotting the whole fracture, you can also plot a slice of the fracture using the py:func:<cite>Fracture.plot_fracture_slice</cite> function. It plots a slice of the domain defined by two given points. let us plot a slice of our mesh passing from the two points (-7, -5) and (7, 5).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Fr</span><span class="o">.</span><span class="n">plot_fracture_slice</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">point1</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">point2</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
 </pre></div>
@@ -140,8 +139,7 @@
 </pre></div>
 </div>
 <p>The above instructions will instantiate a <a class="reference internal" href="doc_src/Properties.html#Properties.PlotProperties" title="Properties.PlotProperties"><code class="xref py py-class docutils literal notranslate"><span class="pre">Properties.PlotProperties</span></code></a> class object that can be used to specify the properties that are to be used to plot the given variable. The variable ‘d_mean’ here specifies the minimum distance of the front from the injection point. Below is the list of variables that can be plotted.</p>
-<table border="1" class="docutils align-center" id="id2">
-<caption><span class="caption-text">supported variables</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<table border="1" class="docutils align-center" id="variable-table">
 <colgroup>
 <col width="100%" />
 </colgroup>
@@ -150,37 +148,39 @@
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>‘front_dist_min’ or ‘d_min’</td>
+<tr class="row-even"><td>‘w’ or ‘width’</td>
 </tr>
-<tr class="row-odd"><td>‘front_dist_max’ or ‘d_max’</td>
+<tr class="row-odd"><td>‘pf’ or ‘fluid pressure’</td>
 </tr>
-<tr class="row-even"><td>‘front_dist_mean’ or ‘d_mean’</td>
+<tr class="row-even"><td>‘pn’ or ‘net pressure’</td>
+</tr>
+<tr class="row-odd"><td>‘v’ or ‘front velocity’</td>
+</tr>
+<tr class="row-even"><td>‘d_min’ or ‘front_dist_min’</td>
+</tr>
+<tr class="row-odd"><td>‘d_max’ or ‘front_dist_max’</td>
+</tr>
+<tr class="row-even"><td>‘d_mean’ or ‘front_dist_mean’</td>
+</tr>
+<tr class="row-odd"><td>‘V’ or ‘volume’</td>
+</tr>
+<tr class="row-even"><td>‘lk’ or ‘leak off’</td>
+</tr>
+<tr class="row-odd"><td>‘lkt’ or ‘leaked off total’</td>
+</tr>
+<tr class="row-even"><td>‘ar’ or ‘aspect ratio’</td>
+</tr>
+<tr class="row-odd"><td>‘ef’ or ‘efficiency’</td>
+</tr>
+<tr class="row-even"><td>‘Re’ or ‘Reynolds number’</td>
+</tr>
+<tr class="row-odd"><td>‘ff’ or ‘fluid flux’</td>
+</tr>
+<tr class="row-even"><td>‘fv’ or ‘fluid velocity’</td>
 </tr>
 <tr class="row-odd"><td>‘mesh’</td>
 </tr>
 <tr class="row-even"><td>‘footprint’</td>
-</tr>
-<tr class="row-odd"><td>‘volume’ or ‘V’</td>
-</tr>
-<tr class="row-even"><td>‘lk’ or ‘leak off’</td>
-</tr>
-<tr class="row-odd"><td>‘lkv’ or ‘leaked off volume’</td>
-</tr>
-<tr class="row-even"><td>‘ar’ or ‘aspect ratio’</td>
-</tr>
-<tr class="row-odd"><td>‘efficiency’ or ‘ef’</td>
-</tr>
-<tr class="row-even"><td>‘w’ or ‘width’</td>
-</tr>
-<tr class="row-odd"><td>‘p’ or ‘pressure’</td>
-</tr>
-<tr class="row-even"><td>‘v’ or ‘front velocity’</td>
-</tr>
-<tr class="row-odd"><td>‘Re’ or ‘Reynolds number’</td>
-</tr>
-<tr class="row-even"><td>‘ff’ or ‘fluid flux’</td>
-</tr>
-<tr class="row-odd"><td>‘fv’ or ‘fluid velocity’</td>
 </tr>
 </tbody>
 </table>

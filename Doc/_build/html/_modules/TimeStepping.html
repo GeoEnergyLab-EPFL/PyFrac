@@ -370,6 +370,8 @@
             <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidVelocity</span> <span class="o">=</span> <span class="n">fluidVel</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidVel</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span><span class="p">:</span>
+            <span class="c1">###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when</span>
+            <span class="c1"># the solution is evaluated.</span>
             <span class="n">fluid_flux</span><span class="p">,</span> <span class="n">fluid_vel</span><span class="p">,</span> <span class="n">Rey_num</span> <span class="o">=</span> <span class="n">calculate_fluid_flow_characteristics_laminar</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
                                                                                           <span class="n">C</span><span class="p">,</span>
                                                                                           <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">,</span>
@@ -860,6 +862,8 @@
             <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidVelocity</span> <span class="o">=</span> <span class="n">fluidVel</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidVel</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span><span class="p">:</span>
+            <span class="c1">###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when</span>
+            <span class="c1"># the solution is evaluated.</span>
             <span class="n">fluid_flux</span><span class="p">,</span> <span class="n">fluid_vel</span><span class="p">,</span> <span class="n">Rey_num</span> <span class="o">=</span> <span class="n">calculate_fluid_flow_characteristics_laminar</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
                                                               <span class="n">C</span><span class="p">,</span>
                                                               <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">,</span>
@@ -1144,9 +1148,15 @@
 
             <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">substitutePressure</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">solveDeltaP</span><span class="p">:</span>
-                    <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP</span>
+                    <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">solveSparse</span><span class="p">:</span>
+                        <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted</span>
+                    <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">solveSparse</span><span class="p">:</span>
+                        <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted_sparse</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sys_fun</span> <span class="o">=</span> <span class="n">MakeEquationSystem_ViscousFluid_pressure_substituted</span>
                 <span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">EltCrack</span><span class="p">),</span> <span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
                 <span class="n">guess</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">))]</span> <span class="o">=</span> <span class="n">timeStep</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Qin</span><span class="p">)</span> <span class="o">/</span> <span class="n">Fr_lstTmStp</span><span class="o">.</span><span class="n">EltCrack</span><span class="o">.</span><span class="n">size</span> \
                                                     <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">to_solve_k</span><span class="p">),),</span> <span class="nb">float</span><span class="p">)</span>
@@ -1787,6 +1797,8 @@
             <span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">fluidVelocity</span> <span class="o">=</span> <span class="n">fluidVel</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidFlux</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveFluidVel</span> <span class="ow">or</span> <span class="n">sim_properties</span><span class="o">.</span><span class="n">saveReynNumb</span><span class="p">:</span>
+            <span class="c1">###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when</span>
+            <span class="c1"># the solution is evaluated.</span>
             <span class="n">fluid_flux</span><span class="p">,</span> <span class="n">fluid_vel</span><span class="p">,</span> <span class="n">Rey_num</span> <span class="o">=</span> <span class="n">calculate_fluid_flow_characteristics_laminar</span><span class="p">(</span><span class="n">Fr_kplus1</span><span class="o">.</span><span class="n">w</span><span class="p">,</span>
                                                                       <span class="n">C</span><span class="p">,</span>
                                                                       <span class="n">mat_properties</span><span class="o">.</span><span class="n">SigmaO</span><span class="p">,</span>

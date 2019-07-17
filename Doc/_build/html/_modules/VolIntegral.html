@@ -447,6 +447,9 @@
 
     <span class="k">return</span> <span class="n">corr_ribbon</span></div>
 
+
+<span class="c1">#-----------------------------------------------------------------------------------------------------------------------</span>
+
 <div class="viewcode-block" id="leak_off_stagnant_tip"><a class="viewcode-back" href="../doc_src/VolIntegral.html#VolIntegral.leak_off_stagnant_tip">[docs]</a><span class="k">def</span> <span class="nf">leak_off_stagnant_tip</span><span class="p">(</span><span class="n">Elts</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">vrtx_arr_time</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">Cprime</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function evaluates leak-off in the tip cells with stagnant front. Its samples the leak-off midway from the</span>
@@ -455,10 +458,12 @@
 <span class="sd">    todo: can be more precise</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">arrival_time_mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">vrtx_arr_time</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">arrival_time_mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">+</span> <span class="n">vrtx_arr_time</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
     <span class="n">t_since_arrival</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">arrival_time_mid</span>
-    <span class="n">effective_area</span> <span class="o">=</span> <span class="n">Integral_over_cell</span><span class="p">(</span><span class="n">Elts</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span>
-    <span class="n">LkOff</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Cprime</span><span class="p">[</span><span class="n">Elts</span><span class="p">]</span> <span class="o">*</span> <span class="p">((</span><span class="n">t_since_arrival</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">-</span> <span class="p">(</span><span class="n">t_since_arrival</span> <span class="o">-</span> <span class="n">time_step</span><span class="p">)</span><span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">effective_area</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="n">Integral_over_cell</span><span class="p">(</span><span class="n">Elts</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span>
+    <span class="n">t_since_arrival_lstTS</span> <span class="o">=</span> <span class="n">t_since_arrival</span> <span class="o">-</span> <span class="n">time_step</span>
+    <span class="n">t_since_arrival_lstTS</span><span class="p">[</span><span class="n">t_since_arrival_lstTS</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">LkOff</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Cprime</span><span class="p">[</span><span class="n">Elts</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_since_arrival</span> <span class="o">**</span> <span class="mf">0.5</span> <span class="o">-</span> <span class="n">t_since_arrival_lstTS</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">area</span>
 
     <span class="k">return</span> <span class="n">LkOff</span></div>
 </pre></div>

@@ -1,4 +1,4 @@
-
+.. _postproc-visul:
 
 Post-processing and Visualization
 =================================
@@ -21,7 +21,7 @@ With the default options, this function plots the mesh, the footprint and the fr
 
 You can also provide the quantity you want to plot. The following quantities can be plotted:
 
-.. csv-table:: supported variables
+.. csv-table::
     :align:   center
     :header: "supported variables"
 
@@ -32,9 +32,10 @@ You can also provide the quantity you want to plot. The following quantities can
     'Re' or 'Reynolds number'
     'ff' or 'fluid flux'
     'fv' or 'fluid velocity'
+    'lk' or 'leak off'
     'mesh'
     'footprint'
-    'lk' or 'leak off'
+
 
 .. note:: The variables 'Reynolds number', 'fluid flux' and 'fluid velocity' are not saved by default in the results. Their saving can be enabled using simulation properties. See :py:class:`Properties.SimulationProperties` for details.
 
@@ -65,7 +66,7 @@ Let us also superimpose fracture footprint to know where the fracture front is l
     :align:   center
     :scale: 80 %
 
-The above example shows only some basic functionality. For a complete list of available options, see the documentation of the :py:func:`Fracture.plot_fracture` function.
+The above example shows only some basic functionality. For a complete list of available options, see the documentation of the :py:func:`Fracture.Fracture.plot_fracture` function.
 
 Apart from plotting the whole fracture, you can also plot a slice of the fracture using the py:func:`Fracture.plot_fracture_slice` function. It plots a slice of the domain defined by two given points. let us plot a slice of our mesh passing from the two points (-7, -5) and (7, 5).
 
@@ -80,6 +81,7 @@ By default, it will be plotted in 2D projection, but 3D projection can also be p
     :scale: 80 %
 
 If you want to have more control on your plots, you can use the underlying functions that are used by the :py:func:`Fracture.Fracture.plot_fracture` function. Worth mentioning among them are the :py:func:`Visualization.plot_fracture_variable_as_color_map`, :py:func:`Visualization.plot_fracture_variable_as_contours` and :py:func:`Visualization.plot_variable_vs_time`. To use these functions, you can load a fracture variable using :py:func:`PostProcessFracture.get_fracture_variable` function. See the documentation for more details.
+
 
 Plotting Fracture Evolution
 ---------------------------
@@ -105,26 +107,28 @@ Note that we have not provided any time series. In this case, all of the fractur
 
 The above instructions will instantiate a :py:class:`Properties.PlotProperties` class object that can be used to specify the properties that are to be used to plot the given variable. The variable 'd_mean' here specifies the minimum distance of the front from the injection point. Below is the list of variables that can be plotted.
 
-.. csv-table:: supported variables
+.. _variable-table:
+.. csv-table::
     :align:   center
     :header: "supported variables"
 
-    'front_dist_min' or 'd_min'
-    'front_dist_max' or 'd_max'
-    'front_dist_mean' or 'd_mean'
-    'mesh'
-    'footprint'
-    'volume' or 'V'
-    'lk' or 'leak off'
-    'lkv' or 'leaked off volume'
-    'ar' or 'aspect ratio'
-    'efficiency' or 'ef'
     'w' or 'width'
-    'p' or 'pressure'
+    'pf' or 'fluid pressure'
+    'pn' or 'net pressure'
     'v' or 'front velocity'
+    'd_min' or 'front_dist_min'
+    'd_max' or 'front_dist_max'
+    'd_mean' or 'front_dist_mean'
+    'V' or 'volume'
+    'lk' or 'leak off'
+    'lkt' or 'leaked off total'
+    'ar' or 'aspect ratio'
+    'ef' or 'efficiency'
     'Re' or 'Reynolds number'
     'ff' or 'fluid flux'
     'fv' or 'fluid velocity'
+    'mesh'
+    'footprint'
 
 .. note:: The variables 'Reynolds number', 'fluid flux' and 'fluid velocity' are not saved by default in the results. Their saving can be enabled using simulation properties. See :py:class:`Properties.SimulationProperties` for details.
 

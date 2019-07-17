@@ -19,7 +19,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="Installation.html" /> 
+    <link rel="next" title="Getting started" href="GettingStarted.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -31,7 +31,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="Installation.html" title="Installation"
+          <a href="GettingStarted.html" title="Getting started"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">PyFrac 1.0.1 documentation</a> &#187;</li> 
       </ul>
@@ -44,12 +44,35 @@
             
   <div class="section" id="welcome-to-pyfrac-s-documentation">
 <h1>Welcome to PyFrac’s documentation!<a class="headerlink" href="#welcome-to-pyfrac-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>PyFrac is a 3D hydraulic fracture simulator for fractures propagating in a plane. Currently, the under development code has the following capabilities:</p>
+<ul class="simple">
+<li>Isotropic and transversely isotropic elastic infinite medium</li>
+<li>In-homogeneous and anisotropic fracture toughness</li>
+<li>In-homogeneousand leak-off properties</li>
+<li>In-homogeneous in-situ minimum stress</li>
+<li>Buoyant fluid</li>
+<li>Fracture closure and re-opening (multiple injection)</li>
+<li>Time dependent injection history</li>
+<li>Post processing and visualization routines</li>
+</ul>
+<p>The code is largely based on Implicit Level Set Algorithm (see details <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0045782508000443">[here]</a>). The numerical scheme has the following features:</p>
+<ul class="simple">
+<li>Level set description of the fracture front atop a Cartesian mesh (rectangular elements).</li>
+<li>Multiscale resolution via the coupling of the semi-infinite hydraulic fracture tip solution with the finite discretization.</li>
+<li>Boundary element discretization for quasi-static elasticity.</li>
+<li>Finite volume discretization for lubrication flow.</li>
+<li>Fully coupled implicit hydro-mechanical solver.</li>
+<li>Eikonal equation solved via fast-marching method for fracture front evolution.</li>
+<li>Adaptive time-stepping.</li>
+<li>Implicit/explicit fracture front advancing.</li>
+<li>Re-meshing.</li>
+</ul>
+<div align="center" class="align-center"><img alt="_images/footprint_width_3.svg" src="_images/footprint_width_3.svg" /></div>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Installation.html#dill-package">dill package</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Installation.html#running-an-example">Running an example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="GettingStarted.html#running-an-example">Running an example</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="RunningASimulation.html">Running a Simulation</a></li>
@@ -59,7 +82,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Examples.html#viscosity-dominated-penny-shaped-fracture">Viscosity Dominated Penny Shaped Fracture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#penny-shaped-hydraulic-fracture-benchmark">Penny shaped hydraulic fracture benchmark</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#height-contained-hydraulic-fracture">Height contained hydraulic fracture</a></li>
 </ul>
 </li>
 </ul>
@@ -87,8 +111,8 @@
 </ul>
 
   <h4>Next topic</h4>
-  <p class="topless"><a href="Installation.html"
-                        title="next chapter">Installation</a></p>
+  <p class="topless"><a href="GettingStarted.html"
+                        title="next chapter">Getting started</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -122,7 +146,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="Installation.html" title="Installation"
+          <a href="GettingStarted.html" title="Getting started"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">PyFrac 1.0.1 documentation</a> &#187;</li> 
       </ul>
