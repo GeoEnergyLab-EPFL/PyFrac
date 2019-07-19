@@ -10,7 +10,7 @@ PyFrac is a 3D hydraulic fracture simulator for fractures propagating in a plane
 
 - Isotropic and transversely isotropic elastic infinite medium
 - In-homogeneous and anisotropic fracture toughness
-- In-homogeneousand leak-off properties
+- In-homogeneous leak-off properties
 - In-homogeneous in-situ minimum stress
 - Buoyant fluid
 - Fracture closure and re-opening (multiple injection)

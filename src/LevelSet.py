@@ -12,6 +12,7 @@ import numpy as np
 import warnings
 from scipy.optimize import fsolve
 
+
 def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
     """
     solve Eikonal equation to get level set.

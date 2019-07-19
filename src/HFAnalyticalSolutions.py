@@ -755,7 +755,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
                                     - Kt (viscosity dominated regime , with leak off).
                                     - Mt (viscosity dominated regime , with leak off).
                                     - PKN (height contained hydraulic fracture with PKN geometry).
-                                    - KGD_K (The classical KGD solution in toughness dominated regime.)
+                                    - KGD_K (The classical KGD solution in toughness dominated regime).
                                     - E_K (elliptical fracture propagating in toughness dominated regime). The solution\
                                             is equivalent to a particular anisotropic toughness case described in\
                                             Zia and Lecampion, 2018.)
