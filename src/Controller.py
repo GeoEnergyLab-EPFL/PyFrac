@@ -567,19 +567,21 @@ class Controller:
                                                                                 plot_prop=plot_prop,
                                                                                 plot_mesh=False,
                                                                                 print_number=False)
-                if 'win' in sys.platform:
-                    # set figure position
-                    if self.setFigPos:
-                        for i in range(len(self.sim_prop.plotVar)):
-                            plt.figure(i + 1)
-                            mngr = plt.get_current_fig_manager()
-                            x_offset = 650 * i
-                            y_ofset = 50
-                            if i >= 3:
-                                x_offset = (i - 3) * 650
-                                y_ofset = 500
+                # set figure position
+                if self.setFigPos:
+                    for i in range(len(self.sim_prop.plotVar)):
+                        plt.figure(i + 1)
+                        mngr = plt.get_current_fig_manager()
+                        x_offset = 650 * i
+                        y_ofset = 50
+                        if i >= 3:
+                            x_offset = (i - 3) * 650
+                            y_ofset = 500
+                        try:
                             mngr.window.setGeometry(x_offset, y_ofset, 640, 545)
-                        self.setFigPos = False
+                        except AttributeError:
+                            pass
+                    self.setFigPos = False
 
 
                 # plot the figure
