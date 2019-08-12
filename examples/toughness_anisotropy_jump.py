@@ -3,15 +3,18 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Aug 31 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights reserved.
-See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+import numpy as np
 
-# imports
-from src.Fracture import *
-from src.Controller import *
-
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
 Mesh = CartesianMesh(100, 60, 101, 81, symmetric=True)
@@ -77,6 +80,8 @@ controller.run()
 ####################
 # plotting results #
 ####################
+
+from visualization import *
 
 # loading simulation results
 time_srs = 2 ** np.linspace(np.log2(40), np.log2(5000), 8)
