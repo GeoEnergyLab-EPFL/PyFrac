@@ -3,14 +3,16 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri June 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights
-reserved. See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
-
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
 Mesh = CartesianMesh(0.3, 0.3, 41, 41)
@@ -35,10 +37,10 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e5               # the time at which the simulation stops
-simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the viscosity dominated assumption
-simulProp.frontAdvancing = 'explicit'   # to set explicit front tracking
-simulProp.outputEveryTS = 5             # only save after five time steps
+simulProp.finalTime = 1e5                           # the time at which the simulation stops
+simulProp.set_tipAsymptote('M')                     # tip asymptote is evaluated with the viscosity dominated assumption
+simulProp.frontAdvancing = 'explicit'               # to set explicit front tracking
+simulProp.saveTSJump, simulProp.plotTSJump = 5, 5   # save and plot after every five time steps
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
 
 # initialization parameters
@@ -67,6 +69,8 @@ controller.run()
 ####################
 # plotting results #
 ####################
+
+from visualization import *
 
 # loading simulation results
 Fr_list, properties = load_fractures(address="./Data/M_radial_explicit")       # load all fractures
@@ -103,7 +107,7 @@ Fig_w = plot_analytical_solution_at_point('M',
                                           fig=Fig_w)
 
 
-time_srs = np.linspace(1, 1e5, 5)
+time_srs = np.asarray([2, 200, 5000, 30000, 100000])
 Fr_list, properties = load_fractures(address="./Data/M_radial_explicit",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -135,7 +139,7 @@ Fig_WS = plot_fracture_list_slice(Fr_list,
                                   projection='2D',
                                   plot_cell_center=True,
                                   extreme_points=ext_pnts)
-#plot slice analytical
+# plot slice analytical
 Fig_WS = plot_analytical_solution_slice('M',
                                         'w',
                                         Solid,
@@ -144,8 +148,7 @@ Fig_WS = plot_analytical_solution_slice('M',
                                         fig=Fig_WS,
                                         time_srs=time_srs,
                                         point1=ext_pnts[0],
-                                        point2=ext_pnts[1],
-                                        plt_top_view=True)
+                                        point2=ext_pnts[1])
 
 #plotting in 3D
 Fig_Fr = plot_fracture_list(Fr_list,

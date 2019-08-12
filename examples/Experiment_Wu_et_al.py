@@ -3,13 +3,18 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri March 13 2018.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights reserved.
-See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
+import numpy as np
+
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
@@ -47,6 +52,7 @@ simulProp.bckColor = 'confining stress'           # the parameter according to w
 simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
+simulProp.plotVar = ['footprint']
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.019)
@@ -81,6 +87,8 @@ with open('./wu_et_al_data.csv', 'r') as f:
 ####################
 # plotting results #
 ####################
+
+from visualization import *
 
 # plotting fracture footprint
 Fr_list, properties = load_fractures(address='./Data/Wu_et_al',

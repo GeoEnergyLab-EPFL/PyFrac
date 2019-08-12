@@ -7,9 +7,14 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
+import numpy as np
+
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
@@ -51,11 +56,9 @@ Fluid = FluidProperties(viscosity=1.1e-3, density=1000)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 4000               # the time at which the simulation stops
-simulProp.set_tipAsymptote('M')         # the tip asymptote is evaluated with the viscosity dominated assumption
+simulProp.finalTime = 6000              # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
-simulProp.gravity = True
-simulProp.bckColor = 'confining stress'
+simulProp.gravity = True                # take the effect of gravity into account
 
 # initialization parameters
 Fr_geometry = Geometry(shape='height contained',
@@ -86,8 +89,10 @@ controller.run()
 # plotting results #
 ####################
 
+from visualization import *
+
 # loading simulation results
-time_srs = np.linspace(1, 4000, 5)
+time_srs = np.linspace(1, 6000, 5)
 Fr_list, properties = load_fractures(address="./Data/M_radial_explicit",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,

@@ -3,13 +3,18 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri Dec 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights
-reserved. See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
+import numpy as np
+
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
 Mesh = CartesianMesh(5, 5, 41, 41)
@@ -18,7 +23,7 @@ Mesh = CartesianMesh(5, 5, 41, 41)
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu**2)   # plain strain modulus
-K1c = 5e5 / (32 / math.pi)**0.5     # K' = 5e5
+K1c = 5e5 / (32 / np.pi)**0.5       # K' = 5e5
 Cl = 0.5e-6                         # Carter's leak off coefficient
 
 # material properties
@@ -37,11 +42,10 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e7               # the time at which the simulation stops
-simulProp.outputEveryTS = 3             # the time after the output is generated (saving or plotting)
-simulProp.set_outputFolder("./Data/MtoK_leakoff") # the disk address where the files are saved
-# simulProp.frontAdvancing = 'implicit'
-# simulProp.plotVar = ['w', 'pf', 'lk']
+simulProp.finalTime = 1e7                           # the time at which the simulation stops
+simulProp.saveTSJump, simulProp.plotTSJump = 5, 5   # save and plot after every 5 time steps
+simulProp.set_outputFolder("./Data/MtoK_leakoff")   # the disk address where the files are saved
+simulProp.frontAdvancing = 'explicit'               # setting up explicit front advancing
 
 # initializing fracture
 Fr_geometry = Geometry('radial')
@@ -70,6 +74,8 @@ controller.run()
 ####################
 # plotting results #
 ####################
+
+from visualization import *
 
 # loading simulation results
 Fr_list, properties = load_fractures("./Data/MtoK_leakoff")

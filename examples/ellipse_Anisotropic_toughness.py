@@ -3,18 +3,20 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri June 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights reserved.
-See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-
-# imports
-from src.Fracture import *
-from src.Controller import *
-
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
+from visualization import *
 
 # creating mesh
-Mesh = CartesianMesh(10, 4, 101, 101, symmetric=True)
+Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -24,7 +26,7 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
 def K1c_func(alpha):
     K1c_1 = 1.e6                    # fracture toughness along x-axis
-    K1c_2 = 2.0e6                   # fracture toughness along y-axis
+    K1c_2 = 1.414e6                 # fracture toughness along y-axis
 
     beta = np.arctan((K1c_1 / K1c_2)**2 * np.tan(alpha))
     return 4 * (2/np.pi)**0.5 * K1c_2 * (np.sin(beta)**2 + (K1c_1 / K1c_2)**4 * np.cos(beta)**2)**0.25
@@ -49,11 +51,8 @@ simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
 simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
-simulProp.plotFigure = True
-simulProp.plotAnalytical = True
-simulProp.analyticalSol = 'E_K'
-simulProp.symmetric = True
-simulProp.plotVar = ['footprint']
+simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
+simulProp.tmStpPrefactor = 0.6          # setting up the time step preefactor
 
 # initializing fracture
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
@@ -70,7 +69,6 @@ Fr = Fracture(Mesh,
               Injection,
               simulProp)
 
-
 # create a Controller
 controller = Controller(Fr,
                         Solid,
@@ -86,10 +84,12 @@ controller.run()
 # plotting results #
 ####################
 
+from visualization import *
+
 # loading simulation results
-time_srs = np.linspace(1, 500, 8)
+time_srs = np.geomspace(1, 500, 8)
 Fr_list, properties = load_fractures(address="./Data/ellipse",
-                                    simulation='anisotropic_toughness_benchmark',
+                                    sim_name='anisotropic_toughness_benchmark',
                                     time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
@@ -111,19 +111,12 @@ Fig_FP = plot_analytical_solution('E_K',
                                   projection='2D',
                                   time_srs=time_srs)
 
-# loading fractures
-time_srs = 2 ** np.linspace(np.log2(3), np.log2(500), 5)
-Fr_list, properties = load_fractures(address="./Data/ellipse",
-                                            simulation='anisotropic_toughness_benchmark',
-                                            time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
-
 #plotting width
 Fig_w_slice = plot_fracture_list_slice(Fr_list,
                                        variable='width',
                                        point1=[-Fr_list[-1].mesh.Lx, 0],
-                                       point2=[Fr_list[-1].mesh.Lx, 0])
+                                       point2=[Fr_list[-1].mesh.Lx, 0],
+                                       plot_prop=PlotProperties(line_style='.'))
 Fig_w_slice = plot_analytical_solution_slice('E_K',
                                              variable='width',
                                              mat_prop=Solid,
@@ -132,11 +125,12 @@ Fig_w_slice = plot_analytical_solution_slice('E_K',
                                              fig=Fig_w_slice,
                                              point1=[-Fr_list[-1].mesh.Lx, 0],
                                              point2=[Fr_list[-1].mesh.Lx, 0],
-                                             time_srs=time_srs)
+                                             time_srs=time_srs,
+                                             plt_top_view=True)
 
 # loading all fractures
 Fr_list, properties = load_fractures(address="./Data/ellipse",
-                                     simulation='anisotropic_toughness_benchmark')
+                                     sim_name ='anisotropic_toughness_benchmark')
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
 
@@ -158,6 +152,7 @@ Fig_len_a = plot_analytical_solution('E_K',
                                    fig=Fig_len_a,
                                    time_srs=time_srs,
                                    labels=labels)
+
 # plotting major axis length
 labels.figLabel = 'Major axis length'
 Fig_len_b = plot_fracture_list(Fr_list,
@@ -172,5 +167,15 @@ Fig_len_b = plot_analytical_solution('E_K',
                                    fig=Fig_len_b,
                                    time_srs=time_srs,
                                    labels=labels)
+
+# plotting major axis length
+labels.figLabel = 'aspect ratio'
+plot_prop = PlotProperties(line_style = '.', graph_scaling='semilogx')
+Fig_ar = plot_fracture_list(Fr_list,
+                             variable='ar',
+                             plot_prop=plot_prop,
+                             labels=labels)
+ax = Fig_ar.get_axes()[0]
+ax.set_ylim(1.5, 2.5)
 
 plt.show(block=True)

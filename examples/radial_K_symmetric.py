@@ -3,14 +3,16 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri June 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights
-reserved. See the LICENSE.TXT file for more details.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
-
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
 Mesh = CartesianMesh(0.3, 0.3, 41, 41, symmetric=True)
@@ -39,8 +41,6 @@ simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with th
 simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
 simulProp.set_outputFolder("./Data/K_radial_symmetric") # the disk address where the files are saved
 simulProp.symmetric = True              # assume fracture geometry to be symmetric (only available for volume control)
-simulProp.bckColor = "K1c"              # setting the parameter according to which the mesh is color coded
-
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.15)
@@ -68,9 +68,11 @@ controller.run()
 # plotting results #
 ####################
 
+from visualization import *
+
 # loading simulation results
 Fr_list, properties = load_fractures(address="./Data/K_radial_symmetric")       # load all fractures
-time_srs = get_fracture_variable(Fr_list,                                         # list of times
+time_srs = get_fracture_variable(Fr_list,                                       # list of times
                                  variable='time')
 
 plot_prop = PlotProperties()
@@ -132,9 +134,7 @@ Fig_FP = plot_analytical_solution('K',
 ext_pnts = np.empty((2, 2), dtype=np.float64)
 Fig_WS = plot_fracture_list_slice(Fr_list,
                                   variable='w',
-                                  projection='2D',
                                   plot_cell_center=True,
-                                  orientation='horizontal',
                                   extreme_points=ext_pnts)
 #plot slice analytical
 Fig_WS = plot_analytical_solution_slice('K',

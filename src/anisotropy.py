@@ -1,16 +1,17 @@
-#
-# This file is part of PyFrac.
-#
-# Created by Brice Lecampion on 03.04.17.
-# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.  All rights reserved.
-# See the LICENSE.TXT file for more details.
-#
+# -*- coding: utf-8 -*-
+"""
+This file is part of PyFrac.
 
+Created by Haseeb Zia on 03.04.17.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
+"""
 
 import numpy as np
 
-from src.LevelSet import reconstruct_front_LS_gradient
-from src.VolIntegral import Integral_over_cell
+# local imports
+from level_set import reconstruct_front_LS_gradient
+from volume_integral import Integral_over_cell
 
 
 def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
@@ -77,7 +78,7 @@ def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
     return alpha
 
 #-----------------------------------------------------------------------------------------------------------------------
-
+# todo: the function is not written cleanly and is not readable
 def find_angle(elt_ribbon, elt_tip, zr_vrtx_tip, a_tip, b_tip, c_tip, x_lft, y_lft, x_rgt, y_rgt, neig_lft,
                     neig_rgt, mesh):
     """
@@ -693,15 +694,14 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
 
 def TI_plain_strain_modulus(alpha, Cij):
     """
-    This function computes the plain strain elasticity modulus in transverse isotropic medium function of the orientation
-    of the fracture front with the bedding plane. This functions is used for the tip inversion and the evaluation of the
-     fracture volume for the case of TI elasticity.
+    This function computes the plain strain elasticity modulus in transverse isotropic medium. The modulus is a function
+    of the orientation of the fracture front with respect to the bedding plane. This functions is used for the tip
+    inversion and for evaluation of the fracture volume for the case of TI elasticity.
 
     Arguments:
-        alpha (ndarray-float)             -- the angle inscribed by the perpendiculars drawn on the front from
-                                                   the ribbon cell centers.
+        alpha (ndarray-float)             -- the angle inscribed by the perpendiculars drawn on the front from the \
+                                             ribbon cell centers.
         Cij (ndarray-float)               -- the TI stiffness matrix in the canonical basis
-
 
     Returns:
         E' (ndarray-float)               -- plain strain TI elastic modulus.

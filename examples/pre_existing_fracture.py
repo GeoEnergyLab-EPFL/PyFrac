@@ -7,10 +7,14 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
-from src.FractureInitilization import get_eliptical_survey_cells
+import numpy as np
+
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
 Mesh = CartesianMesh(6, 6, 41, 41)
@@ -38,8 +42,10 @@ Fluid = FluidProperties(viscosity=viscosity)
 simulProp = SimulationProperties()
 simulProp.finalTime = 50                      # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/star")     # the address of the output folder
+simulProp.plotTSJump = 4
 
 # initializing fracture
+from fracture_initialization import get_radial_survey_cells
 initRad = np.pi
 surv_cells, _, inner_cells = get_radial_survey_cells(Mesh, initRad)
 surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells, 1])
@@ -48,7 +54,8 @@ Fr_geometry = Geometry(shape='level set',
                        tip_distances=surv_cells_dist,
                        inner_cells=inner_cells)
 
-C = load_elasticity_matrix(Mesh, Eprime)
+from elasticity import load_isotropic_elasticity_matrix
+C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 init_param = InitializationParameters(Fr_geometry,
                                       regime='static',
                                       net_pressure=1e3,
@@ -76,6 +83,8 @@ controller.run()
 ####################
 # plotting results #
 ####################
+
+from visualization import *
 
 # loading simulation results
 Fr_list, properties = load_fractures(address="./Data/star")
