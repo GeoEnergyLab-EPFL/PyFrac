@@ -65,26 +65,6 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     elif isinstance(time_srs, list):
         time_srs = np.array(time_srs)
 
-    # sim_full_name = None
-    # if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):
-    #     sim_full_name = sim_name
-    # else:
-    #     simulations = os.listdir(address)
-    #     recent_sim_time = 0
-    #     for i in simulations:
-    #         if re.match(sim_name + '__\d+-\d+-\d+__\d+_\d+_\d+', i):
-    #
-    #             filename = address + i + slash + 'properties'
-    #             try:
-    #                 with open(filename, 'rb') as inp:
-    #                     (Solid, Fluid, Injection, SimulProp) = dill.load(inp)
-    #             except FileNotFoundError:
-    #                 raise SystemExit('Data not found. The address might be incorrect')
-    #
-    #             if SimulProp.get_timeStamp() > recent_sim_time:
-    #                 recent_sim_time = SimulProp.get_timeStamp()
-    #                 sim_full_name = i
-
     if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):
         sim_full_name = sim_name
     else:
@@ -105,17 +85,6 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
             properties = dill.load(inp)
     except FileNotFoundError:
         raise SystemExit('Data not found. The address might be incorrect')
-
-    # if sim_full_name is None:
-    #     raise ValueError('Simulation not found! The address might be incorrect.')
-
-    # # read properties
-    # filename = address + sim_full_name + slash + 'properties'
-    # try:
-    #     with open(filename, 'rb') as inp:
-    #         properties = dill.load(inp)
-    # except FileNotFoundError:
-    #     raise SystemExit('Data not found. The address might be incorrect')
 
     fileNo = 0
     next_t = 0.0

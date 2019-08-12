@@ -39,6 +39,12 @@ def load_performance_data(address, sim_name='simulation'):
 
     print("---loading performance data---\n")
 
+    if address is None:
+        address = '.' + slash + '_simulation_data_PyFrac'
+
+    if address[-1] is not slash:
+        address = address + slash
+
     if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):
         sim_full_name = sim_name
     else:
@@ -51,9 +57,9 @@ def load_performance_data(address, sim_name='simulation'):
             raise ValueError('Simulation not found! The address might be incorrect.')
 
         Tmst_sorted = sorted(time_stamps)
-        sim_full_name = address + slash + sim_name + '__' + Tmst_sorted[-1] + slash
+        sim_full_name = sim_name + '__' + Tmst_sorted[-1]
 
-    filename = sim_full_name + 'perf_data.dat'
+    filename = address + sim_full_name + slash + 'perf_data.dat'
     try:
         with open(filename, 'rb') as inp:
             perf_data = dill.load(inp)
@@ -218,24 +224,24 @@ def plot_performance(address, variable, sim_name='simulation', fig=None, plot_pr
 
     if plot_vs_N:
         fig = plot_variable_vs_time(N_list_np,
-                                             var_list_np,
-                                             fig=fig,
-                                             plot_prop=plot_prop,
-                                             label='fracture front iterations')
+                                     var_list_np,
+                                     fig=fig,
+                                     plot_prop=plot_prop,
+                                     label='fracture front iterations')
 
-        ax_itr_time = fig.get_axes()[0]
-        ax_itr_time.set_ylabel(variable)
-        ax_itr_time.set_xlabel('number of elements')
+        ax = fig.get_axes()[0]
+        ax.set_ylabel(variable)
+        ax.set_xlabel('number of elements')
     else:
-        fig_itr_N = plot_variable_vs_time(time_list_np,
+        fig = plot_variable_vs_time(time_list_np,
                                              var_list_np,
                                              fig=fig,
                                              plot_prop=plot_prop,
                                              label=variable)
 
-        ax_itr_time = fig.get_axes()[0]
-        ax_itr_time.set_ylabel(variable)
-        ax_itr_time.set_xlabel('time')
+        ax = fig.get_axes()[0]
+        ax.set_ylabel(variable)
+        ax.set_xlabel('time')
 
     return fig
 #-----------------------------------------------------------------------------------------------------------------------
