@@ -76,7 +76,7 @@ class MaterialProperties:
 
     """
 
-    def __init__(self, Mesh, Eprime, Toughness=0., Carters_coef=0., confining_stress=0., grain_size=0., K1c_func=None,
+    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., confining_stress=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, confining_stress_func = None, Carters_coef_func = None, TI_elasticity=False,
                  Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6,
                  pore_pressure=-1.e100):
@@ -89,17 +89,17 @@ class MaterialProperties:
         else:
             self.Eprime = Eprime
 
-        if isinstance(Toughness, np.ndarray):  # check if float or ndarray
-            if Toughness.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
-                self.K1c = Toughness
-                self.Kprime = (32 / math.pi) ** 0.5 * Toughness
+        if isinstance(toughness, np.ndarray):  # check if float or ndarray
+            if toughness.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.K1c = toughness
+                self.Kprime = (32 / math.pi) ** 0.5 * toughness
             else:
                 # error
-                raise ValueError('Error in the size of Toughness input!')
+                raise ValueError('Error in the size of toughness input!')
 
-        elif Toughness is not None:
-            self.K1c = Toughness * np.ones((Mesh.NumberOfElts,), float)
-            self.Kprime = (32 / math.pi) ** 0.5 * Toughness * np.ones((Mesh.NumberOfElts,), float)
+        elif toughness is not None:
+            self.K1c = toughness * np.ones((Mesh.NumberOfElts,), float)
+            self.Kprime = (32 / math.pi) ** 0.5 * toughness * np.ones((Mesh.NumberOfElts,), float)
 
         if isinstance(Carters_coef, np.ndarray):  # check if float or ndarray
             if Carters_coef.size == Mesh.NumberOfElts:  # check if size equal to the mesh size

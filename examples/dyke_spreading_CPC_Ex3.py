@@ -40,7 +40,7 @@ def sigmaO_func(x, y):
 # material properties
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           Toughness=6.5e6,
+                           toughness=6.5e6,
                            confining_stress_func=sigmaO_func,
                            minimum_width=1e-5)
 

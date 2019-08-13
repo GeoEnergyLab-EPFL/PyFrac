@@ -52,7 +52,6 @@ simulProp.remeshFactor = 1.5            # the factor by which the mesh will be c
 simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
-simulProp.tmStpPrefactor = 0.6          # setting up the time step preefactor
 
 # initializing fracture
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
@@ -134,7 +133,7 @@ Fr_list, properties = load_fractures(address="./Data/ellipse",
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
 
-# making a plot properties object with desired linestyle and scaling
+# making a plot properties object with desired line style and scaling
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
 # plotting minor axis length

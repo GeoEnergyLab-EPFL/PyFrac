@@ -37,7 +37,7 @@ def sigmaO_func(x, y):
 # material properties
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           Toughness=K_Ic,
+                           toughness=K_Ic,
                            confining_stress_func=sigmaO_func,
                            Carters_coef=1e-6)
 
