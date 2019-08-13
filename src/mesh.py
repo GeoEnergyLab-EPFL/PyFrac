@@ -334,7 +334,6 @@ class CartesianMesh:
             ax = fig.add_subplot(1, 1, 1, projection='3d')
             ax.set_xlim(-self.Lx * 1.2, self.Lx * 1.2)
             ax.set_ylim(-self.Ly * 1.2, self.Ly * 1.2)
-            plt.gca().set_aspect('equal')
             scale = 1.1
             zoom_factory(ax, base_scale=scale)
         else:
@@ -377,8 +376,7 @@ class CartesianMesh:
         ax.grid(False)
         ax.set_frame_on(False)
         ax.set_axis_off()
-        plt.axis('equal')
-
+        set_aspect_equal_3d(ax)
         return fig
 
 
@@ -618,3 +616,28 @@ def process_material_prop_for_display(material_prop, backGround_param):
                          "-- \'leak off coefficient\' or \'Cl\'")
 
     return min_value, max_value, parameter, colors
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def set_aspect_equal_3d(ax):
+    """Fix equal aspect bug for 3D plots."""
+
+    xlim = ax.get_xlim3d()
+    ylim = ax.get_ylim3d()
+    zlim = ax.get_zlim3d()
+
+    from numpy import mean
+    xmean = mean(xlim)
+    ymean = mean(ylim)
+    zmean = mean(zlim)
+
+    plot_radius = max([abs(lim - mean_)
+                       for lims, mean_ in ((xlim, xmean),
+                                           (ylim, ymean),
+                                           (zlim, zmean))
+                       for lim in lims])
+
+    ax.set_xlim3d([xmean - plot_radius, xmean + plot_radius])
+    ax.set_ylim3d([ymean - plot_radius, ymean + plot_radius])
+    ax.set_zlim3d([zmean - plot_radius, zmean + plot_radius])
