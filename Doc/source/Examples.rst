@@ -212,8 +212,10 @@ After setting up the material properties, we next set up the properties of the f
 
    # simulation properties
    simulProp = SimulationProperties()
-   simulProp.finalTime = 145.                                  # the time at which the simulation stops
-   simulProp.set_outputFolder("./Data/confined_propagation")   # the output folder
+   simulProp.finalTime = 145.              # the time at which the simulation stops
+   simulProp.bckColor = 'sigma0'           # setting the parameter according to which the mesh is color coded
+   simulProp.set_outputFolder("./Data/height_contained")
+   simulProp.plotVar = ['footprint']       # plotting footprint
 
 We will start our simulation with a fracture of 1.3 meters radius. Since we have zero toughness, we can initialize it in the viscosity dominated regime. To do that, we will first instantiate the :py:class:`fracture_initialization.InitializationParameters` object and pass it to the constructor of :py:class:`fracture.Fracture` class. We will also setup the Controller with a :py:class:`controller.Controller` object and run the simulation.
 
@@ -408,7 +410,7 @@ We can proceed in the same manner as the previous examples. Lets make a mesh and
    # material properties
    Solid = MaterialProperties(Mesh,
                               Eprime,
-                              Toughness=K_Ic,
+                              toughness=K_Ic,
                               confining_stress_func=sigmaO_func,
                               Carters_coef=1e-6)
 

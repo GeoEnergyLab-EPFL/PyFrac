@@ -18,6 +18,9 @@ PyFrac uses dill package for saving files on hard disk. You can use pip to insta
 
     pip install dill
 
+If you already have python 3 installed, update installed packages to the latest version. You can use the following to update all installed packages::
+
+   conda update --all
 
 Running an example
 -------------------
