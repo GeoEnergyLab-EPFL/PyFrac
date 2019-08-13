@@ -131,9 +131,9 @@ Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
                             projection='3D',
                             fig=Fig_Fr)
 
-plot_prop = PlotProperties(alpha=0.6)           #plotting width
+plot_prop = PlotProperties(alpha=0.6, text_size=2.)           #plotting width
 Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='surface',
+                            variable='w',
                             projection='3D',
                             fig=Fig_Fr,
                             plot_prop=plot_prop)
