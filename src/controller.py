@@ -621,9 +621,17 @@ class Controller:
 
     def get_time_step(self):
         """
-        This function calculate the appropriate time step.
+        This function calculates the appropriate time step. It takes minimum of the time steps evaluated according to
+        the following:
 
-        Arguments:
+            - time step evaluated with the current front velocity to limit the increase in length compared to a cell \
+                length
+            - time step evaluated with the current front velocity to limit the increase in length compared to the \
+                current fracture length
+            - time step evaluated with the injection rate in the coming time step
+            - time step evaluated to limit the change in total volume of the fracture
+        In addition, the limit on the time step and the times at which the solution is required are also taken in
+        account to get the appropriate time step.
 
         Returns:
             - time_step (float)   -- the appropriate time step.
@@ -756,5 +764,6 @@ class Controller:
         return time_step
 
     def write_to_log(self, line):
+        """ This function writes the given line to the log file."""
         with open(self.logAddress + 'log.txt', 'a+') as file:
             file.writelines(line)
