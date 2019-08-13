@@ -137,7 +137,7 @@ time_srs = get_fracture_variable(Fr_list,
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
 # plotting minor axis length
-labels = LabelProperties('d_min', 'wm', '1D')
+labels = LabelProperties('d_min')
 labels.figLabel = 'Minor axis length'
 Fig_len_a = plot_fracture_list(Fr_list,
                              variable='d_min',

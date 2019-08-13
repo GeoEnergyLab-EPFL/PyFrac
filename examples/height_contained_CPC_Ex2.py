@@ -84,7 +84,7 @@ Fr_list, properties = load_fractures(address="./Data/height_contained")
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
 
-label = LabelProperties('d_max', 'wm')
+label = LabelProperties('d_max')
 label.legend = 'fracture length'
 
 plot_prop = PlotProperties(line_style='.',
@@ -117,7 +117,7 @@ Fig_r = plot_analytical_solution('M',
                                   plot_prop=plot_prop,
                                   labels=label)
 
-label = LabelProperties('w', 'p')
+label = LabelProperties(variable='w', data_subset='point')
 plot_prop = PlotProperties(line_style='.',
                            graph_scaling='loglog')
 Fig_w = plot_fracture_list_at_point(Fr_list,            #plotting footprint

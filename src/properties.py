@@ -12,7 +12,8 @@ import numpy as np
 import time
 import datetime
 from matplotlib.colors import to_rgb
-from labels import var_labels, supported_variables, units, err_msg_variable, unit_conversion, Fig_labels
+from labels import var_labels, supported_variables, units, err_msg_variable, \
+                    unit_conversion, Fig_labels, unidimensional_variables
 
 
 class MaterialProperties:
@@ -920,10 +921,13 @@ class LabelProperties:
     This class stores the labels of a plot figure.
     """
 
-    def __init__(self, variable, data_subset, projection='2D', use_latex=True):
+    def __init__(self, variable, data_subset='whole mesh', projection='2D', use_latex=True):
 
         if variable not in supported_variables:
             raise ValueError(err_msg_variable)
+
+        if variable in unidimensional_variables:
+            projection = '1D'
 
         if data_subset in ('whole mesh', 'wm'):
             if projection in ('2D_clrmap', '2D_contours', '3D', '2D'):
