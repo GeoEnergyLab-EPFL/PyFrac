@@ -157,7 +157,7 @@ This example simulates a hydraulic fracture propagating in a layer bounded with 
     :align:   center
     :header: "Paramters", "Values"
 
-    Plain strain modulus, :math:`39.2\textrm{GPa}`
+    plain strain modulus, :math:`39.2\textrm{GPa}`
     fracture toughness, :math:`0`
     viscosity, :math:`1.1\times10^{-3}\textrm{Pa.s}`
     injection rate, :math:`0.001\textrm{m}^{3}/\textrm{s}`
@@ -361,7 +361,9 @@ Note that the fractures closest to the given times are loaded as the solutions a
    ax.view_init(60, -114)
 
 .. image:: /images/footprint_PKN.png
-    :align:   center
+   :align:   center
+   :width: 1800px
+   :height: 400px
 
 Fracture closure
 ----------------
@@ -371,7 +373,7 @@ In this example, we show the capability of PyFrac to handle fracture closure. Th
     :align:   center
     :header: "Paramters", "Values"
 
-    Plain strain modulus, :math:`47\textrm{GPa}`
+    plain strain modulus, :math:`47\textrm{GPa}`
     fracture toughness, :math:`0.5\textrm{Mpa}\sqrt{\textrm{m}}`
     Carter's leak off coefficient, :math:`10^{-6}\textrm{m}/\sqrt{\textrm{s}}`
     viscosity, :math:`1.1\times10^{-3}\textrm{Pa.s}`
@@ -495,7 +497,8 @@ To visualize the results, lets first plot the fracture footprint at :math:`t=[24
 
 
 .. image:: /images/closure_footprint.png
-      :align:   center
+   :scale:   40%
+   :align:   center
 
 It can be seen that the fracture continues to slowly grow even after the injection has stopped at 6000s until it comes to a complete stop at 10388s. Due to fluid leak off, the fracture starts to close with time starting from 7672s. Lets animate the results to see the fracture propagating initially and then closing due to leak off.
 
@@ -506,3 +509,156 @@ It can be seen that the fracture continues to slowly grow even after the injecti
 
    animate_simulation_results(Fr_list, ['w'])
 
+
+Lateral spreading of a Dyke at neutral buoyancy
+-----------------------------------------------
+This example demonstrates the capability of PyFrac to simulate buoyancy driven fractures. Here, we will simulate propagation of a dyke after a pulse injection of basaltic magma at a depth of 4.2Km. The magma fractures surrounding rock towards the surface as a dyke and  hits a layer of less dense rock  at a depth of 1.3Km, causing it to attain neutral buoyancy. As a result, the propagation is arrested vertically and the dyke spreads horizontally. We will use the following parameters
+
+.. csv-table::
+    :align:   center
+    :header: "Paramters", "Values"
+
+    plain strain modulus, :math:`1.125\textrm{GPa}`
+    fracture toughness, :math:`6.5\textrm{Mpa}\sqrt{\textrm{m}}`
+    density of the rock (upper layer), :math:`2300\textrm{Kg/m}^{3}`
+    density of the rock (lower layer), :math:`2700\textrm{Kg/m}^{3}`
+    viscosity of magma, :math:`30\textrm{Pa.s}`
+    density of magma, :math:`2400\textrm{Kg/m}^{3}`
+    injection rate, :math:`2000\textrm{m}^{3}/\textrm{s}`
+    time of injection, :math:`500\textrm{s}`
+
+We will set up the mesh and the material, fluid and injection properties in the same manner as we have done in the previous examples.
+
+.. code-block:: python
+
+   import numpy as np
+
+   # local imports
+   from mesh import CartesianMesh
+   from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+
+   # creating mesh
+   Mesh = CartesianMesh(3200, 2800, 83, 83)
+
+   # solid properties
+   nu = 0.25                           # Poisson's ratio
+   youngs_mod = 1.125e9                 # Young's modulus
+   Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
+
+
+   def sigmaO_func(x, y):
+       """ This function provides the confining stress over the domain"""
+       density_high = 2700
+       density_low = 2300
+       layer = 1500
+       Ly = 2800
+       if y > layer:
+           return (Ly - y) * density_low * 9.8
+       # only dependant on the depth
+       return (Ly - y) * density_high * 9.8 - (Ly - layer) * (density_high - density_low) * 9.8
+
+   # material properties
+   Solid = MaterialProperties(Mesh,
+                              Eprime,
+                              toughness=6.5e6,
+                              confining_stress_func=sigmaO_func,
+                              minimum_width=1e-5)
+
+   # injection parameters
+   Q0 = np.asarray([[0.0,  500],
+                   [2000,    0]])  # injection rate
+   Injection = InjectionProperties(Q0,
+                                   Mesh,
+                                   source_coordinates=[0, -1400])
+
+   # fluid properties
+   Fluid = FluidProperties(viscosity=30, density=2400)
+
+   # simulation properties
+   simulProp = SimulationProperties()
+   simulProp.finalTime = 560000                # the time at which the simulation stops
+   simulProp.set_outputFolder("./Data/neutral_buoyancy") # the disk address where the files are saved
+   simulProp.gravity = True                    # set up the gravity flag
+   simulProp.tolFractFront = 3e-3              # increase the tolerance for fracture front iteration
+   simulProp.plotTSJump = 4                    # plot every fourth time step
+   simulProp.saveTSJump = 2                    # save every second time step
+   simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
+   simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.3, 0.1]]) # set up the time step prefactor
+   simulProp.timeStepLimit = 5000              # time step limit
+   simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
+
+
+Note that we have set the gravity flag to accommodate the effect of gravity. In addition, since the buoyancy driven fracture problem is more stiff, we have increase the maximum number of iterations for our solver to 200. To start the simulation, we will initialize a static radial fracture with a radius of :math:`300\textrm{m}` and a net pressure of :math:`0.5\textrm{MPa}`. After initialization, we will run the simulation through the controller just like the previous examples.
+
+.. code-block:: python
+
+   from fracture import Fracture
+   from controller import Controller
+   from fracture_initialization import Geometry, InitializationParameters
+   from elasticity import load_isotropic_elasticity_matrix
+
+   C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
+   Fr_geometry = Geometry('radial', radius=300)
+   nit_param = InitializationParameters(Fr_geometry,
+                                      regime='static',
+                                      net_pressure=0.5e6,
+                                      elasticity_matrix=C)
+
+   Fr = Fracture(Mesh,
+                 init_param,
+                 Solid,
+                 Fluid,
+                 Injection,
+                 simulProp)
+
+   # create a Controller
+   controller = Controller(Fr,
+                           Solid,
+                           Fluid,
+                           Injection,
+                           simulProp)
+
+   # run the simulation
+   controller.run()
+
+After the simulation is finished, we can plot the footprint and width of the fracture to visualize the results.
+
+.. code-block:: python
+
+   from visualization import *
+
+   # loading simulation results
+   time_srs = np.asarray([50, 350, 700, 1100, 2500, 12000, 50000, 560000])
+   Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
+                                        time_srs=time_srs)
+   time_srs = get_fracture_variable(Fr_list,
+                                    variable='time')
+
+   # plot footprint
+   Fig_FP = None
+   Fig_FP = plot_fracture_list(Fr_list,
+                               variable='mesh',
+                               projection='2D',
+                               mat_properties=Solid,
+                               backGround_param='confining stress',
+                               )
+   plt_prop = PlotProperties(plot_FP_time=False)
+   Fig_FP = plot_fracture_list(Fr_list,
+                               variable='footprint',
+                               projection='2D',
+                               fig=Fig_FP,
+                               plot_prop=plt_prop)
+
+   # plot width in 3D
+   plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
+   Fig_Fr = plot_fracture_list(Fr_list[2:],
+                               variable='width',
+                               projection='3D',
+                               plot_prop=plot_prop_magma
+                               )
+   Fig_Fr = plot_fracture_list(Fr_list[1:],
+                               variable='footprint',
+                               projection='3D',
+                               fig=Fig_Fr)
+
+   plt.show(block=True)
