@@ -48,7 +48,7 @@ simulProp = SimulationProperties()
 simulProp.finalTime = 145.              # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'           # setting the parameter according to which the mesh is color coded
 simulProp.set_outputFolder("./Data/height_contained")
-simulProp.tmStpPrefactor = 0.6          # decreasing the size of time step
+simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
 simulProp.plotVar = ['footprint']       # plotting footprint
 
 # initializing fracture
@@ -80,7 +80,7 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-Fr_list, properties = load_fractures(address="./Data/confined_propagation")
+Fr_list, properties = load_fractures(address="./Data/height_contained")
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
 
@@ -88,13 +88,12 @@ label = LabelProperties('d_max', 'wm')
 label.legend = 'fracture length'
 
 plot_prop = PlotProperties(line_style='.',
-                           graph_scaling='loglog'
-                           )
+                           graph_scaling='loglog')
+
 Fig_r = plot_fracture_list(Fr_list,            #plotting footprint
                            variable='d_max',
                            plot_prop=plot_prop,
-                           labels=label
-                           )
+                           labels=label)
 
 label.legend = 'fracture length analytical (PKN)'
 Fig_r = plot_analytical_solution('PKN',
@@ -105,8 +104,7 @@ Fig_r = plot_analytical_solution('PKN',
                                   fig=Fig_r,
                                   time_srs=time_srs,
                                   h=7.0,
-                                  labels=label
-                                 )
+                                  labels=label)
 label.legend = 'radius analytical (viscosity dominated)'
 plot_prop.lineColorAnal = 'b'
 Fig_r = plot_analytical_solution('M',
@@ -152,11 +150,8 @@ Fig_w = plot_analytical_solution_at_point('M',
                                   labels=label)
 
 # plotting in 3D
-# loading simulation results
-Fr_list, properties = load_fractures(address="./Data/confined_propagation",
-                                     sim_name='simulation__2019-08-12__11_16_14',
-                                     time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]),
-                                     )
+Fr_list, properties = load_fractures(address="./Data/height_contained",
+                                     time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]))
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
 plot_prop_mesh = PlotProperties(text_size=1.7, use_tex=True)
