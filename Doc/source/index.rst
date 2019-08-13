@@ -14,6 +14,7 @@ Welcome to PyFrac's documentation!
    RunningASimulation
    Visualization
    Examples
+   codeReference
 
 
 Indices and tables

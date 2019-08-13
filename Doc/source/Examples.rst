@@ -118,6 +118,7 @@ To plot the evolution of radius of the fracture, we will use the :py:func:`visua
    Fig_eff = plot_fracture_list(Fr_list,
                               variable='efficiency',
                               plot_prop=plot_prop)
+
 To compare the solution with the semi-analytical solution, We have precomputed the solution using a matlab `[code] <https://datadryad.org/resource/doi:10.5061/dryad.gh469/1>`_ and directly inserted in as numpy array.
 
 .. code-block:: python
@@ -253,14 +254,14 @@ Once the simulation is finished, or even when it is running, we can start visual
 
    from visualization import *
 
-   Fr_list, properties = load_fractures(address="./Data/confined_propagation")
+   Fr_list, properties = load_fractures(address="./Data/height_contained")
    time_srs = get_fracture_variable(Fr_list, variable='time')
 
 Lets first visualize the evolution of the fracture length with time. We can do that using the :py:func:`visualization.plot_fracture_list` function to plot the 'd_max' variable. We will plot it in loglog scaling for better visualization. To do that, we will pass a :py:class:`properties.PlotProperties` object with the graph_scaling attribute set to 'loglog'. For better legends of the plot, we will pass a :py:class:`properties.LabelProperties` object whose legend variable is set to 'fracture length'. The setting up of plot properties and labels is, of course, optional.
 
 .. code-block:: python
 
-   label = LabelProperties('d_max', 'wm')
+   label = LabelProperties('d_max')
    label.legend = 'fracture length'
 
    plot_prop = PlotProperties(line_style='.',
@@ -308,7 +309,7 @@ There are many fracture variables that we can plot now (you can see a list of va
 
 .. code-block:: python
 
-   Fr_list, properties = load_fractures(address="./Data/confined_propagation",
+   Fr_list, properties = load_fractures(address="./Data/height_contained",
                                         time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]))
    time_srs = get_fracture_variable(Fr_list,
                                     variable='time')
