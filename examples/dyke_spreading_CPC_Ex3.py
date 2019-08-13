@@ -56,25 +56,24 @@ Fluid = FluidProperties(viscosity=30, density=2400)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 560000              # the time at which the simulation stops
+simulProp.finalTime = 560000                # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/neutral_buoyancy") # the disk address where the files are saved
-simulProp.gravity = True
-simulProp.bckColor = 'confining stress'
-simulProp.tolFractFront = 3e-3
-simulProp.set_simulation_name('PDLF_parameters_pulse_tough')
-simulProp.plotTSJump = 4
-simulProp.saveTSJump = 2
-simulProp.maxSolverItrs = 200
-simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.3, 0.1]])
-simulProp.timeStepLimit = 5000
-simulProp.plotVar = ['w', 'v']
-simulProp.collectPerfData = True
+simulProp.gravity = True                    # set up the gravity flag
+simulProp.tolFractFront = 3e-3              # increase the tolerance for fracture front iteration
+simulProp.plotTSJump = 4                    # plot every fourth time step
+simulProp.saveTSJump = 2                    # save every second time step
+simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
+simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.3, 0.1]]) # set up the time step prefactor
+simulProp.timeStepLimit = 5000              # time step limit
+simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
 
-
+# initializing a static fracture
 C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
 Fr_geometry = Geometry('radial', radius=300)
-init_param = InitializationParameters(Fr_geometry, regime='static', net_pressure=0.5e6, elasticity_matrix=C)
-
+init_param = InitializationParameters(Fr_geometry,
+                                      regime='static',
+                                      net_pressure=0.5e6,
+                                      elasticity_matrix=C)
 Fr = Fracture(Mesh,
               init_param,
               Solid,
@@ -82,7 +81,7 @@ Fr = Fracture(Mesh,
               Injection,
               simulProp)
 
-# create a Controller
+# create a controller
 controller = Controller(Fr,
                         Solid,
                         Fluid,
@@ -102,7 +101,6 @@ from visualization import *
 # loading simulation results
 time_srs = np.asarray([50, 350, 700, 1100, 2500, 12000, 50000, 560000])
 Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
-                                     sim_name='PDLF_parameters_pulse_tough__2019-08-12__15_43_56',
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
@@ -113,8 +111,7 @@ Fig_FP = plot_fracture_list(Fr_list,
                             variable='mesh',
                             projection='2D',
                             mat_properties=Solid,
-                            backGround_param='confining stress',
-                            )
+                            backGround_param='confining stress')
 plt_prop = PlotProperties(plot_FP_time=False)
 Fig_FP = plot_fracture_list(Fr_list,
                             variable='footprint',
