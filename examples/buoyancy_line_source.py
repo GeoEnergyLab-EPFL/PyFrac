@@ -7,8 +7,6 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
-import numpy as np
-
 # local imports
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
