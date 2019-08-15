@@ -635,6 +635,7 @@ class Controller:
 
         Returns:
             - time_step (float)   -- the appropriate time step.
+
         """
 
         time_step_given = False

@@ -213,15 +213,16 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
         mesh (CartesianMesh):           -- the mesh object.
         function (string):              -- the string specifying the type of function that is to be integreated.
                                            Possible options are:
-                                                'A'  gives the area (fill fraction)
-                                                'K'  gives tip volume according to the square root assymptote
-                                                'M'  gives tip volume according to the viscocity dominated assymptote
-                                                'Lk' Lk is used to calculate the leak off given the distance of the
-                                                     front l (note, its not tip volume)
-                                                'Mt' gives tip volume according to the viscocity, Leak-off assymptote
-                                                'U'  gives tip volume according to the Universal assymptote (Donstov
-                                                     and Pierce, 2017)
-                                                'MK' gives tip volume according to the M-K transition assymptote
+
+                                                - 'A'  gives the area (fill fraction)
+                                                - 'K'  gives tip volume according to the square root asymptote
+                                                - 'M'  gives tip volume according to the viscocity dominated asymptote
+                                                - 'Lk' is used to calculate the leak off given the distance of the \
+                                                        front l (note, its not tip volume)
+                                                - 'Mt' gives tip volume according to the viscocity, Leak-off asymptote
+                                                - 'U'  gives tip volume according to the Universal asymptote (Donstov \
+                                                        and Pierce, 2017)
+                                                - 'MK' gives tip volume according to the M-K transition asymptote
         frac (Fracture):                -- the fracture object.
         mat_prop (MaterialProperties):  -- the material properties object.
         fluid_prop (FluidProperties):   -- the fluid properties object

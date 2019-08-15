@@ -538,6 +538,7 @@ class SimulationProperties:
                                             Use full domain if viscous fluid is injected.
         projMethod (string):         -- the method by which the angle prescribed by the projections onto the front
                                         are evaluated. Possible options are:
+
                                             - 'ILSA_orig' (the method described in the original ILSA scheme).
                                             - 'LS_grad' (using gradient of the level set).
         height (float):             -- this parameters is only used in the case of height contained hydraulic fracture
