@@ -18,7 +18,7 @@ PyFrac uses dill package for saving files on hard disk. You can use pip to insta
 
     pip install dill
 
-If you already have python 3 installed, update installed packages to the latest version. You can use the following to update all installed packages::
+If you already have python 3 installed through anaconda, update installed packages to the latest version. You can use the following to update all installed packages::
 
    conda update --all
 
@@ -29,7 +29,7 @@ Change directory to the folder containing the PyFrac code. An example can be run
 
     python ./examples/radial_viscosity_explicit.py
 
-There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications. The corresponding example number from the paper is mentioned in the name of these scripts. Note that some of the examples may take upto 2 hours to run.
+There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications (see it on arxiv). The corresponding example number from the paper is mentioned in the name of these scripts. Note that some of the examples may take upto 2 hours to run.
 
 Documentation
 -------------
