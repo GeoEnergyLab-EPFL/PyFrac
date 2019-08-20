@@ -96,7 +96,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
 
     # Read the elasticity matrix from the npy file
     print('running C++ process...')
-    subprocess.run(sim_prop.TI_KernelExecPath + 'src',
+    subprocess.run(sim_prop.TI_KernelExecPath + 'TI_kernel',
                             cwd=sim_prop.TI_KernelExecPath)
 
     print('Reading global TI elasticity matrix...')
