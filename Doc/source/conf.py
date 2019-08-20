@@ -46,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'PyFrac'
-copyright = '2019, ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory'
+copyright = '2016-2019, ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory'
 author = 'Haseeb Zia'
 
 # The version info for the project you're documenting, acts as replacement for

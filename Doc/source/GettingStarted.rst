@@ -22,6 +22,22 @@ If you already have python 3 installed through anaconda, update installed packag
 
    conda update --all
 
+Documentation
+-------------
+You can generate the html documentation locally using sphinx. First install shpinx using pip::
+
+    pip install sphinx
+
+Then change directory to the Doc folder present in the PyFrac code. Run the make command to build the documentation in html::
+
+    make html
+
+or in pdf as::
+
+    make latexpdf
+
+After the build is complete, you can access the documentation in the build folder. For html, start with the file named index for html. The pdf file is located in the subflolder latex.
+
 Running an example
 -------------------
 
@@ -30,19 +46,3 @@ Change directory to the folder containing the PyFrac code. An example can be run
     python ./examples/radial_viscosity_explicit.py
 
 There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications (see it on arxiv). The corresponding example number from the paper is mentioned in the name of these scripts. Note that some of the examples may take upto 2 hours to run.
-
-Documentation
--------------
-You can generate the html documentation locally using sphinx. First install shpinx using pip::
-
-   pip install sphinx
-
-Then change directory to the Doc folder present in the PyFrac code. Run make command to build the documentation::
-
-   make html
-
-After the build is complete, you can access the documentation in the build folder. Start with the file named index.
-
-
-
-
