@@ -9,23 +9,28 @@ reserved. See the LICENSE.TXT file for more details.
 
 
 # imports
-from src.Fracture import *
-from src.Controller import *
-from src.anisotropy import *
+import numpy as np
+
+from anisotropy import *
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
-Mesh = CartesianMesh(6., 3., 51, 51)
+Mesh = CartesianMesh(8, 4, 81, 41, symmetric=False)
 
 # solid properties
 Cij = np.zeros((6, 6), dtype=float)
 
 # modelgam05
-Cij[0, 0] = 47.5
-Cij[0, 1] = 16.55
+Cij[0, 0] = 66.6
+Cij[0, 1] = 42.75
 Cij[5, 5] = 0.5*(Cij[0, 0]-Cij[0, 1])
-Cij[0, 2] = 20.34
-Cij[2, 2] = 28.86
-Cij[3, 3] = 7.32
+Cij[0, 2] = 33.33
+Cij[2, 2] = 41.66
+Cij[3, 3] = 7.91
 Cij[1, 1] = Cij[0, 0]
 Cij[1, 0] = Cij[0, 1]
 Cij[2, 0] = Cij[0, 2]
@@ -40,16 +45,16 @@ Eprime = TI_plain_strain_modulus(np.pi/2, Cij) # plain strain modulus
 def K1c_func(alpha):
     """ function giving the dependence of fracture toughness on propagation direction alpha"""
 
-    K1c_3 = 2e6                     # fracture toughness along x-axis
-    gamma = 2.0                     # aspect ratio
+    K1c_3 = 2e6 *1.2                    # fracture toughness along y-axis
+    K1c_1 = 2e6                     # fracture toughness along x-axis
 
     Cij = np.zeros((6, 6), dtype=float)
-    Cij[0, 0] = 47.5
-    Cij[0, 1] = 16.55
+    Cij[0, 0] = 66.6
+    Cij[0, 1] = 42.75
     Cij[5, 5] = 0.5 * (Cij[0, 0] - Cij[0, 1])
-    Cij[0, 2] = 20.34
-    Cij[2, 2] = 28.86
-    Cij[3, 3] = 7.32
+    Cij[0, 2] = 33.33
+    Cij[2, 2] = 41.66
+    Cij[3, 3] = 7.91
     Cij[1, 1] = Cij[0, 0]
     Cij[1, 0] = Cij[0, 1]
     Cij[2, 0] = Cij[0, 2]
@@ -59,15 +64,16 @@ def K1c_func(alpha):
     Cij = Cij * 1e9
 
     Eprime_ratio = TI_plain_strain_modulus(alpha,Cij) / TI_plain_strain_modulus(np.pi/2, Cij)
+    gamma = (Eprime_ratio*K1c_3/K1c_1)**2  # aspect ratio
     beta = np.arctan(np.tan(alpha) / gamma)
 
     return K1c_3 * Eprime_ratio * ((np.sin(beta))**2 + (np.cos(beta)/gamma)**2)**0.25
 
 # materila properties
 Solid = MaterialProperties(Mesh,
-                           Eprime=Eprime,
+                           Eprime,
                            anisotropic_K1c=True,
-                           Toughness=K1c_func(np.pi/2),
+                           toughness=K1c_func(np.pi/2),
                            K1c_func=K1c_func,
                            TI_elasticity=True,
                            Cij=Cij)
@@ -77,30 +83,28 @@ Q0 = 0.001  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.1e-5)
+Fluid = FluidProperties(viscosity=1.1e-4)
 
 # aspect ratio of the elliptical fracture
-gamma = 2.0
+gamma  = (K1c_func(np.pi/2) / K1c_func(0)*TI_plain_strain_modulus(0, Cij)/TI_plain_strain_modulus(np.pi/2, Cij))**2  # gamma = (Kc3/Kc1*E1/E3)**2
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 75                # the time at which the simulation stops
-simulProp.set_tipAsymptote("K")         # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.outputTimePeriod = 1e-3       # save after every time step
+simulProp = SimulationProperties()
+simulProp.finalTime = 500               # the time at which the simulation stops
+simulProp.set_volumeControl(True)       # to set up the solver in volume control mode (inviscid fluid)
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
-simulProp.maxToughnessItr = 5           # set maximum iterations to 5 for faster simulation
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
-simulProp.set_volumeControl(True)       # assume inviscid fluid
-simulProp.explicitProjection = True     # do not iterate on projection to find propagation direction
-simulProp.aspectRatio = gamma           # aspect ratio of the fracture
+simulProp.frontAdvancing="implicit"
+simulProp.set_tipAsymptote('K')
+# simulProp.aspectRatio = gamma           # aspect ratio of the fracture
 simulProp.set_outputFolder("./data/TI_elasticity_ellipse")
 simulProp.set_simulation_name('TI_ellasticy_benchmark')
-simulProp.TI_KernelExecPath = '../src_TI_Kernel/' # path to the executable that calculates TI kernel
-simulProp.verbosity = 2
-
+simulProp.TI_KernelExecPath = '../src_TI_Kernel/cmake-build-debug/' # path to the executable that calculates TI kernel
+# simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 # initialization parameters
 Fr_geometry = Geometry('elliptical',
-                       minor_axis=0.75,
+                       minor_axis=1,
                        gamma=gamma)
 init_param = InitializationParameters(Fr_geometry, regime='E_E')
 

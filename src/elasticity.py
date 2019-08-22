@@ -84,10 +84,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
             'Mesh':             {'L1': Mesh.Lx,
                                  'L3': Mesh.Ly,
                                  'n1': Mesh.nx,
-                                 'n3': Mesh.ny},
-            'Free_Surf_Param': {'FS_Flag': mat_prop.freeSurf,
-                                        'Frac_Depth': mat_prop.FreeSurfDepth}
-                                        # 'angle': mat_prop.TI_PlaneAngle}
+                                 'n3': Mesh.ny}
             }
 
     print('Writing parameters to a file...')
@@ -96,7 +93,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
 
     # Read the elasticity matrix from the npy file
     print('running C++ process...')
-    subprocess.run(sim_prop.TI_KernelExecPath + 'TI_kernel',
+    subprocess.run('./TI_elasticity_kernel',
                             cwd=sim_prop.TI_KernelExecPath)
 
     print('Reading global TI elasticity matrix...')
