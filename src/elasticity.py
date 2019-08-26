@@ -12,6 +12,7 @@ import json
 import subprocess
 import pickle
 from array import array
+import os
 
 def load_isotropic_elasticity_matrix(Mesh, Ep):
     """
@@ -88,17 +89,18 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
             }
 
     print('Writing parameters to a file...')
-    with open(sim_prop.TI_KernelExecPath + 'stiffness_matrix.json', 'w') as outfile:
+    curr_directory = os.getcwd()
+    os.chdir(sim_prop.TI_KernelExecPath)
+    with open('stiffness_matrix.json', 'w') as outfile:
         json.dump(data, outfile, indent=3)
 
     # Read the elasticity matrix from the npy file
     print('running C++ process...')
-    subprocess.run('./TI_elasticity_kernel',
-                            cwd=sim_prop.TI_KernelExecPath)
+    subprocess.run('TI_elasticity_kernel', shell=True)
 
     print('Reading global TI elasticity matrix...')
     try:
-        file = open(sim_prop.TI_KernelExecPath + 'StrainResult.bin', "rb")
+        file = open('StrainResult.bin', "rb")
         C = array('d')
         C.fromfile(file, pow(data['Mesh']['n1'] * data['Mesh']['n3'], 2))
         C = np.reshape(C,
@@ -108,6 +110,8 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
     except FileNotFoundError:
         # if 'CMatrix' file is not found
         raise SystemExit('file not found')
+
+    os.chdir(curr_directory)
 
     return C
 

@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import numpy as np
 
+
 def get_symetric_elements(mesh, elements):
     """ This function gives the four symmetric elements in each of the quadrant for the given element list."""
 
@@ -31,8 +32,9 @@ def get_symetric_elements(mesh, elements):
 
 
 def get_active_symmetric_elements(mesh):
-    """ This functions gives the elements in the first quadrant, including the elements intersecting the x and y
-        axes lines.
+    """
+    This functions gives the elements in the first quadrant, including the elements intersecting the x and y
+    axes lines.
     """
 
     # elements in the quadrant with positive x and y coordinates
@@ -50,10 +52,13 @@ def get_active_symmetric_elements(mesh):
 
     return all_elts, pos_qdrnt, boundary_x, boundary_y
 
-# -----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def corresponding_elements_in_symmetric(mesh):
+    """
+    This function returns the corresponding elements in symmetric fracture.
+    """
 
     correspondence = np.empty((mesh.NumberOfElts, ), dtype=int)
     all_elmnts, pos_qdrnt, boundary_x, boundary_y = get_active_symmetric_elements(mesh)
@@ -75,8 +80,7 @@ def corresponding_elements_in_symmetric(mesh):
     return correspondence
 
 
-
-
+#-----------------------------------------------------------------------------------------------------------------------
 
 def symmetric_elasticity_matrix_from_full(C, mesh):
 
@@ -276,6 +280,9 @@ def load_isotropic_elasticity_matrix_symmetric(mesh, Ep):
     C_sym[-1, -1] = C_i[mesh.CenterElts[0]]
 
     return C_sym
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def self_influence(mesh, Ep):
     a = mesh.hx / 2.

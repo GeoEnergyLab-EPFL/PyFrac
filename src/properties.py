@@ -656,7 +656,7 @@ class SimulationProperties:
         self.saveReynNumb = simul_param.save_ReyNumb
         self.saveFluidFlux = simul_param.save_fluid_flux
         self.saveFluidVel = simul_param.save_fluid_vel
-        self.explicitProjection = simul_param.explict_projection
+        self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.projMethod = simul_param.proj_method
         if self.projMethod not in ['ILSA_orig', 'LS_grad']:

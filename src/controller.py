@@ -22,7 +22,7 @@ from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matr
 from mesh import CartesianMesh
 from time_stepping import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution, plot_injection_source
-from symmetry import load_isotropic_elasticity_matrix_symmetric
+from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 from labels import TS_errorMessages, supported_projections
 
 
@@ -173,21 +173,26 @@ class Controller:
         if self.C is None:
             print("Making elasticity matrix...")
             if self.sim_prop.symmetric:
-                if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
-                    raise ValueError("Symmetric fracture for TI material is not yet supported!")
-                elif not self.sim_prop.get_volumeControl():
+                if not self.sim_prop.get_volumeControl():
                     raise ValueError("Symmetric fracture is only supported for inviscid fluid yet!")
-                else:
+
+            if not self.solid_prop.TI_elasticity:
+                if self.sim_prop.symmetric:
                     self.C = load_isotropic_elasticity_matrix_symmetric(self.fracture.mesh,
                                                                         self.solid_prop.Eprime)
-            else:
-                if self.solid_prop.TI_elasticity or self.solid_prop.freeSurf:
-                    self.C = load_TI_elasticity_matrix(self.fracture.mesh,
-                                                       self.solid_prop,
-                                                       self.sim_prop)
                 else:
                     self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
                                                               self.solid_prop.Eprime)
+            else:
+                C = load_TI_elasticity_matrix(self.fracture.mesh,
+                                                   self.solid_prop,
+                                                   self.sim_prop)
+                # compressing the elasticity matrix for symmetric fracture
+                if self.sim_prop.symmetric:
+                    self.C = symmetric_elasticity_matrix_from_full(C, self.fracture.mesh)
+                else:
+                    self.C = C
+
             print('Done!')
 
         # perform first time step with implicit front advancing due to non-availability of velocity

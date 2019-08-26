@@ -1,0 +1,145 @@
+commit 397cf411eee11ec1c1864fb9d124e6c2bcd57cb4 (after this one with 2x factor)
+CentOS 7.3
+Icpc 17.0.1
+Dual Xeon
+
+icpc -std=c++11 -O3 -xHost -ansi-alias -DNDEBUG append_benchmark.cpp -o append_benchmark -lpthread -lbenchmark
+
+Benchmark                               Time           CPU Iterations
+---------------------------------------------------------------------
+Append_1_Std                           47 ns         47 ns   11379784
+Append_1_Il                            36 ns         36 ns   19535930
+Append_2_Std                           90 ns         90 ns    7770442
+Append_2_Il                            75 ns         75 ns    9354913
+Append_5_Std                          204 ns        204 ns    3451360
+Append_5_Il                           216 ns        216 ns    3234731
+Append_10_Std                         272 ns        272 ns    2570424
+Append_10_Il                          326 ns        326 ns    2148507
+Append_100_Std                        954 ns        954 ns     733028
+Append_100_Il                        1004 ns       1004 ns     697025
+Append_1000_Std                      2674 ns       2674 ns     261987
+Append_1000_Il                       2143 ns       2143 ns     327895
+Append_10000_Std                    61133 ns      61133 ns      11418
+Append_10000_Il                     55955 ns      55955 ns      12491
+Append_1_int_Std                       43 ns         43 ns   16136518
+Append_1_int_Il                        36 ns         36 ns   19294459
+Append_2_int_Std                       89 ns         89 ns    7879967
+Append_2_int_Il                        76 ns         76 ns    9248714
+Append_5_int_Std                      183 ns        183 ns    3822854
+Append_5_int_Il                       214 ns        214 ns    3274588
+Append_10_int_Std                     241 ns        241 ns    2908084
+Append_10_int_Il                      291 ns        291 ns    2405994
+Append_100_int_Std                    659 ns        659 ns    1061350
+Append_100_int_Il                     695 ns        695 ns    1005767
+Append_1000_int_Std                  2307 ns       2307 ns     303281
+Append_1000_int_Il                   2000 ns       2000 ns     349864
+Append_10000_int_Std                21003 ns      21003 ns      33318
+Append_10000_int_Il                 13028 ns      13028 ns      53701
+Append_1_long_long_int_Std             46 ns         46 ns   15206719
+Append_1_long_long_int_Il              36 ns         36 ns   19563940
+Append_2_long_long_int_Std             91 ns         91 ns    7705500
+Append_2_long_long_int_Il              75 ns         75 ns    9373707
+Append_5_long_long_int_Std            194 ns        194 ns    3607068
+Append_5_long_long_int_Il             215 ns        215 ns    3260037
+Append_10_long_long_int_Std           278 ns        278 ns    2494351
+Append_10_long_long_int_Il            324 ns        324 ns    2158450
+Append_100_long_long_int_Std          960 ns        960 ns     728727
+Append_100_long_long_int_Il           992 ns        992 ns     703272
+Append_1000_long_long_int_Std        2441 ns       2441 ns     286876
+Append_1000_long_long_int_Il         2116 ns       2116 ns     330689
+Append_10000_long_long_int_Std      61066 ns      61065 ns      11438
+Append_10000_long_long_int_Il       55990 ns      55989 ns      12480
+
+g++ -std=c++11 -O3 -mavx2 -DNDEBUG append_benchmark.cpp -o append_benchmark -lpthread -lbenchmark
+
+Benchmark                               Time           CPU Iterations
+---------------------------------------------------------------------
+Append_1_Std                           43 ns         43 ns   12122989
+Append_1_Il                            41 ns         41 ns   16927359
+Append_2_Std                           90 ns         90 ns    7776190
+Append_2_Il                            86 ns         86 ns    8224665
+Append_5_Std                          192 ns        192 ns    3658021
+Append_5_Il                           172 ns        172 ns    4074564
+Append_10_Std                         282 ns        282 ns    2486943
+Append_10_Il                          227 ns        227 ns    3078915
+Append_100_Std                       1104 ns       1104 ns     633421
+Append_100_Il                         800 ns        800 ns     874265
+Append_1000_Std                      4605 ns       4605 ns     151639
+Append_1000_Il                       1765 ns       1765 ns     396161
+Append_10000_Std                    73454 ns      73453 ns       9510
+Append_10000_Il                     46254 ns      46254 ns      15132
+Append_1_int_Std                       44 ns         44 ns   15827968
+Append_1_int_Il                        41 ns         41 ns   17144955
+Append_2_int_Std                       90 ns         90 ns    7739707
+Append_2_int_Il                        83 ns         83 ns    8437270
+Append_5_int_Std                      186 ns        186 ns    3754873
+Append_5_int_Il                       167 ns        167 ns    4177966
+Append_10_int_Std                     234 ns        234 ns    2991037
+Append_10_int_Il                      193 ns        193 ns    3624009
+Append_100_int_Std                    773 ns        773 ns     904166
+Append_100_int_Il                     511 ns        511 ns    1366891
+Append_1000_int_Std                  4461 ns       4461 ns     156864
+Append_1000_int_Il                   1651 ns       1651 ns     423992
+Append_10000_int_Std                38333 ns      38334 ns      18258
+Append_10000_int_Il                 10858 ns      10858 ns      64431
+Append_1_long_long_int_Std             43 ns         43 ns   16337747
+Append_1_long_long_int_Il              41 ns         41 ns   17022347
+Append_2_long_long_int_Std             92 ns         92 ns    7579333
+Append_2_long_long_int_Il              85 ns         85 ns    8246828
+Append_5_long_long_int_Std            191 ns        191 ns    3651064
+Append_5_long_long_int_Il             175 ns        175 ns    4002947
+Append_10_long_long_int_Std           279 ns        279 ns    2512900
+Append_10_long_long_int_Il            232 ns        232 ns    3023578
+Append_100_long_long_int_Std         1087 ns       1087 ns     643780
+Append_100_long_long_int_Il           802 ns        802 ns     870973
+Append_1000_long_long_int_Std        4578 ns       4578 ns     152939
+Append_1000_long_long_int_Il         1732 ns       1732 ns     402480
+Append_10000_long_long_int_Std      74236 ns      74237 ns       9395
+Append_10000_long_long_int_Il       46266 ns      46266 ns      15132
+
+clang++ -std=c++11 -O3 -mavx2 -DNDEBUG append_benchmark.cpp -o append_benchmark -lpthread -lbenchmark
+
+Benchmark                               Time           CPU Iterations
+---------------------------------------------------------------------
+Append_1_Std                           36 ns         36 ns   13967023
+Append_1_Il                            41 ns         41 ns   16938761
+Append_2_Std                           73 ns         73 ns    9553990
+Append_2_Il                            85 ns         85 ns    8248776
+Append_5_Std                          145 ns        145 ns    4835322
+Append_5_Il                           203 ns        203 ns    3440136
+Append_10_Std                         260 ns        260 ns    2697122
+Append_10_Il                          305 ns        305 ns    2299032
+Append_100_Std                        891 ns        891 ns     784984
+Append_100_Il                        1097 ns       1097 ns     638049
+Append_1000_Std                      2323 ns       2323 ns     301604
+Append_1000_Il                       2516 ns       2516 ns     276918
+Append_10000_Std                    50319 ns      50318 ns      13870
+Append_10000_Il                     60541 ns      60541 ns      11541
+Append_1_int_Std                       36 ns         36 ns   19291629
+Append_1_int_Il                        42 ns         42 ns   16735465
+Append_2_int_Std                       76 ns         76 ns    7600827
+Append_2_int_Il                        89 ns         89 ns    7843089
+Append_5_int_Std                      146 ns        146 ns    4793803
+Append_5_int_Il                       213 ns        213 ns    3280334
+Append_10_int_Std                     219 ns        219 ns    3190336
+Append_10_int_Il                      286 ns        286 ns    2451433
+Append_100_int_Std                    616 ns        616 ns    1136076
+Append_100_int_Il                     773 ns        773 ns     903867
+Append_1000_int_Std                  2207 ns       2207 ns     317297
+Append_1000_int_Il                   2429 ns       2429 ns     288096
+Append_10000_int_Std                15624 ns      15624 ns      44811
+Append_10000_int_Il                 21255 ns      21255 ns      32924
+Append_1_long_long_int_Std             36 ns         36 ns   19292426
+Append_1_long_long_int_Il              41 ns         41 ns   16940144
+Append_2_long_long_int_Std             74 ns         74 ns    9504984
+Append_2_long_long_int_Il              85 ns         85 ns    8218927
+Append_5_long_long_int_Std            144 ns        144 ns    4849810
+Append_5_long_long_int_Il             204 ns        204 ns    3417471
+Append_10_long_long_int_Std           264 ns        264 ns    2646752
+Append_10_long_long_int_Il            318 ns        318 ns    2201148
+Append_100_long_long_int_Std          942 ns        942 ns     781549
+Append_100_long_long_int_Il          1096 ns       1096 ns     638072
+Append_1000_long_long_int_Std        2304 ns       2304 ns     304205
+Append_1000_long_long_int_Il         2547 ns       2547 ns     275463
+Append_10000_long_long_int_Std      50641 ns      50640 ns      13792
+Append_10000_long_long_int_Il       60875 ns      60875 ns      11472

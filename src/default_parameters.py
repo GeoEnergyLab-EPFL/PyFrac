@@ -68,8 +68,8 @@ save_ReyNumb = False                    # if True, the Reynold's number at each 
 save_fluid_flux = False                 # if True, the fluid flux at each edge will be saved.
 save_fluid_vel = False                  # if True, the fluid vel at each edge will be saved.
 gravity = False                         # if True, the effect of gravity will be taken into account.
-TI_Kernel_exec_path = './TI_Kernel'     # the folder containing the executable to calculate TI elasticty matrix.
-explict_projection = False              # if True, direction from last time step will be used to evaluate TI parameters.
+TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
+explicit_projection = False             # if True, direction from last time step will be used to evaluate TI parameters.
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
 proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
 

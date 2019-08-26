@@ -639,8 +639,8 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
 
 def TI_Elasticity_elliptical_solution_Fabrikant(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None, required='111111'):
     """
-    Analytical solution for an elliptical fracture propagating in toughness dominated regime in Transverse Isotropic media  (see Fabrikant,
-    2011).
+    Analytical solution for an elliptical fracture propagating in toughness dominated regime in Transverse Isotropic
+    media  (see Fabrikant, 2011).
 
     Arguments:
         mesh (CartesianMesh)    -- a CartesianMesh class object describing the grid.
@@ -648,7 +648,7 @@ def TI_Elasticity_elliptical_solution_Fabrikant(mesh, gamma, Cij, Kc3, Ep3, Q0, 
         Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).
         Kc3 (float):            -- the fracture toughness along the minor axis.
         Ep3 (float):            -- the effective (see Moukhtari and Lecampion, 2019) elasticity along the minor axis.
-        Q0 (float)              -- injection rate.
+        Q0 (float):             -- injection rate.
         t (float):              -- the given time for which the solution is evaluated.
         b (float):              -- the given minor axis length.
         required (string):      -- a mask giving which of the variables are required.
@@ -735,9 +735,7 @@ def TI_elasticity_sigma(theta, *args):
     xi3 = ((gamma3 * np.cos(theta)) ** 2 + np.sin(theta) ** 2) ** 0.5
 
     rgam = (gamma ** 2 * np.cos(theta) ** 2 + np.sin(theta) ** 2) ** 0.5
-
     dd = m2 * h1 ** 2 * xi2 - m1 * h2 ** 2 * xi1 + 4 * (m1 - m2) * xi2 * xi1 * xi3 * np.sin(theta) ** 2
-
     sigma = dd / (xi1 * xi2 * np.cos(theta) ** 2 * rgam ** 3)
 
     return sigma
@@ -747,31 +745,28 @@ def TI_elasticity_sigma(theta, *args):
 
 def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None, required='111111'):
     """
-        Analytical solution for an elliptical fracture propagating in toughness dominated regime in Transverse Isotropic media
+    Analytical solution for an elliptical fracture propagating in toughness dominated regime in Transverse
+    Isotropic media
 
-        
-        Arguments:
-        mesh (CartesianMesh)    -- a CartesianMesh class object describing the grid.
+    Arguments:
+        mesh (CartesianMesh):   -- a CartesianMesh class object describing the grid.
         gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.
         Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).
         Kc3 (float):            -- the fracture toughness along the minor axis.
         Ep3 (float):            -- the effective (see Moukhtari and Lecampion, 2019) elasticity along the minor axis.
-        Q0 (float)              -- injection rate.
+        Q0 (float):             -- injection rate.
         t (float):              -- the given time for which the solution is evaluated.
         b (float):              -- the given minor axis length.
         required (string):      -- a mask giving which of the variables are required.
-        
-        Returns:
+
+    Returns:
         - t (float)              -- time at which the fracture reaches the given length.
         - b (float)              -- length of the minor axix of the elliptical fracture at the given time.
         - p (ndarray-float)      -- pressure at each cell at the given time.
         - w (ndarray-float)      -- width at each cell at the given time.
-        - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
-      
+        - actvElts (ndarray)     -- list of cells inside the fracture at the given time
 
-        """
-    
-    
+    """
     
     if b is None and t is None:
         raise ValueError("Either the minor axis length or time is to be provided!")
@@ -782,40 +777,32 @@ def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=
     
     if required[3] is '1' or required[2] is '1':
         a = gamma * b
-
-        C11 = Cij[0, 0]
-        C12 = Cij[0, 1]
-        C13 = Cij[0, 2]
-        C33 = Cij[2, 2]
-        C44 = Cij[3, 3]
-        C66 = Cij[5, 5]
-
         beta= lambda alpha: np.arctan(np.tan(alpha) *gamma)
 
-        t22 =lambda alpha: TI_plain_strain_modulus(beta(alpha), Cij)*((np.sin(alpha))**2 + (np.cos(alpha)/gamma)**2)**0.5
+        t22 =lambda alpha: TI_plain_strain_modulus(beta(alpha), Cij)*(
+                            (np.sin(alpha))**2 + (np.cos(alpha)/gamma)**2)**0.5
 
         T22 = integrate.quad(lambda alpha: t22(alpha),
-                     0,
-                     2 * np.pi
-                     )[0]
+                             0,
+                             2 * np.pi
+                             )[0]
     
-        w0 = 16*(1/gamma)**0.5/T22
+        w0 = 16 * (1 / gamma) ** 0.5 / T22
         rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
         actvElts = np.where(rho > 0)[0]  # active cells (inside fracture)
         p = np.zeros((mesh.NumberOfElts, ), float)
-        p[actvElts] = 4*(Kc3) / ((np.pi * a) ** 0.5 * w0 * Ep3)
-    
+        p[actvElts] = 4 * Kc3 / ((np.pi * a) ** 0.5 * w0 * Ep3)
         u0 =  w0 * p * (b*a)**0.5
-    
         w = np.zeros((mesh.NumberOfElts,))
         w[actvElts] = u0[actvElts] * (1 - (mesh.CenterCoor[actvElts, 0] / a) ** 2 - (
-                                                                                 mesh.CenterCoor[actvElts, 1] / b) ** 2)**0.5
+                                        mesh.CenterCoor[actvElts, 1] / b) ** 2)**0.5
     else:
         p = None
         w = None
         actvElts = None
                                                                                  
     return t, b, p, w, None, actvElts
+
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -936,7 +923,7 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
                                     - E_E (the elliptical solution with transverse isotropic material properties; see\
                                            Moukhtari and Lecampion, 2019.)
                                     - MDR (viscosity dominated solution for turbulent flow. The friction factor is\
-                                        calculated using MDR asymptote (see Zia and Lecampion 2019)).
+                                        calculated using MDR asymptote (see Zia and Lecampion, 2019)).
         Eprime (float):         -- plain strain modulus.
         Q0 (float):             -- injection rate.
         muPrime (float):        -- 12*viscosity.
