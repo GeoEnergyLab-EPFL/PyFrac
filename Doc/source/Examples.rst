@@ -588,7 +588,7 @@ We will set up the mesh and the material, fluid and injection properties in the 
    simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
 
 
-Note that we have set the gravity flag to accommodate the effect of gravity. In addition, since the buoyancy driven fracture problem is more stiff, we have increase the maximum number of iterations for our solver to 200. To start the simulation, we will initialize a static radial fracture with a radius of :math:`300\textrm{m}` and a net pressure of :math:`0.5\textrm{MPa}`. After initialization, we will run the simulation through the controller just like the previous examples.
+Note that we have set the gravity flag to accommodate the effect of gravity. In addition, since the buoyancy driven fracture problem is more stiff, we have increase the maximum number of iterations for our solver to 200. To start the simulation, we will initialize a static radial fracture with a radius of :math:`300\textrm{m}` and a net pressure of :math:`0.5\textrm{MPa}`. After the start of injection, the fracture will bloat like a balloon due to injection and pressure will increase. As it increases, the stress intensity factor at the tip will also increase until it will get equal to the fracture toughness of the rock. The fracture will start propagating at this stage. We will run the simulation through the controller just like the previous examples.
 
 .. code-block:: python
 
