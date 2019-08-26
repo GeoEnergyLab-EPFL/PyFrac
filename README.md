@@ -27,19 +27,19 @@ Beta release
 Getting started
 ===============
 
-Running PyFrac will require a functioning installation of Python 3, numpy, SciPy and matplotlib. You can download ANACONDA distribution with all these packages from <https://www.anaconda.com/distribution/>. To run PyFrac using Unix shell or windows command prompt, the directory containing the PyFrac source code is required to be added to the ``PYTHONPATH`` environment variable. It can be added with the following command on windows (give the local path of the ``src`` folder in place of path_of_PyFrac_src)::
+Running PyFrac will require a functioning installation of Python 3, numpy, SciPy and matplotlib. You can download ANACONDA distribution with all these packages from <https://www.anaconda.com/distribution/>. To run PyFrac using Unix shell or windows command prompt, the directory containing the PyFrac source code is required to be added to the ``PYTHONPATH`` environment variable. It can be added with the following command on windows (give the local path of the ``src`` folder in place of path_of_PyFrac_src):
 
     set PYTHONPATH=%PYTHONPATH%;path_of_PyFrac_src
 
-and with the following for linux or mac::
+and with the following for linux or mac:
 
     export PYTHONPATH=${PYTHONPATH}:path_of_PyFrac_src
 
-PyFrac uses dill package for saving files on hard disk. You can use pip to install the latest distribution of the package with the following command::
+PyFrac uses dill package for saving files on hard disk. You can use pip to install the latest distribution of the package with the following command:
 
     pip install dill
 
-If you already have python 3 installed through anaconda, update installed packages to the latest version. You can use the following to update all installed packages::
+If you already have python 3 installed through anaconda, update installed packages to the latest version. You can use the following to update all installed packages:
 
    conda update --all
 
@@ -55,11 +55,11 @@ The code uses inside loop library which requires installation of OpenBLAS. Follo
 
    1. Download and install OpenBLAS. You can also download binary packages available for windows.
    2. Download and install MSYS2.
-   3. Install gcc and cmake for MSYS2 using the following::
+   3. Install gcc and cmake for MSYS2 using the following:
 
          pacman -S base-devel gcc vim cmake
    4. In case you have downloaded binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
-   5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
 
          cmake ..
          cmake --build .
@@ -70,22 +70,22 @@ The code uses inside loop library which requires installation of OpenBLAS. Follo
 
    1. Download and install OpenBlas.
    2. Install Cmake.
-   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
 
          cmake ..
          cmake --build .
 
 Documentation
 =============
-You can generate documentation locally using sphinx. First install shpinx using pip::
+You can generate documentation locally using sphinx. First install shpinx using pip:
 
     pip install sphinx
 
-Then change directory to the Doc folder present in the PyFrac code. Run the make command to build the documentation in html::
+Then change directory to the Doc folder present in the PyFrac code. Run the make command to build the documentation in html:
 
     make html
 
-or in pdf as::
+or in pdf as:
 
     make latexpdf
 
@@ -94,7 +94,7 @@ After the build is complete, you can access the documentation in the build folde
 Running an example
 ==================
 
-Change directory to the folder containing the PyFrac code. An example can be run from the windows command prompt or linux shell by executing the example script e.g.::
+Change directory to the folder containing the PyFrac code. An example can be run from the windows command prompt or linux shell by executing the example script e.g.:
 
     python ./examples/radial_viscosity_explicit.py
 
