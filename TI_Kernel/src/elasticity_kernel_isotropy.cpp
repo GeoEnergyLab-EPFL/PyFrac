@@ -3,10 +3,12 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
-
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
 
 #include <il/math.h>
-#include "elasticity_kernel_isotropy.h"
+#include <src/elasticity_kernel_isotropy.h>
 
 
 namespace hfp3d {

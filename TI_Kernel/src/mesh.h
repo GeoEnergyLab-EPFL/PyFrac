@@ -3,11 +3,16 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
+// Brice Lecampion
+// Dmitry Nikolskiy
 
 #ifndef HFPX3D_VC_MESH_H
 #define HFPX3D_VC_MESH_H
 
-#include<iostream>
+#include <iostream>
 #include <complex>
 #include <il/math.h>
 #include <il/StaticArray.h>

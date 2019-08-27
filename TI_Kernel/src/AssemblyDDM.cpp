@@ -3,10 +3,13 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
+// Brice Lecampion
 
-#include "AssemblyDDM.h"
+#include <src/AssemblyDDM.h>
 
-//#include "elasticity_kernel_integration.h"
 
 namespace hfp3d {
 

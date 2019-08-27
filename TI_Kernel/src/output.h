@@ -1,3 +1,13 @@
+//
+// Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland,
+// Geo-Energy Laboratory, 2016-2019.  All rights reserved.
+// See the LICENSE.TXT file for more details.
+//
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
+// Brice Lecampion
+// Dmitry Nikolskiy
 
 
 #ifndef HFPX3D_VC_OUTPUT_H
@@ -5,7 +15,7 @@
 
 #include <il/Array2D.h>
 #include <il/Array.h>
-#include<iostream>
+#include <iostream>
 
 namespace hfp3d {
 

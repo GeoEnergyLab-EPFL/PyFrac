@@ -3,12 +3,18 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
+// Brice Lecampion
+// Dmitry Nikolskiy
+
 
 #include <cstdio>
 #include <fstream>
-#include "src/inputE.h"
-#include "src/elasticity_kernel_isotropy.h"
-#include "src/AssemblyDDM.h"
+#include <src/inputE.h>
+#include <src/elasticity_kernel_isotropy.h>
+#include <src/AssemblyDDM.h>
 #include <src/output.h>
 
 using namespace std;

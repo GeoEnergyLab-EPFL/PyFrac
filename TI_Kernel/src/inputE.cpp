@@ -3,8 +3,10 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Fatima-Ezzahra Moukhtari
 
-#include "src/inputE.h"
+#include <src/inputE.h>
 
 namespace hfp3d {
 

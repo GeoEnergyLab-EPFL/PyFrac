@@ -32,7 +32,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
             Does not return anything. The levelSet is updated in place.
     """
 
-    # todo: This method is inefficient. It can be imlpemented with heap for better efficiency
+    # todo: This method is inefficient. It can be implemented with heap for better efficiency
 
     # for Elements radialy outward from ribbon cells
     Alive = EltRibbon.tolist()

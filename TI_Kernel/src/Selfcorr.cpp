@@ -3,8 +3,10 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
 
-#include "Selfcorr.h"
+#include <src/Selfcorr.h>
 
 namespace hfp3d {
     il::Array2D<double> Self_corr(il::Array2D<double> global) {

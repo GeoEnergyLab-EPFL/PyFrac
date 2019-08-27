@@ -3,6 +3,10 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
+
 
 #ifndef INC_HFPX3D_ELAST_KER_INT_H
 #define INC_HFPX3D_ELAST_KER_INT_H

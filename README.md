@@ -44,20 +44,20 @@ If you already have python 3 installed through anaconda, update installed packag
 
 ##Transverse Isotropic Kernel
 
-PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code is to be compiled before the fracture simulation can be done is transverse isotropic materials. Use the following steps to generate the executable:
+PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code has to be compiled before the fracture simulation can be done for transverse isotropic materials. Use the following steps to generate the executable:
 
 **Note:**   The setup below is required only if you want to simulate fracture propagation in transversely isotropic materials.
 
-The code uses inside loop library which requires installation of OpenBLAS. Follow the instruction below for your operating system
+The code uses the Inside Loop (il) library which requires installation of OpenBLAS. See https://github.com/InsideLoop/InsideLoop. We ship the il source codes with this release for simplicity.  Follow the instruction below for your operating system in order to compile the elastic TI code for planar fracture and rectangular mesh.
 
 ##windows
 
-   1. Download and install OpenBLAS. You can also download binary packages available for windows.
+   1. Download and install OpenBLAS. You can also download binary packages available for windows (preferred).
    2. Download and install MSYS2.
    3. Install gcc and cmake for MSYS2 using the following:
 
     pacman -S base-devel gcc vim cmake
-   4. In case you have downloaded binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
+   4. In case you have downloaded the binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
    5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
 
     cmake ..  
@@ -68,14 +68,14 @@ The code uses inside loop library which requires installation of OpenBLAS. Follo
 ##Linux
 
    1. Install OpenBlas and LAPACK with the following commands:
-        
+
     sudo apt-get install libopenblas-dev  
     sudo apt-get install liblapacke-dev
-        
+
    2. Install Cmake with the following.
-   
+
     sudo apt-get -y install cmake
-    
+
    3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
 
     cmake ..  
@@ -84,18 +84,18 @@ The code uses inside loop library which requires installation of OpenBLAS. Follo
 ##Mac
 
    1. Install OpenBlas with the following:
-    
+
     brew install openblas
-    
+
    2. Install Cmake with the following:
-   
+
     brew install cmake
-    
+
    3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
 
     cmake ..  
     make
-     
+
 Documentation
 =============
 You can generate documentation locally using sphinx. First install shpinx using pip:

@@ -3,15 +3,17 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
 
-#include<iostream>
+
+#include <iostream>
 #include <il/math.h>
-#include "elasticity_kernel_integration.h"
-#include<il/linearAlgebra.h>
-#include "src/inputE.h"
+#include <src/elasticity_kernel_integration.h>
+#include <il/linearAlgebra.h>
+#include <src/inputE.h>
 #include <il/Array2D.h>
-
-
 
 namespace hfp3d {
 

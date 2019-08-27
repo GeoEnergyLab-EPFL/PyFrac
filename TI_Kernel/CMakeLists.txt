@@ -1,3 +1,12 @@
+
+# Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland,
+# Geo-Energy Laboratory, 2016-2019.  All rights reserved.
+# See the LICENSE.TXT file for more details.
+#
+# Contributors:
+# Brice Lecampion
+# Haseeb Zia
+
 cmake_minimum_required(VERSION 3.6)
 
 project(TI_elasticity_kernel)
@@ -16,7 +25,7 @@ if (UNIX AND NOT APPLE)
     # Note that we are using msys2 on windows, so we are setting it for UNIX.
     include_directories(/C/repositories/OpenBLAS/include)
     link_directories(/C/repositories/OpenBLAS/lib)
-else()
+elseif(APPLE)  # for APPLE
     include_directories(/usr/local/opt/openblas/include)
     link_directories(/usr/local/opt/openblas/lib)
 endif()

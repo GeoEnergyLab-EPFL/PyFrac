@@ -3,6 +3,11 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+// Fatima-Ezzahra Moukhtari
+// Brice Lecampion
+// Dmitry Nikolskiy
 
 #include<iostream>
 #include <complex>
@@ -14,7 +19,7 @@
 #include<il/linearAlgebra.h>
 #include <il/Array.h>
 #include <il/Array2D.h>
-#include "mesh.h"
+#include <src/mesh.h>
 
 namespace hfp3d{
     void Mesh::set_values(il::Array<il::StaticArray<double,2>> xy,int nnx,int nny,double LLx,double LLy,double ddx, double ddy) {

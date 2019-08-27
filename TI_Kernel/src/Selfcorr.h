@@ -3,6 +3,9 @@
 // Geo-Energy Laboratory, 2016-2019.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
+// Contributors:
+// Weihan Zhang
+
 
 #ifndef HFPX3D_VC_SELFCORR_H
 #define HFPX3D_VC_SELFCORR_H
