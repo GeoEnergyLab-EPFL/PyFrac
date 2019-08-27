@@ -12,7 +12,7 @@ import json
 import subprocess
 import pickle
 from array import array
-import os
+import os, sys
 
 def load_isotropic_elasticity_matrix(Mesh, Ep):
     """
@@ -94,9 +94,14 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
     with open('stiffness_matrix.json', 'w') as outfile:
         json.dump(data, outfile, indent=3)
 
+    if "win32" in sys.platform or "win64" in sys.platform:
+        suffix = ""
+    else:
+        suffix = "./"
+
     # Read the elasticity matrix from the npy file
     print('running C++ process...')
-    subprocess.run('TI_elasticity_kernel', shell=True)
+    subprocess.run(suffix + 'TI_elasticity_kernel', shell=True)
 
     print('Reading global TI elasticity matrix...')
     try:

@@ -574,10 +574,6 @@ class SimulationProperties:
             slash = "\\"
         else:
             slash = "/"
-        if not '..' + slash + 'src' in sys.path:
-            sys.path.append('..' + slash + 'src')
-        if not '.' + slash + 'src' in sys.path:
-            sys.path.append('.' + slash + 'src')
 
         if address is None:
             import default_parameters as simul_param

@@ -3,12 +3,25 @@ cmake_minimum_required(VERSION 3.6)
 project(TI_elasticity_kernel)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DIL_OPENBLAS -DIL_BLAS")
-set(SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 
-# provide the correct path of OpenBLAS in the following
-include_directories(/C/repositories/OpenBLAS/include)
-link_directories(/C/repositories/OpenBLAS/lib)
+
+# provide the correct path of folders containg OpenBLAS include files and libraries in the following. Note that if you
+# are using msys2 on windows, you have to set it for UNIX.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIL_OPENBLAS -DIL_BLAS")
+set(CMAKE_OPENBLAS_LIBRARIES "openblas")
+
+
+if (UNIX)
+    # For windows, provide the correct path of folders containg OpenBLAS include files and libraries in the following.
+    # Note that we are using msys2 on windows, so we are setting it for UNIX.
+    include_directories(/C/repositories/OpenBLAS/include)
+    link_directories(/C/repositories/OpenBLAS/lib)
+elseif (APPLE)
+    include_directories(/usr/local/opt/openblas/include)
+    link_directories(/usr/local/opt/openblas/lib)
+endif()
+
+set(SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 
 set(SOURCE_FILES
         main.cpp
@@ -22,5 +35,7 @@ set(SOURCE_FILES
         src/Selfcorr.cpp)
 
 add_executable(TI_elasticity_kernel ${SOURCE_FILES})
+
+target_link_libraries(TI_elasticity_kernel  ${CMAKE_OPENBLAS_LIBRARIES})
+target_compile_definitions(TI_elasticity_kernel PRIVATE IL_OPENBLAS=1 IL_BLAS=1)
 target_include_directories(TI_elasticity_kernel PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(TI_elasticity_kernel openblas)
