@@ -44,7 +44,7 @@ If you already have python 3 installed through anaconda, update installed packag
 
 ##Transverse Isotropic Kernel
 
-PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code is to be compiled and the executable generated before the fracture simulation can be done is transverse isotropic materials. Use the following steps to generate the executable:
+PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code is to be compiled before the fracture simulation can be done is transverse isotropic materials. Use the following steps to generate the executable:
 
 **Note:**   The setup below is required only if you want to simulate fracture propagation in transversely isotropic materials.
 

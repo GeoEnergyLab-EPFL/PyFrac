@@ -11,12 +11,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIL_OPENBLAS -DIL_BLAS")
 set(CMAKE_OPENBLAS_LIBRARIES "openblas")
 
 
-if (UNIX)
-    # For windows, provide the correct path of folders containg OpenBLAS include files and libraries in the following.
+if (UNIX AND NOT APPLE)
+    # For windows, provide the correct path of folders containing OpenBLAS include files and libraries in the following.
     # Note that we are using msys2 on windows, so we are setting it for UNIX.
     include_directories(/C/repositories/OpenBLAS/include)
     link_directories(/C/repositories/OpenBLAS/lib)
-elseif (APPLE)
+else()
     include_directories(/usr/local/opt/openblas/include)
     link_directories(/usr/local/opt/openblas/lib)
 endif()
