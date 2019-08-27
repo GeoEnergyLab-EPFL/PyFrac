@@ -24,7 +24,7 @@ If you already have python 3 installed through anaconda, update installed packag
 
 Transverse Isotropic Kernel
 ----------------------------
-PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code is to be compiled and the executable generated before the fracture simulation can be done is transverse isotropic materials. Use the following steps to generate the executable:
+PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code is to be compiled before the fracture simulation can be done is transverse isotropic materials. Use the following steps to generate the executable:
 
 .. note::
 
@@ -43,18 +43,40 @@ windows
    5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
          cmake ..
-         cmake --build .
+         make
 
    6. Add MSYS2 libraries path (typically C:\\msys64\\usr\\bin) to the windows `PATH` environment variable.
 
-Linux and Mac
-^^^^^^^^^^^^^
-   1. Download and install OpenBlas.
-   2. Install Cmake.
+Linux
+^^^^^
+   1. Install OpenBlas and LAPACK with the following commands::
+
+         sudo apt-get install libopenblas-dev
+         sudo apt-get install liblapacke-dev
+
+   2. Install Cmake with the following::
+
+         sudo apt-get -y install cmake
+
    3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
          cmake ..
-         cmake --build .
+         make
+
+Mac
+^^^^
+   1. Install OpenBlas with the following::
+
+         brew install openblas
+
+   2. Install Cmake with the following::
+
+         brew install cmake
+
+   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+
+         cmake ..
+         make
 
 Documentation
 =============
