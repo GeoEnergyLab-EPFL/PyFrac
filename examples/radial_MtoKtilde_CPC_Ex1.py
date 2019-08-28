@@ -115,4 +115,8 @@ ax_r = Fig_r.get_axes()[0]
 ax_r.loglog(t, r_analytical, 'r-', label='semi-anlytical radius')
 ax_r.legend()
 
-plt.show(block=True)
+#plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()

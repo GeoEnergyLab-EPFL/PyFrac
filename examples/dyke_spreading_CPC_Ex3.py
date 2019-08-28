@@ -99,7 +99,7 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-time_srs = np.asarray([50, 350, 700, 1100, 2500, 12000, 50000, 560000])
+time_srs = np.asarray([50, 350,  700, 1100, 2500, 12000, 50000, 560000])
 Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -131,5 +131,9 @@ Fig_Fr = plot_fracture_list(Fr_list[1:],
                             projection='3D',
                             fig=Fig_Fr)
 
-plt.show(block=True)
 
+#  set block=True and comment last 2 lines if you want to keep the window open
+#plt.show(block=True)
+plt.show(block=False)
+plt.pause(5)
+plt.close()

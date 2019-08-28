@@ -24,11 +24,12 @@ nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 
-# the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
+# the function below will make the fracture propagate a specific shape at large time (see Zia et al. IJF 2018)
+# somehow "eye" like at large time
 def K1c_func(alpha):
     K1c_1 = 2.0e6                    # fracture toughness along x-axis
     K1c_2 = 3.0e6                    # fracture toughness along y-axis
-
+# the evolution between the 0 and 90 deg angle is a smooth Heaviside starting at "sharp" angle  3 pi/20
     j = 3 * np.pi / 20
     f = 1 / (1 + np.e ** (-2 * 5 * (alpha - j)))
     return K1c_1 + (K1c_2 - K1c_1) * f
@@ -43,11 +44,11 @@ Q0 = 0.01  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-Fluid = FluidProperties(viscosity=1.1e-3)
+Fluid = FluidProperties(viscosity=1.1e-3)    # toughness dominated solution
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 5000            # the time at which the simulation stops
+simulProp.finalTime = 4000            # the time at which the simulation stops
 simulProp.set_volumeControl(True)     # to set up the solver in volume control mode (inviscid fluid)
 simulProp.tolFractFront = 4e-3        # increase tolerance for the anisotropic case
 simulProp.set_outputFolder("./Data/toughness_jump") # the disk address where the files are saved
@@ -128,4 +129,8 @@ Fig_len_a = plot_fracture_list(Fr_list,
                                 variable='ar',
                                 plot_prop=plot_prop)
 
-plt.show(block=True)
+#plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()

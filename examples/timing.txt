@@ -1,0 +1,87 @@
++++++++++++++
+./buoyancy_line_source.py
+real 367.53
+user 1257.45
+sys 58.62
++++++++++++++
++++++++++++++
+./dyke_spreading_CPC_Ex3.py
+real 15846.02
+user 39069.66
+sys 2045.98
++++++++++++++
++++++++++++++
+./ellipse_Anisotropic_toughness.py
+real 3261.26
+user 2249.07
+sys 12.04
++++++++++++++
++++++++++++++
+./ellipse_TI_elasticity.py
+No handles with labels found to put in legend.
+real 6473.47
+user 4931.19
+sys 26.77
++++++++++++++
++++++++++++++
+./Experiment_Wu_et_al.py
+real 128.04
+user 148.70
+sys 4.32
++++++++++++++
++++++++++++++
+./fracture_closure_CPC_Ex4.py
+^CTraceback (most recent call last):
+  File "fracture_closure_CPC_Ex4.py", line 83, in <module>
+    controller.run()
+  File "/Users/bricelecampion/Documents/Work/Geomechanics/HydraulicFracturing/Computations/PyFrac/src/controller.py", line 302, in run
+    inp = input("Fracture is fully closed. Continuing with the simulation may result in non-realistic\n"
+KeyboardInterrupt
+real 1198.06
+user 1835.56
+sys 109.58
++++++++++++++
++++++++++++++
+./height_contained_CPC_Ex2.py
+real 5563.39
+user 16344.61
+sys 1181.95
++++++++++++++
++++++++++++++
+./pinch_point.py
+real 1372.03
+user 4142.44
+sys 293.21
++++++++++++++
++++++++++++++
+./pre_existing_fracture.py
+real 429.29
+user 175.72
+sys 6.87
++++++++++++++
++++++++++++++
+./radial_K_symmetric.py
+No handles with labels found to put in legend.
+real 155.87
+user 428.05
+sys 16.22
++++++++++++++
++++++++++++++
+./radial_MtoKtilde_CPC_Ex1.py
+real 311.37
+user 977.24
+sys 44.18
++++++++++++++
++++++++++++++
+./radial_viscosity_explicit.py
+No handles with labels found to put in legend.
+real 154.19
+user 480.56
+sys 22.18
++++++++++++++
++++++++++++++
+./toughness_anisotropy_jump.py
+real 3859.00
+user 2976.47
+sys 20.76
++++++++++++++

@@ -12,7 +12,7 @@ We first demonstrate the accuracy of PyFrac on the case of a penny-shaped hydrau
 
 .. csv-table::
     :align:   center
-    :header: "Paramters", "Values"
+    :header: "Parameters", "Values"
 
     :math:`E^\prime` (Plain strain modulus), :math:`39\textrm{GPa}`
     :math:`K_{Ic}` (fracture toughness), :math:`0.156~MPa\sqrt{\textrm{m}}`

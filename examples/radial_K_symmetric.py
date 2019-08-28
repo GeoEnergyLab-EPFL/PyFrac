@@ -36,7 +36,7 @@ Fluid = FluidProperties(viscosity=0)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e5               # the time at which the simulation stops
+simulProp.finalTime = 1e2               # the time at which the simulation stops
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
 simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
 simulProp.set_outputFolder("./Data/K_radial_symmetric") # the disk address where the files are saved
@@ -148,5 +148,9 @@ Fig_WS = plot_analytical_solution_slice('K',
                                         point2=ext_pnts[1])
 
 
-plt.show(block=True)
+#plt.show(block=True)
 
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()

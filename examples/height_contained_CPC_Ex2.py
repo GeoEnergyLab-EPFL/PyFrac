@@ -197,4 +197,8 @@ Fig_Fr = plot_fracture_list(Fr_list,
 ax = Fig_Fr.get_axes()[0]
 ax.view_init(60, -114)
 
-plt.show(block=True)
+#plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()

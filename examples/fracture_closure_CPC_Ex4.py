@@ -52,7 +52,7 @@ Fluid = FluidProperties(viscosity=1e-3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e5                       # the time at which the simulation stops
+simulProp.finalTime = 1.6e4                       # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/fracture_closure") # the disk address where the files are saved
 simulProp.bckColor = 'confining stress'         # setting the parameter for the mesh color coding
 simulProp.plotTSJump = 4                        # set to plot every four time steps
@@ -110,13 +110,16 @@ Fig_FP = plot_fracture_list(Fr_list,
                             fig=Fig_FP,
                             plot_prop=plot_prop1)
 Fig_FP.set_size_inches(5, 4)
-plt.show(block=True)
+#plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()
 
+#plt.show(block=True)
 # loading fractures at the different stages
-time_srs = [7672, 9660, 12435, 14693, 15362, 15866]
+time_srs = [230, 1000,7672, 9660, 12435, 14693, 15362, 15866]
 Fr_list, properties = load_fractures(address="./Data/fracture_closure",
                                      time_srs=time_srs)
 
 animate_simulation_results(Fr_list, ['w'], block_figure=True)
-
-

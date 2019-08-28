@@ -105,4 +105,4 @@ There are scripts available for a set of examples in the examples folders provid
 
 .. note::
 
-   Some of the examples may take upto 2 hours to run.
+   Some of the examples may take upto 2 hours to run (see the file timing.txt in the examples for run time (in secs) on a mid-2015 MacBook Pro). See also the Readme.md in the examples folder for details.

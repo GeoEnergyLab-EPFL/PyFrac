@@ -177,4 +177,8 @@ Fig_ar = plot_fracture_list(Fr_list,
 ax = Fig_ar.get_axes()[0]
 ax.set_ylim(1.5, 2.5)
 
-plt.show(block=True)
+#plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()

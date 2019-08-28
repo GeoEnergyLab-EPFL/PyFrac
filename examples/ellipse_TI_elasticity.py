@@ -197,4 +197,8 @@ Fig_len_b = plot_analytical_solution('E_E',
                                    gamma=gamma,
                                    labels=labels)
 
-plt.show(block=True)
+#plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()

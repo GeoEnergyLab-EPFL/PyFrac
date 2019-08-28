@@ -7,9 +7,12 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
-# imports
-from src.Fracture import *
-from src.Controller import *
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
@@ -80,6 +83,7 @@ controller.run()
 ####################
 # plotting results #
 ####################
+from visualization import *
 
 # loading results
 Fr_list, properties = load_fractures(address='./Data/pinch_point')
@@ -93,4 +97,7 @@ Fig = plot_fracture_list_slice(Fr_list[-6:],
                                 orientation='vertical',
                                 plot_prop=plt_prop)
 
-plt.show(block=True)
+#  set block=True and comment last 2 lines if you want to keep the window open
+plt.show(block=False)
+plt.pause(5)
+plt.close()
