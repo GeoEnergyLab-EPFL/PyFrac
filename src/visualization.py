@@ -1963,18 +1963,20 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                                         print_number=False)
 
         # set figure position
-        if 'win' in sys.platform:
-            if setFigPos:
-                for i in range(len(variable)):
-                    plt.figure(i + 1)
-                    mngr = plt.get_current_fig_manager()
-                    x_offset = 650 * i
-                    y_ofset = 50
-                    if i >= 3:
-                        x_offset = (i - 3) * 650
-                        y_ofset = 500
+        if setFigPos:
+            for i in range(len(variable)):
+                plt.figure(i + 1)
+                mngr = plt.get_current_fig_manager()
+                x_offset = 650 * i
+                y_ofset = 50
+                if i >= 3:
+                    x_offset = (i - 3) * 650
+                    y_ofset = 500
+                try:
                     mngr.window.setGeometry(x_offset, y_ofset, 640, 545)
-                setFigPos = False
+                except AttributeError:
+                    pass
+            setFigPos = False
 
         # plot the figure
         plt.ion()
