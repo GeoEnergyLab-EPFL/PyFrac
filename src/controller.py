@@ -299,8 +299,7 @@ class Controller:
                 # fracture fully closed
                 self.output(Fr_n_pls1)
                 if self.PstvInjJmp is None:
-                    inp = input("Fracture is fully closed. Continuing with the simulation may result in non-realistic\n"
-                            "pressures due to compressibility(see Zia and Lecampion, 2019).\n\n Do you want to jump to"
+                    inp = input("Fracture is fully closed.\n\nDo you want to jump to"
                             " the time of next positive injection? [y/n]")
                     while inp not in ['y', 'Y', 'n', 'N']:
                         inp = input("Press y or n")
