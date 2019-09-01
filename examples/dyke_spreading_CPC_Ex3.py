@@ -34,7 +34,7 @@ def sigmaO_func(x, y):
     Ly = 2800
     if y > layer:
         return (Ly - y) * density_low * 9.8
-    # only dependant on the depth
+
     return (Ly - y) * density_high * 9.8 - (Ly - layer) * (density_high - density_low) * 9.8
 
 # material properties

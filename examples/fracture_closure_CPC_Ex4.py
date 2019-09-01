@@ -122,4 +122,4 @@ time_srs = [230, 1000,7672, 9660, 12435, 14693, 15362, 15866]
 Fr_list, properties = load_fractures(address="./Data/fracture_closure",
                                      time_srs=time_srs)
 
-animate_simulation_results(Fr_list, ['w'], block_figure=True)
+animate_simulation_results(Fr_list, ['w'], block_figure=False)
