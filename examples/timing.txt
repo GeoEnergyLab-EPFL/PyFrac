@@ -6,9 +6,9 @@ sys 58.62
 +++++++++++++
 +++++++++++++
 ./dyke_spreading_CPC_Ex3.py
-real 15846.02
-user 39069.66
-sys 2045.98
+real 11371.25
+user 37947.08
+sys 2614.70
 +++++++++++++
 +++++++++++++
 ./ellipse_Anisotropic_toughness.py
