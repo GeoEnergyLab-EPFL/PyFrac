@@ -14,7 +14,7 @@ We first demonstrate the accuracy of PyFrac on the case of a penny-shaped hydrau
     :align:   center
     :header: "Parameters", "Values"
 
-    :math:`E^\prime` (Plain strain modulus), :math:`39\textrm{GPa}`
+    :math:`E^\prime` (plane strain modulus), :math:`35.2\textrm{GPa}`
     :math:`K_{Ic}` (fracture toughness), :math:`0.156~MPa\sqrt{\textrm{m}}`
     :math:`C_L` (Carter's leak-off coefficient), :math:`0.5\times10^{-6}~m/\sqrt{\textrm{s}}`
     :math:`\mu` (viscosity), :math:`8.3\times10^{-5}~Pa\cdot s`
@@ -39,8 +39,8 @@ Next we setup the properties of the material by instantiating a :py:class:`prope
    # solid properties
    nu = 0.4                            # Poisson's ratio
    youngs_mod = 3.3e10                 # Young's modulus
-   Eprime = youngs_mod / (1 - nu**2)   # plain strain modulus
-   K1c = 5e5 / (32 / np.pi)**0.5     # K' = 5e5
+   Eprime = youngs_mod / (1 - nu**2)   # plane strain modulus
+   K1c = 5e5 / (32 / np.pi)**0.5       # K' = 5e5
    Cl = 0.5e-6                         # Carter's leak off coefficient
 
    # material properties
@@ -157,7 +157,7 @@ This example simulates a hydraulic fracture propagating in a layer bounded with 
     :align:   center
     :header: "Paramters", "Values"
 
-    plain strain modulus, :math:`39.2\textrm{GPa}`
+    plane strain modulus, :math:`35.2\textrm{GPa}`
     fracture toughness, :math:`0`
     viscosity, :math:`1.1\times10^{-3}\textrm{Pa.s}`
     injection rate, :math:`0.001\textrm{m}^{3}/\textrm{s}`
@@ -183,7 +183,7 @@ Next we setup the properties of the material by instantiating a :py:class:`prope
    # solid properties
    nu = 0.4                            # Poisson's ratio
    youngs_mod = 3.3e10                 # Young's modulus
-   Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
+   Eprime = youngs_mod / (1 - nu ** 2) # plane strain modulus
    K_Ic = 0                            # fracture toughness of the material
 
    def sigmaO_func(x, y):
@@ -373,7 +373,7 @@ In this example, we show the capability of PyFrac to handle fracture closure. Th
     :align:   center
     :header: "Paramters", "Values"
 
-    plain strain modulus, :math:`47\textrm{GPa}`
+    plane strain modulus, :math:`42.67\textrm{GPa}`
     fracture toughness, :math:`0.5\textrm{Mpa}\sqrt{\textrm{m}}`
     Carter's leak off coefficient, :math:`10^{-6}\textrm{m}/\sqrt{\textrm{s}}`
     viscosity, :math:`1.1\times10^{-3}\textrm{Pa.s}`
@@ -398,7 +398,7 @@ We can proceed in the same manner as the previous examples. Lets make a mesh and
    # solid properties
    nu = 0.4                            # Poisson's ratio
    youngs_mod = 4e10                   # Young's modulus
-   Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
+   Eprime = youngs_mod / (1 - nu ** 2) # plane strain modulus
    K_Ic = 5.0e5                        # fracture toughness
 
    def sigmaO_func(x, y):
@@ -510,7 +510,7 @@ It can be seen that the fracture continues to slowly grow even after the injecti
    animate_simulation_results(Fr_list, ['w'])
 
 
-Lateral spreading of a Dyke at neutral buoyancy
+Lateral spreading of a dyke at neutral buoyancy
 -----------------------------------------------
 This example demonstrates the capability of PyFrac to simulate buoyancy driven fractures. Here, we will simulate propagation of a dyke after a pulse injection of basaltic magma at a depth of 4.2Km. The magma fractures surrounding rock towards the surface as a dyke and  hits a layer of less dense rock  at a depth of 1.3Km, causing it to attain neutral buoyancy. As a result, the propagation is arrested vertically and the dyke spreads horizontally. We will use the following parameters
 
@@ -518,7 +518,7 @@ This example demonstrates the capability of PyFrac to simulate buoyancy driven f
     :align:   center
     :header: "Paramters", "Values"
 
-    plain strain modulus, :math:`1.125\textrm{GPa}`
+    Young's modulus, :math:`1.125\textrm{GPa}`
     fracture toughness, :math:`6.5\textrm{Mpa}\sqrt{\textrm{m}}`
     density of the rock (upper layer), :math:`2300\textrm{Kg/m}^{3}`
     density of the rock (lower layer), :math:`2700\textrm{Kg/m}^{3}`
@@ -542,8 +542,8 @@ We will set up the mesh and the material, fluid and injection properties in the 
 
    # solid properties
    nu = 0.25                           # Poisson's ratio
-   youngs_mod = 1.125e9                 # Young's modulus
-   Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
+   youngs_mod = 1.125e9                # Young's modulus
+   Eprime = youngs_mod / (1 - nu ** 2) # plane strain modulus
 
 
    def sigmaO_func(x, y):
