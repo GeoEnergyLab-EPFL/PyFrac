@@ -512,7 +512,7 @@ It can be seen that the fracture continues to slowly grow even after the injecti
 
 Lateral spreading of a dyke at neutral buoyancy
 -----------------------------------------------
-This example demonstrates the capability of PyFrac to simulate buoyancy driven fractures. Here, we will simulate propagation of a dyke after a pulse injection of basaltic magma at a depth of 4.2Km. The magma fractures surrounding rock towards the surface as a dyke and  hits a layer of less dense rock  at a depth of 1.3Km, causing it to attain neutral buoyancy. As a result, the propagation is arrested vertically and the dyke spreads horizontally. We will use the following parameters
+This example demonstrates the capability of PyFrac to simulate buoyancy driven fractures. Here, we will simulate propagation of a dyke after a pulse injection of basaltic magma at a depth of 4.2Km. The magma fractures surrounding rock towards the surface as a dyke and  hits a layer of less dense rock  at a depth of 1.3Km, causing it to attain neutral buoyancy. As a result, the propagation is arrested vertically and the dyke spreads horizontally. We will use the following parameters taken from Traversa et al. - JGR-B (2010)
 
 .. csv-table::
     :align:   center

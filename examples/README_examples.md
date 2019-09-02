@@ -41,9 +41,6 @@ Additional examples
 - Experiment_Wu_et_al.py
     Modeling of the experiment described in Wu et al. (2008) - Zero toughness HF with non-symmetric stress contrast
 
-- pinch_point.py
-    An example with peculiar varying confining stress in order to test the pinching due to a small layer of higher stress
-
 - pre_existing_fracture.py
     Injection into a pre-existing fracture -   we see first the re-opening front (radial M-vertex type), then ballooning of the fracture until KI=KIc is reach and subsequent propagation. Because the initial fracture is not radial, we then see the fracture going back to a radial fracture (isotropic material)
 

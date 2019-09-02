@@ -48,12 +48,6 @@ user 16344.61
 sys 1181.95
 +++++++++++++
 +++++++++++++
-./pinch_point.py
-real 1372.03
-user 4142.44
-sys 293.21
-+++++++++++++
-+++++++++++++
 ./pre_existing_fracture.py
 real 429.29
 user 175.72
