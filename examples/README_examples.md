@@ -54,4 +54,4 @@ Additional examples
     Propagation of a HF with anisotropic toughness according to the smoothed heaviside law described in Zia et al., IJF (2018)
 
 
-**Note:**   Some of these examples may take upto 2 hours to run (see the file timing.txt in the examples for run time (in secs) on a mid-2015 MacBook Pro).
+**Note:**   Some of these examples may take upto 3 hours to run (see the file timing.txt in the examples for run time (in secs) on a mid-2015 MacBook Pro).
