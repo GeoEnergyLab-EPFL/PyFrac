@@ -19,7 +19,7 @@ from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
-
+from explicit_RKL import solve_width_pressure_RKL2_2
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -232,7 +232,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # solve for width. All of the fracture cells are solved (no tip values are is imposed)
     empty = np.array([], dtype=int)
-    w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
+    w_k, p_k, return_data = solve_width_pressure_RKL2(Fr_lstTmStp,
                                          sim_properties,
                                          fluid_properties,
                                          mat_properties,
@@ -261,7 +261,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.pFluid = p_k
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
     Fr_kplus1.pNet[Fr_lstTmStp.EltCrack] = p_k[Fr_lstTmStp.EltCrack] - mat_properties.SigmaO[Fr_lstTmStp.EltCrack]
-    Fr_kplus1.closed = return_data[1]
+    # Fr_kplus1.closed = return_data[1]
     Fr_kplus1.v = np.zeros((len(Fr_kplus1.EltTip), ), dtype=np.float64)
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
@@ -270,7 +270,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
-    fluidVel = return_data[0]
+    # fluidVel = return_data[0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
             ReNumb, check = turbulence_check_tip(fluidVel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
@@ -306,11 +306,11 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
-    Fr_lstTmStp.closed = return_data[1]
+    # Fr_lstTmStp.closed = return_data[1]
     # check if the solution is valid
 
-    if return_data[2]:
-        return 14, Fr_kplus1
+    # if return_data[2]:
+    #     return 14, Fr_kplus1
 
     exitstatus = 1
     return exitstatus, Fr_kplus1
@@ -704,7 +704,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         exitstatus = 13
         return exitstatus, None
 
-    w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure_RKL2(Fr_lstTmStp,
                                                         sim_properties,
                                                         fluid_properties,
                                                         mat_properties,
@@ -727,7 +727,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         exitstatus = 5
         return exitstatus, None
 
-    fluidVel = data[0]
+    # fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)
@@ -768,7 +768,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
-    Fr_kplus1.closed = data[1]
+    # Fr_kplus1.closed = data[1]
     tip_neg_rib = np.asarray([], dtype=np.int)
     # adding tip cells with closed corresponding ribbon cells to the list of closed cells
     for i, elem in enumerate(Fr_kplus1.EltTip):
@@ -817,8 +817,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
-    if data[2]:
-        return 14, Fr_kplus1
+    # if data[2]:
+    #     return 14, Fr_kplus1
 
     exitstatus = 1
     return exitstatus, Fr_kplus1
@@ -1316,8 +1316,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
                                                                                  Fr_lstTmStp.v)
     current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 *(
-                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    cell_diag = (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5
+    expected_range = max(current_prefactor * 6.66 * cell_diag, 1.5 * cell_diag)
+    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < expected_range)[0]
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                    Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -1541,7 +1542,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # set leak off to zero if pressure below pore pressure
     LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
 
-    w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure_RKL2_2(Fr_lstTmStp,
                                                       sim_properties,
                                                       fluid_properties,
                                                       mat_properties,
@@ -1564,7 +1565,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 5
         return exitstatus, None
 
-    fluidVel = data[0]
+    # fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)
@@ -1586,7 +1587,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
     Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
     Fr_kplus1.time += timeStep
-    Fr_kplus1.closed = data[1]
+    # Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
@@ -1793,8 +1794,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
-    if data[2]:
-        return 14, Fr_kplus1
+    # if data[2]:
+    #     return 14, Fr_kplus1
 
     exitstatus = 1
     return exitstatus, Fr_kplus1
