@@ -139,8 +139,8 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
 
     Args:
         fracture_list (list):       -- the fracture list from which the variable is to be extracted.
-        variable (string):          -- the variable to be extracted. See :py:data:`supported_variables` of the
-                                        :py:mod:`Labels` module for a list of supported variables.
+        variable (string):          -- the variable to be extracted. See :py:data:`labels.supported_variables` of the
+                                        :py:mod:`labels` module for a list of supported variables.
         edge (int):                 -- the edge of the cell that will be plotted. This is for variables that
                                        are evaluated on the cell edges instead of cell center. It can have a
                                        value from 0 to 4 (0->left, 1->right, 2->bottom, 3->top, 4->average).
@@ -267,26 +267,13 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             time_srs.append(i.time)
             
     elif variable is 'aspect ratio' or variable is 'ar':
-        for i in fracture_list:
-            cells_x_axis = np.where(abs(i.mesh.CenterCoor[:, 1]) < 1e-12)[0]
-            to_delete = np.where(i.mesh.CenterCoor[cells_x_axis, 0] < 0)[0]
-            cells_x_axis_pstv = np.delete(cells_x_axis, to_delete)
-            tipCell_x_axis = np.intersect1d(i.EltTip, cells_x_axis_pstv)
-            in_tip_x = np.where(i.EltTip == tipCell_x_axis[0])[0]
-    
-            cells_y_axis = np.where(abs(i.mesh.CenterCoor[:, 0]) < 1e-12)[0]
-            to_delete = np.where(i.mesh.CenterCoor[cells_y_axis, 1] < 0)[0]
-            cells_y_axis_pstv = np.delete(cells_y_axis, to_delete)
-            tipCell_y_axis = np.intersect1d(i.EltTip, cells_y_axis_pstv)
-            in_tip_y = np.where(i.EltTip == tipCell_y_axis[0])[0]
-    
-            tipVrtxCoord = i.mesh.VertexCoor[i.mesh.Connectivity[tipCell_y_axis, 0]]
-            r_y = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + i.l[in_tip_y]
-            tipVrtxCoord = i.mesh.VertexCoor[i.mesh.Connectivity[tipCell_x_axis, 0]]
-            r_x = (tipVrtxCoord[0, 0] ** 2 + tipVrtxCoord[0, 1] ** 2) ** 0.5 + i.l[in_tip_x]
-    
-            variable_list.append(r_x / r_y)
-            time_srs.append(i.time)
+        for fr in fracture_list:
+            x_coords = np.hstack((fr.Ffront[:, 0], fr.Ffront[:, 2]))
+            x_len = np.max(x_coords) - np.min(x_coords)
+            y_coords = np.hstack((fr.Ffront[:, 1], fr.Ffront[:, 3]))
+            y_len = np.max(y_coords) - np.min(y_coords)
+            variable_list.append(x_len / y_len)
+            time_srs.append(fr.time)
             
     else:
         raise ValueError('The variable type is not correct.')
@@ -324,7 +311,14 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
 
     return_list = []
 
-    var_values, time_list = get_fracture_variable(fracture_list,
+    if variable in ['front intercepts', 'fi']:
+        return_list = get_front_intercepts(fracture_list, point)
+        if return_time:
+            return return_list, get_fracture_variable(fracture_list, 't')
+        else:
+            return return_list
+    else:
+        var_values, time_list = get_fracture_variable(fracture_list,
                                                     variable,
                                                     edge=edge,
                                                     return_time=True)
@@ -744,7 +738,7 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
 
 def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=None, edge=4):
     """ This function writes fracture variable from each fracture in the list as a csv file. The variable from each of
-        the fracture in the list will saved in a row of the csv file. If a variable is bidimensional, a point can be
+        the fracture in the list will saved in a row of the csv file. If a variable is bi-dimensional, a point can be
         given at which the variable is to be saved.
 
         Args:
@@ -815,7 +809,7 @@ def read_fracture_variable_csv_file(file_name):
 
 def get_extermities_cells(Fr_list):
     """
-    This function returns the extreme points each of the fracture in the list.
+    This function returns the extreme points for each of the fracture in the list.
 
     Args:
         Fr_list (list):         -- the fracture list
@@ -856,3 +850,115 @@ def get_extermities_cells(Fr_list):
             extremities[indx, 2] = fracture.EltTip[min_intrsct2_y]
 
     return extremities
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_front_intercepts(fr_list, point):
+    """
+    This function returns the top, bottom, left and right intercepts on the front of the horizontal and vertical lines
+    drawn from the given point.
+
+    Arguments:
+         fr_list (list):            -- the given fracture list.
+         point (list or ndarray)    -- the point from the horizontal and vertical lines are drawn.
+
+    Returns:
+          intercepts (list):        -- list of top, bottom, left and right intercepts for each fracture in the list
+
+    """
+
+    intercepts = []
+
+    for fr in fr_list:
+        pnt_cell = fr.mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
+        pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
+        cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0]      # all the cells with the same y coord
+        tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)               # the tip cells with the same y coord
+
+        # the code bellow remove the tip cells which are directly at right and left of the cell containing the point but
+        # have the front line partially passing through them. For them, the horizontal line drawn from the given point
+        # will pass through the cell but not from the front line.
+        if len(tipCells_x_axis) > 2:
+            invalid_cell = np.full(len(tipCells_x_axis), True, dtype=bool)
+            for indx, cell in enumerate(tipCells_x_axis):
+                in_tip_cells = np.where(fr.EltTip == cell)[0]
+                if (point[1] > fr.Ffront[in_tip_cells, 1] and point[1] <= fr.Ffront[in_tip_cells, 3]) or (
+                        point[1] < fr.Ffront[in_tip_cells, 1] and point[1] >= fr.Ffront[in_tip_cells, 3]):
+                    invalid_cell[indx] = False
+            tipCells_x_axis = np.delete(tipCells_x_axis, np.where(invalid_cell)[0])
+
+        # find out the left and right cells
+        if len(tipCells_x_axis) == 2:
+            if fr.mesh.CenterCoor[tipCells_x_axis[0], 0] < point[0]:
+                lft_cell = tipCells_x_axis[0]
+                rgt_cell = tipCells_x_axis[1]
+            else:
+                lft_cell = tipCells_x_axis[1]
+                rgt_cell = tipCells_x_axis[0]
+        else:
+            lft_cell = np.nan
+            rgt_cell = np.nan
+
+        pnt_cell_x = fr.mesh.CenterCoor[pnt_cell, 0]
+        cells_y_axis = np.where(fr.mesh.CenterCoor[:, 0] == pnt_cell_x)[0]
+        tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)
+
+        # the code bellow remove the tip cells which are directly at top and bottom of the cell containing the point but
+        # have the front line partially passing through them. For them, the vertical line drawn from the given point
+        # will pass through the cell but not from the front line.
+        if len(tipCells_y_axis) > 2:
+            invalid_cell = np.full(len(tipCells_y_axis), True, dtype=bool)
+            for indx, cell in enumerate(tipCells_y_axis):
+                in_tip_cells = np.where(fr.EltTip == cell)[0]
+                if (point[0] > fr.Ffront[in_tip_cells, 0] and point[0] <= fr.Ffront[in_tip_cells, 2]) or (
+                        point[0] < fr.Ffront[in_tip_cells, 0] and point[0] >= fr.Ffront[in_tip_cells, 2]):
+                    invalid_cell[indx] = False
+            tipCells_y_axis = np.delete(tipCells_y_axis, np.where(invalid_cell)[0])
+
+        if len(tipCells_y_axis) == 2:
+            if fr.mesh.CenterCoor[tipCells_y_axis[0], 0] < point[1]:
+                btm_cell = tipCells_y_axis[0]
+                top_cell = tipCells_y_axis[1]
+            else:
+                btm_cell = tipCells_y_axis[1]
+                top_cell = tipCells_y_axis[0]
+        else:
+            btm_cell = np.nan
+            top_cell = np.nan
+
+        top_in_tip = np.where(fr.EltTip == top_cell)[0]
+        btm_in_tip = np.where(fr.EltTip == btm_cell)[0]
+        lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+        rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+
+        intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan] # set to nan if not available
+
+        # find the intersection using the equations of the front lines in the tip cells
+        if top_in_tip.size > 0:
+            intrcp_top = fr.Ffront[top_in_tip, 3] + \
+                     (fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) / (
+                                 fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * \
+                     (point[0] - fr.Ffront[top_in_tip, 2])
+
+        if btm_in_tip.size > 0:
+            intrcp_btm = fr.Ffront[btm_in_tip, 3] + \
+                     (fr.Ffront[btm_in_tip, 3] - fr.Ffront[btm_in_tip, 1]) / (
+                                 fr.Ffront[btm_in_tip, 2] - fr.Ffront[btm_in_tip, 0]) * \
+                     (point[0] - fr.Ffront[btm_in_tip, 2])
+
+        if lft_in_tip.size > 0:
+            intrcp_lft = (point[1] - fr.Ffront[lft_in_tip, 3]) / \
+                     (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                 fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                     fr.Ffront[lft_in_tip, 2]
+
+        if rgt_in_tip.size > 0:
+            intrcp_rgt = (point[1] - fr.Ffront[rgt_in_tip, 3]) / \
+                     (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                 fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                     fr.Ffront[rgt_in_tip, 2]
+
+        intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
+
+    return intercepts

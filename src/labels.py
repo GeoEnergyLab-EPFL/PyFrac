@@ -166,14 +166,14 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
-                       'ar', 'aspect ratio', 'efficiency', 'ef', 'surface']
+                       'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
                             'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total']
 bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                           'fluid velocity', 'fv', 'lk', 'leak off', 'surface']
+                           'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi']
 
 required_string = {
     't': '100000',
