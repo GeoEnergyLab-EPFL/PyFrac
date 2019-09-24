@@ -702,6 +702,12 @@ class Fracture:
                                                             self.Tarrival[self.EltChannel],
                                                             coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
                                                             method='linear')
+        Tarrival_nan = np.where(np.isnan(Fr_coarse.Tarrival[Fr_coarse.EltChannel]))[0]
+        if Tarrival_nan.size > 0:
+            for elt in Tarrival_nan:
+                Fr_coarse.Tarrival[Fr_coarse.EltChannel[elt]] = np.nanmean(
+                                            Fr_coarse.Tarrival[coarse_mesh.NeiElements[Fr_coarse.EltChannel[elt]]])
+
         Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
                                                             self.TarrvlZrVrtx[self.EltChannel],
                                                             coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
@@ -709,8 +715,9 @@ class Fracture:
 
         # The zero vertex arrival time for the tip elements is taken equal to the corresponding element in the
         # fine mesh. If not available, average is taken of the enclosing elements
-        for i in Fr_coarse.EltTip:
-            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0], coarse_mesh.CenterCoor[i, 1])
+        to_correct = []
+        for indx, elt in enumerate(Fr_coarse.EltTip):
+            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])
             if np.isnan(self.TarrvlZrVrtx[corr_tip]):
                 TarrvlZrVrtx = 0
                 cnt = 0
@@ -718,9 +725,16 @@ class Fracture:
                     if not np.isnan(self.TarrvlZrVrtx[enclosing[corr_tip][j]]):
                         TarrvlZrVrtx += self.TarrvlZrVrtx[enclosing[corr_tip][j]]
                         cnt += 1
-                Fr_coarse.TarrvlZrVrtx[i] = TarrvlZrVrtx / cnt
+                if cnt > 0:
+                    Fr_coarse.TarrvlZrVrtx[elt] = TarrvlZrVrtx / cnt
+                else:
+                    to_correct.append(indx)
+                    Fr_coarse.TarrvlZrVrtx[elt] = np.nan
             else:
-                Fr_coarse.TarrvlZrVrtx[i] = self.TarrvlZrVrtx[corr_tip]
+                Fr_coarse.TarrvlZrVrtx[elt] = self.TarrvlZrVrtx[corr_tip]
+        if len(to_correct) > 0:
+            for elt in to_correct:
+                Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
 
         Fr_coarse.LkOff = LkOff
         Fr_coarse.LkOffTotal = self.LkOffTotal
