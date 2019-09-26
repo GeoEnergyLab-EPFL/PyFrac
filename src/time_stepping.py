@@ -220,6 +220,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
         # Calculate leak-off term for the channel cell
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
+        t_lst_min_t0[t_lst_min_t0 < 0.] = 0.
         t_min_t0 = t_lst_min_t0 + timeStep
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (t_min_t0 ** 0.5 -
                                         t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
@@ -684,9 +685,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
         #todo: no need to evaluate on each iteration. Need to decide. Evaluating here for now for better readability
-        LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((Fr_lstTmStp.time +
-                        timeStep - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5 - (Fr_lstTmStp.time -
-                        Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel])**0.5) * Fr_lstTmStp.mesh.EltArea
+        t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
+        t_lst_min_t0[t_lst_min_t0 < 0.] = 0.
+        t_min_t0 = t_lst_min_t0 + timeStep
+        LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (
+                                            t_min_t0**0.5 - t_lst_min_t0**0.5) * Fr_lstTmStp.mesh.EltArea
         if stagnant.any():
             LkOff[EltsTipNew[stagnant]] = leak_off_stagnant_tip(EltsTipNew[stagnant],
                                                                 l_k[stagnant],
@@ -1522,6 +1525,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
         t_since_arrival = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
+        t_since_arrival[t_since_arrival < 0.] = 0.
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((t_since_arrival
                                             + timeStep)**0.5 - t_since_arrival**0.5) * Fr_lstTmStp.mesh.EltArea
         if np.isnan(LkOff[Fr_lstTmStp.EltChannel]).any():

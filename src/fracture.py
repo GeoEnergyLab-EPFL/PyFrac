@@ -734,7 +734,8 @@ class Fracture:
                 Fr_coarse.TarrvlZrVrtx[elt] = self.TarrvlZrVrtx[corr_tip]
         if len(to_correct) > 0:
             for elt in to_correct:
-                Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
+                Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
+                                                Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
 
         Fr_coarse.LkOff = LkOff
         Fr_coarse.LkOffTotal = self.LkOffTotal
