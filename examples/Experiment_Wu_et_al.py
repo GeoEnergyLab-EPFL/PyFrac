@@ -28,7 +28,7 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
     if y > 0.025:
-        return 11.2e6
+        return 9.2e6
     elif y < -0.025:
         return 5.0e6
     else:
@@ -52,7 +52,10 @@ simulProp.bckColor = 'confining stress'           # the parameter according to w
 simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
-simulProp.plotVar = ['footprint']
+# simulProp.plotVar = ['footprint', 'w', 'pf', 'pn']
+simulProp.tmStpPrefactor = 0.4
+# simulProp.saveToDisk = False
+simulProp.plotFigure = False
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.019)
@@ -75,7 +78,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+# controller.run()
 
 # loading the experiment data file
 import csv
@@ -138,8 +141,8 @@ Fig_Fr = plot_fracture_list(Fr_list,
                             fig=Fig_Fr,
                             plot_prop=plot_prop)
 
-#plt.show(block=True)
+plt.show(block=True)
 #  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()
+# plt.show(block=False)
+# plt.pause(5)
+# plt.close()

@@ -19,7 +19,7 @@ from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
-from explicit_RKL import solve_width_pressure_RKL2_2
+from explicit_RKL import solve_width_pressure_RKL2, solve_width_pressure_RKL2_2
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -1542,7 +1542,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # set leak off to zero if pressure below pore pressure
     LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
 
-    w_n_plus1, pf_n_plus1, data = solve_width_pressure_RKL2_2(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure_RKL2(Fr_lstTmStp,
                                                       sim_properties,
                                                       fluid_properties,
                                                       mat_properties,

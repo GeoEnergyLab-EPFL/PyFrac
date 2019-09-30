@@ -49,6 +49,7 @@ def solve_width_pressure_RKL2(Fr_lstTmStp, sim_properties, fluid_properties, mat
     dt_CFL = 5 * fluid_properties.viscosity * min(Fr_lstTmStp.mesh.hx, Fr_lstTmStp.mesh.hy) ** 3 / \
              (mat_properties.Eprime * np.max(Fr_lstTmStp.w) ** 3)
     s = ceil(-0.5 + (8 + 16 * timeStep / dt_CFL) ** 0.5 / 2)
+    print("s = " + repr(s))
     # s = 60
     delt_wTip = wTip - Fr_lstTmStp.w[EltTip]
     tip_delw_step = delt_wTip / s
@@ -64,44 +65,29 @@ def solve_width_pressure_RKL2(Fr_lstTmStp, sim_properties, fluid_properties, mat
                                          InCrack,
                                          corr_nei)
 
+    mu_t_1 = 4 / (3 * (s * s + s - 2))
     # pf_0 = Fr_lstTmStp.pFluid[EltCrack_k]
-    pf_0 = np.dot(C[np.ix_(EltCrack_k, EltCrack_k)], Fr_lstTmStp.w[EltCrack_k])
-    M_0 = np.dot(cond_0[:n_channel, :-1], pf_0) + Qin[Fr_lstTmStp.EltChannel] / Fr_lstTmStp.mesh.EltArea
+    pf_0 = np.empty(len(EltCrack_k))
+    pf_0[:n_channel] = np.dot(C[np.ix_(Fr_lstTmStp.EltChannel, EltCrack_k)], Fr_lstTmStp.w[EltCrack_k]) + mat_properties.SigmaO[Fr_lstTmStp.EltChannel]
+    pf_0[n_channel:] = np.linalg.solve(timeStep * mu_t_1 * cond_0[n_channel:, n_channel:-1], tip_delw_step - np.dot(timeStep * mu_t_1 * cond_0[n_channel:, :n_channel], pf_0[:n_channel]))
+    # pf_0 = np.dot(C[np.ix_(EltCrack_k, EltCrack_k)], Fr_lstTmStp.w[EltCrack_k])
+
+    M_0 = np.dot(cond_0[:, :-1], pf_0) + Qin[EltCrack_k] / Fr_lstTmStp.mesh.EltArea
 
     W_0 = Fr_lstTmStp.w[EltCrack_k]
-    W_1 = np.zeros(len(EltCrack_k))
-    mu_t_1 = 4 / (3 * (s * s + s - 2))
-    W_1[:n_channel] = Fr_lstTmStp.w[Fr_lstTmStp.EltChannel] + timeStep * mu_t_1 * M_0
-    W_1[n_channel:] = Fr_lstTmStp.w[EltTip] + tip_delw_step
+
+    W_1 = Fr_lstTmStp.w[EltCrack_k] + timeStep * mu_t_1 * M_0
 
     W_jm1 = np.copy(W_1)
     W_jm2 = np.copy(W_0)
     tau_M0 = timeStep * M_0
     param_pack = (Fr_lstTmStp.muPrime, Fr_lstTmStp.mesh, InCrack, corr_nei)
-    sum_mut = copy.copy(mu_t_1)
-    sum_gamma = 0
 
     for j in range(2, s + 1):
 
-        # C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
-        #                             EltTip[partlyFilledTip])])  # keeping the tip element entries to restore current
-        # #  tip correction. This is done to avoid copying the full elasticity matrix.
-        #
-        # # filling fraction correction for element in the tip region
-        # FillF = j / s * FillFrac[partlyFilledTip]
-        # for e in range(0, len(partlyFilledTip)):
-        #     r = FillF[e] - .25
-        #     if r < 0.1:
-        #         r = 0.1
-        #     ac = (1 - r) / r
-        #     C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
-
-
-        W_j, sum_mut, sum_gamma = RKL_substep(j, s, W_jm1, W_jm2, W_0, EltCrack_k, n_channel, tip_delw_step, param_pack, C, timeStep, tau_M0, Qin[Fr_lstTmStp.EltChannel], wTip, sum_mut, sum_gamma)
+        W_j = RKL_substep(j, s, W_jm1, W_jm2, W_0, EltCrack_k, n_channel, tip_delw_step, param_pack, C, timeStep, tau_M0, Qin[EltCrack_k], Fr_lstTmStp.EltChannel, mat_properties.SigmaO)
         W_jm2 = W_jm1
         W_jm1 = W_j
-
-        # C[np.ix_(EltTip[partlyFilledTip], EltTip[partlyFilledTip])] = C_EltTip
 
     w_s = np.zeros(Fr_lstTmStp.mesh.NumberOfElts)
     pf_s = np.zeros(Fr_lstTmStp.mesh.NumberOfElts)
@@ -114,24 +100,34 @@ def solve_width_pressure_RKL2(Fr_lstTmStp, sim_properties, fluid_properties, mat
     return w_s, pf_s, None
 
 
-def RKL_substep(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, param_pack, C, tau, tau_M0, Qin, W0_tip, sum_mut, sum_gamma):
+def RKL_substep(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, param_pack, C, tau, tau_M0, Qin, EltChannel, sigmaO):
 
-    pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
+    # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
     muPrime, Mesh, InCrack, neiInCrack = param_pack
     w_jm1 = np.zeros(Mesh.NumberOfElts)
     w_jm1[crack] = W_jm1
     cond = finiteDiff_operator_laminar(w_jm1, crack, muPrime, Mesh, InCrack, neiInCrack)
-    M_jm1 = np.dot(cond[:n_channel, :-1], pf) + Qin / Mesh.EltArea
     mu_t = 4 * (2 * j - 1) * b[j] / (j * (s * s + s - 2) * b[j - 1])
     gamma_t = -a[j - 1] * mu_t
-    W_j = np.zeros(len(crack))
-    W_j[:n_channel] = mu[j] * W_jm1[:n_channel] + nu[j] * W_jm2[:n_channel] + (1 - mu[j] - nu[j]) * W_0[:n_channel] + mu_t * tau * M_jm1 + gamma_t * tau_M0
-    sum_mut += mu_t
-    sum_gamma += gamma_t
-    W_j[n_channel:] = W0_tip + j * tip_delw_step
+
+    # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
+
+
+    pf = np.empty(len(crack))
+    pf[:n_channel] = np.dot(C[np.ix_(EltChannel, crack)], W_jm1) + sigmaO[EltChannel]
+
+    S = j * tip_delw_step - mu[j] * W_jm1[n_channel:] - nu[j] * W_jm2[n_channel:] + (mu[j] + nu[j]) * W_0[n_channel:] - gamma_t * tau_M0[n_channel:] - mu_t * tau * np.dot(cond[n_channel:, :n_channel], pf[:n_channel])
+    A = mu_t * tau * cond[n_channel:, n_channel:-1]
+    pf[n_channel:] = np.linalg.solve(A, S)
+
+    M_jm1 = np.dot(cond[:, :-1], pf) + Qin / Mesh.EltArea
+
+    # W_j[:n_channel] = mu[j] * W_jm1[:n_channel] + nu[j] * W_jm2[:n_channel] + (1 - mu[j] - nu[j]) * W_0[:n_channel] + mu_t * tau * M_jm1 + gamma_t * tau_M0
+    W_j = mu[j] * W_jm1 + nu[j] * W_jm2 + (1 - mu[j] - nu[j]) * W_0 + mu_t * tau * M_jm1 + gamma_t * tau_M0
+    # W_j[n_channel:] = W0_tip + j * tip_delw_step
     # W_j[n_channel:] = s * tip_delw_step
 
-    return W_j, sum_mut, sum_gamma
+    return W_j
 
 
 def find_neighbor_in_crack(EltCrack, mesh):
