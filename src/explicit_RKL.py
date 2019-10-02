@@ -45,7 +45,6 @@ def solve_width_pressure_RKL2(Fr_lstTmStp, sim_properties, fluid_properties, mat
         ac = (1 - r) / r
         C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
 
-
     dt_CFL = 5 * fluid_properties.viscosity * min(Fr_lstTmStp.mesh.hx, Fr_lstTmStp.mesh.hy) ** 3 / \
              (mat_properties.Eprime * np.max(Fr_lstTmStp.w) ** 3)
     s = ceil(-0.5 + (8 + 16 * timeStep / dt_CFL) ** 0.5 / 2)
@@ -280,3 +279,107 @@ def RKL_substep_2(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, para
 
     return W_j, sum_mut, sum_gamma
 
+
+def solve_with_RKL2_neg(Eprime, *args):
+
+    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
+     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+
+    viscosity = muPrime / 12
+    dt_CFL = 5 * np.min(viscosity) * min(Mesh.hx, Mesh.hy) ** 3 / \
+             (Eprime * np.max(wLastTS) ** 3)
+    s = ceil(-0.5 + (8 + 16 * dt / dt_CFL) ** 0.5 / 2)
+    print("s = " + repr(s))
+
+    delt_wTip = imposed_val - wLastTS[to_impose]
+    tip_delw_step = delt_wTip / s
+
+    # act_tip = np.concatenate((active, to_impose))
+    act_tip_val = np.concatenate((wc_to_impose, tip_delw_step))
+    n_ch = len(to_solve)
+    # n_act = len(active)
+    # n_tip = len(imposed_val)
+    # n_total = n_ch + n_act + n_tip
+
+    ch_indxs = np.arange(n_ch)
+
+    # act_indxs = n_ch + np.arange(n_act)
+    # tip_indxs = n_ch + n_act + np.arange(n_tip)
+
+
+    cond_0 = finiteDiff_operator_laminar(wLastTS,
+                                         EltCrack,
+                                         muPrime,
+                                         Mesh,
+                                         InCrack,
+                                         neiInCrack)
+
+    mu_t_1 = 4 / (3 * (s * s + s - 2))
+    # pf_0 = Fr_lstTmStp.pFluid[EltCrack]
+    pf_0 = np.empty(len(EltCrack))
+    pf_0[ch_indxs] = np.dot(C[np.ix_(to_solve, EltCrack)], wLastTS[EltCrack]) + \
+                       sigma0[to_solve]
+    pf_0[n_ch:] = np.linalg.solve(dt * mu_t_1 * cond_0[n_ch:, n_ch:-1],
+                                       act_tip_val - np.dot(dt * mu_t_1 * cond_0[n_ch:, :n_ch],
+                                                              pf_0[:n_ch]))
+    # pf_0 = np.dot(C[np.ix_(EltCrack, EltCrack)], wLastTS[EltCrack])
+
+    M_0 = np.dot(cond_0[:, :-1], pf_0) + Q[EltCrack] / Mesh.EltArea
+
+    W_0 = wLastTS[EltCrack]
+
+    W_1 = wLastTS[EltCrack] + dt * mu_t_1 * M_0
+
+    W_jm1 = np.copy(W_1)
+    W_jm2 = np.copy(W_0)
+    tau_M0 = dt * M_0
+    param_pack = (muPrime, Mesh, InCrack, neiInCrack)
+
+    for j in range(2, s + 1):
+        W_j = RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, EltCrack, n_ch, tip_delw_step, param_pack, C, dt,
+                          tau_M0, Q[EltCrack], to_solve, sigma0, act_tip_val)
+        W_jm2 = W_jm1
+        W_jm1 = W_j
+
+    # w_s = np.zeros(Mesh.NumberOfElts)
+    # pf_s = np.zeros(Mesh.NumberOfElts)
+    #
+    # w_s[EltCrack] = W_j
+    # pf_s[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], W_j)
+    sol = W_j - wLastTS[EltCrack]
+
+
+    return sol, None
+
+
+def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, param_pack, C, tau, tau_M0, Qin, EltChannel,
+                sigmaO, imposed_value):
+    # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
+    muPrime, Mesh, InCrack, neiInCrack = param_pack
+    w_jm1 = np.zeros(Mesh.NumberOfElts)
+    w_jm1[crack] = W_jm1
+    cond = finiteDiff_operator_laminar(w_jm1, crack, muPrime, Mesh, InCrack, neiInCrack)
+    mu_t = 4 * (2 * j - 1) * b[j] / (j * (s * s + s - 2) * b[j - 1])
+    gamma_t = -a[j - 1] * mu_t
+
+    # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
+
+    pf = np.empty(len(crack))
+    pf[:n_channel] = np.dot(C[np.ix_(EltChannel, crack)], W_jm1) + sigmaO[EltChannel]
+
+    imposed_value[-len(tip_delw_step):] = j * tip_delw_step
+    S = imposed_value - mu[j] * W_jm1[n_channel:] - nu[j] * W_jm2[n_channel:] + (mu[j] + nu[j]) * W_0[
+                            n_channel:] - gamma_t * tau_M0[n_channel:] - mu_t * tau * np.dot(
+                            cond[n_channel:, :n_channel], pf[:n_channel])
+
+    A = mu_t * tau * cond[n_channel:, n_channel:-1]
+    pf[n_channel:] = np.linalg.solve(A, S)
+
+    M_jm1 = np.dot(cond[:, :-1], pf) + Qin / Mesh.EltArea
+
+    # W_j[:n_channel] = mu[j] * W_jm1[:n_channel] + nu[j] * W_jm2[:n_channel] + (1 - mu[j] - nu[j]) * W_0[:n_channel] + mu_t * tau * M_jm1 + gamma_t * tau_M0
+    W_j = mu[j] * W_jm1 + nu[j] * W_jm2 + (1 - mu[j] - nu[j]) * W_0 + mu_t * tau * M_jm1 + gamma_t * tau_M0
+    # W_j[n_channel:] = W0_tip + j * tip_delw_step
+    # W_j[n_channel:] = s * tip_delw_step
+
+    return W_j

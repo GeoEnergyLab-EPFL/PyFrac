@@ -19,7 +19,7 @@ from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
-from explicit_RKL import solve_width_pressure_RKL2, solve_width_pressure_RKL2_2
+from explicit_RKL import solve_width_pressure_RKL2, solve_width_pressure_RKL2_2, solve_with_RKL2_neg
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -1107,14 +1107,17 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             typValue = np.copy(guess)
             inter_itr_init = (vk, np.array([], dtype=int))
 
-            sol, data_Pic = Picard_Newton(None,
-                                   sys_fun,
-                                   guess,
-                                   typValue,
-                                   inter_itr_init,
-                                   sim_properties,
-                                   *arg,
-                                   perf_node=perfNode_widthConstrItr)
+            sol, data_Pic = solve_with_RKL2_neg(mat_properties.Eprime, *arg)
+
+            # sol, data_Pic = Picard_Newton(None,
+            #                        sys_fun,
+            #                        guess,
+            #                        typValue,
+            #                        inter_itr_init,
+            #                        sim_properties,
+            #                        *arg,
+            #                        perf_node=perfNode_widthConstrItr)
+
 
             failed_sol = np.isnan(sol).any()
 
@@ -1167,10 +1170,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 if len(new_neg) == 0:
                     active_contraint = False
                 else:
-                    if sim_properties.frontAdvancing is not 'implicit':
-                        print('Changing front advancing scheme to implicit due to width going negative...')
-                        sim_properties.frontAdvancing = 'implicit'
-                        return np.nan, np.nan, (np.nan, np.nan)
+                    # if sim_properties.frontAdvancing is not 'implicit':
+                    #     print('Changing front advancing scheme to implicit due to width going negative...')
+                    #     sim_properties.frontAdvancing = 'implicit'
+                    #     return np.nan, np.nan, (np.nan, np.nan)
 
                     # cumulatively add the cells with active width constraint
                     neg = np.hstack((neg_km1, new_neg))
@@ -1542,7 +1545,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # set leak off to zero if pressure below pore pressure
     LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
 
-    w_n_plus1, pf_n_plus1, data = solve_width_pressure_RKL2(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                       sim_properties,
                                                       fluid_properties,
                                                       mat_properties,
@@ -1564,6 +1567,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if np.isnan(w_n_plus1).any():
         exitstatus = 5
         return exitstatus, None
+
+    if np.where(w_n_plus1 < 0.)[0].any():
+        print("negative found!")
+
+    # w_n_plus1[w_n_plus1<1e-6] = 1e-6
 
     # fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
@@ -1587,7 +1595,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
     Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
     Fr_kplus1.time += timeStep
-    # Fr_kplus1.closed = data[1]
+    Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
@@ -1794,8 +1802,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
-    # if data[2]:
-    #     return 14, Fr_kplus1
+    if data[2]:
+        return 14, Fr_kplus1
 
     exitstatus = 1
     return exitstatus, Fr_kplus1
