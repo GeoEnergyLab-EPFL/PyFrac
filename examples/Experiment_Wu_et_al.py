@@ -28,7 +28,7 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 def sigmaO_func(x, y):
     """ The function providing the confining stress"""
     if y > 0.025:
-        return 9.2e6
+        return 11.2e6
     elif y < -0.025:
         return 5.0e6
     else:
@@ -50,12 +50,14 @@ Fluid = FluidProperties(viscosity=30)
 simulProp = SimulationProperties()
 simulProp.bckColor = 'confining stress'           # the parameter according to which the background is color coded
 simulProp.frontAdvancing = 'explicit'
+simulProp.set_tipAsymptote('M')
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 # simulProp.plotVar = ['footprint', 'w', 'pf', 'pn']
-simulProp.tmStpPrefactor = 0.4
+simulProp.tmStpPrefactor = 0.6
 # simulProp.saveToDisk = False
-simulProp.plotFigure = False
+simulProp.tolFractFront = 0.004
+# simulProp.plotFigure = False
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.019)
@@ -78,7 +80,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-# controller.run()
+controller.run()
 
 # loading the experiment data file
 import csv

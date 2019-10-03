@@ -232,7 +232,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # solve for width. All of the fracture cells are solved (no tip values are is imposed)
     empty = np.array([], dtype=int)
-    w_k, p_k, return_data = solve_width_pressure_RKL2(Fr_lstTmStp,
+    w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
                                          sim_properties,
                                          fluid_properties,
                                          mat_properties,
@@ -704,7 +704,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         exitstatus = 13
         return exitstatus, None
 
-    w_n_plus1, pf_n_plus1, data = solve_width_pressure_RKL2(Fr_lstTmStp,
+    w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                         sim_properties,
                                                         fluid_properties,
                                                         mat_properties,
@@ -768,7 +768,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
-    # Fr_kplus1.closed = data[1]
+    Fr_kplus1.closed = data[1]
     tip_neg_rib = np.asarray([], dtype=np.int)
     # adding tip cells with closed corresponding ribbon cells to the list of closed cells
     for i, elem in enumerate(Fr_kplus1.EltTip):
@@ -817,8 +817,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
-    # if data[2]:
-    #     return 14, Fr_kplus1
+    if data[2]:
+        return 14, Fr_kplus1
 
     exitstatus = 1
     return exitstatus, Fr_kplus1

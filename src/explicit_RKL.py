@@ -286,7 +286,7 @@ def solve_with_RKL2_neg(Eprime, *args):
      sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
 
     viscosity = muPrime / 12
-    dt_CFL = 5 * np.min(viscosity) * min(Mesh.hx, Mesh.hy) ** 3 / \
+    dt_CFL = 3 * np.min(viscosity) * min(Mesh.hx, Mesh.hy) ** 3 / \
              (Eprime * np.max(wLastTS) ** 3)
     s = ceil(-0.5 + (8 + 16 * dt / dt_CFL) ** 0.5 / 2)
     print("s = " + repr(s))
@@ -357,7 +357,9 @@ def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, pa
     # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
     muPrime, Mesh, InCrack, neiInCrack = param_pack
     w_jm1 = np.zeros(Mesh.NumberOfElts)
-    w_jm1[crack] = W_jm1
+    cp_W_jm1 = np.copy(W_jm1)
+    cp_W_jm1[W_jm1 < 1e-6] = 1e-6
+    w_jm1[crack] = cp_W_jm1
     cond = finiteDiff_operator_laminar(w_jm1, crack, muPrime, Mesh, InCrack, neiInCrack)
     mu_t = 4 * (2 * j - 1) * b[j] / (j * (s * s + s - 2) * b[j - 1])
     gamma_t = -a[j - 1] * mu_t
