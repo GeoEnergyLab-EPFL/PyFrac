@@ -7,10 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
-from elastohydrodynamic_solver import finiteDiff_operator_laminar
+from elastohydrodynamic_solver import finiteDiff_operator_laminar, Gravity_term
 import numpy as np
 from math import ceil
-# from elasticity import calculate_fluid_flow_characteristics_laminar
 import copy
 
 s_max = 1000
@@ -279,7 +278,7 @@ def RKL_substep_2(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, para
 
     return W_j, sum_mut, sum_gamma
 
-@profile
+# @profile
 def solve_with_RKL2_neg(Eprime, *args):
 
     (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
@@ -324,7 +323,21 @@ def solve_with_RKL2_neg(Eprime, *args):
                                        act_tip_val - dt * mu_t_1 * cond_0[n_ch:, :][:, :n_ch].dot(pf_0[:n_ch]))
     # pf_0 = np.dot(C[np.ix_(EltCrack, EltCrack)], wLastTS[EltCrack])
 
-    M_0 = cond_0[:, :-1].dot(pf_0) + Q[EltCrack] / Mesh.EltArea
+
+    if gravity:
+        w_0 = np.zeros(Mesh.NumberOfElts)
+        w_0[EltCrack] = wLastTS[EltCrack]
+        G = Gravity_term(w_0,
+                         EltCrack,
+                         muPrime,
+                         Mesh,
+                         InCrack,
+                         rho)[EltCrack]
+
+    else:
+        G = np.zeros((len(EltCrack),))
+
+    M_0 = cond_0[:, :-1].dot(pf_0) + Q[EltCrack] / Mesh.EltArea + G
 
     W_0 = wLastTS[EltCrack]
 
@@ -336,9 +349,9 @@ def solve_with_RKL2_neg(Eprime, *args):
     param_pack = (muPrime, Mesh, InCrack, neiInCrack)
     C_red = np.asfortranarray(C[np.ix_(to_solve, EltCrack)])
     for j in range(2, s + 1):
-        print('step = ' + repr(j))
+        # print('step = ' + repr(j))
         W_j = RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, EltCrack, n_ch, tip_delw_step, param_pack, C_red, dt,
-                          tau_M0, Q[EltCrack], to_solve, sigma0, act_tip_val)
+                          tau_M0, Q[EltCrack], to_solve, sigma0, act_tip_val, gravity, rho)
         W_jm2 = W_jm1
         W_jm1 = W_j
 
@@ -352,9 +365,9 @@ def solve_with_RKL2_neg(Eprime, *args):
 
     return sol, None
 
-@profile
+# @profile
 def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, param_pack, C_, tau, tau_M0, Qin, EltChannel,
-                sigmaO, imposed_value):
+                sigmaO, imposed_value, gravity, rho):
     # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
     muPrime, Mesh, InCrack, neiInCrack = param_pack
     w_jm1 = np.zeros(Mesh.NumberOfElts)
@@ -380,7 +393,19 @@ def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, pa
     A = mu_t * tau * (cond[n_channel:, :][:, n_channel:-1]).toarray()
     pf[n_channel:] = np.linalg.solve(A, S)
 
-    M_jm1 = cond[:, :-1].dot(pf) + Qin / Mesh.EltArea
+
+    if gravity:
+        G = Gravity_term(w_jm1,
+                         crack,
+                         muPrime,
+                         Mesh,
+                         InCrack,
+                         rho)[crack]
+
+    else:
+        G = np.zeros((len(crack),))
+
+    M_jm1 = cond[:, :-1].dot(pf) + Qin / Mesh.EltArea + G
 
 
     # W_j[:n_channel] = mu[j] * W_jm1[:n_channel] + nu[j] * W_jm2[:n_channel] + (1 - mu[j] - nu[j]) * W_0[:n_channel] + mu_t * tau * M_jm1 + gamma_t * tau_M0
@@ -440,7 +465,7 @@ def pardot(a, b, nblocks, mblocks, dot_func=do_dot):
         th.join()
 
     return out
-@profile
+# @profile
 def pardot_matrix_vector(a, b, nblocks, dot_func=do_dot):
     """
     Return the matrix product a * b.
