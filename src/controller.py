@@ -131,7 +131,14 @@ class Controller:
         self.successfulTimeSteps = 0
         self.failedTimeSteps = 0
 
-        self.frontAdvancing = Sim_prop.frontAdvancing
+        # setting front advancing scheme to implicit if velocity is not available for the first time step.
+        self.frontAdvancing = copy.copy(Sim_prop.frontAdvancing)
+        if Sim_prop.frontAdvancing in ['explicit', 'predictor-corrector']:
+            if np.max(Fracture.v) <= 0 or np.isnan(Fracture.v).any():
+                Sim_prop.frontAdvancing = 'implicit'
+            else:
+                Sim_prop.frAdvCurrent = copy.copy(Sim_prop.frontAdvancing)
+
         if self.sim_prop.saveToDisk:
             self.logAddress = copy.copy(Sim_prop.get_outputFolder())
         else:
@@ -195,10 +202,10 @@ class Controller:
 
             print('Done!')
 
-        # perform first time step with implicit front advancing due to non-availability of velocity
-        if not self.sim_prop.symmetric:
-            if self.sim_prop.frontAdvancing == "predictor-corrector":
-                self.sim_prop.frontAdvancing = "implicit"
+        # # perform first time step with implicit front advancing due to non-availability of velocity
+        # if not self.sim_prop.symmetric:
+        #     if self.sim_prop.frontAdvancing == "predictor-corrector":
+        #         self.sim_prop.frontAdvancing = "implicit"
 
         print("Starting time = " + repr(self.fracture.time))
         # starting time stepping loop
@@ -258,6 +265,12 @@ class Controller:
                     self.sim_prop.solveDeltaP = self.solveDetlaP_cp
                 self.PstvInjJmp = None
                 self.fullyClosed = False
+
+                # set front advancing back as set in simulation properties originally if velocity becomes available.
+                if np.max(Fr_n_pls1.v) > 0 or not np.isnan(Fr_n_pls1.v).any():
+                    self.sim_prop.frontAdvancing = copy.copy(self.frontAdvancing)
+                else:
+                    self.sim_prop.frontAdvancing = 'implicit'
 
                 if self.TmStpCount == self.sim_prop.maxTimeSteps:
                     print("Max time steps reached!")
@@ -364,9 +377,6 @@ class Controller:
                     self.failedTimeSteps += 1
 
             self.TmStpCount += 1
-            # set front advancing beck as set in simulation properties originally
-            if self.TmStpCount == 1:
-                self.sim_prop.frontAdvancing = self.frontAdvancing
 
         self.write_to_log("\n\n-----Simulation finished------")
         self.write_to_log("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
