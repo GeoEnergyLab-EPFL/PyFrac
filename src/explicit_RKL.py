@@ -11,6 +11,7 @@ from elastohydrodynamic_solver import finiteDiff_operator_laminar, Gravity_term
 import numpy as np
 from math import ceil
 import copy
+from properties import instrument_start, instrument_close
 
 s_max = 1000
 a = np.zeros(s_max)
@@ -279,7 +280,9 @@ def RKL_substep_2(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, para
     return W_j, sum_mut, sum_gamma
 
 # @profile
-def solve_with_RKL2_neg(Eprime, *args):
+def solve_with_RKL2_neg(Eprime, perf_node, *args):
+
+    perfNode_RKL = instrument_start("linear system solve", perf_node)
 
     (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
      sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
@@ -362,8 +365,12 @@ def solve_with_RKL2_neg(Eprime, *args):
     # pf_s[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], W_j)
     sol = W_j - wLastTS[EltCrack]
 
+    instrument_close(perf_node, perfNode_RKL, None,
+                     len(W_j), True, False, None)
+    perfNode_RKL.iterations = s
+    perf_node.RKL_data.append(perfNode_RKL)
 
-    return sol, None
+    return sol, s
 
 # @profile
 def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, param_pack, C_, tau, tau_M0, Qin, EltChannel,

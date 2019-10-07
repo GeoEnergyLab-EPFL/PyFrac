@@ -1107,7 +1107,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             typValue = np.copy(guess)
             inter_itr_init = (vk, np.array([], dtype=int))
 
-            sol, data_Pic = solve_with_RKL2_neg(mat_properties.Eprime, *arg)
+            sol, data_Pic = solve_with_RKL2_neg(mat_properties.Eprime, perfNode_widthConstrItr, *arg)
 
             # sol, data_Pic = Picard_Newton(None,
             #                        sys_fun,

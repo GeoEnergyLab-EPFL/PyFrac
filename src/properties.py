@@ -835,6 +835,7 @@ class IterationProperties:
             self.widthConstraintItr_data = []
         elif itr_type == 'width constraint iteration':
             self.linearSolve_data = []
+            self.RKL_data = []
         elif itr_type == 'linear system solve':
             pass
         elif itr_type == 'Brent method':
