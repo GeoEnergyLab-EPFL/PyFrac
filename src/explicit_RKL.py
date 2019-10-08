@@ -287,6 +287,7 @@ def solve_with_RKL2_neg(Eprime, perf_node, *args):
     (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
      sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
 
+    Lk_rate = LeakOff / dt
     viscosity = muPrime / 12
     dt_CFL = 5 * np.min(viscosity) * min(Mesh.hx, Mesh.hy) ** 3 / \
              (Eprime * np.max(wLastTS) ** 3)
@@ -318,14 +319,6 @@ def solve_with_RKL2_neg(Eprime, perf_node, *args):
                                          sparse_flag=True)
     cond_0 = cond_0_lil.tocsr()
     mu_t_1 = 4 / (3 * (s * s + s - 2))
-    # pf_0 = Fr_lstTmStp.pFluid[EltCrack]
-    pf_0 = np.empty(len(EltCrack))
-    pf_0[ch_indxs] = np.dot(C[np.ix_(to_solve, EltCrack)], wLastTS[EltCrack]) + \
-                       sigma0[to_solve]
-    pf_0[n_ch:] = np.linalg.solve(dt * mu_t_1 * (cond_0[n_ch:, n_ch:-1]).toarray(),
-                                       act_tip_val - dt * mu_t_1 * cond_0[n_ch:, :][:, :n_ch].dot(pf_0[:n_ch]))
-    # pf_0 = np.dot(C[np.ix_(EltCrack, EltCrack)], wLastTS[EltCrack])
-
 
     if gravity:
         w_0 = np.zeros(Mesh.NumberOfElts)
@@ -340,7 +333,14 @@ def solve_with_RKL2_neg(Eprime, perf_node, *args):
     else:
         G = np.zeros((len(EltCrack),))
 
-    M_0 = cond_0[:, :-1].dot(pf_0) + Q[EltCrack] / Mesh.EltArea + G
+    # pf_0 = Fr_lstTmStp.pFluid[EltCrack]
+    pf_0 = np.empty(len(EltCrack))
+    pf_0[ch_indxs] = np.dot(C[np.ix_(to_solve, EltCrack)], wLastTS[EltCrack]) + \
+                       sigma0[to_solve]
+    pf_0[n_ch:] = np.linalg.solve(dt * mu_t_1 * (cond_0[n_ch:, n_ch:-1]).toarray(),
+                                       act_tip_val - dt * mu_t_1 * (cond_0[n_ch:, :][:, :n_ch].dot(pf_0[:n_ch]) + G[n_ch:] + (Q[EltCrack[n_ch:]] - Lk_rate[EltCrack[n_ch:]]) / Mesh.EltArea))
+
+    M_0 = cond_0[:, :-1].dot(pf_0) + (Q[EltCrack] - Lk_rate[EltCrack]) / Mesh.EltArea + G
 
     W_0 = wLastTS[EltCrack]
 
@@ -354,28 +354,23 @@ def solve_with_RKL2_neg(Eprime, perf_node, *args):
     for j in range(2, s + 1):
         # print('step = ' + repr(j))
         W_j = RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, EltCrack, n_ch, tip_delw_step, param_pack, C_red, dt,
-                          tau_M0, Q[EltCrack], to_solve, sigma0, act_tip_val, gravity, rho)
+                          tau_M0, Q[EltCrack], to_solve, sigma0, act_tip_val, gravity, rho, Lk_rate[EltCrack])
         W_jm2 = W_jm1
         W_jm1 = W_j
 
-    # w_s = np.zeros(Mesh.NumberOfElts)
-    # pf_s = np.zeros(Mesh.NumberOfElts)
-    #
-    # w_s[EltCrack] = W_j
-    # pf_s[EltCrack] = np.dot(C[np.ix_(EltCrack, EltCrack)], W_j)
     sol = W_j - wLastTS[EltCrack]
 
-    instrument_close(perf_node, perfNode_RKL, None,
-                     len(W_j), True, False, None)
-    perfNode_RKL.iterations = s
-    perf_node.RKL_data.append(perfNode_RKL)
+    if perf_node is not None:
+        instrument_close(perf_node, perfNode_RKL, None, len(W_j), True, False, None)
+        perfNode_RKL.iterations = s
+        perf_node.RKL_data.append(perfNode_RKL)
 
     return sol, s
 
 # @profile
 def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, param_pack, C_, tau, tau_M0, Qin, EltChannel,
-                sigmaO, imposed_value, gravity, rho):
-    # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
+                sigmaO, imposed_value, gravity, rho, LeakOff):
+
     muPrime, Mesh, InCrack, neiInCrack = param_pack
     w_jm1 = np.zeros(Mesh.NumberOfElts)
     cp_W_jm1 = np.copy(W_jm1)
@@ -385,21 +380,6 @@ def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, pa
     cond = cond_lil.tocsr()
     mu_t = 4 * (2 * j - 1) * b[j] / (j * (s * s + s - 2) * b[j - 1])
     gamma_t = -a[j - 1] * mu_t
-
-    # pf = np.dot(C[np.ix_(crack, crack)], W_jm1)
-
-    pf = np.empty(len(crack))
-    # pf[:n_channel] = pardot(C_, W_jm1, 4, 2) + sigmaO[EltChannel]
-    # pf[:n_channel] = np.dot(C_, W_jm1) + sigmaO[EltChannel]
-    pf[:n_channel] = pardot_matrix_vector(C_, W_jm1, 4) + sigmaO[EltChannel]
-    imposed_value[-len(tip_delw_step):] = j * tip_delw_step
-    S = imposed_value - mu[j] * W_jm1[n_channel:] - nu[j] * W_jm2[n_channel:] + (mu[j] + nu[j]) * W_0[
-                            n_channel:] - gamma_t * tau_M0[n_channel:] - mu_t * tau * np.dot(
-                            (cond[n_channel:, :][:, :n_channel]).toarray(), pf[:n_channel])
-
-    A = mu_t * tau * (cond[n_channel:, :][:, n_channel:-1]).toarray()
-    pf[n_channel:] = np.linalg.solve(A, S)
-
 
     if gravity:
         G = Gravity_term(w_jm1,
@@ -412,12 +392,23 @@ def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, pa
     else:
         G = np.zeros((len(crack),))
 
-    M_jm1 = cond[:, :-1].dot(pf) + Qin / Mesh.EltArea + G
 
+    pf = np.empty(len(crack))
+    pf[:n_channel] = pardot_matrix_vector(C_, W_jm1, 4) + sigmaO[EltChannel]
+    imposed_value[-len(tip_delw_step):] = j * tip_delw_step
+    M_jm1_tip = np.dot((cond[n_channel:, :][:, :n_channel]).toarray(), pf[:n_channel]) + G[n_channel:] + (Qin[n_channel:] - LeakOff[n_channel:])/Mesh.EltArea
+    S = imposed_value - mu[j] * W_jm1[n_channel:] - nu[j] * W_jm2[n_channel:] + (mu[j] + nu[j]) * W_0[
+                            n_channel:] - gamma_t * tau_M0[n_channel:] - mu_t * tau * M_jm1_tip
 
-    # W_j[:n_channel] = mu[j] * W_jm1[:n_channel] + nu[j] * W_jm2[:n_channel] + (1 - mu[j] - nu[j]) * W_0[:n_channel] + mu_t * tau * M_jm1 + gamma_t * tau_M0
+    A = mu_t * tau * (cond[n_channel:, :][:, n_channel:-1]).toarray()
+    pf[n_channel:] = np.linalg.solve(A, S)
+
+    M_jm1 = cond[:, :-1].dot(pf) + G + (Qin - LeakOff) / Mesh.EltArea
+
+    W_j = np.empty(len(crack))
+    # W_j[:n_channel] = mu[j] * W_jm1[:n_channel] + nu[j] * W_jm2[:n_channel] + (1 - mu[j] - nu[j]) * W_0[:n_channel] + mu_t * tau * M_jm1[:n_channel] + gamma_t * tau_M0[:n_channel]
     W_j = mu[j] * W_jm1 + nu[j] * W_jm2 + (1 - mu[j] - nu[j]) * W_0 + mu_t * tau * M_jm1 + gamma_t * tau_M0
-    # W_j[n_channel:] = W0_tip + j * tip_delw_step
+    # W_j[n_channel:] = np.copy(imposed_value)
     # W_j[n_channel:] = s * tip_delw_step
 
     return W_j
