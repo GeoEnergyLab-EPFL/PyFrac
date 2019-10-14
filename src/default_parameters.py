@@ -46,6 +46,7 @@ save_time_period = None                 # the time period after which the output
 save_TS_jump = 1                        # the number of time steps after which the output is saved to disk.
 
 # type of solver
+elastohydr_solver = 'implicit_Picard'   # set the elasto-hydrodynamic system solver to implicit with Picard iteration .
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
@@ -71,6 +72,8 @@ gravity = False                         # if True, the effect of gravity will be
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 explicit_projection = False             # if True, direction from last time step will be used to evaluate TI parameters.
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
+enable_GPU = False                      # if True, GPU will be use to do the dense matrix vector product.
+n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
 proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
 
 # fracture geometry

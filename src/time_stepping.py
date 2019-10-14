@@ -19,7 +19,7 @@ from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
-from explicit_RKL import solve_width_pressure_RKL2, solve_width_pressure_RKL2_2, solve_with_RKL2_neg
+from explicit_RKL import solve_width_pressure_RKL2
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -1058,8 +1058,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     corr_nei[i, 3] = corresponding
 
             arg = (
-                # See the documentation of the functions making the linear system for description of the arguments
-                # passed to the Piccard solver.
+                # See the documentation of the functions making the linear system for a description of the arguments.
                 to_solve_k,
                 to_impose_k,
                 Fr_lstTmStp.w,
@@ -1084,40 +1083,47 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 fluid_properties.compressibility,
                 corr_nei)
 
-            if sim_properties.substitutePressure:
-                if sim_properties.solveDeltaP:
-                    if sim_properties.solveSparse:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+            if sim_properties.elastohydrSolver == 'implicit_Picard':
+                if sim_properties.substitutePressure:
+                    if sim_properties.solveDeltaP:
+                        if sim_properties.solveSparse:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+                        else:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
                     else:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
+                        if sim_properties.solveSparse:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_sparse
+                        else:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
+                    guess = np.zeros((len(EltCrack), ), float)
+                    guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                        * np.ones((len(to_solve_k),), float)
                 else:
-                    if sim_properties.solveSparse:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_sparse
-                    else:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
-                guess = np.zeros((len(EltCrack), ), float)
-                guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                    * np.ones((len(to_solve_k),), float)
+                    sys_fun = MakeEquationSystem_ViscousFluid
+                    guess = 1e6 * np.ones((2 * len(to_solve_k) + len(to_impose_k) + 2 * len(neg),), dtype=np.float64)
+                    guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / len(to_solve_k) *\
+                                                        np.ones((len(to_solve_k),), float)
+
+                typValue = np.copy(guess)
+                inter_itr_init = (vk, np.array([], dtype=int))
+
+                sol, data_Pic = Picard_Newton(None,
+                                       sys_fun,
+                                       guess,
+                                       typValue,
+                                       inter_itr_init,
+                                       sim_properties,
+                                       *arg,
+                                       perf_node=perfNode_widthConstrItr)
+
+            elif sim_properties.elastohydrSolver == 'RKL2':
+                sol, data_Pic = solve_width_pressure_RKL2(mat_properties.Eprime,
+                                                          sim_properties.enableGPU,
+                                                          sim_properties.nThreads,
+                                                          perfNode_widthConstrItr,
+                                                          *arg)
             else:
-                sys_fun = MakeEquationSystem_ViscousFluid
-                guess = 1e6 * np.ones((2 * len(to_solve_k) + len(to_impose_k) + 2 * len(neg),), dtype=np.float64)
-                guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / len(to_solve_k) *\
-                                                    np.ones((len(to_solve_k),), float)
-
-            typValue = np.copy(guess)
-            inter_itr_init = (vk, np.array([], dtype=int))
-
-            sol, data_Pic = solve_with_RKL2_neg(mat_properties.Eprime, perfNode_widthConstrItr, *arg)
-
-            # sol, data_Pic = Picard_Newton(None,
-            #                        sys_fun,
-            #                        guess,
-            #                        typValue,
-            #                        inter_itr_init,
-            #                        sim_properties,
-            #                        *arg,
-            #                        perf_node=perfNode_widthConstrItr)
-
+                SystemExit("The given elasto-hydrodynamic solver is not supported!")
 
             failed_sol = np.isnan(sol).any()
 
