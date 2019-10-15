@@ -1263,7 +1263,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
                 perfNode_linSolve = instrument_start("linear system solve", perf_node)
                 solk = (1 - relax) * solkm1 + relax * np.linalg.solve(A, b)
             except np.linalg.linalg.LinAlgError:
-                print('singlular matrix!')
+                print('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 if perf_node is not None:
                     instrument_close(perf_node, perfNode_linSolve, None,
@@ -1460,3 +1460,110 @@ def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, I
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+
+def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
+                  m_Anderson=3, perf_node=None):
+    """
+    Anderson solver for non linear system.
+
+    Args:
+        sys_fun (function):                 -- The function giving the system A, b for the Anderson solver to solve the
+                                               linear system of the form Ax=b.
+        guess (ndarray):                    -- The initial guess.
+        interItr_init (ndarray):            -- Initial value of the variable(s) exchanged between the iterations (if
+                                               any).
+        sim_prop (SimulationProperties):    -- the SimulationProperties object giving simulation parameters.
+        relax (float):                      -- The relaxation factor.
+        args (tuple):                       -- arguments given to the residual and systems functions.
+        perf_node (IterationProperties):    -- the IterationProperties object passed to be populated with data.
+        m_Anderson                          -- value of the recursive time steps to consider for the anderson iteration
+
+    Returns:
+        - Xks[mk+1] (ndarray)  -- final solution at the end of the iterations.
+        - data (tuple)         -- any data to be returned
+    """
+
+    ## Initialization of solution vectors
+    xks = np.full((m_Anderson+1,guess.size),0.)
+    Fks = np.full((m_Anderson+1,guess.size),0.)
+    Gks = np.full((m_Anderson+1,guess.size),0.)
+
+    ## Initialization of iteration parameters
+    k = 0
+    normlist = []
+    interItr = interItr_init
+    converged = False
+
+    # First iteration
+    xks[0,::] = np.array([guess])                                       # xo
+    (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
+    Gks[0,::] = np.linalg.solve(A, b)                                   # solve the linear system
+    Fks[0,::] = Gks[0,::] - xks[0,::]
+    xks[1,::] = Gks[0,::]                                               # x1
+
+    while not converged:
+
+        try:
+            mk = np.min([k, m_Anderson-1])  # Asses the amount of solutions available for the least square problem
+
+            (A, b, interItr, indices) = sys_fun(xks[mk+1,::], interItr, *args)
+            perfNode_linSolve = instrument_start("linear system solve", perf_node)
+            if k < m_Anderson+1:
+                Gks[mk+1,::] = np.linalg.solve(A, b)
+                Fks[mk+1,::] = Gks[mk+1,::]-xks[mk+1,::]
+            else: # Rotate as to overrwrite "oldest" solution and calculate new solution
+                Gks = np.roll(Gks,-1, axis=0)
+                Gks[mk+1,::] = np.linalg.solve(A, b)
+                Fks = np.roll(Fks, -1, axis=0)
+                Fks[mk+1,::] = Gks[mk+1,::]-xks[mk+1,::]
+
+            ## Setting up the Least square problem of Anderson
+            A_Anderson = np.transpose(Fks[:mk+1:1,::] - Fks[mk+1,::])
+            b_Anderson = - Fks[mk+1,::]
+
+            ## Solving the least square problem for the coefficients
+            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson)[0]
+            omega_s = np.append(omega_s,1.0 - np.sum(omega_s))
+
+            ## Updating xk in a relaxed version
+            if k < m_Anderson + 1:
+                xks[mk+1,::] = (1-relax) * np.sum(np.transpose(np.multiply(np.transpose(xks[:mk+2,::]), omega_s)),axis=0)\
+                     + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
+            else:
+                xks = np.roll(xks, -1, axis=0)
+                xks[mk+1,::] = (1-relax) * np.sum(np.transpose(np.multiply(np.transpose(xks[:mk+2,::]), omega_s)),axis=0)\
+                     + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
+
+        except np.linalg.linalg.LinAlgError:
+            print('singular matrix!')
+            solk = np.full((len(xks[mk]),), np.nan, dtype=np.float64)
+            if perf_node is not None:
+                instrument_close(perf_node, perfNode_linSolve, None,
+                                 len(b), False, 'singular matrix', None)
+                perf_node.linearSolve_data.append(perfNode_linSolve)
+            return solk, None
+        ## Check for convergency of the solution
+        converged, norm = check_covergance(xks[0,::], xks[1,::], indices, sim_prop.toleranceEHL)
+        normlist.append(norm)
+        k = k + 1
+
+        if perf_node is not None:
+            instrument_close(perf_node, perfNode_linSolve, norm, len(b), True, None, None)
+            perf_node.linearSolve_data.append(perfNode_linSolve)
+
+        if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
+            print('Anderson iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
+                  ' iterations, norm:' + repr(norm))
+            solk = np.full((np.size(xks[0,::]),), np.nan, dtype=np.float64)
+            if perf_node is not None:
+                perfNode_linSolve.failure_cause = 'singular matrix'
+                perfNode_linSolve.status = 'failed'
+            return solk, None
+
+    if sim_prop.verbosity > 1:
+        print("Converged after " + repr(k) + " iterations")
+    data = interItr
+    return xks[0,::], data
+
+
+#-----------------------------------------------------------------------------------------------------------------------

@@ -804,6 +804,35 @@ def read_fracture_variable_csv_file(file_name):
 
     return np.genfromtxt(file_name, delimiter=',')
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def write_fracture_mesh_csv_file(file_name, mesh_list):
+    """ This function writes important data of a mesh as a csv file. The csv contains (in a row vector) the number of
+    elements, hx, hy, nx, ny, the flattened connectivity matrix and the flattened node coordinates. Each row of the csv
+    corresponds to an entry in the mesh_list
+
+        Args:
+            file_name (string):         -- the name of the file to be written.
+            mesh_list (list):       -- the fracture list from which the variable is to be extracted.
+
+    """
+
+    return_list = []
+
+    for i in mesh_list:
+        export_mesh = np.array([i.NumberOfElts])
+        export_mesh = np.append(export_mesh, [i.hx, i.hy, i.nx, i.ny])
+        export_mesh = np.append(export_mesh, i.Connectivity.flatten())
+        export_mesh = np.append(export_mesh, i.VertexCoor.flatten())
+        return_list.append(export_mesh)
+
+    if file_name[-4:] != '.csv':
+        file_name = file_name + '.csv'
+
+    return_list_np = np.asarray(return_list)
+    np.savetxt(file_name, return_list_np, delimiter=',')
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 

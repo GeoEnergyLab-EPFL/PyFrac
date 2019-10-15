@@ -1110,14 +1110,21 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             typValue = np.copy(guess)
             inter_itr_init = (vk, np.array([], dtype=int))
 
-            sol, data_Pic = Picard_Newton(None,
-                                   sys_fun,
-                                   guess,
-                                   typValue,
-                                   inter_itr_init,
-                                   sim_properties,
-                                   *arg,
-                                   perf_node=perfNode_widthConstrItr)
+            # Just uncomment Picard_Newton, delete this line and anderson to reset normal simulation
+            # sol, data_Pic = Picard_Newton(None,
+            #                        sys_fun,
+            #                        guess,
+            #                        typValue,
+            #                        inter_itr_init,
+            #                        sim_properties,
+            #                        *arg,
+            #                        perf_node=perfNode_widthConstrItr)
+            sol, data_Pic = Anderson(sys_fun,
+                                     guess,
+                                     inter_itr_init,
+                                     sim_properties,
+                                     *arg,
+                                     perf_node=perfNode_widthConstrItr)
 
             failed_sol = np.isnan(sol).any()
 
