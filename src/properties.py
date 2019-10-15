@@ -490,6 +490,11 @@ class SimulationProperties:
         saveTimePeriod (float):      -- the time period after which the results are saved to disk during simulation.
         saveTSJump (int):            -- the number of time steps after which the results are saved to disk, e.g. a value
                                         of 4 will result in plotting every four time steps.
+        elastohydrSolver (string):   -- the type of solver to solve the elasto-hydrodynamic system. At the moment, two
+                                        main solvers can be specified.
+
+                                            - 'implicit_Picard'
+                                            - 'RKL2'
         substitutePressure(bool):    -- a flag specifying the solver to be used. If True, the pressure will be
                                         substituted in the channel elements (see Zia and Lecampion, 2019).
         solveDeltaP (bool):          -- a flag specifying the solver to be used. If True, the change in pressure,
@@ -536,6 +541,11 @@ class SimulationProperties:
                                         Attention:
                                             The symmetric fracture is only implemented in the toughness dominated case.\
                                             Use full domain if viscous fluid is injected.
+        enableGPU                    -- if True, the dense matrix vector product for the RKL scheme would be done using
+                                        GPU. If False, multithreaded dot product implemented in the explicit_RKL module
+                                        will be used to do it.
+        nThreads                     -- The number of threads to be used for the dense matrix dot product in the RKL
+                                        scheme. By default set to 4.
         projMethod (string):         -- the method by which the angle prescribed by the projections onto the front
                                         are evaluated. Possible options are:
 
@@ -626,6 +636,7 @@ class SimulationProperties:
         self.saveTimePeriod = simul_param.save_time_period
 
         # solver type
+        self.elastohydrSolver = simul_param.elastohydr_solver
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
@@ -655,6 +666,8 @@ class SimulationProperties:
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.projMethod = simul_param.proj_method
+        self.enableGPU = simul_param.enable_GPU
+        self.nThreads = simul_param.n_threads
         if self.projMethod not in ['ILSA_orig', 'LS_grad']:
             raise ValueError("Projection method is not recognised!")
 
@@ -835,6 +848,7 @@ class IterationProperties:
             self.widthConstraintItr_data = []
         elif itr_type == 'width constraint iteration':
             self.linearSolve_data = []
+            self.RKL_data = []
         elif itr_type == 'linear system solve':
             pass
         elif itr_type == 'Brent method':

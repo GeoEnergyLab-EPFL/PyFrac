@@ -19,7 +19,7 @@ from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
-
+from explicit_RKL import solve_width_pressure_RKL2
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -262,7 +262,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.pFluid = p_k
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
     Fr_kplus1.pNet[Fr_lstTmStp.EltCrack] = p_k[Fr_lstTmStp.EltCrack] - mat_properties.SigmaO[Fr_lstTmStp.EltCrack]
-    Fr_kplus1.closed = return_data[1]
+    # Fr_kplus1.closed = return_data[1]
     Fr_kplus1.v = np.zeros((len(Fr_kplus1.EltTip), ), dtype=np.float64)
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
@@ -271,7 +271,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
-    fluidVel = return_data[0]
+    # fluidVel = return_data[0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
             ReNumb, check = turbulence_check_tip(fluidVel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
@@ -307,11 +307,11 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
                 Fr_kplus1.ReynoldsNumber = Rnum
 
-    Fr_lstTmStp.closed = return_data[1]
+    # Fr_lstTmStp.closed = return_data[1]
     # check if the solution is valid
 
-    if return_data[2]:
-        return 14, Fr_kplus1
+    # if return_data[2]:
+    #     return 14, Fr_kplus1
 
     exitstatus = 1
     return exitstatus, Fr_kplus1
@@ -730,7 +730,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         exitstatus = 5
         return exitstatus, None
 
-    fluidVel = data[0]
+    # fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)
@@ -1061,8 +1061,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     corr_nei[i, 3] = corresponding
 
             arg = (
-                # See the documentation of the functions making the linear system for description of the arguments
-                # passed to the Piccard solver.
+                # See the documentation of the functions making the linear system for a description of the arguments.
                 to_solve_k,
                 to_impose_k,
                 Fr_lstTmStp.w,
@@ -1087,44 +1086,55 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 fluid_properties.compressibility,
                 corr_nei)
 
-            if sim_properties.substitutePressure:
-                if sim_properties.solveDeltaP:
-                    if sim_properties.solveSparse:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+            if sim_properties.elastohydrSolver == 'implicit_Picard':
+                if sim_properties.substitutePressure:
+                    if sim_properties.solveDeltaP:
+                        if sim_properties.solveSparse:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+                        else:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
                     else:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
+                        if sim_properties.solveSparse:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_sparse
+                        else:
+                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
+                    guess = np.zeros((len(EltCrack), ), float)
+                    guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
+                                                        * np.ones((len(to_solve_k),), float)
                 else:
-                    if sim_properties.solveSparse:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_sparse
-                    else:
-                        sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted
-                guess = np.zeros((len(EltCrack), ), float)
-                guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                    * np.ones((len(to_solve_k),), float)
+                    sys_fun = MakeEquationSystem_ViscousFluid
+                    guess = 1e6 * np.ones((2 * len(to_solve_k) + len(to_impose_k) + 2 * len(neg),), dtype=np.float64)
+                    guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / len(to_solve_k) *\
+                                                        np.ones((len(to_solve_k),), float)
+
+                typValue = np.copy(guess)
+                inter_itr_init = (vk, np.array([], dtype=int))
+
+                # Just uncomment Picard_Newton, delete this line and anderson to reset normal simulation
+                # sol, data_Pic = Picard_Newton(None,
+                #                        sys_fun,
+                #                        guess,
+                #                        typValue,
+                #                        inter_itr_init,
+                #                        sim_properties,
+                #                        *arg,
+                #                        perf_node=perfNode_widthConstrItr)
+                sol, data_Pic = Anderson(sys_fun,
+                                         guess,
+                                         inter_itr_init,
+                                         sim_properties,
+                                         *arg,
+                                         perf_node=perfNode_widthConstrItr)
+
+            elif sim_properties.elastohydrSolver == 'RKL2':
+                sol, data_Pic = solve_width_pressure_RKL2(mat_properties.Eprime,
+                                                          sim_properties.enableGPU,
+                                                          sim_properties.nThreads,
+                                                          perfNode_widthConstrItr,
+                                                          *arg)
             else:
-                sys_fun = MakeEquationSystem_ViscousFluid
-                guess = 1e6 * np.ones((2 * len(to_solve_k) + len(to_impose_k) + 2 * len(neg),), dtype=np.float64)
-                guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / len(to_solve_k) *\
-                                                    np.ones((len(to_solve_k),), float)
+                SystemExit("The given elasto-hydrodynamic solver is not supported!")
 
-            typValue = np.copy(guess)
-            inter_itr_init = (vk, np.array([], dtype=int))
-
-            # Just uncomment Picard_Newton, delete this line and anderson to reset normal simulation
-            # sol, data_Pic = Picard_Newton(None,
-            #                        sys_fun,
-            #                        guess,
-            #                        typValue,
-            #                        inter_itr_init,
-            #                        sim_properties,
-            #                        *arg,
-            #                        perf_node=perfNode_widthConstrItr)
-            sol, data_Pic = Anderson(sys_fun,
-                                     guess,
-                                     inter_itr_init,
-                                     sim_properties,
-                                     *arg,
-                                     perf_node=perfNode_widthConstrItr)
 
             failed_sol = np.isnan(sol).any()
 
@@ -1177,10 +1187,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 if len(new_neg) == 0:
                     active_contraint = False
                 else:
-                    if sim_properties.frontAdvancing is not 'implicit':
-                        print('Changing front advancing scheme to implicit due to width going negative...')
-                        sim_properties.frontAdvancing = 'implicit'
-                        return np.nan, np.nan, (np.nan, np.nan)
+                    # if sim_properties.frontAdvancing is not 'implicit':
+                    #     print('Changing front advancing scheme to implicit due to width going negative...')
+                    #     sim_properties.frontAdvancing = 'implicit'
+                    #     return np.nan, np.nan, (np.nan, np.nan)
 
                     # cumulatively add the cells with active width constraint
                     neg = np.hstack((neg_km1, new_neg))
@@ -1326,8 +1336,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
                                                                                  Fr_lstTmStp.v)
     current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 *(
-                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    cell_diag = (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5
+    expected_range = max(current_prefactor * 6.66 * cell_diag, 1.5 * cell_diag)
+    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < expected_range)[0]
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                    Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -1575,7 +1586,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 5
         return exitstatus, None
 
-    fluidVel = data[0]
+    if np.where(w_n_plus1 < 0.)[0].any():
+        print("negative found!")
+
+    # w_n_plus1[w_n_plus1<1e-6] = 1e-6
+
+    # fluidVel = data[0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)

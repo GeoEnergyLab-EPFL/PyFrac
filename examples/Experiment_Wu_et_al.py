@@ -50,9 +50,14 @@ Fluid = FluidProperties(viscosity=30)
 simulProp = SimulationProperties()
 simulProp.bckColor = 'confining stress'           # the parameter according to which the background is color coded
 simulProp.frontAdvancing = 'explicit'
+simulProp.set_tipAsymptote('M')
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
-simulProp.plotVar = ['footprint']
+# simulProp.plotVar = ['footprint', 'w', 'pf', 'pn']
+simulProp.tmStpPrefactor = 0.6
+# simulProp.saveToDisk = False
+simulProp.tolFractFront = 0.004
+# simulProp.plotFigure = False
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.019)
@@ -138,8 +143,8 @@ Fig_Fr = plot_fracture_list(Fr_list,
                             fig=Fig_Fr,
                             plot_prop=plot_prop)
 
-#plt.show(block=True)
+plt.show(block=True)
 #  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()
+# plt.show(block=False)
+# plt.pause(5)
+# plt.close()

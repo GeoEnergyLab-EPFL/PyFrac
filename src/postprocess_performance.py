@@ -120,6 +120,10 @@ def get_performance_variable(perf_data, iteration, variable):
                                                                                 widthConstraint_Itr.linearSolve_data):
                                                 if iteration == 'linear system solve':
                                                     append_variable(linearSolve_Itr, variable)
+                                            for i_RKLSolve, RKLSolve_Itr in enumerate(
+                                                                                widthConstraint_Itr.RKL_data):
+                                                if iteration == 'RKL time step':
+                                                    append_variable(RKLSolve_Itr, variable)
 
                     for i_extFP_inj, extFP_inj in enumerate(TS_attempt.extendedFront_data):
                         if iteration == 'extended front':
@@ -154,6 +158,10 @@ def get_performance_variable(perf_data, iteration, variable):
                                                                                 widthConstraint_Itr.linearSolve_data):
                                                 if iteration == 'linear system solve':
                                                     append_variable(linearSolve_Itr, variable)
+                                            for i_RKLSolve, RKLSolve_Itr in enumerate(
+                                                                                widthConstraint_Itr.RKL_data):
+                                                if iteration == 'RKL time step':
+                                                    append_variable(RKLSolve_Itr, variable)
 
     return var_list, time_list, N_list
 
@@ -199,6 +207,8 @@ def plot_performance(address, variable, sim_name='simulation', fig=None, plot_pr
         var_list, time_list, N_list = get_performance_variable(perf_data, 'nonlinear system solve', 'iterations')
     elif variable in ['Picard iterations']:
         var_list, time_list, N_list = get_performance_variable(perf_data, 'width constraint iteration', 'iterations')
+    elif variable in ['RKL substeps']:
+        var_list, time_list, N_list = get_performance_variable(perf_data, 'RKL time step', 'iterations')
     elif variable in ['CPU time: time steps']:
         t_start_list, time_list, N_list = get_performance_variable(perf_data, 'time step', 'CpuTime_start')
         del time_list, N_list

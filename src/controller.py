@@ -133,7 +133,14 @@ class Controller:
 
         # setting front advancing scheme to implicit if velocity is not available for the first time step.
         self.frontAdvancing = copy.copy(Sim_prop.frontAdvancing)
+
         Sim_prop.frontAdvancing = 'implicit'
+
+        if Sim_prop.frontAdvancing in ['explicit', 'predictor-corrector']:
+            if np.max(Fracture.v) <= 0 or np.isnan(Fracture.v).any():
+                Sim_prop.frontAdvancing = 'implicit'
+            else:
+                Sim_prop.frAdvCurrent = copy.copy(Sim_prop.frontAdvancing)
 
         if self.sim_prop.saveToDisk:
             self.logAddress = copy.copy(Sim_prop.get_outputFolder())
