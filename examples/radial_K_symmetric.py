@@ -148,9 +148,5 @@ Fig_WS = plot_analytical_solution_slice('K',
                                         point2=ext_pnts[1])
 
 
-#plt.show(block=True)
+plt.show(block=True)
 
-#  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()

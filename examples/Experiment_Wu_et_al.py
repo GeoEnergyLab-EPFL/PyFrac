@@ -138,8 +138,5 @@ Fig_Fr = plot_fracture_list(Fr_list,
                             fig=Fig_Fr,
                             plot_prop=plot_prop)
 
-#plt.show(block=True)
-#  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()
+plt.show(block=True)
+

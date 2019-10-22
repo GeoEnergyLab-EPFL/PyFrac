@@ -110,13 +110,9 @@ Fig_FP = plot_fracture_list(Fr_list,
                             fig=Fig_FP,
                             plot_prop=plot_prop1)
 Fig_FP.set_size_inches(5, 4)
-#plt.show(block=True)
-#  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()
 
-#plt.show(block=True)
+plt.show(block=True)
+
 # loading fractures at the different stages
 time_srs = [230, 1000,7672, 9660, 12435, 14693, 15362, 15866]
 Fr_list, properties = load_fractures(address="./Data/fracture_closure",
