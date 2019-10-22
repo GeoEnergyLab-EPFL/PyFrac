@@ -69,7 +69,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         projection = supported_projections[variable][0]
     elif projection not in supported_projections[variable]:
         raise ValueError("The given projection is not supported for \'" + variable +
-                         '\'. Select one the following\n' + repr(supported_projections[variable]))
+                         '\'. Select one of the following\n' + repr(supported_projections[variable]))
 
     if plot_prop is None:
         plot_prop = PlotProperties()
@@ -142,7 +142,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                     plot_prop=plot_prop,
                                     label=labels.legend)
 
-    elif variable not in ['mesh', 'footprint']:
+    elif variable in bidimensional_variables:
 
         if plot_non_zero:
             for indx, value in enumerate(var_val_copy):

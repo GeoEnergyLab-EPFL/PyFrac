@@ -501,8 +501,8 @@ class SimulationProperties:
         solveTipCorrRib (bool):      -- if True, the tip cells corresponding to the closed ribbon cells will also be
                                         considered as closed and the width will be imposed on them.
         solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
-        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
-                                        saved.
+        saveRegime (boolean):        -- if True, the regime of the propagation as observed in the ribbon cell (see Zia
+                                        and Lecampion 2018, IJF) will be saved.
         verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
                                         two levels 1 and 2 are supported).
         enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by

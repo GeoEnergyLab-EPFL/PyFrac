@@ -69,7 +69,7 @@ class Fracture:
         Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
                                        cells. Each row contains the x and y coordinates of the two points.
         regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
-                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
+                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018, IJF)
         ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
         fluidFlux (ndarray):        -- the fluid flux at each edge of the cells in the fracture. The arrangement is
@@ -131,7 +131,7 @@ class Fracture:
                                                                         surv_cells,
                                                                         inner_cells,
                                                                         surv_dist)
-        # for general purpose initialization
+        # for static fracture initialization
         if init_param.regime is 'static':
             self.w, self.pNet = get_width_pressure(self.mesh,
                                                    self.EltCrack,

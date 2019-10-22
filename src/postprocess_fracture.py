@@ -274,7 +274,16 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             y_len = np.max(y_coords) - np.min(y_coords)
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
-            
+
+    elif variable is 'regime':
+            for i in fracture_list:
+                if hasattr(i, 'regime'):
+                    variable_list.append(i.regime)
+                    time_srs.append(i.time)
+                else:
+                    raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
+                                     ' See the saveRegime falg of SimulationProperties class.')
+
     else:
         raise ValueError('The variable type is not correct.')
 
