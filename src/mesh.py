@@ -108,13 +108,33 @@ class CartesianMesh:
 
         self.VertexCoor = np.reshape(np.stack((a, b), axis=-1), (len(a), 2))
 
+        self.NumberofNodes = (self.nx+1) * (self.ny+1)                                                    # Peruzzo 2019
         self.NumberOfElts = self.nx * self.ny
         self.EltArea = self.hx * self.hy
 
-        # Connectivity array giving four vertices of an element in the following order
+        # Giving four neighbouring elements in the following order: [left,right,bottom,up]
+        Nei = np.zeros((self.NumberOfElts, 4), int)
+        for i in range(0, self.NumberOfElts):
+            Nei[i, :] = np.asarray(self.Neighbors(i, self.nx, self.ny))
+        self.NeiElements = Nei
+
+        # conn is the connectivity array giving four vertices of an element in the following order
         #     3         2
         #     0   -     1
+        #
+        # connElemEdges is a connectivity array: for each element is listing the name of its 4 edges      # Peruzzo 2019
+        # connEdgesNodes is a connectivity array: for each edge is listing the name of its 2 end nodes    # Peruzzo 2019
+        # connEdgesElem is a connectivity array:                                                          # Peruzzo 2019
+        # for each edge is listing the name of its 2 neighbouring elements                                # Peruzzo 2019
+        # connNodesElem is a connectivity array: for each node is listing the 4 elements that share that  # Peruzzo 2019
+        numberofedges = (2 * self.nx * self.ny + self.nx + self.ny)  # Peruzzo 2019
         conn = np.empty([self.NumberOfElts, 4], dtype=int)
+        booleconnEdgesNodes = np.zeros([numberofedges, 1], dtype=int)  # Peruzzo 2019
+        connEdgesNodes = np.empty([numberofedges, 2], dtype=int)  # Peruzzo 2019
+        connElemEdges = np.empty([self.NumberOfElts, 4], dtype=int)  # Peruzzo 2019
+        connEdgesElem = np.full([numberofedges, 2], np.nan, dtype=np.int)  # Peruzzo 2019
+        connNodesEdges = np.full([self.NumberofNodes, 4], np.nan, dtype=int)  # Peruzzo 2019
+        connNodesElem = np.full([self.NumberofNodes, 4], np.nan, dtype=int)  # Peruzzo 2019
         k = 0
         for j in range(0, self.ny):
             for i in range(0, self.nx):
@@ -122,9 +142,294 @@ class CartesianMesh:
                 conn[k, 1] = (i + 1) + j * (self.nx + 1)
                 conn[k, 2] = i + 1 + (j + 1) * (self.nx + 1)
                 conn[k, 3] = i + (j + 1) * (self.nx + 1)
+                connElemEdges[k, 0] = (j * (2 * self.nx + 1) + i)  # BottomEdge - Peruzzo 2019
+                connElemEdges[k, 1] = (j * (2 * self.nx + 1) + self.nx + i + 1)  # RightEdge  - Peruzzo 2019
+                connElemEdges[k, 2] = ((j + 1) * (2 * self.nx + 1) + i)  # topEdge    - Peruzzo 2019
+                connElemEdges[k, 3] = (j * (2 * self.nx + 1) + self.nx + i)  # LeftEdge   - Peruzzo 2019
+                connEdgesElem[connElemEdges[k, 0], :] = [k, Nei[k, 2]]  # Peruzzo 2019
+                connEdgesElem[connElemEdges[k, 1], :] = [k, Nei[k, 1]]  # Peruzzo 2019
+                connEdgesElem[connElemEdges[k, 2], :] = [k, Nei[k, 3]]  # Peruzzo 2019
+                connEdgesElem[connElemEdges[k, 3], :] = [k, Nei[k, 0]]  # Peruzzo 2019
+                # How neighbours are sorted within Nei: [left, right, bottom, up]
+                for s in range(0, 4):  # Peruzzo 2019
+                    index = connElemEdges[k, s]  # Peruzzo 2019
+                    if booleconnEdgesNodes[index] == 0:  # Peruzzo 2019
+                        booleconnEdgesNodes[index] = 1  # Peruzzo 2019
+                        if s < 3:  # Peruzzo 2019
+                            connEdgesNodes[index, :] = [conn[k, s], conn[k, s + 1]]  # Peruzzo 2019
+                        else:  # Peruzzo 2019
+                            connEdgesNodes[index, :] = [conn[k, s], conn[k, 0]]  # Peruzzo 2019
+                if i == (self.nx - 1) or j == (self.ny - 1) or i == 0 or j == 0:  # start Peruzzo 2019
+                    if i == (self.nx - 1) and j != (self.ny - 1) and i != 0 and j != 0:  # right row of cells
+                        # for each top left node
+                        connNodesEdges[conn[k, 3], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 3], 1] = connElemEdges[k, 3]  # leftedge
+                        # BottomEdgeOfTopLeftNeighboursElem
+                        connNodesEdges[conn[k, 3], 2] = ((j + 1) * (2 * self.nx + 1) + (i - 1))
+                        # RightEdgeOfTopLeftNeighboursElem
+                        connNodesEdges[conn[k, 3], 3] = ((j + 1) * (2 * self.nx + 1) + self.nx + (i - 1) + 1)
+                        connNodesEdges[conn[k, 1], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 1], 1] = connElemEdges[k, 1]  # rightedge
+                        # RightEdgeOfBottomNeighboursElem
+                        connNodesEdges[conn[k, 1], 2] = ((j - 1) * (2 * self.nx + 1) + self.nx + i + 1)
+                        connNodesEdges[conn[k, 1], 3] = connElemEdges[k, 0]  # bottomedge #repeated
+                        # connNodesElem:
+                        #    |   |
+                        # ___a___o
+                        #    |   |
+                        # ___o___b
+                        #    |   |
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 1], 0] = Nei[k, 2]  # element: bottom left
+                        connNodesElem[conn[k, 1], 1] = Nei[k, 2]  # element: bottom right #repeated
+                        connNodesElem[conn[k, 1], 2] = Nei[k, 2]  # element: top right #repeated
+                        connNodesElem[conn[k, 1], 3] = k  # element: top left (current k)
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 3], 0] = Nei[k, 0]  # element: bottom left
+                        connNodesElem[conn[k, 3], 1] = k  # element: bottom right (current k)
+                        connNodesElem[conn[k, 3], 2] = Nei[k, 3]  # element: top right
+                        connNodesElem[conn[k, 3], 3] = Nei[k - 1, 3]  # element: top left
+
+                    elif i != (self.nx - 1) and j == (self.ny - 1) and i != 0 and j != 0:  # top row of cells
+                        # for each bottom left node
+                        connNodesEdges[conn[k, 0], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 0], 1] = connElemEdges[k, 3]  # leftedge
+                        # TopEdgeOfBottomLeftNeighboursElem
+                        connNodesEdges[conn[k, 0], 2] = (((j - 1) + 1) * (2 * self.nx + 1) + (i - 1))
+                        # RightEdgeOfBottomLeftNeighboursElem
+                        connNodesEdges[conn[k, 0], 3] = ((j - 1) * (2 * self.nx + 1) + self.nx + (i - 1) + 1)
+                        connNodesEdges[conn[k, 2], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 2], 1] = connElemEdges[k, 1]  # rightedge
+                        # TopEdgeOfRightNeighboursElem
+                        connNodesEdges[conn[k, 2], 2] = ((j + 1) * (2 * self.nx + 1) + (i + 1))
+                        connNodesEdges[conn[k, 2], 3] = connElemEdges[k, 1]  # rightedge #repeated
+                        # connNodesElem:
+                        # ___o___b___
+                        #    |   |
+                        # ___a___o___
+                        #    |   |
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 0], 0] = Nei[k - 1, 2]  # element: bottom left #repeated
+                        connNodesElem[conn[k, 0], 1] = Nei[k, 2]  # element: bottom right #repeated
+                        connNodesElem[conn[k, 0], 2] = k  # element: top right (current k)
+                        connNodesElem[conn[k, 0], 3] = Nei[k, 0]  # element: top left
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 2], 0] = k  # element: bottom left (current k)
+                        connNodesElem[conn[k, 2], 1] = Nei[k, 1]  # element: bottom right
+                        connNodesElem[conn[k, 2], 2] = Nei[k + 1, 3]  # element: top right
+                        connNodesElem[conn[k, 2], 3] = Nei[k, 3]  # element: top left
+
+                    elif i != (self.nx - 1) and j != (self.ny - 1) and i == 0 and j != 0:  # left row of cells
+                        # for each bottom right node
+                        connNodesEdges[conn[k, 1], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 1], 1] = connElemEdges[k, 1]  # rightedge
+                        # TopEdgeOfBottomRightNeighboursElem
+                        connNodesEdges[conn[k, 1], 2] = (((j - 1) + 1) * (2 * self.nx + 1) + (i + 1))
+                        # LeftEdgeOfBottomRightNeighboursElem
+                        connNodesEdges[conn[k, 1], 3] = ((j - 1) * (2 * self.nx + 1) + self.nx + (i + 1))
+                        connNodesEdges[conn[k, 3], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 3], 1] = connElemEdges[k, 3]  # leftedge
+                        # LeftEdgeOfTopNeighboursElem
+                        connNodesEdges[conn[k, 3], 2] = ((j + 1) * (2 * self.nx + 1) + self.nx + i)
+                        connNodesEdges[conn[k, 3], 3] = connElemEdges[k, 2]  # topedge #repeated
+                        # connNodesElem:
+                        # |   |
+                        # a___o___
+                        # |   |
+                        # o___b___
+                        # |   |
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 1], 0] = Nei[k, 2]  # element: bottom left
+                        connNodesElem[conn[k, 1], 1] = Nei[k + 1, 2]  # element: bottom right
+                        connNodesElem[conn[k, 1], 2] = Nei[k, 1]  # element: top right
+                        connNodesElem[conn[k, 1], 3] = k  # element: top left  (current k)
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 3], 0] = k  # element: bottom left  #repeated
+                        connNodesElem[conn[k, 3], 1] = k  # element: bottom right (current k)
+                        connNodesElem[conn[k, 3], 2] = Nei[k, 3]  # element: top right
+                        connNodesElem[conn[k, 3], 3] = Nei[k, 3]  # element: top left  #repeated
+
+                    elif i != (self.nx - 1) and j != (self.ny - 1) and i != 0 and j == 0:  # bottom row of cells
+                        # for each top right node
+                        connNodesEdges[conn[k, 2], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 2], 1] = connElemEdges[k, 1]  # rightedge
+                        # BottomEdgeOfTopRightNeighboursElem
+                        connNodesEdges[conn[k, 2], 2] = ((j + 1) * (2 * self.nx + 1) + (i + 1))
+                        # LeftEdgeOfTopRightNeighboursElem
+                        connNodesEdges[conn[k, 2], 3] = ((j + 1) * (2 * self.nx + 1) + self.nx + (i + 1))
+                        connNodesEdges[conn[k, 0], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 0], 1] = connElemEdges[k, 3]  # leftedge
+                        # BottomEdgeOfLeftNeighboursElem
+                        connNodesEdges[conn[k, 0], 2] = (j * (2 * self.nx + 1) + (i - 1))
+                        connNodesEdges[conn[k, 0], 3] = connElemEdges[k, 3]  # leftedge # repeated
+                        # connNodesElem:
+                        #    |   |
+                        # ___o___b___
+                        #    |   |
+                        # ___a___o___
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 0], 0] = k  # element: bottom left #repeated
+                        connNodesElem[conn[k, 0], 1] = k  # element: bottom right #repeated
+                        connNodesElem[conn[k, 0], 2] = k  # element: top right (current k)
+                        connNodesElem[conn[k, 0], 3] = Nei[k, 0]  # element: top left
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 2], 0] = k  # element: bottom left (current k)
+                        connNodesElem[conn[k, 2], 1] = Nei[k, 1]  # element: bottom right
+                        connNodesElem[conn[k, 2], 2] = Nei[k + 1, 1]  # element: top right
+                        connNodesElem[conn[k, 2], 3] = Nei[k, 3]  # element: top left
+
+                    elif i == (self.nx - 1) and j == (self.ny - 1):  # corner cell: top right
+                        connNodesEdges[conn[k, 2], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 2], 1] = connElemEdges[k, 1]  # rightedge
+                        connNodesEdges[conn[k, 2], 2] = connElemEdges[k, 2]  # topedge   #repeated
+                        connNodesEdges[conn[k, 2], 3] = connElemEdges[k, 1]  # rightedge #repeated
+                        connNodesEdges[conn[k, 1], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 1], 1] = connElemEdges[k, 1]  # rightedge
+                        connNodesEdges[conn[k, 1], 2] = (
+                                    (j - 1) * (2 * self.nx + 1) + self.nx + i + 1)  # RightEdgeBottomCell
+                        connNodesEdges[conn[k, 1], 3] = connElemEdges[k, 0]  # bottomedge  #repeated
+                        # connNodesElem:
+                        # ___o___b
+                        #    |   |
+                        # ___o___a
+                        #    |   |
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 1], 0] = Nei[k, 2]  # element: bottom left
+                        connNodesElem[conn[k, 1], 1] = k  # element: bottom right #repeated
+                        connNodesElem[conn[k, 1], 2] = k  # element: top right #repeated
+                        connNodesElem[conn[k, 1], 3] = k  # element: top left (current k)
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 2], 0] = k  # element: bottom left (current k)
+                        connNodesElem[conn[k, 2], 1] = k  # element: bottom right #repeated
+                        connNodesElem[conn[k, 2], 2] = k  # element: top right  #repeated
+                        connNodesElem[conn[k, 2], 3] = k  # element: top left  #repeated
+
+                    elif i == (self.nx - 1) and j == 0:  # corner cell: bottom right
+                        connNodesEdges[conn[k, 1], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 1], 1] = connElemEdges[k, 1]  # rightedge
+                        connNodesEdges[conn[k, 1], 2] = connElemEdges[k, 0]  # bottomedge #repeated
+                        connNodesEdges[conn[k, 1], 3] = connElemEdges[k, 1]  # rightedge  #repeated
+                        connNodesEdges[conn[k, 0], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 0], 1] = connElemEdges[k, 3]  # leftedge
+                        connNodesEdges[conn[k, 0], 2] = (j * (2 * self.nx + 1) + (i - 1))  # BottomEdgeLeftCell
+                        connNodesEdges[conn[k, 0], 3] = connElemEdges[k, 3]  # leftedge  #repeated
+                        # connNodesElem:
+                        #    |   |
+                        # ___o___o
+                        #    |   |
+                        # ___a___b
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 0], 0] = k  # element: bottom left #repeated
+                        connNodesElem[conn[k, 0], 1] = k  # element: bottom right #repeated
+                        connNodesElem[conn[k, 0], 2] = k  # element: top right (current k)
+                        connNodesElem[conn[k, 0], 3] = Nei[k, 0]  # element: top left
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 1], 0] = k  # element: bottom left #repeated
+                        connNodesElem[conn[k, 1], 1] = k  # element: bottom right #repeated
+                        connNodesElem[conn[k, 1], 2] = k  # element: top right  #repeated
+                        connNodesElem[conn[k, 1], 3] = k  # element: top left  (current k)
+
+                    elif i == 0 and j == (self.ny - 1):  # corner cell: top left
+                        connNodesEdges[conn[k, 3], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 3], 1] = connElemEdges[k, 3]  # leftedge
+                        connNodesEdges[conn[k, 3], 2] = connElemEdges[k, 2]  # topedge #repeated
+                        connNodesEdges[conn[k, 3], 3] = connElemEdges[k, 3]  # leftedge #repeated
+                        connNodesEdges[conn[k, 2], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 2], 1] = connElemEdges[k, 1]  # rightedge
+                        connNodesEdges[conn[k, 2], 2] = ((j + 1) * (2 * self.nx + 1) + (i + 1))  # TopEdgeRightCell
+                        connNodesEdges[conn[k, 2], 3] = connElemEdges[k, 1]  # rightedge #repeated
+                        # connNodesElem:
+                        # b___a___
+                        # |   |
+                        # o___o___
+                        # |   |
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 2], 0] = k  # element: bottom left (current k)
+                        connNodesElem[conn[k, 2], 1] = Nei[k, 1]  # element: bottom right
+                        connNodesElem[conn[k, 2], 2] = k  # element: top right #repeated
+                        connNodesElem[conn[k, 2], 3] = k  # element: top left #repeated
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 3], 0] = k  # element: bottom left #repeated
+                        connNodesElem[conn[k, 3], 1] = k  # element: bottom right (current k)
+                        connNodesElem[conn[k, 3], 2] = k  # element: top right  #repeated
+                        connNodesElem[conn[k, 3], 3] = k  # element: top left  #repeated
+
+                    elif i == 0 and j == 0:  # corner cell: bottom left
+                        connNodesEdges[conn[k, 0], 0] = connElemEdges[k, 0]  # bottomedge
+                        connNodesEdges[conn[k, 0], 1] = connElemEdges[k, 3]  # leftedge
+                        connNodesEdges[conn[k, 0], 2] = connElemEdges[k, 0]  # bottomedge #repeated
+                        connNodesEdges[conn[k, 0], 3] = connElemEdges[k, 3]  # leftedge #repeated
+                        connNodesEdges[conn[k, 3], 0] = connElemEdges[k, 2]  # topedge
+                        connNodesEdges[conn[k, 3], 1] = connElemEdges[k, 3]  # leftedge
+                        connNodesEdges[conn[k, 3], 2] = ((j + 1) * (2 * self.nx + 1) + self.nx + i)  # LeftEdgeTopCell
+                        connNodesEdges[conn[k, 3], 3] = connElemEdges[k, 2]  # topedge #repeated
+                        # connNodesElem:
+                        #
+                        # |   |
+                        # a___o___
+                        # |   |
+                        # b___o___
+                        #
+                        # note: NeiElements(ndarray): [left, right,bottom, up]
+                        #
+                        # node a (comments with respect to the node)
+                        connNodesElem[conn[k, 3], 0] = k  # element: bottom left #repeated
+                        connNodesElem[conn[k, 3], 1] = k  # element: bottom right (current k)
+                        connNodesElem[conn[k, 3], 2] = Nei[k, 3]  # element: top right #repeated
+                        connNodesElem[conn[k, 3], 3] = k  # element: top left #repeated
+                        # node b (comments with respect to the node)
+                        connNodesElem[conn[k, 0], 0] = k  # element: bottom left #repeated
+                        connNodesElem[conn[k, 0], 1] = k  # element: bottom right #repeated
+                        connNodesElem[conn[k, 0], 2] = k  # element: top right  (current k)
+                        connNodesElem[conn[k, 0], 3] = k  # element: top left  #repeated
+                else:
+                    node = conn[k, 1]  # for each bottom right node of the elements not near the mesh boundaryes
+                    connNodesEdges[node, 0] = connElemEdges[k, 1]  # rightedge
+                    connNodesEdges[node, 1] = connElemEdges[k, 0]  # bottomedge
+                    connNodesEdges[node, 2] = connElemEdges[Nei[k, 2], 1]  # leftedgeBottomNeighboursElem
+                    connNodesEdges[node, 3] = connElemEdges[Nei[k + 1, 2], 2]  # bottomedgeLeftNeighboursElem
+                    # connNodesElem:
+                    # note:  NeiElements(ndarray): [left, right,bottom, up]
+                    # o___o___o
+                    # | 3k| 2 |     k is the current element
+                    # o___x___o     x is the current node
+                    # | 0 | 1 |
+                    # o___o___o
+                    connNodesElem[node, 0] = Nei[k, 2]  # element: bottom left with respect to the node x
+                    connNodesElem[node, 1] = Nei[k + 1, 2]  # element: bottom right with respect to the node x
+                    connNodesElem[node, 2] = Nei[k, 1]  # element: top right  with respect to the node x
+                    connNodesElem[node, 3] = k  # element: top left (current k) with respect to the node x
+                    # end Peruzzo 2019
+
                 k = k + 1
 
         self.Connectivity = conn
+        self.Connectivityelemedges = connElemEdges  # Peruzzo 2019
+        self.Connectivityedgeselem = connEdgesElem  # Peruzzo 2019
+        self.Connectivityedgesnodes = connEdgesNodes  # Peruzzo 2019
+        self.Connectivitynodesedges = connNodesEdges  # Peruzzo 2019
+        self.Connectivitynodeselem = connNodesElem  # Peruzzo 2019
 
         # coordinates of the center of the elements
         CoorMid = np.empty([self.NumberOfElts, 2], dtype=float)
@@ -135,11 +440,7 @@ class CartesianMesh:
 
         self.distCenter = (CoorMid[:, 0] ** 2 + CoorMid[:, 1] ** 2) ** 0.5
 
-        # Giving four neighbouring elements in the following order: [left,right,bottom,up]
-        Nei = np.zeros((self.NumberOfElts, 4), int)
-        for i in range(0, self.NumberOfElts):
-            Nei[i, :] = np.asarray(self.Neighbors(i, self.nx, self.ny))
-        self.NeiElements = Nei
+
 
         # the element in the center (used for fluid injection)
         self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < self.hx/2),

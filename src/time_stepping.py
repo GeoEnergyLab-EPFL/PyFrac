@@ -16,6 +16,7 @@ from utility import find_regime
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
 from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
+from front_reconstruction_from_levelset import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
@@ -504,6 +505,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                        front_region,
                                                                        Fr_lstTmStp.EltChannel,
                                                                        Fr_lstTmStp.mesh)
+    elif sim_properties.projMethod is 'LS_continousfront':
+        EltsTipNew, l_k, alpha_k, CellStatus, newRibbon, listofTIPcells, zrVertx_k = reconstruct_front_continuous(
+            sgndDist_k, front_region[pstv_region],
+            Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
@@ -547,18 +552,29 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         exitstatus = 9
         return exitstatus, None
 
-    # todo: some of the list are redundant to calculate on each iteration
-    # Evaluate the element lists for the trial fracture front
-    (EltChannel_k,
-     EltTip_k,
-     EltCrack_k,
-     EltRibbon_k,
-     zrVertx_k,
-     CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
-                                 EltsTipNew,
-                                 FillFrac_k,
-                                 sgndDist_k,
-                                 Fr_lstTmStp.mesh)
+    if sim_properties.projMethod is not 'LS_continousfront':
+        # todo: some of the list are redundant to calculate on each iteration
+        # Evaluate the element lists for the trial fracture front
+        (EltChannel_k,
+         EltTip_k,
+         EltCrack_k,
+         EltRibbon_k,
+         zrVertx_k,
+         CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
+                                     EltsTipNew,
+                                     FillFrac_k,
+                                     sgndDist_k,
+                                     Fr_lstTmStp.mesh)
+    elif sim_properties.projMethod is 'LS_continousfront':
+
+        (EltChannel_k,
+         EltTip_k,
+         EltCrack_k,
+         EltRibbon_k,
+         zrVertx_k,
+         CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                           listofTIPcells,
+                                                           sgndDist_k, zrVertx_k, Fr_lstTmStp.mesh)
 
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
@@ -1175,6 +1191,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                         sim_properties.frontAdvancing = 'implicit'
                         return np.nan, np.nan, (np.nan, np.nan)
 
+
                     # cumulatively add the cells with active width constraint
                     neg = np.hstack((neg_km1, new_neg))
                     new_wc = []
@@ -1348,6 +1365,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                 Fr_lstTmStp.EltChannel,
                                                                 Fr_lstTmStp.mesh)
 
+    elif sim_properties.projMethod is 'LS_continousfront':
+        EltsTipNew, l_k, alpha_k, CellStatus,  newRibbon, listofTIPcells, zrVertx_k  = reconstruct_front_continuous(sgndDist_k, front_region[pstv_region],
+                                                                        Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
+
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
                          " level set.")
@@ -1385,18 +1406,30 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 9
         return exitstatus, None
 
+    if sim_properties.projMethod is not 'LS_continousfront':
     # todo: some of the list are redundant to calculate on each iteration
     # Evaluate the element lists for the trial fracture front
-    (EltChannel_k,
-     EltTip_k,
-     EltCrack_k,
-     EltRibbon_k,
-     zrVertx_k,
-     CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
-                                 EltsTipNew,
-                                 FillFrac_k,
-                                 sgndDist_k,
-                                 Fr_lstTmStp.mesh)
+        (EltChannel_k,
+         EltTip_k,
+         EltCrack_k,
+         EltRibbon_k,
+         zrVertx_k,
+         CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
+                                     EltsTipNew,
+                                     FillFrac_k,
+                                     sgndDist_k,
+                                     Fr_lstTmStp.mesh)
+
+    elif sim_properties.projMethod is 'LS_continousfront':
+
+        (EltChannel_k,
+         EltTip_k,
+         EltCrack_k,
+         EltRibbon_k,
+         zrVertx_k,
+         CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                           listofTIPcells,
+                                                           sgndDist_k, zrVertx_k, Fr_lstTmStp.mesh)
 
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
