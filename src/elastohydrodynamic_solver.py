@@ -1493,13 +1493,22 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
     normlist = []
     interItr = interItr_init
     converged = False
-
-    # First iteration
-    xks[0,::] = np.array([guess])                                       # xo
-    (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
-    Gks[0,::] = np.linalg.solve(A, b)                                   # solve the linear system
-    Fks[0,::] = Gks[0,::] - xks[0,::]
-    xks[1,::] = Gks[0,::]                                               # x1
+    try:
+        perfNode_linSolve = instrument_start("linear system solve", perf_node)
+        # First iteration
+        xks[0,::] = np.array([guess])                                       # xo
+        (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
+        Gks[0,::] = np.linalg.solve(A, b)                                   # solve the linear system
+        Fks[0,::] = Gks[0,::] - xks[0,::]
+        xks[1,::] = Gks[0,::]                                               # x1
+    except np.linalg.linalg.LinAlgError:
+        print('singular matrix!')
+        solk = np.full((len(xks[0]),), np.nan, dtype=np.float64)
+        if perf_node is not None:
+            instrument_close(perf_node, perfNode_linSolve, None,
+                             len(b), False, 'singular matrix', None)
+            perf_node.linearSolve_data.append(perfNode_linSolve)
+        return solk, None
 
     while not converged:
 

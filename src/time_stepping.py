@@ -1086,7 +1086,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 fluid_properties.compressibility,
                 corr_nei)
 
-            if sim_properties.elastohydrSolver == 'implicit_Picard':
+            if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if sim_properties.substitutePressure:
                     if sim_properties.solveDeltaP:
                         if sim_properties.solveSparse:
@@ -1107,24 +1107,27 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / len(to_solve_k) *\
                                                         np.ones((len(to_solve_k),), float)
 
-                typValue = np.copy(guess)
                 inter_itr_init = (vk, np.array([], dtype=int))
 
-                # Just uncomment Picard_Newton, delete this line and anderson to reset normal simulation
-                # sol, data_Pic = Picard_Newton(None,
-                #                        sys_fun,
-                #                        guess,
-                #                        typValue,
-                #                        inter_itr_init,
-                #                        sim_properties,
-                #                        *arg,
-                #                        perf_node=perfNode_widthConstrItr)
-                sol, data_Pic = Anderson(sys_fun,
-                                         guess,
-                                         inter_itr_init,
-                                         sim_properties,
-                                         *arg,
-                                         perf_node=perfNode_widthConstrItr)
+                if sim_properties.elastohydrSolver == 'implicit_Picard':
+
+                    typValue = np.copy(guess)
+
+                    sol, data_Pic = Picard_Newton(None,
+                                           sys_fun,
+                                           guess,
+                                           typValue,
+                                           inter_itr_init,
+                                           sim_properties,
+                                           *arg,
+                                           perf_node=perfNode_widthConstrItr)
+                else:
+                    sol, data_Pic = Anderson(sys_fun,
+                                             guess,
+                                             inter_itr_init,
+                                             sim_properties,
+                                             *arg,
+                                             perf_node=perfNode_widthConstrItr)
 
             elif sim_properties.elastohydrSolver == 'RKL2':
                 sol, data_Pic = solve_width_pressure_RKL2(mat_properties.Eprime,
