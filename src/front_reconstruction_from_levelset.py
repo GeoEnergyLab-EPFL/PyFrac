@@ -140,7 +140,7 @@ def findangle(x1, y1, x2, y2, x0, y0):
     :return: angle, xintersections, yintersections
 
     """
-    fmachineprec = np.finfo(float).eps
+    fmachineprec = 100*np.finfo(float).eps
     if np.abs(x2 - x1)/np.maximum(np.abs(x2),np.abs(x1)) < fmachineprec:  # the front is a vertical line
         x = x2
         y = y0
@@ -188,7 +188,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         """
         fprecision = np.float64
         iprecision = int
-        fmachineprec = 100*np.finfo(float).eps
+        fmachineprec = 1000*np.finfo(float).eps
         """
         ------------------
         0) Set all the LS==0 to -fmachineprec
@@ -306,7 +306,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         the front is crossing the cell because at least one vertex has LS<0 and at least one has LS>0
         there are always 2 edges where the front enter the fictitious cell and where it exits the cell.
         The front can't exit the fictitious cell from a vertex because we set LS -(machine precision) where it was 0
-        _ _ _ _ _ _
+         _ _ _ _ _ _
         |_|_|_|_|_|_|
         |_|_|_|_|_|_|
         |_|_|a|b|_|_|
@@ -908,12 +908,89 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             xintersectionsfromzerovertex.append(xint)
             yintersectionsfromzerovertex.append(yint)
 
+        # find the cells that have been passed completely by the front
+        # you can find them by this reasoning:
+        # [cells where LS<0] - [cells at the previous channell (meaning ribbon+fracture)] - [tip cells]
+        #
+        temp = sgndDist_k[:]
+        temp[temp > 0] = 0
+        fullyfractured = np.nonzero(temp)
+        fullyfractured = np.setdiff1d(fullyfractured,eltsChannel)
+        fullyfractured = np.setdiff1d(fullyfractured,listofTIPcells)
+        if len(fullyfractured) > 0:
+            fullyfractured_angle=[]
+            fullyfractured_distance = []
+            fullyfractured_vertexID = []
+            fullyfractured_vertexpositionwithinthecell = []
+            # loop over the fullyfractured cells
+            for fullyfracturedcell in range(0, len(fullyfractured)):
+                i = fullyfractured[fullyfracturedcell]
+                """
+                you are in cell i
+                take the level set at the center of the neighbors cells 
+                  _   _   _   _   _   _
+                | _ | _ | _ | _ | _ | _ |
+                | _ | _ | _ | _ | _ | _ |
+                | _ | e | a | f | _ | _ |
+                | _ | _ 3 _ 2 _ | _ | _ |              
+                | _ | d | i | b | _ | _ |
+                | _ | _ 0 _ 1 _ | _ | _ |
+                | _ | h | c | g | _ | _ |
+                | _ | _ | _ | _ | _ | _ |
+                
+                                        0     1      2      3
+                NeiElements[element]->[left, right, bottom, up]
+                """
+
+                a = mesh.NeiElements[i, top_elem]
+                b = mesh.NeiElements[i, right_elem]
+                c = mesh.NeiElements[i, bottom_elem]
+                d = mesh.NeiElements[i, left_elem]
+                e = mesh.NeiElements[d, top_elem]
+                f = mesh.NeiElements[b, top_elem]
+                g = mesh.NeiElements[b, bottom_elem]
+                h = mesh.NeiElements[d, bottom_elem]
+
+                hcid = sgndDist_k[[h, c, i, d]]
+                cgbi = sgndDist_k[[c, g, b, i]]
+                ibfa = sgndDist_k[[i, b, f, a]]
+                diae = sgndDist_k[[d, i, a, e]]
+                LS = [hcid, cgbi, ibfa, diae]
+                hcid_mean = np.mean(np.asarray(sgndDist_k[[h, c, i, d]]))
+                cgbi_mean = np.mean(np.asarray(sgndDist_k[[c, g, b, i]]))
+                ibfa_mean = np.mean(np.asarray(sgndDist_k[[i, b, f, a]]))
+                diae_mean = np.mean(np.asarray(sgndDist_k[[d, i, a, e]]))
+                LS_means = [hcid_mean, cgbi_mean, ibfa_mean, diae_mean]
+                localvertexpositionwithinthecell = np.argmin(np.asarray(LS_means))
+                fullyfractured_vertexpositionwithinthecell.append(localvertexpositionwithinthecell)
+                fullyfractured_distance.append(np.abs(LS_means[localvertexpositionwithinthecell]))
+                fullyfractured_vertexID.append(mesh.Connectivity[i, localvertexpositionwithinthecell])
+                chosenLS=LS[localvertexpositionwithinthecell ]
+                # compute the angle
+                dLSdy = 0.5 * mesh.hy * (chosenLS[3] + chosenLS[2] - chosenLS[1] - chosenLS[0])
+                dLSdx = 0.5 * mesh.hx * (chosenLS[2] + chosenLS[1] - chosenLS[3] - chosenLS[0])
+                if   dLSdy ==0. and dLSdx !=0. :
+                    fullyfractured_angle.append(0.)
+                elif dLSdy !=0. and dLSdx ==0 :
+                    fullyfractured_angle.append(np.pi())
+                elif dLSdy != 0. and dLSdx != 0:
+                    fullyfractured_angle.append(np.arctan(np.abs(dLSdy)/np.abs(dLSdx)))
+                else:
+                    print("ERROR minimum of the function has been found, not expected")
+            # finally append these informations to what computed before
+            listofTIPcells=listofTIPcells+np.ndarray.tolist(fullyfractured)
+            distances=distances+fullyfractured_distance
+            angles=angles+fullyfractured_angle
+            vertexpositionwithinthecell=vertexpositionwithinthecell+fullyfractured_vertexpositionwithinthecell
+            vertexID=vertexID+fullyfractured_vertexID
+
+
         # find the new ribbon cells
         newRibbon = np.unique(np.ndarray.flatten(mesh.NeiElements[listofTIPcells, :]))
         temp = sgndDist_k[newRibbon]
         temp[temp > 0] = 0
         newRibbon = newRibbon[np.nonzero(temp)]
-        newRibbon = np.setdiff1d(newRibbon, np.asarray(listofTIPcells), assume_unique=True)
+        newRibbon = np.setdiff1d(newRibbon, np.asarray(listofTIPcells))
 
         # A = np.full(mesh.NumberOfElts, np.nan)
         # A[anularegion] = sgndDist_k[anularegion]
@@ -931,7 +1008,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # # plt.plot(xred, yred, '.',color='red' )
         # # plt.plot(xgreen, ygreen, '.',color='yellow')
         # plt.plot(xblack, yblack, '.',color='black')
-        # plt.plot(mesh.CenterCoor[Ribbon,0], mesh.CenterCoor[Ribbon,1], '.',color='orange')
+        # plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
         # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
         # plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
         # plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
@@ -945,6 +1022,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # K = np.zeros((mesh.NumberOfElts,), )
         # K[listofTIPcells] = distances
         # plot_as_matrix(K, mesh)
+
+        # from utility import plot_as_matrix
+        # K = np.zeros((Fr_kplus1.mesh.NumberOfElts,), )
+        # K[Fr_kplus1.EltTip] = Fr_kplus1.alpha
+        # plot_as_matrix(K, Fr_kplus1.mesh)
+
+        # from utility import plot_as_matrix
+        # K = np.zeros((Fr_kplus1.mesh.NumberOfElts,), )
+        # K[Fr_kplus1.EltTip] = Fr_kplus1.ZeroVertex
+        # plot_as_matrix(K, Fr_kplus1.mesh)
 
         # Cells status list store the status of all the cells in the domain
         # update ONLY the position of the tip cells
