@@ -112,6 +112,30 @@ class CartesianMesh:
         self.NumberOfElts = self.nx * self.ny
         self.EltArea = self.hx * self.hy
 
+        """
+        Creating a list of the names of the cells that are identified with x in the example below
+        
+         ________________________
+        |    |    |    |    |    |
+        |____|____|____|____|____|
+        |    | x  |  x |  x |    |
+        |____|____|____|____|____|
+        |    | x  |    |  x |    |
+        |____|____|____|____|____|
+        |    | x  |  x |  x |    |
+        |____|____|____|____|____|
+        |    |    |    |    |    |
+        |____|____|____|____|____|   
+        
+        the list will be called frontlist             
+        """
+        self.Frontlist=[]
+        self.Frontlist=self.Frontlist + list(range(self.nx+1,2*self.nx-1))
+        self.Frontlist=self.Frontlist + list(range((self.ny-3)*(self.nx)+self.nx + 1, (self.ny-3)*(self.nx)+2 * self.nx - 1))
+        for i in range(1,self.ny-3):
+            self.Frontlist.append(  self.nx+1+i*self.nx)
+            self.Frontlist.append(2*self.nx-2+i*self.nx)
+
         # Giving four neighbouring elements in the following order: [left,right,bottom,up]
         Nei = np.zeros((self.NumberOfElts, 4), int)
         for i in range(0, self.NumberOfElts):
