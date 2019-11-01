@@ -76,7 +76,8 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
     return nodeVScommonelementtable
 
 def ISinsideFracture(i,mesh,sgndDist_k):
-
+    if i == 1258:
+        print("")
     """
     you are in cell i
     you want to know if points 0,1,2,3 are inside or outside of the fracture
@@ -871,8 +872,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             define the angle
         ------------------  
         """
-        vertexpositionwithinthecell=[]
-        vertexID = []
+        vertexpositionwithinthecell=[0 for i in range(len(listofTIPcells))]
+        vertexID = [0 for i in range(len(listofTIPcells))]
         distances = [0 for i in range(len(listofTIPcells))]
         angles = [0 for i in range(len(listofTIPcells))]
         xintersectionsfromzerovertex = []
@@ -888,6 +889,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             localvertexpositionwithinthecell = []
             p = Point(0,0.,0.)
             i=listofTIPcells[nodeindexp1]
+            if i==1258:
+                print("")
             answer_on_vertexes = ISinsideFracture(i, mesh, sgndDist_k)
             for j in range(0,4):
                 p.name = mesh.Connectivity[i][j]
@@ -902,8 +905,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
             # take the largest distance from the front
             index = np.argmax(np.asarray(localdistances))
-            vertexID.append(localvertexID[index])
-            vertexpositionwithinthecell.append(localvertexpositionwithinthecell[index])
+            if index.size>1:
+                index = index[0]
+            vertexID[nodeindexp1]=localvertexID[index]
+            vertexpositionwithinthecell[nodeindexp1]=localvertexpositionwithinthecell[index]
             distances[nodeindexp1]=localdistances[index]
 
             # compute the angle
@@ -918,6 +923,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         vertexpositionwithinthecellTIPcellsONLY = np.asarray(vertexpositionwithinthecell,dtype=int)
         distancesTIPcellsONLY=np.copy(distances)
         anglesTIPcellsONLY=np.copy(angles)
+        vertexIDTIPcellsONLY=np.copy(vertexID)
+
         # find the cells that have been passed completely by the front
         # you can find them by this reasoning:
         # [cells where LS<0] - [cells at the previous channell (meaning ribbon+fracture)] - [tip cells]
@@ -1004,27 +1011,27 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         newRibbon = newRibbon[np.nonzero(temp)]
         newRibbon = np.setdiff1d(newRibbon, np.asarray(listofTIPcellsONLY))
 
-        A = np.full(mesh.NumberOfElts, np.nan)
-        A[anularegion] = sgndDist_k[anularegion]
-        from visualization import plot_fracture_variable_as_image
-        figure = plot_fracture_variable_as_image(A, mesh)
-        ax = figure.get_axes()[0]
-        xtemp = xintersection
-        ytemp = yintersection
-        xtemp.append(xtemp[0]) # close the front
-        ytemp.append(ytemp[0]) # close the front
-        # plt.plot(mesh.VertexCoor[mesh.Connectivity[Ribbon,0],0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
-        plt.plot(xtemp, ytemp, '-o')
-        for i in range(0,len(xintersectionsfromzerovertex)) :
-            plt.plot([mesh.VertexCoor[vertexID[i], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[i], 1], yintersectionsfromzerovertex[i]], '-r')
-        # plt.plot(xred, yred, '.',color='red' )
-        # plt.plot(xgreen, ygreen, '.',color='yellow')
-        plt.plot(xblack, yblack, '.',color='black')
-        plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
-        #plt.plot(mesh.CenterCoor[Ribbon,0], mesh.CenterCoor[Ribbon,1], '.',color='b')
-        plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
-        plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
-        plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
+        # A = np.full(mesh.NumberOfElts, np.nan)
+        # A[anularegion] = sgndDist_k[anularegion]
+        # from visualization import plot_fracture_variable_as_image
+        # figure = plot_fracture_variable_as_image(A, mesh)
+        # ax = figure.get_axes()[0]
+        # xtemp = xintersection
+        # ytemp = yintersection
+        # xtemp.append(xtemp[0]) # close the front
+        # ytemp.append(ytemp[0]) # close the front
+        # # plt.plot(mesh.VertexCoor[mesh.Connectivity[Ribbon,0],0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
+        # plt.plot(xtemp, ytemp, '-o')
+        # for i in range(0,len(xintersectionsfromzerovertex)) :
+        #     plt.plot([mesh.VertexCoor[vertexID[i], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[i], 1], yintersectionsfromzerovertex[i]], '-r')
+        # # plt.plot(xred, yred, '.',color='red' )
+        # # plt.plot(xgreen, ygreen, '.',color='yellow')
+        # plt.plot(xblack, yblack, '.',color='black')
+        # plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
+        # #plt.plot(mesh.CenterCoor[Ribbon,0], mesh.CenterCoor[Ribbon,1], '.',color='b')
+        # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+        # plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
+        # plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
 
         # from utility import plot_as_matrix
         # K = np.zeros((mesh.NumberOfElts,), )
@@ -1057,7 +1064,18 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         CellStatusNew[eltsChannel] = 1
         CellStatusNew[listofTIPcells] = 2
         CellStatusNew[Ribbon] = 3
-        
+
+        # mesh.identify_elements(listofTIPcellsONLY)
+        # test=listofTIPcellsONLY
+        # test1=listofTIPcellsONLY
+        # for j in range(1,len(listofTIPcellsONLY)):
+        #     element=listofTIPcellsONLY[j]
+        #     test1[j]=mesh.Connectivity[element][vertexpositionwithinthecellTIPcellsONLY[j]]
+        #     test[j]=vertexIDTIPcellsONLY[j]-mesh.Connectivity[element][vertexpositionwithinthecellTIPcellsONLY[j]]
+        # from utility import plot_as_matrix
+        # K = np.zeros((mesh.NumberOfElts,), )
+        # K[listofTIPcellsONLY] = test1
+        # plot_as_matrix(K, mesh)
         return np.asarray(listofTIPcells),np.asarray(listofTIPcellsONLY) , np.asarray(distances), np.asarray(angles), np.asarray(CellStatusNew), np.asarray(newRibbon), vertexpositionwithinthecell, vertexpositionwithinthecellTIPcellsONLY
         # return np.asarray(listofTIPcells),np.asarray(listofTIPcellsONLY) , np.asarray(distancesTIPcellsONLY), np.asarray(anglesTIPcellsONLY), np.asarray(CellStatusNew), np.asarray(newRibbon), vertexpositionwithinthecell, vertexpositionwithinthecellTIPcellsONLY
 
