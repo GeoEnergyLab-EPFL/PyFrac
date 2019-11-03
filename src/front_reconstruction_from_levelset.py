@@ -7,6 +7,7 @@ class Point:
         self.x = x
         self.y = y
 
+
 def distance(p1, p2):
     # Compute the euclidean distance between two points
     return np.sqrt((-p1.x + p2.x)**2 + (-p1.y + p2.y)**2)
@@ -61,19 +62,21 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
     elif len(common) > 1:
         """
         situation with two common elements
-        ___|______|____
-           |      |
-        ___*______*____
-           |      |   
-        ___|______|____
-           |      |
-        In this situation take the i with LS>0 as tip
+        ___|______|____           ___|_*__*_|____
+           |      |                  |/    \|         
+        ___*______*____           ___*______*____
+           |      |                 /|      |\  
+        ___|______|____           _/_|______|_\___
+           |      |                  |      |
+        In this situation take the i with LS<0 as tip
+        (...if you choose LS>0 as tip you will not find zero vertexes then...)
         """
-
+        #nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
         nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
     elif len(common) == 0:
         print('ERROR: two consecutive nodes does not belongs to a common cell --->PLEASE STOP THE PROGRAM')
     return nodeVScommonelementtable
+
 
 def ISinsideFracture(i,mesh,sgndDist_k):
     if i == 1258:
@@ -113,6 +116,7 @@ def ISinsideFracture(i,mesh,sgndDist_k):
     answer_on_vertexes = [hcid_mean<0, cgbi_mean<0, ibfa_mean<0, diae_mean<0]
     return answer_on_vertexes
 
+
 def findangle(x1, y1, x2, y2, x0, y0):
     """
     Compute the angle with respect to the horizontal direction between the segment from a point of coordinates (x0,y0)
@@ -150,6 +154,7 @@ def findangle(x1, y1, x2, y2, x0, y0):
         angle = np.arctan(np.abs((y-y0))/np.abs((x-x0)))
 
     return angle, x, y
+
 
 def find_first_cell(i, mesh, anularegion, sgndDist_k):
     checked_cells = 0
@@ -210,9 +215,10 @@ def find_first_cell(i, mesh, anularegion, sgndDist_k):
             checked_cells = checked_cells + 1
     if checked_cells > len(anularegion):
         raise SystemExit('ERROR: unable to find the first cell where the front is passing trough, LS non correct')
-    else :
+    else:
         return i   
-    
+
+
 def find_next_cell(i, mesh, sgndDist_k):
 
     #                         0     1      2      3
@@ -383,7 +389,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             icbaMat:
              _               _
             |                 |
-            |i ; right  | 
+            |    i   ; right  | 
             |                 |
             |   up   ; rightup|
             |_               _|
@@ -461,17 +467,17 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             |      up  o right up|
                             |_________/|_________|
                             |        / |         |
-                            |  i | right   |
+                            |  i    /  | right   |
                             |______/___|_________|
-                                    /
+                                  /
                              ______________/_____
                             |         |   /      |
                             |     up  |right  up |
                             |_________|_/________|
                             |         |/         |
-                            | i o   right  |
+                            | i       o   right  |
                             |________/|__________|
-                                      /
+                                    /
                                        icbaMat[0,:]=[i,right]
                                        icbaMat[1,:]=[up,rightUp]              
                             """
@@ -489,9 +495,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             |    | up  |right  up |
                             |____|_____|__________|
                             |    |     |          |
-                            | i  |   right  |
+                            | i  |   right        |
                             |____|_____|__________|
-                                   |
+                                 |
                             checking flags
                             """
                             appendYcandidate = 'no'
@@ -515,7 +521,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             |   /  up  | right up|
                             |__o_______|_________|
                             | /        |         |
-                            |/ i | right   |
+                            |/      i  | right   |
                             |__________|_________|
 
                              _________________/__
@@ -523,7 +529,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             |     up  |right/ up |
                             |_________|____o_____|
                             |         |   /      |
-                            | i |  /right  |
+                            |     i   |  /right  |
                             |_________|_/________|
                                        /
                             icbaMat[0,:]=[i,right]
@@ -546,7 +552,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                               |     up  |right  up |
                               |_________|__________|
                             __|_________|__________|_______
-                              | i |   right  |
+                              |     i   |   right  |
                               |_________|__________|
 
                             checking flags                            
@@ -561,7 +567,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     icbaMat:
                      _               _
                     |                 |
-                    |i ; right  | 
+                    |    i ;   right  | 
                     |                 |
                     |   up   ; rightup|
                     |_               _|
@@ -571,7 +577,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     
                      _               _
                     |        |        |
-                    |i | right  | 
+                    |    i   | right  | 
                     |________|________|
                     |   up   | rightup|
                     |_       |       _|
@@ -789,25 +795,36 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
         """
         ------------------
-        4)  Make a 2D table for each node found at the front: the first column contains the cell's name common with the 
-            previous node while the second column the cell's name common with the next node.
-            the nodes that have to be deleted will have same value in both column
+        4)  Make a 2D table where to store info for each node found at the front. 
+            The 1st column contains the TIPcell's name common with the 
+            previous node in the list of nodes at the front while the second column the cell's name common with the next node.
+            The nodes that have to be deleted will have same value in both columns
+            
+         ___|__________|___   
+            |   in     |
+            |         /|
+            |\       / |
+         ___|_\_____/__|___
+            |          |
+            |    out   |
+            
+            
         ------------------  
                   
           
         """
-        nodeVScommonelementtable=np.empty([len(xintersection), 2],dtype=int)
+        nodeVScommonelementtable=np.zeros([len(xintersection), 3],dtype=int)
         for nodeindex in range(0,len(xintersection)):
             # commonbackward contains the unique values in cellOfNodei that are in cellOfNodeim1.
             if nodeindex== 0:
-                commonbackward = findcommon(nodeindex,len(xintersection)-1, typeindex, mesh.Connectivityedgeselem,mesh.Connectivitynodeselem, edgeORvertexID)
+                commonbackward = findcommon(nodeindex, len(xintersection)-1, typeindex, mesh.Connectivityedgeselem, mesh.Connectivitynodeselem, edgeORvertexID)
             else:
-                commonbackward = findcommon(nodeindex, (nodeindex - 1), typeindex, mesh.Connectivityedgeselem,mesh.Connectivitynodeselem, edgeORvertexID)
+                commonbackward = findcommon(nodeindex, (nodeindex - 1), typeindex, mesh.Connectivityedgeselem, mesh.Connectivitynodeselem, edgeORvertexID)
             # commonforward contains the unique values in cellOfNodei that are in cellOfNodeip1.
             if nodeindex== len(xintersection)-1:
-                commonforward=findcommon(nodeindex, 0,typeindex,mesh.Connectivityedgeselem, mesh.Connectivitynodeselem, edgeORvertexID)
+                 commonforward = findcommon(nodeindex, 0,typeindex,mesh.Connectivityedgeselem, mesh.Connectivitynodeselem, edgeORvertexID)
             else:
-                commonforward = findcommon(nodeindex, (nodeindex + 1), typeindex, mesh.Connectivityedgeselem,mesh.Connectivitynodeselem, edgeORvertexID)
+                 commonforward = findcommon(nodeindex, (nodeindex + 1), typeindex, mesh.Connectivityedgeselem, mesh.Connectivitynodeselem, edgeORvertexID)
 
             column=0
             nodeVScommonelementtable=filltable(nodeVScommonelementtable,nodeindex,commonbackward,sgndDist_k,column)
@@ -817,54 +834,100 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         listofTIPcells = []
         # remove the nodes in the cells with more than 2 nodes and keep the first and the last node
         counter = 0
+        n=len(xintersection)
         for nodeindex in range(0, len(xintersection)):
             if nodeVScommonelementtable[nodeindex][1] == nodeVScommonelementtable[nodeindex][0]:
+                # plot before removing
+                # A = np.full(mesh.NumberOfElts, np.nan)
+                # A[anularegion] = sgndDist_k[anularegion]
+                # from visualization import plot_fracture_variable_as_image
+                # figure = plot_fracture_variable_as_image(A, mesh)
+                # ax = figure.get_axes()[0]
+                # xtempppp = xintersection
+                # ytempppp = yintersection
+                # xtempppp.append(xtempppp[0]) # close the front
+                # ytempppp.append(ytempppp[0]) # close the front
+                # plt.plot(xtempppp, ytempppp, '-o')
+                # plt.plot( xintersection[nodeindex-counter - 1:nodeindex-counter + 1], yintersection[nodeindex-counter - 1:nodeindex-counter + 1], '-r')
+                # plt.plot(xblack, yblack, '.',color='black')
+                # plt.plot(mesh.CenterCoor[Ribbon,0], mesh.CenterCoor[Ribbon,1], '.',color='g')
+                # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+
                 del xintersection[nodeindex-counter]
                 del yintersection[nodeindex-counter]
                 del typeindex[nodeindex-counter]
                 del edgeORvertexID[nodeindex-counter]
-                counter = counter+1
+
+                nodeVScommonelementtable[nodeindex][2]=1 # to remember that the node has been deleted
+
+                #plot after removing
+                # A = np.full(mesh.NumberOfElts, np.nan)
+                # A[anularegion] = sgndDist_k[anularegion]
+                # from visualization import plot_fracture_variable_as_image
+                # figure = plot_fracture_variable_as_image(A, mesh)
+                # ax = figure.get_axes()[0]
+                # xtempppp = xintersection
+                # ytempppp = yintersection
+                # xtempppp.append(xtempppp[0])  # close the front
+                # ytempppp.append(ytempppp[0])  # close the front
+                # plt.plot(xtempppp, ytempppp, '-o')
+                # plt.plot(xintersection[nodeindex-counter - 1:nodeindex-counter + 1], yintersection[nodeindex-counter - 1:nodeindex-counter + 1], '-r')
+                # plt.plot(xblack, yblack, '.', color='black')
+                # plt.plot(mesh.CenterCoor[Ribbon, 0], mesh.CenterCoor[Ribbon, 1], '.', color='g')
+                # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10,
+                #          mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+                counter = counter + 1
+            elif nodeVScommonelementtable[nodeindex][0] == nodeVScommonelementtable[(nodeindex+1)%n][1]:
+                # plot before removing
+                # A = np.full(mesh.NumberOfElts, np.nan)
+                # A[anularegion] = sgndDist_k[anularegion]
+                # from visualization import plot_fracture_variable_as_image
+                # figure = plot_fracture_variable_as_image(A, mesh)
+                # ax = figure.get_axes()[0]
+                # xtempppp = xintersection
+                # ytempppp = yintersection
+                # xtempppp.append(xtempppp[0]) # close the front
+                # ytempppp.append(ytempppp[0]) # close the front
+                # plt.plot(xtempppp, ytempppp, '-o')
+                # plt.plot( xintersection[nodeindex-counter - 1:nodeindex-counter + 1], yintersection[nodeindex-counter - 1:nodeindex-counter + 1], '-r')
+                # plt.plot(xblack, yblack, '.',color='black')
+                # plt.plot(mesh.CenterCoor[Ribbon,0], mesh.CenterCoor[Ribbon,1], '.',color='g')
+                # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+                del xintersection[nodeindex-counter]
+                del yintersection[nodeindex-counter]
+                del typeindex[nodeindex-counter]
+                del edgeORvertexID[nodeindex-counter]
+                nodeVScommonelementtable[nodeindex][2]=1 # to remember that the node has been deleted
+                counter = counter + 1
+                del xintersection[(nodeindex-counter+1)%len(xintersection)]
+                del yintersection[(nodeindex-counter+1)%len(xintersection)]
+                del typeindex[(nodeindex-counter+1)%len(xintersection)]
+                del edgeORvertexID[(nodeindex-counter+1)%len(xintersection)]
+                nodeVScommonelementtable[(nodeindex+1)%n][2]=1 # to remember that the node has been deleted
+                counter = counter + 1
+                # plot after removing
+                # A = np.full(mesh.NumberOfElts, np.nan)
+                # A[anularegion] = sgndDist_k[anularegion]
+                # from visualization import plot_fracture_variable_as_image
+                # figure = plot_fracture_variable_as_image(A, mesh)
+                # ax = figure.get_axes()[0]
+                # xtempppp = xintersection
+                # ytempppp = yintersection
+                # xtempppp.append(xtempppp[0])  # close the front
+                # ytempppp.append(ytempppp[0])  # close the front
+                # plt.plot(xtempppp, ytempppp, '-o')
+                # plt.plot(xintersection[nodeindex-counter - 1:nodeindex-counter + 1], yintersection[nodeindex-counter - 1:nodeindex-counter + 1], '-r')
+                # plt.plot(xblack, yblack, '.', color='black')
+                # plt.plot(mesh.CenterCoor[Ribbon, 0], mesh.CenterCoor[Ribbon, 1], '.', color='g')
+                # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10,
+                #          mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
             else:
                 listofTIPcells.append(nodeVScommonelementtable[nodeindex][0])
 
-        """
-        This is another way of computing the tip cells
-        - not used anymore -
-        """
-        # i=0
-        # if len(typeindex) > 1:
-        #     for i in range(0,len(typeindex)):
-        #         cellscommontolastnodeadded = []
-        #         cellscommontosecondlastnodeadded = []
-        #         if (i+1)>len(typeindex)-1:
-        #             j=0
-        #         else:
-        #             j=i+1
-        #         # compute the tip cell defined by the last 2 points added in the list
-        #         if typeindex[i] == 0:  # is an edge
-        #             elms=np.unique(mesh.Connectivityedgeselem[edgeORvertexID[i]])
-        #             cellscommontolastnodeadded.append(elms[0])
-        #             cellscommontolastnodeadded.append(elms[1])
-        #         elif typeindex[i] == 1:  # is a vertex
-        #             elms = np.unique(mesh.Connectivitynodeselem[edgeORvertexID[i]])
-        #             cellscommontolastnodeadded.append(elms[0])
-        #             cellscommontolastnodeadded.append(elms[1])
-        #             cellscommontolastnodeadded.append(elms[2])
-        #             cellscommontolastnodeadded.append(elms[3])
-        #         #
-        #         if typeindex[j] == 0:  # is an edge
-        #             elms = np.unique(mesh.Connectivityedgeselem[edgeORvertexID[j]])
-        #             cellscommontosecondlastnodeadded.append(elms[0])
-        #             cellscommontosecondlastnodeadded.append(elms[1])
-        #         elif typeindex[j] == 1:  # is a vertex
-        #             elms = np.unique(mesh.Connectivitynodeselem[edgeORvertexID[j]])
-        #             cellscommontosecondlastnodeadded.append(elms[0])
-        #             cellscommontosecondlastnodeadded.append(elms[1])
-        #             cellscommontosecondlastnodeadded.append(elms[2])
-        #             cellscommontosecondlastnodeadded.append(elms[3])
-        #         cellscommontosecondlastnodeadded=np.asarray(cellscommontosecondlastnodeadded)
-        #         cellscommontolastnodeadded = np.asarray(cellscommontolastnodeadded)
-        #         listofTIPcells.append(np.intersect1d(cellscommontosecondlastnodeadded, cellscommontolastnodeadded)[0])
+        if np.unique(np.asarray(listofTIPcells)).size != len(listofTIPcells):
+            duplicates=np.abs(np.unique(np.asarray(listofTIPcells)).size-len(listofTIPcells))
+            raise SystemExit('ERROR: the front has cells that are duplicates:', duplicates)
+
         """
         ------------------
         5)  Define the correct node from where compute the distance to the front
@@ -889,8 +952,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             localvertexpositionwithinthecell = []
             p = Point(0,0.,0.)
             i=listofTIPcells[nodeindexp1]
-            if i==1258:
-                print("")
             answer_on_vertexes = ISinsideFracture(i, mesh, sgndDist_k)
             for j in range(0,4):
                 p.name = mesh.Connectivity[i][j]
@@ -904,6 +965,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     localdistances.append(pointtolinedistance(p1, p2, p))
 
             # take the largest distance from the front
+            if len(localdistances)==0:
+                raise SystemExit('ERROR: there are no nodes in the given tip cell that are inside the fracture')
             index = np.argmax(np.asarray(localdistances))
             if index.size>1:
                 index = index[0]
@@ -1022,8 +1085,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # ytemp.append(ytemp[0]) # close the front
         # # plt.plot(mesh.VertexCoor[mesh.Connectivity[Ribbon,0],0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
         # plt.plot(xtemp, ytemp, '-o')
-        # for i in range(0,len(xintersectionsfromzerovertex)) :
-        #     plt.plot([mesh.VertexCoor[vertexID[i], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[i], 1], yintersectionsfromzerovertex[i]], '-r')
+        # n=len(xintersectionsfromzerovertex)
+        # for i in range(0,n) :
+        #     plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
         # # plt.plot(xred, yred, '.',color='red' )
         # # plt.plot(xgreen, ygreen, '.',color='yellow')
         # plt.plot(xblack, yblack, '.',color='black')
@@ -1076,10 +1140,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # K = np.zeros((mesh.NumberOfElts,), )
         # K[listofTIPcellsONLY] = test1
         # plot_as_matrix(K, mesh)
-        return np.asarray(listofTIPcells),np.asarray(listofTIPcellsONLY) , np.asarray(distances), np.asarray(angles), np.asarray(CellStatusNew), np.asarray(newRibbon), vertexpositionwithinthecell, vertexpositionwithinthecellTIPcellsONLY
+
+        return np.asarray(listofTIPcells),np.asarray(listofTIPcellsONLY) , np.asarray(distances), np.asarray(angles), CellStatusNew, newRibbon, vertexpositionwithinthecell, vertexpositionwithinthecellTIPcellsONLY
         # return np.asarray(listofTIPcells),np.asarray(listofTIPcellsONLY) , np.asarray(distancesTIPcellsONLY), np.asarray(anglesTIPcellsONLY), np.asarray(CellStatusNew), np.asarray(newRibbon), vertexpositionwithinthecell, vertexpositionwithinthecellTIPcellsONLY
-
-
 
 
 def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrVertx_k, mesh):
@@ -1087,6 +1150,8 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrV
         EltChannel_k = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcells)
         EltTip_k = listofTIPcells
         EltCrack_k = np.concatenate((listofTIPcells, EltChannel_k))
+        if np.unique(EltCrack_k).size != EltCrack_k.size:
+            raise SystemExit('ERROR: the front is entering more than 1 time the same cell')
         EltRibbon_k = newRibbon
 
         # Cells status list store the status of all the cells in the domain

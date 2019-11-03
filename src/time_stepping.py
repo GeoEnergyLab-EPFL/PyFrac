@@ -580,7 +580,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                            listofTIPcellsONLY,
                                                            sgndDist_k, vertexpositionwithinthecellTIPcellsONLY, Fr_lstTmStp.mesh)
 
-
     # from utility import plot_as_matrix
     # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
     # K[EltTip_k] = zrVertx_k
