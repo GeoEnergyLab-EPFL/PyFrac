@@ -1074,6 +1074,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         newRibbon = newRibbon[np.nonzero(temp)]
         newRibbon = np.setdiff1d(newRibbon, np.asarray(listofTIPcellsONLY))
 
+        if len(xintersection)==0:
+            raise SystemExit('ERROR: front not reconstructed')
+
         # A = np.full(mesh.NumberOfElts, np.nan)
         # A[anularegion] = sgndDist_k[anularegion]
         # from visualization import plot_fracture_variable_as_image

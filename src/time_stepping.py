@@ -495,20 +495,23 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
-    if sim_properties.projMethod is 'ILSA_orig':
+    if sim_properties.projMethod == 'ILSA_orig':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front(sgndDist_k,
                                                                  front_region,
                                                                  Fr_lstTmStp.EltChannel,
                                                                  Fr_lstTmStp.mesh)
-    elif sim_properties.projMethod is 'LS_grad':
+    elif sim_properties.projMethod == 'LS_grad':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front_LS_gradient(sgndDist_k,
                                                                        front_region,
                                                                        Fr_lstTmStp.EltChannel,
                                                                        Fr_lstTmStp.mesh)
-    elif sim_properties.projMethod is 'LS_continousfront':
+    elif sim_properties.projMethod == 'LS_continousfront':
         EltsTipNew, listofTIPcellsONLY,l_k, alpha_k, CellStatus, newRibbon, zrVertx_k,vertexpositionwithinthecellTIPcellsONLY = reconstruct_front_continuous(
             sgndDist_k, front_region[pstv_region],
             Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
+    else:
+        raise SystemExit("projection method not supported")
+
     # EltsTipNew=listofTIPcellsONLY
     # zrVertx_k=vertexpositionwithinthecellTIPcellsONLY
     if not np.in1d(EltsTipNew, front_region).any():
@@ -1367,18 +1370,18 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
-    if sim_properties.projMethod is 'ILSA_orig':
+    if sim_properties.projMethod == 'ILSA_orig':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front(sgndDist_k,
                                                                 front_region,
                                                                 Fr_lstTmStp.EltChannel,
                                                                 Fr_lstTmStp.mesh)
-    elif sim_properties.projMethod is 'LS_grad':
+    elif sim_properties.projMethod == 'LS_grad':
         EltsTipNew, l_k, alpha_k, CellStatus = reconstruct_front_LS_gradient(sgndDist_k,
                                                                 front_region,
                                                                 Fr_lstTmStp.EltChannel,
                                                                 Fr_lstTmStp.mesh)
 
-    elif sim_properties.projMethod is 'LS_continousfront':
+    elif sim_properties.projMethod == 'LS_continousfront':
         EltsTipNew, listofTIPcellsONLY, l_k, alpha_k, CellStatus,  newRibbon,  zrVertx_k ,vertexpositionwithinthecellTIPcellsONLY = reconstruct_front_continuous(sgndDist_k, front_region[pstv_region],
                                                                         Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
         # EltsTipNew, l_k, alpha_k, CellStatus,  newRibbon, listofTIPcells, zrVertx_k  = reconstruct_front_continuous(sgndDist_k, front_region,

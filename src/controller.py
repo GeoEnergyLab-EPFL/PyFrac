@@ -535,7 +535,7 @@ class Controller:
                         plt.clf()                              # clear figure
                         self.Figures[index].add_axes(axes[0])   # add axis to the figure
 
-                    if plt_var is 'footprint':
+                    if plt_var == 'footprint':
                         # footprint is plotted if variable to plot is not given
                         plot_prop.lineColor = 'b'
                         if self.sim_prop.plotAnalytical:
