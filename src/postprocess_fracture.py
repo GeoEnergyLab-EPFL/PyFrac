@@ -836,7 +836,7 @@ def write_fracture_mesh_csv_file(file_name, mesh_list):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_extermities_cells(Fr_list):
+def get_extremities_cells(Fr_list):
     """
     This function returns the extreme points for each of the fracture in the list.
 
