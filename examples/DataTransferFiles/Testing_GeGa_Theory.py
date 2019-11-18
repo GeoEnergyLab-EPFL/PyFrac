@@ -18,48 +18,41 @@ from fracture_initialization import Geometry, InitializationParameters
 from elasticity import load_isotropic_elasticity_matrix
 import time
 # creating mesh
-Mesh = CartesianMesh(0.02,0.1, 31,151)
+Mesh = CartesianMesh(500,3000, 41,121)
 
 # solid properties
 nu = 0.25                           # Poisson's ratio
-youngs_mod = 30*1e9            # Young's modulus
+youngs_mod = 30e9            # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 
 
 def sigmaO_func(x, y):
     """ This function provides the confining stress over the domain"""
-    density_high = 10
-    density_low = 2400
-    #layer = 1000
-    Ly = 51.3
-    #if y > layer:
-        #return (Ly - y) * density_low * 9.8
-    # only dependant on the depth
-    #return (Ly - y) * density_high * 9.8 - (Ly - layer) * (density_high - density_low) * 9.8
-    #return (Ly - y) * density_high * 9.81
-    return 51.3-y
+    density_high = 2700
+    Ly = 8000
+    return (Ly - y) * density_high * 9.81
 
 # material properties
 Solid = MaterialProperties(Mesh,
                            Eprime,
-                           toughness=1,
+                           toughness=100e6,
                            confining_stress_func=sigmaO_func,
                            minimum_width=1e-15)
 
 # injection parameters
 #Q0 = np.asarray([[0.0,0.000049210724286799595],
 #                 [1,    0]])  # injection rate
-Q0 = 1e-4
+Q0 = 10
 Injection = InjectionProperties(Q0,
                                 Mesh,
-                                source_coordinates=[0, -0.085])
+                                source_coordinates=[0, -2650])
 
 # fluid properties
-Fluid = FluidProperties(viscosity=0.001, density=2400)
+Fluid = FluidProperties(viscosity=1, density=2400)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e20
+simulProp.finalTime = 30e3
 #simulProp.timeStepLimit = 2
 #simulProp.frontAdvancing = 'implicit'  # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/neutral_buoyancy") # the disk address where the files are saved
@@ -70,25 +63,23 @@ simulProp.saveTSJump = 5                 # save every second time step
 simulProp.maxSolverItrs = 250
 simulProp.maxReattempts = 10
 simulProp.reAttemptFactor = 0.25
-simulProp.tmStpPrefactor = np.asarray([[0, 500], [0.3, 1]]) # set up the time step prefactor
+simulProp.tmStpPrefactor = np.asarray([[0, 500], [0.6, 1]]) # set up the time step prefactor
 #simulProp.timeStepLimit = 0.5           # time step limit
 simulProp.plotVar = ['w']              # plot fracture width and fracture front velocity
-sim_name = "008_pc_2019-09-23__10_58_32"
+sim_name = "TL_test"
 simulProp.set_simulation_name(sim_name)
 simulProp.solveStagnantTip = True
 simulProp.saveRegime = True
 simulProp.solveTipCorrRib = True
-simulProp.projMethod = 'LS_continousfront'
-#simulProp.elastohydrSolver = 'implicit_Anderson'
+#simulProp.projMethod = 'LS_continousfront'
+simulProp.elastohydrSolver = 'implicit_Anderson'
 #simulProp.blockFigure = True
 simulProp.saveToDisk = False
 
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
-Fr_geometry = Geometry('radial',radius=0.005)
+Fr_geometry = Geometry('radial',radius=150)
 init_param = InitializationParameters(Fr_geometry,
-                                      #time=0.05,
-                                      net_pressure=1e6,
                                       regime='M',
                                       elasticity_matrix=C)
 

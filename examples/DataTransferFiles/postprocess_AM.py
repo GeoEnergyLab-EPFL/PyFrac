@@ -21,13 +21,14 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_bar_values_and_scales(properties):
+def get_bar_values_and_scales(properties,rho_s):
     """
     This function returns a list of the overbar values defined by GeGa14.
 
     Args:
         properties (tuple):             -- a tuple containing the Material, FLuid, Injection and Simulation properties
                                            of the simulation
+        rho_s (scalar or array):        -- function to calculate the density at each point of the domain
 
     Returns:
         bar_values (list):              --  A list of two lists:
@@ -49,8 +50,7 @@ def get_bar_values_and_scales(properties):
     bar_values = [[np.sqrt(2/np.pi)*properties[0].K1c]] # Kbar index 0
     bar_values[0].append(1 / np.pi * properties[0].Eprime) # Ebar index 1
     bar_values[0].append(np.pi**2 * properties[1].viscosity) # mubar index 2
-    # todo: evaluate_density properly
-    bar_values[0].append(float(2700-properties[1].density)) #delta rho index 3
+    bar_values[0].append(float(rho_s-properties[1].density)) #delta rho index 3
 
     if type(properties[2].injectionRate[0]) is not 'np.ndarray':
         bar_values[0].append(None)
