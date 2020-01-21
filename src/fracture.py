@@ -86,6 +86,7 @@ class Fracture:
         injectedVol (float):        -- the total volume that is injected into the fracture.
         sgndDist_last (ndarray):    -- the signed distance of the last time step. Used for re-meshing.
         timeStep_last (float):      -- the last time step. Required for re-meshing.
+        source (ndarray):           -- the list of injection cells i.e. the source elements.
 
     """
 
@@ -170,6 +171,7 @@ class Fracture:
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
+        self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
 
         self.process_fracture_front()
 

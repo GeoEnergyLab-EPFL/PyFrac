@@ -588,10 +588,9 @@ class Controller:
                                                                        projection='2D_clrmap',
                                                                        mat_properties=self.solid_prop,
                                                                        fig=self.Figures[index])
-                    # plotting source elements
-                    plot_injection_source(self.injection_prop,
-                                          self.fracture.mesh,
-                                          fig=self.Figures[index])
+                        # plotting source elements
+                        plot_injection_source(self.fracture,
+                                              fig=self.Figures[index])
 
                     # plotting closed cells
                     if len(Fr_advanced.closed) > 0:

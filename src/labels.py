@@ -43,7 +43,9 @@ Fig_labels = {
     'mesh': 'Mesh',
     'footprint': 'Fracture Footprint',
     'surface': 'Fracture Surface',
-    'regime': 'Propagation Regime (M-K)'
+    'regime': 'Propagation Regime (M-K)',
+    'source elements': 'Source Elements',
+    'se': 'Source Elements'
 }
 
 var_labels = {
@@ -82,7 +84,9 @@ var_labels = {
     'mesh': '',
     'footprint': '',
     'surface': '',
-    'regime': 'regime (M = 1, K = 0)'
+    'regime': 'regime (M = 1, K = 0)',
+    'source elements': 'source elements',
+    'se': 'source elements'
 }
 
 units = {
@@ -121,7 +125,9 @@ units = {
     'mesh': '',
     'footprint': '',
     'surface': ' ($mm$)',
-    'regime': ''
+    'regime': '',
+    'source elements': '',
+    'se': ''
 }
 
 unit_conversion = {
@@ -160,7 +166,9 @@ unit_conversion = {
     'mesh': None,
     'footprint': None,
     'surface': 1.e-3,
-    'regime': 1.
+    'regime': 1.,
+    'source elements': 1.,
+    'se': 1.
 }
 
 
@@ -171,7 +179,7 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
-                       'regime']
+                       'regime', 'source elements', 'se']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
@@ -219,7 +227,8 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'ar\' or \'aspect ratio\'\n' \
                     '-- \'ef\' or \'efficiency\'\n' \
                     '-- \'surface\'\n' \
-                    '-- \'regime\''
+                    '-- \'regime\'\n' \
+                    '-- \'se\' or \'source elements\''
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -257,7 +266,9 @@ supported_projections ={
     'efficiency': ['1D'],
     'ef': ['1D'],
     'surface': ['3D'],
-    'regime': ['2D_clrmap', '2D_contours', '3D']
+    'regime': ['2D_clrmap', '2D_contours', '3D'],
+    'source elements': ['2D_clrmap', '2D_contours', '3D'],
+    'se': ['2D_clrmap', '2D_contours', '3D']
 }
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \

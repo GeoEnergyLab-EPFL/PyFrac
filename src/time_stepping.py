@@ -42,7 +42,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         - Fr_k (Fracture)       -- fracture after advancing time step.
     """
 
-    Qin = inj_properties.get_injection_rate(Frac.time, Frac.mesh)
+    Qin = inj_properties.get_injection_rate(Frac.time, Frac)
 
     if sim_properties.frontAdvancing == 'explicit':
 
@@ -271,6 +271,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
+    Fr_kplus1.source = np.where(Qin != 0)[0]
     fluidVel = return_data[0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -542,7 +543,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-4 (up to 4 figures)
     FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-4)] = 1.0
 
-    # if filling fraction is below zero or above 1+1e-6
+    # if filling fraction is below zero or above 1+1e-4
     if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
         exitstatus = 9
         return exitstatus, None
@@ -784,6 +785,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
+    Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1713,12 +1715,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                  front_region[pstv_region],
                  front_region[ngtv_region])
 
-        # # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
-        # # todo: not satisfied with why this happens. need re-examining
-        # if max(sgndDist_k) == 1e50:
-        #     exitstatus = 2
-        #     return exitstatus, None
-
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
                 or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
@@ -1750,6 +1746,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+    Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts, ), np.nan, dtype=np.float32)
