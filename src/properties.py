@@ -675,6 +675,10 @@ class SimulationProperties:
         self.height = simul_param.height
         self.aspectRatio = simul_param.aspect_ratio
 
+        # AM adapted to define Chi in tip cells and tip regime in adjacent cells
+        self.saveChi = simul_param.save_chi
+        self.saveTipRegime = simul_param.save_tip_regime
+
 # ----------------------------------------------------------------------------------------------------------------------
 
     # setter and getter functions

@@ -1520,7 +1520,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
             if k < m_Anderson+1:
                 Gks[mk+1,::] = np.linalg.solve(A, b)
                 Fks[mk+1,::] = Gks[mk+1,::]-xks[mk+1,::]
-            else: # Rotate as to overrwrite "oldest" solution and calculate new solution
+            else: # Rotate as to overwrite "oldest" solution and calculate new solution
                 Gks = np.roll(Gks,-1, axis=0)
                 Gks[mk+1,::] = np.linalg.solve(A, b)
                 Fks = np.roll(Fks, -1, axis=0)

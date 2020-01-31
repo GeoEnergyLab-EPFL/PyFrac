@@ -274,6 +274,12 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             y_len = np.max(y_coords) - np.min(y_coords)
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
+    elif variable is 'ki':
+        for i in fracture_list:
+            vel = np.full((i.mesh.NumberOfElts,), np.nan)
+            vel[i.EltTip] = i.v
+            variable_list.append(vel)
+            time_srs.append(i.time)
             
     else:
         raise ValueError('The variable type is not correct.')
@@ -527,7 +533,12 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     else:
         density = None
 
-    if regime in ['M', 'MDR', 'Mt', 'PKN']:
+    if inj_prop.injectionRate.size > 2:
+        V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
+    else:
+        V0 = None
+
+    if regime in ['M', 'MDR', 'Mt', 'PKN', 'Mp']:
         if fluid_prop is None:
             raise ValueError('Fluid properties required for ' + regime + ' type analytical solution')
         muPrime = fluid_prop.muPrime
@@ -573,7 +584,6 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 mesh_i = CartesianMesh(x_len, y_len, 151, 151)
             else:
                 mesh_i = mesh
-            mesh_list.append(mesh_i)
 
             t, r, p, w, v, actvElts = HF_analytical_sol(regime,
                                                         mesh_i,
@@ -590,7 +600,9 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                         density=density,
                                                         Cij=Cij,
                                                         gamma=gamma,
-                                                        required=required_string[variable])
+                                                        required=required_string[variable],
+                                                        Vinj=V0)
+            mesh_list.append(mesh_i)
 
             if variable is 'time' or variable is 't':
                 return_list.append(t)
@@ -709,7 +721,7 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
     else:
         density = None
 
-    if regime in ('M', 'Mt', 'PKN', 'MDR'):
+    if regime in ('M', 'Mt', 'PKN', 'MDR', 'Mp'):
         if fluid_prop is None:
             raise ValueError('Fluid properties required to evaluate analytical solution')
         muPrime = fluid_prop.muPrime
@@ -719,17 +731,25 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
     if samp_cell is None:
         samp_cell = int(len(mat_prop.Kprime) / 2)
 
+    if inj_prop.injectionRate.size > 2:
+        V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
+    else:
+        V0=None
+
+    Q0 = inj_prop.injectionRate[1, 0]
+
     x_len, y_len = get_fracture_dimensions_analytical(regime,
                                                       np.max(time_srs),
                                                       mat_prop.Eprime,
-                                                      inj_prop.injectionRate[1, 0],
+                                                      Q0,
                                                       muPrime,
                                                       Kprime=mat_prop.Kprime[samp_cell],
                                                       Cprime=mat_prop.Cprime[samp_cell],
                                                       Kc_1=Kc_1,
                                                       h=h,
                                                       density=density,
-                                                      gamma=gamma)
+                                                      gamma=gamma,
+                                                      Vinj=V0)
 
     return x_len, y_len
 
@@ -993,3 +1013,40 @@ def get_front_intercepts(fr_list, point):
         intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
 
     return intercepts
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def write_properties_csv_file(file_name, properties):
+    """ This function writes the properties of a simulatio as a csv file. The csv contains (in a row vector) Eprime, K1c
+    , Cl, mu, rho_f, Q and t_inj
+
+        Args:
+            file_name (string):         -- the name of the file to be written.
+            properties (tuple):         -- the properties of the fracture loaded
+
+    """
+
+    if isinstance(properties[2].injectionRate,np.ndarray):
+        output_list = [None] * 7
+    else:
+        output_list = [None] * 6
+
+    output_list[0] = properties[0].Eprime
+    output_list[1] = properties[0].K1c[0]
+    output_list[2] = properties[0].Cl
+    output_list[3] = properties[1].viscosity
+    output_list[4] = properties[1].density
+
+    if isinstance(properties[2].injectionRate,np.ndarray):
+        output_list[5] = properties[2].injectionRate[1][0]
+        output_list[6] = properties[2].injectionRate[0][1]
+    else:
+        output_list[5] = properties[2].injectionRate
+
+
+    if file_name[-4:] != '.csv':
+        file_name = file_name + '.csv'
+
+    output_list_np = np.asarray(output_list)
+    np.savetxt(file_name, output_list_np, delimiter=',')

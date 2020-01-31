@@ -76,6 +76,10 @@ enable_GPU = False                      # if True, GPU will be use to do the den
 n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
 proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
 
+# AM adapted to define Chi in tip cells and tip regime in adjacent cells
+save_chi = False
+save_tip_regime = False
+
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry.
 aspect_ratio = None                     # fracture aspect ratio to calculate the analytical solution for TI case.
