@@ -416,7 +416,7 @@ class LoadingProperties:
 
     def __init__(self,  displ_rate=0., loaded_elts=None):
         """
-        The constructor of the InjectionProperties class.
+        The constructor of the LoadingProperties class.
 
         Arguments:
             displ_rate (float):     -- the rate at which the elements in the EltLoaded list are displaced due to the

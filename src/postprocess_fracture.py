@@ -274,7 +274,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             y_len = np.max(y_coords) - np.min(y_coords)
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
-    elif variable is 'ki':
+    elif variable is 'chi':
         for i in fracture_list:
             vel = np.full((i.mesh.NumberOfElts,), np.nan)
             vel[i.EltTip] = i.v
