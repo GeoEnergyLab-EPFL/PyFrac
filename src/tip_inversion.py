@@ -20,6 +20,13 @@ cnst_mc = 3 * beta_mtld**4 / (4 * beta_m**3)
 cnst_m = beta_m**3 / 3
 Ki_c = 3000
 
+def C1(delta):
+    return 4 * (1 - 2 * delta) / (delta * (1 - delta)) * np.tan(np.pi * delta)
+
+def C2(delta):
+    return 16 * (1 - 3 * delta) / (3 * delta * (2 - 3 * delta)) * np.tan(3 / 2 * np.pi * delta)
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_viscStor_Res(dist, *args):
@@ -57,13 +64,13 @@ def TipAsym_M_MDR_Res(dist, *args):
     0.255286 * dist ** 0.2 * Vel ** 0.4 * density ** 0.3 / (Eprime ** 0.1 * muPrime ** 0.2)) ** 0.37037 / Eprime**(1/3)
 
 # ----------------------------------------------------------------------------------------------------------------------
-
+# included a 2 into the equation
 def TipAsym_viscLeakOff_Res(dist, *args):
     """Residual function for viscosity dominated regime, with leak off"""
 
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
-    return wEltRibbon - 4 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * ((dist -
+    return wEltRibbon - 4 / (15 * np.tan(np.pi / 8)) ** 0.25 * (2 * Cbar * muPrime / Eprime) ** 0.25 * ((dist -
             DistLstTSEltRibbon) / dt) ** 0.125 * dist ** (5 / 8)
 
 
@@ -84,6 +91,28 @@ def TipAsym_MK_zrthOrder_Res(dist, *args):
     V = (dist - DistLstTSEltRibbon) / dt
     return w_tld - (1 + beta_m**3 * Eprime**2 * V * dist**0.5 * muPrime / Kprime**3)**(1/3)
 
+# -----------------------------------------------------------------------------------------------------------------------
+# AM: implemented first order
+
+def TipAsym_MK_deltaC_Res(dist, *args):
+    """Residual function for viscosity to toughness regime with transition, without leak off"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    if Kprime == 0:
+        return TipAsym_viscStor_Res(dist, *args)
+    if muPrime == 0:
+        # return toughness dominated asymptote
+        return dist - wEltRibbon ** 2 * (Eprime / Kprime) ** 2
+
+    w_tld = Eprime * wEltRibbon / (Kprime * dist ** 0.5)
+
+    V = (dist - DistLstTSEltRibbon) / dt
+    l_mk = (Kprime ** 3 / (Eprime ** 2 * muPrime * V)) ** 2
+    x_tld = (dist / l_mk) ** (1/2)
+    delta = 1 / 3 * beta_m ** 3 * x_tld / (1 + beta_m ** 3 * x_tld)
+    return w_tld - (1 + 3 * C1(delta) * x_tld) ** (1/3)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -99,43 +128,116 @@ def TipAsym_MTildeK_zrthOrder_Res(dist, *args):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def TipAsym_MTildeK_deltaC_Res(dist, *args):
+    """Residual function for viscosity to toughness regime with transition, without leak off"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    w_tld = Eprime * wEltRibbon / (Kprime * dist ** 0.5)
+
+    V = (dist - DistLstTSEltRibbon) / dt
+    l_mk = (Kprime ** 3 / (Eprime ** 2 * muPrime * V)) ** 2
+    chi = 2 * Cbar * Eprime / (V**0.5 * Kprime)
+    x_tld = (dist / l_mk) ** (1/2)
+    delta = 1 / 4 * beta_mtld ** 4 * chi * x_tld / (1 + beta_mtld ** 4 * chi * x_tld)
+    return w_tld - (1 + 4 * C2(delta) * x_tld * chi) ** (1/3)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 def f(K, Cb, C1):
     return 1 / (3 * C1) * (
         1 - K ** 3 - 3 * Cb * (1 - K ** 2) / 2 + 3 * Cb ** 2 * (1 - K) - 3 * Cb ** 3 * np.log((Cb + 1) / (Cb + K)))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+# AM: expansions of tip asymptotics
+
+def TipAsym_k_exp(dist, *args):
+    """Residual function for the near-field k expansion (Garagash & Detournay, 2011)"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    V = (dist - DistLstTSEltRibbon) / dt
+    l_mk = (Kprime ** 3 / (Eprime ** 2 * muPrime * V)) ** 2
+    l_mtk = Kprime ** 8 / (Eprime ** 6 * muPrime ** 2 * (2 * Cbar) ** 2 * V)
+    l1 = (l_mk ** (-1/2) + l_mtk ** (-1/2)) ** (-2)
+    l2 = (2 / 3 * l_mk ** (-1/2) + l_mtk ** (-1/2)) ** (-2)
+
+    return -wEltRibbon + ( Kprime / Eprime ) ** 2 * dist ** (1/2) * ( 1 + 4 * np.pi * (dist/l1) ** (1/2) + 64 *
+                                                                      (dist * np.log(dist) / (l1 * l2) ** (1/2)))
+# ----------------------------------------------------------------------------------------------------------------------
+# AM: expansions of tip asymptotics
+
+def TipAsym_m_exp(dist, *args):
+    """Residual function for the far-field m expansion (Garagash & Detournay, 2011)"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    V = (dist - DistLstTSEltRibbon) / dt
+    l_mmt = (2 * Cbar) ** 6 * Eprime ** 2 / ( V ** 5 * muPrime ** 2)
+
+    return -wEltRibbon + ( V * muPrime / Eprime ) ** (1/3) * dist ** (2/3) * ( beta_m + 1 / 2 * (l_mmt / dist) ** (1/6)
+                                                                               - 3 ** (1/6) / 2 ** (7/3) * (l_mmt / dist) ** (1/3)
+                                                                               + 2 ** (7/3) / 3 ** (5/3) * (l_mmt / dist) ** (1/2)
+                                                                               - 0.7406 * (l_mmt / dist) ** (2/3 - 0.1387))
+
+# ----------------------------------------------------------------------------------------------------------------------
+# AM: expansions of tip asymptotics
+
+def TipAsym_mt_exp(dist, *args):
+    """Residual function for the intermediate-field m expansion (Garagash & Detournay, 2011)"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
+
+    V = (dist - DistLstTSEltRibbon) / dt
+    l_mtk = Kprime ** 8 / (Eprime ** 6 * muPrime ** 2 * (2 * Cbar) ** 2 * V)
+    l_mmt = (2 * Cbar) ** 6 * Eprime ** 2 / (V ** 5 * muPrime ** 2)
+
+    return -wEltRibbon + (2 * Cbar * V ** (1/2) * muPrime / Eprime ) ** (1/4) * dist ** (5/8) * (0.0161 * (l_mtk / dist) ** (5/8 - 0.06999)
+                                                                                                 + 2.53356 + 1.30165 * (dist/l_mmt) ** (1/8)
+                                                                                                 - 0.451609 * (dist/l_mmt) ** (1/4)
+                                                                                                 + 0.183355 * (dist/l_mmt) ** (3/8))
+
+# ----------------------------------------------------------------------------------------------------------------------
 # todo: 1st order tip asymptote solutions
-# def TipAsym_Universal_1stOrder_Res(dist, *args):
-#     """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
-#
-#     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
-#
-#     Vel = (dist - DistLstTSEltRibbon) / dt
-#     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
-#     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
-#     sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
-#
-#     g0 = f(Kh, 0.9911799823 * Ch, 10.392304845)
-#     delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
-#
-#     C1 = 4 * (1 - 2 * delt) / (delt * (1 - delt)) * np.tan(math.pi * delt)
-#     C2 = 16 * (1 - 3 * delt) / (3 * delt * (2 - 3 * delt)) * np.tan(3 * math.pi * delt / 2)
-#     b = C2 / C1
-#
-#     return sh - f(Kh, Ch * b, C1)
+def TipAsym_Universal_1stOrder_Res(dist, *args):
+    """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, Dist_LstTS, dt) = args
+
+    if Cbar == 0:
+        return TipAsym_MK_deltaC_Res(dist, *args)
+
+    Vel = (dist - Dist_LstTS) / dt
+
+    Ki = 2 * Cbar * Eprime / (Vel**0.5 * Kprime)
+    if Ki > Ki_c:
+        return TipAsym_MTildeK_deltaC_Res(dist, *args)
+
+    Vel = (dist - Dist_LstTS) / dt
+    Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
+
+    Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
+    sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
+
+    g0 = f(Kh, cnst_mc * Ch, cnst_m)
+    delta = cnst_m * (1 + cnst_mc * Ch) * g0
+
+    return sh - f(Kh, Ch * C2(delta) / C1(delta), C1(delta))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_Universal_zrthOrder_Res(dist, *args):
-    """Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)"""
+    """Function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce 2017)"""
     (wEltRibbon, Kprime, Eprime, muPrime, Cbar, Dist_LstTS, dt) = args
 
     if Cbar == 0:
         return TipAsym_MK_zrthOrder_Res(dist, *args)
 
     Vel = (dist - Dist_LstTS) / dt
+
     Ki = 2 * Cbar * Eprime / (Vel**0.5 * Kprime)
     if Ki > Ki_c:
         return TipAsym_MTildeK_zrthOrder_Res(dist, *args)
@@ -245,11 +347,15 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
         Eprime = Eprime_k
 
     if simParmtrs.get_tipAsymptote() == 'U':
+        # ResFunc = TipAsym_Universal_1stOrder_Res
+        # AM: Adapted as Kt asymptote is K asymptote
         ResFunc = TipAsym_Universal_zrthOrder_Res
     elif simParmtrs.get_tipAsymptote() == 'K':
         return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
     elif simParmtrs.get_tipAsymptote() == 'Kt':
-        raise ValueError("Tip inversion with Kt regime is yet to be implemented")
+        return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
+        # AM: Adapted as Kt asymptote is K asymptote
+        # raise ValueError("Tip inversion with Kt regime is yet to be implemented")
     elif simParmtrs.get_tipAsymptote() == 'M':
         ResFunc = TipAsym_viscStor_Res
     elif simParmtrs.get_tipAsymptote() == 'Mt':
