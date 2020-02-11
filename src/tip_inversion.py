@@ -28,6 +28,20 @@ def C2(delta):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+def C1(delta):
+    if (delta == 1 or delta == 0):
+        return cnst_m
+    else:
+        4 * (1 - 2 * delta) / (delta * (1 - delta)) * np.tan(np.pi * delta)
+
+#-----------------------------------------------------------------------------------------------------------------------
+def C2(delta):
+    if (delta == 1 or delta == 0 or delta == 1/3):
+        return beta_mtld ** 4 / 4
+    else:
+        16 * (1 - 3 * delta) / (3 * delta * (2 - 3 * delta)) * np.tan(3 * np.pi / 2 * delta)
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def TipAsym_viscStor_Res(dist, *args):
     """Residual function for viscosity dominate regime, without leak off"""
@@ -146,8 +160,15 @@ def TipAsym_MTildeK_deltaC_Res(dist, *args):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def f(K, Cb, C1):
-    return 1 / (3 * C1) * (
-        1 - K ** 3 - 3 * Cb * (1 - K ** 2) / 2 + 3 * Cb ** 2 * (1 - K) - 3 * Cb ** 3 * np.log((Cb + 1) / (Cb + K)))
+    if (Cb == 0 and K == 0):
+        return 1 / (3 * C1)
+    elif (Cb > 100 and K == 0):
+        return 1 / (4 * C1 * Cb)
+    elif Cb == 0:
+        return 1 / (3 * C1) * (1 - K ** 3 )
+    else:
+        return 1 / (3 * C1) * (
+            1 - K ** 3 - 3 * Cb * (1 - K ** 2) / 2 + 3 * Cb ** 2 * (1 - K) - 3 * Cb ** 3 * np.log((Cb + 1) / (Cb + K)))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -204,27 +225,18 @@ def TipAsym_mt_exp(dist, *args):
 def TipAsym_Universal_1stOrder_Res(dist, *args):
     """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
 
-    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, Dist_LstTS, dt) = args
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt) = args
 
-    if Cbar == 0:
-        return TipAsym_MK_deltaC_Res(dist, *args)
-
-    Vel = (dist - Dist_LstTS) / dt
-
-    Ki = 2 * Cbar * Eprime / (Vel**0.5 * Kprime)
-    if Ki > Ki_c:
-        return TipAsym_MTildeK_deltaC_Res(dist, *args)
-
-    Vel = (dist - Dist_LstTS) / dt
+    Vel = (dist - DistLstTSEltRibbon) / dt
     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
-
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
     sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
 
     g0 = f(Kh, cnst_mc * Ch, cnst_m)
-    delta = cnst_m * (1 + cnst_mc * Ch) * g0
 
-    return sh - f(Kh, Ch * C2(delta) / C1(delta), C1(delta))
+    delt = cnst_m * (1 + cnst_mc * Ch) * g0
+
+    return sh - f(Kh, Ch * C2(delt) / C1(delt), C1(delt))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -239,8 +251,9 @@ def TipAsym_Universal_zrthOrder_Res(dist, *args):
     Vel = (dist - Dist_LstTS) / dt
 
     Ki = 2 * Cbar * Eprime / (Vel**0.5 * Kprime)
-    if Ki > Ki_c:
-        return TipAsym_MTildeK_zrthOrder_Res(dist, *args)
+    ## Adaptdet from here on
+    # if Ki > Ki_c:
+    #     return TipAsym_MTildeK_zrthOrder_Res(dist, *args)
 
     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)

@@ -347,7 +347,13 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
 
-    a = b = LEFM = dist ** 0.5 * Kprime / Eprime
+    if Kprime != 0:
+        a = b = LEFM = dist ** 0.5 * Kprime / Eprime
+    else:
+        a = b = LEFM =  4 / (15 ** (1 / 4) * (2 ** 0.5 - 1) ** (1 / 4)) * \
+                        (2 * Cprime * Vel ** (1/2) * muPrime / Eprime) ** (1/4)\
+                        * dist ** (5/8)
+
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cprime, Vel)
 
     cnt = 1
