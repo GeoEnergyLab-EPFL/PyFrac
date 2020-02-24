@@ -694,10 +694,12 @@ class SimulationProperties:
                                             - M  (viscosity dominated regime, without leak off)
                                             - Mt (viscosity dominated regime , with leak off)
                                             - U  (Universal regime accommodating viscosity, toughness\
-                                                 and leak off (see Donstov and Pierce, 2017))
+                                                 and leak off (see Donstov and Pierce, 2017), 0 order)
+                                            - U1  (Universal regime accommodating viscosity, toughness\
+                                                 and leak off (see Donstov and Pierce, 2017), delta correction)
                                             - MK (viscosity to toughness transition regime)
         """
-        tipAssymptOptions = ("K", "M", "Mt", "U", "MK", "MDR", "M_MDR")
+        tipAssymptOptions = ("K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR")
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote
         else: # error

@@ -1027,7 +1027,7 @@ def write_properties_csv_file(file_name, properties):
 
     """
 
-    if isinstance(properties[2].injectionRate,np.ndarray):
+    if len(properties[2].injectionRate[0]) > 1:
         output_list = [None] * 7
     else:
         output_list = [None] * 6
@@ -1038,11 +1038,11 @@ def write_properties_csv_file(file_name, properties):
     output_list[3] = properties[1].viscosity
     output_list[4] = properties[1].density
 
-    if isinstance(properties[2].injectionRate,np.ndarray):
+    if len(properties[2].injectionRate[0]) > 1:
         output_list[5] = properties[2].injectionRate[1][0]
         output_list[6] = properties[2].injectionRate[0][1]
     else:
-        output_list[5] = properties[2].injectionRate
+        output_list[5] = properties[2].injectionRate[1][0]
 
 
     if file_name[-4:] != '.csv':

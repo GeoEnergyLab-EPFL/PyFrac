@@ -376,6 +376,10 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)  # active cells (inside fracture)
 
+        # temporary variables to avoid recomputation
+        var1 = (1 - rho[actvElts]) ** 0.375
+        var2 = (1 - rho[actvElts]) ** 0.625
+
         p = np.zeros((Mesh.NumberOfElts,))
         p[actvElts] = (0.156415 * Cprime ** 0.375 * Eprime ** 0.75 * muPrime ** 0.25 * (
         -1.0882178530759854 + 6.3385626500863985 * var1 - 0.07314343477396379 * rho[actvElts] - 0.21802875891750756

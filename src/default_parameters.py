@@ -46,7 +46,7 @@ save_time_period = None                 # the time period after which the output
 save_TS_jump = 1                        # the number of time steps after which the output is saved to disk.
 
 # type of solver
-elastohydr_solver = 'implicit_Picard'   # set the elasto-hydrodynamic system solver to implicit with Picard iteration .
+elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
@@ -57,7 +57,7 @@ solve_tip_corr_rib = True               # if True, the corresponding tip cells t
 solve_sparse = None                     # if True, the fluid conductivity matrix will be made with sparse matrix.
 
 # miscellaneous
-tip_asymptote = 'U'                     # the tip_asymptote to be used (see class documentation for details).
+tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
 save_regime = False                     # if True, the the regime of the ribbon cells will also be saved.
 verbosity = 2                           # the level of details about the ongoing simulation to be plotted.
 enable_remeshing = True                 # if true, computation domain will be remeshed after reaching end of the domain.

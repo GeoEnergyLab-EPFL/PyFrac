@@ -1889,17 +1889,20 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
     if regime is 'PKN' and h is None:
         raise ValueError("Fracture height is required to plot PKN fracture!")
 
-    if type(inj_prop.injectionRate) is np.ndarray:
+    if len(inj_prop.injectionRate[0]) > 1:
         V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
     else:
         V0=None
 
     return_patches = []
     for i in time_srs:
-        if i > inj_prop.injectionRate[0, 1]:
-            Q0 = 0.0
+        if len(inj_prop.injectionRate[0]) > 1:
+            if i > inj_prop.injectionRate[0, 1]:
+                Q0 = 0.0
+            else:
+                Q0 = inj_prop.injectionRate[1, 0]
         else:
-            Q0 = inj_prop.injectionRate[1, 0]
+            Q0 = inj_prop.injectionRate[1,0]
 
         x_len, y_len = get_fracture_dimensions_analytical(regime,
                                                           i,

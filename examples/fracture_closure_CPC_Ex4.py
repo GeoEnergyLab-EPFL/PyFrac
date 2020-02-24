@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 This file is part of PyFrac.
-
 Created by Haseeb Zia on Fri June 16 17:49:21 2017.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights
 reserved. See the LICENSE.TXT file for more details.
@@ -17,7 +16,7 @@ from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
-Mesh = CartesianMesh(90, 66, 41, 27)
+Mesh = CartesianMesh(99, 88, 45, 36)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -27,7 +26,7 @@ K_Ic = 5.0e5                        # fracture toughness
 
 def sigmaO_func(x, y):
     """ This function provides the confining stress over the domain"""
-    if 0 < y < 7:
+    if 2.5 < y < 7:
         return 5.25e6
     elif y < -50:
         return 5.25e6
@@ -52,13 +51,14 @@ Fluid = FluidProperties(viscosity=1e-3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1.6e4                       # the time at which the simulation stops
+simulProp.finalTime = 1.8e4                       # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/fracture_closure") # the disk address where the files are saved
 simulProp.bckColor = 'confining stress'         # setting the parameter for the mesh color coding
-simulProp.plotTSJump = 4                        # set to plot every four time steps
+simulProp.plotTSJump = 3                        # set to plot every four time steps
 simulProp.plotVar = ['w', 'lk', 'footprint']    # setting the parameters that will be plotted
 simulProp.tmStpPrefactor = np.asarray([[0, 6000], [0.8, 0.4]]) # decreasing the time step pre-factor after 6000s
 simulProp.maxSolverItrs = 120                   # increase maximum iterations for the elastohydrodynamic solver
+simulProp.set_solTimeSeries = np.asarray([7672, 9660, 12435, 14693, 15342, 15835])
 
 # initialization parameters
 Fr_geometry = Geometry('radial', radius=20)
@@ -110,15 +110,11 @@ Fig_FP = plot_fracture_list(Fr_list,
                             fig=Fig_FP,
                             plot_prop=plot_prop1)
 Fig_FP.set_size_inches(5, 4)
-#plt.show(block=True)
-#  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()
 
-#plt.show(block=True)
+plt.show(block=True)
+
 # loading fractures at the different stages
-time_srs = [230, 1000,7672, 9660, 12435, 14693, 15362, 15866]
+time_srs = [230, 1000, 7672, 9660, 12435, 14693, 15342, 15835, 16500]
 Fr_list, properties = load_fractures(address="./Data/fracture_closure",
                                      time_srs=time_srs)
 
