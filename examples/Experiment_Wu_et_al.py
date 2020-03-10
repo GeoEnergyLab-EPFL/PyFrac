@@ -6,7 +6,6 @@ Created by Haseeb Zia on Fri March 13 2018.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
 import numpy as np
 
 # local imports
@@ -138,8 +137,4 @@ Fig_Fr = plot_fracture_list(Fr_list,
                             fig=Fig_Fr,
                             plot_prop=plot_prop)
 
-#plt.show(block=True)
-#  set block=True and comment last 2 lines if you want to keep the window open
-plt.show(block=False)
-plt.pause(5)
-plt.close()
+plt.show(block=True)

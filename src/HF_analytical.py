@@ -15,6 +15,7 @@ Hydraulic fracture propagation Analytical solutions notably for
 
 # imports
 import numpy as np
+from numpy import genfromtxt
 from scipy import interpolate
 import warnings
 from scipy import special
@@ -185,13 +186,75 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
         if np.isinf(p[actvElts]).any():
             p[p == np.NINF] = min(p[p != np.NINF])
             p[p == np.Inf] = max(p[p != np.inf])
+
     else:
         p = None
 
     if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
         actvElts = None
+        z_coords = None
 
     return t, R, p, w, v, actvElts
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
+    """
+    Analytical solution for Viscosity dominated (M vertex) fracture propagation, given fracture radius or the time
+    since the start of the injection. The solution does not take leak off into account.
+
+    Arguments:
+        Eprime (float):       -- plain strain elastic modulus.
+        V0 (float):           -- Finite volume injected
+        muPrime (float):      -- 12*viscosity.
+        Mesh (CartesianMesh): -- a CartesianMesh class object describing the grid.
+        R (float):            -- the given radius for which the solution is evaluated.
+        t (float):            -- time since the start of the injection.
+        required (string):    -- a mask giving which of the variables are required.
+
+    Returns:
+        - t (float)            -- time at which the fracture reaches the given radius.
+        - R (float)            -- radius of the fracture at the given time.
+        - p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius
+        - w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time
+        - v (float)            -- fracture propagation velocity
+        - coords (ndarray)     -- coordinates of points around center
+    """
+
+    if R is None and t is None:
+        raise ValueError("Either radius or time must be provided!")
+    elif t is None:
+        t = R ** 9 * muPrime/ (0.795934 ** 9 * Eprime * V0 ** 3)
+    elif R is None:
+        R = 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
+
+    if required[4] is '1':
+        v = 1/9 * 0.795934 * (Eprime * V0 ** 3 / (muPrime * t **8 ))** (1 / 9)
+    else:
+        v = None
+
+    if required[3] is '1':
+        w = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
+                       delimiter=',')[1, ::] * (muPrime ** 2 * V0 ** 3 / (Eprime ** 2 * t ** 2)) ** (1 / 9)
+        coords = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
+                              delimiter=',')[2, ::] * 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
+
+    else:
+        w = None
+
+    if required[2] is '1':
+        p = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
+                       delimiter=',')[0, ::] * (Eprime ** 2 * muPrime / t) ** (1 / 3)
+        coords = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
+                              delimiter=',')[2, ::] * 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
+
+    else:
+        p = None
+
+    return t, R, p, w, v, coords
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -313,6 +376,10 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)  # active cells (inside fracture)
 
+        # temporary variables to avoid recomputation
+        var1 = (1 - rho[actvElts]) ** 0.375
+        var2 = (1 - rho[actvElts]) ** 0.625
+
         p = np.zeros((Mesh.NumberOfElts,))
         p[actvElts] = (0.156415 * Cprime ** 0.375 * Eprime ** 0.75 * muPrime ** 0.25 * (
         -1.0882178530759854 + 6.3385626500863985 * var1 - 0.07314343477396379 * rho[actvElts] - 0.21802875891750756
@@ -365,7 +432,6 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, require
         - v (float)           -- fracture propagation velocity
         - actvElts (ndarray)  -- list of cells inside the fracture at the given time
     """
-
 
     if R is None and t is None:
         raise ValueError("Either the time or the radius is required to evaluate the solution.")
@@ -515,6 +581,7 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None, required=
         - v (float)              -- propagation velocity.
         - actvElts (ndarray)     -- list of cells inside the KGD fracture at the given time.
     """
+
     # injection rate per unit height in one wing
     Q = Q0 / height
 
@@ -711,7 +778,7 @@ def TI_Elasticity_elliptical_solution_Fabrikant(mesh, gamma, Cij, Kc3, Ep3, Q0, 
         w = None
         actvElts = None
 
-    return t, b, p, w, None, actvElts
+    return t, b, p, w, None, actvElts, None
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -807,7 +874,7 @@ def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=
 
 
 def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kprime=None, Cprime=None, length=None,
-                      t=None, Kc_1=None, h=None, density=None, Cij=None, gamma=None, required='111111'):
+                      t=None, Kc_1=None, h=None, density=None, Cij=None, gamma=None, required='111111',Vinj=None):
     """
     This function provides the analytical solution for the given parameters according to the given propagation regime
 
@@ -843,6 +910,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         Cij (ndarray):          -- the transverse isotropic stiffness matrix (in the canonical basis).
         gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.
         required (string):      -- a mask giving which of the variables are required.
+        Vinj (flaot):           -- the total volume injected (for a finite pulse else it is None)
 
     Returns:
         - t (float)              -- time at which the fracture reaches the given length.
@@ -858,6 +926,8 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
 
     if regime is 'M':
         t, r, p, w, v, actvElts = M_vertex_solution(Eprime, Q0, muPrime, mesh, length, t, required)
+    elif regime is 'Mp':
+        t, r, p, w, v, actvElts = Mp_vertex_solution(Eprime, Vinj, muPrime, length, t, required)
     elif regime is 'K':
         t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, length, t, required)
     elif regime is 'Mt':
@@ -882,7 +952,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         raise ValueError("The provided regime is not supported!")
 
     # shift injection point
-    if inj_point is not None:
+    if inj_point is not None and regime is not 'Mp':
         shifted_inj_point = inj_point[0] != 0 or inj_point[1] != 0      # injection point is shifted
         req_w_p = required[3] == '1' or required[2] == '1'              # width or pressure is required
         if req_w_p and shifted_inj_point:
@@ -904,7 +974,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
 
 
 def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None,
-                      Kc_1=None, h=None, density=None, gamma=None):
+                      Kc_1=None, h=None, density=None, gamma=None, Vinj=None):
     """
     This function gives the length of the fracture along the x and y axes propagating in the given regime at the given
     time.
@@ -934,6 +1004,7 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
         h (float):              -- the height of the PKN fracture.
         density (float):        -- the density of the injected fluid.
         gamma (float):          -- aspect ratio of the elliptical fracture in the anisotropic cases.
+        V0 (float):             -- Injected volume of the finite pulse
 
     Returns:
         - t (float)              -- time at which the fracture reaches the given length.
@@ -946,10 +1017,15 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
         - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
 
     """
+
     if regime is 'M':
         x_len = y_len = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
+    elif regime is 'Mp':
+        x_len = y_len = 0.795934 * Eprime ** (1 / 9) * Vinj ** (1 / 3) * t ** (1 / 9) / muPrime ** (1 / 9)
     elif regime is 'K':
         x_len = y_len = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
+    elif regime is 'Kp':
+        x_len = y_len = (3 / 2 ** (1 / 2) / np.pi * Vinj * Eprime / Kprime) ** (2 / 5)
     elif regime is 'Mt':
         x_len = y_len = (2 * Q0 / Cprime) ** 0.5 * t ** 0.25 / np.pi
     elif regime is 'Kt':
@@ -974,6 +1050,8 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         y_len = (Q0 * t * 3 * Eprime / (8 * gamma * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
         x_len = y_len * gamma
+    else:
+        raise ValueError("Analytical footprint for this regime not yet iplemented")
 
     return x_len, y_len
 

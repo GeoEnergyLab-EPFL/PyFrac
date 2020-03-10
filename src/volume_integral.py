@@ -10,7 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # imports
 import numpy as np
 from scipy.optimize import brentq
-from tip_inversion import f
+from tip_inversion import f, C1, C2
 
 def TipAsym_UniversalW_zero_Res(w, *args):
     """Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)"""
@@ -36,14 +36,14 @@ def TipAsym_UniversalW_delt_Res(w, *args):
     g0 = f(Kh, 0.9911799823 * Ch, 10.392304845)
     delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
 
-    C1 = 4 * (1 - 2 * delt) / (delt * (1 - delt)) * np.tan(np.pi * delt)
-    C2 = 16 * (1 - 3 * delt) / (3 * delt * (2 - 3 * delt)) * np.tan(3 * np.pi * delt / 2)
-    b = C2 / C1
+    b = C2(delt) / C1(delt)
+    con = C1(delt)
+    gdelt = f(Kh, Ch * b, con)
 
-    return sh - f(Kh, Ch * b, C1)
+    return sh - gdelt
 
 
-def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime):
+def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime):
     """Moments of the General tip asymptote to calculate the volume integral (see Donstov and Pierce, 2017)"""
 
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cbar, Vel)
@@ -51,9 +51,12 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
     if stagnant:
         w = KIPrime * dist ** 0.5 / Eprime
     else:
-        a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel)
+        a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel, regime)
         try:
-            w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
+            if regime == 'U':
+                w = brentq(TipAsym_UniversalW_zero_Res, a, b, TipAsmptargs)  # root finding
+            else:
+                w = brentq(TipAsym_UniversalW_delt_Res, a, b, TipAsmptargs)  # root finding
         except RuntimeError:
             M0, M1 = np.nan, np.nan
             return M0, M1
@@ -123,11 +126,11 @@ def VolumeTriangle(dist, *param):
         return 256 / 273 / (15 * np.tan(np.pi / 8)) ** 0.25 * (
                                     Cbar * muPrime / Eprime) ** 0.25 * em * Vel ** 0.125 * dist ** (21 / 8)
 
-    elif regime == 'U':
+    elif regime == 'U' or regime == 'U1':
         if Cbar == 0 and Kprime == 0: # if fully viscosity dominated
             return 0.7081526678 * (Vel * muPrime / Eprime) ** (1 / 3) * em * dist ** (8 / 3)
 
-        (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime)
+        (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime)
         return em * (dist * M0 - M1)
 
     elif regime == 'MK':
@@ -180,10 +183,10 @@ def Area(dist, *param):
         return 32 / 13 / (15 * np.tan(np.pi / 8)) ** 0.25 * (Cbar * muPrime / Eprime) ** 0.25 * Vel ** 0.125 * dist ** (
         13 / 8)
 
-    elif regime == 'U':
+    elif regime == 'U' or regime == 'U1':
         if Cbar == 0 and Kprime == 0:  # if fully viscosity dominated
             return 1.8884071141 * (Vel * muPrime / Eprime) ** (1 / 3) * dist ** (5 / 3)
-        (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime)
+        (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime)
         return M0
 
     elif regime == 'MK':
@@ -342,25 +345,52 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
     return integral
 
 
-def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel):
+def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel, regime):
     """
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
+    if regime == 'U':
+        res_func = TipAsym_UniversalW_zero_Res
+    else:
+        res_func = TipAsym_UniversalW_delt_Res
 
-    a = b = LEFM = dist ** 0.5 * Kprime / Eprime
+    wk = dist ** 0.5 * Kprime / Eprime
+    wmtld = 4 / (15 ** (1 / 4) * (2 ** 0.5 - 1) ** (1 / 4)) * \
+                        (2 * Cprime * Vel ** (1/2) * muPrime / Eprime) ** (1/4)\
+                        * dist ** (5/8)
+    wm = 2 ** (1 / 3) * 3 ** (5 / 6) * (Vel * muPrime / Eprime) ** (1/3) * dist ** (2/3)
+
+    if np.nanmin([wk, wmtld, wm]) > np.finfo(np.float).eps:
+        b = 0.95 * np.nanmin([wk, wmtld, wm])
+        a = 1.05 * np.nanmax([wk, wmtld, wm])
+    elif np.nanmin([wmtld, wm]) > np.finfo(np.float).eps:
+        b = 0.95 * np.nanmin([wmtld, wm])
+        a = 1.05 * np.nanmax([wmtld, wm])
+    elif np.nanmin([wk, wm]) > np.finfo(np.float).eps:
+        b = 0.95 * np.nanmin([wk, wm])
+        a = 1.05 * np.nanmax([wk, wm])
+    else:
+        b = 0.95 * np.nanmax([wk, wmtld, wm])
+        a = 1.05 * np.nanmax([wk, wmtld, wm])
+
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cprime, Vel)
 
     cnt = 1
-    Res_a = Res_b = TipAsym_UniversalW_zero_Res(LEFM, *TipAsmptargs)
-    while Res_a * Res_b > 0:
-        a = 10**-cnt * LEFM
-        b = 10**cnt * LEFM
-        Res_a = TipAsym_UniversalW_zero_Res(a, *TipAsmptargs)
-        Res_b = TipAsym_UniversalW_zero_Res(b, *TipAsmptargs)
+    Res_a = res_func(a, *TipAsmptargs)
+    Res_b = res_func(b, *TipAsmptargs)
+
+    while (Res_a * Res_b > 0 or np.isnan(Res_a) or np.isnan(Res_b)):
+        a = 2 * a
+        Res_a = res_func(a, *TipAsmptargs)
+
+        b = 0.5 * b
+        Res_b = res_func(b, *TipAsmptargs)
+
         cnt += 1
-        if cnt >= 12:
+        if cnt >= 20:
             a = np.nan
             b = np.nan
+            break
 
     return a, b
 

@@ -59,22 +59,22 @@ class Controller:
         self.C = C
         self.fr_queue = [None, None, None, None, None]  # queue of fractures from the last five time steps
         self.stepsFromChckPnt = 0
-        self.tmStpPrefactor_copy = copy.copy(Sim_prop.tmStpPrefactor)
-        self.stagnant_TS = None
+        self.tmStpPrefactor_copy = copy.copy(Sim_prop.tmStpPrefactor) # should be in simulation properties
+        self.stagnant_TS = None # ??
         self.perfData = []
         self.lastSavedFile = 0
         self.lastSavedTime = np.NINF
         self.lastPlotTime = np.NINF
         self.TmStpCount = 0
-        self.chkPntReattmpts = 0
-        self.delta_w = None
+        self.chkPntReattmpts = 0 # should be in simulation properties
+        self.delta_w = None # ??
         self.lstTmStp = None
-        self.solveDetlaP_cp = self.sim_prop.solveDeltaP
-        self.PstvInjJmp = None
-        self.fullyClosed = False
+        self.solveDetlaP_cp = self.sim_prop.solveDeltaP # ??
+        self.PstvInjJmp = None # ??
+        self.fullyClosed = False # should be related to the fracture state (thus in fracture class)
         self.setFigPos = True
         self.lastSuccessfulTS = Fracture.time
-        self.maxTmStp = 0
+        self.maxTmStp = 0 # should be in simulation properties
 
 
         # make a list of Nones with the size of the number of variables to plot during simulation
@@ -106,6 +106,7 @@ class Controller:
 
         if self.sim_prop.finalTime is None:
            if self.sim_prop.get_solTimeSeries() is None:
+               ## Not necessarily an error
                 raise ValueError("The final time to stop the simulation is not provided!")
            else:
                self.sim_prop.finalTime = np.max(self.sim_prop.get_solTimeSeries())
@@ -133,7 +134,15 @@ class Controller:
 
         # setting front advancing scheme to implicit if velocity is not available for the first time step.
         self.frontAdvancing = copy.copy(Sim_prop.frontAdvancing)
+
         Sim_prop.frontAdvancing = 'implicit'
+
+        # todo: Remove following block (never executed)
+        if Sim_prop.frontAdvancing in ['explicit', 'predictor-corrector']:
+            if np.max(Fracture.v) <= 0 or np.isnan(Fracture.v).any():
+                Sim_prop.frontAdvancing = 'implicit'
+            else:
+                Sim_prop.frAdvCurrent = copy.copy(Sim_prop.frontAdvancing)
 
         if self.sim_prop.saveToDisk:
             self.logAddress = copy.copy(Sim_prop.get_outputFolder())

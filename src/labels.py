@@ -42,7 +42,9 @@ Fig_labels = {
     'ef': 'Fracture Efficiency',
     'mesh': 'Mesh',
     'footprint': 'Fracture Footprint',
-    'surface': 'Fracture Surface'
+    'surface': 'Fracture Surface',
+    'chi': 'Tip leak-off parameter',
+    'tip_tri': 'Tip asymptotic regime'
 }
 
 var_labels = {
@@ -80,7 +82,9 @@ var_labels = {
     'ef': 'fracture efficiency',
     'mesh': '',
     'footprint': '',
-    'surface': ''
+    'surface': '',
+    'chi': '',
+    'tip_tri' : ''
 }
 
 units = {
@@ -118,7 +122,9 @@ units = {
     'ef': '',
     'mesh': '',
     'footprint': '',
-    'surface': ' ($mm$)'
+    'surface': ' ($mm$)',
+    'chi': '',
+    'tip_tri' : ''
 }
 
 unit_conversion = {
@@ -156,7 +162,9 @@ unit_conversion = {
     'ef': 100.,
     'mesh': None,
     'footprint': None,
-    'surface': 1.e-3
+    'surface': 1.e-3,
+    'chi': 1,
+    'tip_tri' : 1
 }
 
 
@@ -166,14 +174,16 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
-                       'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi']
+                       'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
+                       'chi','tip_tri']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
                             'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total']
 bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                           'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi']
+                           'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi',
+                           'chi','tip_tri']
 
 required_string = {
     't': '100000',
@@ -212,7 +222,9 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'lkt\' or \'leaked off total\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
                     '-- \'ef\' or \'efficiency\'\n' \
-                    '-- \'surface\''
+                    '-- \'surface\''\
+                    '-- \'chi\''\
+                    '-- \'tip_tri\''
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -249,7 +261,9 @@ supported_projections ={
     'aspect ratio': ['1D'],
     'efficiency': ['1D'],
     'ef': ['1D'],
-    'surface': ['3D']
+    'surface': ['3D'],
+    'chi': ['2D_clrmap', '2D_contours'],
+    'tip_tri': ['2D_clrmap']
 }
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \

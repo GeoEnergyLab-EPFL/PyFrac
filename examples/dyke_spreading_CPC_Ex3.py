@@ -60,7 +60,7 @@ simulProp.finalTime = 560000                # the time at which the simulation s
 simulProp.set_outputFolder("./Data/neutral_buoyancy") # the disk address where the files are saved
 simulProp.gravity = True                    # set up the gravity flag
 simulProp.tolFractFront = 3e-3              # increase the tolerance for fracture front iteration
-simulProp.plotTSJump = 4                    # plot every fourth time step
+simulProp.plotTSJump = 1                    # plot every fourth time step
 simulProp.saveTSJump = 2                    # save every second time step
 simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
 simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.3, 0.1]]) # set up the time step prefactor
@@ -131,9 +131,4 @@ Fig_Fr = plot_fracture_list(Fr_list[1:],
                             projection='3D',
                             fig=Fig_Fr)
 
-
-#  set block=True and comment last 2 lines if you want to keep the window open
-#plt.show(block=True)
-plt.show(block=False)
-plt.pause(5)
-plt.close()
+plt.show(block=True)

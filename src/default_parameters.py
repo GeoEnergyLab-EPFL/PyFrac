@@ -46,6 +46,7 @@ save_time_period = None                 # the time period after which the output
 save_TS_jump = 1                        # the number of time steps after which the output is saved to disk.
 
 # type of solver
+elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
@@ -56,7 +57,7 @@ solve_tip_corr_rib = True               # if True, the corresponding tip cells t
 solve_sparse = None                     # if True, the fluid conductivity matrix will be made with sparse matrix.
 
 # miscellaneous
-tip_asymptote = 'U'                     # the tip_asymptote to be used (see class documentation for details).
+tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
 save_regime = False                     # if True, the the regime of the ribbon cells will also be saved.
 verbosity = 2                           # the level of details about the ongoing simulation to be plotted.
 enable_remeshing = True                 # if true, computation domain will be remeshed after reaching end of the domain.
@@ -71,7 +72,13 @@ gravity = False                         # if True, the effect of gravity will be
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 explicit_projection = False             # if True, direction from last time step will be used to evaluate TI parameters.
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
+enable_GPU = False                      # if True, GPU will be use to do the dense matrix vector product.
+n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
 proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
+
+# AM adapted to define Chi in tip cells and tip regime in adjacent cells
+save_chi = False
+save_tip_regime = False
 
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry.

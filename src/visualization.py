@@ -16,6 +16,8 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import copy
+from HF_analytical import Mp_vertex_solution
+import numpy as np
 
 # local imports
 from postprocess_fracture import *
@@ -107,7 +109,43 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                 fig = i.plot_front_3D(fig=fig, plot_prop=plot_prop)
 
     else:
-        var_val_list, time_list = get_fracture_variable(fracture_list,
+        # AM: adapted to plot ki in tip cells and tip asymptotic regimes (need to be rethink where to put it)
+        if variable is 'chi':
+            vel_list, time_list = get_fracture_variable(fracture_list,
+                                                            'v',
+                                                            edge=edge,
+                                                            return_time=True)
+            var_val_list = []
+            for i in vel_list:
+                actual_ki = 2 * mat_properties.Cprime * mat_properties.Eprime / \
+                            (np.sqrt(np.asarray(i)) * mat_properties.Kprime)
+                var_val_list.append(actual_ki.tolist())
+        elif variable is 'tip_tri':
+            width_list, time_list = get_fracture_variable(fracture_list,
+                                                        'w',
+                                                        edge=edge,
+                                                        return_time=True)
+            vel_list, time_list = get_fracture_variable(fracture_list,
+                                                        'v',
+                                                        edge=edge,
+                                                        return_time=True)
+            tip_tri = []
+            for i in range(len(width_list)):
+                width = np.full((fracture_list[i].mesh.NumberOfElts,), np.nan)
+                width[fracture_list[i].EltRibbon] = width_list[i][fracture_list[i].EltRibbon]
+                if fracture_list[i].sgndDist_last is not None:
+                    nk = np.asarray(width) - mat_properties.Kprime / mat_properties.Eprime * fracture_list[i].sgndDist_last ** (1/2) #/ \
+                        #(width - mat_properties.Kprime / mat_properties.Eprime * fracture_list[i].sgndDist ** (1/2))
+                    # nmt = mat_properties.Kprime / mat_properties.Eprime * fracture_list[i].sgndDist ** (1/2)
+                    # nm =
+                    # Nk =
+                    # Nm =
+                    # Nmt =
+                tip_tri.append(width)
+
+            var_val_list = tip_tri
+        else:
+            var_val_list, time_list = get_fracture_variable(fracture_list,
                                                             variable,
                                                             edge=edge,
                                                             return_time=True)
@@ -953,6 +991,57 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def plot_fracture_slice_GC_Mp(var_value, mesh, fig=None, plot_prop=None, vmin=None,
+                                     vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True):
+    """
+    This function plots the analytical solution for a finite pulse.
+
+    Args:
+        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.
+        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
+        point1 (list or ndarray):           -- the left point from which the slice should pass [x, y].
+        point2 (list or ndarray):           -- the right point from which the slice should pass [x, y].
+        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
+        plot_prop (PlotProperties):         -- the properties to be used for the plot.
+        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
+        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
+        plot_colorbar (bool):               -- if True, colorbar will be plotted.
+        labels (LabelProperties):           -- the labels to be used for the plot.
+        plt_2D_image (bool):                -- if True, a subplot showing the colormap and the slice will also be
+                                                plotted.
+
+    Returns:
+        (Figure):                           -- A Figure object that can be used superimpose further plots.
+
+    """
+
+    print("Plotting slice...")
+    if fig is None:
+        fig = plt.figure()
+        ax_slice = fig.add_subplot(111)
+    else:
+        if len(fig.get_axes()) > 1:
+            ax_slice = fig.get_axes()[1]
+        else:
+            ax_slice = fig.get_axes()[0]
+
+    if plot_prop is None:
+        plot_prop = PlotProperties()
+
+    ax_slice.plot(mesh,
+                  var_value,
+                  plot_prop.lineStyle,
+                  color=plot_prop.lineColor)
+
+    if vmin is not None and vmax is not None:
+        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+
+    return fig
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
                                 extreme_points=None):
@@ -1132,6 +1221,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
             option      limiting solution
             ========    ============================
             'M'         viscosity storage
+            'Mp'        finite pulse viscosity storage
             'Mt'        viscosity leak-off
             'K'         toughness storage
             'Kt'        toughness leak-off
@@ -1195,7 +1285,6 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                       h=h,
                                                       samp_cell=samp_cell,
                                                       gamma=gamma)
-
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
 
@@ -1219,6 +1308,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
         labels.legend = 'analytical (' + regime + ') t= ' + to_precision(time_srs[i],
                                                              plot_prop.dispPrecision)
         plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
+
         fig = plot_fracture_slice_interpolated(analytical_list[i],
                                                 mesh_list[i],
                                                 point1=point1,
@@ -1799,36 +1889,50 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
     if regime is 'PKN' and h is None:
         raise ValueError("Fracture height is required to plot PKN fracture!")
 
-    return_pathces = []
+    if len(inj_prop.injectionRate[0]) > 1:
+        V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
+    else:
+        V0=None
+
+    return_patches = []
     for i in time_srs:
+        if len(inj_prop.injectionRate[0]) > 1:
+            if i > inj_prop.injectionRate[0, 1]:
+                Q0 = 0.0
+            else:
+                Q0 = inj_prop.injectionRate[1, 0]
+        else:
+            Q0 = inj_prop.injectionRate[1,0]
+
         x_len, y_len = get_fracture_dimensions_analytical(regime,
                                                           i,
                                                           mat_prop.Eprime,
-                                                          inj_prop.injectionRate[1, 0],
+                                                          Q0,
                                                           muPrime=muPrime,
                                                           Kprime=Kprime,
                                                           Cprime=Cprime,
                                                           Kc_1=Kc_1,
                                                           h=h,
                                                           density=density,
-                                                          gamma=gamma)
+                                                          gamma=gamma,
+                                                          Vinj=V0)
 
         if inj_point is None:
             inj_point = [0., 0.]
 
         if regime in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):
-            return_pathces.append(mpatches.Circle((inj_point[0], inj_point[1]),
+            return_patches.append(mpatches.Circle((inj_point[0], inj_point[1]),
                                    x_len,
                                    edgecolor=plot_prop.lineColorAnal,
                                    facecolor='none'))
         elif regime in ('PKN', 'KGD_K'):
-            return_pathces.append(mpatches.Rectangle(xy=(-x_len + inj_point[0], -y_len + inj_point[1]),
+            return_patches.append(mpatches.Rectangle(xy=(-x_len + inj_point[0], -y_len + inj_point[1]),
                                       width=2 * x_len,
                                       height=2 * y_len,
                                       edgecolor=plot_prop.lineColorAnal,
                                       facecolor='none'))
         elif regime in ('E_K', 'E_E'):
-            return_pathces.append(mpatches.Ellipse(xy=(inj_point[0], inj_point[1]),
+            return_patches.append(mpatches.Ellipse(xy=(inj_point[0], inj_point[1]),
                                    width=2 * x_len,
                                    height=2 * y_len,
                                    edgecolor=plot_prop.lineColorAnal,
@@ -1836,7 +1940,7 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
         else:
             raise ValueError("Regime not supported.")
 
-    return return_pathces
+    return return_patches
 
 #-----------------------------------------------------------------------------------------------------------------------
 
