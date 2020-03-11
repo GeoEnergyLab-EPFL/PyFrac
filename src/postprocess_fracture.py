@@ -57,7 +57,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
 
-    if address[-1] is not slash:
+    if address[-1] != slash:
         address = address + slash
 
     if isinstance(time_srs, float) or isinstance(time_srs, int):
@@ -155,34 +155,34 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     variable_list = []
     time_srs = []
 
-    if variable is 'time' or variable is 't':
+    if variable == 'time' or variable == 't':
         for i in fracture_list:
             variable_list.append(i.time)
             time_srs.append(i.time)
 
-    elif variable is 'width' or variable is 'w' or variable is 'surface':
+    elif variable == 'width' or variable == 'w' or variable == 'surface':
         for i in fracture_list:
             variable_list.append(i.w)
             time_srs.append(i.time)
 
-    elif variable is 'fluid pressure' or variable is 'pf':
+    elif variable == 'fluid pressure' or variable == 'pf':
         for i in fracture_list:
             variable_list.append(i.pFluid)
             time_srs.append(i.time)
 
-    elif variable is 'Net pressure' or variable is 'pn':
+    elif variable == 'Net pressure' or variable == 'pn':
         for i in fracture_list:
             variable_list.append(i.pNet)
             time_srs.append(i.time)
 
-    elif variable is 'front velocity' or variable is 'v':
+    elif variable == 'front velocity' or variable == 'v':
         for i in fracture_list:
             vel = np.full((i.mesh.NumberOfElts, ), np.nan)
             vel[i.EltTip] = i.v
             variable_list.append(vel)
             time_srs.append(i.time)
 
-    elif variable is 'Reynolds number' or variable is 'Re':
+    elif variable == 'Reynolds number' or variable == 'Re':
         if fracture_list[-1].ReynoldsNumber is None:
             raise SystemExit(err_var_not_saved)
         for i in fracture_list:
@@ -197,7 +197,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
 
-    elif variable is 'fluid flux' or variable is 'ff':
+    elif variable == 'fluid flux' or variable == 'ff':
         if fracture_list[-1].fluidFlux is None:
             raise SystemExit(err_var_not_saved)
         for i in fracture_list:
@@ -212,7 +212,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts,), np.nan))
 
-    elif variable is 'fluid velocity' or variable is 'fv':
+    elif variable == 'fluid velocity' or variable == 'fv':
         if fracture_list[-1].fluidVelocity is None:
             raise SystemExit(err_var_not_saved)
         for i in fracture_list:
@@ -231,42 +231,42 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
         for i in fracture_list:
             # coordinate of the zero vertex in the tip cells
             vertex_coord_tip = i.mesh.VertexCoor[i.mesh.Connectivity[i.EltTip, i.ZeroVertex]]
-            if variable is 'front_dist_mean' or variable is 'd_mean':
+            if variable == 'front_dist_mean' or variable == 'd_mean':
                 variable_list.append(np.mean((vertex_coord_tip[:, 0] ** 2 +
                                               vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
-            elif variable is 'front_dist_max' or variable is 'd_max':
+            elif variable == 'front_dist_max' or variable == 'd_max':
                 variable_list.append(max((vertex_coord_tip[:, 0] ** 2 +
                                           vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
-            elif variable is 'front_dist_min' or variable is 'd_min':
+            elif variable == 'front_dist_min' or variable == 'd_min':
                 variable_list.append(min((vertex_coord_tip[:, 0] ** 2 +
                                           vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             time_srs.append(i.time)
-    elif variable is 'mesh':
+    elif variable == 'mesh':
         for i in fracture_list:
             variable_list.append(i.mesh)
             time_srs.append(i.time)
 
-    elif variable is 'efficiency' or variable is 'ef':
+    elif variable == 'efficiency' or variable == 'ef':
         for i in fracture_list:
             variable_list.append(i.efficiency)
             time_srs.append(i.time)
             
-    elif variable is 'volume' or variable is 'V':
+    elif variable == 'volume' or variable == 'V':
         for i in fracture_list:
             variable_list.append(i.FractureVolume)
             time_srs.append(i.time)
             
-    elif variable is 'leak off' or variable is 'lk':
+    elif variable == 'leak off' or variable == 'lk':
         for i in fracture_list:
             variable_list.append(i.LkOff)
             time_srs.append(i.time)
             
-    elif variable is 'leaked off volume' or variable is 'lkv':
+    elif variable == 'leaked off volume' or variable == 'lkv':
         for i in fracture_list:
             variable_list.append(sum(i.LkOffTotal[i.EltCrack]))
             time_srs.append(i.time)
             
-    elif variable is 'aspect ratio' or variable is 'ar':
+    elif variable == 'aspect ratio' or variable == 'ar':
         for fr in fracture_list:
             x_coords = np.hstack((fr.Ffront[:, 0], fr.Ffront[:, 2]))
             x_len = np.max(x_coords) - np.min(x_coords)
@@ -274,7 +274,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             y_len = np.max(y_coords) - np.min(y_coords)
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
-    elif variable is 'chi':
+    elif variable == 'chi':
         for i in fracture_list:
             vel = np.full((i.mesh.NumberOfElts,), np.nan)
             vel[i.EltTip] = i.v
@@ -476,13 +476,13 @@ def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orienta
     if zero_cell == np.nan:
         raise ValueError("The given point does not lie in the grid!")
 
-    if orientation is 'vertical':
+    if orientation == 'vertical':
         sampling_cells = np.hstack((np.arange(zero_cell, 0, -mesh.nx)[::-1],
                                     np.arange(zero_cell, mesh.NumberOfElts, mesh.nx)))
-    elif orientation is 'horizontal':
+    elif orientation == 'horizontal':
         sampling_cells = np.arange(zero_cell // mesh.nx * mesh.nx, (zero_cell // mesh.nx + 1) * mesh.nx)
 
-    elif orientation is 'increasing':
+    elif orientation == 'increasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx - 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] >
                                                       mesh.CenterCoor[zero_cell, 0])[0])
@@ -491,7 +491,7 @@ def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orienta
                                                 mesh.CenterCoor[zero_cell, 0])[0])
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
-    elif orientation is 'decreasing':
+    elif orientation == 'decreasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx + 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] <
                                                       mesh.CenterCoor[zero_cell, 0])[0])
@@ -518,17 +518,17 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     if time_srs is None and length_srs is None:
         raise ValueError('Either time series or lengths series is to be provided.')
 
-    if regime is 'E_K':
+    if regime == 'E_K':
         Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
 
-    if regime is 'E_E':
+    if regime == 'E_E':
         Cij = mat_prop.Cij
     else:
         Cij = None
 
-    if regime is 'MDR':
+    if regime == 'MDR':
         density = fluid_prop.density
     else:
         density = None
@@ -604,13 +604,13 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                         Vinj=V0)
             mesh_list.append(mesh_i)
 
-            if variable is 'time' or variable is 't':
+            if variable == 'time' or variable == 't':
                 return_list.append(t)
-            elif variable is 'width' or variable is 'w':
+            elif variable == 'width' or variable == 'w':
                 return_list.append(w)
-            elif variable is 'net pressure' or variable is 'pn':
+            elif variable == 'net pressure' or variable == 'pn':
                 return_list.append(p)
-            elif variable is 'front velocity' or variable is 'v':
+            elif variable == 'front velocity' or variable == 'v':
                 return_list.append(v)
 
         elif variable in ['front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean',
@@ -623,13 +623,13 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                                               h=h,
                                                                               samp_cell=samp_cell,
                                                                               gamma=gamma)
-            if variable is 'radius' or variable is 'r':
+            if variable == 'radius' or variable == 'r':
                 return_list.append(x_len)
-            elif variable is 'front_dist_min' or variable is 'd_min':
+            elif variable == 'front_dist_min' or variable == 'd_min':
                 return_list.append(y_len)
-            elif variable is 'front_dist_max' or variable is 'd_max':
+            elif variable == 'front_dist_max' or variable == 'd_max':
                 return_list.append(x_len)
-            elif variable is 'front_dist_mean' or variable is 'd_mean':
+            elif variable == 'front_dist_mean' or variable == 'd_mean':
                 if regime in ('E_K', 'E_E'):
                     raise ValueError('Mean distance not available.')
                 else:
@@ -711,12 +711,12 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
                                               h=None, samp_cell=None, gamma=None):
 
 
-    if regime is 'E_K':
+    if regime == 'E_K':
         Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
 
-    if regime is 'MDR':
+    if regime == 'MDR':
         density = fluid_prop.density
     else:
         density = None
@@ -785,7 +785,7 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
                                                     edge=edge,
                                                     return_time=True)
 
-    if point is None:
+    if point == None:
         return_list = var_values
     else:
         for i in range(len(fracture_list)):

@@ -42,7 +42,7 @@ def load_performance_data(address, sim_name='simulation'):
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
 
-    if address[-1] is not slash:
+    if address[-1] != slash:
         address = address + slash
 
     if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):

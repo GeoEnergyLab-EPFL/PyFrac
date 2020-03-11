@@ -241,7 +241,7 @@ class FluidProperties:
         Constructor function.
 
         """
-        if viscosity is None:
+        if viscosity is  None:
             # uniform viscosity
             self.viscosity = None
             self.muPrime = None
@@ -254,9 +254,9 @@ class FluidProperties:
 
         rheologyOptions = ("Newtonian", "non-Newtonian")
         if rheology in rheologyOptions:  # check if rheology match to any rheology option
-            if rheology is "Newtonian":
+            if rheology == "Newtonian":
                 self.rheology = rheology
-            elif rheology is "non-Newtonian":
+            elif rheology == "non-Newtonian":
                 raise ValueError("Non-Newtonian rheology not yet supported")
         else:# error
             raise ValueError('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
@@ -742,7 +742,7 @@ class SimulationProperties:
         if output_address is not None:
             self.saveToDisk = True
 
-            if output_address[-1] is slash:
+            if output_address[-1] == slash:
                 output_address = output_address[:-1]
 
             self.__outputAddress = output_address
@@ -951,14 +951,14 @@ class LabelProperties:
                 self.yLabel = 'meters'
                 self.xLabel = 'meters'
                 self.zLabel = var_labels[variable] + units[variable]
-            elif projection is '1D':
+            elif projection == '1D':
                 self.xLabel = 'time $(s)$'
                 self.yLabel = var_labels[variable] + units[variable]
         elif data_subset in ('slice', 's'):
             if '2D' in projection:
                 self.xLabel = 'meters'
                 self.yLabel = var_labels[variable] + units[variable]
-            elif projection is '3D':
+            elif projection == '3D':
                 self.yLabel = 'meters'
                 self.xLabel = 'meters'
                 self.zLabel = var_labels[variable] + units[variable]
