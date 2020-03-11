@@ -1391,7 +1391,7 @@ def move_intersections_to_the_center_when_inRibbon_type4(indexesFC_T4_central_in
         # intersecting point
         to_move_to_the_center=np.where(np.sum(LS_TYPE_4, axis=1)/4. > 0.)[0]
         if to_move_to_the_center.size > 0:
-            indexesFC_T4_central_inters = np.concatenate((indexesFC_T4_central_inters,indexesFC_T4_other_inters[to_move_to_the_center]))
+            indexesFC_T4_central_inters = np.concatenate((indexesFC_T4_central_inters,indexesFC_T4_other_inters[to_move_to_the_center])).astype(int)
             indexesFC_T4_other_inters = np.delete(indexesFC_T4_other_inters,to_move_to_the_center)
     return indexesFC_T4_central_inters, indexesFC_T4_other_inters
 
@@ -1824,7 +1824,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         if np.any(LS_on_cells_around_front == np.NaN) or  np.any(LS_on_cells_around_front > 10.**40):
             print('WARNING: I am increasing the thickness of the band')
             correct_size_of_pstv_region = False
-            return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region
+            return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k
         else:
             del cells_around_front, LS_on_cells_around_front
 
@@ -2457,8 +2457,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 np.asarray(global_list_of_newRibbon), \
                 global_list_of_vertexpositionwithinthecell, \
                 np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
-                correct_size_of_pstv_region,sgndDist_k
-
+                correct_size_of_pstv_region,\
+                sgndDist_k
 
 def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrVertx_k, mesh):
 
