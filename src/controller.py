@@ -770,10 +770,9 @@ class Controller:
         # check if time step would step over the next time in required time series
         if self.fracture.time + time_step > next_in_TS:
             time_step = next_in_TS - self.fracture.time
-
         # check if the current time is very close the next time to hit. If yes, set it to the next time to avoid
         # very small time step in the next time step advance.
-        if next_in_TS - self.fracture.time < 1.05 * time_step:
+        elif next_in_TS - self.fracture.time < 1.05 * time_step:
             time_step = next_in_TS - self.fracture.time
 
         # checking if the time step is above the limit
