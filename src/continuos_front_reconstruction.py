@@ -1917,7 +1917,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             global_list_of_TIPcellsONLY = []
             global_list_of_distances = []
             global_list_of_angles = []
-            global_list_of_newRibbon = []
             global_list_of_vertexpositionwithinthecell = []
             global_list_of_vertexpositionwithinthecellTIPcellsONLY = []
             sgndDist_k_new = np.copy(sgndDist_k)
@@ -2192,13 +2191,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     # vertexIDTIPcellsONLY=np.copy(vertexID)   #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
 
 
-                    # find the new ribbon cells
-                    newRibbon = np.unique(np.ndarray.flatten(mesh.NeiElements[listofTIPcellsONLY, :]))
-                    temp = sgndDist_k[newRibbon]
-                    temp[temp > 0] = 0
-                    newRibbon = newRibbon[np.nonzero(temp)]
-                    newRibbon = np.setdiff1d(newRibbon, np.asarray(listofTIPcellsONLY))
-
                     if len(xintersection)==0:
                         raise SystemExit('ERROR: front not reconstructed')
 
@@ -2267,7 +2259,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     global_list_of_TIPcellsONLY.extend(listofTIPcellsONLY.tolist()) #np
                     global_list_of_distances.extend(distances)
                     global_list_of_angles.extend(angles)
-                    global_list_of_newRibbon.extend(newRibbon.tolist()) #np
                     global_list_of_vertexpositionwithinthecell.extend(vertexpositionwithinthecell)
                     global_list_of_vertexpositionwithinthecellTIPcellsONLY.extend(vertexpositionwithinthecellTIPcellsONLY.tolist()) #np
 
@@ -2447,7 +2438,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                  global_list_of_vertexpositionwithinthecellTIPcellsONLY,
                  correct_size_of_pstv_region,sgndDist_k] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
             else:
+                # find the new ribbon cells
+                global_list_of_newRibbon = []
+                newRibbon = np.unique(np.ndarray.flatten(mesh.NeiElements[global_list_of_TIPcellsONLY, :]))
+                temp = sgndDist_k[newRibbon]
+                temp[temp > 0] = 0
+                newRibbon = newRibbon[np.nonzero(temp)]
+                newRibbon = np.setdiff1d(newRibbon, np.asarray(global_list_of_TIPcellsONLY))
+                global_list_of_newRibbon.extend(newRibbon.tolist())  # np
                 correct_size_of_pstv_region = True
+
             return \
                 np.asarray(global_list_of_TIPcells),\
                 np.asarray(global_list_of_TIPcellsONLY), \
@@ -2484,3 +2484,22 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrV
         # K = np.zeros((mesh.NumberOfElts,), )
         # plot_as_matrix(CellStatus_k, mesh)
         return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k
+
+# A = np.full(mesh.NumberOfElts, np.nan)
+# A[anularegion] = sgndDist_k[anularegion]
+# from visualization import plot_fracture_variable_as_image
+# figure = plot_fracture_variable_as_image(A, mesh)
+# ax = figure.get_axes()[0]
+# xtemp = xintersection
+# ytemp = yintersection
+# xtemp.append(xtemp[0]) # close the front
+# ytemp.append(ytemp[0]) # close the front
+# # plt.plot(mesh.CenterCoor[listofTIPcells, 0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
+# plt.plot(xtemp, ytemp, '-o')
+# n=len(xintersectionsfromzerovertex)
+# for i in range(0,n) :
+#     plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
+# plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
+# plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+# plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
+# plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
