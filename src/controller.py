@@ -322,7 +322,7 @@ class Controller:
                     while inp not in ['y', 'Y', 'n', 'N']:
                         inp = input("Press y or n")
 
-                    if inp is 'y' or inp is 'Y':
+                    if inp == 'y' or inp == 'Y':
                         self.PstvInjJmp = True
                     else:
                         self.PstvInjJmp = False
@@ -338,7 +338,7 @@ class Controller:
                         break
                     jump_to = min(self.injection_prop.injectionRate[0, np.intersect1d(time_larger, pos_inj)])
                     Fr_n_pls1.time = jump_to
-                elif inp is 'n' or inp is 'N':
+                elif inp == 'n' or inp == 'N':
                     self.sim_prop.solveDeltaP = True
                 self.fullyClosed = True
                 self.fracture = copy.deepcopy(Fr_n_pls1)

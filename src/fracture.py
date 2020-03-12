@@ -97,7 +97,7 @@ class Fracture:
 
         self.mesh = mesh
 
-        if init_param.regime is not 'static':
+        if init_param.regime != 'static':
 
             # get appropriate length dimension variable
             length = init_param.geometry.get_length_dimension()
@@ -132,7 +132,7 @@ class Fracture:
                                                                         inner_cells,
                                                                         surv_dist)
         # for general purpose initialization
-        if init_param.regime is 'static':
+        if init_param.regime == 'static':
             self.w, self.pNet = get_width_pressure(self.mesh,
                                                    self.EltCrack,
                                                    self.EltTip,
@@ -245,7 +245,7 @@ class Fracture:
         if variable in unidimensional_variables:
             raise ValueError("The variable does not vary spatially!")
 
-        if variable is 'complete':
+        if variable == 'complete':
             proj = '3D'
             if '2D' in projection:
                 proj = '2D'
@@ -273,7 +273,7 @@ class Fracture:
                                      labels=labels)
             variable = 'width'
 
-        if projection is '3D':
+        if projection == '3D':
             plot_non_zero = False
 
         fig = plot_fracture_list([self],

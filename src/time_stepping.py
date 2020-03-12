@@ -369,9 +369,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     while itr < sim_properties.maxProjItrs:
 
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
-            if sim_properties.projMethod is 'ILSA_orig':
+            if sim_properties.projMethod == 'ILSA_orig':
                 projection_method = projection_from_ribbon
-            elif sim_properties.projMethod is 'LS_grad':
+            elif sim_properties.projMethod == 'LS_grad':
                 projection_method = projection_from_ribbon_LS_gradient
             if itr == 0:
                 # first iteration
@@ -664,7 +664,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = ((abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5)
                 | (Vel_k <  1e-6))#np.finfo(np.float).eps))
-    if stagnant.any() and not ((sim_properties.get_tipAsymptote() is 'U') or (sim_properties.get_tipAsymptote() is 'U1')):
+    if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
         if sim_properties.verbosity > 1:
             print("Stagnant front is only supported with universal tip asymptote. continuing...")
         stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
@@ -1593,7 +1593,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = ((abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5) | (
                 Vel_k < 1e-6))#np.finfo(np.float).eps))
-    if stagnant.any() and not ((sim_properties.get_tipAsymptote() is 'U') or (sim_properties.get_tipAsymptote() is 'U1')):
+    if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
         if sim_properties.verbosity > 1:
             print("Stagnant front is only supported with universal tip asymptote. Continuing...")
         stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
@@ -1774,9 +1774,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     while itr < sim_properties.maxProjItrs:
 
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
-            if sim_properties.projMethod is 'ILSA_orig':
+            if sim_properties.projMethod == 'ILSA_orig':
                 projection_method = projection_from_ribbon
-            elif sim_properties.projMethod is 'LS_grad':
+            elif sim_properties.projMethod == 'LS_grad':
                 projection_method = projection_from_ribbon_LS_gradient
 
             if itr == 0:

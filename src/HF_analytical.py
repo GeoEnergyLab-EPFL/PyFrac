@@ -61,7 +61,7 @@ def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, requi
         R = gammam*((2**(14./87))*(Eprime**(10./87))*(Q0**(9./29))*(t**(40/87))
                     )/((3**(7./87))*(fo**(10./87))*(visc**(7./87))*density**(1./29))
 
-    if required[3] is '1':
+    if required[3] == '1':
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
         var1 = 1 - rho[actvElts]
@@ -81,7 +81,7 @@ def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, requi
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
         var1 = 1 - rho[actvElts]
@@ -104,7 +104,7 @@ def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, requi
     else:
         p = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         v = gammam * 0.45977011494252873 * (t ** (0.45977011494252873-1.)) * ((
             (2 ** 0.16091954022988506) * (Eprime ** 0.11494252873563218) * (Q0 ** 0.3103448275862069) ) /
             ((3 ** 0.08045977011494253) * (fo ** 0.11494252873563218) * (visc ** 0.08045977011494253) * (
@@ -112,7 +112,7 @@ def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, requi
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, R, p, w, v, actvElts
@@ -150,12 +150,12 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
     elif R is None:
         R = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
 
-    if required[4] is '1':
+    if required[4] == '1':
         v = (4 / 9) * (t ** (4 / 9 -1.)) * ((0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) ) / muPrime ** (1 / 9))
     else:
         v = None
 
-    if required[3] is '1':
+    if required[3] == '1':
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
         # temporary variables to avoid recomputation
@@ -173,7 +173,7 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         p = np.zeros((Mesh.NumberOfElts,))
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
         actvElts = np.where(rho <= 1)[0] # active cells (inside fracture)
@@ -190,7 +190,7 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
     else:
         p = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
         z_coords = None
 
@@ -230,12 +230,12 @@ def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
     elif R is None:
         R = 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
 
-    if required[4] is '1':
+    if required[4] == '1':
         v = 1/9 * 0.795934 * (Eprime * V0 ** 3 / (muPrime * t **8 ))** (1 / 9)
     else:
         v = None
 
-    if required[3] is '1':
+    if required[3] == '1':
         w = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
                        delimiter=',')[1, ::] * (muPrime ** 2 * V0 ** 3 / (Eprime ** 2 * t ** 2)) ** (1 / 9)
         coords = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
@@ -244,7 +244,7 @@ def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         p = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
                        delimiter=',')[0, ::] * (Eprime ** 2 * muPrime / t) ** (1 / 3)
         coords = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
@@ -288,13 +288,13 @@ def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None, required='111111
     elif R is None:
         R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
 
-    if required[2] is '1':
+    if required[2] == '1':
         p = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5) * np.ones(
             (mesh.NumberOfElts,), float)
     else:
         p = None
 
-    if required[3] is '1':
+    if required[3] == '1':
         w = np.zeros((mesh.NumberOfElts,))
         rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center
         actvElts = np.where(rad < R) # active cells (inside fracture)
@@ -303,14 +303,14 @@ def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None, required='111111
     else:
         w = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
         t1 = 2 ** 0.5 * Kprime * np.pi * (1.01 * R) ** (5 / 2) / (3 * Eprime * Q0)
         v = 0.01 * R / (t1 - t)
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, R, p, w, v, actvElts
@@ -353,7 +353,7 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
             raise ValueError("leak off cannot be zero for Mt regime!")
         R = (2 * Q0 / Cprime) ** 0.5 * t ** 0.25 / np.pi
 
-    if required[3] is '1':
+    if required[3] == '1':
         w = np.zeros((Mesh.NumberOfElts,))
 
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
@@ -372,7 +372,7 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)  # active cells (inside fracture)
 
@@ -392,14 +392,14 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, R=None, t=None, requir
     else:
         p = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
         t1 = Cprime ** 2 * (1.01 * R) ** 4 * np.pi ** 4 / 4 / Q0 ** 2
         v = 0.01 * R / (t1 - t)
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, R, p, w, v, actvElts
@@ -444,7 +444,7 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, require
             raise ValueError("leak off cannot be zero for Kt regime!")
         t = (R * Cprime**0.5 * np.pi / (2 * Q0)**0.5)**4
 
-    if required[3] is '1':
+    if required[3] == '1':
         w = np.zeros((Mesh.NumberOfElts,))
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)  # active cells (inside fracture)
@@ -453,7 +453,7 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, require
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)  # active cells (inside fracture)
         p = np.zeros((Mesh.NumberOfElts,))
@@ -461,14 +461,14 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, require
     else:
         p = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         # todo Hack: The velocity is evaluated with time taken by the fracture to advance by one percent
         t1 = (1.01 * R * Cprime**0.5 * np.pi / (2 * Q0)**0.5)**4
         v = 0.01 * R / (t1 - t)
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, R, p, w, v, actvElts
@@ -511,7 +511,7 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='11111
 
     x = np.linspace(-ell, ell, int(Mesh.nx))
 
-    if required[3] is '1':
+    if required[3] == '1':
         # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated
         # with the power of 1/3 and not evaluate with the series.
         sol_w = (np.pi ** 3 * viscosity * Q0 ** 2 * t / (Eprime * h * 8)) ** (1 / 5) * 1.326 * (1 - abs(x) /
@@ -532,7 +532,7 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='11111
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         # cells inside the PKN fracture
         actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= h / 2)
         actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
@@ -543,14 +543,14 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='11111
     else:
         p = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
         t1 = (1.01 * ell / (2 * (Q0 / 2) ** 3 * Eprime / np.pi ** 3 / muPrime * 12 / h ** 4) ** (1 / 5)) ** (5 / 4)
         v = 0.01 * ell / (t1 - t)
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, ell, p, w, v, actvElts
@@ -595,7 +595,7 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None, required=
 
     x = np.linspace(-ell, ell, int(Mesh.nx))
 
-    if required[3] is '1':
+    if required[3] == '1':
         # one dimensional solution for average width along the width of the PKN fracture. The solution is approximated with
         # the power of 1/3 and not evaluate with the series.
         sol_w = 0.682784 * (Kprime ** 2 * Q * t / Eprime ** 2) ** (1 / 3) * (1 - (abs(x) / ell) ** 2) ** (1 / 2)
@@ -614,7 +614,7 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None, required=
     else:
         w = None
 
-    if required[2] is '1':
+    if required[2] == '1':
         # cells inside the PKN fracture
         actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= height / 2)
         actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
@@ -625,14 +625,14 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, height, ell=None, t=None, required=
     else:
         p = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         # todo !!! Hack: The velocity is evaluated with time taken by the fracture to acvance by one percent
         t1 = 1.11072 * Kprime / Eprime / Q * (1.01 * ell) ** (3 / 2)
         v = 0.01 * ell / (t1 - t)
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, ell, p, w, v, actvElts
@@ -676,7 +676,7 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
     if t is None:
         t = 8 * KIc_max * np.pi**0.5 * b**(5/2) / (3 * c * Eprime * Q0)
 
-    if required[3] is '1' or required[2] is '1':
+    if required[3] == '1' or required[2] == '1':
         a = (KIc_max / KIc_min)**2 * b
         eccentricity = (1 - b ** 2 / a ** 2) ** 0.5
         rho = 1 - (mesh.CenterCoor[:, 0] / a) ** 2 - (mesh.CenterCoor[:, 1] / b) ** 2
@@ -690,13 +690,13 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
         p = None
         w = None
 
-    if required[4] is '1':
+    if required[4] == '1':
         t1 = 8 * KIc_max * np.pi**0.5 * (1.01 * b)**(5/2) / (3 * c * Eprime * Q0)
         v = 0.01 * b / (t1 - t)
     else:
         v = None
 
-    if not (required[5] is '1' and (required[2] is '1' or required[3] is '1')):
+    if not (required[5] == '1' and (required[2] == '1' or required[3] == '1')):
         actvElts = None
 
     return t, b, p, w, v, actvElts
@@ -735,7 +735,7 @@ def TI_Elasticity_elliptical_solution_Fabrikant(mesh, gamma, Cij, Kc3, Ep3, Q0, 
     else:
         t = b**(5 / 2) * 8 * gamma * Kc3 * np.pi**0.5 / (3 * Q0 * Ep3)
 
-    if required[3] is '1' or required[2] is '1':
+    if required[3] == '1' or required[2] == '1':
         a = gamma * b
 
         C11 = Cij[0, 0]
@@ -842,7 +842,7 @@ def TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc3, Ep3, Q0, t=None, b=
     else:
         t = b**(5 / 2) * 8 * gamma * Kc3 * np.pi**0.5 / (3 * Q0 * Ep3)
     
-    if required[3] is '1' or required[2] is '1':
+    if required[3] == '1' or required[2] == '1':
         a = gamma * b
         beta= lambda alpha: np.arctan(np.tan(alpha) *gamma)
 
@@ -924,27 +924,27 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
 
     """
 
-    if regime is 'M':
+    if regime == 'M':
         t, r, p, w, v, actvElts = M_vertex_solution(Eprime, Q0, muPrime, mesh, length, t, required)
-    elif regime is 'Mp':
+    elif regime == 'Mp':
         t, r, p, w, v, actvElts = Mp_vertex_solution(Eprime, Vinj, muPrime, length, t, required)
-    elif regime is 'K':
+    elif regime == 'K':
         t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, length, t, required)
-    elif regime is 'Mt':
+    elif regime == 'Mt':
         t, r, p, w, v, actvElts = Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, mesh, length, t, required)
-    elif regime is 'Kt':
+    elif regime == 'Kt':
         t, r, p, w, v, actvElts = KT_vertex_solution(Eprime, Cprime, Q0, Kprime, mesh, length, t, required)
-    elif regime is 'PKN':
+    elif regime == 'PKN':
         t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t, required)
-    elif regime is 'KGD_K':
+    elif regime == 'KGD_K':
         t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t, required)
-    elif regime is 'MDR':
+    elif regime == 'MDR':
         t, r, p, w, v, actvElts = MDR_M_vertex_solution(Eprime, Q0, density, muPrime/12., mesh, length, t, required)
-    elif regime is 'E_K':
+    elif regime == 'E_K':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         t, r, p, w, v, actvElts = anisotropic_toughness_elliptical_solution(Kc_3, Kc_1, Eprime, Q0, mesh, length, t,
                                                                              required)
-    elif regime is 'E_E':
+    elif regime == 'E_E':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         t, r, p, w, v, actvElts = TI_Elasticity_elliptical_solution(mesh, gamma, Cij, Kc_3, Eprime, Q0, t, length,
                                                                     required)
@@ -952,7 +952,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         raise ValueError("The provided regime is not supported!")
 
     # shift injection point
-    if inj_point is not None and regime is not 'Mp':
+    if inj_point is not None and regime != 'Mp':
         shifted_inj_point = inj_point[0] != 0 or inj_point[1] != 0      # injection point is shifted
         req_w_p = required[3] == '1' or required[2] == '1'              # width or pressure is required
         if req_w_p and shifted_inj_point:
@@ -961,10 +961,10 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
                     raise ValueError("The injection point should be a list of numpy array of length 2, giving the"
                                      " x and y coordinates of the injection point!")
                 else:
-                    if required[3] is '1':
+                    if required[3] == '1':
                         actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh,
                                                                  w, active_elts=actvElts, fill=0.)
-                    if required[2] is '1':
+                    if required[2] == '1':
                         actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh,
                                                                  p, active_elts=actvElts, fill=0.)
                 actvElts = actvElts_shft
@@ -1018,35 +1018,35 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
 
     """
 
-    if regime is 'M':
+    if regime == 'M':
         x_len = y_len = (0.6976 * Eprime ** (1 / 9) * Q0 ** (1 / 3) * t ** (4 / 9)) / muPrime ** (1 / 9)
-    elif regime is 'Mp':
+    elif regime == 'Mp':
         x_len = y_len = 0.795934 * Eprime ** (1 / 9) * Vinj ** (1 / 3) * t ** (1 / 9) / muPrime ** (1 / 9)
-    elif regime is 'K':
+    elif regime == 'K':
         x_len = y_len = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
-    elif regime is 'Kp':
+    elif regime == 'Kp':
         x_len = y_len = (3 / 2 ** (1 / 2) / np.pi * Vinj * Eprime / Kprime) ** (2 / 5)
-    elif regime is 'Mt':
+    elif regime == 'Mt':
         x_len = y_len = (2 * Q0 / Cprime) ** 0.5 * t ** 0.25 / np.pi
-    elif regime is 'Kt':
+    elif regime == 'Kt':
         x_len = y_len = 2 ** 0.5 * Q0 ** 0.5 * t ** (1 / 4) / Cprime ** 0.5 / np.pi
-    elif regime is 'PKN':
+    elif regime == 'PKN':
         x_len = 1.001 * (Q0 ** 3 * Eprime * t ** 4 / (4 * np.pi ** 3 * (muPrime / 12) * h ** 4)) ** (1 / 5)
         y_len = h / 2
-    elif regime is 'KGD_K':
+    elif regime == 'KGD_K':
         x_len = 0.932388 * (Eprime * Q0 * t / Kprime) ** (2 / 3)
         y_len = h
-    elif regime is 'MDR':
+    elif regime == 'MDR':
         fo = 1.78
         gammam = 0.758244
         x_len = y_len = gammam * ((2 ** (14. / 87)) * (Eprime ** (10. / 87)) * (Q0 ** (9. / 29)) * (t ** (40 / 87))
                     ) / ((3 ** (7. / 87)) * (fo ** (10. / 87)) * ((muPrime / 12) ** (7. / 87)) * density ** (1. / 29))
-    elif regime is 'E_K':
+    elif regime == 'E_K':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         c = (Kc_1 / Kc_3) ** 2
         y_len = (Q0 * t * 3 * c * Eprime / (8 * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
         x_len = y_len / c
-    elif regime is 'E_E':
+    elif regime == 'E_E':
         Kc_3 = Kprime / (32 / np.pi) ** 0.5
         y_len = (Q0 * t * 3 * Eprime / (8 * gamma * Kc_3 * np.pi ** 0.5)) ** (2 / 5)
         x_len = y_len * gamma
