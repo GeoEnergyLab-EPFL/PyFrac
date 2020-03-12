@@ -663,7 +663,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = ((abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5)
-                | (Vel_k < np.finfo(np.float).eps))
+                | (Vel_k <  1e-6))#np.finfo(np.float).eps))
     if stagnant.any() and not ((sim_properties.get_tipAsymptote() is 'U') or (sim_properties.get_tipAsymptote() is 'U1')):
         if sim_properties.verbosity > 1:
             print("Stagnant front is only supported with universal tip asymptote. continuing...")
@@ -1592,7 +1592,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = ((abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5) | (
-                Vel_k < np.finfo(np.float).eps))
+                Vel_k < 1e-6))#np.finfo(np.float).eps))
     if stagnant.any() and not ((sim_properties.get_tipAsymptote() is 'U') or (sim_properties.get_tipAsymptote() is 'U1')):
         if sim_properties.verbosity > 1:
             print("Stagnant front is only supported with universal tip asymptote. Continuing...")

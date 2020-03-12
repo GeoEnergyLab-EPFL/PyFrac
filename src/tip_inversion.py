@@ -300,6 +300,7 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
 
         cnt = 0
         mid = b[i]
+        mid_b = b[i]
         while Res_a * Res_b > 0:
             mid = (a[i] + 2 * mid) / 3  # weighted
             Res_a = ResFunc(mid, *TipAsmptargs)
@@ -308,12 +309,14 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
                 a[i] = mid
                 break
             elif Res_a > 0.0 and Res_b > 0.0:
-                b_i = b[i]/cnt ** 2
-                Res_b = ResFunc(b_i, *TipAsmptargs)
+                mid_b = b[i] * 2 ** cnt
+                #mid_b += 2.66/100 * (mesh.hx**2 + mesh.hy**2)**0.5
+                Res_b = ResFunc(mid_b, *TipAsmptargs)
                 if Res_a * Res_b < 0:
-                    b[i] = b_i
+                    a[i] = mid
+                    b[i] = mid_b
                     break
-            elif cnt >= 100:  # Should assume not propagating. not set to check how frequently it happens.
+            if cnt >= 100:  # Should assume not propagating. not set to check how frequently it happens.
                 a[i] = np.nan
                 b[i] = np.nan
                 break
