@@ -756,10 +756,10 @@ class SimulationProperties:
         return self.__outputFolder
 
     def set_solTimeSeries(self, sol_t_srs):
-        if isinstance(sol_t_srs, np.ndarray):
-            self.__solTimeSeries = sol_t_srs
-        elif sol_t_srs is None:
+        if sol_t_srs is None:
             self.__solTimeSeries = None
+        elif isinstance(sol_t_srs, np.ndarray):
+            self.__solTimeSeries = sol_t_srs
         else:
             raise ValueError("The given solution time series is not a numpy array!")
 
