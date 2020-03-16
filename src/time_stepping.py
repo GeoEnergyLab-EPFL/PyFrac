@@ -662,8 +662,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         perfNode_wTip = instrument_start('nonlinear system solve', perfNode)
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
-    stagnant = ((abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5))
-                #| (Vel_k <  1e-6))#np.finfo(np.float).eps))
+    stagnant = (-(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) /
+                (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < 1e-6)
     if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
         if sim_properties.verbosity > 1:
             print("Stagnant front is only supported with universal tip asymptote. continuing...")
@@ -1591,8 +1591,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         # todo close tip width instrumentation
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
-    stagnant = ((abs(1 - sgndDist_k[EltsTipNew] / Fr_lstTmStp.sgndDist[EltsTipNew]) < 1e-5))
-                #| (Vel_k <  1e-6))#np.finfo(np.float).eps))
+    stagnant = (-(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) /
+                (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < 1e-6)
     if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
         if sim_properties.verbosity > 1:
             print("Stagnant front is only supported with universal tip asymptote. Continuing...")

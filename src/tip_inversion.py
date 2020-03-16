@@ -222,7 +222,6 @@ def TipAsym_Universal_1stOrder_Res(dist, *args):
     sh = muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
 
     g0 = f(Kh, cnst_mc * Ch, cnst_m)
-
     delt = cnst_m * (1 + cnst_mc * Ch) * g0
     gdelt = f(Kh, Ch * C2(delt) / C1(delt), C1(delt))
 
@@ -310,7 +309,6 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
                 break
             elif Res_a > 0.0 and Res_b > 0.0:
                 mid_b = b[i] * 2 ** cnt
-                #mid_b += 2.66/100 * (mesh.hx**2 + mesh.hy**2)**0.5
                 Res_b = ResFunc(mid_b, *TipAsmptargs)
                 if Res_a * Res_b < 0:
                     a[i] = mid
