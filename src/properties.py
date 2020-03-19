@@ -432,7 +432,6 @@ class LoadingProperties:
             raise ValueError("The loaded elements should be given in the form an ndarray of integers.")
 
 
-
 # --------------------------------------------------------------------------------------------------------
 class SimulationProperties:
     """
@@ -445,6 +444,7 @@ class SimulationProperties:
     Attributes:
         tolFractFront (float):       -- tolerance for the fracture front loop.
         toleranceEHL (float):        -- tolerance for the Elastohydrodynamic solver.
+        toleranceVStagnant (float):  -- tolerance on the velocity to decide if a cell is stagnant.
         toleranceProjection (float): -- tolerance for projection iteration for anisotropic case
         maxFrontItrs (int):          -- maximum iterations to for the fracture front loop.
         maxSolverItrs (int):         -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
@@ -598,6 +598,7 @@ class SimulationProperties:
         self.tolFractFront = simul_param.toleranceFractureFront
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
+        self.toleranceVStagnant = simul_param.toleranceVStagnant
 
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
@@ -637,6 +638,8 @@ class SimulationProperties:
 
         # solver type
         self.elastohydrSolver = simul_param.elastohydr_solver
+        self.Anderson_parameter = simul_param.m_Anderson
+        self.relaxation_factor = simul_param.relaxation_param
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
