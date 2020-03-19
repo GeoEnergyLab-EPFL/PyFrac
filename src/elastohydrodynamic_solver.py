@@ -1214,7 +1214,7 @@ def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args, relax=1.0,
+def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args,
                   PicardPerNewton=1000, perf_node=None):
     """
     Mixed Picard Newton solver for nonlinear systems.
@@ -1239,7 +1239,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
         - solk (ndarray)       -- solution at the end of iteration.
         - data (tuple)         -- any data to be returned
     """
-
+    relax = sim_prop.relaxation_factor
     solk = guess
     k = 0
     normlist = []
@@ -1461,8 +1461,7 @@ def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, I
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
-                  m_Anderson=3, perf_node=None):
+def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     """
     Anderson solver for non linear system.
 
@@ -1482,6 +1481,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
         - Xks[mk+1] (ndarray)  -- final solution at the end of the iterations.
         - data (tuple)         -- any data to be returned
     """
+    m_Anderson = sim_prop.Anderson_parameter
+    relax = sim_prop.relaxation_factor
 
     ## Initialization of solution vectors
     xks = np.full((m_Anderson+1,guess.size),0.)

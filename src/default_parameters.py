@@ -11,6 +11,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver.
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
+toleranceVStagnant = 1e-6               # tolerance on the velocity to decide if a cell is stagnant.
 
 # max iterations
 max_front_itrs = 25                     # maximum iterations for the fracture front.
@@ -47,6 +48,8 @@ save_TS_jump = 1                        # the number of time steps after which t
 
 # type of solver
 elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
+m_Anderson = 3                          # number of previous solutions to take into account in the Anderson scheme
+relaxation_param = 1.0                  # parameter defining the under-relaxation performed (default is not relaxed)
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
