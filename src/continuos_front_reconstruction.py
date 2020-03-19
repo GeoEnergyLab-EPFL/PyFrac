@@ -53,22 +53,12 @@ def copute_area_of_a_closed_front(xintersection,yintersection):
                      - xintersection[0]   * yintersection[n-1])/2.
     return area
 
-def pointtolinedistance(p1, p2, p0, mac_precision):
+def pointtolinedistance(x0, x1, x2, y0, y1, y2):
     # USING OBJECTS: POINT
     #
     # Compute the minimum distance from a point of coordinates (x0,y0) to a the line passing through 2 points.
     # The function works only for planar problems.
-    x0, x1, x2 = [p0.x, p1.x, p2.x]
-    y0, y1, y2 = [p0.y, p1.y, p2.y]
-    dist=0
-    dist_p1p2 = distance(p1,p2)
-    if np.abs(x2 - x1)/dist_p1p2 < mac_precision:  # the front is a vertical line
-        dist=np.abs(x0 - x1)
-    elif np.abs(y2 - y1)/dist_p1p2 < mac_precision:  # the front is an horizontal line
-        dist = np.abs(y0 - y1)
-    else: #general case
-        dist = np.abs((y2-y1)*x0-(x2-x1)*y0+x2*y1-y2*x1)/distance(p1, p2)
-    return dist
+    return np.abs((y2-y1)*x0-(x2-x1)*y0+x2*y1-y2*x1)/np.sqrt((-x1 + x2)**2 + (-y1 + y2)**2)
 
 def elements(typeindex, nodeindex, connectivityedgeselem, Connectivitynodeselem, edgeORvertexID):
     # This function returns in the case:
@@ -184,6 +174,7 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
     :return: angle, xintersections, yintersections
 
     """
+    # ------ only for plotting purposes -----
     dist_p1p2 = distance(Point(0,x1,y1),Point(0,x2,y2))
     if np.abs(x2 - x1)/dist_p1p2 < mac_precision/1000:  # the front is a vertical line
         x = x2
@@ -201,7 +192,15 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
         q2 = y0 + x0 / m
         x = (q2 - q1) * m / (m * m + 1)
         y = m * x + q1
-        angle = np.arctan(np.abs((y-y0))/np.abs((x-x0)))
+        # angle = np.arctan(np.abs((y-y0))/np.abs((x-x0))) naive way of computing the angle
+    # ---------------------------------------------------
+
+    try:
+        # here we use directly points 1 and 2 to find the angle instead of finding the intersection between the normal from a point to the
+        # front and then computing the angle
+        dx_over_dy =  np.abs((x2-x1))/np.abs((y2-y1))
+        angle = np.arctan(dx_over_dy)
+    except : angle = 0.
 
     return angle, x, y
 
@@ -900,7 +899,7 @@ def find_xy_intersections_type3_case_2_intersections(return_info, indexesFC_T3_2
 def check_if_point_inside_cell(xORy_grid,xORy_Candidate,hx_OR_hy,mac_precision):
     xORy_max = xORy_grid + hx_OR_hy * .5
     xORy_min = xORy_grid - hx_OR_hy * .5
-    return (((xORy_Candidate - xORy_max) / hx_OR_hy) <= mac_precision/1000 ) * (((xORy_Candidate - xORy_min) / hx_OR_hy) >= -mac_precision/1000 )
+    return (((xORy_Candidate - xORy_max) / hx_OR_hy) <= mac_precision/10000 ) * (((xORy_Candidate - xORy_min) / hx_OR_hy) >= -mac_precision/10000 )
 
 def reorder_intersections(Fracturelist,
                           xCandidate_2_inter,
@@ -1641,13 +1640,19 @@ def is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision, area_
     else:
         return False
 
-def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_precision,area_of_a_cell):
+def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_precision,area_of_a_cell,zero_level_set_value):
     # find the distance from the cell center to the front
-    distance_center_to_front = pointtolinedistance(p1, p2, p_center, mac_precision)
+    p1x=p1.x
+    p1y=p1.y
+    p2x=p2.x
+    p2y=p2.y
+    p0x=p_center.x
+    p0y=p_center.y
+    distance_center_to_front = pointtolinedistance(p0x, p1x, p2x, p0y, p1y, p2y)
 
     # we do not allow to have LS == 0
     if distance_center_to_front == 0 :
-        distance_center_to_front = -mac_precision
+        distance_center_to_front = -zero_level_set_value
     else :
         """
         Now we want to understand if the sign of the LS at the cell center is positive or negative.
@@ -2121,20 +2126,21 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         localvertexID = []
                         localdistances = []
                         localvertexpositionwithinthecell = []
-                        p = Point(0,0.,0.)
                         i=listofTIPcells[nodeindexp1]
                         # check the vertexes if they are inside or outside of the fracture
                         answer_on_vertexes = ISinsideFracture(i, mesh, sgndDist_k)
                         for jj in range(0,4):
                             if answer_on_vertexes[jj]: # if the vertex is inside the fracture
-                                p.name = mesh.Connectivity[i][jj]
-                                p.x = mesh.VertexCoor[p.name][0]
-                                p.y = mesh.VertexCoor[p.name][1]
-                                localvertexID.append(p.name)
+                                p0name = mesh.Connectivity[i][jj]
+                                p0x = mesh.VertexCoor[p0name][0]
+                                p0y = mesh.VertexCoor[p0name][1]
+                                localvertexID.append(p0name)
                                 localvertexpositionwithinthecell.append(jj)
-                                p1 = Point(0,xintersection[nodeindex], yintersection[nodeindex])
-                                p2 = Point(0,xintersection[nodeindexp1], yintersection[nodeindexp1])
-                                localdistances.append(pointtolinedistance(p1, p2, p, mac_precision)) #compute the distance from the vertex to the front
+                                p1x = xintersection[nodeindex]
+                                p1y = yintersection[nodeindex]
+                                p2x = xintersection[nodeindexp1]
+                                p2y = yintersection[nodeindexp1]
+                                localdistances.append(pointtolinedistance(p0x, p1x, p2x, p0y, p1y, p2y)) #compute the distance from the vertex to the front
 
                         # take the largest distance from the front
                         if len(localdistances)==0:
@@ -2163,7 +2169,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             p_center = Point(i, mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])
                             p1 = Point(2, xintersection[nodeindex], yintersection[nodeindex])
                             p2 = Point(3, xintersection[nodeindexp1], yintersection[nodeindexp1])
-                            sgndDist_k_new = recompute_LS_at_tip_cells(sgndDist_k_new, p_zero_vertex, p_center,p1,p2, mac_precision,area_of_a_cell)
+                            sgndDist_k_new = recompute_LS_at_tip_cells(sgndDist_k_new, p_zero_vertex, p_center,p1,p2, mac_precision,area_of_a_cell,zero_level_set_value)
                         xintersectionsfromzerovertex.append(xint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
                         yintersectionsfromzerovertex.append(yint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
 
