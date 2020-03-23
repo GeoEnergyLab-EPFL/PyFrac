@@ -514,7 +514,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             CellStatus, \
             newRibbon, \
             zrVertx_k, \
-            vertexpositionwithinthecellTIPcellsONLY, \
             correct_size_of_pstv_region, \
             sgndDist_k_temp = reconstruct_front_continuous(sgndDist_k,
                                                            front_region[pstv_region],
@@ -614,10 +613,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
          EltTip_k,
          EltCrack_k,
          EltRibbon_k,
-         zrVertx_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
                                                            listofTIPcellsONLY,
-                                                           sgndDist_k, vertexpositionwithinthecellTIPcellsONLY,
+                                                           sgndDist_k,
                                                            Fr_lstTmStp.mesh)
 
     # from utility import plot_as_matrix
@@ -1448,7 +1446,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             CellStatus, \
             newRibbon, \
             zrVertx_k, \
-            vertexpositionwithinthecellTIPcellsONLY, \
             correct_size_of_pstv_region,\
             sgndDist_k_temp             = reconstruct_front_continuous(sgndDist_k,
                                                                        front_region[pstv_region],
@@ -1545,10 +1542,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
          EltTip_k,
          EltCrack_k,
          EltRibbon_k,
-         zrVertx_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
                                                            listofTIPcellsONLY,
-                                                           sgndDist_k, vertexpositionwithinthecellTIPcellsONLY,
+                                                           sgndDist_k,
                                                            Fr_lstTmStp.mesh)
 
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements

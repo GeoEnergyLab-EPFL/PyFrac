@@ -2431,7 +2431,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                  global_list_of_angles,
                  CellStatusNew,
                  global_list_of_newRibbon,
-                 global_list_of_vertexpositionwithinthecell,
                  global_list_of_vertexpositionwithinthecellTIPcellsONLY,
                  correct_size_of_pstv_region,sgndDist_k] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
             else:
@@ -2452,12 +2451,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 np.asarray(global_list_of_angles), \
                 CellStatusNew, \
                 np.asarray(global_list_of_newRibbon), \
-                global_list_of_vertexpositionwithinthecell, \
                 np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
                 correct_size_of_pstv_region,\
                 sgndDist_k
 
-def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrVertx_k, mesh):
+def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, mesh):
 
         EltChannel_k = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcells)
         EltTip_k = listofTIPcells
@@ -2480,7 +2478,7 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrV
         # from utility import plot_as_matrix
         # K = np.zeros((mesh.NumberOfElts,), )
         # plot_as_matrix(CellStatus_k, mesh)
-        return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k
+        return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, CellStatus_k
 
 # A = np.full(mesh.NumberOfElts, np.nan)
 # A[anularegion] = sgndDist_k[anularegion]

@@ -130,7 +130,8 @@ class Fracture:
         self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,
                                                                         surv_cells,
                                                                         inner_cells,
-                                                                        surv_dist)
+                                                                        surv_dist,
+                                                                        simulProp.projMethod)
         # for general purpose initialization
         if init_param.regime == 'static':
             self.w, self.pNet = get_width_pressure(self.mesh,

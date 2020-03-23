@@ -14,6 +14,7 @@ from level_set import SolveFMM, reconstruct_front, UpdateLists
 from volume_integral import Integral_over_cell
 from HF_analytical import shift_injection_point
 from symmetry import self_influence
+from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 
 
 
@@ -177,7 +178,7 @@ def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
+def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMethod):
     """
     This function takes the survey cells and their distances from the front and generate the footprint of a fracture
     using the fast marching method.
@@ -222,7 +223,31 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
 
     band = np.arange(mesh.NumberOfElts)
     # costruct the front
-    (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, band, inner_region, mesh)
+    if projMethod == 'LS_continousfront':
+        correct_size_of_pstv_region = False
+        recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
+        while not correct_size_of_pstv_region:
+            EltTip_tmp, \
+            listofTIPcellsONLY, \
+            l_tmp, alpha_tmp, \
+            CellStatus, \
+            newRibbon, \
+            ZeroVertex, \
+            correct_size_of_pstv_region,\
+            sgndDist_k_temp             = reconstruct_front_continuous(sgndDist,
+                                                                       band,
+                                                                       surv_cells,
+                                                                       inner_region,
+                                                                       mesh,
+                                                                       recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+            if not correct_size_of_pstv_region:
+                raise SystemExit('FRONT RECONSTRUCTION ERROR: it is not possible to initialize the front with the given distances to the front')
+        sgndDist = sgndDist_k_temp
+        del correct_size_of_pstv_region
+
+    else:
+        (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, band, inner_region, mesh)
+
 
     # get the filling fraction of the tip cells
     FillFrac_tmp = Integral_over_cell(EltTip_tmp,
@@ -232,16 +257,26 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
                               'A') / mesh.EltArea
 
     # generate cell lists
-    (EltChannel,
-     EltTip,
-     EltCrack,
-     EltRibbon,
-     ZeroVertex,
-     CellStatus) = UpdateLists(inner_region,
-                               EltTip_tmp,
-                               FillFrac_tmp,
-                               sgndDist,
-                               mesh)
+    if projMethod == 'LS_continousfront':
+        (EltChannel,
+         EltTip,
+         EltCrack,
+         EltRibbon,
+         CellStatus) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                         listofTIPcellsONLY,
+                                                          sgndDist,
+                                                          mesh)
+    else:
+        (EltChannel,
+         EltTip,
+         EltCrack,
+         EltRibbon,
+         ZeroVertex,
+         CellStatus) = UpdateLists(inner_region,
+                                   EltTip_tmp,
+                                   FillFrac_tmp,
+                                   sgndDist,
+                                   mesh)
 
     # removing fully traversed cells from the tip cells and other lists
     newTip_indices = np.arange(len(EltTip_tmp))[np.in1d(EltTip_tmp, EltTip)]
