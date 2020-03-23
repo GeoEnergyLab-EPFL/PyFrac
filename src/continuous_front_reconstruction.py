@@ -37,7 +37,7 @@ def distance(p1, p2):
 
 def copute_area_of_a_closed_front(xintersection,yintersection):
     # todo: remove for speed
-    if  xintersection.size !=  yintersection.size : raise SystemExit('ERROR: bad coordinate sizes')
+    if  xintersection.size !=  yintersection.size : raise SystemExit('FRONT RECONSTRUCTION ERROR: bad coordinate sizes')
 
     # use the Shoelace formula (Gauss area formula or surveyor's formula) to compute the area of a polygon
     # Performed tests:
@@ -117,7 +117,7 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
         nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
         exitstatus = True
     elif len(common) == 0:
-        #raise SystemExit('ERROR: two consecutive nodes does not belongs to a common cell')
+        #raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
         exitstatus = False
     return nodeVScommonelementtable, exitstatus
 
@@ -452,7 +452,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         if i_indexes_of_fictitius_cells.size < 1:
             raise FileNotFoundError
     except FileNotFoundError:
-        print("ERROR: The front does not exist")
+        print("FRONT RECONSTRUCTION ERROR: The front does not exist")
 
 
     """
@@ -569,7 +569,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
     #     if np.setdiff1d(anularegion[i_indexes_of_fictitius_cells],np.concatenate((anularegion[i_indexes_of_TYPE_1_cells], anularegion[i_indexes_of_TYPE_2_cells], anularegion[i_indexes_of_TYPE_3_cells], anularegion[i_indexes_of_TYPE_4_cells]))).size > 0:
     #         raise FileNotFoundError
     # except FileNotFoundError:
-    #     print("ERROR: this function has an error")
+    #     print("FRONT RECONSTRUCTION ERROR: this function has an error")
 
     # make dictionaries:
     i_1_2_3_4_FC_type = dict(zip(anularegion[i_indexes_of_TYPE_1_cells].astype(str).tolist(), np.ones(i_indexes_of_TYPE_1_cells.size).astype(int).tolist()))
@@ -1064,7 +1064,7 @@ def find_xy_intersections_type3_case_0_1_2_intersections(    indexesFC_T3_0_1_2_
     # check if the steps before have been done correctly
     if is_X_inside_the_cell_Answer.size > 0:
         if is_X_inside_the_cell_Answer.max() > 1:
-            raise SystemExit('ERROR: the processing of the cells is not correct')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: the processing of the cells is not correct')
 
 
     # processing the case of single intersection
@@ -1156,7 +1156,7 @@ def find_xy_intersections_type1( indexesFC_T1_1_2_intersections,
     # check if the steps before have been done correctly
     if is_X_inside_the_cell_Answer.size > 0:
         if is_X_inside_the_cell_Answer.max() > 1:
-            raise SystemExit('ERROR: the processing of the cells is not correct')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: the processing of the cells is not correct')
 
 
     # processing the case of single intersection
@@ -1542,7 +1542,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
             orientation = define_orientation_type3OR4("3",current_cell_name, mesh, sgndDist_k)
         elif FC_type == 4:
             orientation = define_orientation_type3OR4("4", current_cell_name, mesh, sgndDist_k)
-        else: raise SystemExit('Error: Unknown cell type')
+        else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Unknown cell type')
 
         if orientation == 0:
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][2])] = mesh.NeiElements[current_cell_name][0]
@@ -1556,7 +1556,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
         elif orientation == 3:
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][0])] = mesh.NeiElements[current_cell_name][3]
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][3])] = mesh.NeiElements[current_cell_name][0]
-        else: raise SystemExit('Error: Wrong orientation')
+        else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Wrong orientation')
 
     try:
         if str(previous_cell_name) not in dict_of_possibilities.keys():
@@ -1564,7 +1564,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
         else:
             return dict_of_possibilities[str(previous_cell_name)]
     except FileNotFoundError:
-        print("ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
+        print("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
     """
@@ -1591,7 +1591,7 @@ def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
             next_cell_name = mesh.NeiElements[first_cell_name][2]
         else:
             next_cell_name = mesh.NeiElements[first_cell_name][3]
-    else: raise SystemExit('Error: Unknown cell type')
+    else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Unknown cell type')
     return next_cell_name
 
 from itertools import chain
@@ -1605,7 +1605,7 @@ def itertools_chain_from_iterable(lsts):
     try :
       to_be_returned =list(chain.from_iterable(lsts))
     except:
-      print("ERROR: The list contains an element not between square brakets")
+      print("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
     return to_be_returned
 
 def append_to_typelists(cell_index,cell_type,type1,type2,type3,type4):
@@ -1790,9 +1790,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -zero_level_set_value
                     del index_of_positives, all_cells_of_all_FC_of_this_small_fracture
             if len(list_of_Fracturelists)<1:
-                raise SystemExit('ERROR: not valid fractures have been found! Rememnber that you could have several fractures of too small size to be tracked')
+                raise SystemExit('FRONT RECONSTRUCTION ERROR: not valid fractures have been found! Rememnber that you could have several fractures of too small size to be tracked')
         else :
-            raise SystemExit('ERROR: not enough cells to define evene one fracture front!')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: not enough cells to define evene one fracture front!')
 
         del dict_FC_names, next_cell_name, previous_cell_name, Args, Fracturelist, Cells_type_1_list, Cells_type_2_list, Cells_type_3_list, Cells_type_4_list
         del NofCells_explored, NofCells_to_explore, first_cell_name, dict_Ribbon,  i_1_2_3_4_FC_type
@@ -1855,7 +1855,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
                 if len(indexesFC_TYPE_2) > 0:
                     #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
-                    raise SystemExit('ERROR: type 2 to be tested')
+                    raise SystemExit('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
 
                 del indexesFC_TYPE_1, indexesFC_TYPE_2, indexesFC_TYPE_3, indexesFC_TYPE_4, Args
                 """
@@ -1982,11 +1982,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         column=0
                         nodeVScommonelementtable, exitstatus=filltable(nodeVScommonelementtable,nodeindex,commonbackward,sgndDist_k,column)
                         if not exitstatus:
-                            raise SystemExit('ERROR: two consecutive nodes does not belongs to a common cell')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
                         column=1
                         nodeVScommonelementtable, exitstatus=filltable(nodeVScommonelementtable,nodeindex,commonforward,sgndDist_k,column)
                         if not exitstatus:
-                            raise SystemExit('ERROR: two consecutive nodes does not belongs to a common cell')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
 
                     listofTIPcells = []
                     # remove the nodes in the cells with more than 2 nodes and keep the first and the last node
@@ -2144,7 +2144,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                         # take the largest distance from the front
                         if len(localdistances)==0:
-                            raise SystemExit('ERROR: there are no nodes in the given tip cell that are inside the fracture')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: there are no nodes in the given tip cell that are inside the fracture')
                         index = np.argmax(np.asarray(localdistances)) # compute the index of the point with the maximun distance to the front
                         if index.size>1: # if you have two nodes that have the same distance to the front and are inside thake the first
                             index = index[0]
@@ -2182,7 +2182,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
 
                     if len(xintersection)==0:
-                        raise SystemExit('ERROR: front not reconstructed')
+                        raise SystemExit('FRONT RECONSTRUCTION ERROR: front not reconstructed')
 
                     # A = np.full(mesh.NumberOfElts, np.nan)
                     # A[anularegion] = sgndDist_k[anularegion]
@@ -2305,7 +2305,14 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         fully traversed cells. We need to really to define the level set in the cells where we set -machine precision
                         """
                         # level set known and unknown, cell names where the LS is known,cracked elements (including tip), mesh , empty, Specific cells that I need inwards
-                        SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, [], negative_cells)
+
+                        #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, negative_cells, None, True)
+
+                        sgndDist_k =  1e50 * np.ones((mesh.NumberOfElts,), float)
+                        sgndDist_k[global_list_of_TIPcellsONLY] = original_sgndDist_k[global_list_of_TIPcellsONLY]
+                        SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, np.setdiff1d(anularegion,negative_cells), negative_cells)
+                        #delta_sgndDist_k = sgndDist_k - original_sgndDist_k
+
                         # Usage of SolveFMM:
                         # 1st arg: vector with the LS value everywhere
                         # 2nd arg: list of positions (or cell names) where the LS is KNOWN => it should be a set of closed fronts!
@@ -2372,7 +2379,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         elif dLSdy != 0. and dLSdx != 0:
                             fullyfractured_angle.append(np.arctan(np.abs(dLSdy) / np.abs(dLSdx)))
                         else:
-                            raise SystemExit('ERROR minimum of the function has been found, not expected')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: minimum of the function has been found, not expected')
 
                     # finally append these informations to what computed before
 
@@ -2461,7 +2468,7 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrV
         # K[listofTIPcells] = 2
         # plot_as_matrix(K, mesh)
         if np.unique(EltCrack_k).size != EltCrack_k.size:
-            raise SystemExit('ERROR: the front is entering more than 1 time the same cell')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: the front is entering more than 1 time the same cell')
         EltRibbon_k = newRibbon
 
         # Cells status list store the status of all the cells in the domain
