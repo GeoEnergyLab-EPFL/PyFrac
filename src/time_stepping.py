@@ -1442,7 +1442,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         while not correct_size_of_pstv_region:
             EltsTipNew, \
             listofTIPcellsONLY, \
-            l_k, alpha_k, \
+            l_k, \
+            alpha_k, \
             CellStatus, \
             newRibbon, \
             zrVertx_k, \

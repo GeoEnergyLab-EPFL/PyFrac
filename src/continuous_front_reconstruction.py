@@ -195,14 +195,14 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
         # angle = np.arctan(np.abs((y-y0))/np.abs((x-x0))) naive way of computing the angle
     # ---------------------------------------------------
 
-    try:
-        # here we use directly points 1 and 2 to find the angle instead of finding the intersection between the normal from a point to the
-        # front and then computing the angle
-        dx_over_dy =  np.abs((x2-x1))/np.abs((y2-y1))
-        angle = np.arctan(dx_over_dy)
-    except : angle = 0.
+    # here we use directly points 1 and 2 to find the angle instead of finding the intersection between the normal from a point to the
+    # front and then computing the angle
 
-    return angle, x, y
+    if y2!=y1:
+        dx_over_dy =  np.abs((x2-x1))/np.abs((y2-y1))
+        return np.arctan(dx_over_dy), x, y
+    else:
+        return 0., x0, y2
 
 def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None):
         #fig = None
@@ -329,9 +329,10 @@ def get_fictitius_cell_names(index_to_output,fictitius_cells, NeiElements):
     c = NeiElements[fictitius_cells, right_elem]
     b = NeiElements[fictitius_cells + 1, top_elem]
     full_matrix=np.column_stack((fictitius_cells, c, b, a))
-    row_idx=np.arange(0,full_matrix.shape[0],1,dtype=int)
-    # very nice peace of code below: I am randoimly specific positions from the matrix
-    return full_matrix[[row_idx[None,:],index_to_output.transpose()]]
+    to_return = []
+    for i in range(index_to_output.size):
+        to_return.append(full_matrix[i,index_to_output[i]])
+    return np.asarray([to_return])
 
 def get_fictitius_cell_all_names(fictitius_cells, NeiElements):
     """
@@ -837,8 +838,13 @@ def find_edge_ID(xCandidate,xgrid,yCandidate,ygrid,mesh,i):
     IDs0, IDs1 = get_fictitius_cell_specific_names("left right", i, mesh.NeiElements)
     row_idx = np.arange(0, x_position.shape[0], 1, dtype=int)
     # very nice peace of code below: I am randoimly specific positions from the matrix
-    IDs0 = IDs0[[row_idx[None, :], x_position]].transpose()
-    IDs1 = IDs1[[row_idx[None, :], x_position]].transpose()
+    list_temp_0=[]
+    list_temp_1 = []
+    for j in range(row_idx.size):
+        list_temp_0.append(IDs0[j,x_position[j]])
+        list_temp_1.append(IDs1[j,x_position[j]])
+    IDs0 = np.asarray([list_temp_0]).transpose()
+    IDs1 = np.asarray([list_temp_1]).transpose()
     edge_x = []
     for j in range(IDs0.size):
         edge_x.append(np.intersect1d(mesh.Connectivityelemedges[IDs0[j]], mesh.Connectivityelemedges[IDs1[j]],
@@ -851,8 +857,13 @@ def find_edge_ID(xCandidate,xgrid,yCandidate,ygrid,mesh,i):
     IDs0, IDs1 = get_fictitius_cell_specific_names("bottom top", i, mesh.NeiElements)
     row_idx = np.arange(0, y_position.shape[0], 1, dtype=int)
     # very nice peace of code below: I am randoimly specific positions from the matrix
-    IDs0 = IDs0[[row_idx[None, :], y_position]].transpose()
-    IDs1 = IDs1[[row_idx[None, :], y_position]].transpose()
+    list_temp_0=[]
+    list_temp_1 = []
+    for j in range(row_idx.size):
+        list_temp_0.append(IDs0[j,y_position[j]])
+        list_temp_1.append(IDs1[j, y_position[j]])
+    IDs0 = np.asarray([list_temp_0]).transpose()
+    IDs1 = np.asarray([list_temp_1]).transpose()
     edge_y = []
     for j in range(IDs0.size):
         edge_y.append(np.intersect1d(mesh.Connectivityelemedges[IDs0[j]], mesh.Connectivityelemedges[IDs1[j]],
@@ -2432,7 +2443,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                  CellStatusNew,
                  global_list_of_newRibbon,
                  global_list_of_vertexpositionwithinthecellTIPcellsONLY,
-                 correct_size_of_pstv_region,sgndDist_k] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+                 correct_size_of_pstv_region,
+                 sgndDist_k] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
             else:
                 # find the new ribbon cells
                 global_list_of_newRibbon = []
