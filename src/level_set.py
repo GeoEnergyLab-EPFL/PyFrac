@@ -64,6 +64,10 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
 
                 NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
                 NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
+                if  NeigxMin >= 1e50 and NeigyMin>= 1e50 :
+                    print("LEVEL SET FUNCTION WARNING: You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
+                    # A possible fix of this situation could be leave apart the cell and come back later
+                    # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method
                 delT = NeigyMin - NeigxMin
 
                 theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2
@@ -125,6 +129,11 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                                    positive_levelSet[mesh.NeiElements[neighbor, 1]])
                     NeigyMin = min(positive_levelSet[mesh.NeiElements[neighbor, 2]],
                                    positive_levelSet[mesh.NeiElements[neighbor, 3]])
+                    if NeigxMin >= 1e50 and NeigyMin >= 1e50:
+                        print(
+                            "LEVEL SET FUNCTION WARNING: You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
+                        # A possible fix of this situation could be leave apart the cell and come back later
+                        # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method
                     beta = mesh.hx / mesh.hy
                     delT = NeigyMin - NeigxMin
                     theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2
@@ -153,7 +162,24 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                        levelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikonal equation function
             guess = np.max(levelSet[neighbors])  # initial starting guess for the numerical solver
             levelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
-
+# from visualization import plot_fracture_variable_as_image
+# import matplotlib.pyplot as plt
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# A = np.full(mesh.NumberOfElts, -1.)
+# A[farAwayPstv] = levelSet[farAwayPstv]
+# A[farAwayNgtv] = levelSet[farAwayNgtv]
+# A[EltRibbon] = levelSet[EltRibbon]
+#
+# for i in range(mesh.NumberOfElts):
+#     if A[i] < -10000 or A[i] > 10000:
+#         A[i] = -1
+# fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
+# ax = fig.get_axes()[0]
+# x_center = mesh.CenterCoor[Alive, 0]
+# y_center = mesh.CenterCoor[Alive, 1]
+# for i, txt in enumerate(Alive):
+#     ax.annotate(txt, (x_center[i], y_center[i]))
 #-----------------------------------------------------------------------------------------------------------------------
 
 

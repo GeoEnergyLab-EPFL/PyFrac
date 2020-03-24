@@ -16,7 +16,7 @@ from utility import find_regime
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
 from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
-from continuos_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
+from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
@@ -514,9 +514,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             CellStatus, \
             newRibbon, \
             zrVertx_k, \
-            vertexpositionwithinthecellTIPcellsONLY, \
             correct_size_of_pstv_region, \
-            sgndDist_k_temp = reconstruct_front_continuous(sgndDist_k,
+            sgndDist_k_temp, Ffront = reconstruct_front_continuous(sgndDist_k,
                                                            front_region[pstv_region],
                                                            Fr_lstTmStp.EltRibbon,
                                                            Fr_lstTmStp.EltChannel,
@@ -614,10 +613,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
          EltTip_k,
          EltCrack_k,
          EltRibbon_k,
-         zrVertx_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
                                                            listofTIPcellsONLY,
-                                                           sgndDist_k, vertexpositionwithinthecellTIPcellsONLY,
+                                                           sgndDist_k,
                                                            Fr_lstTmStp.mesh)
 
     # from utility import plot_as_matrix
@@ -833,7 +831,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.InCrack = InCrack_k
-    Fr_kplus1.process_fracture_front()
+    if sim_properties.projMethod != 'LS_continousfront':
+        Fr_kplus1.process_fracture_front()
+    else : Fr_kplus1.Ffront = Ffront
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
@@ -1444,13 +1444,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         while not correct_size_of_pstv_region:
             EltsTipNew, \
             listofTIPcellsONLY, \
-            l_k, alpha_k, \
+            l_k, \
+            alpha_k, \
             CellStatus, \
             newRibbon, \
             zrVertx_k, \
-            vertexpositionwithinthecellTIPcellsONLY, \
             correct_size_of_pstv_region,\
-            sgndDist_k_temp             = reconstruct_front_continuous(sgndDist_k,
+            sgndDist_k_temp, Ffront     = reconstruct_front_continuous(sgndDist_k,
                                                                        front_region[pstv_region],
                                                                        Fr_lstTmStp.EltRibbon,
                                                                        Fr_lstTmStp.EltChannel,
@@ -1545,10 +1545,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
          EltTip_k,
          EltCrack_k,
          EltRibbon_k,
-         zrVertx_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
                                                            listofTIPcellsONLY,
-                                                           sgndDist_k, vertexpositionwithinthecellTIPcellsONLY,
+                                                           sgndDist_k,
                                                            Fr_lstTmStp.mesh)
 
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
@@ -1761,7 +1760,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.alpha = alpha_k[partlyFilledTip]
     Fr_kplus1.l = l_k[partlyFilledTip]
     Fr_kplus1.InCrack = InCrack_k
-    Fr_kplus1.process_fracture_front()
+    if sim_properties.projMethod != 'LS_continousfront':
+        Fr_kplus1.process_fracture_front()
+    else : Fr_kplus1.Ffront = Ffront
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
