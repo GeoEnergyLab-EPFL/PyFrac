@@ -65,6 +65,7 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
             return M0, M1
 
         if w < -1e-15:
+            print('Warning: Negative width encountered in volume integral')
             w = abs(w)
 
     if Vel < 1e-6:
