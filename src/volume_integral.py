@@ -287,7 +287,9 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
     integral = np.zeros((len(l),), float)
     for i in range(0, len(l)):
 
-        m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
+        if alpha[i] != 0:
+            m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
+        else : m = np.inf
         # packing parameters to pass
         param_pack = (function, Kprime[i], Eprime[i], muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
                       arrival_t[i], m, t_lstTS, dt)

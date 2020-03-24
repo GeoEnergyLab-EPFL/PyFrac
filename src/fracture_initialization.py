@@ -229,12 +229,13 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
         while not correct_size_of_pstv_region:
             EltTip_tmp, \
             listofTIPcellsONLY, \
-            l_tmp, alpha_tmp, \
+            l_tmp, \
+            alpha_tmp, \
             CellStatus, \
             newRibbon, \
             ZeroVertex, \
             correct_size_of_pstv_region,\
-            sgndDist_k_temp             = reconstruct_front_continuous(sgndDist,
+            sgndDist_k_temp, Ffront             = reconstruct_front_continuous(sgndDist,
                                                                        band,
                                                                        surv_cells,
                                                                        inner_region,
@@ -247,6 +248,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
 
     else:
         (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, band, inner_region, mesh)
+        Ffront = 'It will be computed later by the method process_fracture_front()'
 
 
     # get the filling fraction of the tip cells
@@ -288,7 +290,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
         raise SystemExit("No channel elements. The initial radius is probably too small!")
 
 
-    return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist
+    return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist, Ffront
 
 #-----------------------------------------------------------------------------------------------------------------------
 

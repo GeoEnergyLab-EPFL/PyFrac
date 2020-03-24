@@ -202,7 +202,7 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
         dx_over_dy =  np.abs((x2-x1))/np.abs((y2-y1))
         return np.arctan(dx_over_dy), x, y
     else:
-        return 0., x0, y2
+        return np.pi/2, x0, y2
 
 def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None):
         #fig = None
@@ -2444,7 +2444,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                  global_list_of_newRibbon,
                  global_list_of_vertexpositionwithinthecellTIPcellsONLY,
                  correct_size_of_pstv_region,
-                 sgndDist_k] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+                 sgndDist_k, Ffront] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
             else:
                 # find the new ribbon cells
                 global_list_of_newRibbon = []
@@ -2456,6 +2456,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 global_list_of_newRibbon.extend(newRibbon.tolist())  # np
                 correct_size_of_pstv_region = True
 
+                # compute the coordinates for the Ffront variable in the Fracture object
+                xintersection.append(xintersection[0]) # close the front
+                yintersection.append(yintersection[0]) # close the front
+
+                Ffront = np.column_stack((xintersection[0:-1], yintersection[0:-1], xintersection[1:],yintersection[1:]))
+
             return \
                 np.asarray(global_list_of_TIPcells),\
                 np.asarray(global_list_of_TIPcellsONLY), \
@@ -2465,7 +2471,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 np.asarray(global_list_of_newRibbon), \
                 np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
                 correct_size_of_pstv_region,\
-                sgndDist_k
+                sgndDist_k, Ffront
 
 def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, mesh):
 

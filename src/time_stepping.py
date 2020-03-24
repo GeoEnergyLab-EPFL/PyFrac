@@ -515,7 +515,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             newRibbon, \
             zrVertx_k, \
             correct_size_of_pstv_region, \
-            sgndDist_k_temp = reconstruct_front_continuous(sgndDist_k,
+            sgndDist_k_temp, Ffront = reconstruct_front_continuous(sgndDist_k,
                                                            front_region[pstv_region],
                                                            Fr_lstTmStp.EltRibbon,
                                                            Fr_lstTmStp.EltChannel,
@@ -831,7 +831,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.InCrack = InCrack_k
-    Fr_kplus1.process_fracture_front()
+    if sim_properties.projMethod != 'LS_continousfront':
+        Fr_kplus1.process_fracture_front()
+    else : Fr_kplus1.Ffront = Ffront
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
@@ -1448,7 +1450,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             newRibbon, \
             zrVertx_k, \
             correct_size_of_pstv_region,\
-            sgndDist_k_temp             = reconstruct_front_continuous(sgndDist_k,
+            sgndDist_k_temp, Ffront     = reconstruct_front_continuous(sgndDist_k,
                                                                        front_region[pstv_region],
                                                                        Fr_lstTmStp.EltRibbon,
                                                                        Fr_lstTmStp.EltChannel,
@@ -1758,7 +1760,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.alpha = alpha_k[partlyFilledTip]
     Fr_kplus1.l = l_k[partlyFilledTip]
     Fr_kplus1.InCrack = InCrack_k
-    Fr_kplus1.process_fracture_front()
+    if sim_properties.projMethod != 'LS_continousfront':
+        Fr_kplus1.process_fracture_front()
+    else : Fr_kplus1.Ffront = Ffront
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
