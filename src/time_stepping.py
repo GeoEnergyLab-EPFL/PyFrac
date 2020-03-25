@@ -513,7 +513,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             alpha_k, \
             CellStatus, \
             newRibbon, \
-            zrVertx_k, \
+            zrVertx_k_with_fully_traversed, \
+            zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region, \
             sgndDist_k_temp, Ffront = reconstruct_front_continuous(sgndDist_k,
                                                            front_region[pstv_region],
@@ -548,8 +549,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     else:
         raise SystemExit("projection method not supported")
 
-    # EltsTipNew=listofTIPcellsONLY
-    # zrVertx_k=vertexpositionwithinthecellTIPcellsONLY
+
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
                          " level set.")
@@ -608,7 +608,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                      sgndDist_k,
                                      Fr_lstTmStp.mesh)
     elif sim_properties.projMethod == 'LS_continousfront':
-
+        zrVertx_k = zrVertx_k_without_fully_traversed
         (EltChannel_k,
          EltTip_k,
          EltCrack_k,
@@ -631,7 +631,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-    else: zrVrtx_newTip = zrVertx_k
+    else: zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
 
     # finding ribbon cells corresponding to tip cells
     corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
@@ -645,8 +645,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         if sim_properties.projMethod != 'LS_continousfront':
             # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
             zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-        else:
-            zrVrtx_newTip = zrVertx_k
+        else: zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
 
         # get toughness from tip in case of anisotropic or
         Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
@@ -670,10 +669,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = (-(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) /
                 (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
-    if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
-        if sim_properties.verbosity > 1:
-            print("Stagnant front is only supported with universal tip asymptote. continuing...")
-        stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
+    # we need to remove it:
+    # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
+    #     if sim_properties.verbosity > 1:
+    #         print("Stagnant front is only supported with universal tip asymptote. continuing...")
+    #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if perfNode is not None:
         perfNode_tipWidth = instrument_start('tip width', perfNode)
@@ -1456,7 +1456,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             alpha_k, \
             CellStatus, \
             newRibbon, \
-            zrVertx_k, \
+            zrVertx_k_with_fully_traversed, \
+            zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region,\
             sgndDist_k_temp, Ffront     = reconstruct_front_continuous(sgndDist_k,
                                                                        front_region[pstv_region],
@@ -1489,9 +1490,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         del correct_size_of_pstv_region
     else:
         raise SystemExit("projection method not supported")
-
-        # EltsTipNew, l_k, alpha_k, CellStatus,  newRibbon, listofTIPcells, zrVertx_k  = reconstruct_front_continuous(sgndDist_k, front_region,
-        #                                                                 Fr_lstTmStp.EltRibbon, Fr_lstTmStp.EltChannel, Fr_lstTmStp.mesh)
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
@@ -1548,7 +1546,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                      Fr_lstTmStp.mesh)
 
     elif sim_properties.projMethod == 'LS_continousfront':
-
+        zrVertx_k = zrVertx_k_without_fully_traversed
         (EltChannel_k,
          EltTip_k,
          EltCrack_k,
@@ -1567,7 +1565,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-    else: zrVrtx_newTip = zrVertx_k
+    else: zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
     # finding ribbon cells corresponding to tip cells
     corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
                                                  alpha_k,
@@ -1602,10 +1600,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = (-(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) /
                 (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
-    if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
-        if sim_properties.verbosity > 1:
-            print("Stagnant front is only supported with universal tip asymptote. Continuing...")
-        stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
+    # we need to remove it:
+    # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
+    #     if sim_properties.verbosity > 1:
+    #         print("Stagnant front is only supported with universal tip asymptote. Continuing...")
+    #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if stagnant.any():
         # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells

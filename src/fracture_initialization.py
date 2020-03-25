@@ -233,6 +233,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
             alpha_tmp, \
             CellStatus, \
             newRibbon, \
+            ZeroVertex_with_fully_traversed, \
             ZeroVertex, \
             correct_size_of_pstv_region,\
             sgndDist_k_temp, Ffront             = reconstruct_front_continuous(sgndDist,

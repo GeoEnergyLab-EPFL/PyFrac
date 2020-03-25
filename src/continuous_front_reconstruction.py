@@ -2442,6 +2442,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                  global_list_of_angles,
                  CellStatusNew,
                  global_list_of_newRibbon,
+                 global_list_of_vertexpositionwithinthecell,
                  global_list_of_vertexpositionwithinthecellTIPcellsONLY,
                  correct_size_of_pstv_region,
                  sgndDist_k, Ffront] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
@@ -2461,7 +2462,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 yintersection.append(yintersection[0]) # close the front
 
                 Ffront = np.column_stack((xintersection[0:-1], yintersection[0:-1], xintersection[1:],yintersection[1:]))
-
+            if np.asarray(global_list_of_TIPcells).size != np.asarray(global_list_of_vertexpositionwithinthecell).size:
+                print("huston")
             return \
                 np.asarray(global_list_of_TIPcells),\
                 np.asarray(global_list_of_TIPcellsONLY), \
@@ -2469,6 +2471,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 np.asarray(global_list_of_angles), \
                 CellStatusNew, \
                 np.asarray(global_list_of_newRibbon), \
+                np.asarray(global_list_of_vertexpositionwithinthecell),\
                 np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
                 correct_size_of_pstv_region,\
                 sgndDist_k, Ffront
