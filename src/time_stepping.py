@@ -628,8 +628,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.verbosity > 1:
         print('Solving the EHL system with the new trial footprint')
 
+    if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
-    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+    else: zrVrtx_newTip = zrVertx_k
+
     # finding ribbon cells corresponding to tip cells
     corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
                                                  alpha_k,
@@ -639,7 +642,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
     if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
-        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        if sim_properties.projMethod != 'LS_continousfront':
+            # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
+            zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        else:
+            zrVrtx_newTip = zrVertx_k
+
         # get toughness from tip in case of anisotropic or
         Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                          Fr_lstTmStp.mesh,
@@ -1556,8 +1564,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if sim_properties.verbosity > 1:
         print('Solving the EHL system with the new trial footprint')
 
+    if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
-    zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+        zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
+    else: zrVrtx_newTip = zrVertx_k
     # finding ribbon cells corresponding to tip cells
     corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
                                                  alpha_k,
