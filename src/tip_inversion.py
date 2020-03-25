@@ -299,7 +299,6 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
 
         cnt = 0
         mid = b[i]
-        mid_b = b[i]
         while Res_a * Res_b > 0:
             mid = (a[i] + 2 * mid) / 3  # weighted
             Res_a = ResFunc(mid, *TipAsmptargs)
@@ -385,7 +384,18 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
                             dt,
                             frac.mesh,
                             ResFunc)
-
+    ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
+    if any(np.isnan(a)):
+        stagnant_from_bracketing = np.argwhere(np.isnan(a))[0]
+        a = np.delete(a, stagnant_from_bracketing)
+        b = np.delete(b, stagnant_from_bracketing)
+        if not stagnant.size == 0:
+            stagnant = np.sort(np.unique(np.concatenate(stagnant, moving[stagnant_from_bracketing])))
+        else:
+            stagnant = stagnant_from_bracketing
+        moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
+    ## End of adaption
+    
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
         TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
