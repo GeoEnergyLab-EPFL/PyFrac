@@ -99,7 +99,7 @@ def VolumeTriangle(dist, *param):
 
     regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
-    if stagnant: regime == 'U1'
+    if stagnant: regime = 'U1'
 
     if regime == 'A':
         return dist ** 2 * em / 2
@@ -157,7 +157,7 @@ def Area(dist, *param):
 
     regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
-    if stagnant: regime == 'U1'
+    if stagnant: regime = 'U1'
 
     if regime == 'A':
         return dist
