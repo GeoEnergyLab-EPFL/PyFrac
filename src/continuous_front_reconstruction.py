@@ -1823,9 +1823,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         cells_around_front = np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(itertools_chain_from_iterable(list_of_Fracturelists), mesh.NeiElements)))
         LS_on_cells_around_front = sgndDist_k[cells_around_front]
         if np.any(LS_on_cells_around_front == np.NaN) or  np.any(LS_on_cells_around_front > 10.**40):
-            print('WARNING: I am increasing the thickness of the band')
+            print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band')
             correct_size_of_pstv_region = False
-            return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k
+            return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
         else:
             del cells_around_front, LS_on_cells_around_front
 
