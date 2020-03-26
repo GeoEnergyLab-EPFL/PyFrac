@@ -1571,7 +1571,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
     data = interItr
-    return xks[0,::], data
+    return xks[mk + 2, ::], data
 
 
 #-----------------------------------------------------------------------------------------------------------------------
