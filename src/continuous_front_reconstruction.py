@@ -204,7 +204,7 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
     else:
         return np.pi/2, x0, y2
 
-def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None):
+def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate=False):
         #fig = None
         if fig is None:
             fig = plt.figure()
@@ -226,10 +226,11 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None):
             plt.plot(mesh.CenterCoor[Negative_nonRibbon, 0], mesh.CenterCoor[Negative_nonRibbon, 1], ".",
                      marker="_", color='b')
         plt.plot(np.asarray(x), np.asarray(y), '.-', color='red')
-        x_center =mesh.CenterCoor[anularegion,0]
-        y_center = mesh.CenterCoor[anularegion,1]
-        for i, txt in enumerate(anularegion):
-            ax.annotate(txt, (x_center[i], y_center[i]))
+        if annotate:
+            x_center =mesh.CenterCoor[anularegion,0]
+            y_center = mesh.CenterCoor[anularegion,1]
+            for i, txt in enumerate(anularegion):
+                ax.annotate(txt, (x_center[i], y_center[i]))
         plt.show()
         return fig
 
@@ -1908,9 +1909,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
 
             # plot reconstructed front
-            # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersection_for_all_closed_paths[0], fig=None)
-            # for j in range(len(list_of_xintersections_for_all_closed_paths)):
-            #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[j], list_of_yintersection_for_all_closed_paths[j], fig1)
+            # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersections_for_all_closed_paths[0], fig=None)
+            # for j in range(1,len(list_of_xintersections_for_all_closed_paths)):
+            #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[j], list_of_yintersections_for_all_closed_paths[j], fig1)
             # del j, fig1
 
             global_list_of_TIPcells = []
