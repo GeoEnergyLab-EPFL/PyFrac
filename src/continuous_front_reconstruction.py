@@ -1834,8 +1834,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             to be output at the end:
             """
 
-            list_of_xintersection_for_all_closed_paths = []
-            list_of_yintersection_for_all_closed_paths = []
+            list_of_xintersections_for_all_closed_paths = []
+            list_of_yintersections_for_all_closed_paths = []
             list_of_typeindex_for_all_closed_paths = []
             list_of_edgeORvertexID_for_all_closed_paths = []
 
@@ -1901,16 +1901,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     del index_of_positives, all_cells_of_all_FC_of_this_small_fracture
                     recompute_front = True
                 else :
-                    list_of_xintersection_for_all_closed_paths.append(xintersection)
-                    list_of_yintersection_for_all_closed_paths.append(yintersection)
+                    list_of_xintersections_for_all_closed_paths.append(xintersection)
+                    list_of_yintersections_for_all_closed_paths.append(yintersection)
                     list_of_typeindex_for_all_closed_paths.append(typeindex)
                     list_of_edgeORvertexID_for_all_closed_paths.append(edgeORvertexID)
 
 
             # plot reconstructed front
-            # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersection_for_all_closed_paths[0], list_of_yintersection_for_all_closed_paths[0], fig=None)
-            # for j in range(len(list_of_xintersection_for_all_closed_paths)):
-            #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersection_for_all_closed_paths[j], list_of_yintersection_for_all_closed_paths[j], fig1)
+            # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersection_for_all_closed_paths[0], fig=None)
+            # for j in range(len(list_of_xintersections_for_all_closed_paths)):
+            #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[j], list_of_yintersection_for_all_closed_paths[j], fig1)
             # del j, fig1
 
             global_list_of_TIPcells = []
@@ -1927,8 +1927,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if not recompute_front:
                 for j in range(len(list_of_Fracturelists)):
 
-                    xintersection  = list_of_xintersection_for_all_closed_paths[j]
-                    yintersection  = list_of_yintersection_for_all_closed_paths[j]
+                    xintersection  = list_of_xintersections_for_all_closed_paths[j]
+                    yintersection  = list_of_yintersections_for_all_closed_paths[j]
                     typeindex      = list_of_typeindex_for_all_closed_paths[j]
                     edgeORvertexID = list_of_edgeORvertexID_for_all_closed_paths[j]
 
@@ -2098,6 +2098,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         #         listofTIPcells.append(nodeVScommonelementtable[nodeindex][0])
                         listofTIPcells.append(nodeVScommonelementtable[nodeindex][0])
                     # del n, jump, nodeindex, counter
+
+                    # after removing the points on the same edge, update the global list
+                    list_of_xintersections_for_all_closed_paths[j] = xintersection
+                    list_of_yintersections_for_all_closed_paths[j] = yintersection
 
                     # In principle the following check should be activated only if the front is
                     # approaching the same tip cell. The strategy is to set these shared tip cells to be negative and re-launch the code
@@ -2458,12 +2462,30 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 correct_size_of_pstv_region = True
 
                 # compute the coordinates for the Ffront variable in the Fracture object
-                xintersection.append(xintersection[0]) # close the front
-                yintersection.append(yintersection[0]) # close the front
+                # for each cell where the front is passing you have to list the coordinates with the intersection with
+                # the first edge and the second one
+                xinters4all_closed_paths_1 = []
+                xinters4all_closed_paths_2 = []
+                yinters4all_closed_paths_1 = []
+                yinters4all_closed_paths_2 = []
+                for jj in range(len(list_of_xintersections_for_all_closed_paths)):
+                    xintersection = list_of_xintersections_for_all_closed_paths[jj]
+                    yintersection = list_of_yintersections_for_all_closed_paths[jj]
+                    xintersection.append(xintersection[0]) # close the front
+                    yintersection.append(yintersection[0]) # close the front
+                    xinters4all_closed_paths_1.append(xintersection[0:-1])
+                    xinters4all_closed_paths_2.append(xintersection[1:])
+                    yinters4all_closed_paths_1.append(yintersection[0:-1])
+                    yinters4all_closed_paths_2.append(yintersection[1:])
+                xinters4all_closed_paths_1 = itertools_chain_from_iterable(xinters4all_closed_paths_1)
+                xinters4all_closed_paths_2 = itertools_chain_from_iterable(xinters4all_closed_paths_2)
+                yinters4all_closed_paths_1 = itertools_chain_from_iterable(yinters4all_closed_paths_1)
+                yinters4all_closed_paths_2 = itertools_chain_from_iterable(yinters4all_closed_paths_2)
+                Ffront = np.column_stack((xinters4all_closed_paths_1,
+                                          yinters4all_closed_paths_1,
+                                          xinters4all_closed_paths_2,
+                                          yinters4all_closed_paths_2))
 
-                Ffront = np.column_stack((xintersection[0:-1], yintersection[0:-1], xintersection[1:],yintersection[1:]))
-            if np.asarray(global_list_of_TIPcells).size != np.asarray(global_list_of_vertexpositionwithinthecell).size:
-                print("huston")
             return \
                 np.asarray(global_list_of_TIPcells),\
                 np.asarray(global_list_of_TIPcellsONLY), \
