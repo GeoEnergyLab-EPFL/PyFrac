@@ -504,9 +504,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                              Fr_lstTmStp.EltChannel,
                                                                              Fr_lstTmStp.mesh)
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = False
+        correct_size_of_pstv_region = [False,False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
-        while not correct_size_of_pstv_region:
+        while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
             listofTIPcellsONLY, \
             l_k, \
@@ -522,7 +522,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                            Fr_lstTmStp.EltChannel,
                                                            Fr_lstTmStp.mesh,
                                                            recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if not correct_size_of_pstv_region:
+            if correct_size_of_pstv_region[1]:
+                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
+                return exitstatus, None
+
+            if not correct_size_of_pstv_region[0]:
                 # Expand the
                 # - front region by 1 cell tickness
                 # - pstv_region by 1 cell tickness
@@ -1447,9 +1451,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                              Fr_lstTmStp.mesh)
 
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = False
+        correct_size_of_pstv_region = [False,False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
-        while not correct_size_of_pstv_region:
+        while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
             listofTIPcellsONLY, \
             l_k, \
@@ -1465,7 +1469,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                        Fr_lstTmStp.EltChannel,
                                                                        Fr_lstTmStp.mesh,
                                                                        recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if not correct_size_of_pstv_region:
+            if correct_size_of_pstv_region[1]:
+                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
+                return exitstatus, None
+
+            if not correct_size_of_pstv_region[0]:
                 # Expand the
                 # - front region by 1 cell tickness
                 # - pstv_region by 1 cell tickness

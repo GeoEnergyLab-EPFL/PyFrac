@@ -224,9 +224,9 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
     band = np.arange(mesh.NumberOfElts)
     # costruct the front
     if projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = False
+        correct_size_of_pstv_region = [False,False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
-        while not correct_size_of_pstv_region:
+        while not correct_size_of_pstv_region[0]:
             EltTip_tmp, \
             listofTIPcellsONLY, \
             l_tmp, \
@@ -242,7 +242,11 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
                                                                        inner_region,
                                                                        mesh,
                                                                        recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if not correct_size_of_pstv_region:
+            if correct_size_of_pstv_region[1]:
+                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
+                return exitstatus, None
+
+            if not correct_size_of_pstv_region[0]:
                 raise SystemExit('FRONT RECONSTRUCTION ERROR: it is not possible to initialize the front with the given distances to the front')
         sgndDist = sgndDist_k_temp
         del correct_size_of_pstv_region

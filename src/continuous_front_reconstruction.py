@@ -1823,9 +1823,14 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         cells_around_front = np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(itertools_chain_from_iterable(list_of_Fracturelists), mesh.NeiElements)))
         LS_on_cells_around_front = sgndDist_k[cells_around_front]
         if np.any(LS_on_cells_around_front == np.NaN) or  np.any(LS_on_cells_around_front > 10.**40):
-            print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band')
-            correct_size_of_pstv_region = False
-            return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
+            if np.any(sgndDist_k[mesh.Frontlist]<0):
+                print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: i make the time step failing')
+                correct_size_of_pstv_region = [False,True]
+                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None
+            else:
+                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band')
+                correct_size_of_pstv_region = [False,False]
+                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
         else:
             del cells_around_front, LS_on_cells_around_front
 
@@ -2460,7 +2465,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 newRibbon = newRibbon[np.nonzero(temp)]
                 newRibbon = np.setdiff1d(newRibbon, np.asarray(global_list_of_TIPcellsONLY))
                 global_list_of_newRibbon.extend(newRibbon.tolist())  # np
-                correct_size_of_pstv_region = True
+                correct_size_of_pstv_region = [True,False]
 
                 # compute the coordinates for the Ffront variable in the Fracture object
                 # for each cell where the front is passing you have to list the coordinates with the intersection with
