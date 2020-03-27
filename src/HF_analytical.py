@@ -226,12 +226,12 @@ def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
     if R is None and t is None:
         raise ValueError("Either radius or time must be provided!")
     elif t is None:
-        t = R ** 9 * muPrime/ (0.795934 ** 9 * Eprime * V0 ** 3)
+        t = R ** 9 * muPrime/ (0.8367 ** 9 * Eprime * V0 ** 3)
     elif R is None:
-        R = 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
+        R = 0.8367 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
 
     if required[4] == '1':
-        v = 1/9 * 0.795934 * (Eprime * V0 ** 3 / (muPrime * t **8 ))** (1 / 9)
+        v = 1/9 * 0.8367 * (Eprime * V0 ** 3 / (muPrime * t **8 ))** (1 / 9)
     else:
         v = None
 
@@ -239,7 +239,7 @@ def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
         w = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
                        delimiter=',')[1, ::] * (muPrime ** 2 * V0 ** 3 / (Eprime ** 2 * t ** 2)) ** (1 / 9)
         coords = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
-                              delimiter=',')[2, ::] * 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
+                              delimiter=',')[2, ::] * 0.8367 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
 
     else:
         w = None
@@ -248,7 +248,7 @@ def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
         p = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
                        delimiter=',')[0, ::] * (Eprime ** 2 * muPrime / t) ** (1 / 3)
         coords = genfromtxt('/Users/amoeri/Documents/PyFrac_Programms/PyFrac/SA_Solutions/MV_VertexSolution.csv',
-                              delimiter=',')[2, ::] * 0.795934 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
+                              delimiter=',')[2, ::] * 0.8367 * (Eprime * V0 ** 3 * t / muPrime) ** (1 / 9)
 
     else:
         p = None
