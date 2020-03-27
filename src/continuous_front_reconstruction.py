@@ -37,7 +37,7 @@ def distance(p1, p2):
 
 def copute_area_of_a_closed_front(xintersection,yintersection):
     # todo: remove for speed
-    if  xintersection.size !=  yintersection.size : raise SystemExit('ERROR: bad coordinate sizes')
+    if  xintersection.size !=  yintersection.size : raise SystemExit('FRONT RECONSTRUCTION ERROR: bad coordinate sizes')
 
     # use the Shoelace formula (Gauss area formula or surveyor's formula) to compute the area of a polygon
     # Performed tests:
@@ -53,22 +53,12 @@ def copute_area_of_a_closed_front(xintersection,yintersection):
                      - xintersection[0]   * yintersection[n-1])/2.
     return area
 
-def pointtolinedistance(p1, p2, p0):
+def pointtolinedistance(x0, x1, x2, y0, y1, y2):
     # USING OBJECTS: POINT
     #
     # Compute the minimum distance from a point of coordinates (x0,y0) to a the line passing through 2 points.
     # The function works only for planar problems.
-    x0, x1, x2 = [p0.x, p1.x, p2.x]
-    y0, y1, y2 = [p0.y, p1.y, p2.y]
-    mac_precision = 10 * np.finfo(float).eps
-    dist=0
-    if np.abs(x2 - x1)/np.maximum(np.abs(x2),np.abs(x1)) < mac_precision:  # the front is a vertical line
-        dist=np.abs(x0 - x1)
-    elif np.abs(y2 - y1)/np.maximum(np.abs(y2),np.abs(y1)) < mac_precision:  # the front is an horizontal line
-        dist = np.abs(y0 - y1)
-    else: #general case
-        dist = np.abs((y2-y1)*x0-(x2-x1)*y0+x2*y1-y2*x1)/distance(p1, p2)
-    return dist
+    return np.abs((y2-y1)*x0-(x2-x1)*y0+x2*y1-y2*x1)/np.sqrt((-x1 + x2)**2 + (-y1 + y2)**2)
 
 def elements(typeindex, nodeindex, connectivityedgeselem, Connectivitynodeselem, edgeORvertexID):
     # This function returns in the case:
@@ -127,7 +117,7 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
         nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
         exitstatus = True
     elif len(common) == 0:
-        #raise SystemExit('ERROR: two consecutive nodes does not belongs to a common cell')
+        #raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
         exitstatus = False
     return nodeVScommonelementtable, exitstatus
 
@@ -167,7 +157,7 @@ def ISinsideFracture(i,mesh,sgndDist_k):
     answer_on_vertexes = [hcid_mean<0, cgbi_mean<0, ibfa_mean<0, diae_mean<0]
     return answer_on_vertexes
 
-def findangle(x1, y1, x2, y2, x0, y0):
+def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
     """
     Compute the angle with respect to the horizontal direction between the segment from a point of coordinates (x0,y0)
     and orthogonal to a the line passing through 2 points. The function works only for planar problems.
@@ -184,12 +174,13 @@ def findangle(x1, y1, x2, y2, x0, y0):
     :return: angle, xintersections, yintersections
 
     """
-    mac_precision = 10*np.finfo(float).eps
-    if np.abs(x2 - x1)/np.maximum(np.abs(x2),np.abs(x1)) < mac_precision:  # the front is a vertical line
+    # ------ only for plotting purposes -----
+    dist_p1p2 = distance(Point(0,x1,y1),Point(0,x2,y2))
+    if np.abs(x2 - x1)/dist_p1p2 < mac_precision/1000:  # the front is a vertical line
         x = x2
         y = y0
         angle = 0.
-    elif np.abs(y2 - y1)/np.maximum(np.abs(y2),np.abs(y1)) < mac_precision:  # the front is an horizontal line
+    elif np.abs(y2 - y1)/dist_p1p2 < mac_precision/1000:  # the front is an horizontal line
         angle = np.pi/2
         x = x0
         y = y2
@@ -201,9 +192,17 @@ def findangle(x1, y1, x2, y2, x0, y0):
         q2 = y0 + x0 / m
         x = (q2 - q1) * m / (m * m + 1)
         y = m * x + q1
-        angle = np.arctan(np.abs((y-y0))/np.abs((x-x0)))
+        # angle = np.arctan(np.abs((y-y0))/np.abs((x-x0))) naive way of computing the angle
+    # ---------------------------------------------------
 
-    return angle, x, y
+    # here we use directly points 1 and 2 to find the angle instead of finding the intersection between the normal from a point to the
+    # front and then computing the angle
+
+    if y2!=y1:
+        dx_over_dy =  np.abs((x2-x1))/np.abs((y2-y1))
+        return np.arctan(dx_over_dy), x, y
+    else:
+        return np.pi/2, x0, y2
 
 def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None):
         #fig = None
@@ -330,9 +329,10 @@ def get_fictitius_cell_names(index_to_output,fictitius_cells, NeiElements):
     c = NeiElements[fictitius_cells, right_elem]
     b = NeiElements[fictitius_cells + 1, top_elem]
     full_matrix=np.column_stack((fictitius_cells, c, b, a))
-    row_idx=np.arange(0,full_matrix.shape[0],1,dtype=int)
-    # very nice peace of code below: I am randoimly specific positions from the matrix
-    return full_matrix[[row_idx[None,:],index_to_output.transpose()]]
+    to_return = []
+    for i in range(index_to_output.size):
+        to_return.append(full_matrix[i,index_to_output[i]])
+    return np.asarray([to_return])
 
 def get_fictitius_cell_all_names(fictitius_cells, NeiElements):
     """
@@ -453,7 +453,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         if i_indexes_of_fictitius_cells.size < 1:
             raise FileNotFoundError
     except FileNotFoundError:
-        print("ERROR: The front does not exist")
+        print("FRONT RECONSTRUCTION ERROR: The front does not exist")
 
 
     """
@@ -570,7 +570,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
     #     if np.setdiff1d(anularegion[i_indexes_of_fictitius_cells],np.concatenate((anularegion[i_indexes_of_TYPE_1_cells], anularegion[i_indexes_of_TYPE_2_cells], anularegion[i_indexes_of_TYPE_3_cells], anularegion[i_indexes_of_TYPE_4_cells]))).size > 0:
     #         raise FileNotFoundError
     # except FileNotFoundError:
-    #     print("ERROR: this function has an error")
+    #     print("FRONT RECONSTRUCTION ERROR: this function has an error")
 
     # make dictionaries:
     i_1_2_3_4_FC_type = dict(zip(anularegion[i_indexes_of_TYPE_1_cells].astype(str).tolist(), np.ones(i_indexes_of_TYPE_1_cells.size).astype(int).tolist()))
@@ -838,8 +838,13 @@ def find_edge_ID(xCandidate,xgrid,yCandidate,ygrid,mesh,i):
     IDs0, IDs1 = get_fictitius_cell_specific_names("left right", i, mesh.NeiElements)
     row_idx = np.arange(0, x_position.shape[0], 1, dtype=int)
     # very nice peace of code below: I am randoimly specific positions from the matrix
-    IDs0 = IDs0[[row_idx[None, :], x_position]].transpose()
-    IDs1 = IDs1[[row_idx[None, :], x_position]].transpose()
+    list_temp_0=[]
+    list_temp_1 = []
+    for j in range(row_idx.size):
+        list_temp_0.append(IDs0[j,x_position[j]])
+        list_temp_1.append(IDs1[j,x_position[j]])
+    IDs0 = np.asarray([list_temp_0]).transpose()
+    IDs1 = np.asarray([list_temp_1]).transpose()
     edge_x = []
     for j in range(IDs0.size):
         edge_x.append(np.intersect1d(mesh.Connectivityelemedges[IDs0[j]], mesh.Connectivityelemedges[IDs1[j]],
@@ -852,8 +857,13 @@ def find_edge_ID(xCandidate,xgrid,yCandidate,ygrid,mesh,i):
     IDs0, IDs1 = get_fictitius_cell_specific_names("bottom top", i, mesh.NeiElements)
     row_idx = np.arange(0, y_position.shape[0], 1, dtype=int)
     # very nice peace of code below: I am randoimly specific positions from the matrix
-    IDs0 = IDs0[[row_idx[None, :], y_position]].transpose()
-    IDs1 = IDs1[[row_idx[None, :], y_position]].transpose()
+    list_temp_0=[]
+    list_temp_1 = []
+    for j in range(row_idx.size):
+        list_temp_0.append(IDs0[j,y_position[j]])
+        list_temp_1.append(IDs1[j, y_position[j]])
+    IDs0 = np.asarray([list_temp_0]).transpose()
+    IDs1 = np.asarray([list_temp_1]).transpose()
     edge_y = []
     for j in range(IDs0.size):
         edge_y.append(np.intersect1d(mesh.Connectivityelemedges[IDs0[j]], mesh.Connectivityelemedges[IDs1[j]],
@@ -900,9 +910,7 @@ def find_xy_intersections_type3_case_2_intersections(return_info, indexesFC_T3_2
 def check_if_point_inside_cell(xORy_grid,xORy_Candidate,hx_OR_hy,mac_precision):
     xORy_max = xORy_grid + hx_OR_hy * .5
     xORy_min = xORy_grid - hx_OR_hy * .5
-    a=np.max(np.column_stack((np.abs(xORy_Candidate), np.abs(xORy_max), np.ones(xORy_max.size))), axis=1)
-    b=np.max(np.column_stack((np.abs(xORy_Candidate), np.abs(xORy_min), np.ones(xORy_min.size))), axis=1)
-    return ((xORy_Candidate - xORy_max) / a <= mac_precision ) * ((xORy_Candidate - xORy_min) / b >= -mac_precision )
+    return (((xORy_Candidate - xORy_max) / hx_OR_hy) <= mac_precision/10000 ) * (((xORy_Candidate - xORy_min) / hx_OR_hy) >= -mac_precision/10000 )
 
 def reorder_intersections(Fracturelist,
                           xCandidate_2_inter,
@@ -1067,7 +1075,7 @@ def find_xy_intersections_type3_case_0_1_2_intersections(    indexesFC_T3_0_1_2_
     # check if the steps before have been done correctly
     if is_X_inside_the_cell_Answer.size > 0:
         if is_X_inside_the_cell_Answer.max() > 1:
-            raise SystemExit('ERROR: the processing of the cells is not correct')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: the processing of the cells is not correct')
 
 
     # processing the case of single intersection
@@ -1159,7 +1167,7 @@ def find_xy_intersections_type1( indexesFC_T1_1_2_intersections,
     # check if the steps before have been done correctly
     if is_X_inside_the_cell_Answer.size > 0:
         if is_X_inside_the_cell_Answer.max() > 1:
-            raise SystemExit('ERROR: the processing of the cells is not correct')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: the processing of the cells is not correct')
 
 
     # processing the case of single intersection
@@ -1545,7 +1553,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
             orientation = define_orientation_type3OR4("3",current_cell_name, mesh, sgndDist_k)
         elif FC_type == 4:
             orientation = define_orientation_type3OR4("4", current_cell_name, mesh, sgndDist_k)
-        else: raise SystemExit('Error: Unknown cell type')
+        else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Unknown cell type')
 
         if orientation == 0:
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][2])] = mesh.NeiElements[current_cell_name][0]
@@ -1559,7 +1567,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
         elif orientation == 3:
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][0])] = mesh.NeiElements[current_cell_name][3]
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][3])] = mesh.NeiElements[current_cell_name][0]
-        else: raise SystemExit('Error: Wrong orientation')
+        else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Wrong orientation')
 
     try:
         if str(previous_cell_name) not in dict_of_possibilities.keys():
@@ -1567,7 +1575,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
         else:
             return dict_of_possibilities[str(previous_cell_name)]
     except FileNotFoundError:
-        print("ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
+        print("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
     """
@@ -1594,7 +1602,7 @@ def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
             next_cell_name = mesh.NeiElements[first_cell_name][2]
         else:
             next_cell_name = mesh.NeiElements[first_cell_name][3]
-    else: raise SystemExit('Error: Unknown cell type')
+    else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Unknown cell type')
     return next_cell_name
 
 from itertools import chain
@@ -1608,7 +1616,7 @@ def itertools_chain_from_iterable(lsts):
     try :
       to_be_returned =list(chain.from_iterable(lsts))
     except:
-      print("ERROR: The list contains an element not between square brakets")
+      print("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
     return to_be_returned
 
 def append_to_typelists(cell_index,cell_type,type1,type2,type3,type4):
@@ -1622,7 +1630,7 @@ def append_to_typelists(cell_index,cell_type,type1,type2,type3,type4):
         type4.append(cell_index)
     return type1,type2,type3,type4
 
-def is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision):
+def is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision, area_of_a_cell):
     #
     # This function answer to the question:
     # is the point inside a triangle?
@@ -1635,21 +1643,27 @@ def is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision):
     T3y = np.asarray([p_center.y,p2.y,p_zero_vertex.y])
     Tx = np.asarray([p1.x,p2.x,p_zero_vertex.x])
     Ty = np.asarray([p1.y,p2.y,p_zero_vertex.y])
-    if    copute_area_of_a_closed_front(T1x, T1y) \
-        + copute_area_of_a_closed_front(T2x, T2y) \
-        + copute_area_of_a_closed_front(T3x, T3y) \
-        - copute_area_of_a_closed_front(Tx, Ty) < mac_precision:
+    if    (copute_area_of_a_closed_front(T1x, T1y)
+        + copute_area_of_a_closed_front(T2x, T2y)
+        + copute_area_of_a_closed_front(T3x, T3y)
+        - copute_area_of_a_closed_front(Tx, Ty) )/area_of_a_cell < mac_precision:
         return True
     else:
         return False
 
-def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_precision):
+def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_precision,area_of_a_cell,zero_level_set_value):
     # find the distance from the cell center to the front
-    distance_center_to_front = pointtolinedistance(p1, p2, p_center)
+    p1x=p1.x
+    p1y=p1.y
+    p2x=p2.x
+    p2y=p2.y
+    p0x=p_center.x
+    p0y=p_center.y
+    distance_center_to_front = pointtolinedistance(p0x, p1x, p2x, p0y, p1y, p2y)
 
     # we do not allow to have LS == 0
     if distance_center_to_front == 0 :
-        distance_center_to_front = -mac_precision
+        distance_center_to_front = -zero_level_set_value
     else :
         """
         Now we want to understand if the sign of the LS at the cell center is positive or negative.
@@ -1658,7 +1672,7 @@ def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_p
         that is made by considering the zero vertex and the two points of intersection of the front with the cell. 
         If it is true, then the cell center is inside the fracture, otherwise it is outside
         """
-        if is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision):
+        if is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision, area_of_a_cell):
             sgndDist_k[p_center.name] = - distance_center_to_front
         else:
             sgndDist_k[p_center.name] = + distance_center_to_front
@@ -1686,32 +1700,18 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
         recompute_front = False
         float_precision = np.float64
-        integer_precision = int
-        mac_precision = 10*np.finfo(float).eps
-        """
-        a := diagnal of the mesh
-        b := min size of the front in the cell
-        b/a := min_ratio_front_and_edge_size = 0.01
-                         ___|_______|__   
-                            |      /|
-                            |     / |
-                            |  a /  |
-                            |   /   |
-                            |  /    |
-                            | /    b/
-                         ___|/_____/|___
-                            |       |   
-        """
-        min_ratio_front_and_edge_size = 0.01
+        mac_precision = 100*np.sqrt(np.finfo(float).eps)
+        zero_level_set_value = np.minimum(mesh.hx,mesh.hy)/1000.
         area_of_a_cell = mesh.hx * mesh.hy
 
+
         """
-        0) - Set all the LS==0 to -mac_precision
+        0) - Set all the LS==0 to -zero_level_set_value
         In this way we avoid to deal with the situations where the front is crossing exactly a vertex of an i     
         """
         zerovertexes = np.where(sgndDist_k == 0)[0]
         if len(zerovertexes) > 0:
-            sgndDist_k[zerovertexes] = -mac_precision
+            sgndDist_k[zerovertexes] = -zero_level_set_value
         del zerovertexes
 
 
@@ -1798,12 +1798,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     all_cells_of_all_FC_of_this_small_fracture = np.unique(
                         np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                     index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture] > 0)[0]
-                    sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -mac_precision
+                    sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -zero_level_set_value
                     del index_of_positives, all_cells_of_all_FC_of_this_small_fracture
             if len(list_of_Fracturelists)<1:
-                raise SystemExit('ERROR: not valid fractures have been found! Rememnber that you could have several fractures of too small size to be tracked')
+                raise SystemExit('FRONT RECONSTRUCTION ERROR: not valid fractures have been found! Rememnber that you could have several fractures of too small size to be tracked')
         else :
-            raise SystemExit('ERROR: not enough cells to define evene one fracture front!')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: not enough cells to define evene one fracture front!')
 
         del dict_FC_names, next_cell_name, previous_cell_name, Args, Fracturelist, Cells_type_1_list, Cells_type_2_list, Cells_type_3_list, Cells_type_4_list
         del NofCells_explored, NofCells_to_explore, first_cell_name, dict_Ribbon,  i_1_2_3_4_FC_type
@@ -1834,8 +1834,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             to be output at the end:
             """
 
-            list_of_xintersection_for_all_closed_paths = []
-            list_of_yintersection_for_all_closed_paths = []
+            list_of_xintersections_for_all_closed_paths = []
+            list_of_yintersections_for_all_closed_paths = []
             list_of_typeindex_for_all_closed_paths = []
             list_of_edgeORvertexID_for_all_closed_paths = []
 
@@ -1866,7 +1866,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
                 if len(indexesFC_TYPE_2) > 0:
                     #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
-                    raise SystemExit('ERROR: type 2 to be tested')
+                    raise SystemExit('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
 
                 del indexesFC_TYPE_1, indexesFC_TYPE_2, indexesFC_TYPE_3, indexesFC_TYPE_4, Args
                 """
@@ -1897,20 +1897,20 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     # set the level set of all the positive cells in fracture list to be positive
                     all_cells_of_all_FC_of_this_small_fracture = np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                     index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture]>0)[0]
-                    sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -mac_precision
+                    sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -zero_level_set_value
                     del index_of_positives, all_cells_of_all_FC_of_this_small_fracture
                     recompute_front = True
                 else :
-                    list_of_xintersection_for_all_closed_paths.append(xintersection)
-                    list_of_yintersection_for_all_closed_paths.append(yintersection)
+                    list_of_xintersections_for_all_closed_paths.append(xintersection)
+                    list_of_yintersections_for_all_closed_paths.append(yintersection)
                     list_of_typeindex_for_all_closed_paths.append(typeindex)
                     list_of_edgeORvertexID_for_all_closed_paths.append(edgeORvertexID)
 
 
             # plot reconstructed front
-            # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersection_for_all_closed_paths[0], list_of_yintersection_for_all_closed_paths[0], fig=None)
-            # for j in range(len(list_of_xintersection_for_all_closed_paths)):
-            #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersection_for_all_closed_paths[j], list_of_yintersection_for_all_closed_paths[j], fig1)
+            # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersection_for_all_closed_paths[0], fig=None)
+            # for j in range(len(list_of_xintersections_for_all_closed_paths)):
+            #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[j], list_of_yintersection_for_all_closed_paths[j], fig1)
             # del j, fig1
 
             global_list_of_TIPcells = []
@@ -1927,8 +1927,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if not recompute_front:
                 for j in range(len(list_of_Fracturelists)):
 
-                    xintersection  = list_of_xintersection_for_all_closed_paths[j]
-                    yintersection  = list_of_yintersection_for_all_closed_paths[j]
+                    xintersection  = list_of_xintersections_for_all_closed_paths[j]
+                    yintersection  = list_of_yintersections_for_all_closed_paths[j]
                     typeindex      = list_of_typeindex_for_all_closed_paths[j]
                     edgeORvertexID = list_of_edgeORvertexID_for_all_closed_paths[j]
 
@@ -1962,7 +1962,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             del typeindex[value-jjj]
                             del edgeORvertexID[value-jjj]
                         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                        print("deleted "+str(repeated_indicies.size)+" points")
+                        print("FRONT RECONSTRUCTION MESSAGE: deleted "+str(repeated_indicies.size)+" points")
                         del jjj, value, indicies_of_repeated_in_edges_indexes, repeated_indicies, edges_indexes
 
                     """
@@ -1993,11 +1993,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         column=0
                         nodeVScommonelementtable, exitstatus=filltable(nodeVScommonelementtable,nodeindex,commonbackward,sgndDist_k,column)
                         if not exitstatus:
-                            raise SystemExit('ERROR: two consecutive nodes does not belongs to a common cell')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
                         column=1
                         nodeVScommonelementtable, exitstatus=filltable(nodeVScommonelementtable,nodeindex,commonforward,sgndDist_k,column)
                         if not exitstatus:
-                            raise SystemExit('ERROR: two consecutive nodes does not belongs to a common cell')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
 
                     listofTIPcells = []
                     # remove the nodes in the cells with more than 2 nodes and keep the first and the last node
@@ -2099,6 +2099,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         listofTIPcells.append(nodeVScommonelementtable[nodeindex][0])
                     # del n, jump, nodeindex, counter
 
+                    # after removing the points on the same edge, update the global list
+                    list_of_xintersections_for_all_closed_paths[j] = xintersection
+                    list_of_yintersections_for_all_closed_paths[j] = yintersection
+
                     # In principle the following check should be activated only if the front is
                     # approaching the same tip cell. The strategy is to set these shared tip cells to be negative and re-launch the code
                     # At this stage if we find duplicated cells in the tip cells, than that means we should
@@ -2113,9 +2117,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     if dup.size > 1:
                         recompute_front = True
                         # set the repeated cells artificially inside the fracture
-                        print("- Recomputing the fracture front because one or more coalescing point have been found")
-                        print("set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
-                        sgndDist_k[dup] = -mac_precision
+                        print("FRONT RECONSTRUCTION MESSAGE: Recomputing the fracture front because one or more coalescing point have been found")
+                        print("FRONT RECONSTRUCTION MESSAGE: set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
+                        sgndDist_k[dup] = -zero_level_set_value
                         break  # break here
 
                     """
@@ -2137,24 +2141,25 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         localvertexID = []
                         localdistances = []
                         localvertexpositionwithinthecell = []
-                        p = Point(0,0.,0.)
                         i=listofTIPcells[nodeindexp1]
                         # check the vertexes if they are inside or outside of the fracture
                         answer_on_vertexes = ISinsideFracture(i, mesh, sgndDist_k)
                         for jj in range(0,4):
                             if answer_on_vertexes[jj]: # if the vertex is inside the fracture
-                                p.name = mesh.Connectivity[i][jj]
-                                p.x = mesh.VertexCoor[p.name][0]
-                                p.y = mesh.VertexCoor[p.name][1]
-                                localvertexID.append(p.name)
+                                p0name = mesh.Connectivity[i][jj]
+                                p0x = mesh.VertexCoor[p0name][0]
+                                p0y = mesh.VertexCoor[p0name][1]
+                                localvertexID.append(p0name)
                                 localvertexpositionwithinthecell.append(jj)
-                                p1 = Point(0,xintersection[nodeindex], yintersection[nodeindex])
-                                p2 = Point(0,xintersection[nodeindexp1], yintersection[nodeindexp1])
-                                localdistances.append(pointtolinedistance(p1, p2, p)) #compute the distance from the vertex to the front
+                                p1x = xintersection[nodeindex]
+                                p1y = yintersection[nodeindex]
+                                p2x = xintersection[nodeindexp1]
+                                p2y = yintersection[nodeindexp1]
+                                localdistances.append(pointtolinedistance(p0x, p1x, p2x, p0y, p1y, p2y)) #compute the distance from the vertex to the front
 
                         # take the largest distance from the front
                         if len(localdistances)==0:
-                            raise SystemExit('ERROR: there are no nodes in the given tip cell that are inside the fracture')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: there are no nodes in the given tip cell that are inside the fracture')
                         index = np.argmax(np.asarray(localdistances)) # compute the index of the point with the maximun distance to the front
                         if index.size>1: # if you have two nodes that have the same distance to the front and are inside thake the first
                             index = index[0]
@@ -2170,7 +2175,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         # compute the angle
                         x = mesh.VertexCoor[localvertexID[index]][0] # x coordinate of the zero vertex
                         y = mesh.VertexCoor[localvertexID[index]][1] # y coordinate of the zero vertex
-                        [angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex], xintersection[nodeindexp1], yintersection[nodeindexp1], x, y)
+                        [angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex], xintersection[nodeindexp1], yintersection[nodeindexp1], x, y,mac_precision)
                         angles[nodeindexp1] = angle
                         #[angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex],
                         #                                xintersection[nodeindexp1], yintersection[nodeindexp1], mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])  #<--------- IT CAN BE REMOVED, IT IS ONLY FOR ONE POSSIBLE LOCAL DEBUGGING
@@ -2179,7 +2184,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             p_center = Point(i, mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])
                             p1 = Point(2, xintersection[nodeindex], yintersection[nodeindex])
                             p2 = Point(3, xintersection[nodeindexp1], yintersection[nodeindexp1])
-                            sgndDist_k_new = recompute_LS_at_tip_cells(sgndDist_k_new, p_zero_vertex, p_center,p1,p2, mac_precision)
+                            sgndDist_k_new = recompute_LS_at_tip_cells(sgndDist_k_new, p_zero_vertex, p_center,p1,p2, mac_precision,area_of_a_cell,zero_level_set_value)
                         xintersectionsfromzerovertex.append(xint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
                         yintersectionsfromzerovertex.append(yint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
 
@@ -2192,7 +2197,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
 
                     if len(xintersection)==0:
-                        raise SystemExit('ERROR: front not reconstructed')
+                        raise SystemExit('FRONT RECONSTRUCTION ERROR: front not reconstructed')
 
                     # A = np.full(mesh.NumberOfElts, np.nan)
                     # A[anularegion] = sgndDist_k[anularegion]
@@ -2315,7 +2320,14 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         fully traversed cells. We need to really to define the level set in the cells where we set -machine precision
                         """
                         # level set known and unknown, cell names where the LS is known,cracked elements (including tip), mesh , empty, Specific cells that I need inwards
-                        SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, [], negative_cells)
+
+                        #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, negative_cells, None, True)
+
+                        sgndDist_k =  1e50 * np.ones((mesh.NumberOfElts,), float)
+                        sgndDist_k[global_list_of_TIPcellsONLY] = original_sgndDist_k[global_list_of_TIPcellsONLY]
+                        SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, np.setdiff1d(anularegion,negative_cells), negative_cells)
+                        #delta_sgndDist_k = sgndDist_k - original_sgndDist_k
+
                         # Usage of SolveFMM:
                         # 1st arg: vector with the LS value everywhere
                         # 2nd arg: list of positions (or cell names) where the LS is KNOWN => it should be a set of closed fronts!
@@ -2382,7 +2394,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         elif dLSdy != 0. and dLSdx != 0:
                             fullyfractured_angle.append(np.arctan(np.abs(dLSdy) / np.abs(dLSdx)))
                         else:
-                            raise SystemExit('ERROR minimum of the function has been found, not expected')
+                            raise SystemExit('FRONT RECONSTRUCTION ERROR: minimum of the function has been found, not expected')
 
                     # finally append these informations to what computed before
 
@@ -2415,8 +2427,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     # needed. In the next front reconstruction we will propagate inward the level set from the tip cells
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
                     # set the repeated cells artificially inside the fracture
-                    print("set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
-                    sgndDist_k[dup]=-mac_precision         #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, dup, None, True)
+                    print("FRONT RECONSTRUCTION MESSAGE: set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
+                    sgndDist_k[dup]=-zero_level_set_value         #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, dup, None, True)
                 else: recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
 
             if recompute_front:
@@ -2436,7 +2448,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                  global_list_of_newRibbon,
                  global_list_of_vertexpositionwithinthecell,
                  global_list_of_vertexpositionwithinthecellTIPcellsONLY,
-                 correct_size_of_pstv_region,sgndDist_k] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+                 correct_size_of_pstv_region,
+                 sgndDist_k, Ffront] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
             else:
                 # find the new ribbon cells
                 global_list_of_newRibbon = []
@@ -2448,6 +2461,31 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 global_list_of_newRibbon.extend(newRibbon.tolist())  # np
                 correct_size_of_pstv_region = True
 
+                # compute the coordinates for the Ffront variable in the Fracture object
+                # for each cell where the front is passing you have to list the coordinates with the intersection with
+                # the first edge and the second one
+                xinters4all_closed_paths_1 = []
+                xinters4all_closed_paths_2 = []
+                yinters4all_closed_paths_1 = []
+                yinters4all_closed_paths_2 = []
+                for jj in range(len(list_of_xintersections_for_all_closed_paths)):
+                    xintersection = list_of_xintersections_for_all_closed_paths[jj]
+                    yintersection = list_of_yintersections_for_all_closed_paths[jj]
+                    xintersection.append(xintersection[0]) # close the front
+                    yintersection.append(yintersection[0]) # close the front
+                    xinters4all_closed_paths_1.append(xintersection[0:-1])
+                    xinters4all_closed_paths_2.append(xintersection[1:])
+                    yinters4all_closed_paths_1.append(yintersection[0:-1])
+                    yinters4all_closed_paths_2.append(yintersection[1:])
+                xinters4all_closed_paths_1 = itertools_chain_from_iterable(xinters4all_closed_paths_1)
+                xinters4all_closed_paths_2 = itertools_chain_from_iterable(xinters4all_closed_paths_2)
+                yinters4all_closed_paths_1 = itertools_chain_from_iterable(yinters4all_closed_paths_1)
+                yinters4all_closed_paths_2 = itertools_chain_from_iterable(yinters4all_closed_paths_2)
+                Ffront = np.column_stack((xinters4all_closed_paths_1,
+                                          yinters4all_closed_paths_1,
+                                          xinters4all_closed_paths_2,
+                                          yinters4all_closed_paths_2))
+
             return \
                 np.asarray(global_list_of_TIPcells),\
                 np.asarray(global_list_of_TIPcellsONLY), \
@@ -2455,12 +2493,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 np.asarray(global_list_of_angles), \
                 CellStatusNew, \
                 np.asarray(global_list_of_newRibbon), \
-                global_list_of_vertexpositionwithinthecell, \
+                np.asarray(global_list_of_vertexpositionwithinthecell),\
                 np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
                 correct_size_of_pstv_region,\
-                sgndDist_k
+                sgndDist_k, Ffront
 
-def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrVertx_k, mesh):
+def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, mesh):
 
         EltChannel_k = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcells)
         EltTip_k = listofTIPcells
@@ -2471,7 +2509,7 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrV
         # K[listofTIPcells] = 2
         # plot_as_matrix(K, mesh)
         if np.unique(EltCrack_k).size != EltCrack_k.size:
-            raise SystemExit('ERROR: the front is entering more than 1 time the same cell')
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: the front is entering more than 1 time the same cell')
         EltRibbon_k = newRibbon
 
         # Cells status list store the status of all the cells in the domain
@@ -2483,7 +2521,7 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, zrV
         # from utility import plot_as_matrix
         # K = np.zeros((mesh.NumberOfElts,), )
         # plot_as_matrix(CellStatus_k, mesh)
-        return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, zrVertx_k, CellStatus_k
+        return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, CellStatus_k
 
 # A = np.full(mesh.NumberOfElts, np.nan)
 # A[anularegion] = sgndDist_k[anularegion]

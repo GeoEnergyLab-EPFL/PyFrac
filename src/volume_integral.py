@@ -65,6 +65,7 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
             return M0, M1
 
         if w < -1e-15:
+            print('Warning: Negative width encountered in volume integral')
             w = abs(w)
 
     if Vel < 1e-6:
@@ -98,6 +99,8 @@ def VolumeTriangle(dist, *param):
 
     regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
+    if stagnant: regime = 'U1'
+
     if regime == 'A':
         return dist ** 2 * em / 2
 
@@ -127,9 +130,8 @@ def VolumeTriangle(dist, *param):
                                     Cbar * muPrime / Eprime) ** 0.25 * em * Vel ** 0.125 * dist ** (21 / 8)
 
     elif regime == 'U' or regime == 'U1':
-        if Cbar == 0 and Kprime == 0: # if fully viscosity dominated
+        if Cbar == 0 and Kprime == 0 and not stagnant: # if fully viscosity dominated
             return 0.7081526678 * (Vel * muPrime / Eprime) ** (1 / 3) * em * dist ** (8 / 3)
-
         (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime)
         return em * (dist * M0 - M1)
 
@@ -154,6 +156,8 @@ def Area(dist, *param):
     used in case of 0 or 90 degree angle; can be used for 1d case"""
 
     regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
+
+    if stagnant: regime = 'U1'
 
     if regime == 'A':
         return dist
@@ -184,7 +188,7 @@ def Area(dist, *param):
         13 / 8)
 
     elif regime == 'U' or regime == 'U1':
-        if Cbar == 0 and Kprime == 0:  # if fully viscosity dominated
+        if Cbar == 0 and Kprime == 0 and not stagnant:  # if fully viscosity dominated
             return 1.8884071141 * (Vel * muPrime / Eprime) ** (1 / 3) * dist ** (5 / 3)
         (M0, M1) = MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime)
         return M0
@@ -287,7 +291,9 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
     integral = np.zeros((len(l),), float)
     for i in range(0, len(l)):
 
-        m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
+        if alpha[i] != 0:
+            m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
+        else : m = np.inf
         # packing parameters to pass
         param_pack = (function, Kprime[i], Eprime[i], muPrimeTip[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
                       arrival_t[i], m, t_lstTS, dt)

@@ -127,10 +127,11 @@ class Fracture:
 
         self.EltChannel, self.EltTip, self.EltCrack, \
         self.EltRibbon, self.ZeroVertex, self.CellStatus, \
-        self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,
+        self.l, self.alpha, self.FillF, self.sgndDist, self.Ffront = generate_footprint(self.mesh,
                                                                         surv_cells,
                                                                         inner_cells,
-                                                                        surv_dist)
+                                                                        surv_dist,
+                                                                        simulProp.projMethod)
         # for general purpose initialization
         if init_param.regime == 'static':
             self.w, self.pNet = get_width_pressure(self.mesh,
@@ -171,7 +172,8 @@ class Fracture:
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
 
-        self.process_fracture_front()
+        if simulProp.projMethod != 'LS_continousfront':
+            self.process_fracture_front()
 
         # local viscosity
         if fluid is not None:

@@ -1214,7 +1214,7 @@ def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args, relax=1.0,
+def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args,
                   PicardPerNewton=1000, perf_node=None):
     """
     Mixed Picard Newton solver for nonlinear systems.
@@ -1239,7 +1239,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
         - solk (ndarray)       -- solution at the end of iteration.
         - data (tuple)         -- any data to be returned
     """
-
+    relax = sim_prop.relaxation_factor
     solk = guess
     k = 0
     normlist = []
@@ -1461,8 +1461,7 @@ def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, I
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
-                  m_Anderson=3, perf_node=None):
+def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     """
     Anderson solver for non linear system.
 
@@ -1482,9 +1481,11 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
         - Xks[mk+1] (ndarray)  -- final solution at the end of the iterations.
         - data (tuple)         -- any data to be returned
     """
+    m_Anderson = sim_prop.Anderson_parameter
+    relax = sim_prop.relaxation_factor
 
     ## Initialization of solution vectors
-    xks = np.full((m_Anderson+1,guess.size),0.)
+    xks = np.full((m_Anderson+2,guess.size),0.)
     Fks = np.full((m_Anderson+1,guess.size),0.)
     Gks = np.full((m_Anderson+1,guess.size),0.)
 
@@ -1514,17 +1515,16 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
 
         try:
             mk = np.min([k, m_Anderson-1])  # Asses the amount of solutions available for the least square problem
-
-            (A, b, interItr, indices) = sys_fun(xks[mk+1,::], interItr, *args)
-            perfNode_linSolve = instrument_start("linear system solve", perf_node)
-            if k < m_Anderson+1:
-                Gks[mk+1,::] = np.linalg.solve(A, b)
-                Fks[mk+1,::] = Gks[mk+1,::]-xks[mk+1,::]
-            else: # Rotate as to overwrite "oldest" solution and calculate new solution
+            if k >= m_Anderson:# + 1:
+                (A, b, interItr, indices) = sys_fun(xks[mk + 2,::], interItr, *args)
                 Gks = np.roll(Gks, -1, axis=0)
-                Gks[mk+1,::] = np.linalg.solve(A, b)
                 Fks = np.roll(Fks, -1, axis=0)
-                Fks[mk+1,::] = Gks[mk+1,::]-xks[mk+1,::]
+            else:
+                (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
+            perfNode_linSolve = instrument_start("linear system solve", perf_node)
+
+            Gks[mk + 1, ::] = np.linalg.solve(A, b)
+            Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 
             ## Setting up the Least square problem of Anderson
             A_Anderson = np.transpose(Fks[:mk+1:1,::] - Fks[mk+1,::])
@@ -1535,13 +1535,11 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
             omega_s = np.append(omega_s,1.0 - np.sum(omega_s))
 
             ## Updating xk in a relaxed version
-            if k < m_Anderson + 1:
-                xks[mk+1,::] = (1-relax) * np.sum(np.transpose(np.multiply(np.transpose(xks[:mk+2,::]), omega_s)),axis=0)\
-                     + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
-            else:
+            if k >= m_Anderson:# + 1:
                 xks = np.roll(xks, -1, axis=0)
-                xks[mk+1,::] = (1-relax) * np.sum(np.transpose(np.multiply(np.transpose(xks[:mk+2,::]), omega_s)),axis=0)\
-                     + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
+
+            xks[mk + 2, ::] = (1-relax) * np.sum(np.transpose(np.multiply(np.transpose(xks[:mk+2,::]), omega_s)),axis=0)\
+                 + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
 
         except np.linalg.linalg.LinAlgError:
             print('singular matrix!')
@@ -1552,7 +1550,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
                 perf_node.linearSolve_data.append(perfNode_linSolve)
             return solk, None
         ## Check for convergency of the solution
-        converged, norm = check_covergance(xks[0,::], xks[1,::], indices, sim_prop.toleranceEHL)
+        #converged, norm = check_covergance(xks[0,::], xks[1,::], indices, sim_prop.toleranceEHL)
+        converged, norm = check_covergance(xks[mk + 1, ::], xks[mk + 2, ::], indices, sim_prop.toleranceEHL)
         normlist.append(norm)
         k = k + 1
 
@@ -1572,7 +1571,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, relax=1.0,
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
     data = interItr
-    return xks[0,::], data
+    return xks[mk + 2, ::], data
 
 
 #-----------------------------------------------------------------------------------------------------------------------

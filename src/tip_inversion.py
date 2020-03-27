@@ -299,7 +299,6 @@ def FindBracket_dist(w, Kprime, Eprime, muPrime, Cprime, DistLstTS, dt, mesh, Re
 
         cnt = 0
         mid = b[i]
-        mid_b = b[i]
         while Res_a * Res_b > 0:
             mid = (a[i] + 2 * mid) / 3  # weighted
             Res_a = ResFunc(mid, *TipAsmptargs)
@@ -385,6 +384,17 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
                             dt,
                             frac.mesh,
                             ResFunc)
+    ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
+    if any(np.isnan(a)):
+        stagnant_from_bracketing = np.argwhere(np.isnan(a))[0]
+        a = np.delete(a, stagnant_from_bracketing)
+        b = np.delete(b, stagnant_from_bracketing)
+        if not stagnant.size == 0:
+            stagnant = np.sort(np.unique(np.concatenate(stagnant, moving[stagnant_from_bracketing])))
+        else:
+            stagnant = stagnant_from_bracketing
+        moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
+    ## End of adaption
 
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
@@ -407,7 +417,23 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
         except RuntimeError:
             dist[moving[i]] = np.nan
         except ValueError:
-            dist[moving[i]] = np.nan
+            if simParmtrs.get_tipAsymptote() == 'U1':
+                print("WARNING: First order did not converged: try with zero order.")
+                try:
+                    if perfNode is None:
+                        dist[moving[i]] = brentq(TipAsym_Universal_zrthOrder_Res, a[i], b[i], TipAsmptargs)
+                    else:
+                        brentq_itr = instrument_start('Brent method', perfNode)
+                        dist[moving[i]], data = brentq(ResFunc, a[i], b[i], TipAsmptargs, full_output=True)
+                        instrument_close(perfNode, brentq_itr, None, None, data.converged, None, None)
+                        brentq_itr.iterations = data.iterations
+                        perfNode.brentMethod_data.append(brentq_itr)
+                except RuntimeError:
+                    dist[moving[i]] = np.nan
+                except ValueError:
+                    dist[moving[i]] = np.nan
+            else:
+                dist[moving[i]] = np.nan
     return dist
 
 # -----------------------------------------------------------------------------------------------------------------------
