@@ -170,7 +170,7 @@ unit_conversion = {
 
 supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                        'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                       'fluid velocity', 'fv', 'front_dist_min', 'd_min',
+                       'fluid velocity', 'fv','fluid velocity as vector field','fvvf', 'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
@@ -241,6 +241,8 @@ supported_projections ={
     'ff': ['2D_clrmap', '2D_contours', '3D'],
     'fluid velocity': ['2D_clrmap', '2D_contours', '3D'],
     'fv': ['2D_clrmap', '2D_contours', '3D'],
+    'fluid velocity as vector field': ['2D_vectorfield'],
+    'fvvf': ['2D_vectorfield'],
     'front_dist_min': ['1D'],
     'd_min': ['1D'],
     'front_dist_max': ['1D'],

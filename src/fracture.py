@@ -192,13 +192,27 @@ class Fracture:
 
         if simulProp.saveFluidFlux:
             self.fluidFlux = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
+            self.fluidFlux_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
         else:
             self.fluidFlux = None
+            self.fluidFlux_components = None
 
         if simulProp.saveFluidVel:
             self.fluidVelocity = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
+            self.fluidVelocity_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
         else:
             self.fluidVelocity = None
+            self.fluidVelocity_components = None
+
+        if simulProp.saveFluidFluxAsVector:
+            self.fluidFlux_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidFlux_components = None
+
+        if simulProp.saveFluidVelAsVector:
+            self.fluidVelocity_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidVelocity_components = None
 
         self.closed = np.array([], dtype=int)
 

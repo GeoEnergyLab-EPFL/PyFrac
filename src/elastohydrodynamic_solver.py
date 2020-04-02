@@ -1336,21 +1336,31 @@ def check_covergance(solk, solkm1, indices, tol):
     """
 
     # if delta w is zero in some cells
-    solkm1_is_0 = np.where(solkm1 == 0)[0]
-    if len(solkm1_is_0) > 0:
-        delw = solk[indices[0]]
-        delw_km1 = solkm1[indices[0]]
-        delw = np.delete(delw, solkm1_is_0)
-        delw_km1 = np.delete(delw_km1, solkm1_is_0)
-        norm_w = np.linalg.norm(abs(delw - delw_km1) / abs(delw_km1))
-    else:
-        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / abs(solkm1[indices[0]]))
+    # solkm1_is_0 = np.where(solkm1 == 0)[0]
+    # if len(solkm1_is_0) > 0:
+    #     delw = solk[indices[0]]
+    #     delw_km1 = solkm1[indices[0]]
+    #     delw = np.delete(delw, solkm1_is_0)
+    #     delw_km1 = np.delete(delw_km1, solkm1_is_0)
+    #     norm_w = np.linalg.norm(abs(delw - delw_km1) / abs(delw_km1))
+    # else:
+    #   norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / abs(solkm1[indices[0]]))
 
-    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
-    if len(indices[2]) > 0:
-        norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
-    else:
+    #norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / np.maximum(np.linalg.norm(solkm1[indices[0]]),1.))
+    norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+
+    #norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
+    #norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / np.maximum(np.linalg.norm(solkm1[indices[1]]),1.))
+    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]))
+
+    if len(indices[2]) > 0: #these are the cells with the active width constraints
+        #norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
+        #norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / np.maximum(np.linalg.norm(solkm1[indices[2]]),1.))
+        norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
+    else :
         norm_tr = 0.
+
+
     norm = (norm_w + norm_p + norm_tr) / 3
 
     converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
@@ -1416,8 +1426,13 @@ def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, I
     This function calculate fluid flux and velocity at the cell edges evaluated with the pressure calculated from the
     elasticity relation for the given fracture width and the poisoille's Law.
     """
+    """
+    remembrer the usage of NeiElements[i]->[left, right, bottom, up]
+                                             0     1      2      3
+    """
     dp = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
     (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
+    # dp = [dpdxLft , dpdxRgt, dpdyBtm, dpdyTop, dpdyLft, dpdyRgt, dpdxBtm, dpdxTop]
     dp[0, EltCrack] = dpdxLft
     dp[1, EltCrack] = dpdxRgt
     dp[2, EltCrack] = dpdyBtm
@@ -1448,15 +1463,46 @@ def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, I
     fluid_flux = np.vstack((fluid_flux, -wBtmEdge ** 3 * dpBtm / muPrime))
     fluid_flux = np.vstack((fluid_flux, -wTopEdge ** 3 * dpTop / muPrime))
 
+    #          0    ,    1   ,     2  ,    3   ,    4   ,    5   ,    6   ,    7
+    # dp = [dpdxLft , dpdxRgt, dpdyBtm, dpdyTop, dpdyLft, dpdyRgt, dpdxBtm, dpdxTop]
+
+    # fluid_flux_components = [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge, fy bottom edge, fx top edge, fy top edge]
+    #                                                      fx left edge          ,              fy left edge
+    fluid_flux_components = np.vstack((-wLftEdge ** 3 * dp[0, EltCrack] / muPrime, -wLftEdge ** 3 * dp[4, EltCrack] / muPrime))
+    #                                                      fx right edge
+    fluid_flux_components = np.vstack((fluid_flux_components, -wRgtEdge ** 3 * dp[1, EltCrack] / muPrime))
+    #                                                      fy right edge
+    fluid_flux_components = np.vstack((fluid_flux_components, -wRgtEdge ** 3 * dp[5, EltCrack] / muPrime))
+    #                                                      fx bottom edge
+    fluid_flux_components = np.vstack((fluid_flux_components, -wBtmEdge ** 3 * dp[6, EltCrack] / muPrime))
+    #                                                      fy bottom edge
+    fluid_flux_components = np.vstack((fluid_flux_components, -wBtmEdge ** 3 * dp[2, EltCrack] / muPrime))
+    #                                                      fx top edge
+    fluid_flux_components = np.vstack((fluid_flux_components, -wTopEdge ** 3 * dp[7, EltCrack] / muPrime))
+    #                                                      fy top edge
+    fluid_flux_components = np.vstack((fluid_flux_components, -wTopEdge ** 3 * dp[3, EltCrack] / muPrime))
+
+
+
     fluid_vel = np.copy(fluid_flux)
     fluid_vel[0] /= wLftEdge
     fluid_vel[1] /= wRgtEdge
     fluid_vel[2] /= wBtmEdge
     fluid_vel[3] /= wTopEdge
 
+    fluid_vel_components = np.copy(fluid_flux_components)
+    fluid_vel_components[0] /= wLftEdge
+    fluid_vel_components[1] /= wLftEdge
+    fluid_vel_components[2] /= wRgtEdge
+    fluid_vel_components[3] /= wRgtEdge
+    fluid_vel_components[4] /= wBtmEdge
+    fluid_vel_components[5] /= wBtmEdge
+    fluid_vel_components[6] /= wTopEdge
+    fluid_vel_components[7] /= wTopEdge
+
     Rey_number = abs(4 / 3 * density * fluid_flux / muPrime * 12)
 
-    return abs(fluid_flux), abs(fluid_vel), Rey_number
+    return abs(fluid_flux), abs(fluid_vel), Rey_number, fluid_flux_components, fluid_vel_components
 
 #-----------------------------------------------------------------------------------------------------------------------
 

@@ -666,6 +666,8 @@ class SimulationProperties:
         self.saveReynNumb = simul_param.save_ReyNumb
         self.saveFluidFlux = simul_param.save_fluid_flux
         self.saveFluidVel = simul_param.save_fluid_vel
+        self.saveFluidFluxAsVector = simul_param.save_fluid_flux_as_vector
+        self.saveFluidVelAsVector = simul_param.save_fluid_vel_as_vector
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.projMethod = simul_param.proj_method
