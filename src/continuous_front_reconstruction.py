@@ -538,8 +538,6 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
                       np.greater(LS_a_times_LS_c, 0.).astype(int) +
                       np.greater(LS_b_times_LS_i, 0.).astype(int) ) == 4)[0]]
 
-        if i_indexes_of_TYPE_2_cells.size>0:
-            print("here")
         """
         Whe define the fictitius cell types:
         
@@ -1892,6 +1890,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 del dict_FC_names[next(iter(dict_FC_names))]
                 NofCells_explored += 1
 
+                # todo: in case of cells of type 2 this have to be reviewed: do not delete cell of type 2
                 next_cell_name = get_next_cell_name_from_first(first_cell_name,i_1_2_3_4_FC_type[str(first_cell_name)],mesh,sgndDist_k)
 
                 while next_cell_name != first_cell_name :
@@ -1913,7 +1912,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         cell_type = i_1_2_3_4_FC_type[str(next_cell_name)]
 
                     [Cells_type_1_list, Cells_type_2_list, Cells_type_3_list, Cells_type_4_list] = append_to_typelists(len(Fracturelist) - 1, cell_type, Cells_type_1_list, Cells_type_2_list, Cells_type_3_list, Cells_type_4_list)
-                    if str(next_cell_name) in dict_FC_names.keys():
+                    if str(next_cell_name) in dict_FC_names.keys() and cell_type != 2 :
                         del dict_FC_names[str(next_cell_name)]
                     previous_cell_name = Fracturelist[-2] #second last cell in the list and the one where we are coming
                     next_cell_name = get_next_cell_name(next_cell_name,previous_cell_name,cell_type,Args)

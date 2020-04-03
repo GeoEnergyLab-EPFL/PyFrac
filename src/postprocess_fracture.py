@@ -221,8 +221,38 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list.append(i.fluidVelocity[edge])
                 time_srs.append(i.time)
-            elif i.fluidFlux is not None:
+            elif i.fluidVelocity is not None:
                 variable_list.append(np.mean(i.fluidVelocity, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+
+    elif variable == 'fluid flux as vector field' or variable == 'ffvf':
+        if fracture_list[-1].fluidFlux_components is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidFlux_components[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux_components is not None:
+                variable_list.append(i.fluidFlux_components)
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts,), np.nan))
+
+    elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
+        if fracture_list[-1].fluidVelocity_components is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidVelocity_components[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux_components is not None:
+                variable_list.append(i.fluidVelocity_components)
                 time_srs.append(i.time)
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))

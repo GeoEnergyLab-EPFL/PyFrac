@@ -1418,10 +1418,23 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
     return dpdxLft, dpdxRgt, dpdyBtm, dpdyTop
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+def pressure_gradient_form_pressure(w, pf, sigma0, Mesh, EltCrack, InCrack):
+    """
+    This function gives the pressure gradient at the cell edges evaluated with the pressure
+    """
+
+    dpdxLft = (pf[EltCrack] - pf[Mesh.NeiElements[EltCrack, 0]]) * InCrack[Mesh.NeiElements[EltCrack, 0]]
+    dpdxRgt = (pf[Mesh.NeiElements[EltCrack, 1]] - pf[EltCrack]) * InCrack[Mesh.NeiElements[EltCrack, 1]]
+    dpdyBtm = (pf[EltCrack] - pf[Mesh.NeiElements[EltCrack, 2]]) * InCrack[Mesh.NeiElements[EltCrack, 2]]
+    dpdyTop = (pf[Mesh.NeiElements[EltCrack, 3]] - pf[EltCrack]) * InCrack[Mesh.NeiElements[EltCrack, 3]]
+
+    return dpdxLft, dpdxRgt, dpdyBtm, dpdyTop
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, InCrack, muPrime, density):
+def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, InCrack, muPrime, density):
     """
     This function calculate fluid flux and velocity at the cell edges evaluated with the pressure calculated from the
     elasticity relation for the given fracture width and the poisoille's Law.
@@ -1431,7 +1444,7 @@ def calculate_fluid_flow_characteristics_laminar(w, C, sigma0, Mesh, EltCrack, I
                                              0     1      2      3
     """
     dp = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
-    (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack)
+    (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient_form_pressure(w, pf, sigma0, Mesh, EltCrack, InCrack)
     # dp = [dpdxLft , dpdxRgt, dpdyBtm, dpdyTop, dpdyLft, dpdyRgt, dpdxBtm, dpdxTop]
     dp[0, EltCrack] = dpdxLft
     dp[1, EltCrack] = dpdxRgt

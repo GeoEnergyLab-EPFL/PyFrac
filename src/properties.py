@@ -952,7 +952,7 @@ class LabelProperties:
             projection = '1D'
 
         if data_subset in ('whole mesh', 'wm'):
-            if projection in ('2D_clrmap', '2D_contours', '3D', '2D'):
+            if projection in ('2D_clrmap', '2D_contours', '2D_vectorfield', '3D', '2D'):
                 self.yLabel = 'meters'
                 self.xLabel = 'meters'
                 self.zLabel = var_labels[variable] + units[variable]

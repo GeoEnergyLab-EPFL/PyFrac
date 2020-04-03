@@ -154,23 +154,23 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         for i in range(len(var_val_copy)):
             var_val_copy[i] /= labels.unitConversion
 
-
-        var_value_tmp = np.copy(var_val_copy)
-        if plot_non_zero:
-            var_value_tmp = var_value_tmp[var_value_tmp != 0]
-        vmin, vmax = np.inf, -np.inf
-        for i in var_value_tmp:
+        if projection != '2D_vectorfield':
+            var_value_tmp = np.copy(var_val_copy)
             if plot_non_zero:
-                i = i[i != 0]
-            i = np.delete(i, np.where(np.isinf(i))[0])
-            i = np.delete(i, np.where(np.isnan(i))[0])
-            if not (not isinstance(i, float) and len(i) == 0):
-                if variable in ('p', 'pressure'):
-                    non_zero = np.where(abs(i) > 0)[0]
-                    i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
-                else:
-                    i_min, i_max = np.min(i), np.max(i)
-                vmin, vmax = min(vmin, i_min), max(vmax, i_max)
+                var_value_tmp = var_value_tmp[var_value_tmp != 0]
+            vmin, vmax = np.inf, -np.inf
+            for i in var_value_tmp:
+                if plot_non_zero:
+                    i = i[i != 0]
+                i = np.delete(i, np.where(np.isinf(i))[0])
+                i = np.delete(i, np.where(np.isnan(i))[0])
+                if not (not isinstance(i, float) and len(i) == 0):
+                    if variable in ('p', 'pressure'):
+                        non_zero = np.where(abs(i) > 0)[0]
+                        i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
+                    else:
+                        i_min, i_max = np.min(i), np.max(i)
+                    vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
 
     if variable in unidimensional_variables:
@@ -181,10 +181,10 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                     label=labels.legend)
 
     elif variable not in ['mesh', 'footprint']:
-
-        if plot_non_zero:
-            for indx, value in enumerate(var_val_copy):
-                remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
+        if projection != '2D_vectorfield':
+            if plot_non_zero:
+                for indx, value in enumerate(var_val_copy):
+                    remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
 
         if variable == 'surface':
             plot_prop.colorMap = 'cool'
@@ -230,6 +230,17 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                         elements=elements,
                                                         vmin=vmin,
                                                         vmax=vmax)
+        elif projection == '2D_vectorfield':
+            # fracture_list[i].EltCrack => ribbon+tip+other in crack
+            # fracture_list[i].EltChannel => ribbon+other in crack
+            elements_where_to_plot = fracture_list[i].EltCrack
+            #elements_where_to_plot = fracture_list[i].EltChannel
+            #elements_where_to_plot = np.setdiff1d(fracture_list[i].EltChannel,fracture_list[i].EltRibbon)
+            #elements_where_to_plot = np.setdiff1d(elements_where_to_plot, np.unique(np.ndarray.flatten(fracture_list[i].mesh.NeiElements[fracture_list[i].EltRibbon])))
+            fig = plot_fracture_variable_as_vector(var_val_copy[i],
+                                                      fracture_list[i].mesh,
+                                                      elements_where_to_plot,
+                                                      fig=fig)
 
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
@@ -492,6 +503,47 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def plot_fracture_variable_as_vector(var_value, mesh, Elements_to_plot, fig=None):
+
+    #todo: complete the description
+    """
+
+
+    """
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    U = np.vstack((var_value[0,Elements_to_plot], var_value[2,Elements_to_plot]))
+    U = np.vstack((U, var_value[4,Elements_to_plot]))
+    U = np.vstack((U, var_value[6,Elements_to_plot]))
+    U = np.ndarray.flatten(U)
+
+    V = np.vstack((var_value[1,Elements_to_plot], var_value[3,Elements_to_plot]))
+    V = np.vstack((V, var_value[5,Elements_to_plot]))
+    V = np.vstack((V, var_value[7,Elements_to_plot]))
+    V = np.ndarray.flatten(V)
+
+    X = np.vstack((mesh.CenterCoor[Elements_to_plot,0]-mesh.hx*0.5, mesh.CenterCoor[Elements_to_plot,0]+mesh.hx*0.5))
+    X = np.vstack((X, mesh.CenterCoor[Elements_to_plot,0]))
+    X = np.vstack((X, mesh.CenterCoor[Elements_to_plot,0]))
+    X = np.ndarray.flatten(X)
+
+    Y = np.vstack((mesh.CenterCoor[Elements_to_plot,1], mesh.CenterCoor[Elements_to_plot,1]))
+    Y = np.vstack((Y, mesh.CenterCoor[Elements_to_plot,1]-mesh.hy*0.5))
+    Y = np.vstack((Y, mesh.CenterCoor[Elements_to_plot,1]+mesh.hy*0.5))
+    Y = np.ndarray.flatten(Y)
+
+    M = np.hypot(U, V)
+
+    ax.quiver(X,Y,U,V,M,pivot='mid')
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label=None):
     """

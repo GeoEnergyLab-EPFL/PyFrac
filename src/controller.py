@@ -572,7 +572,24 @@ class Controller:
                                                                        projection='2D',
                                                                        fig=self.Figures[index],
                                                                        plot_prop=plot_prop)
+                    elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
+                        self.Figures[index] = Fr_advanced.plot_fracture(variable='mesh',
+                                                                       mat_properties=self.solid_prop,
+                                                                       projection='2D',
+                                                                       backGround_param=self.sim_prop.bckColor,
+                                                                       fig=self.Figures[index],
+                                                                       plot_prop=plot_prop)
 
+                        plot_prop.lineColor = 'k'
+                        self.Figures[index] = Fr_advanced.plot_fracture(variable='footprint',
+                                                                       projection='2D',
+                                                                       fig=self.Figures[index],
+                                                                       plot_prop=plot_prop)
+
+                        self.Figures[index] = Fr_advanced.plot_fracture(variable=plt_var,
+                                                                       projection='2D_vectorfield',
+                                                                       mat_properties=self.solid_prop,
+                                                                       fig=self.Figures[index])
                     else:
                         if self.sim_prop.plotAnalytical:
                             proj = supported_projections[plt_var][0]

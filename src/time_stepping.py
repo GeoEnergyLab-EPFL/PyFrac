@@ -282,12 +282,14 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
         if sim_properties.saveFluidVel:
             Fr_kplus1.fluidVelocity = fluidVel
+        if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
+        if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
-                                                                                          C,
+                                                                                          Fr_kplus1.pFluid,
                                                                                           mat_properties.SigmaO,
                                                                                           Fr_kplus1.mesh,
                                                                                           Fr_kplus1.EltCrack,
@@ -893,12 +895,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
         if sim_properties.saveFluidVel:
             Fr_kplus1.fluidVelocity = fluidVel
+        if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
+        if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components= calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
-                                                                                          C,
+                                                                                          Fr_kplus1.pFluid,
                                                                                           mat_properties.SigmaO,
                                                                                           Fr_kplus1.mesh,
                                                                                           Fr_kplus1.EltCrack,
@@ -1991,12 +1995,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
         if sim_properties.saveFluidVel:
             Fr_kplus1.fluidVelocity = fluidVel
+        if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
+        if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
         if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
-                                                                                          C,
+                                                                                          Fr_kplus1.pFluid,
                                                                                           mat_properties.SigmaO,
                                                                                           Fr_kplus1.mesh,
                                                                                           Fr_kplus1.EltCrack,
