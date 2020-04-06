@@ -573,6 +573,10 @@ class Controller:
                                                                        fig=self.Figures[index],
                                                                        plot_prop=plot_prop)
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
+                        if self.fluid_prop.viscosity == 0. :
+                            raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
+                        elif self.sim_prop._SimulationProperties__tipAsymptote == 'K':
+                            raise SystemExit('ERROR: if tipAsymptote == K, does not make sense to ask a plot of the fluid velocity or fluid flux')
                         self.Figures[index] = Fr_advanced.plot_fracture(variable='mesh',
                                                                        mat_properties=self.solid_prop,
                                                                        projection='2D',

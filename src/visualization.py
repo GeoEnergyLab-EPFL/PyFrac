@@ -233,10 +233,12 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         elif projection == '2D_vectorfield':
             # fracture_list[i].EltCrack => ribbon+tip+other in crack
             # fracture_list[i].EltChannel => ribbon+other in crack
-            elements_where_to_plot = fracture_list[i].EltCrack
-            #elements_where_to_plot = fracture_list[i].EltChannel
-            #elements_where_to_plot = np.setdiff1d(fracture_list[i].EltChannel,fracture_list[i].EltRibbon)
-            #elements_where_to_plot = np.setdiff1d(elements_where_to_plot, np.unique(np.ndarray.flatten(fracture_list[i].mesh.NeiElements[fracture_list[i].EltRibbon])))
+
+            # multiple options:
+            # elements_where_to_plot = fracture_list[i].EltCrack
+            elements_where_to_plot = fracture_list[i].EltChannel
+            # elements_where_to_plot = np.setdiff1d(fracture_list[i].EltChannel,fracture_list[i].EltRibbon)
+            # elements_where_to_plot = np.setdiff1d(elements_where_to_plot, np.unique(np.ndarray.flatten(fracture_list[i].mesh.NeiElements[fracture_list[i].EltRibbon])))
             fig = plot_fracture_variable_as_vector(var_val_copy[i],
                                                       fracture_list[i].mesh,
                                                       elements_where_to_plot,
@@ -504,10 +506,22 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
 #-----------------------------------------------------------------------------------------------------------------------
 
 def plot_fracture_variable_as_vector(var_value, mesh, Elements_to_plot, fig=None):
-
-    #todo: complete the description
     """
+    This function plots a given 2D vector field.
 
+    Args:
+        var_value:                      -- an array with each column having the following information:
+                                            [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge,
+                                             fy bottom edge, fx top edge, fy top edge]
+                                            note that "fx left edge" is the component along the x direction of the
+                                            vector at the left edge of the cell. The name of the cell is coincident with
+                                            the column position.
+        mesh (CartesianMesh):           -- a CartesianMesh object giving the descritization of the domain.
+        Elements_to_plot:               -- list of cell names on whose edges plot the vectors.
+        fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.
+
+    Returns:
+        (Figure):                       -- A Figure object that can be used superimpose further plots.
 
     """
 

@@ -47,11 +47,12 @@ def copute_area_of_a_closed_front(xintersection,yintersection):
     # copute_area_of_a_closed_front(np.asarray([0,2,3,0.5]),np.asarray([0,0,3,3])) == 6.75
 
     n = xintersection.size
+
     area = \
-        np.abs( np.dot(xintersection[0:n-1],yintersection[1:n]) \
-                     + xintersection[n-1] * yintersection[0] \
-              - np.dot(xintersection[1:n],  yintersection[0:(n-1)]) \
-                     - xintersection[0]   * yintersection[n-1])/2.
+    np.abs( np.dot(xintersection[0:n-1],yintersection[1:n]) \
+                 + xintersection[n-1] * yintersection[0] \
+          - np.dot(xintersection[1:n],  yintersection[0:(n-1)]) \
+                 - xintersection[0]   * yintersection[n-1])/2.
     return area
 
 def pointtolinedistance(x0, x1, x2, y0, y1, y2):
@@ -1259,14 +1260,15 @@ def process_fictitius_cells_3(indexesFC_TYPE_3,Args, x, y, typeindex,edgeORverte
 
     # find the intersections with the vertical and horizontal axes passing throug the cell center
     # 2 intersections
-    [T3_x_inters,
-     T3_y_inters,
-     T3_edgeORvertexID] = find_xy_intersections_type3_case_2_intersections("return xy",
-                                                                           indexesFC_T3_2_intersections,
-                                                                           Fracturelist,
-                                                                           mesh,
-                                                                           sgndDist_k,
-                                                                           float_precision)
+    if indexesFC_T3_2_intersections.size > 0:
+        [T3_x_inters,
+         T3_y_inters,
+         T3_edgeORvertexID] = find_xy_intersections_type3_case_2_intersections("return xy",
+                                                                               indexesFC_T3_2_intersections,
+                                                                               Fracturelist,
+                                                                               mesh,
+                                                                               sgndDist_k,
+                                                                               float_precision)
     # set the found intersections
     for j in range(indexesFC_T3_2_intersections.size):
         temp_index = indexesFC_T3_2_intersections[j]
@@ -1276,34 +1278,35 @@ def process_fictitius_cells_3(indexesFC_TYPE_3,Args, x, y, typeindex,edgeORverte
         typeindex[temp_index ] = [0,0]
 
     # 0,1,2 intersections
-    [indexesFC_T3_0_intersection_local,
-     indexesFC_T3_1_intersection_local,
-     indexesFC_T3_2_intersections_local,
-     xCandidate,yCandidate,edge_1_inters,
-     xCandidate_2_inter,yCandidate_2_inter,edge_2_inter] = find_xy_intersections_type3_case_0_1_2_intersections(indexesFC_T3_0_1_2_intersections,
-                                                                                                                Fracturelist,
-                                                                                                                mesh,sgndDist_k,float_precision,mac_precision)
-    # set the found intersections
-    for j in range(indexesFC_T3_0_intersection_local.size):
-        temp_index = indexesFC_T3_0_intersection_local[j]
-        x[temp_index ] = []
-        y[temp_index ] = []
-        edgeORvertexID[temp_index ] = []
-        typeindex[temp_index ] = []
+    if indexesFC_T3_0_1_2_intersections.size > 0:
+        [indexesFC_T3_0_intersection_local,
+         indexesFC_T3_1_intersection_local,
+         indexesFC_T3_2_intersections_local,
+         xCandidate,yCandidate,edge_1_inters,
+         xCandidate_2_inter,yCandidate_2_inter,edge_2_inter] = find_xy_intersections_type3_case_0_1_2_intersections(indexesFC_T3_0_1_2_intersections,
+                                                                                                                    Fracturelist,
+                                                                                                                    mesh,sgndDist_k,float_precision,mac_precision)
+        # set the found intersections
+        for j in range(indexesFC_T3_0_intersection_local.size):
+            temp_index = indexesFC_T3_0_intersection_local[j]
+            x[temp_index ] = []
+            y[temp_index ] = []
+            edgeORvertexID[temp_index ] = []
+            typeindex[temp_index ] = []
 
-    for j in range(indexesFC_T3_1_intersection_local.size):
-        temp_index = indexesFC_T3_1_intersection_local[j]
-        x[temp_index ] = [xCandidate[j]]
-        y[temp_index ] = [yCandidate[j]]
-        edgeORvertexID[temp_index ] = [edge_1_inters[j]]
-        typeindex[temp_index ] = [0]
+        for j in range(indexesFC_T3_1_intersection_local.size):
+            temp_index = indexesFC_T3_1_intersection_local[j]
+            x[temp_index ] = [xCandidate[j]]
+            y[temp_index ] = [yCandidate[j]]
+            edgeORvertexID[temp_index ] = [edge_1_inters[j]]
+            typeindex[temp_index ] = [0]
 
-    for j in range(indexesFC_T3_2_intersections_local.size):
-        temp_index = indexesFC_T3_2_intersections_local[j]
-        x[temp_index ] = xCandidate_2_inter[j]
-        y[temp_index ] = yCandidate_2_inter[j]
-        edgeORvertexID[temp_index ] = edge_2_inter[j]
-        typeindex[temp_index ] = [0,0]
+        for j in range(indexesFC_T3_2_intersections_local.size):
+            temp_index = indexesFC_T3_2_intersections_local[j]
+            x[temp_index ] = xCandidate_2_inter[j]
+            y[temp_index ] = yCandidate_2_inter[j]
+            edgeORvertexID[temp_index ] = edge_2_inter[j]
+            typeindex[temp_index ] = [0,0]
 
     return [ x, y, typeindex, edgeORvertexID]
 
@@ -2012,7 +2015,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             - If the area > area cell => - find the names of the positive cells
                                          - set the level set of the positive cells artificially to be -mac precision       
             """
-            closed_front_area=copute_area_of_a_closed_front(np.asarray(xintersection),np.asarray(yintersection))
+            if len(xintersection)>0:
+                closed_front_area=copute_area_of_a_closed_front(np.asarray(xintersection),np.asarray(yintersection))
+            else: closed_front_area = 0
             if closed_front_area <= area_of_a_cell*1.01:
                 print("A small front of area ="+str(100*closed_front_area/area_of_a_cell)[:4]+"% of the single cell has been deleted")
                 # set the level set of all the positive cells in fracture list to be positive
@@ -2059,14 +2064,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 """
                 new cleaning: 
                 clean only if the elements belong to the same edge
+                A and C are the corners to be deleted
+                
                      ___|__________|___
                       \\|          |//   
-                       **    in    **
+                     A **          ** D
                         \\        //
                         |\\      //|
                      ___|_**====**_|___
-                        |          |
-                        |    out   |  
+                        | B     C  |
+                        |          |  
                 """
 
                 to_be_deleted = []
@@ -2088,49 +2095,98 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                 if counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + "edge points")
+                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " edge points")
 
                 """
                 new cleaning: 
-                clean this situation
+                C is the corner to be deleted
                 
                      ___|___________|___   
                         |           |
-                        |    out    |
+                        | A         |
                       ==**          |
-                        |\\         | corner to be deleted
+                        |\\         | C
                      ___|_**=======**___
-                        |          ||
-                        |     in   || 
-                        |          **
+                        |  B       ||
+                        |          || 
+                        |          **  D
                         |           \\         
-                        |           |\\
+                        |           |\\  E
                      ___|___________|_**_
                         |           |
                 """
+                """
+                new cleaning: 
+                B is the corner to be deleted
+                This case DO NOT CONSIDER WHEN D IS NOT IN THE SAME EDGE OF C
 
+                     ___|___________|___   
+                        |           |
+                        | A         |
+                      ==**          |
+                        |\\         | C
+                     ___|_**=======**___
+                        | B        ||
+                        |          || 
+                        |          ||
+                        |          ||         
+                        |          || D
+                     ___|__________**____
+                        |          ||
+                """
                 vertex_indexes = np.where(np.asarray(typeindex) == 1)[0]
                 counter = 0
                 for jjj in range(vertex_indexes.size):
                     vijjj = vertex_indexes[jjj]-counter
                     vertex_name = edgeORvertexID[vijjj]
                     edge_name_previous_point = edgeORvertexID[vijjj-1]
-                    edge_name_next_point = edgeORvertexID[vijjj+1]
-                    if typeindex[vijjj-1] == 0 and typeindex[vijjj+1] == 0:
+                    edge_name_next_point = edgeORvertexID[(vijjj+1)%(len(edgeORvertexID))]
+                    # CASE 1 - removing the corner point
+                    if typeindex[vijjj-1] == 0 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 0:
                         edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
                         n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size
                         n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point ).size
-
                         if n1 + n2 == 2:
-                            del xintersection[vijjj - counter]
-                            del yintersection[vijjj - counter]
-                            del typeindex[vijjj - counter]
-                            del edgeORvertexID[vijjj - counter]
+                            index_to_delete = vijjj
+                            del xintersection[index_to_delete]
+                            del yintersection[index_to_delete]
+                            del typeindex[index_to_delete]
+                            del edgeORvertexID[index_to_delete]
+                            counter = counter + 1
+                    # CASE 2 - removing the edge point
+                    # previous vertex is on cell node & next vertex is on cell edge
+                    elif (typeindex[vijjj - 1] == 1 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 0):
+                        edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
+                        edge_name_previous_point = mesh.Connectivitynodesedges[edge_name_previous_point]
+                        n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size
+                        n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point ).size
+                        if n1 + n2 == 2:
+                            index_to_delete = (vijjj+1)%(len(edgeORvertexID))
+                            del xintersection[index_to_delete]
+                            del yintersection[index_to_delete]
+                            del typeindex[index_to_delete]
+                            del edgeORvertexID[index_to_delete]
+                            counter = counter + 1
+                    # previous vertex is on cell edge & next vertex is on cell node
+                    elif (typeindex[vijjj - 1] == 0 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 1) :
+                        edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
+                        edge_name_next_point = mesh.Connectivitynodesedges[edge_name_next_point]
+                        n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size
+                        n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point ).size
+                        if n1 + n2 == 2:
+                            index_to_delete = vijjj-1
+                            del xintersection[index_to_delete]
+                            del yintersection[index_to_delete]
+                            del typeindex[index_to_delete]
+                            del edgeORvertexID[index_to_delete]
                             counter = counter + 1
                 if counter > 0:
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + "corner points")
-                    del n1, n2, edges_of_the_corner_vertex
+                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " edge and corner points")
+                    del n1, n2, edges_of_the_corner_vertex, index_to_delete
                 if vertex_indexes.size > 0 : del jjj, vertex_indexes, vijjj, vertex_name, edge_name_previous_point, edge_name_next_point
+
+
+
                 """
                 new cleaning: 
                 Before going further we need to collapse to the closest mesh node all the edges of the front that are very small

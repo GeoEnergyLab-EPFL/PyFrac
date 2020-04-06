@@ -285,7 +285,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
         if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
-        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb or sim_properties.saveFluidFluxAsVector or sim_properties.saveFluidVelAsVector:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
@@ -898,7 +898,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
         if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
-        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb or sim_properties.saveFluidFluxAsVector or sim_properties.saveFluidVelAsVector:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components= calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
@@ -1998,7 +1998,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
         if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
-        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb or sim_properties.saveFluidFluxAsVector or sim_properties.saveFluidVelAsVector:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
             fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
@@ -2015,20 +2015,20 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 fflux[:, Fr_kplus1.EltCrack] = fluid_flux
                 Fr_kplus1.fluidFlux = fflux
 
-                if sim_properties.saveFluidFluxAsVector:
-                    fflux_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
-                    fflux_components[:, Fr_kplus1.EltCrack] = fluid_flux_components
-                    Fr_kplus1.fluidFlux_components = fflux_components
+            if sim_properties.saveFluidFluxAsVector:
+                fflux_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fflux_components[:, Fr_kplus1.EltCrack] = fluid_flux_components
+                Fr_kplus1.fluidFlux_components = fflux_components
 
-                if sim_properties.saveFluidVel:
-                    fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
-                    fvel[:, Fr_kplus1.EltCrack] = fluid_vel
-                    Fr_kplus1.fluidVelocity = fvel
+            if sim_properties.saveFluidVel:
+                fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fvel[:, Fr_kplus1.EltCrack] = fluid_vel
+                Fr_kplus1.fluidVelocity = fvel
 
-                if sim_properties.saveFluidVelAsVector:
-                    fvel_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
-                    fvel_components[:, Fr_kplus1.EltCrack] = fluid_vel_components
-                    Fr_kplus1.fluidVelocity_components = fvel_components
+            if sim_properties.saveFluidVelAsVector:
+                fvel_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fvel_components[:, Fr_kplus1.EltCrack] = fluid_vel_components
+                Fr_kplus1.fluidVelocity_components = fvel_components
 
             if sim_properties.saveReynNumb:
                 Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
