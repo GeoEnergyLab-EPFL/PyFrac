@@ -1345,30 +1345,30 @@ def process_fictitius_cells_1(indexesFC_TYPE_1, Args, x, y, typeindex, edgeORver
         edgeORvertexID[temp_index] = [T1_edgeORvertexID_center[j]]
         typeindex[temp_index] = [1]
 
+    if indexesFC_T1_1_2_intersections.size > 0:
+        # find the intersections with the vertical and horizontal axes passing throug the cell center
+        [indexesFC_T1_1_intersection_local, \
+         indexesFC_T1_2_intersections_local, \
+         xCandidate,yCandidate,edge_1_inters,\
+         xCandidate_2_inter,yCandidate_2_inter,edge_2_inter] = find_xy_intersections_type1(indexesFC_T1_1_2_intersections,
+                                                             Fracturelist,
+                                                             mesh,
+                                                             sgndDist_k,
+                                                             float_precision,
+                                                             mac_precision)
+        for j in range(indexesFC_T1_1_intersection_local.size):
+            temp_index = indexesFC_T1_1_intersection_local[j]
+            x[temp_index] = [xCandidate[j]]
+            y[temp_index] = [yCandidate[j]]
+            edgeORvertexID[temp_index]  = [edge_1_inters[j]]
+            typeindex[temp_index] = [0]
 
-    # find the intersections with the vertical and horizontal axes passing throug the cell center
-    [indexesFC_T1_1_intersection_local, \
-     indexesFC_T1_2_intersections_local, \
-     xCandidate,yCandidate,edge_1_inters,\
-     xCandidate_2_inter,yCandidate_2_inter,edge_2_inter] = find_xy_intersections_type1(indexesFC_T1_1_2_intersections,
-                                                         Fracturelist,
-                                                         mesh,
-                                                         sgndDist_k,
-                                                         float_precision,
-                                                         mac_precision)
-    for j in range(indexesFC_T1_1_intersection_local.size):
-        temp_index = indexesFC_T1_1_intersection_local[j]
-        x[temp_index] = [xCandidate[j]]
-        y[temp_index] = [yCandidate[j]]
-        edgeORvertexID[temp_index]  = [edge_1_inters[j]]
-        typeindex[temp_index] = [0]
-
-    for j in range(indexesFC_T1_2_intersections_local.size):
-        temp_index = indexesFC_T1_2_intersections_local[j]
-        x[temp_index] = xCandidate_2_inter[j]
-        y[temp_index] = yCandidate_2_inter[j]
-        edgeORvertexID[temp_index] = edge_2_inter[j]
-        typeindex[temp_index] = [0,0]
+        for j in range(indexesFC_T1_2_intersections_local.size):
+            temp_index = indexesFC_T1_2_intersections_local[j]
+            x[temp_index] = xCandidate_2_inter[j]
+            y[temp_index] = yCandidate_2_inter[j]
+            edgeORvertexID[temp_index] = edge_2_inter[j]
+            typeindex[temp_index] = [0,0]
 
 
     return [x, y, typeindex, edgeORvertexID]

@@ -130,7 +130,7 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
+def get_rectangular_survey_cells(mesh, length, height, rect_center = [0.,0.], inj_point=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
     lengths and height. A list of all the cells inside the fracture is also provided.
@@ -148,8 +148,8 @@ def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
-    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]) < length)[0],
-                                 np.where(abs(mesh.CenterCoor[:, 1]) < height / 2)[0])
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]-rect_center[0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[:, 1]-rect_center[1]) < height / 2)[0])
     max_x = max(abs(mesh.CenterCoor[inner_cells, 0]))
     max_y = max(abs(mesh.CenterCoor[inner_cells, 1]))
     ribbon_x = np.where(abs(abs(mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
@@ -157,8 +157,8 @@ def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
 
     surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
     surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
-    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]))
-    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]))
+    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]-rect_center[0]))
+    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]-rect_center[1]))
 
     if len(inner_cells) == 0:
         raise SystemError("The given rectangular region is too small compared to the mesh!")
