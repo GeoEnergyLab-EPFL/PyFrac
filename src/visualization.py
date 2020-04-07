@@ -71,7 +71,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         projection = supported_projections[variable][0]
     elif projection not in supported_projections[variable]:
         raise ValueError("The given projection is not supported for \'" + variable +
-                         '\'. Select one the following\n' + repr(supported_projections[variable]))
+                         '\'. Select one of the following\n' + repr(supported_projections[variable]))
 
     if plot_prop is None:
         plot_prop = PlotProperties()
@@ -107,6 +107,10 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         else:
             for i in fracture_list:
                 fig = i.plot_front_3D(fig=fig, plot_prop=plot_prop)
+
+    elif variable in ['source elements', 'se']:
+        for fr in fracture_list:
+            fig = plot_injection_source(fr, fig=fig, plot_prop=plot_prop)
 
     else:
         # AM: adapted to plot ki in tip cells and tip asymptotic regimes (need to be rethink where to put it)
@@ -179,8 +183,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                     fig=fig,
                                     plot_prop=plot_prop,
                                     label=labels.legend)
-
-    elif variable not in ['mesh', 'footprint']:
+    #todo: the following was elif variable not in ['mesh', 'footprint']:
+    elif variable in bidimensional_variables:
         if projection != '2D_vectorfield':
             if plot_non_zero:
                 for indx, value in enumerate(var_val_copy):
@@ -248,7 +252,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
     ax.set_title(labels.figLabel)
-    if projection == '3D' and variable not in ('mesh', 'footprint'):
+    if projection == '3D' and variable not in ['mesh', 'footprint', 'se', 'source elements']:
         ax.set_zlabel(labels.zLabel)
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                    norm=plt.Normalize(vmin=vmin,
@@ -313,7 +317,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     if variable in unidimensional_variables:
         raise ValueError("The given variable does not vary spatially.")
 
-    if plot_prop is  None:
+    if plot_prop is None:
         plot_prop = PlotProperties()
         if plot_cell_center:
             plot_prop.lineStyle = '.'
@@ -1156,7 +1160,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         else:
             ax_slice = fig.get_axes()[0]
 
-    if plot_prop is  None:
+    if plot_prop is None:
         plot_prop = PlotProperties()
         plot_prop.lineStyle = '.'
 
@@ -2010,7 +2014,7 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_injection_source(inj_prop, mesh, fig=None, plot_prop=None):
+def plot_injection_source(frac, fig=None, plot_prop=None):
     """
     This function plots the location of the source.
     """
@@ -2024,10 +2028,12 @@ def plot_injection_source(inj_prop, mesh, fig=None, plot_prop=None):
     if plot_prop is None:
         plot_prop = PlotProperties()
 
-    ax.plot(mesh.CenterCoor[inj_prop.sourceElem, 0],
-            mesh.CenterCoor[inj_prop.sourceElem, 1],
+    ax.plot(frac.mesh.CenterCoor[frac.source, 0],
+            frac.mesh.CenterCoor[frac.source, 1],
             '.',
             color=plot_prop.lineColor)
+
+    return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -2088,8 +2094,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        projection=projection,
                                                        backGround_param=backGround_param,
                                                        fig=figures[indx],
-                                                       plot_prop=plot_prop,
-                                                       )
+                                                       plot_prop=plot_prop)
 
                 plot_prop.lineColor = 'k'
                 figures[indx] = fracture.plot_fracture(variable='footprint',
@@ -2123,6 +2128,10 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        contours_at=contours_at,
                                                        labels=labels,
                                                        plot_non_zero=plot_non_zero)
+
+            # plotting source elements
+            plot_injection_source(fracture, fig=figures[indx])
+
             # plotting closed cells
             if len(fracture.closed) > 0:
                 plot_prop.lineColor = 'orangered'

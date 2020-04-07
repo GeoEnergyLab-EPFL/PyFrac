@@ -44,7 +44,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         - Fr_k (Fracture)       -- fracture after advancing time step.
     """
 
-    Qin = inj_properties.get_injection_rate(Frac.time, Frac.mesh)
+    Qin = inj_properties.get_injection_rate(Frac.time, Frac)
 
     if sim_properties.frontAdvancing == 'explicit':
 
@@ -232,26 +232,26 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 13
         return exitstatus, None
 
-    # solve for width. All of the fracture cells are solved (no tip values are is imposed)
+    # solve for width. All of the fracture cells are solved (tip values imposed from the last time step)
     empty = np.array([], dtype=int)
+
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
                                                  sim_properties,
                                                  fluid_properties,
                                                  mat_properties,
-                                                 empty,
-                                                 empty,
+                                                 Fr_lstTmStp.EltTip,
+                                                 np.arange(len(Fr_lstTmStp.EltTip)),
                                                  C,
-                                                 Fr_lstTmStp.FillF[empty],
+                                                 Fr_lstTmStp.FillF,
                                                  Fr_lstTmStp.EltCrack,
                                                  Fr_lstTmStp.InCrack,
                                                  LkOff,
-                                                 empty,
+                                                 Fr_lstTmStp.w[Fr_lstTmStp.EltTip],
                                                  timeStep,
                                                  Qin,
                                                  perfNode,
                                                  empty,
                                                  empty)
-
     # check if the solution is valid
     if np.isnan(w_k).any() or np.isnan(p_k).any():
         exitstatus = 5
@@ -272,6 +272,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
+    Fr_kplus1.source = np.where(Qin != 0)[0]
     fluidVel = return_data[0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -614,7 +615,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-4 (up to 4 figures)
     FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-4)] = 1.0
 
-    # if filling fraction is below zero or above 1+1e-6
+    # if filling fraction is below zero or above 1+1e-4
     if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
         exitstatus = 9
         return exitstatus, None
@@ -885,6 +886,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
+    Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1323,7 +1325,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if sim_properties.substitutePressure:
             pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             # pressure evaluated by dot product of width and elasticity matrix
-            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
             if sim_properties.solveDeltaP:
                 pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
                 pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
@@ -1937,12 +1939,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                  front_region[pstv_region],
                  front_region[ngtv_region])
 
-        # # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
-        # # todo: not satisfied with why this happens. need re-examining
-        # if max(sgndDist_k) == 1e50:
-        #     exitstatus = 2
-        #     return exitstatus, None
-
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
                 or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
@@ -1974,6 +1970,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+    Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)

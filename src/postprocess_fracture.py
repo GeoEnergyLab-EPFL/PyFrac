@@ -170,7 +170,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             variable_list.append(i.pFluid)
             time_srs.append(i.time)
 
-    elif variable == 'Net pressure' or variable == 'pn':
+    elif variable == 'net pressure' or variable == 'pn':
         for i in fracture_list:
             variable_list.append(i.pNet)
             time_srs.append(i.time)
@@ -310,7 +310,22 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             vel[i.EltTip] = i.v
             variable_list.append(vel)
             time_srs.append(i.time)
-            
+
+
+    elif variable == 'regime':
+        for i in fracture_list:
+            if hasattr(i, 'regime'):
+                variable_list.append(i.regime)
+                time_srs.append(i.time)
+            else:
+                raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
+                                 ' See the saveRegime falg of SimulationProperties class.')
+
+    elif variable == 'source elements' or variable == 'se':
+        for fr in fracture_list:
+            variable_list.append(fr.source)
+            time_srs.append(fr.time)
+
     else:
         raise ValueError('The variable type is not correct.')
 

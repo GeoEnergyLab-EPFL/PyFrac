@@ -17,7 +17,6 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-#Mesh = CartesianMesh(0.065, 0.085, 31, 41)
 Mesh = CartesianMesh(0.070, 0.090, 41, 51)
 
 # solid properties
@@ -119,24 +118,25 @@ ax.set_ylim(-170e-3, 50e-3,)
 
 
 #plotting in 3D
-# plot_prop_mesh = PlotProperties(disp_precision=2)
-# Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
-#                             variable='mesh',
-#                             projection='3D',
-#                             backGround_param='sigma0',
-#                             mat_properties=Solid,
-#                             plot_prop=plot_prop_mesh)
-#
-# Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
-#                             variable='footprint',
-#                             projection='3D',
-#                             fig=Fig_Fr)
-#
-# plot_prop = PlotProperties(alpha=0.6, text_size=2.)           #plotting width
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='w',
-#                             projection='3D',
-#                             fig=Fig_Fr,
-#                             plot_prop=plot_prop)
+plot_prop_mesh = PlotProperties(disp_precision=2)
+Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
+                            variable='mesh',
+                            projection='3D',
+                            backGround_param='sigma0',
+                            mat_properties=Solid,
+                            plot_prop=plot_prop_mesh)
+
+Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
+                            variable='footprint',
+                            projection='3D',
+                            fig=Fig_Fr)
+
+plot_prop = PlotProperties(alpha=0.6, text_size=2.)           #plotting width
+Fig_Fr = plot_fracture_list(Fr_list,
+                            variable='w',
+                            projection='3D',
+                            fig=Fig_Fr,
+                            plot_prop=plot_prop)
 
 plt.show(block=True)
+

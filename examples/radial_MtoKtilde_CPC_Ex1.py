@@ -81,7 +81,6 @@ from visualization import *
 Fr_list, properties = load_fractures("./Data/MtoK_leakoff")
 time_srs = get_fracture_variable(Fr_list,
                                  'time')
-
 # plotting efficiency
 plot_prop = PlotProperties(graph_scaling='loglog',
                            line_style='.')

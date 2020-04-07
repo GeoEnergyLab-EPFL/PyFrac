@@ -172,7 +172,9 @@ class MaterialProperties:
         self.wc = minimum_width
         self.porePressure = pore_pressure
 
-# ----------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+
     def remesh(self, mesh):
         """
         This function evaluates the toughness, confining stress and leak off coefficient on the given mesh using the
@@ -241,7 +243,7 @@ class FluidProperties:
         Constructor function.
 
         """
-        if viscosity is  None:
+        if viscosity is None:
             # uniform viscosity
             self.viscosity = None
             self.muPrime = None
@@ -271,8 +273,9 @@ class FluidProperties:
 
         self.compressibility = compressibility
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------------------
+
 class InjectionProperties:
     """
     Class defining the injection parameters.
@@ -365,26 +368,28 @@ class InjectionProperties:
 
     #-------------------------------------------------------------------------------------------------------------------
 
-    def get_injection_rate(self, tm, mesh):
+    def get_injection_rate(self, tm, frac):
         """ This function gives the current injection rate at all of the cells in the domain.
 
         Arguments:
             tm (float):             -- the time at which the injection rate is required.
-            mesh (CartesianMesh):   -- the CartesianMesh object describing the mesh.
+            frac (CartesianMesh):   -- the Fracture object containing the mesh and the current fracture elements.
 
         returns:
             Qin (ndarray):          -- an numpy array of the size of the mesh with injection rates in each of the cell
 
         """
 
-        Qin = np.zeros(mesh.NumberOfElts, float)
+        Qin = np.zeros(frac.mesh.NumberOfElts, float)
         indxCurTime = max(np.where(tm >= self.injectionRate[0, :])[0])
         currentRate = self.injectionRate[1, indxCurTime]  # current injection rate
-        Qin[self.sourceElem] = currentRate / len(self.sourceElem)
+        currentSource = np.intersect1d(self.sourceElem, frac.EltCrack)
+        Qin[currentSource] = currentRate / len(currentSource)
 
         return Qin
 
     #-------------------------------------------------------------------------------------------------------------------
+
 
     def remesh(self, new_mesh, old_mesh):
         """ This function is called every time the domian is remeshed.
@@ -403,6 +408,7 @@ class InjectionProperties:
         self.sourceElem = list(actv_cells)
 
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 class LoadingProperties:
     """
@@ -431,8 +437,8 @@ class LoadingProperties:
         else:
             raise ValueError("The loaded elements should be given in the form an ndarray of integers.")
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------------------
 class SimulationProperties:
     """
     Class defining the simulation properties.
@@ -506,8 +512,8 @@ class SimulationProperties:
         solveTipCorrRib (bool):      -- if True, the tip cells corresponding to the closed ribbon cells will also be
                                         considered as closed and the width will be imposed on them.
         solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
-        saveRegime (boolean):        -- if True, the regime of the propagation (see Zia and Lecampion 2018) will be
-                                        saved.
+        saveRegime (boolean):        -- if True, the regime of the propagation as observed in the ribbon cell (see Zia
+                                        and Lecampion 2018, IJF) will be saved.
         verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
                                         two levels 1 and 2 are supported).
         enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by
@@ -810,6 +816,7 @@ class SimulationProperties:
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 class IterationProperties:
     """
     This class stores performance data in the form of a tree.
@@ -887,6 +894,8 @@ def instrument_close(perfNode, perfNode_subItr, norm, n_elem, status, fail_cause
     perfNode_subItr.time = simulated_time
     if not status:
         perfNode_subItr.failure_cause = fail_cause
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 class PlotProperties:

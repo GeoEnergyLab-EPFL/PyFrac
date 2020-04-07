@@ -73,13 +73,12 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-Fr_list, properties = load_fractures(address="./Data/M_radial_explicit")       # load all fractures
-time_srs = get_fracture_variable(Fr_list,                                        # list of times
-                                 variable='time')
+Fr_list, properties = load_fractures(address="./Data/M_radial_explicit")        # load all fractures
+time_srs = get_fracture_variable(Fr_list, variable='time')                      # list of times
 
 # plot fracture radius
 plot_prop = PlotProperties()
-plot_prop.lineStyle = '.'               # setting the linestyle to point
+plot_prop.lineStyle = '.'               # setting the line style to point
 plot_prop.graphScaling = 'loglog'       # setting to log log plot
 Fig_R = plot_fracture_list(Fr_list,
                            variable='d_mean',
@@ -165,7 +164,3 @@ Fig_Fr = plot_fracture_list(Fr_list,
 
 plt.show(block=True)
 
-#  set block=True and comment last 2 lines if you want to keep the window open
-# plt.show(block=False)
-# plt.pause(5)
-# plt.close()
