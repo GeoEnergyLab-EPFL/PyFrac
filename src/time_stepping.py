@@ -1138,7 +1138,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # the code below finds the tip cells with corresponding closed ribbon cells and add them in the list
             # of elements to be solved.
             if len(neg) > 0 and len(to_impose) > 0:
-                if sim_properties.solveTipCorrRib:
+                if sim_properties.solveTipCorrRib and corr_ribbon.size != 0:
                     if not corr_ribb_flag:
                         # do it once
                         tip_sorted = np.argsort(EltTip)
