@@ -106,17 +106,17 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
         """
         situations with two common elements:
            |      |                  |      |           |      |
-        ___|______|____           ___|_*__*_|____    ___|_*____*____
-           |      |                  |/    \|           |/     |\        
-        ___*______*____           ___/______\____    ___/______|_\__
-           |      |                 /|      |\         /|      |  \  
-        ___|______|____           _/_|______|_\___   _/_|______|___\___
-           |      |                  |      |           |      |
+        ___|______|____           ___*======*====    ___|_*____*____
+           |      |                 ||      |           |/     |\        
+        ___*______*____           ___*______|___     ___/______|_\__
+           |      |                 ||      |          /|      |  \  
+        ___|______|____           __||______|____    _/_|______|___\___
+           |      |                 ||      |           |      |
         In this situation take the i with LS<0 as tip
         (...if you choose LS>0 as tip you will not find zero vertexes then...)
         """
-        #nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
-        nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
+        nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
+        #nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
         exitstatus = True
     elif len(common) == 0:
         #raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
@@ -2386,35 +2386,64 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             localdistances.append(pointtolinedistance(p0x, p1x, p2x, p0y, p1y, p2y)) #compute the distance from the vertex to the front
 
                     # take the largest distance from the front
-                    if len(localdistances)==0:
-                        raise SystemExit('FRONT RECONSTRUCTION ERROR: there are no nodes in the given tip cell that are inside the fracture')
-                    index = np.argmax(np.asarray(localdistances)) # compute the index of the point with the maximun distance to the front
-                    if index.size>1: # if you have two nodes that have the same distance to the front and are inside thake the first
-                        index = index[0]
+                    if len(localdistances)!=0:
+                        index = np.argmax(np.asarray(localdistances)) # compute the index of the point with the maximun distance to the front
+                        if index.size>1: # if you have two nodes that have the same distance to the front and are inside thake the first
+                            index = index[0]
 
-                    # take:
-                    #       - name of the vertex
-                    #       - local position within the cell
-                    #       - distance to the front
-                    vertexID[nodeindexp1]=localvertexID[index] #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
-                    vertexpositionwithinthecell[nodeindexp1]=localvertexpositionwithinthecell[index]
-                    distances[nodeindexp1]=localdistances[index]
+                        # take:
+                        #       - name of the vertex
+                        #       - local position within the cell
+                        #       - distance to the front
+                        vertexID[nodeindexp1]=localvertexID[index] #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
+                        vertexpositionwithinthecell[nodeindexp1]=localvertexpositionwithinthecell[index]
+                        distances[nodeindexp1]=localdistances[index]
 
-                    # compute the angle
-                    x = mesh.VertexCoor[localvertexID[index]][0] # x coordinate of the zero vertex
-                    y = mesh.VertexCoor[localvertexID[index]][1] # y coordinate of the zero vertex
-                    [angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex], xintersection[nodeindexp1], yintersection[nodeindexp1], x, y,mac_precision)
-                    angles[nodeindexp1] = angle
-                    #[angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex],
-                    #                                xintersection[nodeindexp1], yintersection[nodeindexp1], mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])  #<--------- IT CAN BE REMOVED, IT IS ONLY FOR ONE POSSIBLE LOCAL DEBUGGING
-                    if recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge:
-                        p_zero_vertex = Point(0, x, y)
-                        p_center = Point(i, mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])
-                        p1 = Point(2, xintersection[nodeindex], yintersection[nodeindex])
-                        p2 = Point(3, xintersection[nodeindexp1], yintersection[nodeindexp1])
-                        sgndDist_k_new = recompute_LS_at_tip_cells(sgndDist_k_new, p_zero_vertex, p_center,p1,p2, mac_precision,area_of_a_cell,zero_level_set_value)
-                    xintersectionsfromzerovertex.append(xint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
-                    yintersectionsfromzerovertex.append(yint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
+                        # compute the angle
+                        x = mesh.VertexCoor[localvertexID[index]][0] # x coordinate of the zero vertex
+                        y = mesh.VertexCoor[localvertexID[index]][1] # y coordinate of the zero vertex
+                        [angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex], xintersection[nodeindexp1], yintersection[nodeindexp1], x, y,mac_precision)
+                        angles[nodeindexp1] = angle
+                        #[angle, xint, yint] = findangle(xintersection[nodeindex], yintersection[nodeindex],
+                        #                                xintersection[nodeindexp1], yintersection[nodeindexp1], mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])  #<--------- IT CAN BE REMOVED, IT IS ONLY FOR ONE POSSIBLE LOCAL DEBUGGING
+                        if recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge:
+                            p_zero_vertex = Point(0, x, y)
+                            p_center = Point(i, mesh.CenterCoor[i,0], mesh.CenterCoor[i,1])
+                            p1 = Point(2, xintersection[nodeindex], yintersection[nodeindex])
+                            p2 = Point(3, xintersection[nodeindexp1], yintersection[nodeindexp1])
+                            sgndDist_k_new = recompute_LS_at_tip_cells(sgndDist_k_new, p_zero_vertex, p_center,p1,p2, mac_precision,area_of_a_cell,zero_level_set_value)
+                        xintersectionsfromzerovertex.append(xint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
+                        yintersectionsfromzerovertex.append(yint) #<--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
+                    else:
+                        if typeindex[nodeindex] == 1 and typeindex[nodeindexp1] == 1:
+                            edges_node1 = mesh.Connectivitynodesedges[edgeORvertexID[nodeindex]]
+                            edges_node2 = mesh.Connectivitynodesedges[edgeORvertexID[nodeindexp1]]
+                            commonedge = np.intersect1d(edges_node1, edges_node2)
+                            if commonedge.size > 0 :
+                                #            0
+                                #            |
+                                #         1__o__3    o is the node and the order in  connNodesEdges is [vertical_top, horizotal_left, vertical_bottom, horizotal_right]
+                                #            |
+                                #            2
+                                # the points are on the same edge an the front it is exactly there
+                                position_in_connectivity = np.where(mesh.Connectivitynodesedges[edgeORvertexID[nodeindex]] == commonedge)[0][0]
+                                if  position_in_connectivity in [1,3]:
+                                    angles[nodeindexp1] = np.pi/2.
+                                else:
+                                    angles[nodeindexp1] = 0.
+                                vertexID[nodeindexp1] = edgeORvertexID[nodeindexp1]
+                                vertexpositionwithinthecell[nodeindexp1] = np.where(mesh.Connectivity[i]==edgeORvertexID[nodeindexp1])[0][0]
+                                distances[nodeindexp1] = 0.
+                                x = mesh.VertexCoor[edgeORvertexID[nodeindexp1]][0]  # x coordinate of the zero vertex
+                                y = mesh.VertexCoor[edgeORvertexID[nodeindexp1]][1]  # y coordinate of the zero vertex
+                                xint = x
+                                yint = y
+                                xintersectionsfromzerovertex.append(xint)  # <--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
+                                yintersectionsfromzerovertex.append(yint)  # <--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
+                                
+                        else:
+                            raise SystemExit(
+                                'FRONT RECONSTRUCTION ERROR: there are no nodes in the given tip cell that are inside the fracture')
 
                 if recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge: del p_zero_vertex, p_center, p1, p2
                 listofTIPcellsONLY=np.asarray(listofTIPcells,dtype=int) # It contains only the tip cells, not the one fully traversed
@@ -2618,7 +2647,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     if dLSdy == 0. and dLSdx != 0.:
                         fullyfractured_angle.append(0.)
                     elif dLSdy != 0. and dLSdx == 0:
-                        fullyfractured_angle.append(np.pi())
+                        fullyfractured_angle.append(np.pi)
                     elif dLSdy != 0. and dLSdx != 0:
                         fullyfractured_angle.append(np.arctan(np.abs(dLSdy) / np.abs(dLSdx)))
                     else:
