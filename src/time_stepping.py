@@ -44,7 +44,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         - Fr_k (Fracture)       -- fracture after advancing time step.
     """
 
-    Qin = inj_properties.get_injection_rate(Frac.time, Frac.mesh)
+    Qin = inj_properties.get_injection_rate(Frac.time, Frac)
 
     if sim_properties.frontAdvancing == 'explicit':
 
@@ -232,26 +232,26 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 13
         return exitstatus, None
 
-    # solve for width. All of the fracture cells are solved (no tip values are is imposed)
+    # solve for width. All of the fracture cells are solved (tip values imposed from the last time step)
     empty = np.array([], dtype=int)
+
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
                                                  sim_properties,
                                                  fluid_properties,
                                                  mat_properties,
-                                                 empty,
-                                                 empty,
+                                                 Fr_lstTmStp.EltTip,
+                                                 np.arange(len(Fr_lstTmStp.EltTip)),
                                                  C,
-                                                 Fr_lstTmStp.FillF[empty],
+                                                 Fr_lstTmStp.FillF,
                                                  Fr_lstTmStp.EltCrack,
                                                  Fr_lstTmStp.InCrack,
                                                  LkOff,
-                                                 empty,
+                                                 Fr_lstTmStp.w[Fr_lstTmStp.EltTip],
                                                  timeStep,
                                                  Qin,
                                                  perfNode,
                                                  empty,
                                                  empty)
-
     # check if the solution is valid
     if np.isnan(w_k).any() or np.isnan(p_k).any():
         exitstatus = 5
@@ -272,6 +272,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
+    Fr_kplus1.source = np.where(Qin != 0)[0]
     fluidVel = return_data[0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -282,12 +283,14 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
         if sim_properties.saveFluidVel:
             Fr_kplus1.fluidVelocity = fluidVel
+        if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
+        if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
-        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb or sim_properties.saveFluidFluxAsVector or sim_properties.saveFluidVelAsVector:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
-            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
-                                                                                          C,
+            fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
+                                                                                          Fr_kplus1.pFluid,
                                                                                           mat_properties.SigmaO,
                                                                                           Fr_kplus1.mesh,
                                                                                           Fr_kplus1.EltCrack,
@@ -299,10 +302,22 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fflux[:, Fr_kplus1.EltCrack] = fluid_flux
                 Fr_kplus1.fluidFlux = fflux
+
+            if sim_properties.saveFluidFluxAsVector:
+                fflux_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fflux_components[:, Fr_kplus1.EltCrack] = fluid_flux_components
+                Fr_kplus1.fluidFlux_components = fflux_components
+
             if sim_properties.saveFluidVel:
                 fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fvel[:, Fr_kplus1.EltCrack] = fluid_vel
                 Fr_kplus1.fluidVelocity = fvel
+
+            if sim_properties.saveFluidVelAsVector:
+                fvel_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fvel_components[:, Fr_kplus1.EltCrack] = fluid_vel_components
+                Fr_kplus1.fluidVelocity_components = fvel_components
+
             if sim_properties.saveReynNumb:
                 Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
@@ -504,9 +519,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                              Fr_lstTmStp.EltChannel,
                                                                              Fr_lstTmStp.mesh)
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = False
+        correct_size_of_pstv_region = [False,False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
-        while not correct_size_of_pstv_region:
+        while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
             listofTIPcellsONLY, \
             l_k, \
@@ -522,7 +537,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                            Fr_lstTmStp.EltChannel,
                                                            Fr_lstTmStp.mesh,
                                                            recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if not correct_size_of_pstv_region:
+            if correct_size_of_pstv_region[1]:
+                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
+                return exitstatus, None
+
+            if not correct_size_of_pstv_region[0]:
                 # Expand the
                 # - front region by 1 cell tickness
                 # - pstv_region by 1 cell tickness
@@ -535,6 +554,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
                 # the search region inwards from the front position at last time step
                 ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+
+                #sgndDist_k_temp2 = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,),float)  # Initializing the cells with extremely
+                # large float value. (algorithm requires inf)
+                #sgndDist_k_temp2[Fr_lstTmStp.EltRibbon] = sgndDist_k[Fr_lstTmStp.EltRibbon]
+                #sgndDist_k = sgndDist_k_temp2
+                #sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
+                #                                               Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
 
                 # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
                 SolveFMM(sgndDist_k,
@@ -589,7 +615,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-4 (up to 4 figures)
     FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-4)] = 1.0
 
-    # if filling fraction is below zero or above 1+1e-6
+    # if filling fraction is below zero or above 1+1e-4
     if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
         exitstatus = 9
         return exitstatus, None
@@ -860,6 +886,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
+    Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -870,12 +897,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
         if sim_properties.saveFluidVel:
             Fr_kplus1.fluidVelocity = fluidVel
+        if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
+        if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
-        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb or sim_properties.saveFluidFluxAsVector or sim_properties.saveFluidVelAsVector:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
-            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
-                                                                                          C,
+            fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components= calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
+                                                                                          Fr_kplus1.pFluid,
                                                                                           mat_properties.SigmaO,
                                                                                           Fr_kplus1.mesh,
                                                                                           Fr_kplus1.EltCrack,
@@ -887,10 +916,22 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fflux[:, Fr_kplus1.EltCrack] = fluid_flux
                 Fr_kplus1.fluidFlux = fflux
+
+            if sim_properties.saveFluidFluxAsVector:
+                fflux_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fflux_components[:, Fr_kplus1.EltCrack] = fluid_flux_components
+                Fr_kplus1.fluidFlux_components = fflux_components
+
             if sim_properties.saveFluidVel:
                 fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fvel[:, Fr_kplus1.EltCrack] = fluid_vel
                 Fr_kplus1.fluidVelocity = fvel
+
+            if sim_properties.saveFluidVelAsVector:
+                fvel_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fvel_components[:, Fr_kplus1.EltCrack] = fluid_vel_components
+                Fr_kplus1.fluidVelocity_components = fvel_components
+
             if sim_properties.saveReynNumb:
                 Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num
@@ -1097,7 +1138,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # the code below finds the tip cells with corresponding closed ribbon cells and add them in the list
             # of elements to be solved.
             if len(neg) > 0 and len(to_impose) > 0:
-                if sim_properties.solveTipCorrRib:
+                if sim_properties.solveTipCorrRib and corr_ribbon.size != 0:
                     if not corr_ribb_flag:
                         # do it once
                         tip_sorted = np.argsort(EltTip)
@@ -1284,7 +1325,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if sim_properties.substitutePressure:
             pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             # pressure evaluated by dot product of width and elasticity matrix
-            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
             if sim_properties.solveDeltaP:
                 pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
                 pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
@@ -1447,9 +1488,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                              Fr_lstTmStp.mesh)
 
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = False
+        correct_size_of_pstv_region = [False,False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
-        while not correct_size_of_pstv_region:
+        while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
             listofTIPcellsONLY, \
             l_k, \
@@ -1465,7 +1506,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                        Fr_lstTmStp.EltChannel,
                                                                        Fr_lstTmStp.mesh,
                                                                        recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if not correct_size_of_pstv_region:
+            if correct_size_of_pstv_region[1]:
+                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
+                return exitstatus, None
+
+            if not correct_size_of_pstv_region[0]:
                 # Expand the
                 # - front region by 1 cell tickness
                 # - pstv_region by 1 cell tickness
@@ -1479,6 +1524,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 # the search region inwards from the front position at last time step
                 ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
 
+                #sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,),float)  # Initializing the cells with extremely
+                                                                                     # large float value. (algorithm requires inf)
+                #sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
+
+                #sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
+                #                                                                             Fr_lstTmStp.v)
+
                 # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
                 SolveFMM(sgndDist_k,
                          Fr_lstTmStp.EltTip,
@@ -1486,6 +1538,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                          Fr_lstTmStp.mesh,
                          front_region[pstv_region],
                          front_region[ngtv_region])
+
         sgndDist_k = sgndDist_k_temp
         del correct_size_of_pstv_region
     else:
@@ -1524,7 +1577,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                     'A') / Fr_lstTmStp.mesh.EltArea
 
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-4 (up to 4 figures)
-    FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-4)] = 1.0
+    FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1.0 + 1e-4)] = 1.0
 
     # if filling fraction is below zero or above 1+1e-6
     if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
@@ -1534,6 +1587,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if sim_properties.projMethod != 'LS_continousfront':
         # todo: some of the list are redundant to calculate on each iteration
         # Evaluate the element lists for the trial fracture front
+        # new tip elements contain only the partially filled elements
         (EltChannel_k,
          EltTip_k,
          EltCrack_k,
@@ -1546,6 +1600,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                      Fr_lstTmStp.mesh)
 
     elif sim_properties.projMethod == 'LS_continousfront':
+        # new tip elements contain only the partially filled elements
         zrVertx_k = zrVertx_k_without_fully_traversed
         (EltChannel_k,
          EltTip_k,
@@ -1884,12 +1939,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                  front_region[pstv_region],
                  front_region[ngtv_region])
 
-        # # if some elements remain unevaluated by fast marching method. It happens with unrealistic fracture geometry.
-        # # todo: not satisfied with why this happens. need re-examining
-        # if max(sgndDist_k) == 1e50:
-        #     exitstatus = 2
-        #     return exitstatus, None
-
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
                 or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
@@ -1921,6 +1970,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+    Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)
@@ -1942,12 +1992,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 Fr_kplus1.fluidFlux = ReNumb * 3 / 4 / fluid_properties.density * fluid_properties.viscosity
         if sim_properties.saveFluidVel:
             Fr_kplus1.fluidVelocity = fluidVel
+        if sim_properties.saveFluidVelAsVector:  raise SystemExit('saveFluidVelAsVector Not yet implemented')
+        if sim_properties.saveFluidFluxAsVector: raise SystemExit('saveFluidFluxAsVector Not yet implemented')
     else:
-        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb:
+        if sim_properties.saveFluidFlux or sim_properties.saveFluidVel or sim_properties.saveReynNumb or sim_properties.saveFluidFluxAsVector or sim_properties.saveFluidVelAsVector:
             ###todo: re-evaluating these parameters is highly inefficient. They have to be stored if neccessary when
             # the solution is evaluated.
-            fluid_flux, fluid_vel, Rey_num = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
-                                                                                          C,
+            fluid_flux, fluid_vel, Rey_num, fluid_flux_components, fluid_vel_components = calculate_fluid_flow_characteristics_laminar(Fr_kplus1.w,
+                                                                                          Fr_kplus1.pFluid,
                                                                                           mat_properties.SigmaO,
                                                                                           Fr_kplus1.mesh,
                                                                                           Fr_kplus1.EltCrack,
@@ -1959,10 +2011,22 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fflux[:, Fr_kplus1.EltCrack] = fluid_flux
                 Fr_kplus1.fluidFlux = fflux
+
+            if sim_properties.saveFluidFluxAsVector:
+                fflux_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fflux_components[:, Fr_kplus1.EltCrack] = fluid_flux_components
+                Fr_kplus1.fluidFlux_components = fflux_components
+
             if sim_properties.saveFluidVel:
                 fvel = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 fvel[:, Fr_kplus1.EltCrack] = fluid_vel
                 Fr_kplus1.fluidVelocity = fvel
+
+            if sim_properties.saveFluidVelAsVector:
+                fvel_components = np.zeros((8, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
+                fvel_components[:, Fr_kplus1.EltCrack] = fluid_vel_components
+                Fr_kplus1.fluidVelocity_components = fvel_components
+
             if sim_properties.saveReynNumb:
                 Rnum = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)
                 Rnum[:, Fr_kplus1.EltCrack] = Rey_num

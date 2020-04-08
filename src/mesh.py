@@ -108,26 +108,29 @@ class CartesianMesh:
 
         self.VertexCoor = np.reshape(np.stack((a, b), axis=-1), (len(a), 2))
 
-        self.NumberofNodes = (self.nx+1) * (self.ny+1)                                                    # Peruzzo 2019
+        self.NumberofNodes = (self.nx+1) * (self.ny+1)
         self.NumberOfElts = self.nx * self.ny
         self.EltArea = self.hx * self.hy
 
+
         """
-        Creating a list of the names of the cells that are identified with x in the example below
+        We create a list of cell names thaht are colose to the boundary of the mesh. See the example below.
+        In that case the list will contain the elements identified with a x.
+        The list of elements will be called Frontlist
         
-         ________________________
-        |    |    |    |    |    |
-        |____|____|____|____|____|
-        |    | x  |  x |  x |    |
-        |____|____|____|____|____|
-        |    | x  |    |  x |    |
-        |____|____|____|____|____|
-        |    | x  |  x |  x |    |
-        |____|____|____|____|____|
-        |    |    |    |    |    |
-        |____|____|____|____|____|   
-        
-        the list will be called frontlist             
+         _____________________________
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        |    | x  |  x |  x |  x |    |
+        |____|____|____|____|____|____|
+        |    | x  |    |    |  x |    |
+        |____|____|____|____|____|____|
+        |    | x  |    |    |  x |    |
+        |____|____|____|____|____|____|
+        |    | x  |  x |  x |  x |    |
+        |____|____|____|____|____|____|
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|            
         """
         self.Frontlist=[]
         self.Frontlist=self.Frontlist + list(range(self.nx+1,2*self.nx-1))
@@ -136,21 +139,51 @@ class CartesianMesh:
             self.Frontlist.append(  self.nx+1+i*self.nx)
             self.Frontlist.append(2*self.nx-2+i*self.nx)
 
-        # Giving four neighbouring elements in the following order: [left,right,bottom,up]
+
+
+        """
+         Giving four neighbouring elements in the following order: [left,right,bottom,up]
+         ______ ______ _____ 
+        |      | top  |     |
+        |______|______|_____|
+        |left  |  i   |right|
+        |______|______|_____|
+        |      |bottom|     |
+        |______|______|_____|
+        """
         Nei = np.zeros((self.NumberOfElts, 4), int)
         for i in range(0, self.NumberOfElts):
             Nei[i, :] = np.asarray(self.Neighbors(i, self.nx, self.ny))
         self.NeiElements = Nei
 
-        # conn is the connectivity array giving four vertices of an element in the following order
-        #     3         2
-        #     0   -     1
+
+        """
+         conn is the connectivity array giving four vertices of an element in the following order
+         ______ ______ _____ 
+        |      |      |     |
+        |______3______2_____|
+        |      |  i   |     |
+        |______0______1_____|
+        |      |      |     |
+        |______|______|_____|
+        """
+
+        """
+         connElemEdges is a connectivity array: for each element is listing the name of its 4 edges
+         connEdgesElem is a connectivity array: for each edge is listing the name of its 2 neighbouring elements
+        """
+
+
         #
-        # connElemEdges is a connectivity array: for each element is listing the name of its 4 edges      # Peruzzo 2019
-        # connEdgesNodes is a connectivity array: for each edge is listing the name of its 2 end nodes    # Peruzzo 2019
-        # connEdgesElem is a connectivity array:                                                          # Peruzzo 2019
-        # for each edge is listing the name of its 2 neighbouring elements                                # Peruzzo 2019
-        # connNodesElem is a connectivity array: for each node is listing the 4 elements that share that  # Peruzzo 2019
+        # connEdgesNodes is a connectivity array: for each edge is listing the name of its 2 end nodes
+
+        # connNodesElem is a connectivity array: for each node is listing the 4 elements that share that
+        # connNodesEdges:
+        #            0
+        #            |
+        #         1__o__3    o is the node and the order in  connNodesEdges is [vertical_top, horizotal_left, vertical_bottom, horizotal_right]
+        #            |
+        #            2
         numberofedges = (2 * self.nx * self.ny + self.nx + self.ny)  # Peruzzo 2019
         conn = np.empty([self.NumberOfElts, 4], dtype=int)
         booleconnEdgesNodes = np.zeros([numberofedges, 1], dtype=int)  # Peruzzo 2019

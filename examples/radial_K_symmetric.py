@@ -41,7 +41,7 @@ simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with th
 simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
 simulProp.set_outputFolder("./Data/K_radial_symmetric") # the disk address where the files are saved
 simulProp.symmetric = True              # assume fracture geometry to be symmetric (only available for volume control)
-simulProp.projMethod='LS_continousfront'
+
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.15)
 init_param = InitializationParameters(Fr_geometry, regime='K')

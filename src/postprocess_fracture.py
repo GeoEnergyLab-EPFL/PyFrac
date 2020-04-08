@@ -170,7 +170,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             variable_list.append(i.pFluid)
             time_srs.append(i.time)
 
-    elif variable == 'Net pressure' or variable == 'pn':
+    elif variable == 'net pressure' or variable == 'pn':
         for i in fracture_list:
             variable_list.append(i.pNet)
             time_srs.append(i.time)
@@ -221,8 +221,38 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list.append(i.fluidVelocity[edge])
                 time_srs.append(i.time)
-            elif i.fluidFlux is not None:
+            elif i.fluidVelocity is not None:
                 variable_list.append(np.mean(i.fluidVelocity, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+
+    elif variable == 'fluid flux as vector field' or variable == 'ffvf':
+        if fracture_list[-1].fluidFlux_components is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidFlux_components[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux_components is not None:
+                variable_list.append(i.fluidFlux_components)
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts,), np.nan))
+
+    elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
+        if fracture_list[-1].fluidVelocity_components is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidVelocity_components[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux_components is not None:
+                variable_list.append(i.fluidVelocity_components)
                 time_srs.append(i.time)
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
@@ -280,7 +310,22 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             vel[i.EltTip] = i.v
             variable_list.append(vel)
             time_srs.append(i.time)
-            
+
+
+    elif variable == 'regime':
+        for i in fracture_list:
+            if hasattr(i, 'regime'):
+                variable_list.append(i.regime)
+                time_srs.append(i.time)
+            else:
+                raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
+                                 ' See the saveRegime falg of SimulationProperties class.')
+
+    elif variable == 'source elements' or variable == 'se':
+        for fr in fracture_list:
+            variable_list.append(fr.source)
+            time_srs.append(fr.time)
+
     else:
         raise ValueError('The variable type is not correct.')
 

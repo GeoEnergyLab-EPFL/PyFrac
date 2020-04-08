@@ -69,7 +69,7 @@ class Fracture:
         Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
                                        cells. Each row contains the x and y coordinates of the two points.
         regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
-                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018)
+                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018, IJF)
         ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
         fluidFlux (ndarray):        -- the fluid flux at each edge of the cells in the fracture. The arrangement is
@@ -86,6 +86,7 @@ class Fracture:
         injectedVol (float):        -- the total volume that is injected into the fracture.
         sgndDist_last (ndarray):    -- the signed distance of the last time step. Used for re-meshing.
         timeStep_last (float):      -- the last time step. Required for re-meshing.
+        source (ndarray):           -- the list of injection cells i.e. the source elements.
 
     """
 
@@ -132,7 +133,7 @@ class Fracture:
                                                                         inner_cells,
                                                                         surv_dist,
                                                                         simulProp.projMethod)
-        # for general purpose initialization
+        # for static fracture initialization
         if init_param.regime == 'static':
             self.w, self.pNet = get_width_pressure(self.mesh,
                                                    self.EltCrack,
@@ -171,6 +172,7 @@ class Fracture:
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
+        self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
 
         if simulProp.projMethod != 'LS_continousfront':
             self.process_fracture_front()
@@ -192,13 +194,27 @@ class Fracture:
 
         if simulProp.saveFluidFlux:
             self.fluidFlux = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
+            self.fluidFlux_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
         else:
             self.fluidFlux = None
+            self.fluidFlux_components = None
 
         if simulProp.saveFluidVel:
             self.fluidVelocity = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
+            self.fluidVelocity_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
         else:
             self.fluidVelocity = None
+            self.fluidVelocity_components = None
+
+        if simulProp.saveFluidFluxAsVector:
+            self.fluidFlux_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidFlux_components = None
+
+        if simulProp.saveFluidVelAsVector:
+            self.fluidVelocity_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidVelocity_components = None
 
         self.closed = np.array([], dtype=int)
 

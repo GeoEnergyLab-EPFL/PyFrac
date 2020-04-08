@@ -71,7 +71,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         projection = supported_projections[variable][0]
     elif projection not in supported_projections[variable]:
         raise ValueError("The given projection is not supported for \'" + variable +
-                         '\'. Select one the following\n' + repr(supported_projections[variable]))
+                         '\'. Select one of the following\n' + repr(supported_projections[variable]))
 
     if plot_prop is None:
         plot_prop = PlotProperties()
@@ -107,6 +107,10 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         else:
             for i in fracture_list:
                 fig = i.plot_front_3D(fig=fig, plot_prop=plot_prop)
+
+    elif variable in ['source elements', 'se']:
+        for fr in fracture_list:
+            fig = plot_injection_source(fr, fig=fig, plot_prop=plot_prop)
 
     else:
         # AM: adapted to plot ki in tip cells and tip asymptotic regimes (need to be rethink where to put it)
@@ -154,23 +158,23 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         for i in range(len(var_val_copy)):
             var_val_copy[i] /= labels.unitConversion
 
-
-        var_value_tmp = np.copy(var_val_copy)
-        if plot_non_zero:
-            var_value_tmp = var_value_tmp[var_value_tmp != 0]
-        vmin, vmax = np.inf, -np.inf
-        for i in var_value_tmp:
+        if projection != '2D_vectorfield':
+            var_value_tmp = np.copy(var_val_copy)
             if plot_non_zero:
-                i = i[i != 0]
-            i = np.delete(i, np.where(np.isinf(i))[0])
-            i = np.delete(i, np.where(np.isnan(i))[0])
-            if not (not isinstance(i, float) and len(i) == 0):
-                if variable in ('p', 'pressure'):
-                    non_zero = np.where(abs(i) > 0)[0]
-                    i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
-                else:
-                    i_min, i_max = np.min(i), np.max(i)
-                vmin, vmax = min(vmin, i_min), max(vmax, i_max)
+                var_value_tmp = var_value_tmp[var_value_tmp != 0]
+            vmin, vmax = np.inf, -np.inf
+            for i in var_value_tmp:
+                if plot_non_zero:
+                    i = i[i != 0]
+                i = np.delete(i, np.where(np.isinf(i))[0])
+                i = np.delete(i, np.where(np.isnan(i))[0])
+                if not (not isinstance(i, float) and len(i) == 0):
+                    if variable in ('p', 'pressure'):
+                        non_zero = np.where(abs(i) > 0)[0]
+                        i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
+                    else:
+                        i_min, i_max = np.min(i), np.max(i)
+                    vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
 
     if variable in unidimensional_variables:
@@ -179,12 +183,12 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                     fig=fig,
                                     plot_prop=plot_prop,
                                     label=labels.legend)
-
-    elif variable not in ['mesh', 'footprint']:
-
-        if plot_non_zero:
-            for indx, value in enumerate(var_val_copy):
-                remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
+    #todo: the following was elif variable not in ['mesh', 'footprint']:
+    elif variable in bidimensional_variables:
+        if projection != '2D_vectorfield':
+            if plot_non_zero:
+                for indx, value in enumerate(var_val_copy):
+                    remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
 
         if variable == 'surface':
             plot_prop.colorMap = 'cool'
@@ -230,12 +234,25 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                         elements=elements,
                                                         vmin=vmin,
                                                         vmax=vmax)
+        elif projection == '2D_vectorfield':
+            # fracture_list[i].EltCrack => ribbon+tip+other in crack
+            # fracture_list[i].EltChannel => ribbon+other in crack
+
+            # multiple options:
+            # elements_where_to_plot = fracture_list[i].EltCrack
+            elements_where_to_plot = fracture_list[i].EltChannel
+            # elements_where_to_plot = np.setdiff1d(fracture_list[i].EltChannel,fracture_list[i].EltRibbon)
+            # elements_where_to_plot = np.setdiff1d(elements_where_to_plot, np.unique(np.ndarray.flatten(fracture_list[i].mesh.NeiElements[fracture_list[i].EltRibbon])))
+            fig = plot_fracture_variable_as_vector(var_val_copy[i],
+                                                      fracture_list[i].mesh,
+                                                      elements_where_to_plot,
+                                                      fig=fig)
 
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
     ax.set_title(labels.figLabel)
-    if projection == '3D' and variable not in ('mesh', 'footprint'):
+    if projection == '3D' and variable not in ['mesh', 'footprint', 'se', 'source elements']:
         ax.set_zlabel(labels.zLabel)
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                    norm=plt.Normalize(vmin=vmin,
@@ -300,7 +317,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     if variable in unidimensional_variables:
         raise ValueError("The given variable does not vary spatially.")
 
-    if plot_prop is  None:
+    if plot_prop is None:
         plot_prop = PlotProperties()
         if plot_cell_center:
             plot_prop.lineStyle = '.'
@@ -492,6 +509,59 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def plot_fracture_variable_as_vector(var_value, mesh, Elements_to_plot, fig=None):
+    """
+    This function plots a given 2D vector field.
+
+    Args:
+        var_value:                      -- an array with each column having the following information:
+                                            [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge,
+                                             fy bottom edge, fx top edge, fy top edge]
+                                            note that "fx left edge" is the component along the x direction of the
+                                            vector at the left edge of the cell. The name of the cell is coincident with
+                                            the column position.
+        mesh (CartesianMesh):           -- a CartesianMesh object giving the descritization of the domain.
+        Elements_to_plot:               -- list of cell names on whose edges plot the vectors.
+        fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.
+
+    Returns:
+        (Figure):                       -- A Figure object that can be used superimpose further plots.
+
+    """
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    U = np.vstack((var_value[0,Elements_to_plot], var_value[2,Elements_to_plot]))
+    U = np.vstack((U, var_value[4,Elements_to_plot]))
+    U = np.vstack((U, var_value[6,Elements_to_plot]))
+    U = np.ndarray.flatten(U)
+
+    V = np.vstack((var_value[1,Elements_to_plot], var_value[3,Elements_to_plot]))
+    V = np.vstack((V, var_value[5,Elements_to_plot]))
+    V = np.vstack((V, var_value[7,Elements_to_plot]))
+    V = np.ndarray.flatten(V)
+
+    X = np.vstack((mesh.CenterCoor[Elements_to_plot,0]-mesh.hx*0.5, mesh.CenterCoor[Elements_to_plot,0]+mesh.hx*0.5))
+    X = np.vstack((X, mesh.CenterCoor[Elements_to_plot,0]))
+    X = np.vstack((X, mesh.CenterCoor[Elements_to_plot,0]))
+    X = np.ndarray.flatten(X)
+
+    Y = np.vstack((mesh.CenterCoor[Elements_to_plot,1], mesh.CenterCoor[Elements_to_plot,1]))
+    Y = np.vstack((Y, mesh.CenterCoor[Elements_to_plot,1]-mesh.hy*0.5))
+    Y = np.vstack((Y, mesh.CenterCoor[Elements_to_plot,1]+mesh.hy*0.5))
+    Y = np.ndarray.flatten(Y)
+
+    M = np.hypot(U, V)
+
+    ax.quiver(X,Y,U,V,M,pivot='mid')
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label=None):
     """
@@ -1090,7 +1160,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         else:
             ax_slice = fig.get_axes()[0]
 
-    if plot_prop is  None:
+    if plot_prop is None:
         plot_prop = PlotProperties()
         plot_prop.lineStyle = '.'
 
@@ -1944,7 +2014,7 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def plot_injection_source(inj_prop, mesh, fig=None, plot_prop=None):
+def plot_injection_source(frac, fig=None, plot_prop=None):
     """
     This function plots the location of the source.
     """
@@ -1958,10 +2028,12 @@ def plot_injection_source(inj_prop, mesh, fig=None, plot_prop=None):
     if plot_prop is None:
         plot_prop = PlotProperties()
 
-    ax.plot(mesh.CenterCoor[inj_prop.sourceElem, 0],
-            mesh.CenterCoor[inj_prop.sourceElem, 1],
+    ax.plot(frac.mesh.CenterCoor[frac.source, 0],
+            frac.mesh.CenterCoor[frac.source, 1],
             '.',
             color=plot_prop.lineColor)
+
+    return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -2022,8 +2094,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        projection=projection,
                                                        backGround_param=backGround_param,
                                                        fig=figures[indx],
-                                                       plot_prop=plot_prop,
-                                                       )
+                                                       plot_prop=plot_prop)
 
                 plot_prop.lineColor = 'k'
                 figures[indx] = fracture.plot_fracture(variable='footprint',
@@ -2057,6 +2128,10 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        contours_at=contours_at,
                                                        labels=labels,
                                                        plot_non_zero=plot_non_zero)
+
+            # plotting source elements
+            plot_injection_source(fracture, fig=figures[indx])
+
             # plotting closed cells
             if len(fracture.closed) > 0:
                 plot_prop.lineColor = 'orangered'

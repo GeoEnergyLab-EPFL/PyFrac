@@ -130,7 +130,7 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
+def get_rectangular_survey_cells(mesh, length, height, rect_center = [0.,0.], inj_point=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
     lengths and height. A list of all the cells inside the fracture is also provided.
@@ -148,8 +148,8 @@ def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
-    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]) < length)[0],
-                                 np.where(abs(mesh.CenterCoor[:, 1]) < height / 2)[0])
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]-rect_center[0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[:, 1]-rect_center[1]) < height / 2)[0])
     max_x = max(abs(mesh.CenterCoor[inner_cells, 0]))
     max_y = max(abs(mesh.CenterCoor[inner_cells, 1]))
     ribbon_x = np.where(abs(abs(mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
@@ -157,8 +157,8 @@ def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
 
     surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
     surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
-    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]))
-    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]))
+    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]-rect_center[0]))
+    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]-rect_center[1]))
 
     if len(inner_cells) == 0:
         raise SystemError("The given rectangular region is too small compared to the mesh!")
@@ -224,9 +224,9 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
     band = np.arange(mesh.NumberOfElts)
     # costruct the front
     if projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = False
+        correct_size_of_pstv_region = [False,False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
-        while not correct_size_of_pstv_region:
+        while not correct_size_of_pstv_region[0]:
             EltTip_tmp, \
             listofTIPcellsONLY, \
             l_tmp, \
@@ -242,7 +242,11 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
                                                                        inner_region,
                                                                        mesh,
                                                                        recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if not correct_size_of_pstv_region:
+            if correct_size_of_pstv_region[1]:
+                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
+                return exitstatus, None
+
+            if not correct_size_of_pstv_region[0]:
                 raise SystemExit('FRONT RECONSTRUCTION ERROR: it is not possible to initialize the front with the given distances to the front')
         sgndDist = sgndDist_k_temp
         del correct_size_of_pstv_region

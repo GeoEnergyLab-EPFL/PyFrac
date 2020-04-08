@@ -24,6 +24,10 @@ Fig_labels = {
     'ff': 'Fluid Flux',
     'fluid velocity': 'Fluid Velocity',
     'fv': 'Fluid Velocity',
+    'fluid velocity as vector field': 'Fluid Velocity',
+    'fvvf': 'Fluid Velocity',
+    'fluid flux as vector field': 'Fluid Flux',
+    'ffvf': 'Fluid Flux',
     'front_dist_min': 'Closest Distance to Front',
     'd_min': 'Closest Distance to Front',
     'front_dist_max': 'Farthest Distance to Front',
@@ -44,7 +48,10 @@ Fig_labels = {
     'footprint': 'Fracture Footprint',
     'surface': 'Fracture Surface',
     'chi': 'Tip leak-off parameter',
-    'tip_tri': 'Tip asymptotic regime'
+    'tip_tri': 'Tip asymptotic regime',
+    'regime': 'Propagation Regime (M-K)',
+    'source elements': 'Source Elements',
+    'se': 'Source Elements'
 }
 
 var_labels = {
@@ -64,6 +71,10 @@ var_labels = {
     'ff': 'fluid flux',
     'fluid velocity': 'fluid velocity',
     'fv': 'fluid velocity',
+    'fluid velocity as vector field': 'fluid velocity',
+    'fvvf': 'fluid velocity',
+    'fluid flux as vector field': 'fluid flux',
+    'ffvf': 'fluid flux',
     'front_dist_min': '$R_{min}$',
     'd_min': '$R_{min}$',
     'front_dist_max': '$R_{max}$',
@@ -84,7 +95,10 @@ var_labels = {
     'footprint': '',
     'surface': '',
     'chi': '',
-    'tip_tri' : ''
+    'tip_tri' : '',
+    'regime': 'regime (M = 1, K = 0)',
+    'source elements': 'source elements',
+    'se': 'source elements'
 }
 
 units = {
@@ -104,6 +118,10 @@ units = {
     'ff': ' ($m^2/s$)',
     'fluid velocity': ' ($m/s$)',
     'fv': ' ($m/s$)',
+    'fluid velocity as vector field': ' ($m/s$)',
+    'fvvf': ' ($m/s$)',
+    'fluid flux as vector field': ' ($m^2/s$)',
+    'ffvf': ' ($m^2/s$)',
     'front_dist_min': ' ($meters$)',
     'd_min': ' ($meters$)',
     'front_dist_max': ' ($meters$)',
@@ -124,7 +142,10 @@ units = {
     'footprint': '',
     'surface': ' ($mm$)',
     'chi': '',
-    'tip_tri' : ''
+    'tip_tri' : '',
+    'regime': '',
+    'source elements': '',
+    'se': ''
 }
 
 unit_conversion = {
@@ -144,6 +165,10 @@ unit_conversion = {
     'ff': 1.,
     'fluid velocity': 1.,
     'fv': 1.,
+    'fluid velocity as vector field': 1.,
+    'fvvf': 1.,
+    'fluid flux as vector field': 1.,
+    'ffvf': 1.,
     'front_dist_min': 1.,
     'd_min': 1.,
     'front_dist_max': 1.,
@@ -164,26 +189,32 @@ unit_conversion = {
     'footprint': None,
     'surface': 1.e-3,
     'chi': 1,
-    'tip_tri' : 1
+    'tip_tri' : 1,
+    'regime': 1.,
+    'source elements': 1.,
+    'se': 1.
 }
 
 
 supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                        'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                       'fluid velocity', 'fv', 'front_dist_min', 'd_min',
+                       'fluid velocity', 'fv',
+                       'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
+                       'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
-                       'chi','tip_tri']
+                       'chi','tip_tri','regime', 'source elements', 'se']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
                             'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total']
 bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
+                           'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
                            'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi',
-                           'chi','tip_tri']
+                           'chi','tip_tri','regime']
 
 required_string = {
     't': '100000',
@@ -222,9 +253,11 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'lkt\' or \'leaked off total\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
                     '-- \'ef\' or \'efficiency\'\n' \
-                    '-- \'surface\''\
-                    '-- \'chi\''\
-                    '-- \'tip_tri\''
+                    '-- \'surface\'\n'\
+                    '-- \'chi\'\n'\
+                    '-- \'tip_tri\'\n'\
+                    '-- \'regime\'\n' \
+                    '-- \'se\' or \'source elements\''
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -241,6 +274,10 @@ supported_projections ={
     'ff': ['2D_clrmap', '2D_contours', '3D'],
     'fluid velocity': ['2D_clrmap', '2D_contours', '3D'],
     'fv': ['2D_clrmap', '2D_contours', '3D'],
+    'fluid flux as vector field': ['2D_vectorfield'],
+    'ffvf': ['2D_vectorfield'],
+    'fluid velocity as vector field': ['2D_vectorfield'],
+    'fvvf': ['2D_vectorfield'],
     'front_dist_min': ['1D'],
     'd_min': ['1D'],
     'front_dist_max': ['1D'],
@@ -263,7 +300,10 @@ supported_projections ={
     'ef': ['1D'],
     'surface': ['3D'],
     'chi': ['2D_clrmap', '2D_contours'],
-    'tip_tri': ['2D_clrmap']
+    'tip_tri': ['2D_clrmap'],
+    'regime': ['2D_clrmap', '2D_contours', '3D'],
+    'source elements': ['2D_clrmap', '2D_contours', '3D'],
+    'se': ['2D_clrmap', '2D_contours', '3D']
 }
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
