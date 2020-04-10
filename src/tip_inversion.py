@@ -386,11 +386,11 @@ def TipAsymInversion(w, frac, matProp, simParmtrs, dt=None, Kprime_k=None, Eprim
                             ResFunc)
     ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
     if any(np.isnan(a)):
-        stagnant_from_bracketing = np.argwhere(np.isnan(a))[0]
+        stagnant_from_bracketing = np.argwhere(np.isnan(a))[::,0]
         a = np.delete(a, stagnant_from_bracketing)
         b = np.delete(b, stagnant_from_bracketing)
         if not stagnant.size == 0:
-            stagnant = np.sort(np.unique(np.concatenate(stagnant, moving[stagnant_from_bracketing])))
+            stagnant = np.sort(np.unique(np.hstack((stagnant, moving[stagnant_from_bracketing]))))
         else:
             stagnant = stagnant_from_bracketing
         moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
