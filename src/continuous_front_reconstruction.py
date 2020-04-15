@@ -2061,8 +2061,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             indexesFC_TYPE_4 = list_of_Cells_type_4_list[j]
 
             if len(indexesFC_TYPE_3) > 0:
-                if np.any(np.asarray(Fracturelist)[np.asarray(indexesFC_TYPE_3)]==1871):
-                    print('here')
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_3(indexesFC_TYPE_3, Args, x, y, typeindex, edgeORvertexID)
 
             if len(indexesFC_TYPE_1) > 0:
@@ -2144,6 +2142,53 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 4) - Cleaning up the points
                 """
                 """
+                new cleaning:
+                I found this situation that needs to be resolved before proceding with the next correction.
+                I will delete just one point in this case otherwise I can not identify the tip cell
+                    
+                                 A
+                 |___________|___**______|___________|_   
+                 |           |   ||      |           |
+                 |           |   ||      |           |
+                 |     +     |   ||-     |     -     |
+                 |           |   ||   C  |           | 
+                 |___________|___**==**__|___________|_
+                 |           |   B   ||  |           |
+                 |           |       ||  |           |
+                 |     +     |     + ||  |     _     |
+                 |           |       ||  |           |
+                 |           |       ||  |           |
+                 |___________|_______**__|___________|__
+                 |           |      D||  |           |
+                 |           |       ||  |           |
+                 |     +     |     + ||  |     _     |
+                 |           |       ||  |           |
+                 |           |       ||  |           |
+                 |___________|_______**__|___________|__
+                """
+                to_be_deleted = []
+                for jjj in range(len(typeindex)):
+                    if typeindex[jjj] == 0 and typeindex[jjj - 1] == 0:
+                        if edgeORvertexID[jjj] == edgeORvertexID[jjj - 1]:
+                            if typeindex[jjj-2] == 0: elements_A = mesh.Connectivityedgeselem[edgeORvertexID[jjj-2]]
+                            else: elements_A = mesh.Connectivitynodeselem[edgeORvertexID[jjj-2]]
+                            if typeindex[jjj+1] == 0: elements_D = mesh.Connectivityedgeselem[edgeORvertexID[jjj+1]]
+                            else: elements_D = mesh.Connectivitynodeselem[edgeORvertexID[jjj+1]]
+                            if np.intersect1d(elements_A,elements_D).size<1:
+                                to_be_deleted.append(jjj)
+                to_be_deleted = np.sort(np.asarray(to_be_deleted))
+                counter = 0
+                for jjj in range(to_be_deleted.size):
+                    value = to_be_deleted[jjj]
+                    del xintersection[value - counter]
+                    del yintersection[value - counter]
+                    del typeindex[value - counter]
+                    del edgeORvertexID[value - counter]
+                    counter = counter + 1
+                if counter > 0:
+                    recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
+                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " points on the same edge but close to each other")
+                """
                 new cleaning: 
                 clean only if the elements belong to the same edge
                 A and C are the corners to be deleted
@@ -2180,7 +2225,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     else: recursive_counter = recursive_counter + counter
                 if recursive_counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(recursive_counter) + " edge points")
+                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(recursive_counter) + " points on the same edge that leads to sub resolution")
 
                 """
                 CASE 1: 
