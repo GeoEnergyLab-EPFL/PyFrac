@@ -679,7 +679,7 @@ class SimulationProperties:
         self.projMethod = simul_param.proj_method
         self.enableGPU = simul_param.enable_GPU
         self.nThreads = simul_param.n_threads
-        if self.projMethod not in ['ILSA_orig', 'LS_grad']:
+        if self.projMethod not in ['ILSA_orig', 'LS_grad', 'LS_continousfront']:
             raise ValueError("Projection method is not recognised!")
 
         # fracture geometry to calculate analytical solution for plotting
