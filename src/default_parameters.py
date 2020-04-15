@@ -48,7 +48,7 @@ save_TS_jump = 1                        # the number of time steps after which t
 
 # type of solver
 elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
-m_Anderson = 3                          # number of previous solutions to take into account in the Anderson scheme
+m_Anderson = 20                         # number of previous solutions to take into account in the Anderson scheme
 relaxation_param = 1.0                  # parameter defining the under-relaxation performed (default is not relaxed)
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
