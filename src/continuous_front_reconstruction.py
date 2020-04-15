@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from properties import PlotProperties
+from matplotlib.collections import PatchCollection
 from level_set import *
 
 
@@ -206,7 +209,7 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
     else:
         return np.pi/2, x0, y2
 
-def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate=False):
+def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, grid=True):
         #fig = None
         if fig is None:
             fig = plt.figure()
@@ -228,15 +231,58 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
             plt.plot(mesh.CenterCoor[Negative_nonRibbon, 0], mesh.CenterCoor[Negative_nonRibbon, 1], ".",
                      marker="_", color='b')
         plt.plot(np.asarray(x), np.asarray(y), '.-', color='red')
-        if annotate:
-            x_center =mesh.CenterCoor[anularegion,0]
+
+        if annotate_cellName:
+            x_center = mesh.CenterCoor[anularegion,0]
             y_center = mesh.CenterCoor[anularegion,1]
             for i, txt in enumerate(anularegion):
                 ax.annotate(txt, (x_center[i], y_center[i]))
+
+        if annotate_edgeName:
+            edges_in_anularegion = np.unique(np.ndarray.flatten(mesh.Connectivityelemedges[anularegion]))
+            x_center = []
+            y_center = []
+            for i in edges_in_anularegion:
+                node_0 = mesh.Connectivityedgesnodes[i][0]
+                node_1 = mesh.Connectivityedgesnodes[i][1]
+                x_center.append(np.mean([mesh.VertexCoor[node_0, 0], mesh.VertexCoor[node_1, 0]]))
+                y_center.append(np.mean([mesh.VertexCoor[node_0, 1], mesh.VertexCoor[node_1, 1]]))
+            for i, txt in enumerate(edges_in_anularegion):
+                ax.annotate(txt, (x_center[i], y_center[i]))
+
+
+        if grid:
+            # set the four corners of the rectangular mesh
+            ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
+            ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
+
+            # add rectangle for each cell
+            patches = []
+            for i in range(mesh.NumberOfElts):
+                polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
+                patches.append(polygon)
+
+            # if plot_prop is None:
+            plot_prop = PlotProperties()
+            plot_prop.alpha = 0.65
+            plot_prop.lineColor = '0.5'
+            plot_prop.lineWidth = 0.2
+
+            p = PatchCollection(patches,
+                                cmap=plot_prop.colorMap,
+                                alpha=plot_prop.alpha,
+                                edgecolor=plot_prop.meshEdgeColor,
+                                linewidth=plot_prop.lineWidth)
+
+            colors = np.full((mesh.NumberOfElts,), 0.5)
+
+            p.set_array(np.array(colors))
+            ax.add_collection(p)
+            plt.axis('equal')
         plt.show()
         return fig
 
-def plot_cells(anularegion,mesh,sgndDist_k, Ribbon,list,fig=None, annotate=False):
+def plot_cells(anularegion,mesh,sgndDist_k, Ribbon,list,fig=None, annotate_cellName=False, grid=True):
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -261,12 +307,39 @@ def plot_cells(anularegion,mesh,sgndDist_k, Ribbon,list,fig=None, annotate=False
 
     plt.plot(mesh.CenterCoor[list, 0] + mesh.hx * .1,
              mesh.CenterCoor[list, 1] + mesh.hy * .1, ".", color='y')
-    if annotate:
+    if annotate_cellName:
         x_center = mesh.CenterCoor[anularegion,0]
         y_center = mesh.CenterCoor[anularegion,1]
         for i, txt in enumerate(anularegion):
             ax.annotate(txt, (x_center[i], y_center[i]))
+    if grid:
+        # set the four corners of the rectangular mesh
+        ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
+        ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
 
+        # add rectangle for each cell
+        patches = []
+        for i in range(mesh.NumberOfElts):
+            polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
+            patches.append(polygon)
+
+        # if plot_prop is None:
+        plot_prop = PlotProperties()
+        plot_prop.alpha = 0.65
+        plot_prop.lineColor = '0.5'
+        plot_prop.lineWidth = 0.2
+
+        p = PatchCollection(patches,
+                            cmap=plot_prop.colorMap,
+                            alpha=plot_prop.alpha,
+                            edgecolor=plot_prop.meshEdgeColor,
+                            linewidth=plot_prop.lineWidth)
+
+        colors = np.full((mesh.NumberOfElts,), 0.5)
+
+        p.set_array(np.array(colors))
+        ax.add_collection(p)
+        plt.axis('equal')
     plt.show()
     return fig
 
@@ -677,8 +750,8 @@ def define_orientation_type3OR4(type,Tx_other_intersections, mesh, sgndDist_k):
     for i in range(LS_TYPE_3or4.shape[0]):
         LS_TYPE_3or4[i,:]=np.multiply(LS_TYPE_3or4[i,:], testvector)
 
-    if (np.sum(LS_TYPE_3or4, axis=1)-1)[0] == 6 :
-     print("stop")
+    # if (np.sum(LS_TYPE_3or4, axis=1)-1)[0] == 4 :
+    #  print("stop")
     return (np.sum(LS_TYPE_3or4, axis=1)-1)
 
 def move_intersections_to_the_center_when_inRibbon_type3(indexesFC_T3_central_inters,
@@ -697,7 +770,7 @@ def move_intersections_to_the_center_when_inRibbon_type3(indexesFC_T3_central_in
     # check if the negative cells are Ribbon cells
     T3_other_intersections_test_if_Ribbon = np.isin(T3_other_intersections_name_of_negatives, Ribbon).astype(int)
 
-    # take to the next check only the cells that are within ribbon
+    # let to be examined by the next if condition only the cells that are within ribbon
     indexes_temp=np.nonzero(T3_other_intersections_test_if_Ribbon)[1]
     indexesFC_T3_2_intersections=indexesFC_T3_other_inters[indexes_temp]
     indexesFC_T3_0_1_2_intersections=np.delete(indexesFC_T3_other_inters,indexes_temp)
@@ -1907,9 +1980,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                     if str(next_cell_name) not in i_1_2_3_4_FC_type.keys():
                         if np.any(LSet_temp > 10. ** 40):
-                            print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tipe i cell not found in the anularegion)')
-                            correct_size_of_pstv_region = [False, False]
-                            return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
+
+                            if np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist)).size >0:
+                                raise SystemExit('FRONT RECONSTRUCTION ERROR: The front is going outside of the mesh.')
+                            else:
+                                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tipe i cell not found in the anularegion)')
+                                correct_size_of_pstv_region = [False, False]
+                                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
                     else:
                         cell_type = i_1_2_3_4_FC_type[str(next_cell_name)]
@@ -1928,13 +2005,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     list_of_Cells_type_3_list.append(Cells_type_3_list)
                     list_of_Cells_type_4_list.append(Cells_type_4_list)
                 else :
-                    print("<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>")
-                    print("set the LS of the positive cells to be -machine precision")
-                    all_cells_of_all_FC_of_this_small_fracture = np.unique(
-                        np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
-                    index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture] > 0)[0]
-                    sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -zero_level_set_value
-                    del index_of_positives, all_cells_of_all_FC_of_this_small_fracture
+                    if np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist)).size >0:
+                        raise SystemExit('FRONT RECONSTRUCTION ERROR: The front is going outside of the mesh.')
+                    else :
+                        print("<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>")
+                        print("set the LS of the positive cells to be -machine precision")
+                        all_cells_of_all_FC_of_this_small_fracture = np.unique(
+                            np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
+                        index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture] > 0)[0]
+                        sgndDist_k[all_cells_of_all_FC_of_this_small_fracture[index_of_positives]] = -zero_level_set_value
+                        del index_of_positives, all_cells_of_all_FC_of_this_small_fracture
             if len(list_of_Fracturelists)<1:
                 raise SystemExit('FRONT RECONSTRUCTION ERROR: not valid fractures have been found! Rememnber that you could have several fractures of too small size to be tracked')
         else :
@@ -1981,6 +2061,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             indexesFC_TYPE_4 = list_of_Cells_type_4_list[j]
 
             if len(indexesFC_TYPE_3) > 0:
+                if np.any(np.asarray(Fracturelist)[np.asarray(indexesFC_TYPE_3)]==1871):
+                    print('here')
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_3(indexesFC_TYPE_3, Args, x, y, typeindex, edgeORvertexID)
 
             if len(indexesFC_TYPE_1) > 0:
@@ -2075,30 +2157,33 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         | B     C  |
                         |          |  
                 """
-
-                to_be_deleted = []
-                for jjj in range(len(typeindex)):
-                    if typeindex[jjj] == 0 and typeindex[jjj-1] == 0:
-                        if edgeORvertexID[jjj] == edgeORvertexID[jjj-1]:
-                            if jjj-1 != -1: to_be_deleted.append(jjj-1)
-                            else : to_be_deleted.append(len(typeindex)-1)
-                            to_be_deleted.append(jjj)
-                to_be_deleted =np.sort(np.asarray( to_be_deleted ))
-                counter = 0
-                for jjj in range(to_be_deleted.size):
-                    value = to_be_deleted[jjj]
-                    del xintersection[value-counter]
-                    del yintersection[value-counter]
-                    del typeindex[value-counter]
-                    del edgeORvertexID[value-counter]
-                    counter = counter + 1
-
-                if counter > 0:
+                recursive_deleting = True
+                recursive_counter = 0
+                while recursive_deleting:
+                    to_be_deleted = []
+                    for jjj in range(len(typeindex)):
+                        if typeindex[jjj] == 0 and typeindex[jjj-1] == 0:
+                            if edgeORvertexID[jjj] == edgeORvertexID[jjj-1]:
+                                if jjj-1 != -1: to_be_deleted.append(jjj-1)
+                                else : to_be_deleted.append(len(typeindex)-1)
+                                to_be_deleted.append(jjj)
+                    to_be_deleted =np.sort(np.asarray( to_be_deleted ))
+                    counter = 0
+                    for jjj in range(to_be_deleted.size):
+                        value = to_be_deleted[jjj]
+                        del xintersection[value-counter]
+                        del yintersection[value-counter]
+                        del typeindex[value-counter]
+                        del edgeORvertexID[value-counter]
+                        counter = counter + 1
+                    if counter == 0: recursive_deleting = False
+                    else: recursive_counter = recursive_counter + counter
+                if recursive_counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " edge points")
+                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(recursive_counter) + " edge points")
 
                 """
-                new cleaning: 
+                CASE 1: 
                 C is the corner to be deleted
                 
                      ___|___________|___   
@@ -2116,7 +2201,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         |           |
                 """
                 """
-                new cleaning: 
+                CASE 2: 
                 B is the corner to be deleted
                 This case DO NOT CONSIDER WHEN D IS NOT IN THE SAME EDGE OF C
 
@@ -2134,9 +2219,32 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                      ___|__________**____
                         |          ||
                 """
+                """
+                CASE 3: 
+                B is the corner to be deleted
+                This case DO NOT CONSIDER WHEN G IS NOT IN ONE EDGE OF [CFED]
+
+                     ___L___________K____________J   
+                        |           |            |
+                        | A         |            |
+                      ==**          |            |
+                        |\\         | C          |
+                     ___F_**=======**____________I
+                        | B         \\           |
+                        |           |\\          |
+                        |           | \\         |
+                        |           |  \\        |
+                        |           |   \\ G     |
+                     ___E___________D____**______H (we only ask that G does not belong to [CFED]
+                        |           |
+                        
+                forbidden nodes are meant to be (D,E,F,C,K,L)
+                forbidden edges are meant to be all the edges of [CFED] and [FCKL]
+                """
                 vertex_indexes = np.where(np.asarray(typeindex) == 1)[0]
                 counter = 0
                 for jjj in range(vertex_indexes.size):
+                    cases_1and2_passed = False
                     vijjj = vertex_indexes[jjj]-counter
                     vertex_name = edgeORvertexID[vijjj]
                     edge_name_previous_point = edgeORvertexID[vijjj-1]
@@ -2153,6 +2261,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             del typeindex[index_to_delete]
                             del edgeORvertexID[index_to_delete]
                             counter = counter + 1
+                        else : cases_1and2_passed = True
                     # CASE 2 - removing the edge point
                     # previous vertex is on cell node & next vertex is on cell edge
                     elif (typeindex[vijjj - 1] == 1 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 0):
@@ -2167,6 +2276,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             del typeindex[index_to_delete]
                             del edgeORvertexID[index_to_delete]
                             counter = counter + 1
+                        else:
+                            cases_1and2_passed = True
                     # previous vertex is on cell edge & next vertex is on cell node
                     elif (typeindex[vijjj - 1] == 0 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 1) :
                         edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
@@ -2180,12 +2291,67 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             del typeindex[index_to_delete]
                             del edgeORvertexID[index_to_delete]
                             counter = counter + 1
+                        else:
+                            cases_1and2_passed = True
+                    if cases_1and2_passed :
+                        # CASE 3 - removing the edge point
+                        # PREVIOUS vertex is on cell edge or node that does not belog to any of the edges of the cell where
+                        # the current vertex lies & NEXT vertex is on the edge bounding the cell where the current vertex is
+
+                        edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
+                        # check that the next vertex has a edge in common with the current vertex
+                        # check that the next vertex is on edge
+                        if typeindex[(vijjj + 1) % (len(edgeORvertexID))] == 0 and \
+                            np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point).size == 1:
+
+                            common_cells = np.intersect1d(mesh.Connectivitynodeselem[vertex_name,:],mesh.Connectivityedgeselem[edge_name_next_point])
+                            forbidden_edges = np.ndarray.flatten(mesh.Connectivityelemedges[common_cells])
+                            forbidden_nodes = np.unique(np.ndarray.flatten(mesh.Connectivity[common_cells]))
+                            delete = False
+                            if typeindex[vijjj - 1] == 0: #it means that the previous vertex is on edge
+                                if not np.intersect1d(forbidden_edges, edge_name_previous_point).size > 0 :
+                                    delete = True
+                            else: #it means that the previous vertex is on a vertex
+                                if not np.intersect1d(forbidden_nodes, edge_name_previous_point).size > 0 :
+                                    delete = True
+                            if delete:
+                                index_to_delete = (vijjj + 1) % (len(edgeORvertexID))
+                                del xintersection[index_to_delete]
+                                del yintersection[index_to_delete]
+                                del typeindex[index_to_delete]
+                                del edgeORvertexID[index_to_delete]
+                                counter = counter + 1
+                        # NEXT vertex is on cell edge or node that does not belog to any of the edges of the cell where
+                        # the current vertex lies & PREVIOUS vertex is on the edge bounding the cell where the current vertex is
+
+                        # check that the previous vertex is on edge
+                        # check that the previous vertex has a edge in common with the current vertex
+                        elif typeindex[vijjj - 1] == 0 and \
+                             np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size == 1:
+
+                            common_cells = np.intersect1d(mesh.Connectivitynodeselem[vertex_name,:],mesh.Connectivityedgeselem[edge_name_previous_point])
+                            forbidden_edges = np.ndarray.flatten(mesh.Connectivityelemedges[common_cells])
+                            forbidden_nodes = np.unique(np.ndarray.flatten(mesh.Connectivity[common_cells]))
+                            delete = False
+                            if typeindex[(vijjj + 1) % (len(edgeORvertexID))] == 0: #it means that the next vertex is on edge
+                                if not np.intersect1d(forbidden_edges, edge_name_next_point).size > 0 :
+                                    delete = True
+                            else: #it means that the previous vertex is on a vertex
+                                if not np.intersect1d(forbidden_nodes, edge_name_next_point).size > 0 :
+                                    delete = True
+                            if delete:
+                                index_to_delete = vijjj - 1
+                                del xintersection[index_to_delete]
+                                del yintersection[index_to_delete]
+                                del typeindex[index_to_delete]
+                                del edgeORvertexID[index_to_delete]
+                                counter = counter + 1
                 if counter > 0:
                     print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " edge and corner points")
                     del n1, n2, edges_of_the_corner_vertex, index_to_delete
                 if vertex_indexes.size > 0 : del jjj, vertex_indexes, vijjj, vertex_name, edge_name_previous_point, edge_name_next_point
 
-
+                # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, xintersection, yintersection, fig=None)
 
                 """
                 new cleaning: 
@@ -2440,7 +2606,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                 yint = y
                                 xintersectionsfromzerovertex.append(xint)  # <--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
                                 yintersectionsfromzerovertex.append(yint)  # <--------- IT CAN BE REMOVED, IT IS ONLY FOR LOCAL DEBUGGING
-                                
+
                         else:
                             raise SystemExit(
                                 'FRONT RECONSTRUCTION ERROR: there are no nodes in the given tip cell that are inside the fracture')

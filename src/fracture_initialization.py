@@ -130,7 +130,70 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_rectangular_survey_cells(mesh, length, height, rect_center = [0.,0.], inj_point=None):
+def get_rectangular_survey_cells_new(mesh, length, height, rect_center = [0.,0.], inj_point=None):
+    """
+    This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
+    lengths and height. A list of all the cells inside the fracture is also provided.
+
+    Arguments:
+        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
+        length (float):                     -- the half length of the rectangle.
+        height (float):                     -- the height of the rectangle.
+        inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
+        rect_center (list or ndarray):      -- the coordinates [x, y] of the center of the rectangle.
+
+    Returns:
+        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given rectangle.
+        - surv_dist (ndarray)               -- the list of corresponding distances of the surv_cells to the fracture\
+                                               tip.
+        - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
+    """
+
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]-rect_center[0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[:, 1]-rect_center[1]) < height / 2)[0])
+    max_x = max(mesh.CenterCoor[inner_cells, 0])
+    min_x = min(mesh.CenterCoor[inner_cells, 0])
+    min_y = min(mesh.CenterCoor[inner_cells, 1])
+    max_y = max(mesh.CenterCoor[inner_cells, 1])
+
+    ribbon_max_x = np.where(abs(mesh.CenterCoor[inner_cells, 0] - max_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_max_y = np.where(abs(mesh.CenterCoor[inner_cells, 1] - max_y) < 100 * sys.float_info.epsilon)[0]
+    ribbon_min_x = np.where(abs(mesh.CenterCoor[inner_cells, 0] - min_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_min_y = np.where(abs(mesh.CenterCoor[inner_cells, 1] - min_y) < 100 * sys.float_info.epsilon)[0]
+
+    surv_cells = np.append(inner_cells[ribbon_max_x], inner_cells[ribbon_max_y])
+    surv_cells = np.append(surv_cells, inner_cells[ribbon_min_x])
+    surv_cells = np.append(surv_cells, inner_cells[ribbon_min_y])
+
+    surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
+
+    for i in range(len(surv_cells)):
+        surv_dist[i] = min([length - abs(mesh.CenterCoor[surv_cells[i], 0]-rect_center[0]),
+                            height / 2 - abs(mesh.CenterCoor[surv_cells[i], 1] - rect_center[1])
+                            ])
+
+    if len(inner_cells) == 0:
+        raise SystemError("The given rectangular region is too small compared to the mesh!")
+
+    if inj_point is not None:
+        surv_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=surv_cells)
+        inner_cells, tmp = shift_injection_point(inj_point[0],
+                                                 inj_point[1],
+                                                 mesh,
+                                                 active_elts=inner_cells)
+
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh.NumberOfElts,), )
+    # K[surv_cells] = surv_dist
+    # plot_as_matrix(K, mesh)
+    return surv_cells, surv_dist, inner_cells
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
     lengths and height. A list of all the cells inside the fracture is also provided.
@@ -148,8 +211,8 @@ def get_rectangular_survey_cells(mesh, length, height, rect_center = [0.,0.], in
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
-    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]-rect_center[0]) < length)[0],
-                                 np.where(abs(mesh.CenterCoor[:, 1]-rect_center[1]) < height / 2)[0])
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[:, 1]) < height / 2)[0])
     max_x = max(abs(mesh.CenterCoor[inner_cells, 0]))
     max_y = max(abs(mesh.CenterCoor[inner_cells, 1]))
     ribbon_x = np.where(abs(abs(mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
@@ -157,8 +220,8 @@ def get_rectangular_survey_cells(mesh, length, height, rect_center = [0.,0.], in
 
     surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
     surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
-    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]-rect_center[0]))
-    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]-rect_center[1]))
+    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]))
+    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]))
 
     if len(inner_cells) == 0:
         raise SystemError("The given rectangular region is too small compared to the mesh!")
@@ -174,6 +237,7 @@ def get_rectangular_survey_cells(mesh, length, height, rect_center = [0.,0.], in
                                                  active_elts=inner_cells)
 
     return surv_cells, surv_dist, inner_cells
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------

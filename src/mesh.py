@@ -31,21 +31,29 @@ class CartesianMesh:
                                        symmetric fracture solver.
 
     Attributes:
-        Lx,Ly (float):              -- length of the domain in x and y directions respectively. The rectangular domain
-                                       have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
-                                       the positive and negative halves are included.
-        nx,ny (int):                -- number of elements in x and y directions respectively.
-        hx,hy (float):              -- grid spacing in x and y directions respectively.
-        VertexCoor  (ndarray):      -- [x,y] Coordinates of the vertices.
-        CenterCoor  (ndarray):      -- [x,y] coordinates of the center of the elements.
-        NumberOfElts (int):         -- total number of elements in the mesh.
-        EltArea (float):            -- area of each element.
-        Connectivity (ndarray):     -- connectivity array giving four vertices of an element in the following order
-                                       [bottom left, bottom right, top right, top left]
-        NeiElements (ndarray):      -- Giving four neighboring elements with the following order:[left, right,
-                                       bottom, up].
-        distCenter (ndarray):       -- the distance of the cells from the center.
-        CenterElts (ndarray):       -- the element in the center (the cell with the injection point).
+        Lx,Ly (float):                    -- length of the domain in x and y directions respectively. The rectangular domain
+                                             have a total length of 2*Lx in the x direction and 2*Ly in the y direction. Both
+                                             the positive and negative halves are included.
+        nx,ny (int):                      -- number of elements in x and y directions respectively.
+        hx,hy (float):                    -- grid spacing in x and y directions respectively.
+        VertexCoor  (ndarray):            -- [x,y] Coordinates of the vertices.
+        CenterCoor  (ndarray):            -- [x,y] coordinates of the center of the elements.
+        NumberOfElts (int):               -- total number of elements in the mesh.
+        EltArea (float):                  -- area of each element.
+        Connectivity (ndarray):           -- connectivity array giving four vertices of an element in the following order
+                                             [bottom left, bottom right, top right, top left]
+        Connectivityelemedges (ndarray):  -- connectivity array giving four edges of an element in the following order
+                                             [bottom, right, top, left]
+        Connectivityedgeselem (ndarray):  -- connectivity array giving two elements that are sharing an edge
+        Connectivityedgesnodes (ndarray): -- connectivity array giving two vertices of an edge
+        Connectivitynodesedges (ndarray): -- connectivity array giving four edges of a node in the following order
+                                             [vertical_top, horizotal_left, vertical_bottom, horizotal_right]
+        Connectivitynodeselem (ndarray):  -- connectivity array giving four elements of a node in the following order
+                                             [bottom left, bottom right, top right, top left]
+        NeiElements (ndarray):            -- Giving four neighboring elements with the following order:[left, right,
+                                             bottom, up].
+        distCenter (ndarray):             -- the distance of the cells from the center.
+        CenterElts (ndarray):             -- the element in the center (the cell with the injection point).
 
     Note:
         The attributes below are only evaluated if symmetric solver is used.
@@ -473,6 +481,7 @@ class CartesianMesh:
                     # o___x___o     x is the current node
                     # | 0 | 1 |
                     # o___o___o
+                    #
                     connNodesElem[node, 0] = Nei[k, 2]  # element: bottom left with respect to the node x
                     connNodesElem[node, 1] = Nei[k + 1, 2]  # element: bottom right with respect to the node x
                     connNodesElem[node, 2] = Nei[k, 1]  # element: top right  with respect to the node x
