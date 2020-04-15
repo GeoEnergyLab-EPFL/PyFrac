@@ -1345,18 +1345,29 @@ def check_covergance(solk, solkm1, indices, tol):
     #     norm_w = np.linalg.norm(abs(delw - delw_km1) / abs(delw_km1))
     # else:
     #   norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / abs(solkm1[indices[0]]))
+    # norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
+    # if len(indices[2]) > 0: #these are the cells with the active width constraints
+    #     norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
+    # else :
+    #     norm_tr = 0.
 
-    #norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / np.maximum(np.linalg.norm(solkm1[indices[0]]),1.))
-    norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+    w_normalization = np.linalg.norm(solkm1[indices[0]])
+    if w_normalization >0.:
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
+    else : norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
 
-    #norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
-    #norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / np.maximum(np.linalg.norm(solkm1[indices[1]]),1.))
-    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]))
+    p_normalization = np.linalg.norm(solkm1[indices[1]])
+    if p_normalization >0.:
+        norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
+    else : norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
+    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
 
     if len(indices[2]) > 0: #these are the cells with the active width constraints
-        #norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
-        #norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / np.maximum(np.linalg.norm(solkm1[indices[2]]),1.))
-        norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
+        tr_normalization = np.linalg.norm(solkm1[indices[2]])
+        if tr_normalization > 0.:
+            norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / tr_normalization)
+        else:
+            norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
     else :
         norm_tr = 0.
 
