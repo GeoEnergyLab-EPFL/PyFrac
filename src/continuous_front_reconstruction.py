@@ -209,7 +209,7 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
     else:
         return np.pi/2, x0, y2
 
-def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, grid=True):
+def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True):
         #fig = None
         if fig is None:
             fig = plt.figure()
@@ -237,6 +237,19 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
             y_center = mesh.CenterCoor[anularegion,1]
             for i, txt in enumerate(anularegion):
                 ax.annotate(txt, (x_center[i], y_center[i]))
+
+        if annotatePoints:
+            points = range(len(x))
+            offset = np.sqrt(mesh.hx**2+mesh.hy**2)/15
+            for i,txt in enumerate(points):
+                ax.annotate(txt,
+                            xy=(x[i], y[i]),
+                            xycoords='data',
+                            xytext=(x[i]+offset, y[i]+offset),
+                            textcoords='data',
+                            arrowprops=dict(arrowstyle="->",
+                            connectionstyle="arc3"),)
+
 
         if annotate_edgeName:
             edges_in_anularegion = np.unique(np.ndarray.flatten(mesh.Connectivityelemedges[anularegion]))
@@ -2230,25 +2243,33 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 """
                 CASE 1: 
                 C is the corner to be deleted
-                
-                     ___|___________|___   
-                        |           |
-                        | A         |
-                      ==**          |
-                        |\\         | C
-                     ___|_**=======**___
-                        |  B       ||
-                        |          || 
-                        |          **  D
-                        |           \\         
-                        |           |\\  E
-                     ___|___________|_**_
-                        |           |
+                Loop over the corner nodes, check if the previous point is really on edge
+                                            check if the next point is really on edge
+                                            check if the next and previous points shares an edge of the edges exiting front C
+                                            check that the edges of the previous point and the next one belongs to the same element
+                                            in order to avoid the case where -A-B-C-G-E- will see C removed
+                     ___|___________|___________|_   
+                        |           |           |
+                        | A         |           |
+                      ==**          |           |
+                        |\\         | C    G    |
+                     ___|_**=======**______**___F_
+                        |  B       ||           |
+                        |          ||           |
+                        |          **  D        |
+                        |           \\          |
+                        |           |\\  E      |
+                     ___|___________|_**________|_
+                        |           |           |
                 """
                 """
                 CASE 2: 
                 B is the corner to be deleted
-                This case DO NOT CONSIDER WHEN D IS NOT IN THE SAME EDGE OF C
+                This case DO NOT CONSIDER WHEN D IS NOT IN THE SAME EDGE OF C AND IN THE SAME CELL OF B AND C
+                Loop over the corner nodes, check if the previous point is really on edge and next really on vertex
+                                            or vice versa...
+                                            check if the two points on the vertex shares the same edge
+                                            check if the the previous and the next point are on the same element
 
                      ___|___________|___   
                         |           |
@@ -2285,9 +2306,24 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         
                 forbidden nodes are meant to be (D,E,F,C,K,L)
                 forbidden edges are meant to be all the edges of [CFED] and [FCKL]
+                
+                     ___|___________|____________|___   
+                        |           |            |
+                        |           |            |
+                      ==**          |           **===
+                        |\\         |          //|
+                     ___|_**=======**=========**_|____
+                        |           |            |
+                        |           |            |
+                        |           |            |
+                        |           |            |
+                        |           |            |
+                     ___|___________|____________|__ 
+                        |           |            |
                 """
                 vertex_indexes = np.where(np.asarray(typeindex) == 1)[0]
                 counter = 0
+                add_at_the_end = 0
                 for jjj in range(vertex_indexes.size):
                     cases_1and2_passed = False
                     vijjj = vertex_indexes[jjj]-counter
@@ -2297,45 +2333,55 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     # CASE 1 - removing the corner point
                     if typeindex[vijjj-1] == 0 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 0:
                         edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
-                        n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size
-                        n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point ).size
-                        if n1 + n2 == 2:
+                        n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point)
+                        n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point )
+                        if np.intersect1d(mesh.Connectivityedgeselem[n1],mesh.Connectivityedgeselem[n2]).size>0:
                             index_to_delete = vijjj
                             del xintersection[index_to_delete]
                             del yintersection[index_to_delete]
                             del typeindex[index_to_delete]
                             del edgeORvertexID[index_to_delete]
-                            counter = counter + 1
+                            if index_to_delete != -1:
+                                counter = counter + 1
+                            else: add_at_the_end = add_at_the_end + 1
                         else : cases_1and2_passed = True
                     # CASE 2 - removing the edge point
                     # previous vertex is on cell node & next vertex is on cell edge
                     elif (typeindex[vijjj - 1] == 1 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 0):
                         edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
+                        sharing_the_element = np.intersect1d(mesh.Connectivitynodeselem[edge_name_previous_point], mesh.Connectivityedgeselem[edge_name_next_point]).size > 0
                         edge_name_previous_point = mesh.Connectivitynodesedges[edge_name_previous_point]
                         n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size
                         n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point ).size
-                        if n1 + n2 == 2:
+
+                        if n1 + n2 == 2 and sharing_the_element :
                             index_to_delete = (vijjj+1)%(len(edgeORvertexID))
                             del xintersection[index_to_delete]
                             del yintersection[index_to_delete]
                             del typeindex[index_to_delete]
                             del edgeORvertexID[index_to_delete]
-                            counter = counter + 1
+                            if index_to_delete != -1:
+                                counter = counter + 1
+                            else: add_at_the_end = add_at_the_end + 1
                         else:
                             cases_1and2_passed = True
                     # previous vertex is on cell edge & next vertex is on cell node
                     elif (typeindex[vijjj - 1] == 0 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 1) :
                         edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
+                        sharing_the_element = np.intersect1d(mesh.Connectivitynodeselem[edge_name_next_point],
+                                                             mesh.Connectivityedgeselem[edge_name_previous_point]).size > 0
                         edge_name_next_point = mesh.Connectivitynodesedges[edge_name_next_point]
                         n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size
                         n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point ).size
-                        if n1 + n2 == 2:
+                        if n1 + n2 == 2 and sharing_the_element :
                             index_to_delete = vijjj-1
                             del xintersection[index_to_delete]
                             del yintersection[index_to_delete]
                             del typeindex[index_to_delete]
                             del edgeORvertexID[index_to_delete]
-                            counter = counter + 1
+                            if index_to_delete != -1:
+                                counter = counter + 1
+                            else: add_at_the_end = add_at_the_end + 1
                         else:
                             cases_1and2_passed = True
                     if cases_1and2_passed :
@@ -2344,8 +2390,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         # the current vertex lies & NEXT vertex is on the edge bounding the cell where the current vertex is
 
                         edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
-                        # check that the next vertex has a edge in common with the current vertex
                         # check that the next vertex is on edge
+                        # check that the next vertex has a edge in common with the current vertex
                         if typeindex[(vijjj + 1) % (len(edgeORvertexID))] == 0 and \
                             np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point).size == 1:
 
@@ -2365,13 +2411,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                 del yintersection[index_to_delete]
                                 del typeindex[index_to_delete]
                                 del edgeORvertexID[index_to_delete]
-                                counter = counter + 1
-                        # NEXT vertex is on cell edge or node that does not belog to any of the edges of the cell where
+                                if index_to_delete != -1:
+                                    counter = counter + 1
+                                else:
+                                    add_at_the_end = add_at_the_end + 1
+                                # NEXT vertex is on cell edge or node that does not belog to any of the edges of the cell where
                         # the current vertex lies & PREVIOUS vertex is on the edge bounding the cell where the current vertex is
 
                         # check that the previous vertex is on edge
                         # check that the previous vertex has a edge in common with the current vertex
-                        elif typeindex[vijjj - 1] == 0 and \
+                        if typeindex[vijjj - 1] == 0 and \
                              np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point).size == 1:
 
                             common_cells = np.intersect1d(mesh.Connectivitynodeselem[vertex_name,:],mesh.Connectivityedgeselem[edge_name_previous_point])
@@ -2390,10 +2439,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                 del yintersection[index_to_delete]
                                 del typeindex[index_to_delete]
                                 del edgeORvertexID[index_to_delete]
-                                counter = counter + 1
+                                if index_to_delete != -1:
+                                    counter = counter + 1
+                                else:
+                                    add_at_the_end = add_at_the_end + 1
                 if counter > 0:
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " edge and corner points")
-                    del n1, n2, edges_of_the_corner_vertex, index_to_delete
+                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter+add_at_the_end) + " edge and corner points")
+                    del n1, n2, edges_of_the_corner_vertex, index_to_delete, add_at_the_end
                 if vertex_indexes.size > 0 : del jjj, vertex_indexes, vijjj, vertex_name, edge_name_previous_point, edge_name_next_point
 
                 # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, xintersection, yintersection, fig=None)
