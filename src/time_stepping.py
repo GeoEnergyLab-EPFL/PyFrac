@@ -587,11 +587,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         return exitstatus, None
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
-    # tipNeighb = Fr_lstTmStp.mesh.NeiElements[EltsTipNew, :]
-    # for i in range(0, len(EltsTipNew)):
-    #     if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
-    #         exitstatus = 12
-    #         return exitstatus, None
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
         exitstatus = 12
         return exitstatus, None
@@ -599,7 +594,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
     InCrack_k[Fr_lstTmStp.EltChannel] = 1
-    InCrack_k[EltsTipNew] = 1
+    InCrack_k[EltsTipNew] = 1  #EltsTipNew is new tip + fully traversed
 
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
@@ -640,8 +635,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
          EltCrack_k,
          EltRibbon_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                           Fr_lstTmStp.EltChannel,
+                                                           EltsTipNew,
                                                            listofTIPcellsONLY,
-                                                           sgndDist_k,
                                                            Fr_lstTmStp.mesh)
 
     # from utility import plot_as_matrix
@@ -1607,8 +1603,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
          EltCrack_k,
          EltRibbon_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                           Fr_lstTmStp.EltChannel,
+                                                           EltsTipNew,
                                                            listofTIPcellsONLY,
-                                                           sgndDist_k,
                                                            Fr_lstTmStp.mesh)
 
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements

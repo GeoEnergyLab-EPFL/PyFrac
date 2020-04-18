@@ -2,6 +2,7 @@
 """
 This file is part of PyFrac.
 
+Created by Carlo Peruzzo on Fri Apr 17 23:16:25 2020.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
@@ -12,6 +13,7 @@ from properties import MaterialProperties, FluidProperties, InjectionProperties,
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
+import math
 
 # creating mesh
 Mesh = CartesianMesh(0.65, 0.65, 69, 69)
@@ -30,6 +32,23 @@ def My_KIc_func(x, y):
 
 # material properties
 def sigmaO_func(x, y):
+
+    # to be uncommented to consider an heterogeneous field of stress
+    # lx = 0.20
+    # ly = 0.20
+    # if math.trunc(abs(x) / lx) >0:
+    #     if math.trunc(abs(x) / lx) %2 == 0:
+    #         x = abs(x) - (math.trunc(abs(x) / lx)) * lx
+    #     else :
+    #         x = abs(x) - (math.trunc(abs(x) / lx) + 1) * lx
+    #
+    # if math.trunc(abs(y) / ly) > 0:
+    #     if math.trunc(abs(y) / ly) %2 == 0:
+    #         y = abs(y) - (math.trunc(abs(y) / ly)) * ly
+    #     else :
+    #         y = abs(y) - (math.trunc(abs(y) / ly)+1) * ly
+
+
     """ The function providing the confining stress"""
     R=0.05
     x1=0.
@@ -67,7 +86,7 @@ simulProp.set_outputFolder("./Data/localized_stress_heterofgeneities") # the dis
 simulProp.saveFluidFluxAsVector = True
 simulProp.plotVar = ['ffvf']
 simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
-simulProp.saveToDisk = True
+simulProp.saveToDisk = False
 
 # initialization parameters
 Fr_geometry = Geometry('radial', radius=0.12)

@@ -209,6 +209,35 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
     else:
         return np.pi/2, x0, y2
 
+def plot_final_reconstruction(mesh,
+                              xintersection,
+                              yintersection,
+                              anularegion,
+                              sgndDist_k,
+                              newRibbon,
+                              listofTIPcells,
+                              xintersectionsfromzerovertex,
+                              yintersectionsfromzerovertex,
+                              vertexID):
+    A = np.full(mesh.NumberOfElts, np.nan)
+    A[anularegion] = sgndDist_k[anularegion]
+    from visualization import plot_fracture_variable_as_image
+    figure = plot_fracture_variable_as_image(A, mesh)
+    ax = figure.get_axes()[0]
+    xtemp = xintersection
+    ytemp = yintersection
+    xtemp.append(xtemp[0]) # close the front
+    ytemp.append(ytemp[0]) # close the front
+    # plt.plot(mesh.CenterCoor[listofTIPcells, 0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
+    plt.plot(xtemp, ytemp, '-o')
+    n=len(xintersectionsfromzerovertex)
+    for i in range(0,n) :
+        plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
+    plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
+    plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+    plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
+    plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
+
 def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True):
         #fig = None
         if fig is None:
@@ -2185,8 +2214,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         if edgeORvertexID[jjj] == edgeORvertexID[jjj - 1]:
                             if typeindex[jjj-2] == 0: elements_A = mesh.Connectivityedgeselem[edgeORvertexID[jjj-2]]
                             else: elements_A = mesh.Connectivitynodeselem[edgeORvertexID[jjj-2]]
-                            if typeindex[jjj+1] == 0: elements_D = mesh.Connectivityedgeselem[edgeORvertexID[jjj+1]]
-                            else: elements_D = mesh.Connectivitynodeselem[edgeORvertexID[jjj+1]]
+                            if typeindex[(jjj+1)%(len(edgeORvertexID))] == 0: elements_D = mesh.Connectivityedgeselem[edgeORvertexID[(jjj+1)%(len(edgeORvertexID))]]
+                            else: elements_D = mesh.Connectivitynodeselem[edgeORvertexID[(jjj+1)%(len(edgeORvertexID))]]
                             if np.intersect1d(elements_A,elements_D).size<1:
                                 to_be_deleted.append(jjj)
                 to_be_deleted = np.sort(np.asarray(to_be_deleted))
@@ -2719,30 +2748,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 if len(xintersection)==0:
                     raise SystemExit('FRONT RECONSTRUCTION ERROR: front not reconstructed')
 
-                # A = np.full(mesh.NumberOfElts, np.nan)
-                # A[anularegion] = sgndDist_k[anularegion]
-                # from visualization import plot_fracture_variable_as_image
-                # figure = plot_fracture_variable_as_image(A, mesh)
-                # ax = figure.get_axes()[0]
-                # xtemp = xintersection
-                # ytemp = yintersection
-                # xtemp.append(xtemp[0]) # close the front
-                # ytemp.append(ytemp[0]) # close the front
-                # # plt.plot(mesh.CenterCoor[listofTIPcells, 0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
-                # plt.plot(xtemp, ytemp, '-o')
-                # n=len(xintersectionsfromzerovertex)
-                # for i in range(0,n) :
-                #     plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
-                      ##plt.plot([mesh.CenterCoor[listofTIPcells[(i+1)%n], 0], xintersectionsfromzerovertex[i]],[mesh.CenterCoor[listofTIPcells[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
-                # # plt.plot(xred, yred, '.',color='red' )
-                # # plt.plot(xgreen, ygreen, '.',color='yellow')
-                # # plt.plot(xblack, yblack, '.',color='black')
-                # plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
-                # #plt.plot(mesh.CenterCoor[Ribbon,0], mesh.CenterCoor[Ribbon,1], '.',color='b')
-                # plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
-                # plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
-                # plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
-
                 # from utility import plot_as_matrix
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[listofTIPcells] = angles
@@ -3018,11 +3023,19 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             correct_size_of_pstv_region,\
             sgndDist_k, Ffront
 
-def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, mesh):
+def UpdateListsFromContinuousFrontRec(newRibbon,
+                                      EltChannel_k,
+                                      listofTIPcells,
+                                      listofTIPcellsONLY,
+                                      mesh):
 
-        EltChannel_k = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcells)
-        EltTip_k = listofTIPcells #the current tip cells are not including anymore the fully traversed
-        EltCrack_k = np.concatenate((listofTIPcells, EltChannel_k))
+        # the listofTIPcells is not including the fully traversed
+
+        #EltChannel_k = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcellsONLY)
+        fully_traversed = np.setdiff1d(listofTIPcells, listofTIPcellsONLY)
+        EltChannel_k = np.concatenate((EltChannel_k,fully_traversed))
+        EltTip_k = listofTIPcellsONLY
+        EltCrack_k = np.concatenate((EltChannel_k,listofTIPcellsONLY))
 
         # from utility import plot_as_matrix
         # K = np.zeros((mesh.NumberOfElts,), )
@@ -3044,22 +3057,3 @@ def UpdateListsFromContinuousFrontRec(newRibbon, listofTIPcells, sgndDist_k, mes
         # K = np.zeros((mesh.NumberOfElts,), )
         # plot_as_matrix(CellStatus_k, mesh)
         return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, CellStatus_k
-
-# A = np.full(mesh.NumberOfElts, np.nan)
-# A[anularegion] = sgndDist_k[anularegion]
-# from visualization import plot_fracture_variable_as_image
-# figure = plot_fracture_variable_as_image(A, mesh)
-# ax = figure.get_axes()[0]
-# xtemp = xintersection
-# ytemp = yintersection
-# xtemp.append(xtemp[0]) # close the front
-# ytemp.append(ytemp[0]) # close the front
-# # plt.plot(mesh.CenterCoor[listofTIPcells, 0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
-# plt.plot(xtemp, ytemp, '-o')
-# n=len(xintersectionsfromzerovertex)
-# for i in range(0,n) :
-#     plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
-# plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
-# plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
-# plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
-# plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
