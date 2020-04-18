@@ -403,28 +403,45 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel, regime):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def find_corresponding_ribbon_cell(tip_cells, alpha, zero_vertex, mesh):
+    """
+     zero_vertex is the node index in the mesh.Connectivity
+     The four vertices of an element have the following order
+     ______ ______ ______
+    |      |      |      |
+    |   C  |  D   |  E   |
+    |______3______2______|
+    |      |      |      |
+    |   B  |  i   |  F   |
+    |______0______1______|
+    |      |      |      |
+    |   A  |  H   |  G   |
+    |______|______|______|
 
+    #                         0     1      2      3
+    #       NeiElements[i]->[left, right, bottom, up]
+    #                         B     F      H      D
+    """
     corr_ribbon = np.empty((len(tip_cells), ), dtype=int)
     for i in range(len(tip_cells)):
         if alpha[i] == 0:
             if zero_vertex[i] == 0 or zero_vertex[i] == 3:
-                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 0]
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 0] # B
             elif zero_vertex[i] == 1 or zero_vertex[i] == 2:
-                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 1]
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 1] # F
         elif alpha[i] == np.pi/2:
             if zero_vertex[i] == 0 or zero_vertex[i] == 1:
-                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 2]
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 2] # H
             elif zero_vertex[i] == 3 or zero_vertex[i] == 2:
-                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 3]
+                corr_ribbon[i] = mesh.NeiElements[tip_cells[i], 3] # D
         else:
             if zero_vertex[i] == 0:
-                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 2], 0]
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 2], 0] # A
             elif zero_vertex[i] == 1:
-                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 2], 1]
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 2], 1] # G
             elif zero_vertex[i] == 2:
-                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 1]
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 1] # E
             elif zero_vertex[i] == 3:
-                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 0]
+                corr_ribbon[i] = mesh.NeiElements[mesh.NeiElements[tip_cells[i], 3], 0] # C
 
     return corr_ribbon
 
