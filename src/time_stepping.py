@@ -388,7 +388,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 projection_method = projection_from_ribbon
             elif sim_properties.projMethod == 'LS_grad':
                 projection_method = projection_from_ribbon_LS_gradient
-            if itr == 0:
+            elif sim_properties.projMethod == 'LS_continousfront': #todo: test this case!!!
+                projection_method = projection_from_ribbon_LS_gradient
+            if itr == 0 :
                 # first iteration
                 alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
                                                    Fr_lstTmStp.EltChannel,
@@ -1840,8 +1842,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 projection_method = projection_from_ribbon
             elif sim_properties.projMethod == 'LS_grad':
                 projection_method = projection_from_ribbon_LS_gradient
+            elif sim_properties.projMethod == 'LS_continousfront':
+                projection_method = projection_from_ribbon_LS_gradient #todo: test this case!!!
 
-            if itr == 0:
+            if itr == 0 :
                 # first iteration
                 alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
                                                    Fr_lstTmStp.EltChannel,
