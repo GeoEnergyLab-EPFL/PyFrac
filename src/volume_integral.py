@@ -417,10 +417,16 @@ def find_corresponding_ribbon_cell(tip_cells, alpha, zero_vertex, mesh):
     |   A  |  H   |  G   |
     |______|______|______|
 
+
+      zero vertex =                0   1    2   3
+      ______________________________________________
+      case alpha = 0         ->    B   F    F   B
+           alpha = pi/2      ->    H   D    D   H
+           alpha = any other ->    A   G    E   C
+    """
     #                         0     1      2      3
     #       NeiElements[i]->[left, right, bottom, up]
     #                         B     F      H      D
-    """
     corr_ribbon = np.empty((len(tip_cells), ), dtype=int)
     for i in range(len(tip_cells)):
         if alpha[i] == 0:
