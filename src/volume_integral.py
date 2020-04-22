@@ -12,9 +12,18 @@ import numpy as np
 from scipy.optimize import brentq
 from tip_inversion import f, C1, C2
 
+beta_m = 2**(1/3) * 3**(5/6)
+beta_mtld = 4/(15**(1/4) * (2**0.5 - 1)**(1/4))
+cnst_mc = 3 * beta_mtld**4 / (4 * beta_m**3)
+cnst_m = beta_m**3 / 3
+Ki_c = 3000
+
 def TipAsym_UniversalW_zero_Res(w, *args):
     """Function to be minimized to find root for universal Tip assymptote (see Donstov and Pierce 2017)"""
     (dist, Kprime, Eprime, muPrime, Cbar, Vel) = args
+
+    if Cbar == 0:
+        return TipAsym_MK_W_zrthOrder_Res(w, *args)
 
     Kh = Kprime * dist ** 0.5 / (Eprime * w)
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * w)
@@ -29,6 +38,9 @@ def TipAsym_UniversalW_delt_Res(w, *args):
 
     (dist, Kprime, Eprime, muPrime, Cbar, Vel) = args
 
+    if Cbar == 0:
+        return TipAsym_MK_W_deltaC_Res(w, *args)
+
     Kh = Kprime * dist ** 0.5 / (Eprime * w)
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * w)
     sh = muPrime * Vel * dist ** 2 / (Eprime * w ** 3)
@@ -42,6 +54,53 @@ def TipAsym_UniversalW_delt_Res(w, *args):
 
     return sh - gdelt
 
+# -----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_MK_W_zrthOrder_Res(w, *args):
+    """Residual function for viscosity to toughness regime with transition, without leak off"""
+
+    (dist, Kprime, Eprime, muPrime, Cbar, Vel) = args
+
+    if Kprime == 0:
+        return TipAsym_viscStor_Res(w, *args) #todo: make this
+    if muPrime == 0:
+        # return toughness dominated asymptote
+        return dist - w ** 2 * (Eprime / Kprime) ** 2
+
+    w_tld = Eprime * w / (Kprime * dist**0.5)
+    return w_tld - (1 + beta_m ** 3 * Eprime**2 * Vel * dist**0.5 * muPrime / Kprime**3)**(1/3)
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_MK_W_deltaC_Res(w, *args):
+    """Residual function for viscosity to toughness regime with transition, without leak off"""
+
+    (dist, Kprime, Eprime, muPrime, Cbar, Vel) = args
+
+    if Kprime == 0:
+        return TipAsym_viscStor_Res(w, *args)
+    if muPrime == 0:
+        # return toughness dominated asymptote
+        return dist - w ** 2 * (Eprime / Kprime) ** 2
+
+    w_tld = Eprime * w / (Kprime * dist ** 0.5)
+
+    l_mk = (Kprime ** 3 / (Eprime ** 2 * muPrime * Vel)) ** 2
+    x_tld = (dist / l_mk) ** (1/2)
+    delta = 1 / 3 * beta_m ** 3 * x_tld / (1 + beta_m ** 3 * x_tld)
+    return w_tld - (1 + 3 * C1(delta) * x_tld) ** (1/3)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_viscStor_Res(w, *args):
+    """Residual function for viscosity dominate regime, without leak off"""
+
+    (dist, Kprime, Eprime, muPrime, Cbar, Vel) = args
+
+    return w - (18 * 3 ** 0.5 * Vel * muPrime / Eprime) ** (1 / 3) * dist ** (
+            2 / 3)
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime):
     """Moments of the General tip asymptote to calculate the volume integral (see Donstov and Pierce, 2017)"""
@@ -99,7 +158,8 @@ def VolumeTriangle(dist, *param):
 
     regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
-    if stagnant: regime = 'U1'
+    if stagnant:
+        regime = 'U1'
 
     if regime == 'A':
         return dist ** 2 * em / 2
@@ -157,7 +217,8 @@ def Area(dist, *param):
 
     regime, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, arrival_t, em, t_lstTS, dt = param
 
-    if stagnant: regime = 'U1'
+    if stagnant:
+        regime = 'U1'
 
     if regime == 'A':
         return dist
