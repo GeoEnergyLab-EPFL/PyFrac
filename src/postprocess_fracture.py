@@ -134,7 +134,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
+def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, source_loc=np.asarray([0,0])):
     """ This function returns the required variable from a fracture list.
 
     Args:
@@ -260,16 +260,21 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in fracture_list:
             # coordinate of the zero vertex in the tip cells
-            vertex_coord_tip = i.mesh.VertexCoor[i.mesh.Connectivity[i.EltTip, i.ZeroVertex]]
+            #vertex_coord_tip = i.mesh.VertexCoor[i.mesh.Connectivity[i.EltTip, i.ZeroVertex]]
+            front_intersect_dist = np.sqrt((i.Ffront[::,[0,2]].flatten() - source_loc[0]) ** 2
+                                           + (i.Ffront[::,[1,3]].flatten() - source_loc[1]) ** 2)
             if variable == 'front_dist_mean' or variable == 'd_mean':
-                variable_list.append(np.mean((vertex_coord_tip[:, 0] ** 2 +
-                                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+                variable_list.append(np.mean(front_intersect_dist))
+            #    variable_list.append(np.mean((vertex_coord_tip[:, 0] ** 2 +
+            #                                  vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             elif variable == 'front_dist_max' or variable == 'd_max':
-                variable_list.append(max((vertex_coord_tip[:, 0] ** 2 +
-                                          vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+                variable_list.append(np.max(front_intersect_dist))
+            #    variable_list.append(max((vertex_coord_tip[:, 0] ** 2 +
+            #                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             elif variable == 'front_dist_min' or variable == 'd_min':
-                variable_list.append(min((vertex_coord_tip[:, 0] ** 2 +
-                                          vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+                variable_list.append(np.min(front_intersect_dist))
+            #    variable_list.append(min((vertex_coord_tip[:, 0] ** 2 +
+            #                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             time_srs.append(i.time)
     elif variable == 'mesh':
         for i in fracture_list:
