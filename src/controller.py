@@ -630,6 +630,9 @@ class Controller:
                                                                                 plot_prop=plot_prop,
                                                                                 plot_mesh=False,
                                                                                 print_number=False)
+                    plt.ion()
+                    plt.pause(0.5)
+                    
                 # set figure position
                 if self.setFigPos:
                     for i in range(len(self.sim_prop.plotVar)):
@@ -647,8 +650,6 @@ class Controller:
                     self.setFigPos = False
 
                 # plot the figure
-                plt.ion()
-                plt.pause(0.01)
                 print("Done! ")
                 if self.sim_prop.blockFigure:
                     input("Press any key to continue.")
