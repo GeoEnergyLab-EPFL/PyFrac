@@ -1173,7 +1173,13 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 corresponding = np.where(EltCrack_k == Fr_lstTmStp.mesh.NeiElements[elem, 3])[0]
                 if len(corresponding) > 0:
                     corr_nei[i, 3] = corresponding
-
+            
+            lst_edgeInCrk = None
+            if fluid_properties.rheology in ["Herschel-Bulkley", "HBF", 'power law', 'PLF']:
+                lst_edgeInCrk = [np.where(InCrack[Fr_lstTmStp.mesh.NeiElements[EltCrack_k, 0]]),
+                              np.where(InCrack[Fr_lstTmStp.mesh.NeiElements[EltCrack_k, 1]]),
+                              np.where(InCrack[Fr_lstTmStp.mesh.NeiElements[EltCrack_k, 2]]),
+                              np.where(InCrack[Fr_lstTmStp.mesh.NeiElements[EltCrack_k, 3]])]
 
             arg = (
                 EltCrack_k,
@@ -1191,8 +1197,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 InCrack,
                 LkOff,
                 neg,
-                corr_nei
-                )
+                corr_nei,
+                lst_edgeInCrk)
             
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if sim_properties.solveDeltaP:
