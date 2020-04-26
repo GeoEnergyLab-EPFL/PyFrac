@@ -692,12 +692,12 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
     
-    interItr_Kp1 = [None] * 3
+    interItr_kp1 = [None] * 3
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
-                                 to_impose, active, interItr_Kp1,
+                                 to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
     
 
@@ -763,7 +763,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
-    interItr_Kp1[1] = below_wc
+    interItr_kp1[1] = below_wc
 
     return A, S, interItr_kp1, indices
 
@@ -835,12 +835,12 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
-    interItr_Kp1 = [None] * 3
+    interItr_kp1 = [None] * 3
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
-                                 to_impose, active, interItr_Kp1,
+                                 to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
     
 
@@ -911,7 +911,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
-    interItr_Kp1[1] = below_wc
+    interItr_kp1[1] = below_wc
 
     return A, S, interItr_kp1, indices
 
@@ -982,12 +982,12 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
-    interItr_Kp1 = [None] * 3
+    interItr_kp1 = [None] * 3
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
-                                 to_impose, active, interItr_Kp1,
+                                 to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
     
 
@@ -1053,7 +1053,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
-    interItr_Kp1[1] = below_wc
+    interItr_kp1[1] = below_wc
 
     return A, S, interItr_kp1, indices
 
@@ -1120,16 +1120,16 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     below_wc = np.where(wNplusOne[to_solve] < mat_prop.wc)[0]
     below_wc_km1 = interItr[1]
     below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
-    wNplusOne[to_solve[below_wc]] = mat_prop.w
+    wNplusOne[to_solve[below_wc]] = mat_prop.wc
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
-    interItr_Kp1 = [None] * 3
+    interItr_kp1 = [None] * 3
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
-                                 to_impose, active, interItr_Kp1,
+                                 to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
     
 
@@ -1197,7 +1197,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
-    interItr_Kp1[1] = below_wc
+    interItr_kp1[1] = below_wc
     
     return A, S, interItr_kp1, indices
 
