@@ -71,11 +71,10 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
     Args:
         w (ndarray):                -- the width of the trial fracture.
         EltCrack (ndarray):         -- the list of elements inside the fracture.
-        muPrime (ndarray):          -- the scaled local viscosity of the injected fluid (12 * viscosity)
+        fluidProp (object):         -- FluidProperties class object giving the fluid properties.
         Mesh (CartesianMesh):       -- the mesh.
         InCrack (ndarray):          -- An array specifying whether elements are inside the fracture or not with
                                        1 or 0 respectively.
-        density (float):            -- the density of the fluid.
         simProp (object):           -- An object of the SimulationProperties class.
 
     Returns:
@@ -108,20 +107,17 @@ def FiniteDiff_operator_turbulent_implicit(w, pf, EltCrack, fluidProp, matProp, 
     Args:
         w (ndarray):                -- the width of the trial fracture.
         EltCrack (ndarray):         -- the list of elements inside the fracture
-        mu (ndarray):               -- the local viscosity of the injected fluid
-        Mesh (CartesianMesh):       -- the mesh.
+        fluidProp (object):         -- FluidProperties class object giving the fluid properties.
+        matProp (object):           -- An instance of the MaterialProperties class giving the material properties.
+        simProp (object):           -- An object of the SimulationProperties class.
+        mesh (CartesianMesh):       -- the mesh.
         InCrack (ndarray):          -- an array specifying whether elements are inside the fracture or not with
                                        1 or 0 respectively.
-        rho (float):                -- density of the fluid.
         vkm1 (ndarray):             -- the velocity at cell edges from the previous iteration (if necessary). Here,
                                        it is used as the starting guess for the implicit solver.
-        C (ndarray):                -- the elasticity matrix.
-        sigma0 (ndarrray):          -- the confining stress.
-        dgrain (float):             -- the grain size. Used to get the relative roughness.
         to_solve (ndarray):         -- the channel elements to be solved.
         active (ndarray):           -- the channel elements where width constraint is active.
         to_impose (ndarray):        -- the tip elements to be imposed.
-        simProp (object):           -- An object of the SimulationProperties class.
                 
     Returns:
         - FinDiffOprtr (ndarray)    -- the finite difference matrix.
@@ -353,20 +349,24 @@ def findBracket(func, guess,*args):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, neiInCrack, in_tip, simProp):
+def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, neiInCrack, edgeInCrk_lst, simProp):
     """
     The function evaluate the finite difference 5 point stencil matrix, i.e. the A matrix in the ElastoHydrodynamic
     equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated for Herschel-Bulkley fluid rheology.
 
     Args:
         w (ndarray):            -- the width of the trial fracture.
+        pf (ndarray):           -- the fluid pressure.
         EltCrack (ndarray):     -- the list of elements inside the fracture.
-        muPrime (ndarray):      -- the scaled local viscosity of the injected fluid (12 * viscosity).
+        fluidProp (object):     -- FluidProperties class object giving the fluid properties.
         Mesh (CartesianMesh):   -- the mesh.
         InCrack (ndarray):      -- an array specifying whether elements are inside the fracture or not with
                                    1 or 0 respectively.
         neiInCrack (ndarray):   -- an ndarray giving indices of the neighbours of all the cells in the crack, in the
                                    EltCrack list.
+        edgeInCrk_lst (ndarray):-- this list provides the indices of those cells in the EltCrack list whose neighbors are not 
+                                   outside the crack. It is used to evaluate the conductivity on edges of only these cells who
+                                   are inside. It consists of four lists, one for each edge.
         simProp (object):       -- An object of the SimulationProperties class.
 
     Returns:
@@ -422,14 +422,14 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
     # dpBtm[dpBtm == 0] = 1e-10
 
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
-    cond[0, in_tip[0]] = (wLftEdge[in_tip[0]] ** (2 * fluidProp.n + 1) * dpLft[in_tip[0]] / \
-                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpLft[in_tip[0]]
-    cond[1, in_tip[1]] = (wRgtEdge[in_tip[1]] ** (2 * fluidProp.n + 1) * dpRgt[in_tip[1]] / \
-                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpRgt[in_tip[1]]
-    cond[2, in_tip[2]] = (wBtmEdge[in_tip[2]] ** (2 * fluidProp.n + 1) * dpBtm[in_tip[2]] / \
-                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpBtm[in_tip[2]]
-    cond[3, in_tip[3]] = (wTopEdge[in_tip[3]] ** (2 * fluidProp.n + 1) * dpTop[in_tip[3]] / \
-                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpTop[in_tip[3]]
+    cond[0, edgeInCrk_lst[0]] = (wLftEdge[edgeInCrk_lst[0]] ** (2 * fluidProp.n + 1) * dpLft[edgeInCrk_lst[0]] / \
+                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpLft[edgeInCrk_lst[0]]
+    cond[1, edgeInCrk_lst[1]] = (wRgtEdge[edgeInCrk_lst[1]] ** (2 * fluidProp.n + 1) * dpRgt[edgeInCrk_lst[1]] / \
+                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpRgt[edgeInCrk_lst[1]]
+    cond[2, edgeInCrk_lst[2]] = (wBtmEdge[edgeInCrk_lst[2]] ** (2 * fluidProp.n + 1) * dpBtm[edgeInCrk_lst[2]] / \
+                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpBtm[edgeInCrk_lst[2]]
+    cond[3, edgeInCrk_lst[3]] = (wTopEdge[edgeInCrk_lst[3]] ** (2 * fluidProp.n + 1) * dpTop[edgeInCrk_lst[3]] / \
+                         fluidProp.Mprime) ** (1 / fluidProp.n) / dpTop[edgeInCrk_lst[3]]
 
     indx_elts = np.arange(len(EltCrack))
     FinDiffOprtr[indx_elts, indx_elts] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2
@@ -452,20 +452,24 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCrack, neiInCrack, in_tip, simProp):
+def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCrack, neiInCrack, edgeInCrk_lst, simProp):
     """
     The function evaluate the finite difference 5 point stencil matrix, i.e. the A matrix in the ElastoHydrodynamic
     equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated for Herschel-Bulkley fluid rheology.
 
     Args:
         w (ndarray):            -- the width of the trial fracture.
+        pf (ndarray):           -- the fluid pressure.
         EltCrack (ndarray):     -- the list of elements inside the fracture.
-        muPrime (ndarray):      -- the scaled local viscosity of the injected fluid (12 * viscosity).
+        fluidProp (object):     -- FluidProperties class object giving the fluid properties.
         Mesh (CartesianMesh):   -- the mesh.
         InCrack (ndarray):      -- an array specifying whether elements are inside the fracture or not with
                                    1 or 0 respectively.
         neiInCrack (ndarray):   -- an ndarray giving indices of the neighbours of all the cells in the crack, in the
                                    EltCrack list.
+        edgeInCrk_lst (ndarray):-- this list provides the indices of those cells in the EltCrack list whose neighbors are not 
+                                   outside the crack. It is used to evaluate the conductivity on edges of only these cells who
+                                   are inside. It consists of four lists, one for each edge.
         simProp (object):       -- An object of the SimulationProperties class.
 
     Returns:
@@ -523,21 +527,21 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
     
     x = 1 - 2 * fluidProp.T0 / wLftEdge / dpLft
-    # tip_edge = np.where(InCrack[Mesh.NeiElements[EltCrack, 0]])
-    cond[0, in_tip[0]] = fluidProp.var1 * dpLft[in_tip[0]] ** fluidProp.var2 * wLftEdge[in_tip[0]] ** fluidProp.var3 * x[in_tip[0]]**fluidProp.var4 * \
-                  (1 + 2*fluidProp.T0 / wLftEdge[in_tip[0]] / dpLft[in_tip[0]] * fluidProp.var5)
+    cond[0, edgeInCrk_lst[0]] = fluidProp.var1 * dpLft[edgeInCrk_lst[0]] ** fluidProp.var2 * wLftEdge[edgeInCrk_lst[0]] ** \
+                                fluidProp.var3 * x[edgeInCrk_lst[0]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wLftEdge[edgeInCrk_lst[0]] / dpLft[edgeInCrk_lst[0]] * fluidProp.var5)
     x = 1 - 2*fluidProp.T0 / wRgtEdge / dpRgt
-    # tip_edge = np.where(InCrack[Mesh.NeiElements[EltCrack, 1]])
-    cond[1, in_tip[1]] = fluidProp.var1 * dpRgt[in_tip[1]] ** fluidProp.var2 * wRgtEdge[in_tip[1]] ** fluidProp.var3 * x[in_tip[1]]**fluidProp.var4 * \
-                  (1 + 2*fluidProp.T0 / wRgtEdge[in_tip[1]] / dpRgt[in_tip[1]] * fluidProp.var5)
+    cond[1, edgeInCrk_lst[1]] = fluidProp.var1 * dpRgt[edgeInCrk_lst[1]] ** fluidProp.var2 * wRgtEdge[edgeInCrk_lst[1]] ** \
+                                fluidProp.var3 * x[edgeInCrk_lst[1]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wRgtEdge[edgeInCrk_lst[1]] / dpRgt[edgeInCrk_lst[1]] * fluidProp.var5)
     x = 1 - 2*fluidProp.T0 / wBtmEdge / dpBtm
-    # tip_edge = np.where(InCrack[Mesh.NeiElements[EltCrack, 2]])
-    cond[2, in_tip[2]] = fluidProp.var1 * dpBtm[in_tip[2]] ** fluidProp.var2 * wBtmEdge[in_tip[2]] ** fluidProp.var3 * x[in_tip[2]]**fluidProp.var4 * \
-                  (1 + 2*fluidProp.T0 / wBtmEdge[in_tip[2]] / dpBtm[in_tip[2]] * fluidProp.var5)
+    cond[2, edgeInCrk_lst[2]] = fluidProp.var1 * dpBtm[edgeInCrk_lst[2]] ** fluidProp.var2 * wBtmEdge[edgeInCrk_lst[2]] ** \
+                                fluidProp.var3 * x[edgeInCrk_lst[2]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wBtmEdge[edgeInCrk_lst[2]] / dpBtm[edgeInCrk_lst[2]] * fluidProp.var5)
     x = 1 - 2*fluidProp.T0 / wTopEdge / dpTop
-    # tip_edge = np.where(InCrack[Mesh.NeiElements[EltCrack, 3]])
-    cond[3, in_tip[3]] = fluidProp.var1 * dpTop[in_tip[3]] ** fluidProp.var2 * wTopEdge[in_tip[3]] ** fluidProp.var3 * x[in_tip[3]]**fluidProp.var4 * \
-                  (1 + 2*fluidProp.T0 / wTopEdge[in_tip[3]] / dpTop[in_tip[3]] * fluidProp.var5)
+    cond[3, edgeInCrk_lst[3]] = fluidProp.var1 * dpTop[edgeInCrk_lst[3]] ** fluidProp.var2 * wTopEdge[edgeInCrk_lst[3]] ** \
+                                fluidProp.var3 * x[edgeInCrk_lst[3]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wTopEdge[edgeInCrk_lst[3]] / dpTop[edgeInCrk_lst[3]] * fluidProp.var5)
 
     indx_elts = np.arange(len(EltCrack))
     FinDiffOprtr[indx_elts, indx_elts] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2
@@ -638,36 +642,37 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
         args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
-            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
-                                                 been fully traversed.
-            - wLastTS (ndarray)             -- fracture width from the last time step.
-            - wTip (ndarray)                -- fracture width in the tip elements.
-            - EltCrack (ndarray)            -- list of elements in the fracture.
-            - Mesh (CartesianMesh object)   -- the mesh.
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.    
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
             - dt (float)                    -- the current time step.
             - Q (float)                     -- fluid injection rate at the current time step.
             - C (ndarray)                   -- the elasticity matrix.
-            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
-            - rho (float)                   -- density of the injected fluid.
             - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
             - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
-            - sigma0 (ndarray)              -- the confining stress.
-            - turb (boolean)                -- turbulence will be taken into account if true.
-            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
-                                               roughness.
             - active (ndarray)              -- index of cells where the width constraint is active.
-            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells.
-            - wc (float)                    -- the critical minimum width for the material.
-            - cf (float)                    -- fluid compressibility.
             - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
                                                the cells in the crack.
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+                                               
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
         - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
-                                   obtained for channel, tip and active width constraint cells.
+                                    obtained for width, pressure and active width constraint cells.
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
@@ -781,37 +786,37 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
         args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
-            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
-                                                 been fully traversed.
-            - wLastTS (ndarray)             -- fracture width from the last time step.
-            - wTip (ndarray)                -- fracture width in the tip elements.
-            - EltCrack (ndarray)            -- list of elements in the fracture.
-            - Mesh (CartesianMesh object)   -- the mesh.
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.    
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
             - dt (float)                    -- the current time step.
             - Q (float)                     -- fluid injection rate at the current time step.
             - C (ndarray)                   -- the elasticity matrix.
-            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
-            - rho (float)                   -- density of the injected fluid.
             - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
             - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
-            - sigma0 (ndarray)              -- the confining stress.
-            - turb (boolean)                -- turbulence will be taken into account if true.
-            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
-                                               roughness.
             - active (ndarray)              -- index of cells where the width constraint is active.
-            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells.
-            - wc (float)                    -- the critical minimum width for the material.
-            - cf (float)                    -- fluid compressibility.
             - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
                                                the cells in the crack.
-
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+                                               
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
         - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
-                                    obtained for channel, tip and active width constraint cells.
+                                    obtained for width, pressure and active width constraint cells.
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
@@ -928,37 +933,37 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
         args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
-            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
-                                                 been fully traversed.
-            - wLastTS (ndarray)             -- fracture width from the last time step.
-            - wTip (ndarray)                -- fracture width in the tip elements.
-            - EltCrack (ndarray)            -- list of elements in the fracture.
-            - Mesh (CartesianMesh object)   -- the mesh.
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.    
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
             - dt (float)                    -- the current time step.
             - Q (float)                     -- fluid injection rate at the current time step.
             - C (ndarray)                   -- the elasticity matrix.
-            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
-            - rho (float)                   -- density of the injected fluid.
             - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
             - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
-            - sigma0 (ndarray)              -- the confining stress.
-            - turb (boolean)                -- turbulence will be taken into account if true.
-            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
-                                               roughness.
             - active (ndarray)              -- index of cells where the width constraint is active.
-            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells.
-            - wc (float)                    -- the critical minimum width for the material.
-            - cf (float)                    -- fluid compressibility.
             - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
                                                the cells in the crack.
-
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+                                               
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
         - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
-                                    obtained for channel, tip and active width constraint cells.
+                                    obtained for width, pressure and active width constraint cells.
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
@@ -1064,43 +1069,43 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     with width using the elasticity relation (see Zia and Lecamption 2019).
 
     Arguments:
-        solk (ndarray):                -- the trial change in width and pressure for the current iteration of
+        solk (ndarray):               -- the trial change in width and pressure for the current iteration of
                                           fracture front.
         interItr (ndarray):            -- the information from the last iteration.
         args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
 
             - EltChannel (ndarray)          -- list of channel elements
-            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
-                                                 been fully traversed.
-            - wLastTS (ndarray)             -- fracture width from the last time step.
-            - wTip (ndarray)                -- fracture width in the tip elements.
-            - EltCrack (ndarray)            -- list of elements in the fracture.
-            - Mesh (CartesianMesh object)   -- the mesh.
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.    
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
             - dt (float)                    -- the current time step.
             - Q (float)                     -- fluid injection rate at the current time step.
             - C (ndarray)                   -- the elasticity matrix.
-            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
-            - rho (float)                   -- density of the injected fluid.
             - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
             - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
-            - sigma0 (ndarray)              -- the confining stress.
-            - turb (boolean)                -- turbulence will be taken into account if true.
-            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
-                                               roughness.
             - active (ndarray)              -- index of cells where the width constraint is active.
-            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells.
-            - wc (float)                    -- the critical minimum width for the material.
-            - cf (float)                    -- fluid compressibility.
             - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
                                                the cells in the crack.
-
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+                                               
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        - interItr_kp1 (tuple)   -- the information transferred between iterations.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
         - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
-                                    obtained for channel, tip and active width constraint cells.
+                                    obtained for width, pressure and active width constraint cells.
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
@@ -1203,7 +1208,7 @@ def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loa
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The given width is
-    imposed on the given loaded elements (see Zia and Lecampion 2019).
+    imposed on the given loaded elements.
     """
 
     Ccc = C[np.ix_(EltChannel, EltChannel)]
@@ -1225,7 +1230,7 @@ def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, sigm
     """
     This function makes the linear system of equations to be solved by a linear system solver. The system is assembled
     with the extended footprint (treating the channel and the extended tip elements distinctly). The the volume of the
-    fracture is imposed to be equal to the fluid injected into the fracture (see Zia and Lecampion 2019).
+    fracture is imposed to be equal to the fluid injected into the fracture.
     """
     Ccc = C[np.ix_(EltChannel, EltChannel)]
     Cct = C[np.ix_(EltChannel, EltTip)]
