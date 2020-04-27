@@ -334,6 +334,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
          EltCrack,
          EltRibbon,
          CellStatus) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                         sgndDist,
                                                          inner_region,
                                                          EltTip_tmp,
                                                          listofTIPcellsONLY,

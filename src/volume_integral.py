@@ -209,7 +209,7 @@ def Area(dist, *param):
 
 
 def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=None, fluid_prop=None, Vel=None,
-                       Kprime=None, Eprime=None, Cprime=None, stagnant=None, KIPrime=None, dt=None, arrival_t=None):
+                       Kprime=None, Eprime=None, Cprime=None, stagnant=None, KIPrime=None, dt=None, arrival_t=None, projMethod=None):
     """
     Calculate integral of the function specified by the argument function over the cell.
 
@@ -289,9 +289,10 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
         arrival_t = dummy
 
     integral = np.zeros((len(l),), float)
-    for i in range(0, len(l)):
+    i=0
+    while i < len(l):
 
-        if alpha[i] != 0:
+        if abs(alpha[i]) >= 1e-8 or abs(alpha[i] - np.pi / 2) >= 1e-8:
             m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
         else : m = np.inf
         # packing parameters to pass
@@ -347,6 +348,13 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
                 IntrsctTri = 0
 
             integral[i] = TriVol - UpTriVol - RtTriVol + IntrsctTri
+
+        if projMethod == 'LS_continousfront' and function == 'A' and integral[i]/ mesh.EltArea > 1.+1e-4:
+            print("COMPUTATION OF THE FILLING FRACTION: Recomputing Integral over cell --> if something else goes wrong the tip volume might be the problem")
+            if abs(alpha[i]) < np.pi / 2 : alpha[i]=0
+            else : alpha[i] = np.pi / 2
+        else:
+            i = i + 1
 
     return integral
 

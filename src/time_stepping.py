@@ -607,7 +607,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                     alpha_k,
                                     l_k,
                                     Fr_lstTmStp.mesh,
-                                    'A') / Fr_lstTmStp.mesh.EltArea
+                                    'A',projMethod=sim_properties.projMethod) / Fr_lstTmStp.mesh.EltArea
 
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-4 (up to 4 figures)
     FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1 + 1e-4)] = 1.0
@@ -616,6 +616,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if (FillFrac_k > 1.0).any() or (FillFrac_k < 0.0 - np.finfo(float).eps).any():
         exitstatus = 9
         return exitstatus, None
+
+    # from utility import plot_as_matrix
+    # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+    # K[EltsTipNew] = FillFrac_k - 1
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
 
     if sim_properties.projMethod != 'LS_continousfront':
         # todo: some of the list are redundant to calculate on each iteration
@@ -637,6 +642,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
          EltCrack_k,
          EltRibbon_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                           sgndDist_k,
                                                            Fr_lstTmStp.EltChannel,
                                                            EltsTipNew,
                                                            listofTIPcellsONLY,
@@ -1572,7 +1578,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                     alpha_k,
                                     l_k,
                                     Fr_lstTmStp.mesh,
-                                    'A') / Fr_lstTmStp.mesh.EltArea
+                                    'A',
+                                    projMethod=sim_properties.projMethod) / Fr_lstTmStp.mesh.EltArea
 
     # todo !!! Hack: This check rounds the filling fraction to 1 if it is not bigger than 1 + 1e-4 (up to 4 figures)
     FillFrac_k[np.logical_and(FillFrac_k > 1.0, FillFrac_k < 1.0 + 1e-4)] = 1.0
@@ -1605,6 +1612,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
          EltCrack_k,
          EltRibbon_k,
          CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                           sgndDist_k,
                                                            Fr_lstTmStp.EltChannel,
                                                            EltsTipNew,
                                                            listofTIPcellsONLY,
@@ -1966,6 +1974,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
+    if np.any(Fr_kplus1.v[new_tip]==0):
+        print('why')
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
     Fr_kplus1.LkOff = LkOff
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
