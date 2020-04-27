@@ -609,6 +609,8 @@ class SimulationProperties:
                                         will be saved.
         saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture
                                         will be saved.
+        saveEffVisc (boolean)L       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
+                                        be saved.
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
         explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
@@ -746,6 +748,7 @@ class SimulationProperties:
         self.saveFluidVel = simul_param.save_fluid_vel
         self.saveFluidFluxAsVector = simul_param.save_fluid_flux_as_vector
         self.saveFluidVelAsVector = simul_param.save_fluid_vel_as_vector
+        self.saveEffVisc = simul_param.save_effective_viscosity
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.projMethod = simul_param.proj_method
