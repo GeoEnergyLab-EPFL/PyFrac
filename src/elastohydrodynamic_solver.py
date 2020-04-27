@@ -53,11 +53,11 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack, neiInCrack,
 
     indx_elts = np.arange(len(EltCrack))
     FinDiffOprtr[indx_elts, indx_elts] = (-(wLftEdge ** 3 + wRgtEdge ** 3) / dx ** 2 - (
-                                            wBtmEdge ** 3 + wTopEdge ** 3) / dy ** 2) / muPrime[EltCrack]
-    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 0]] = wLftEdge ** 3 / dx ** 2 / muPrime[EltCrack]
-    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 1]] = wRgtEdge ** 3 / dx ** 2 / muPrime[EltCrack]
-    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 2]] = wBtmEdge ** 3 / dy ** 2 / muPrime[EltCrack]
-    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 3]] = wTopEdge ** 3 / dy ** 2 / muPrime[EltCrack]
+                                            wBtmEdge ** 3 + wTopEdge ** 3) / dy ** 2) / muPrime
+    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 0]] = wLftEdge ** 3 / dx ** 2 / muPrime
+    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 1]] = wRgtEdge ** 3 / dx ** 2 / muPrime
+    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 2]] = wBtmEdge ** 3 / dy ** 2 / muPrime
+    FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 3]] = wTopEdge ** 3 / dy ** 2 / muPrime
 
     return FinDiffOprtr
 
@@ -87,7 +87,7 @@ def Gravity_term(w, EltCrack, muPrime, Mesh, InCrack, density):
     wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 2]]
     wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 3]]
 
-    G[EltCrack] = density * 9.81 * (wTopEdge ** 3 - wBtmEdge ** 3) / Mesh.hy / muPrime[EltCrack]
+    G[EltCrack] = density * 9.81 * (wTopEdge ** 3 - wBtmEdge ** 3) / Mesh.hy / muPrime
 
     return G
 
@@ -175,7 +175,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
         if dpLft[i] < 1e-8 or wLftEdge[i] < 1e-10:
             vk[0, EltCrack[i]] = 0.0
         else:
-            arg = (wLftEdge[i], mu[EltCrack[i]], rho, dpLft[i], rough[i])
+            arg = (wLftEdge[i], mu, rho, dpLft[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[0, EltCrack[i]], *arg) * Velocity_Residual(
                             upBracket_factor * vkm1[0, EltCrack[i]], *arg) > 0.0:
@@ -190,7 +190,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
         if dpRgt[i] < 1e-8 or wRgtEdge[i] < 1e-10:
             vk[1, EltCrack[i]] = 0.0
         else:
-            arg = (wRgtEdge[i], mu[EltCrack[i]], rho, dpRgt[i], rough[i])
+            arg = (wRgtEdge[i], mu, rho, dpRgt[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[1, EltCrack[i]], *arg) * Velocity_Residual(
                             upBracket_factor * vkm1[1, EltCrack[i]], *arg) > 0.0:
@@ -205,7 +205,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
         if dpBtm[i] < 1e-8 or wBtmEdge[i] < 1e-10:
             vk[2, EltCrack[i]] = 0.0
         else:
-            arg = (wBtmEdge[i], mu[EltCrack[i]], rho, dpBtm[i], rough[i])
+            arg = (wBtmEdge[i], mu, rho, dpBtm[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[2, EltCrack[i]], *arg) * Velocity_Residual(
                             upBracket_factor * vkm1[2, EltCrack[i]], *arg) > 0.0:
@@ -220,7 +220,7 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
         if dpTop[i] < 1e-8 or wTopEdge[i] < 1e-10:
             vk[3, EltCrack[i]] = 0.0
         else:
-            arg = (wTopEdge[i], mu[EltCrack[i]], rho, dpTop[i], rough[i])
+            arg = (wTopEdge[i], mu, rho, dpTop[i], rough[i])
             # check if bracket gives residuals with opposite signs
             if Velocity_Residual(np.finfo(float).eps * vkm1[3, EltCrack[i]],*arg)*Velocity_Residual(
                             upBracket_factor * vkm1[3, EltCrack[i]],*arg)>0.0:
@@ -233,10 +233,10 @@ def FiniteDiff_operator_turbulent_implicit(w, EltCrack, mu, Mesh, InCrack, rho, 
                                             upBracket_factor * vkm1[3, EltCrack[i]], arg)
 
     # calculating Reynold's number with the velocity
-    ReLftEdge = 4 / 3 * rho * wLftEdge * vk[0, EltCrack] / mu[EltCrack]
-    ReRgtEdge = 4 / 3 * rho * wRgtEdge * vk[1, EltCrack] / mu[EltCrack]
-    ReBtmEdge = 4 / 3 * rho * wBtmEdge * vk[2, EltCrack] / mu[EltCrack]
-    ReTopEdge = 4 / 3 * rho * wTopEdge * vk[3, EltCrack] / mu[EltCrack]
+    ReLftEdge = 4 / 3 * rho * wLftEdge * vk[0, EltCrack] / mu
+    ReRgtEdge = 4 / 3 * rho * wRgtEdge * vk[1, EltCrack] / mu
+    ReBtmEdge = 4 / 3 * rho * wBtmEdge * vk[2, EltCrack] / mu
+    ReTopEdge = 4 / 3 * rho * wTopEdge * vk[3, EltCrack] / mu
 
 
     # non zeros Reynolds numbers
@@ -346,165 +346,6 @@ def findBracket(func, guess,*args):
 
     return a, b
 
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def MakeEquationSystem_ViscousFluid(solk, interItr, *args):
-    """
-    This function makes the linearized system of equations to be solved by a linear system solver. The system is
-    assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
-    description of the ILSA algorithm) as of the last time step. The cells where width constraint is active are solved
-    for traction and pressure separately.
-
-    Arguments:
-        solk (ndarray):                -- the trial change in width and pressure for the current iteration of
-                                          fracture front.
-        interItr (ndarray):            -- the information from the last iteration.
-        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
-
-            - EltChannel (ndarray)          -- list of channel elements
-            - EltsTipNew (ndarray)          -- list of new tip elements. This list also contains the elements that has\
-                                                 been fully traversed.
-            - wLastTS (ndarray)             -- fracture width from the last time step.
-            - wTip (ndarray)                -- fracture width in the tip elements.
-            - EltCrack (ndarray)            -- list of elements in the fracture.
-            - Mesh (CartesianMesh object)   -- the mesh.
-            - dt (float)                    -- the current time step.
-            - Q (float)                     -- fluid injection rate at the current time step.
-            - C (ndarray)                   -- the elasticity matrix.
-            - muPrime (ndarray)             -- 12 time viscosity of the injected fluid.
-            - rho (float)                   -- density of the injected fluid.
-            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
-            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
-            - sigma0 (ndarray)              -- the confining stress.
-            - turb (boolean)                -- turbulence will be taken into account if true.
-            - dgrain (float)                -- the grain size of the rock. it will be used to calculate the fracture\
-                                               roughness.
-            - active (ndarray)              -- index of cells where the width constraint is active.
-            - wc_to_impose (ndarray)        -- the critical minimum width to be imposed in the active width constraint \
-                                               cells.
-            - wc (float)                    -- the critical minimum width for the material.
-            - cf (float)                    -- fluid compressibility.
-            - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
-                                               the cells in the crack.
-
-    Returns:
-        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
-        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
-        - interItr_kp1 (tuple)   -- the information transferred between iterations.
-        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
-                                    obtained for channel, tip and active width constraint cells.
-
-    """
-
-    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
-     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
-
-    wcNplusOne = np.copy(wLastTS)
-    wcNplusOne[to_solve] += solk[:len(to_solve)]
-    wcNplusOne[to_impose] = imposed_val
-    if len(wc_to_impose) > 0:
-        wcNplusOne[active] = wc_to_impose
-    wcNplusOne[np.where(wcNplusOne < wc)[0]] = wc
-    vkm1 = interItr
-
-    if turb:
-        FinDiffOprtr, interItr_kp1 = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
-                                                                    EltCrack, muPrime / 12, Mesh,
-                                                                    InCrack, rho, vkm1, C, sigma0,
-                                                                    dgrain, to_solve, active, to_impose)
-
-    else:
-        FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
-                                                   EltCrack,
-                                                   muPrime,
-                                                   Mesh,
-                                                   InCrack,
-                                                   neiInCrack)
-        interItr_kp1 = vkm1
-
-    if gravity:
-        G = Gravity_term(wcNplusOne,
-                         EltCrack,
-                         muPrime,
-                         Mesh,
-                         InCrack,
-                         rho)
-
-    else:
-        G = np.zeros((Mesh.NumberOfElts,))
-
-    LeakOff_cp = np.copy(LeakOff)
-
-    n_ch = len(to_solve)
-    n_act = len(active)
-    n_tip = len(imposed_val)
-    n_w = n_ch + n_act
-    n_p = n_ch + n_act + n_tip
-    n_total = n_w + n_p
-
-    ch_w_row_no = np.arange(n_ch)
-    act_w_row_no = n_ch + np.arange(n_act)
-    ch_p_row_no = n_w + np.arange(n_ch)
-    act_p_row_no = n_w + n_ch + np.arange(n_act)
-    tip_p_row_no = n_w + n_ch + n_act + np.arange(n_tip)
-
-    ch_w_col_no = np.arange(n_ch)
-    act_tr_col_no = n_ch + np.arange(n_act)
-    ch_p_col_no = n_w + np.arange(n_ch)
-    act_p_col_no = n_w + n_ch + np.arange(n_act)
-    tip_p_col_no = n_w + n_ch + n_act + np.arange(n_tip)
-
-    A = np.zeros((n_total, n_total), dtype=np.float64)
-
-    A[np.ix_(ch_w_row_no, ch_w_col_no)] = C[np.ix_(to_solve, to_solve)]
-    A[ch_w_row_no, ch_p_col_no] = -1.
-
-    A[np.ix_(act_w_row_no, ch_w_col_no)] = C[np.ix_(active, to_solve)]
-    A[act_w_row_no, act_tr_col_no] = -1.
-
-    A[ch_p_row_no, ch_w_col_no] = 1.
-    A[np.ix_(ch_p_row_no, ch_p_col_no)] = -dt * FinDiffOprtr[to_solve, :][:, to_solve].toarray()
-    A[np.ix_(ch_p_row_no, act_p_col_no)] = -dt * FinDiffOprtr[to_solve, :][:, active].toarray()
-    A[np.ix_(ch_p_row_no, tip_p_col_no)] = -dt * FinDiffOprtr[to_solve, :][:, to_impose].toarray()
-
-    A[np.ix_(act_p_row_no, ch_p_col_no)] = -dt * FinDiffOprtr[active, :][:, to_solve].toarray()
-    A[np.ix_(act_p_row_no, act_p_col_no)] = -dt * FinDiffOprtr[active, :][:, active].toarray()
-    A[np.ix_(act_p_row_no, tip_p_col_no)] = -dt * FinDiffOprtr[active, :][:, to_impose].toarray()
-
-    A[np.ix_(tip_p_row_no, ch_p_col_no)] = -dt * FinDiffOprtr[to_impose, :][:, to_solve].toarray()
-    A[np.ix_(tip_p_row_no, act_p_col_no)] = -dt * FinDiffOprtr[to_impose, :][:, active].toarray()
-    A[np.ix_(tip_p_row_no, tip_p_col_no)] = -dt * FinDiffOprtr[to_impose, :][:, to_impose].toarray()
-
-    S = np.zeros((n_total, ), dtype=np.float64)
-
-    S[ch_w_row_no] = - sigma0[to_solve] - \
-                        np.dot(C[np.ix_(to_solve, EltCrack)], wLastTS[EltCrack]) - \
-                        np.dot(C[np.ix_(to_solve, to_impose)], imposed_val - wLastTS[to_impose]) - \
-                        np.dot(C[np.ix_(to_solve, active)], wc - wLastTS[active])
-
-    S[act_w_row_no] = - sigma0[active] - \
-                         np.dot(C[np.ix_(active, EltCrack)], wLastTS[EltCrack]) - \
-                         np.dot(C[np.ix_(active, to_impose)], imposed_val - wLastTS[to_impose]) - \
-                         np.dot(C[np.ix_(active, active)], wc - wLastTS[active])
-                         # + pfLastTS[to_solve]
-
-    S[ch_p_row_no] = dt * Q[to_solve] / Mesh.EltArea - LeakOff_cp[to_solve] / Mesh.EltArea + \
-                        dt * G[to_solve]# + dt * cond.dot(pfLastTS[EltCrack_R])
-
-    S[act_p_row_no] = dt * Q[active] / Mesh.EltArea - LeakOff_cp[active] / Mesh.EltArea - \
-                      (wc - wLastTS[active]) + dt * G[active]  # + dt * cond.dot(pfLastTS[EltCrack_R])
-
-    S[tip_p_row_no] = dt * Q[to_impose] / Mesh.EltArea - LeakOff_cp[to_impose] / Mesh.EltArea - \
-                        (imposed_val - wLastTS[to_impose]) + dt * G[to_impose]  # + dt * cond.dot(pfLastTS[EltCrack_R])
-
-    # indices of solved width, pressure and traction in the solution
-    indices = [ch_w_row_no,
-               np.concatenate((ch_p_row_no, act_p_row_no, tip_p_row_no)),
-               act_w_row_no]
-
-    return A, S, interItr_kp1, indices
-
 
 #-----------------------------------------------------------------------------------------------------------------
 
@@ -555,48 +396,52 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
                                    obtained for channel, tip and active width constraint cells.
     """
 
-    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
-     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    # (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
+    #  sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
 
-    wcNplusOne = np.copy(wLastTS)
+    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack) = args
+
+
+    wcNplusOne = np.copy(frac.w)
     wcNplusOne[to_solve] += solk[:len(to_solve)]
     wcNplusOne[to_impose] = imposed_val
     if len(wc_to_impose) > 0:
         wcNplusOne[active] = wc_to_impose
 
-    below_wc = np.where(wcNplusOne[to_solve] < wc)[0]
+    below_wc = np.where(wcNplusOne[to_solve] < mat_prop.wc)[0]
     below_wc_km1 = interItr[1]
     below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
-    wcNplusOne[to_solve[below_wc]] = wc
+    wcNplusOne[to_solve[below_wc]] = mat_prop.wc
     vkm1 = interItr[0]
 
-    wcNplusHalf = (wLastTS + wcNplusOne) / 2
+    wcNplusHalf = (frac.w + wcNplusOne) / 2
 
-    if turb:
+    if fluid_prop.turbulence:
         FinDiffOprtr, interItr_kp1 = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
-                                                                            EltCrack, muPrime / 12, Mesh,
-                                                                            InCrack, rho, vkm1, C, sigma0,
-                                                                            dgrain, to_solve, active, to_impose)
+                                                                            EltCrack, fluid_prop.viscosity, frac.mesh,
+                                                                            InCrack, fluid_prop.density, vkm1, C, mat_prop.SigmaO,
+                                                                            mat_prop.grainSize, to_solve, active, to_impose)
     else:
         FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
                                                    EltCrack,
-                                                   muPrime,
-                                                   Mesh,
+                                                   fluid_prop.muPrime,
+                                                   frac.mesh,
                                                    InCrack,
                                                    neiInCrack,
                                                    sparse_flag=True)
         vk = vkm1
 
-    if gravity:
+    if sim_prop.gravity:
         G = Gravity_term(wcNplusOne,
                          EltCrack,
-                         muPrime,
-                         Mesh,
+                         fluid_prop.muPrime,
+                         frac.mesh,
                          InCrack,
-                         rho)
+                         fluid_prop.density)
 
     else:
-        G = np.zeros((Mesh.NumberOfElts,))
+        G = np.zeros((frac.mesh.NumberOfElts,))
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -610,7 +455,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
-                 - sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
+                 - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
 
     A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
@@ -620,7 +465,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
-                                       sparse.diags([np.full((n_tip,), cf * wcNplusHalf[to_impose])],
+                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
                                                     [0], format='csr')).toarray()
     A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
 
@@ -628,30 +473,30 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
                                         ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
-                                       sparse.diags([np.full((n_act,), cf * wcNplusHalf[active])],
+                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
                                                     [0], format='csr')).toarray()
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], wLastTS[to_solve]) + \
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wcNplusOne[active]) + \
-                  sigma0[to_solve]
+                  mat_prop.SigmaO[to_solve]
 
     S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
                   dt * G[to_solve] + \
-                  dt * Q[to_solve] / Mesh.EltArea - \
-                  LeakOff[to_solve] / Mesh.EltArea + \
-                  cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
-    S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
+                  dt * Q[to_solve] / frac.mesh.EltArea - \
+                  LeakOff[to_solve] / frac.mesh.EltArea + \
+                  fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
-                   cf * wcNplusHalf[to_impose] * pfLastTS[to_impose] + \
+                   fluid_prop.compressibility * wcNplusHalf[to_impose] * frac.pFluid[to_impose] + \
                    dt * G[to_impose] + \
-                   dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
-    S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
-                   cf * wcNplusHalf[active] * pfLastTS[active] + \
+                   fluid_prop.compressibility * wcNplusHalf[active] * frac.pFluid[active] + \
                    dt * G[active] + \
-                   dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
@@ -711,48 +556,50 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                                     obtained for channel, tip and active width constraint cells.
     """
 
-    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
-     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    # (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
+    #  sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack) = args
 
-    wcNplusOne = np.copy(wLastTS)
+    wcNplusOne = np.copy(frac.w)
     wcNplusOne[to_solve] += solk[:len(to_solve)]
     wcNplusOne[to_impose] = imposed_val
     if len(wc_to_impose) > 0:
         wcNplusOne[active] = wc_to_impose
 
-    below_wc = np.where(wcNplusOne[to_solve] < wc)[0]
+    below_wc = np.where(wcNplusOne[to_solve] < mat_prop.wc)[0]
     below_wc_km1 = interItr[1]
     below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
-    wcNplusOne[to_solve[below_wc]] = wc
+    wcNplusOne[to_solve[below_wc]] = mat_prop.wc
     vkm1 = interItr[0]
 
-    wcNplusHalf = (wLastTS + wcNplusOne) / 2
+    wcNplusHalf = (frac.w + wcNplusOne) / 2
 
-    if turb:
+    if fluid_prop.turbulence:
         FinDiffOprtr, interItr_kp1 = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
-                                                                            EltCrack, muPrime / 12, Mesh,
-                                                                            InCrack, rho, vkm1, C, sigma0,
-                                                                            dgrain, to_solve, active, to_impose)
+                                                                            EltCrack, fluid_prop.viscosity, frac.mesh,
+                                                                            InCrack, fluid_prop.density, vkm1, C, mat_prop.SigmaO,
+                                                                            mat_prop.grainSize, to_solve, active, to_impose)
     else:
         FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
                                                    EltCrack,
-                                                   muPrime,
-                                                   Mesh,
+                                                   fluid_prop.muPrime,
+                                                   frac.mesh,
                                                    InCrack,
                                                    neiInCrack,
                                                    sparse_flag=True)
         vk = vkm1
 
-    if gravity:
+    if sim_prop.gravity:
         G = Gravity_term(wcNplusOne,
                          EltCrack,
-                         muPrime,
-                         Mesh,
+                         fluid_prop.muPrime,
+                         frac.mesh,
                          InCrack,
-                         rho)
+                         fluid_prop.density)
 
     else:
-        G = np.zeros((Mesh.NumberOfElts,))
+        G = np.zeros((frac.mesh.NumberOfElts,))
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -766,7 +613,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
-                 - sparse.diags([np.full((n_ch,), cf * wcNplusHalf[to_solve])], [0], format='csr')
+                 - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
 
     A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
@@ -777,7 +624,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
-                                       sparse.diags([np.full((n_tip,), cf * wcNplusHalf[to_impose])],
+                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
                                                     [0], format='csr')).toarray()
     A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
 
@@ -785,35 +632,35 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                                         ).dot(C[np.ix_(to_solve, to_solve)])
     A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
-                                       sparse.diags([np.full((n_act,), cf * wcNplusHalf[active])],
+                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
                                                     [0], format='csr')).toarray()
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], wLastTS[to_solve]) + \
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wcNplusOne[active]) + \
-                  sigma0[to_solve]
+                  mat_prop.SigmaO[to_solve]
 
     S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
-                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).dot(pfLastTS[to_impose]) + \
-                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(pfLastTS[active]) + \
+                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                   dt * G[to_solve] + \
-                  dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea \
-                  + cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
+                  dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
 
-    S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
-                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(pfLastTS[to_impose]) + \
-                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(pfLastTS[active]) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[to_impose] + \
-                   dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea
 
-    S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
-                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(pfLastTS[to_impose]) + \
-                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(pfLastTS[active]) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
@@ -872,48 +719,50 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                                     obtained for channel, tip and active width constraint cells.
     """
 
-    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
-     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    # (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
+    #  sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack) = args
 
-    wcNplusOne = np.copy(wLastTS)
+    wcNplusOne = np.copy(frac.w)
     wcNplusOne[to_solve] += solk[:len(to_solve)]
     wcNplusOne[to_impose] = imposed_val
     if len(wc_to_impose) > 0:
         wcNplusOne[active] = wc_to_impose
 
-    below_wc = np.where(wcNplusOne[to_solve] < wc)[0]
+    below_wc = np.where(wcNplusOne[to_solve] < mat_prop.wc)[0]
     below_wc_km1 = interItr[1]
     below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
-    wcNplusOne[to_solve[below_wc]] = wc
+    wcNplusOne[to_solve[below_wc]] = mat_prop.wc
     vkm1 = interItr[0]
 
-    wcNplusHalf = (wLastTS + wcNplusOne) / 2
+    wcNplusHalf = (frac.w + wcNplusOne) / 2
 
-    if turb:
+    if fluid_prop.turbulence:
         FinDiffOprtr, interItr_kp1 = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
-                                                                         EltCrack, muPrime / 12, Mesh,
-                                                                         InCrack, rho, vkm1, C, sigma0,
-                                                                         dgrain, to_solve, active, to_impose)
+                                                                         EltCrack, fluid_prop.viscosity, frac.mesh,
+                                                                         InCrack, fluid_prop.density, vkm1, C, mat_prop.SigmaO,
+                                                                         fluid_prop.compressibility, to_solve, active, to_impose)
     else:
         FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
                                                    EltCrack,
-                                                   muPrime,
-                                                   Mesh,
+                                                   fluid_prop.muPrime,
+                                                   frac.mesh,
                                                    InCrack,
                                                    neiInCrack)
 
         vk = vkm1
 
-    if gravity:
+    if sim_prop.gravity:
         G = Gravity_term(wcNplusOne,
                          EltCrack,
-                         muPrime,
-                         Mesh,
+                         fluid_prop.muPrime,
+                         frac.mesh,
                          InCrack,
-                         rho)
+                         fluid_prop.density)
 
     else:
-        G = np.zeros((Mesh.NumberOfElts,))
+        G = np.zeros((frac.mesh.NumberOfElts,))
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -927,7 +776,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr[np.ix_(ch_indxs, ch_indxs)]
-    ch_AplusCf[ch_indxs, ch_indxs] -= cf * wcNplusHalf[to_solve]
+    ch_AplusCf[ch_indxs, ch_indxs] -= fluid_prop.compressibility * wcNplusHalf[to_solve]
 
     A[np.ix_(ch_indxs, ch_indxs)] = - np.dot(ch_AplusCf, C[np.ix_(to_solve, to_solve)])
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
@@ -938,7 +787,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     A[np.ix_(tip_indxs, ch_indxs)] = - dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)],
                                                    C[np.ix_(to_solve, to_solve)])
     A[np.ix_(tip_indxs, tip_indxs)] = - dt * FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)]
-    A[tip_indxs, tip_indxs] += cf * wcNplusHalf[to_impose]
+    A[tip_indxs, tip_indxs] += fluid_prop.compressibility * wcNplusHalf[to_impose]
 
     A[np.ix_(tip_indxs, act_indxs)] = -dt * FinDiffOprtr[np.ix_(tip_indxs, act_indxs)]
 
@@ -946,29 +795,29 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                                                    C[np.ix_(to_solve, to_solve)])
     A[np.ix_(act_indxs, tip_indxs)] = -dt * FinDiffOprtr[np.ix_(act_indxs, tip_indxs)]
     A[np.ix_(act_indxs, act_indxs)] = - dt * FinDiffOprtr[np.ix_(act_indxs, act_indxs)]
-    A[act_indxs, act_indxs] += cf * wcNplusHalf[active]
+    A[act_indxs, act_indxs] += fluid_prop.compressibility * wcNplusHalf[active]
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], wLastTS[to_solve]) + \
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wcNplusOne[active]) + \
-                  sigma0[to_solve]
+                  mat_prop.SigmaO[to_solve]
 
     S[ch_indxs] = np.dot(ch_AplusCf, pf_ch_prime) + \
                   dt * G[to_solve] + \
-                  dt * Q[to_solve] / Mesh.EltArea - \
-                  LeakOff[to_solve] / Mesh.EltArea + \
-                  cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
-    S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
+                  dt * Q[to_solve] / frac.mesh.EltArea - \
+                  LeakOff[to_solve] / frac.mesh.EltArea + \
+                  fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)], pf_ch_prime) + \
-                   cf * wcNplusHalf[to_impose] * pfLastTS[to_impose] + \
+                   fluid_prop.compressibility * wcNplusHalf[to_impose] * frac.pFluid[to_impose] + \
                    dt * G[to_impose] + \
-                   dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
-    S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], pf_ch_prime) + \
-                   cf * wcNplusHalf[active] * pfLastTS[active] + \
+                   fluid_prop.compressibility * wcNplusHalf[active] * frac.pFluid[active] + \
                    dt * G[active] + \
-                   dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]
@@ -1027,47 +876,49 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                                     obtained for channel, tip and active width constraint cells.
     """
 
-    (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
-     sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    # (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
+    #  sigma0, turb, dgrain, gravity, active, wc_to_impose, wc, cf, neiInCrack) = args
+    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack) = args
 
-    wcNplusOne = np.copy(wLastTS)
+    wcNplusOne = np.copy(frac.w)
     wcNplusOne[to_solve] += solk[:len(to_solve)]
     wcNplusOne[to_impose] = imposed_val
     if len(wc_to_impose) > 0:
         wcNplusOne[active] = wc_to_impose
 
-    below_wc = np.where(wcNplusOne[to_solve] < wc)[0]
+    below_wc = np.where(wcNplusOne[to_solve] < mat_prop.wc)[0]
     below_wc_km1 = interItr[1]
     below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
-    wcNplusOne[to_solve[below_wc]] = wc
+    wcNplusOne[to_solve[below_wc]] = mat_prop.wc
     vkm1 = interItr[0]
 
-    wcNplusHalf = (wLastTS + wcNplusOne) / 2
+    wcNplusHalf = (frac.w + wcNplusOne) / 2
 
-    if turb:
+    if fluid_prop.turbulence:
         FinDiffOprtr, interItr_kp1 = FiniteDiff_operator_turbulent_implicit(wcNplusOne,
-                                                                            EltCrack, muPrime / 12, Mesh,
-                                                                            InCrack, rho, vkm1, C, sigma0,
-                                                                            dgrain, to_solve, active, to_impose)
+                                                                            EltCrack, fluid_prop.viscosity, frac.mesh,
+                                                                            InCrack, fluid_prop.density, vkm1, C, mat_prop.SigmaO,
+                                                                            mat_prop.grainSize, to_solve, active, to_impose)
     else:
         FinDiffOprtr = finiteDiff_operator_laminar(wcNplusOne,
                                                    EltCrack,
-                                                   muPrime,
-                                                   Mesh,
+                                                   fluid_prop.muPrime,
+                                                   frac.mesh,
                                                    InCrack,
                                                    neiInCrack)
         vk = vkm1
 
-    if gravity:
+    if sim_prop.gravity:
         G = Gravity_term(wcNplusOne,
                          EltCrack,
-                         muPrime,
-                         Mesh,
+                         fluid_prop.muPrime,
+                         frac.mesh,
                          InCrack,
-                         rho)
+                         fluid_prop.density)
 
     else:
-        G = np.zeros((Mesh.NumberOfElts,))
+        G = np.zeros((frac.mesh.NumberOfElts,))
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1081,7 +932,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     A = np.zeros((n_total, n_total), dtype=np.float64)
 
     ch_AplusCf = dt * FinDiffOprtr[np.ix_(ch_indxs, ch_indxs)]
-    ch_AplusCf[ch_indxs, ch_indxs] -= cf * wcNplusHalf[to_solve]
+    ch_AplusCf[ch_indxs, ch_indxs] -= fluid_prop.compressibility * wcNplusHalf[to_solve]
 
     A[np.ix_(ch_indxs, ch_indxs)] = - np.dot(ch_AplusCf, C[np.ix_(to_solve, to_solve)])
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
@@ -1092,41 +943,41 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     A[np.ix_(tip_indxs, ch_indxs)] = - dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)],
                                                     C[np.ix_(to_solve, to_solve)])
     A[np.ix_(tip_indxs, tip_indxs)] = - dt * FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)]
-    A[tip_indxs, tip_indxs] += cf * wcNplusHalf[to_impose]
+    A[tip_indxs, tip_indxs] += fluid_prop.compressibility * wcNplusHalf[to_impose]
     A[np.ix_(tip_indxs, act_indxs)] = - dt * FinDiffOprtr[np.ix_(tip_indxs, act_indxs)]
 
     A[np.ix_(act_indxs, ch_indxs)] = - dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)],
                                                    C[np.ix_(to_solve, to_solve)])
     A[np.ix_(act_indxs, tip_indxs)] = - dt * FinDiffOprtr[np.ix_(act_indxs, tip_indxs)]
     A[np.ix_(act_indxs, act_indxs)] = - dt * FinDiffOprtr[np.ix_(act_indxs, act_indxs)]
-    A[act_indxs, act_indxs] += cf * wcNplusHalf[active]
+    A[act_indxs, act_indxs] += fluid_prop.compressibility * wcNplusHalf[active]
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], wLastTS[to_solve]) + \
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wcNplusOne[active]) + \
-                  sigma0[to_solve]
+                  mat_prop.SigmaO[to_solve]
 
     S[ch_indxs] = np.dot(ch_AplusCf, pf_ch_prime) + \
-                  dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, tip_indxs)], pfLastTS[to_impose]) + \
-                  dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, act_indxs)], pfLastTS[active]) + \
+                  dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
+                  dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, act_indxs)], frac.pFluid[active]) + \
                   dt * G[to_solve] + \
-                  dt * Q[to_solve] / Mesh.EltArea - LeakOff[to_solve] / Mesh.EltArea \
-                  + cf * wcNplusHalf[to_solve] * pfLastTS[to_solve]
+                  dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
 
-    S[tip_indxs] = -(imposed_val - wLastTS[to_impose]) + \
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)], pf_ch_prime) + \
-                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)], pfLastTS[to_impose]) + \
-                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, act_indxs)], pfLastTS[active]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, act_indxs)], frac.pFluid[active]) + \
                    dt * G[to_impose] + \
-                   dt * Q[to_impose] / Mesh.EltArea - LeakOff[to_impose] / Mesh.EltArea
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea
 
-    S[act_indxs] = -(wc_to_impose - wLastTS[active]) + \
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], pf_ch_prime) + \
-                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, tip_indxs)], pfLastTS[to_impose]) + \
-                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, act_indxs)], pfLastTS[active]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, act_indxs)], frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / Mesh.EltArea - LeakOff[active] / Mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs]

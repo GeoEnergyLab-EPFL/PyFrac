@@ -27,7 +27,7 @@ from labels import supported_variables, supported_projections, unidimensional_va
 
 def plot_fracture_list(fracture_list, variable='footprint', projection=None, elements=None, plot_prop=None, fig=None,
                        edge=4, contours_at=None, labels=None, mat_properties=None, backGround_param=None,
-                       plot_non_zero=True):
+                       plot_non_zero=True, source_loc=np.asarray([0,0])):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -152,7 +152,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
             var_val_list, time_list = get_fracture_variable(fracture_list,
                                                             variable,
                                                             edge=edge,
-                                                            return_time=True)
+                                                            return_time=True,
+                                                            source_loc=source_loc)
 
         var_val_copy = np.copy(var_val_list)
         for i in range(len(var_val_copy)):
