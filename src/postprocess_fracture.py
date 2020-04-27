@@ -256,6 +256,21 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
                 time_srs.append(i.time)
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+                
+    elif variable == 'effective viscosity' or variable == 'ev':
+        if fracture_list[-1].effVisc is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.effVisc[edge])
+                time_srs.append(i.time)
+            elif i.effVisc is not None:
+                variable_list.append(np.mean(i.effVisc, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in fracture_list:
