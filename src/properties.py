@@ -230,15 +230,22 @@ class FluidProperties:
                                     fracture class for local viscosity).
         muPrime (float):         -- 12 * viscosity (parallel plates viscosity factor).
         rheology (string):       -- string specifying rheology of the fluid. Possible options:
+            
                                      - "Newtonian"
-                                     - "non-Newtonian"
+                                     - "Herschel-Bulkley" or "HBF"
+                                     - "power-law" or "PLF"
         density (float):         -- density of the fluid.
         turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account.
         compressibility (float): -- the compressibility of the fluid.
+        n (float):               -- flow index of the Herschel-Bulkey fluid.
+        k (float):               -- consistency index of the Herschel-Bulkey fluid.
+        T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
+        Mprime                   -- 2**(n + 1) * (2 * n + 1)**n / n**n  * k
 
     """
 
-    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0):
+    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0,
+                 n=None, k=None, T0=None):
         """
         Constructor function.
 
@@ -254,14 +261,30 @@ class FluidProperties:
             self.viscosity = viscosity
             self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
 
-        rheologyOptions = ("Newtonian", "non-Newtonian")
+        rheologyOptions = ["Newtonian", "Herschel-Bulkley", "HBF", "power-law", "PLF"]
         if rheology in rheologyOptions:  # check if rheology match to any rheology option
-            if rheology == "Newtonian":
-                self.rheology = rheology
-            elif rheology == "non-Newtonian":
-                raise ValueError("Non-Newtonian rheology not yet supported")
+            self.rheology = rheology
+            if rheology in ["Herschel-Bulkley", "HBF"]:
+                if n is None or k is None or T0 is None:
+                    raise ValueError("n (flow index), k(consistency index) and T0 (yield stress) are required for a \
+                                     Herscel-Bulkley type fluid!")
+                self.n = n
+                self.k = k
+                self.T0 = T0
+                self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+                self.var1 = self.Mprime ** (-1 / n)
+                self.var2 = 1/n - 1.
+                self.var3 = 2. + 1/n
+                self.var4 = 1. + 1/n
+                self.var5 = n / (n + 1.)   
+            elif rheology in ["power-law", "PLF"]:
+                if n is None or k is None:
+                    raise ValueError("n (flow index) and k(consistency index) are required for a power-law type fluid!")
+                self.n = n
+                self.k = k
+                self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
         else:# error
-            raise ValueError('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
+            raise ValueError('Invalid input for fluid rheology. Possible options: ' + repr(rheologyOptions))
 
         self.density = density
 
@@ -709,8 +732,23 @@ class SimulationProperties:
                                             - U1  (Universal regime accommodating viscosity, toughness\
                                                  and leak off (see Donstov and Pierce, 2017), delta correction)
                                             - MK (viscosity to toughness transition regime)
+                                            - MDR (Maximum drag reduction asymptote, see Lecampion & Zia 2019)
+                                            - M_MDR (Maximum drag reduction asymptote in viscosity sotrage \ 
+                                                  regime, see Lecampion & Zia 2019)
+                                            - HBF or HBF_aprox (Herschel-Bulkley fluid, see Bessmertnykh and \
+                                                  Dontsov 2019; the tip volume is evaluated with a fast aproximation)
+                                            - HBF_num_quad (Herschel-Bulkley fluid, see Bessmertnykh and \
+                                                  Dontsov 2019; the tip volume is evaluated with numerical quadrature of the\ 
+                                                  approximate function, which makes it very slow)
+                                            - PLF or PLF_aprox (power law fluid, see Dontsov and \
+                                                  Kresse 2017; the tip volume is evaluated with a fast aproximation)
+                                            - PLF_num_quad (power law fluid, see Dontsov and \
+                                                  Kresse 2017; the tip volume is evaluated with numerical quadrature of the\ 
+                                                  approximate function, which makes it very slow)
+                                            = PLF_M (power law fluid in viscosity storage regime; see Desroche et al.)
         """
-        tipAssymptOptions = ("K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR")
+        tipAssymptOptions = ["K", "M", "Mt", "U", "MK", "MDR", "M_MDR", "HBF", "HBF_aprox", 
+                             "HBF_num_quad", "PLF", "PLF_aprox", "PLF_num_quad", "PLF_M"]
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote
         else: # error
