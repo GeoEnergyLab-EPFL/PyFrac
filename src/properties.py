@@ -321,7 +321,16 @@ class InjectionProperties:
                                          a source element. It should have to arguments (x, y) and return True or False.
                                          It is also called upon re-meshing to get the source elements on the coarse
                                          mesh.
-
+       sink_loc_func (function):      -- the sink location function is used to get the elements where there is a fixed rate
+                                         sink. It should take the x and y coordinates and return True or False
+                                         depending upon if the sink is present on these coordinates. This function is
+                                         evaluated at each of the cell centre coordinates to determine if the cell is
+                                         a sink element. It should have to arguments (x, y) and return True or False.
+                                         It is also called upon re-meshing to get the source elements on the coarse
+                                         mesh.
+                                             
+      sink_vel_func (function):       -- this function gives the sink velocity at the given (x, y) point.
+                                   
     Attributes:
         injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection
                                          rates (row 1). The time series provide the time when the injection rate
@@ -337,9 +346,12 @@ class InjectionProperties:
                                          a source element. It should have to arguments (x, y) and return True or False.
                                          It is also called upon re-meshing to get the source elements on the coarse
                                          mesh.
+        sinkLocFunc (function):      --  see description of arguments.
+        sink_vel_func (function):    --  see description of arguments.
+                                         
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None, sink_vel_func=None):
         """
         The constructor of the InjectionProperties class.
         """
@@ -381,13 +393,30 @@ class InjectionProperties:
             self.sourceLocFunc = source_loc_func
             self.sourceElem = []
             for i in range(mesh.NumberOfElts):
-             if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
                  self.sourceElem.append(i)
 
         if len(self.sourceElem) == 0:
             raise ValueError("No source element found!")
         self.sourceCoordinates = [np.mean(mesh.CenterCoor[self.sourceElem, 0]),
                                   np.mean(mesh.CenterCoor[self.sourceElem, 1])]
+        
+        self.sinkLocFunc = sink_loc_func
+        self.sinkVelFunc = sink_vel_func
+        if sink_loc_func is not None:
+            if sink_vel_func is None:
+                raise ValueError("Sink velocity function is required for sink elements!")
+            
+            self.sinkElem = []
+            for i in range(mesh.NumberOfElts):
+                if self.sinkLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                 self.sinkElem.append(i)
+            
+            self.sinkVel = np.empty(len(self.sinkElem))
+            for i in range(len(self.sinkElem)):
+                self.sinkVel[i] = sink_vel_func(mesh.CenterCoor[self.sinkElem[i], 0],
+                                                mesh.CenterCoor[self.sinkElem[i], 1])
+                
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -423,12 +452,31 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        actv_cells = set()
-        for i in self.sourceElem:
-            actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                      old_mesh.CenterCoor[i, 1]))
+        if self.sourceLocFunc is None:
+            actv_cells = set()
+            for i in self.sourceElem:
+                actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                        old_mesh.CenterCoor[i, 1]))
+            self.sourceElem = list(actv_cells)
+        else:
+            self.sourceElem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                 self.sourceElem.append(i)
 
-        self.sourceElem = list(actv_cells)
+        
+        if self.sinkLocFunc is not None:
+            
+            self.sinkElem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sinkLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                 self.sinkElem.append(i)
+            
+            self.sinkVel = np.empty(len(self.sinkElem))
+            for i in range(len(self.sinkElem)):
+                    self.sinkVel[i] = self.sinkVelFunc(new_mesh.CenterCoor[self.sinkElem[i], 0],
+                                                       new_mesh.CenterCoor[self.sinkElem[i], 1])
+        
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -523,6 +571,7 @@ class SimulationProperties:
                                         main solvers can be specified.
 
                                             - 'implicit_Picard'
+                                            - 'implicit_Anderson'
                                             - 'RKL2'
         substitutePressure(bool):    -- a flag specifying the solver to be used. If True, the pressure will be
                                         substituted in the channel elements (see Zia and Lecampion, 2019).
