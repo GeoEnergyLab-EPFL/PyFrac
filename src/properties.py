@@ -799,7 +799,7 @@ class SimulationProperties:
                                                   approximate function, which makes it very slow)
                                             = PLF_M (power law fluid in viscosity storage regime; see Desroche et al.)
         """
-        tipAssymptOptions = ["K", "M", "Mt", "U", "MK", "MDR", "M_MDR", "HBF", "HBF_aprox", 
+        tipAssymptOptions = ["K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR", "HBF", "HBF_aprox", 
                              "HBF_num_quad", "PLF", "PLF_aprox", "PLF_num_quad", "PLF_M"]
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote

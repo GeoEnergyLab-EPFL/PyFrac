@@ -314,7 +314,7 @@ supported_projections ={
     'source elements': ['2D_clrmap', '2D_contours', '3D'],
     'se': ['2D_clrmap', '2D_contours', '3D'],
     'effective viscosity': ['2D_clrmap', '2D_contours', '3D'],
-    'ev': ['2D_clrmap', '2D_contours', '3D'
+    'ev': ['2D_clrmap', '2D_contours', '3D']
 }
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
