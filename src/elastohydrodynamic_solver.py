@@ -1357,7 +1357,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
 
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
-    data = interItr
+    data = [interItr[0], interItr[2]]
     return solk, data
 
 
@@ -1711,7 +1711,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
 
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
-    data = interItr
+        
+    data = [interItr[0], interItr[2]]
     return xks[mk + 2, ::], data
 
 
