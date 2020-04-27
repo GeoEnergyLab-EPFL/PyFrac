@@ -118,8 +118,8 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
         In this situation take the i with LS<0 as tip
         (...if you choose LS>0 as tip you will not find zero vertexes then...)
         """
-        nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
-        #nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
+        #nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
+        nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
         exitstatus = True
     elif len(common) == 0:
         #raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
@@ -210,33 +210,40 @@ def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
         return np.pi/2, x0, y2
 
 def plot_final_reconstruction(mesh,
-                              xintersection,
-                              yintersection,
+                              list_of_xintersection,
+                              list_of_yintersection,
                               anularegion,
                               sgndDist_k,
                               newRibbon,
                               listofTIPcells,
-                              xintersectionsfromzerovertex,
-                              yintersectionsfromzerovertex,
-                              vertexID):
+                              list_of_xintersectionsfromzerovertex,
+                              list_of_yintersectionsfromzerovertex,
+                              list_of_vertexID):
     A = np.full(mesh.NumberOfElts, np.nan)
     A[anularegion] = sgndDist_k[anularegion]
     from visualization import plot_fracture_variable_as_image
     figure = plot_fracture_variable_as_image(A, mesh)
     ax = figure.get_axes()[0]
-    xtemp = xintersection
-    ytemp = yintersection
-    xtemp.append(xtemp[0]) # close the front
-    ytemp.append(ytemp[0]) # close the front
-    # plt.plot(mesh.CenterCoor[listofTIPcells, 0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
-    plt.plot(xtemp, ytemp, '-o')
-    n=len(xintersectionsfromzerovertex)
-    for i in range(0,n) :
-        plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
+    for iiii in range(len(list_of_vertexID)):
+        vertexID = list_of_vertexID[iiii]
+        xintersectionsfromzerovertex = list_of_xintersectionsfromzerovertex[iiii]
+        yintersectionsfromzerovertex = list_of_yintersectionsfromzerovertex[iiii]
+        xintersection = list_of_xintersection[iiii]
+        yintersection = list_of_yintersection[iiii]
+        xtemp = xintersection
+        ytemp = yintersection
+        xtemp.append(xtemp[0]) # close the front
+        ytemp.append(ytemp[0]) # close the front
+        # plt.plot(mesh.CenterCoor[listofTIPcells, 0], mesh.VertexCoor[mesh.Connectivity[Ribbon,0],1], '.',color='violet')
+        plt.plot(xtemp, ytemp, '-o')
+        n=len(xintersectionsfromzerovertex)
+        for i in range(0,n) :
+            plt.plot([mesh.VertexCoor[vertexID[(i+1)%n], 0], xintersectionsfromzerovertex[i]], [mesh.VertexCoor[vertexID[(i+1)%n], 1], yintersectionsfromzerovertex[i]], '-r')
+
+        plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
+        plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
     plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
-    plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
-    plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
 
 def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True):
         #fig = None
@@ -2168,6 +2175,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         global_list_of_vertexpositionwithinthecell = []
         global_list_of_vertexpositionwithinthecellTIPcellsONLY = []
         sgndDist_k_new = np.copy(sgndDist_k)
+        list_of_xintersectionsfromzerovertex =[]
+        list_of_yintersectionsfromzerovertex = []
+        list_of_vertexID = []
         """
         We need to compute first all the closed contours because is of fundamental importance the notion of
         inside or outside of the fracture for what will follow next 
@@ -2791,6 +2801,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 global_list_of_angles.extend(angles)
                 global_list_of_vertexpositionwithinthecell.extend(vertexpositionwithinthecell)
                 global_list_of_vertexpositionwithinthecellTIPcellsONLY.extend(vertexpositionwithinthecellTIPcellsONLY.tolist()) #np
+                list_of_xintersectionsfromzerovertex.append(xintersectionsfromzerovertex)
+                list_of_yintersectionsfromzerovertex.append(yintersectionsfromzerovertex)
+                list_of_vertexID.append(vertexID)
 
 
 
@@ -3011,6 +3024,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                       xinters4all_closed_paths_2,
                                       yinters4all_closed_paths_2))
 
+        # plot_final_reconstruction(mesh,
+        #                           list_of_xintersections_for_all_closed_paths,
+        #                           list_of_yintersections_for_all_closed_paths,
+        #                           anularegion,
+        #                           sgndDist_k,
+        #                           global_list_of_newRibbon,
+        #                           global_list_of_TIPcells,
+        #                           list_of_xintersectionsfromzerovertex,
+        #                           list_of_yintersectionsfromzerovertex,
+        #                           list_of_vertexID)
         return \
             np.asarray(global_list_of_TIPcells),\
             np.asarray(global_list_of_TIPcellsONLY), \
@@ -3024,6 +3047,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             sgndDist_k, Ffront
 
 def UpdateListsFromContinuousFrontRec(newRibbon,
+                                      sgndDist_k,
                                       EltChannel_k,
                                       listofTIPcells,
                                       listofTIPcellsONLY,
@@ -3031,9 +3055,12 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
 
         # the listofTIPcells is not including the fully traversed
 
-        #EltChannel_k = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcellsONLY)
+
         fully_traversed = np.setdiff1d(listofTIPcells, listofTIPcellsONLY)
         EltChannel_k = np.concatenate((EltChannel_k,fully_traversed))
+        EltChannel_k_1 = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcellsONLY)
+        if np.setdiff1d(EltChannel_k_1,EltChannel_k).size>0:
+            print("ecco")
         EltTip_k = listofTIPcellsONLY
         EltCrack_k = np.concatenate((EltChannel_k,listofTIPcellsONLY))
 
