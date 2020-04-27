@@ -51,7 +51,9 @@ Fig_labels = {
     'tip_tri': 'Tip asymptotic regime',
     'regime': 'Propagation Regime (M-K)',
     'source elements': 'Source Elements',
-    'se': 'Source Elements'
+    'se': 'Source Elements',
+    'effective viscosity': 'Effective Viscosity',
+    'ev': 'Effective Viscosity'
 }
 
 var_labels = {
@@ -98,7 +100,9 @@ var_labels = {
     'tip_tri' : '',
     'regime': 'regime (M = 1, K = 0)',
     'source elements': 'source elements',
-    'se': 'source elements'
+    'se': 'source elements',
+    'effective viscosity': 'effective viscosity',
+    'ev': 'effective viscosity'
 }
 
 units = {
@@ -145,7 +149,9 @@ units = {
     'tip_tri' : '',
     'regime': '',
     'source elements': '',
-    'se': ''
+    'se': '',
+    'effective viscosity': '($Pa\cdot s$)',
+    'ev': '($Pa\cdot s$)'
 }
 
 unit_conversion = {
@@ -192,7 +198,9 @@ unit_conversion = {
     'tip_tri' : 1,
     'regime': 1.,
     'source elements': 1.,
-    'se': 1.
+    'se': 1.,
+    'effective viscosity': 1.,
+    'ev': 1.
 }
 
 
@@ -205,7 +213,7 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
-                       'chi','tip_tri','regime', 'source elements', 'se']
+                       'chi','tip_tri','regime', 'source elements', 'se', 'effective viscosity', 'ev']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
@@ -214,7 +222,7 @@ bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pres
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
                            'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
                            'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi',
-                           'chi','tip_tri','regime']
+                           'chi','tip_tri','regime', 'effective viscosity', 'ev']
 
 required_string = {
     't': '100000',
@@ -257,7 +265,8 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'chi\'\n'\
                     '-- \'tip_tri\'\n'\
                     '-- \'regime\'\n' \
-                    '-- \'se\' or \'source elements\''
+                    '-- \'se\' or \'source elements\'' \
+                    '-- \'ev\' or \'effective viscosity\''
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -303,7 +312,9 @@ supported_projections ={
     'tip_tri': ['2D_clrmap'],
     'regime': ['2D_clrmap', '2D_contours', '3D'],
     'source elements': ['2D_clrmap', '2D_contours', '3D'],
-    'se': ['2D_clrmap', '2D_contours', '3D']
+    'se': ['2D_clrmap', '2D_contours', '3D'],
+    'effective viscosity': ['2D_clrmap', '2D_contours', '3D'],
+    'ev': ['2D_clrmap', '2D_contours', '3D'
 }
 
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
