@@ -14,6 +14,7 @@ import os
 import numpy as np
 import time
 from time import gmtime, strftime
+import warnings
 
 # local imports
 from properties import LabelProperties, IterationProperties, PlotProperties
@@ -60,21 +61,22 @@ class Controller:
         self.fr_queue = [None, None, None, None, None]  # queue of fractures from the last five time steps
         self.stepsFromChckPnt = 0
         self.tmStpPrefactor_copy = copy.copy(Sim_prop.tmStpPrefactor) # should be in simulation properties
-        self.stagnant_TS = None # ??
+        self.stagnant_TS = None     # time step if the front is stagnant. It is increased exponentialy to avoid uneccessary small steps.
         self.perfData = []
         self.lastSavedFile = 0
         self.lastSavedTime = np.NINF
         self.lastPlotTime = np.NINF
         self.TmStpCount = 0
-        self.chkPntReattmpts = 0 # should be in simulation properties
-        self.delta_w = None # ??
+        self.chkPntReattmpts = 0    # the number of re-attempts done from the checkpoint. Simulation is declared failed after 5 attempts.
+        self.delta_w = None         # change in width between successive time steps. Used to limit time step.
         self.lstTmStp = None
-        self.solveDetlaP_cp = self.sim_prop.solveDeltaP # ??
-        self.PstvInjJmp = None # ??
-        self.fullyClosed = False # should be related to the fracture state (thus in fracture class)
+        self.solveDetlaP_cp = self.sim_prop.solveDeltaP # copy of the flag indicating the solver to solve for pressure or delta p
+        self.PstvInjJmp = None      # flag specifyung if the jump to the time of the next positive injection after the fracture is
+                                        # fully closed is to be taken or not. Asked from user if it is None.
+        self.fullyClosed = False    # should be related to the fracture state (thus in fracture class)
         self.setFigPos = True
         self.lastSuccessfulTS = Fracture.time
-        self.maxTmStp = 0 # should be in simulation properties
+        self.maxTmStp = 0           # the maximum time step taken uptil now by the controller.
 
 
         # make a list of Nones with the size of the number of variables to plot during simulation
@@ -149,7 +151,19 @@ class Controller:
         else:
             self.logAddress = './'
 
-
+        # setting up tip asymptote
+        if self.fluid_prop.rheology in ["Herschel-Bulkley", "HBF"]:
+            if self.sim_prop.get_tipAsymptote() not in ["HBF", "HBF_aprox", "HBF_num_quad"]:
+                warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'HBF\'")
+                self.sim_prop.set_tipAsymptote('HBF')
+        if self.fluid_prop.rheology in ["power-law", "PLF"]:
+            if self.sim_prop.get_tipAsymptote() not in ["PLF", "PLF_aprox", "PLF_num_quad", "PLF_M"]:
+                warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'PLF\'")
+                self.sim_prop.set_tipAsymptote('PLF')
+        if self.fluid_prop.rheology == 'Newtonian':
+            if self.sim_prop.get_tipAsymptote() not in ["K", "M", "Mt", "U", "MK", "MDR", "M_MDR"]:
+                warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'U\'")
+                self.sim_prop.set_tipAsymptote('U')
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -631,7 +645,7 @@ class Controller:
                                                                                 plot_mesh=False,
                                                                                 print_number=False)
                     plt.ion()
-                    plt.pause(0.5)
+                    plt.pause(0.4)
                     
                 # set figure position
                 if self.setFigPos:
