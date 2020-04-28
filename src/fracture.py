@@ -618,8 +618,8 @@ class Fracture:
             # getting the corresponding cells of the coarse mesh in the fine mesh
             corresponding = []
             for i in intersecting:
-                corresponding.append(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
-                                                            coarse_mesh.CenterCoor[i, 1]))
+                corresponding.append(list(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
+                                                            coarse_mesh.CenterCoor[i, 1]))[0])
             corresponding = np.asarray(corresponding, dtype=int)
 
             # weighted sum to conserve volume upto machine precision
@@ -735,7 +735,7 @@ class Fracture:
         # fine mesh. If not available, average is taken of the enclosing elements
         to_correct = []
         for indx, elt in enumerate(Fr_coarse.EltTip):
-            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])
+            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])[0]
             if np.isnan(self.TarrvlZrVrtx[corr_tip]):
                 TarrvlZrVrtx = 0
                 cnt = 0
