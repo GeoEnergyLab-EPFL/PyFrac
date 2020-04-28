@@ -120,7 +120,7 @@ def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, requi
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='111111'):
+def M_vertex_solution(Eprime, Q0, muPrime, Mesh, inj_point, R=None, t=None, required='111111'):
     """
     Analytical solution for Viscosity dominated (M vertex) fracture propagation, given fracture radius or the time
     since the start of the injection. The solution does not take leak off into account.
@@ -156,7 +156,7 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, R=None, t=None, required='11111
         v = None
 
     if required[3] == '1':
-        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R  # normalized distance from center
+        rho = ((Mesh.CenterCoor[:, 0] - inj_point[0]) ** 2 + (Mesh.CenterCoor[:, 1] - inj_point[1]) ** 2) ** 0.5 / R  # normalized distance from center
         actvElts = np.where(rho <= 1)[0]  # active cells (inside fracture)
         # temporary variables to avoid recomputation
         var1 = -2 + 2 * rho[actvElts]
@@ -923,9 +923,12 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
 
     """
+    ## AM:
+    if inj_point == None:
+        inj_point = np.asarray([0, 0])
 
     if regime == 'M':
-        t, r, p, w, v, actvElts = M_vertex_solution(Eprime, Q0, muPrime, mesh, length, t, required)
+        t, r, p, w, v, actvElts = M_vertex_solution(Eprime, Q0, muPrime, mesh, inj_point, length, t, required)
     elif regime == 'Mp':
         t, r, p, w, v, actvElts = Mp_vertex_solution(Eprime, Vinj, muPrime, length, t, required)
     elif regime == 'K':
@@ -951,23 +954,6 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
     else:
         raise ValueError("The provided regime is not supported!")
 
-    # shift injection point
-    if inj_point is not None and regime != 'Mp':
-        shifted_inj_point = inj_point[0] != 0 or inj_point[1] != 0      # injection point is shifted
-        req_w_p = required[3] == '1' or required[2] == '1'              # width or pressure is required
-        if req_w_p and shifted_inj_point:
-            if isinstance(inj_point, np.ndarray) or isinstance(inj_point, list):
-                if len(inj_point) != 2:
-                    raise ValueError("The injection point should be a list of numpy array of length 2, giving the"
-                                     " x and y coordinates of the injection point!")
-                else:
-                    if required[3] == '1':
-                        actvElts_shft, w = shift_injection_point(inj_point[0], inj_point[1], mesh,
-                                                                 w, active_elts=actvElts, fill=0.)
-                    if required[2] == '1':
-                        actvElts_shft, p = shift_injection_point(inj_point[0], inj_point[1], mesh,
-                                                                 p, active_elts=actvElts, fill=0.)
-                actvElts = actvElts_shft
     return t, r, p, w, v, actvElts
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1090,13 +1076,13 @@ def shift_injection_point(x, y, mesh, variable=None, active_elts=None, fill=None
     if fill is None:
         fill = np.nan
 
-    if active_elts is None:
+    if active_elts == None:
         actv_given = False
         active_elts = np.arange(mesh.NumberOfElts, dtype=int)
     else:
         actv_given = True
 
-    shifted_actv = active_elts - (mesh.CenterElts - inj_elem)
+    shifted_actv = active_elts + (mesh.CenterElts - inj_elem)
 
     # if the active elements are out of the mesh
     if inj_elem < mesh.CenterElts:

@@ -195,11 +195,15 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(np.pi/2)
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
+        else:
+            self.Kprime = np.full((mesh.NumberOfElts,), self.Kprime[0])
 
         if self.SigmaOFunc is not None:
             self.SigmaO = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.SigmaO[i] = self.SigmaOFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+        else:
+            self.SigmaO = np.full((mesh.NumberOfElts,), self.SigmaO[0])
 
         if self.ClFunc is not None:
             self.Cl = np.empty((mesh.NumberOfElts,), dtype=np.float64)
@@ -207,6 +211,8 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.Cl[i] = self.ClFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
             self.Cprime = 2 * self.Cl
+        else:
+            self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -382,8 +388,8 @@ class InjectionProperties:
             else:
                 self.sourceCoordinates = [0., 0.]
 
-            self.sourceElem = [mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])]
-            if np.isnan(self.sourceElem):
+            self.sourceElem = mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
+            if np.isnan(self.sourceElem).any():
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
             print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
@@ -453,11 +459,12 @@ class InjectionProperties:
 
         # update source elements according to the new mesh.
         if self.sourceLocFunc is None:
-            actv_cells = set()
+            actv_cells = np.asarray([1])
             for i in self.sourceElem:
-                actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                        old_mesh.CenterCoor[i, 1]))
-            self.sourceElem = list(actv_cells)
+                actv_cells = np.append(actv_cells, new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                                           old_mesh.CenterCoor[i, 1]))
+
+            self.sourceElem = list(actv_cells[1::])
         else:
             self.sourceElem = []
             for i in range(new_mesh.NumberOfElts):
@@ -476,7 +483,7 @@ class InjectionProperties:
             for i in range(len(self.sinkElem)):
                     self.sinkVel[i] = self.sinkVelFunc(new_mesh.CenterCoor[self.sinkElem[i], 0],
                                                        new_mesh.CenterCoor[self.sinkElem[i], 1])
-        
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -592,6 +599,12 @@ class SimulationProperties:
                                         by the variable remeshFactor after the fracture front reaches the end of the
                                         domain.
         remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.
+
+        meshExtension (bool array):  -- an array of booleans defining if the mesh should be extended in the given
+                                        direction or if it should get compressed. The distribution is bottom, top,
+                                        left, right
+        meshExtensionFactor (float): -- factor by which the current mesh is extended in the extension direction
+
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
 
                                             - 'explicit'
@@ -735,6 +748,10 @@ class SimulationProperties:
         self.saveRegime = simul_param.save_regime
         self.enableRemeshing = simul_param.enable_remeshing
         self.remeshFactor = simul_param.remesh_factor
+
+        self.meshExtension = simul_param.mesh_extension_direction
+        self.meshExtensionFactor = simul_param.mesh_extension_factor
+
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.paramFromTip = simul_param.param_from_tip
@@ -904,6 +921,46 @@ class SimulationProperties:
                                  "pre-factor in the second row.")
         else:
             return self.tmStpPrefactor
+
+    def set_mesh_extension_direction(self, direction):
+        """
+        The function to set up in which directions the mesh should be extended
+
+        Arguments:
+            direction (string):       -- direction where the mesh should be extended:
+
+                                            - top  (mesh extension towards positive y)
+                                            - bottom  (mesh extension towards negative y)
+                                            - Left (mesh extension towards negative x)
+                                            - Right (mesh extension towards positive x)
+                                            - vertical  (mesh extension up and down)
+                                            - horizontal (mesh extension left and right)
+        """
+
+        if direction == 'vertical':
+            self.meshExtension[0::1] = True
+        elif direction == 'horizontal':
+            self.meshExtension[2::-1] = True
+        elif direction == 'top':
+            self.meshExtension[1] = True
+        elif direction == 'bottom':
+            self.meshExtension[0] = True
+        elif direction == 'left':
+            self.meshExtension[2] = True
+        elif direction == 'right':
+            self.meshExtension[3] = True
+        else: # error
+            raise ValueError('Invalid mesh extension definition Possible options: top, bottom, left, right, vertical'
+                             'or horizontal')
+
+    def get_mesh_extension_direction(self):
+        return self.meshExtension
+
+    def set_mesh_extension_factor(self, c):
+        self.meshExtensionFactor = c
+
+    def get_mesh_extension_factor(self):
+        return self.meshExtensionFactor
 
 
 #-----------------------------------------------------------------------------------------------------------------------
