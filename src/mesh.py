@@ -570,7 +570,6 @@ class CartesianMesh:
         return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2),
                        np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2 ))
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 
     def Neighbors(self, elem, nx, ny):
