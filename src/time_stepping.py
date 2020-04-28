@@ -592,13 +592,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 # the search region inwards from the front position at last time step
                 ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
 
-                #sgndDist_k_temp2 = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,),float)  # Initializing the cells with extremely
-                # large float value. (algorithm requires inf)
-                #sgndDist_k_temp2[Fr_lstTmStp.EltRibbon] = sgndDist_k[Fr_lstTmStp.EltRibbon]
-                #sgndDist_k = sgndDist_k_temp2
-                #sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
-                #                                               Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
-
                 # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
                 SolveFMM(sgndDist_k,
                          Fr_lstTmStp.EltTip,
@@ -625,8 +618,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
+        Fr_lstTmStp.EltTip = EltsTipNew
         exitstatus = 12
-        return exitstatus, None
+        return exitstatus, Fr_lstTmStp
 
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
@@ -801,7 +795,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         pass
         # todo close tip width instrumentation
 
-    LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    LkOff = np.zeros((len(CellStatus),), dtype=np.float64)
     if sum(mat_properties.Cprime[EltsTipNew]) > 0:
         # Calculate leak-off term for the tip cell
         LkOff[EltsTipNew] = 2 * mat_properties.Cprime[EltsTipNew] * Integral_over_cell(EltsTipNew,
@@ -1677,14 +1671,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         return exitstatus, None
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
-    # tipNeighb = Fr_lstTmStp.mesh.NeiElements[EltsTipNew, :]
-    # for i in range(0, len(EltsTipNew)):
-    #     if (np.where(tipNeighb[i, :] == EltsTipNew[i])[0]).size > 0:
-    #         exitstatus = 12
-    #         return exitstatus, None
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
+        Fr_lstTmStp.EltTip = EltsTipNew
         exitstatus = 12
-        return exitstatus, None
+        return exitstatus, Fr_lstTmStp
 
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
@@ -1851,7 +1841,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         pass
         # todo close tip width instrumentation
 
-    LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    LkOff = np.zeros((len(CellStatus),), dtype=np.float64)
     if sum(mat_properties.Cprime[EltsTipNew]) > 0:
         # Calculate leak-off term for the tip cell
         LkOff[EltsTipNew] = 2 * mat_properties.Cprime[EltsTipNew] * Integral_over_cell(EltsTipNew,

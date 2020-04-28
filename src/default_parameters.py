@@ -86,8 +86,12 @@ proj_method = 'ILSA_orig'               # set the method to evaluate projection 
 double_fracture_vol_contr = False       # enable the volume control solver for two fractures
 plot_at_sol_time_series = True          # plot when the time is in the requested time series
 
-# AM adapted to define Chi in tip cells and tip regime in adjacent cells
-save_chi = False
+# Tip leak-off parameter
+save_chi = False                        # Question if we save the tip asymptotics leak-off parameter
+
+# Mesh extension
+mesh_extension_direction = [False] * 4  # Per default the mesh is not extended in any direction
+mesh_extension_factor = 2               # How many total elements we will have in this direction
 
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry.

@@ -18,6 +18,7 @@ from properties import PlotProperties
 
 from visualization import zoom_factory, to_precision, text3d
 from symmetry import *
+import numpy as np
 
 class CartesianMesh:
     """Class defining a Cartesian Mesh.
@@ -55,6 +56,8 @@ class CartesianMesh:
         distCenter (ndarray):             -- the distance of the cells from the center.
         CenterElts (ndarray):             -- the element in the center (the cell with the injection point).
 
+        domainLimits (ndarray):           -- the limits of the domain
+
     Note:
         The attributes below are only evaluated if symmetric solver is used.
 
@@ -85,8 +88,22 @@ class CartesianMesh:
 
         """
 
-        self.Lx = Lx
-        self.Ly = Ly
+        if not isinstance(Lx, list):
+            self.Lx = Lx
+            xlims = np.asarray([-Lx, Lx])
+        else:
+            self.Lx = abs(Lx[0]-Lx[1]) / 2
+            xlims = np.asarray([Lx[0], Lx[1]])
+
+        if not isinstance(Ly, list):
+            self.Ly = Ly
+            ylims = np.asarray([-Ly, Ly])
+        else:
+            self.Ly = abs(Ly[0]-Ly[1]) / 2
+            ylims = np.asarray([Ly[0], Ly[1]])
+
+        self.domainLimits = np.hstack((ylims,xlims))
+
 
         # Check if the number of cells is odd to see if the origin would be at the mid point of a single cell
         if nx % 2 == 0:
@@ -103,11 +120,11 @@ class CartesianMesh:
         else:
             self.ny = ny
 
-        self.hx = 2. * Lx / (self.nx - 1)
-        self.hy = 2. * Ly / (self.ny - 1)
+        self.hx = 2. * self.Lx / (self.nx - 1)
+        self.hy = 2. * self.Ly / (self.ny - 1)
 
-        x = np.linspace(-Lx - self.hx / 2., Lx + self.hx / 2., self.nx + 1)
-        y = np.linspace(-Ly - self.hy / 2., Ly + self.hy / 2., self.ny + 1)
+        x = np.linspace(self.domainLimits[2] - self.hx / 2., self.domainLimits[3] + self.hx / 2., self.nx + 1)
+        y = np.linspace(self.domainLimits[0] - self.hy / 2., self.domainLimits[1] + self.hy / 2., self.ny + 1)
 
         xv, yv = np.meshgrid(x, y)  # coordinates of the vertex of each elements
 
@@ -497,6 +514,10 @@ class CartesianMesh:
         self.Connectivitynodesedges = connNodesEdges  # Peruzzo 2019
         self.Connectivitynodeselem = connNodesElem  # Peruzzo 2019
 
+        # coordinates of the center of the mesh
+        centerMesh = np.asarray([(self.domainLimits[2] + self.domainLimits[3])/2,
+                                 (self.domainLimits[1] + self.domainLimits[0])/2])
+
         # coordinates of the center of the elements
         CoorMid = np.empty([self.NumberOfElts, 2], dtype=float)
         for e in range(0, self.NumberOfElts):
@@ -504,13 +525,14 @@ class CartesianMesh:
             CoorMid[e] = np.mean(t, axis=0)
         self.CenterCoor = CoorMid
 
-        self.distCenter = (CoorMid[:, 0] ** 2 + CoorMid[:, 1] ** 2) ** 0.5
+        self.distCenter = ((CoorMid[:, 0] - centerMesh[0]) ** 2 + (CoorMid[:, 1] - centerMesh[1]) ** 2) ** 0.5
 
 
 
         # the element in the center (used for fluid injection)
-        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < self.hx/2),
-                                         np.where(abs(self.CenterCoor[:, 1]) < self.hy/2))
+        # todo: No it is not necessarily where we inject!
+        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - centerMesh[0]) < self.hx/2),
+                                         np.where(abs(self.CenterCoor[:, 1] - centerMesh[1]) < self.hy/2))
         if len(self.CenterElts) != 1:
             #todo
             raise ValueError("Mesh with no center element. To be looked into")
@@ -541,12 +563,12 @@ class CartesianMesh:
 
         """
 
-        if abs(x) >= self.Lx + self.hx / 2 or abs(y) >= self.Ly + self.hy / 2:
+        if x >= self.domainLimits[3] + self.hx / 2 or y >= self.domainLimits[1] + self.hy / 2\
+                or x <= self.domainLimits[2] - self.hx / 2 or y <= self.domainLimits[0] - self.hy / 2:
             return np.nan
 
-        i = (y + self.Ly + self.hy / 2) // self.hy
-        j = (x + self.Lx + self.hx / 2) // self.hx
-        return int(i * self.nx + j)
+        return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2 + np.sqrt(np.finfo(float).eps)),
+                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2 + np.sqrt(np.finfo(float).eps)))
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -626,8 +648,8 @@ class CartesianMesh:
             ax = fig.get_axes()[0]
 
         # set the four corners of the rectangular mesh
-        ax.set_xlim([-self.Lx - self.hx / 2, self.Lx + self.hx / 2])
-        ax.set_ylim([-self.Ly - self.hy / 2, self.Ly + self.hy / 2])
+        ax.set_xlim([self.domainLimits[2] - self.hx / 2, self.domainLimits[3] + self.hx / 2])
+        ax.set_ylim([self.domainLimits[0] - self.hy / 2, self.domainLimits[1] + self.hy / 2])
 
         # add rectangle for each cell
         patches = []
@@ -699,8 +721,8 @@ class CartesianMesh:
         if fig is None:
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1, projection='3d')
-            ax.set_xlim(-self.Lx * 1.2, self.Lx * 1.2)
-            ax.set_ylim(-self.Ly * 1.2, self.Ly * 1.2)
+            ax.set_xlim([self.domainLimits[2] * 1.2, self.domainLimits[3] * 1.2])
+            ax.set_ylim([self.domainLimits[0] * 1.2, self.domainLimits[1] * 1.2])
             scale = 1.1
             zoom_factory(ax, base_scale=scale)
         else:
@@ -856,8 +878,8 @@ class CartesianMesh:
             ax = fig.get_axes()[0]
 
         # set the four corners of the rectangular mesh
-        ax.set_xlim([-self.Lx - self.hx / 2, self.Lx + self.hx / 2])
-        ax.set_ylim([-self.Ly - self.hy / 2, self.Ly + self.hy / 2])
+        ax.set_xlim([self.domainLimits[2] - self.hx / 2, self.domainLimits[3] + self.hx / 2])
+        ax.set_ylim([self.domainLimits[0] - self.hy / 2, self.domainLimits[1] + self.hy / 2])
 
         # add rectangle for each cell
         patch_list = []
