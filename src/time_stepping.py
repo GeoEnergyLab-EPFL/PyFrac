@@ -590,8 +590,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
+        Fr_lstTmStp.EltTip = EltsTipNew
         exitstatus = 12
-        return exitstatus, None
+        return exitstatus, Fr_lstTmStp
 
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
@@ -765,7 +766,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         pass
         # todo close tip width instrumentation
 
-    LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    LkOff = np.zeros((len(CellStatus),), dtype=np.float64)
     if sum(mat_properties.Cprime[EltsTipNew]) > 0:
         # Calculate leak-off term for the tip cell
         LkOff[EltsTipNew] = 2 * mat_properties.Cprime[EltsTipNew] * Integral_over_cell(EltsTipNew,
@@ -1559,8 +1560,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     #         exitstatus = 12
     #         return exitstatus, None
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
+        Fr_lstTmStp.EltTip = EltsTipNew
         exitstatus = 12
-        return exitstatus, None
+        return exitstatus, Fr_lstTmStp
 
     # generate the InCrack array for the current front position
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
@@ -1722,7 +1724,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         pass
         # todo close tip width instrumentation
 
-    LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+    LkOff = np.zeros((len(CellStatus),), dtype=np.float64)
     if sum(mat_properties.Cprime[EltsTipNew]) > 0:
         # Calculate leak-off term for the tip cell
         LkOff[EltsTipNew] = 2 * mat_properties.Cprime[EltsTipNew] * Integral_over_cell(EltsTipNew,

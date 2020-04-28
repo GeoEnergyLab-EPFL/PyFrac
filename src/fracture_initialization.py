@@ -93,19 +93,24 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given circle.
     """
+    if inj_point == None:
+        inj_point = np.asarray([0, 0])
 
     # distances of the cell vertices
-    dist_vertx = ((mesh.VertexCoor[:, 0]) / r) ** 2 + ((mesh.VertexCoor[:, 1]) / r) ** 2 - 1.
+    dist_vertx = (((mesh.VertexCoor[:, 0] - inj_point[0])) ** 2 + ((mesh.VertexCoor[:, 1] - inj_point[1])) ** 2 ) \
+                  ** (1 / 2) / r - 1.
+    #dist_vertx = ((mesh.VertexCoor[:, 0]) / r) ** 2 + ((mesh.VertexCoor[:, 1]) / r) ** 2 - 1.
+
     # vertices that are inside the ellipse
-    vertices = dist_vertx[mesh.Connectivity] < 0
+    vertices = dist_vertx[mesh.Connectivity] <= 0
 
     # cells with all four vertices inside
     log_and = np.logical_and(np.logical_and(vertices[:, 0], vertices[:, 1]),
                              np.logical_and(vertices[:, 2], vertices[:, 3]))
 
     inner_cells = np.where(log_and)[0]
-    dist = r - ((mesh.CenterCoor[inner_cells, 0]) ** 2
-                + (mesh.CenterCoor[inner_cells, 1]) ** 2) ** 0.5
+    dist = r - ((mesh.CenterCoor[inner_cells, 0]- inj_point[0]) ** 2
+                + (mesh.CenterCoor[inner_cells, 1]- inj_point[1]) ** 2) ** 0.5
 
     if len(inner_cells) == 0:
         raise SystemError("The given radius is too small!")
@@ -115,15 +120,15 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
     surv_cells = inner_cells[ribbon]
     surv_dist = dist[ribbon]
 
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
+    # if inj_point is not None:
+    #     surv_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=surv_cells)
+    #     inner_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=inner_cells)
 
     return surv_cells, surv_dist, inner_cells
 

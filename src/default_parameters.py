@@ -85,6 +85,10 @@ proj_method = 'ILSA_orig'               # set the method to evaluate projection 
 save_chi = False
 save_tip_regime = False
 
+# AM adapted for meshing on the fly
+mesh_extension_direction = [False] * 4
+mesh_extension_factor = 2
+
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry.
 aspect_ratio = None                     # fracture aspect ratio to calculate the analytical solution for TI case.
