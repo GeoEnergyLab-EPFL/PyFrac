@@ -237,7 +237,7 @@ def TipAsym_Universal_zrthOrder_Res(dist, *args):
     if Cbar == 0:
         return TipAsym_MK_zrthOrder_Res(dist, *args)
 
-    Vel = (dist - Dist_LstTS) / dt
+    Vel = (dist - DistLstTSEltRibbon) / dt
 
     Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
@@ -453,7 +453,6 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
         ResFunc = TipAsym_M_MDR_Res
     elif simParmtrs.get_tipAsymptote() in ["HBF", "HBF_aprox", "HBF_num_quad"]:
         ResFunc = TipAsym_Hershcel_Burkley_Res
-        T0 = fluidProp.T0
     elif simParmtrs.get_tipAsymptote() in ["PLF", "PLF_aprox", "PLF_num_quad"]:
         ResFunc = TipAsym_power_law_Res
     elif simParmtrs.get_tipAsymptote() == 'PLF_M':
