@@ -118,8 +118,8 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
         In this situation take the i with LS<0 as tip
         (...if you choose LS>0 as tip you will not find zero vertexes then...)
         """
-        #nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
-        nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
+        nodeVScommonelementtable[nodeindex, column] = common[np.argmax(sgndDist_k[common])]
+        #nodeVScommonelementtable[nodeindex,column]=common[np.argmin(sgndDist_k[common])]
         exitstatus = True
     elif len(common) == 0:
         #raise SystemExit('FRONT RECONSTRUCTION ERROR: two consecutive nodes does not belongs to a common cell')
