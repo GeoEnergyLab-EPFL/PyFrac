@@ -392,6 +392,11 @@ def Area(dist, *param):
         return (0.242623 * dist ** 1.74074 * Vel ** 0.481481 * fluid_prop.muPrime ** 0.259259 * density ** 0.111111
          ) / Eprime ** 0.37037
     
+    elif regime in ['HBF', 'HBF_aprox']:
+        args_HB = (dist, Kprime, Eprime, fluid_prop.muPrime, Cbar, Vel, fluid_prop.n, fluid_prop.k, fluid_prop.T0)
+        (M0, M1) = MomentsTipAssymp_HBF_approx(dist, *args_HB)
+        return M0
+    
     elif regime == 'HBF_num_quad':
         args_HB = (dist, Kprime, Eprime, fluid_prop.muPrime, Cbar, Vel, fluid_prop.n, fluid_prop.k, fluid_prop.T0)
         return quad(width_HBF, 0, dist, args_HB)[0]
@@ -469,6 +474,7 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
 
     Returns:
         integral (ndarray)              -- the integral of the specified function over the given tip cells.
+
     """
 
     # Pass None as dummy if parameter is not required
@@ -509,9 +515,10 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
     i=0
     while i < len(l):
 
-        if abs(alpha[i]) >= 1e-8 or abs(alpha[i] - np.pi / 2) >= 1e-8:
+        if abs(alpha[i]) >= 1e-8 and abs(alpha[i] - np.pi / 2) >= 1e-8:
             m = 1 / (np.sin(alpha[i]) * np.cos(alpha[i]))  # the m parameter (see e.g. A. Pierce 2015)
-        else : m = np.inf
+        else : 
+            m = np.inf
         # packing parameters to pass
         param_pack = (function, fluid_prop, Kprime[i], Eprime[i], Cprime[i], Vel[i], stagnant[i], KIPrime[i],
                       arrival_t[i], m, t_lstTS, dt)
