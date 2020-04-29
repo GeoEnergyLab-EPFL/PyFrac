@@ -161,6 +161,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
         if projection != '2D_vectorfield':
             var_value_tmp = np.copy(var_val_copy)
+            if elements is not None:
+                var_value_tmp = var_value_tmp[:, elements]
             if plot_non_zero:
                 var_value_tmp = var_value_tmp[var_value_tmp != 0]
             vmin, vmax = np.inf, -np.inf
@@ -649,12 +651,9 @@ def plot_fracture_variable_as_image(var_value, mesh, fig=None, plot_prop=None, e
     """
 
     if elements is not None:
-        if len(var_value) == len(elements):
-            var_value_fullMesh = np.full((mesh.NumberOfElts, ), np.nan)
-            var_value_fullMesh[elements] = var_value
-            var_value = var_value_fullMesh
-        else:
-            raise ValueError("The var_value and elements arguments should have same lengths.")
+        var_value_fullMesh = np.full((mesh.NumberOfElts, ), np.nan)
+        var_value_fullMesh[elements] = var_value[elements]
+        var_value = var_value_fullMesh
 
     if fig is None:
         fig = plt.figure()

@@ -73,6 +73,7 @@ save_fluid_flux = False                 # if True, the fluid flux at each edge w
 save_fluid_vel = False                  # if True, the fluid vel at each edge will be saved.
 save_fluid_flux_as_vector = False       # if True, the fluid flux at each edge will be saved as vector, i.e. with two components.
 save_fluid_vel_as_vector = False        # if True, the fluid vel at each edge will be saved as vector, i.e. with two components.
+save_effective_viscosity = False        # if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will be saved.
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 explicit_projection = False             # if True, direction from last time step will be used to evaluate TI parameters.
