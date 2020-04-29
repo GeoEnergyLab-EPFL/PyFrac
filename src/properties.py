@@ -230,15 +230,22 @@ class FluidProperties:
                                     fracture class for local viscosity).
         muPrime (float):         -- 12 * viscosity (parallel plates viscosity factor).
         rheology (string):       -- string specifying rheology of the fluid. Possible options:
+            
                                      - "Newtonian"
-                                     - "non-Newtonian"
+                                     - "Herschel-Bulkley" or "HBF"
+                                     - "power-law" or "PLF"
         density (float):         -- density of the fluid.
         turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account.
         compressibility (float): -- the compressibility of the fluid.
+        n (float):               -- flow index of the Herschel-Bulkey fluid.
+        k (float):               -- consistency index of the Herschel-Bulkey fluid.
+        T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
+        Mprime                   -- 2**(n + 1) * (2 * n + 1)**n / n**n  * k
 
     """
 
-    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0):
+    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0,
+                 n=None, k=None, T0=None):
         """
         Constructor function.
 
@@ -254,14 +261,30 @@ class FluidProperties:
             self.viscosity = viscosity
             self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
 
-        rheologyOptions = ("Newtonian", "non-Newtonian")
+        rheologyOptions = ["Newtonian", "Herschel-Bulkley", "HBF", "power-law", "PLF"]
         if rheology in rheologyOptions:  # check if rheology match to any rheology option
-            if rheology == "Newtonian":
-                self.rheology = rheology
-            elif rheology == "non-Newtonian":
-                raise ValueError("Non-Newtonian rheology not yet supported")
+            self.rheology = rheology
+            if rheology in ["Herschel-Bulkley", "HBF"]:
+                if n is None or k is None or T0 is None:
+                    raise ValueError("n (flow index), k(consistency index) and T0 (yield stress) are required for a \
+                                     Herscel-Bulkley type fluid!")
+                self.n = n
+                self.k = k
+                self.T0 = T0
+                self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+                self.var1 = self.Mprime ** (-1 / n)
+                self.var2 = 1/n - 1.
+                self.var3 = 2. + 1/n
+                self.var4 = 1. + 1/n
+                self.var5 = n / (n + 1.)   
+            elif rheology in ["power-law", "PLF"]:
+                if n is None or k is None:
+                    raise ValueError("n (flow index) and k(consistency index) are required for a power-law type fluid!")
+                self.n = n
+                self.k = k
+                self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
         else:# error
-            raise ValueError('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
+            raise ValueError('Invalid input for fluid rheology. Possible options: ' + repr(rheologyOptions))
 
         self.density = density
 
@@ -298,7 +321,16 @@ class InjectionProperties:
                                          a source element. It should have to arguments (x, y) and return True or False.
                                          It is also called upon re-meshing to get the source elements on the coarse
                                          mesh.
-
+       sink_loc_func (function):      -- the sink location function is used to get the elements where there is a fixed rate
+                                         sink. It should take the x and y coordinates and return True or False
+                                         depending upon if the sink is present on these coordinates. This function is
+                                         evaluated at each of the cell centre coordinates to determine if the cell is
+                                         a sink element. It should have to arguments (x, y) and return True or False.
+                                         It is also called upon re-meshing to get the source elements on the coarse
+                                         mesh.
+                                             
+      sink_vel_func (function):       -- this function gives the sink velocity at the given (x, y) point.
+                                   
     Attributes:
         injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection
                                          rates (row 1). The time series provide the time when the injection rate
@@ -314,9 +346,12 @@ class InjectionProperties:
                                          a source element. It should have to arguments (x, y) and return True or False.
                                          It is also called upon re-meshing to get the source elements on the coarse
                                          mesh.
+        sinkLocFunc (function):      --  see description of arguments.
+        sink_vel_func (function):    --  see description of arguments.
+                                         
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None, sink_vel_func=None):
         """
         The constructor of the InjectionProperties class.
         """
@@ -358,13 +393,30 @@ class InjectionProperties:
             self.sourceLocFunc = source_loc_func
             self.sourceElem = []
             for i in range(mesh.NumberOfElts):
-             if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
                  self.sourceElem.append(i)
 
         if len(self.sourceElem) == 0:
             raise ValueError("No source element found!")
         self.sourceCoordinates = [np.mean(mesh.CenterCoor[self.sourceElem, 0]),
                                   np.mean(mesh.CenterCoor[self.sourceElem, 1])]
+        
+        self.sinkLocFunc = sink_loc_func
+        self.sinkVelFunc = sink_vel_func
+        if sink_loc_func is not None:
+            if sink_vel_func is None:
+                raise ValueError("Sink velocity function is required for sink elements!")
+            
+            self.sinkElem = []
+            for i in range(mesh.NumberOfElts):
+                if self.sinkLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                 self.sinkElem.append(i)
+            
+            self.sinkVel = np.empty(len(self.sinkElem))
+            for i in range(len(self.sinkElem)):
+                self.sinkVel[i] = sink_vel_func(mesh.CenterCoor[self.sinkElem[i], 0],
+                                                mesh.CenterCoor[self.sinkElem[i], 1])
+                
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -400,12 +452,31 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        actv_cells = set()
-        for i in self.sourceElem:
-            actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                      old_mesh.CenterCoor[i, 1]))
+        if self.sourceLocFunc is None:
+            actv_cells = set()
+            for i in self.sourceElem:
+                actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                        old_mesh.CenterCoor[i, 1]))
+            self.sourceElem = list(actv_cells)
+        else:
+            self.sourceElem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                 self.sourceElem.append(i)
 
-        self.sourceElem = list(actv_cells)
+        
+        if self.sinkLocFunc is not None:
+            
+            self.sinkElem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sinkLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                 self.sinkElem.append(i)
+            
+            self.sinkVel = np.empty(len(self.sinkElem))
+            for i in range(len(self.sinkElem)):
+                    self.sinkVel[i] = self.sinkVelFunc(new_mesh.CenterCoor[self.sinkElem[i], 0],
+                                                       new_mesh.CenterCoor[self.sinkElem[i], 1])
+        
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -500,6 +571,7 @@ class SimulationProperties:
                                         main solvers can be specified.
 
                                             - 'implicit_Picard'
+                                            - 'implicit_Anderson'
                                             - 'RKL2'
         substitutePressure(bool):    -- a flag specifying the solver to be used. If True, the pressure will be
                                         substituted in the channel elements (see Zia and Lecampion, 2019).
@@ -537,6 +609,8 @@ class SimulationProperties:
                                         will be saved.
         saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture
                                         will be saved.
+        saveEffVisc (boolean)L       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
+                                        be saved.
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
         explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
@@ -674,6 +748,7 @@ class SimulationProperties:
         self.saveFluidVel = simul_param.save_fluid_vel
         self.saveFluidFluxAsVector = simul_param.save_fluid_flux_as_vector
         self.saveFluidVelAsVector = simul_param.save_fluid_vel_as_vector
+        self.saveEffVisc = simul_param.save_effective_viscosity
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.projMethod = simul_param.proj_method
@@ -709,8 +784,23 @@ class SimulationProperties:
                                             - U1  (Universal regime accommodating viscosity, toughness\
                                                  and leak off (see Donstov and Pierce, 2017), delta correction)
                                             - MK (viscosity to toughness transition regime)
+                                            - MDR (Maximum drag reduction asymptote, see Lecampion & Zia 2019)
+                                            - M_MDR (Maximum drag reduction asymptote in viscosity sotrage \ 
+                                                  regime, see Lecampion & Zia 2019)
+                                            - HBF or HBF_aprox (Herschel-Bulkley fluid, see Bessmertnykh and \
+                                                  Dontsov 2019; the tip volume is evaluated with a fast aproximation)
+                                            - HBF_num_quad (Herschel-Bulkley fluid, see Bessmertnykh and \
+                                                  Dontsov 2019; the tip volume is evaluated with numerical quadrature of the\ 
+                                                  approximate function, which makes it very slow)
+                                            - PLF or PLF_aprox (power law fluid, see Dontsov and \
+                                                  Kresse 2017; the tip volume is evaluated with a fast aproximation)
+                                            - PLF_num_quad (power law fluid, see Dontsov and \
+                                                  Kresse 2017; the tip volume is evaluated with numerical quadrature of the\ 
+                                                  approximate function, which makes it very slow)
+                                            = PLF_M (power law fluid in viscosity storage regime; see Desroche et al.)
         """
-        tipAssymptOptions = ("K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR")
+        tipAssymptOptions = ["K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR", "HBF", "HBF_aprox", 
+                             "HBF_num_quad", "PLF", "PLF_aprox", "PLF_num_quad", "PLF_M"]
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote
         else: # error
