@@ -15,6 +15,7 @@ import dill
 import os
 import re
 import sys
+import json
 
 from utility import ReadFracture
 from HF_analytical import HF_analytical_sol, get_fracture_dimensions_analytical
@@ -903,6 +904,76 @@ def write_fracture_mesh_csv_file(file_name, mesh_list):
     return_list_np = np.asarray(return_list)
     np.savetxt(file_name, return_list_np, delimiter=',')
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def append_to_json_file(file_name, content, action, key=None, delete_existing_filename=False):
+    """ This function appends data of a mesh as a json file.
+
+        Args:
+            file_name (string):     -- the name of the file to be written.
+            key (string):           -- a string that describes the information you are passing.
+            content (list):         -- a list of some informations
+            action (string):        -- action to take. Current options are:
+                                       'append2keyASnewlist'
+                                       This option means that you load the json file, you take the content of the key
+                                       and then you append the new content as a new list in a list of lists
+                                       if the existing content was not a list it will be put in a list
+
+                                       'append2keyAND2list'
+                                       This option means that you load the json file, you take the content of the key
+                                       and, supposing that it is a key, you append the new content to it
+                                       if the existing content was not a list it will be put in a list and the new content
+                                       will be appended to it
+
+                                       'dump_this_dictionary'
+                                       You will dump only the content of the dictionary
+
+    """
+
+    # 1)check if the file_name is a Json file
+    if file_name[-5:] != '.json':
+        file_name = file_name + '.json'
+
+    # 3)check if the file already exist
+    if os.path.isfile(file_name) and delete_existing_filename:
+        os.remove(file_name)
+        print("File " +file_name +"  existed and it will be Removed!")
+
+    # 4)check if the file already exist
+    if os.path.isfile(file_name):
+        # The file exist
+
+        with open(file_name, "r+") as json_file:
+            data = json.load(json_file) # get the data
+            if action in ['append2keyASnewlist', 'append2keyAND2list'] and not key == None:
+                if key in data: # the key exist and we need just to add the value
+                    if isinstance(data[key], list): # the data that is already there is a list and a key is provided
+                        data[key].append(content)
+                    elif action == 'append2keyAND2list':
+                        data[key] = [data[key], content]
+                    elif action == 'append2keyASnewlist':
+                        data[key] = [[data[key]], [content]]
+                else:
+                    if action == 'append2keyAND2list':
+                        to_write = {key: content,}
+                    elif action == 'append2keyASnewlist':
+                        to_write = {key: [content],}
+                    return json.dump(to_write, json_file) # dump directly the content referenced by the key to the file
+            elif action == 'dump_this_dictionary':
+                json.dump(content, json_file) # dump directly the dictionary to the file
+            else: raise SystemExit('DUMP TO JSON ERROR: action not supported OR key not provided')
+            json_file.seek(0)           # return to the beginning of the file
+            return json.dump(data, json_file)  # dump the updated data
+    else:
+        # The file do not exist, create a new one
+        with open(file_name, "w") as json_file:
+            if action == 'append2keyAND2list' or action == 'append2keyASnewlist':
+                to_write = {key: content,}
+                return json.dump(to_write, json_file) # dump directly the content referenced by the key to the file
+            elif action == 'dump_this_dictionary':
+                return json.dump(content, json_file) # dump directly the dictionary to the file
+            else: raise SystemExit('DUMP TO JSON ERROR: action not supported')
 
 #-----------------------------------------------------------------------------------------------------------------------
 
