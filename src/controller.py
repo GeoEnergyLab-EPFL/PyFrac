@@ -136,15 +136,9 @@ class Controller:
 
         # setting front advancing scheme to implicit if velocity is not available for the first time step.
         self.frontAdvancing = copy.copy(Sim_prop.frontAdvancing)
-
-        Sim_prop.frontAdvancing = 'implicit'
-
-        # todo: Remove following block (never executed)
         if Sim_prop.frontAdvancing in ['explicit', 'predictor-corrector']:
             if np.max(Fracture.v) <= 0 or np.isnan(Fracture.v).any():
                 Sim_prop.frontAdvancing = 'implicit'
-            else:
-                Sim_prop.frAdvCurrent = copy.copy(Sim_prop.frontAdvancing)
 
         if self.sim_prop.saveToDisk:
             self.logAddress = copy.copy(Sim_prop.get_outputFolder())
@@ -161,9 +155,9 @@ class Controller:
                 warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'PLF\'")
                 self.sim_prop.set_tipAsymptote('PLF')
         if self.fluid_prop.rheology == 'Newtonian':
-            if self.sim_prop.get_tipAsymptote() not in ["K", "M", "Mt", "U", "MK", "MDR", "M_MDR"]:
+            if self.sim_prop.get_tipAsymptote() not in ["K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR"]:
                 warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'U\'")
-                self.sim_prop.set_tipAsymptote('U')
+                self.sim_prop.set_tipAsymptote('U1')
 
 #-----------------------------------------------------------------------------------------------------------------------
 
