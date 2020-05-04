@@ -945,6 +945,9 @@ def append_to_json_file(file_name, content, action, key=None, delete_existing_fi
                                        You will dump only the content of the dictionary
 
     """
+    # 0)transform np.ndarray to list before output
+    if isinstance(content, np.ndarray):
+        content = np.ndarray.tolist(content)
 
     # 1)check if the file_name is a Json file
     if file_name[-5:] != '.json':
@@ -974,9 +977,17 @@ def append_to_json_file(file_name, content, action, key=None, delete_existing_fi
                         to_write = {key: content,}
                     elif action == 'append2keyASnewlist':
                         to_write = {key: [content],}
-                    return json.dump(to_write, json_file) # dump directly the content referenced by the key to the file
+                    data.update(to_write)
+                    json_file.seek(0)
+                    return json.dump(data, json_file) # dump directly the content referenced by the key to the file
             elif action == 'dump_this_dictionary':
-                json.dump(content, json_file) # dump directly the dictionary to the file
+                return json.dump(content, json_file) # dump directly the dictionary to the file
+            elif action == 'extend_dictionary':
+                if isinstance(content, dict):
+                    data.update(content)
+                    json_file.seek(0)  # return to the beginning of the file
+                    return json.dump(data, json_file) # dump directly the dictionary to the file
+                else: raise SystemExit('DUMP TO JSON ERROR: You should provide a dictionary')
             else: raise SystemExit('DUMP TO JSON ERROR: action not supported OR key not provided')
             json_file.seek(0)           # return to the beginning of the file
             return json.dump(data, json_file)  # dump the updated data
