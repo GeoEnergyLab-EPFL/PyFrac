@@ -277,7 +277,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
                              fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal',
-                             extreme_points=None):
+                             extreme_points=None, export2Json=False):
     """
     This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be
     joined to form the slice. The values on the slice are either interpolated from the values available on the cell
@@ -359,13 +359,19 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
             vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
     label = labels.legend
+
+    if export2Json:
+        to_write = {
+            'size_of_data': len(time_list),
+            'time_list': time_list}
+
     for i in range(len(var_val_list)):
         labels.legend = label + ' t= ' + to_precision(time_list[i],
                                                       plot_prop.dispPrecision)
         plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
         if '2D' in projection:
             if plot_cell_center:
-                fig = plot_fracture_slice_cell_center(var_val_copy[i],
+                fig ,sampling_line_out, var_value_selected= plot_fracture_slice_cell_center(var_val_copy[i],
                                                                   mesh_list[i],
                                                                   point=point1,
                                                                   orientation=orientation,
@@ -376,6 +382,9 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   plot_colorbar=False,
                                                                   labels=labels,
                                                                   extreme_points=extreme_points)
+                if i == 0 and export2Json: #write ones the sampling line, assuming no remeshing
+                    to_write['sampling_line_out'] = sampling_line_out.tolist()
+                to_write[str(i)] = var_value_selected.tolist()
             else:
                 fig = plot_fracture_slice_interpolated(var_val_copy[i],
                                                                 mesh_list[i],
@@ -424,7 +433,10 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
     if plot_prop.plotLegend:
         ax_slice.legend()
 
-    return fig
+    if export2Json:
+        return to_write
+    else:
+        return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -1271,7 +1283,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         extreme_points[0] = mesh.CenterCoor[sampling_cells[0]]
         extreme_points[1] = mesh.CenterCoor[sampling_cells[-1]]
 
-    return fig
+    return fig, sampling_line, var_value[sampling_cells]
 
 #-----------------------------------------------------------------------------------------------------------------------
 
