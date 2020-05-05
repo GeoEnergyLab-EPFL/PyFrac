@@ -337,7 +337,7 @@ class Controller:
                         print("Remeshing by extending in the vertical direction the domain...")
 
                         # AM:
-                        elems_add = self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor * 2 - 1)
+                        elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor * 2 - 1))
                         if elems_add % 2 != 0:
                             elems_add = elems_add + 1
 
@@ -370,7 +370,7 @@ class Controller:
                         print("Remeshing by extending in the horizontal direction the domain...")
 
                         # AM:
-                        elems_add = self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor * 2 - 1)
+                        elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor * 2 - 1))
                         if elems_add % 2 != 0:
                             elems_add = elems_add + 1
 
@@ -405,7 +405,7 @@ class Controller:
                             print("Remeshing by extending towards negative y, positive y hit also so extending by half "
                                   "the factor in vertical direction...")
                             # AM:
-                            elems_add = self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -417,7 +417,7 @@ class Controller:
                             print("Remeshing by extending towards negative y...")
 
                             # AM:
-                            elems_add = self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -452,7 +452,7 @@ class Controller:
                             print("Remeshing by extending towards positive y, negative y hit also so extending by half "
                                   "the factor in vertical direction...")
                             # AM:
-                            elems_add = self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -464,7 +464,7 @@ class Controller:
                             print("Remeshing by extending towards positive y...")
 
                             # AM:
-                            elems_add = self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -499,7 +499,7 @@ class Controller:
                             print("Remeshing by extending towards negative x, positive x hit also so extending by half "
                                   "the factor in vertical direction...")
                             # AM:
-                            elems_add = self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -511,7 +511,7 @@ class Controller:
                             print("Remeshing by extending towards negative x...")
 
                             # AM:
-                            elems_add = self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -546,7 +546,7 @@ class Controller:
                             print("Remeshing by extending towards positive x, negative x hit also so extending by half "
                                   "the factor in vertical direction...")
                             # AM:
-                            elems_add = self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
@@ -558,7 +558,7 @@ class Controller:
                             print("Remeshing by extending towards positive x...")
 
                             # AM:
-                            elems_add = self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1)
+                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
