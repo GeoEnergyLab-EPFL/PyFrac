@@ -408,7 +408,6 @@ class Controller:
                         if np.asarray(side_bools)[1]:
                             print("Remeshing by extending towards negative y, positive y hit also so extending by half "
                                   "the factor in vertical direction...")
-
                             elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
