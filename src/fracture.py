@@ -586,6 +586,9 @@ class Fracture:
             Fr_coarse (Fracture):   -- the new fracture after re-meshing.
         """
 
+        if self.sgndDist_last is None:
+            self.sgndDist_last = self.sgndDist
+
         # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,
                  self.EltRibbon,
@@ -724,6 +727,8 @@ class Fracture:
                  cells_outside,
                  [])
 
+        if self.timeStep_last is None:
+            self.timeStep_last = 1
         Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
                         sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
 
