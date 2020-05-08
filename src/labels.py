@@ -53,7 +53,9 @@ Fig_labels = {
     'source elements': 'Source Elements',
     'se': 'Source Elements',
     'effective viscosity': 'Effective Viscosity',
-    'ev': 'Effective Viscosity'
+    'ev': 'Effective Viscosity',
+    'yield ratio': 'Yield Ratio',
+    'y': 'Yield Ratio'
 }
 
 var_labels = {
@@ -102,7 +104,9 @@ var_labels = {
     'source elements': 'source elements',
     'se': 'source elements',
     'effective viscosity': 'effective viscosity',
-    'ev': 'effective viscosity'
+    'ev': 'effective viscosity',
+    'yield ratio': 'yield ratio',
+    'y': 'yield ratio'
 }
 
 units = {
@@ -151,7 +155,9 @@ units = {
     'source elements': '',
     'se': '',
     'effective viscosity': '($Pa\cdot s$)',
-    'ev': '($Pa\cdot s$)'
+    'ev': '($Pa\cdot s$)',
+    'yield ratio': '',
+    'y': ''
 }
 
 unit_conversion = {
@@ -200,7 +206,9 @@ unit_conversion = {
     'source elements': 1.,
     'se': 1.,
     'effective viscosity': 1.,
-    'ev': 1.
+    'ev': 1.,
+    'yield ratio': 1.,
+    'y': 1.
 }
 
 
@@ -213,7 +221,8 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
-                       'chi','tip_tri','regime', 'source elements', 'se', 'effective viscosity', 'ev']
+                       'chi','tip_tri','regime', 'source elements', 'se', 'effective viscosity', 'ev',
+                       'yield ratio','y']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
@@ -222,7 +231,7 @@ bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pres
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
                            'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
                            'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi',
-                           'chi','tip_tri','regime', 'effective viscosity', 'ev']
+                           'chi','tip_tri','regime', 'effective viscosity', 'ev', 'yield ratio','y']
 
 required_string = {
     't': '100000',
@@ -265,8 +274,9 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'chi\'\n'\
                     '-- \'tip_tri\'\n'\
                     '-- \'regime\'\n' \
-                    '-- \'se\' or \'source elements\'' \
-                    '-- \'ev\' or \'effective viscosity\''
+                    '-- \'se\' or \'source elements\'\n' \
+                    '-- \'ev\' or \'effective viscosity\'\n' \
+                    '-- \'yielded\' or \'y\'\n'
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -314,9 +324,61 @@ supported_projections ={
     'source elements': ['2D_clrmap', '2D_contours', '3D'],
     'se': ['2D_clrmap', '2D_contours', '3D'],
     'effective viscosity': ['2D_clrmap', '2D_contours', '3D'],
-    'ev': ['2D_clrmap', '2D_contours', '3D']
+    'ev': ['2D_clrmap', '2D_contours', '3D'],
+    'yield ratio': ['2D_clrmap', '2D_contours', '3D'],
+    'y' : ['2D_clrmap', '2D_contours', '3D']
 }
 
+suitable_elements ={
+    'w': 'crack',
+    'width': 'crack',
+    'pf': 'crack',
+    'fluid pressure': 'crack',
+    'pn': 'crack',
+    'net pressure': 'crack',
+    'front velocity': 'crack',
+    'v': 'crack',
+    'Reynolds number': 'channel',
+    'Re': 'channel',
+    'fluid flux': 'channel',
+    'ff': 'channel',
+    'fluid velocity': 'channel',
+    'fv': 'channel',
+    'fluid flux as vector field': 'channel',
+    'ffvf': 'channel',
+    'fluid velocity as vector field': 'channel',
+    'fvvf': 'channel',
+    'front_dist_min': None,
+    'd_min': None,
+    'front_dist_max': None,
+    'd_max': None,
+    'front_dist_mean': None,
+    'd_mean': None,
+    'mesh': None,
+    'footprint': None,
+    't': None,
+    'time': None,
+    'volume': None,
+    'V': None,
+    'lk': 'crack',
+    'leak off': 'crack',
+    'lkt': None,
+    'leaked off total': None,
+    'ar': None,
+    'aspect ratio': None,
+    'efficiency': None,
+    'ef': None,
+    'surface': 'crack',
+    'chi': 'crack',
+    'tip_tri': 'crack',
+    'regime': 'crack',
+    'source elements': 'crack',
+    'se': 'crack',
+    'effective viscosity': 'channel',
+    'ev': 'channel',
+    'yield ratio': 'channel',
+    'y' : 'channel',
+}
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
                     "enabled during the simulation. Enable saving it through simulation properties."
 
