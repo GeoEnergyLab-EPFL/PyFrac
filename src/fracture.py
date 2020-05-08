@@ -173,8 +173,10 @@ class Fracture:
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
         self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
+        # will be overwritten by None if not required
         self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
-
+        self.yieldRatio = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32) 
+        
         if simulProp.projMethod != 'LS_continousfront':
             self.process_fracture_front()
 
@@ -220,6 +222,7 @@ class Fracture:
         self.closed = np.array([], dtype=int)
 
         self.TarrvlZrVrtx = np.full((mesh.NumberOfElts,), np.nan, dtype=np.float64)
+        self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
         if self.v is not None:
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
 
