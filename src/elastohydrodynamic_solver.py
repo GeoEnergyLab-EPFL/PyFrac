@@ -10,6 +10,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 from scipy import sparse
 from scipy.optimize import brentq
 import numpy as np
+import numdifftools as nd
+import copy
 
 #local imports
 from fluid_model import friction_factor_vector, friction_factor_MDR
@@ -416,11 +418,6 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
     dpBtm = np.sqrt(dp[2, EltCrack] ** 2 + dp[6, EltCrack] ** 2)
     dpTop = np.sqrt(dp[3, EltCrack] ** 2 + dp[7, EltCrack] ** 2)
 
-    # dpLft[dpLft == 0] = 1e-10
-    # dpRgt[dpRgt == 0] = 1e-10
-    # dpTop[dpTop == 0] = 1e-10
-    # dpBtm[dpBtm == 0] = 1e-10
-
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
     cond[0, edgeInCrk_lst[0]] = (wLftEdge[edgeInCrk_lst[0]] ** (2 * fluidProp.n + 1) * dpLft[edgeInCrk_lst[0]] / \
                          fluidProp.Mprime) ** (1 / fluidProp.n) / dpLft[edgeInCrk_lst[0]]
@@ -519,30 +516,27 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     dpBtm = (dp[2, EltCrack] ** 2 + dp[6, EltCrack] ** 2) ** 0.5
     dpTop = (dp[3, EltCrack] ** 2 + dp[7, EltCrack] ** 2) ** 0.5
 
-    # dpLft[dpLft == 0] = 1e-10
-    # dpRgt[dpRgt == 0] = 1e-10
-    # dpTop[dpTop == 0] = 1e-10
-    # dpBtm[dpBtm == 0] = 1e-10
-
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
     
-    x = 1 - 2 * fluidProp.T0 / wLftEdge / dpLft
-    cond[0, edgeInCrk_lst[0]] = fluidProp.var1 * dpLft[edgeInCrk_lst[0]] ** fluidProp.var2 * wLftEdge[edgeInCrk_lst[0]] ** \
-                                fluidProp.var3 * x[edgeInCrk_lst[0]]**fluidProp.var4 * \
-                                (1 + 2*fluidProp.T0 / wLftEdge[edgeInCrk_lst[0]] / dpLft[edgeInCrk_lst[0]] * fluidProp.var5)
-    x = 1 - 2*fluidProp.T0 / wRgtEdge / dpRgt
-    cond[1, edgeInCrk_lst[1]] = fluidProp.var1 * dpRgt[edgeInCrk_lst[1]] ** fluidProp.var2 * wRgtEdge[edgeInCrk_lst[1]] ** \
-                                fluidProp.var3 * x[edgeInCrk_lst[1]]**fluidProp.var4 * \
-                                (1 + 2*fluidProp.T0 / wRgtEdge[edgeInCrk_lst[1]] / dpRgt[edgeInCrk_lst[1]] * fluidProp.var5)
-    x = 1 - 2*fluidProp.T0 / wBtmEdge / dpBtm
-    cond[2, edgeInCrk_lst[2]] = fluidProp.var1 * dpBtm[edgeInCrk_lst[2]] ** fluidProp.var2 * wBtmEdge[edgeInCrk_lst[2]] ** \
-                                fluidProp.var3 * x[edgeInCrk_lst[2]]**fluidProp.var4 * \
-                                (1 + 2*fluidProp.T0 / wBtmEdge[edgeInCrk_lst[2]] / dpBtm[edgeInCrk_lst[2]] * fluidProp.var5)
-    x = 1 - 2*fluidProp.T0 / wTopEdge / dpTop
-    cond[3, edgeInCrk_lst[3]] = fluidProp.var1 * dpTop[edgeInCrk_lst[3]] ** fluidProp.var2 * wTopEdge[edgeInCrk_lst[3]] ** \
-                                fluidProp.var3 * x[edgeInCrk_lst[3]]**fluidProp.var4 * \
-                                (1 + 2*fluidProp.T0 / wTopEdge[edgeInCrk_lst[3]] / dpTop[edgeInCrk_lst[3]] * fluidProp.var5)
 
+    x0 = np.maximum(1 - 2 * fluidProp.T0 / wLftEdge / dpLft, np.zeros(len(wLftEdge), dtype=np.float64))
+    cond[0, edgeInCrk_lst[0]] = fluidProp.var1 * dpLft[edgeInCrk_lst[0]] ** fluidProp.var2 * wLftEdge[edgeInCrk_lst[0]] ** \
+                                fluidProp.var3 * x0[edgeInCrk_lst[0]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wLftEdge[edgeInCrk_lst[0]] / dpLft[edgeInCrk_lst[0]] * fluidProp.var5)
+    x1 = np.maximum(1 - 2*fluidProp.T0 / wRgtEdge / dpRgt, np.zeros(len(wLftEdge), dtype=np.float64))
+    cond[1, edgeInCrk_lst[1]] = fluidProp.var1 * dpRgt[edgeInCrk_lst[1]] ** fluidProp.var2 * wRgtEdge[edgeInCrk_lst[1]] ** \
+                                fluidProp.var3 * x1[edgeInCrk_lst[1]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wRgtEdge[edgeInCrk_lst[1]] / dpRgt[edgeInCrk_lst[1]] * fluidProp.var5)
+    x2 = np.maximum(1 - 2*fluidProp.T0 / wBtmEdge / dpBtm, np.zeros(len(wLftEdge), dtype=np.float64))
+    cond[2, edgeInCrk_lst[2]] = fluidProp.var1 * dpBtm[edgeInCrk_lst[2]] ** fluidProp.var2 * wBtmEdge[edgeInCrk_lst[2]] ** \
+                                fluidProp.var3 * x2[edgeInCrk_lst[2]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wBtmEdge[edgeInCrk_lst[2]] / dpBtm[edgeInCrk_lst[2]] * fluidProp.var5)
+    x3 = np.maximum(1 - 2*fluidProp.T0 / wTopEdge / dpTop, np.zeros(len(wLftEdge), dtype=np.float64))
+    cond[3, edgeInCrk_lst[3]] = fluidProp.var1 * dpTop[edgeInCrk_lst[3]] ** fluidProp.var2 * wTopEdge[edgeInCrk_lst[3]] ** \
+                                fluidProp.var3 * x3[edgeInCrk_lst[3]]**fluidProp.var4 * \
+                                (1 + 2*fluidProp.T0 / wTopEdge[edgeInCrk_lst[3]] / dpTop[edgeInCrk_lst[3]] * fluidProp.var5)
+    
+        
     indx_elts = np.arange(len(EltCrack))
     FinDiffOprtr[indx_elts, indx_elts] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2
     FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 0]] = cond[0, :] / dx ** 2
@@ -554,12 +548,19 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     if simProp.saveEffVisc:
         with np.errstate(divide='ignore'):
             eff_mu = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
-            eff_mu[0, EltCrack] =  wLftEdge ** 3 / (12 * cond[0, :])
-            eff_mu[1, EltCrack] =  wRgtEdge ** 3 / (12 * cond[1, :])
-            eff_mu[2, EltCrack] =  wBtmEdge ** 3 / (12 * cond[2, :])
-            eff_mu[3, EltCrack] =  wTopEdge ** 3 / (12 * cond[3, :])
+            eff_mu[0, EltCrack[edgeInCrk_lst[0]]] =  wLftEdge[edgeInCrk_lst[0]] ** 3 / (12 * cond[0, edgeInCrk_lst[0]])
+            eff_mu[1, EltCrack[edgeInCrk_lst[1]]] =  wRgtEdge[edgeInCrk_lst[1]] ** 3 / (12 * cond[1, edgeInCrk_lst[1]])
+            eff_mu[2, EltCrack[edgeInCrk_lst[2]]] =  wBtmEdge[edgeInCrk_lst[2]] ** 3 / (12 * cond[2, edgeInCrk_lst[2]])
+            eff_mu[3, EltCrack[edgeInCrk_lst[3]]] =  wTopEdge[edgeInCrk_lst[3]] ** 3 / (12 * cond[3, edgeInCrk_lst[3]])
+    
+    if simProp.saveYieldRatio:
+        yielded = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
+        yielded[0, EltCrack] = x0
+        yielded[1, EltCrack] = x1
+        yielded[2, EltCrack] = x2
+        yielded[3, EltCrack] = x3
         
-    return FinDiffOprtr, eff_mu
+    return FinDiffOprtr, eff_mu, yielded
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------
@@ -604,7 +605,7 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                         active,
                                                         to_impose)
         elif fluid_prop.rheology in ["Herschel-Bulkley", "HBF"]:
-            FinDiffOprtr, interItr_kp1[2] = finiteDiff_operator_Herschel_Bulkley(wNplusOne,
+            FinDiffOprtr, interItr_kp1[2], interItr_kp1[3] = finiteDiff_operator_Herschel_Bulkley(wNplusOne,
                                                         pf,
                                                         EltCrack,
                                                         fluid_prop,
@@ -695,7 +696,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
     
-    interItr_kp1 = [None] * 3
+    interItr_kp1 = [None] * 4
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
@@ -852,7 +853,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
-    interItr_kp1 = [None] * 3
+    interItr_kp1 = [None] * 4
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
@@ -1013,7 +1014,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
-    interItr_kp1 = [None] * 3
+    interItr_kp1 = [None] * 4
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
@@ -1169,7 +1170,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
-    interItr_kp1 = [None] * 3
+    interItr_kp1 = [None] * 4
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
@@ -1248,7 +1249,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
         for i in range(n_tip + n_act):
                 if not A[n_ch + i, :].any():
                     to_del.append(i)
-        if len(to_del) > 0:            
+        if len(to_del) > 0:
             deleted = n_ch + np.asarray(to_del)
             A = np.delete(A, deleted, 0)
             A = np.delete(A, deleted, 1)
@@ -1258,7 +1259,6 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     indices = [ch_indxs, tip_indxs, act_indxs, to_del]
     
     interItr_kp1[1] = below_wc
-    
     return A, S, interItr_kp1, indices
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1307,13 +1307,29 @@ def MakeEquationSystem_volumeControl(w_lst_tmstp, wTip, EltChannel, EltTip, sigm
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Elastohydrodynamic_ResidualFun(solk, system_func, *args, interItr=None):
+def Elastohydrodynamic_ResidualFun(solk, system_func, interItr, *args):
     """
     This function gives the residual of the solution for the system of equations formed using the given function.
     """
     A, S, interItr, indices = system_func(solk, interItr, *args)
     return np.dot(A, solk) - S, interItr, indices
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def Elastohydrodynamic_ResidualFun_nd(solk, system_func, interItr, InterItr_o, indices_o,*args):
+    """
+    This function gives the residual of the solution for the system of equations formed using the given function.
+    """
+    A, S, interItr, indices = system_func(solk, interItr, *args)
+    if len(indices[3]) == 0:
+        Fx = np.dot(A, solk) - S
+    else:
+        Fx_red = np.dot(A, np.delete(solk, len(indices[0]) + np.asarray(indices[3]))) - S
+        Fx = populate_full(indices, Fx_red)
+    InterItr_o = interItr
+    indices_o = indices
+    return Fx
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -1378,19 +1394,21 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
 
         solkm1 = solk
         if (k + 1) % PicardPerNewton == 0:
-            Fx, interItr, indices = Res_fun(solk, sys_fun, *args, interItr,)
-            if newton % 3 == 0:
-                Jac = Jacobian(Res_fun, solk, TypValue, *args, interItr)
+            Fx, interItr, indices = Elastohydrodynamic_ResidualFun(solk, sys_fun, interItr, *args)
+            Jac = Jacobian(Elastohydrodynamic_ResidualFun, sys_fun, solk, TypValue, interItr, *args)
+            # Jac = nd.Jacobian(Elastohydrodynamic_ResidualFun)(solk, sys_fun, interItr, interItr_o, indices, *args)
             dx = np.linalg.solve(Jac, -Fx)
             solk = solkm1 + dx
             newton += 1
         else:
             try:
-                (A, b, interItr, indices) = sys_fun(solk, interItr, *args)
+                A, b, interItr, indices = sys_fun(solk, interItr, *args)
                 perfNode_linSolve = instrument_start("linear system solve", perf_node)
-                solk = (1 - relax) * solkm1 + relax * np.linalg.solve(A, b)
+                sol = np.linalg.solve(A, b)
                 if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
-                    solk = get_complete_solution(solk, indices, *args)
+                    solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
+                else:
+                    solk = relax * solkm1 + (1 - relax) * sol 
             except np.linalg.linalg.LinAlgError:
                 print('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
@@ -1419,29 +1437,36 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
 
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
-    data = [interItr[0], interItr[2]]
+    data = [interItr[0], interItr[2], interItr[3]]
     return solk, data
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def Jacobian(Residual_function, x, TypValue, *args, central=False, interItr=None):
+def Jacobian(Residual_function, sys_func, x, TypValue, interItr, *args):
     """
     This function returns the Jacobian of the given function.
     """
 
-    (Fx, interItr) = Residual_function(x, interItr, *args)
+    central = False
+    Fx, interItr, indices = Residual_function(x, sys_func, interItr, *args)
     Jac = np.zeros((len(x), len(x)), dtype=np.float64)
     for i in range(0, len(x)):
-        Epsilon = np.finfo(float).eps ** 0.5 * max(x[i], TypValue[i])
+        Epsilon = np.finfo(float).eps ** 0.5 * abs(max(x[i], TypValue[i]))
+        if Epsilon == 0:
+            Epsilon = np.finfo(float).eps ** 0.5
         xip = np.copy(x)
         xip[i] = xip[i] + Epsilon
         if central:
             xin = np.copy(x)
             xin[i] = xin[i]-Epsilon
-            Jac[:,i] = (Residual_function(xip,interItr,*args)[0] - Residual_function(xin,interItr,*args)[0])/(2*Epsilon)
+            Jac[:,i] = (Residual_function(xip, sys_func, interItr, *args)[0] - Residual_function(
+                xin, sys_func, interItr, *args)[0])/(2*Epsilon)
+            if np.isnan(Jac[:, i]).any():
+                Jac[:,:] = np.nan
+                return Jac
         else:
-            (Fxi, interItr) = Residual_function(xip, interItr, *args)
+            Fxi, interItr, indices = Residual_function(xip, sys_func, interItr, *args)
             Jac[:, i] = (Fxi - Fx) / Epsilon
 
     return Jac
@@ -1502,6 +1527,7 @@ def check_covergance(solk, solkm1, indices, tol):
 
 
     norm = (norm_w + norm_p + norm_tr) / 3
+    # print("w " + repr(norm_w) + " p " + repr(norm_p) + " act " + repr(norm_tr))
 
     converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
 
@@ -1729,8 +1755,13 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             else:
                 (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
-
-            Gks[mk + 1, ::] = np.linalg.solve(A, b)
+            
+            solk = np.linalg.solve(A, b)
+            if len(indices[3]) > 0:                                             # if the size of system is varying between \
+                Gks[mk + 1, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
+            else:
+                Gks[mk + 1, ::] = solk
+            # Gks[mk + 1, ::] = np.linalg.solve(A, b)
             Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 
             ## Setting up the Least square problem of Anderson
@@ -1738,7 +1769,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             b_Anderson = - Fks[mk+1,::]
 
             ## Solving the least square problem for the coefficients
-            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson)[0]
+            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
             omega_s = np.append(omega_s,1.0 - np.sum(omega_s))
 
             ## Updating xk in a relaxed version
@@ -1778,7 +1809,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
         
-    data = [interItr[0], interItr[2]]
+    data = [interItr[0], interItr[2], interItr[3]]
     return xks[mk + 2, ::], data
 
 
@@ -1800,10 +1831,10 @@ def get_complete_solution(sol, indices, *args):
     
     if sim_prop.solveDeltaP:
         values = np.dot(C[np.ix_(tip_act[deleted], EltCrack)], w[EltCrack]) + \
-                    mat_prop.Sigma0[tip_act[deleted]]- frac.pFluid[tip_act[deleted]]
+                    mat_prop.SigmaO[tip_act[deleted]]- frac.pFluid[tip_act[deleted]]
     else:
         values = np.dot(C[np.ix_(tip_act[deleted], EltCrack)], w[EltCrack]) + \
-                    mat_prop.Sigma0[tip_act[deleted]]
+                    mat_prop.SigmaO[tip_act[deleted]]
     sol_full = populate_full(indices, sol, values)
 
     return sol_full
