@@ -22,9 +22,10 @@ from properties import instrument_start, instrument_close
 from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix
 from mesh import CartesianMesh
 from time_stepping import attempt_time_step
-from visualization import plot_footprint_analytical, plot_analytical_solution, plot_injection_source
+from visualization import plot_footprint_analytical, plot_analytical_solution,\
+                          plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
-from labels import TS_errorMessages, supported_projections
+from labels import TS_errorMessages, supported_projections, suitable_elements
 
 
 class Controller:
@@ -625,7 +626,8 @@ class Controller:
                         self.Figures[index] = Fr_advanced.plot_fracture(variable=plt_var,
                                                                        projection='2D_clrmap',
                                                                        mat_properties=self.solid_prop,
-                                                                       fig=self.Figures[index])
+                                                                       fig=self.Figures[index],
+                                                                       elements=get_elements(suitable_elements[plt_var], Fr_advanced))
                         # plotting source elements
                         plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
@@ -665,7 +667,7 @@ class Controller:
                 self.lastPlotTime = Fr_advanced.time
 
 
-    #-------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------
 
     def get_time_step(self):
         """
@@ -815,3 +817,5 @@ class Controller:
         """ This function writes the given line to the log file."""
         with open(self.logAddress + 'log.txt', 'a+') as file:
             file.writelines(line)
+
+    

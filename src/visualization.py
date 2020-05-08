@@ -22,7 +22,8 @@ import numpy as np
 # local imports
 from postprocess_fracture import *
 from properties import PlotProperties, LabelProperties
-from labels import supported_variables, supported_projections, unidimensional_variables
+from labels import supported_variables, supported_projections, \
+                   unidimensional_variables, suitable_elements
 
 
 def plot_fracture_list(fracture_list, variable='footprint', projection=None, elements=None, plot_prop=None, fig=None,
@@ -2040,7 +2041,7 @@ def plot_injection_source(frac, fig=None, plot_prop=None):
 
 def animate_simulation_results(fracture_list, variable='footprint', projection=None, elements=None,
                                  plot_prop=None, edge=4, contours_at=None, labels=None, mat_properties=None,
-                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.001):
+                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.2):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -2117,10 +2118,14 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        projection=fp_projection,
                                                        fig=figures[indx],
                                                        labels=fig_labels)
-
+                
+                if elements is None:
+                    elems = get_elements(suitable_elements[plt_var], fracture)
+                else:
+                    elems = elements
                 figures[indx] = fracture.plot_fracture(variable=plt_var,
                                                        projection=projection,
-                                                       elements=elements,
+                                                       elements=elems,
                                                        mat_properties=mat_properties,
                                                        fig=figures[indx],
                                                        plot_prop=plot_prop,
@@ -2140,7 +2145,9 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                                         plot_prop=plot_prop,
                                                                         plot_mesh=False,
                                                                         print_number=False)
-
+            # plot the figure
+            plt.ion()
+            plt.pause(pause_time)
         # set figure position
         if setFigPos:
             for i in range(len(variable)):
@@ -2157,9 +2164,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                     pass
             setFigPos = False
 
-        # plot the figure
-        plt.ion()
-        plt.pause(pause_time)
+        
         if block_figure:
             input("Press any key to continue.")
     plt.show(block=True)
@@ -2318,15 +2323,29 @@ def save_images_to_video(image_folder, video_name='movie'):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def remove_zeros(var_value, mesh):
+def remove_zeros(var_value, mesh, plot_boundary=False):
 
-    zero = np.full(mesh.NumberOfElts, False, dtype=bool)
-    zero[abs(var_value) < 3 * np.finfo(float).eps] = True
-    for i in range(mesh.NumberOfElts-1):
-        not_left = zero[i] and zero[i + 1]
-        not_right = zero[i] and zero[i - 1]
-        not_bottom = zero[i] and zero[i - mesh.nx]
-        not_top = zero[i] and zero[(i + mesh.nx) % mesh.NumberOfElts]
-        if not_left and not_right and not_bottom and not_top:
-            var_value[i] = np.nan
-    var_value[mesh.NumberOfElts - 1] = np.nan
+    if plot_boundary:
+        zero = np.full(mesh.NumberOfElts, False, dtype=bool)
+        zero[abs(var_value) < 3 * np.finfo(float).eps] = True
+        for i in range(mesh.NumberOfElts-1):
+            not_left = zero[i] and zero[i + 1]
+            not_right = zero[i] and zero[i - 1]
+            not_bottom = zero[i] and zero[i - mesh.nx]
+            not_top = zero[i] and zero[(i + mesh.nx) % mesh.NumberOfElts]
+            if not_left and not_right and not_bottom and not_top:
+                var_value[i] = np.nan
+        var_value[mesh.NumberOfElts - 1] = np.nan
+    else:
+        var_value[abs(var_value) < 3 * np.finfo(float).eps] = np.nan
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_elements(specifier, fr):
+    if specifier == 'crack':
+        return fr.EltCrack
+    elif specifier == 'channel':
+        return fr.EltChannel
+    elif specifier == 'tip':
+        return fr.EltTip
