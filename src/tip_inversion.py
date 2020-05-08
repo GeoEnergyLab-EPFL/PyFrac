@@ -12,6 +12,7 @@ from properties import instrument_start, instrument_close
 import numpy as np
 from scipy.optimize import brentq
 import warnings
+from scipy.optimize import fsolve
 
 
 beta_m = 2**(1/3) * 3**(5/6)
@@ -254,6 +255,9 @@ def TipAsym_Hershcel_Burkley_Res(dist, *args):
 
     (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
     
+    if Cbar == 0:
+        return TipAsym_power_law_MK_Res(dist, *args)
+    
     Vel = (dist - DistLstTSEltRibbon) / dt
     n = fluidProp.n
     alpha = -0.3107 * n + 1.9924
@@ -272,7 +276,7 @@ def TipAsym_Hershcel_Burkley_Res(dist, *args):
     dmt = (2 - n) / (2 + 2 * n)
     Bm = (2 * (2 + n)**2 / n * np.tan(np.pi * n / (2 + n)))**(1 / (2 + n))
     Bmt = (64 * (1 + n) ** 2 / (3 * n *(4 + n)) * np.tan(3 * np.pi * n / (4 * (1 + n))))**(1 / (2 + 2 * n))
-
+    
     dt1 = dmt * dm * Vmt * Vm * \
           (Bm**((2 + n) / n) * Vmt**((1 + theta) / n) + X / wt * Bmt**(2 * (1 + n) / n) * Vm**((1 + theta) / n)) / \
           (dmt * Vmt * Bm**((2 + n) / n) * Vmt**((1 + theta) / n) +
@@ -288,7 +292,10 @@ def TipAsym_power_law_Res(dist, *args):
     """Function to be minimized to find root for power-law fluid (see e.g. Bessmertnykh and Donstov 2019)"""
 
     (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
-
+    
+    if Cbar == 0:
+        return TipAsym_power_law_MK_Res(dist, *args)
+    
     Vel = (dist - DistLstTSEltRibbon) / dt
     n = fluidProp.n
     X = 2 * Cbar * Eprime / np.sqrt(Vel) / Kprime
@@ -312,6 +319,51 @@ def TipAsym_power_law_Res(dist, *args):
 
     return xt**((2 - n) / (1 + theta)) - dt1 * wt**((2 + n) / (1 + theta)) * (dm**(1 + theta) * Bm**(2 + n) +
                             dmt**(1 + theta) * Bmt**(2 * (1 + n)) * ((1 + X / wt)**n - 1))**(-1 / (1 + theta))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_Hershcel_Burkley_MK_Res(dist, *args):
+    """Function to be minimized to find root for power-law fluid (see e.g. Bessmertnykh and Donstov 2019)"""
+
+    (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
+
+    Vel = (dist - DistLstTSEltRibbon) / dt
+    n = fluidProp.n
+    alpha = -0.3107 * n + 1.9924
+    X = 2 * Cbar * Eprime / np.sqrt(Vel) / Kprime
+    Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n * fluidProp.k
+    ell = (Kprime**(n + 2) / Mprime / Vel**n / Eprime**(n + 1))**(2 / (2 - n))
+    xt = np.sqrt(dist / ell)
+    T0t = fluidProp.T0 * 2 * Eprime * ell / Kprime / Kprime
+    wtTau = 2 * np.sqrt(np.pi * T0t) * xt
+    wt = ((wEltRibbon * Eprime / Kprime / np.sqrt(dist))**alpha - wtTau**alpha)**(1 / alpha)
+
+    theta = 0.0452 * n**2 - 0.178 * n + 0.1753
+    dm = (2 - n) / (2 + n)
+    Bm = (2 * (2 + n)**2 / n * np.tan(np.pi * n / (2 + n)))**(1 / (2 + n))
+
+    return wt - (1 + (Bm**(2 + n) * xt**(2 - n))**(1 / (1 + theta)))**((1 + theta) / (2 + n)) 
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def TipAsym_power_law_MK_Res(dist, *args):
+    """Function to be minimized to find root for power-law fluid (see e.g. Bessmertnykh and Donstov 2019)"""
+
+    (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
+
+    Vel = (dist - DistLstTSEltRibbon) / dt
+    n = fluidProp.n
+    Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n * fluidProp.k
+    ell = (Kprime**(n + 2) / Mprime / Vel**n / Eprime**(n + 1))**(2 / (2 - n))
+    xt = np.sqrt(dist / ell)
+    wt = wEltRibbon * Eprime / Kprime / np.sqrt(dist)
+
+    theta = 0.0452 * n**2 - 0.178 * n + 0.1753
+    dm = (2 - n) / (2 + n)
+    Bm = (2 * (2 + n)**2 / n * np.tan(np.pi * n / (2 + n)))**(1 / (2 + n))
+
+    return wt - (1 + (Bm**(2 + n) * xt**(2 - n))**(1 / (1 + theta)))**((1 + theta) / (2 + n)) 
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -363,15 +415,44 @@ def TipAsym_variable_Toughness_Res(dist, *args):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, ResFunc):
+def Vm_residual(dist, *args):
+    
+    (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
+    
+    Vel = (dist - DistLstTSEltRibbon) / dt
+    n = fluidProp.n
+    alpha = -0.3107 * n + 1.9924
+    X = 2 * Cbar * Eprime / np.sqrt(Vel) / Kprime
+    Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n * fluidProp.k
+    ell = (Kprime**(n + 2) / Mprime / Vel**n / Eprime**(n + 1))**(2 / (2 - n))
+    xt = np.sqrt(dist / ell)
+    T0t = fluidProp.T0 * 2 * Eprime * ell / Kprime / Kprime
+    wtTau = 2 * np.sqrt(np.pi * T0t) * xt
+    wt = ((wEltRibbon * Eprime / Kprime / np.sqrt(dist))**alpha - wtTau**alpha)**(1 / alpha)
+    theta = 0.0452 * n**2 - 0.178 * n + 0.1753
+    
+    return 100 * np.finfo(float).eps - 1 + wt ** -((2 + 2 * n) / (1 + theta))
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, ResFunc, simProp):
     """ 
     Find the valid bracket for the root evaluation function.
     """
 
     a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
-    a[np.where(a <= np.finfo(float).eps * np.finfo(float).eps)[0]] = np.finfo(float).eps
-    b = np.full((len(w),), 4 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
-
+    if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
+        b = np.full((len(w),), 6 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
+    elif simProp.get_tipAsymptote()  in ["PLF", "PLF_aprox", "PLF_num_quad"]:
+        b = (w * Eprime / Kprime)**2 - np.finfo(float).eps
+    elif simProp.get_tipAsymptote()  in ["HBF", "HBF_aprox", "HBF_num_quad"]:
+        b = np.zeros(len(w), dtype=np.float64)
+        for i in range(0, len(w)):
+            TipAsmptargs = (w[i], Kprime[i], Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt)
+            b[i] = fsolve(Vm_residual, (w[i] * Eprime[i] / Kprime[i])**2, args=TipAsmptargs)
+        
+        
     for i in range(0, len(w)):
 
         TipAsmptargs = (w[i], Kprime[i], Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt)
@@ -473,7 +554,8 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                             frac.sgndDist[frac.EltRibbon[moving]],
                             dt,
                             frac.mesh,
-                            ResFunc)
+                            ResFunc,
+                            simParmtrs)
     ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
     if any(np.isnan(a)):
         stagnant_from_bracketing = np.argwhere(np.isnan(a))[::,0]
