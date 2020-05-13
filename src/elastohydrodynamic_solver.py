@@ -10,8 +10,10 @@ All rights reserved. See the LICENSE.TXT file for more details.
 from scipy import sparse
 from scipy.optimize import brentq
 import numpy as np
-import numdifftools as nd
+#import numdifftools as nd
 import copy
+from scipy.optimize import lsq_linear
+import matplotlib.pyplot as plt
 
 #local imports
 from fluid_model import friction_factor_vector, friction_factor_MDR
@@ -1765,12 +1767,15 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 
             ## Setting up the Least square problem of Anderson
-            A_Anderson = np.transpose(Fks[:mk+1:1,::] - Fks[mk+1,::])
-            b_Anderson = - Fks[mk+1,::]
+            A_Anderson = np.transpose(Fks[:mk+1, ::] - Fks[mk+1, ::])
+            b_Anderson = -Fks[mk+1,::]
 
-            ## Solving the least square problem for the coefficients
-            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
-            omega_s = np.append(omega_s,1.0 - np.sum(omega_s))
+            # Solving the least square problem for the coefficients
+            #omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
+            #omega_s = np.append(omega_s,1.0 - omega_s[-1])
+            omega_s = lsq_linear(A_Anderson, b_Anderson, bounds=(0, 1/(mk+2)), lsmr_tol='auto').x
+            omega_s = np.append(omega_s, 1.0 - sum(omega_s))
+            print(omega_s)
 
             ## Updating xk in a relaxed version
             if k >= m_Anderson:# + 1:
