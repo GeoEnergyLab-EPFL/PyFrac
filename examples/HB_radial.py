@@ -44,12 +44,12 @@ Fluid = FluidProperties(viscosity=0.22, rheology='HBF', n=0.617, k=0.22, T0=2.3)
 simulProp = SimulationProperties()
 simulProp.finalTime = 4 * 60                           # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/HB")                # the disk address where the files are saved
-simulProp.set_simulation_name('HBF_6.17e-1_2.2e-1_2.3_41')
+simulProp.set_simulation_name('HBF_6.17e-1_2.2e-1_2.3_41_And')
 simulProp.saveYieldRatio = True
 simulProp.plotVar = ['ev', 'w', 'y']
 simulProp.saveEffVisc = True
 simulProp.relaxation_factor = 0.3
-simulProp.elastohydrSolver = 'implicit_Picard'
+simulProp.elastohydrSolver = 'implicit_Anderson'
 simulProp.plotFigure = False
 
 
@@ -86,7 +86,7 @@ from visualization import *
 
 # loading simulation results
 Fr_list, properties = load_fractures(address="./Data/HB",
-                                     sim_name="HBF_6.17e-1_2.2e-1_2.3_41")      # load all fractures
+                                     sim_name="HBF_6.17e-1_2.2e-1_2.3_41__2020-05-13__18_54_03")      # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                      # list of times
 
 
