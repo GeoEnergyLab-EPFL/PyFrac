@@ -1975,11 +1975,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if np.any(sgndDist_k[mesh.Frontlist]<0):
                 print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: i make the time step failing')
                 correct_size_of_pstv_region = [False,True]
-                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None
+                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None
             else:
                 print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
                 correct_size_of_pstv_region = [False, False]
-                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
+                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None
 
         """
         2) - define the fractures
@@ -2035,7 +2035,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             else:
                                 print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tipe i cell not found in the anularegion)')
                                 correct_size_of_pstv_region = [False, False]
-                                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None
+                                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
                     else:
                         cell_type = i_1_2_3_4_FC_type[str(next_cell_name)]
@@ -2987,8 +2987,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
              global_list_of_vertexpositionwithinthecell,
              global_list_of_vertexpositionwithinthecellTIPcellsONLY,
              correct_size_of_pstv_region,
-             sgndDist_k, Ffront] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+             sgndDist_k, Ffront, number_of_fronts ] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
         else:
+            #find the number of fronts
+            number_of_fronts = len(list_of_xintersections_for_all_closed_paths)
             # find the new ribbon cells
             global_list_of_newRibbon = []
             newRibbon = np.unique(np.ndarray.flatten(mesh.NeiElements[global_list_of_TIPcellsONLY, :]))
@@ -3034,6 +3036,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         #                           list_of_xintersectionsfromzerovertex,
         #                           list_of_yintersectionsfromzerovertex,
         #                           list_of_vertexID)
+
+        number_of_fronts
         return \
             np.asarray(global_list_of_TIPcells),\
             np.asarray(global_list_of_TIPcellsONLY), \
@@ -3044,7 +3048,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             np.asarray(global_list_of_vertexpositionwithinthecell),\
             np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
             correct_size_of_pstv_region,\
-            sgndDist_k, Ffront
+            sgndDist_k, Ffront, number_of_fronts
 
 def UpdateListsFromContinuousFrontRec(newRibbon,
                                       sgndDist_k,
