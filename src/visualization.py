@@ -238,7 +238,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                         elements=elements,
                                                         vmin=vmin,
                                                         vmax=vmax)
-        elif projection == '2D_vectorfield':
+        elif projection == '2D_vectorfield' and not np.isnan(var_val_copy[i]).any():
             # fracture_list[i].EltCrack => ribbon+tip+other in crack
             # fracture_list[i].EltChannel => ribbon+other in crack
 
