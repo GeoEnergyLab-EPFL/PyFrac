@@ -1735,6 +1735,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             Gks[0, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
         else:
             Gks[0, ::] = solk
+        # Gks[0, ::] = np.linalg.solve(A, b)
         Fks[0,::] = Gks[0,::] - xks[0,::]
         xks[1,::] = Gks[0,::]                                               # x1
     except np.linalg.linalg.LinAlgError:
@@ -1771,11 +1772,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             b_Anderson = -Fks[mk+1,::]
 
             # Solving the least square problem for the coefficients
-            #omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
-            #omega_s = np.append(omega_s,1.0 - omega_s[-1])
-            omega_s = lsq_linear(A_Anderson, b_Anderson, bounds=(0, 1/(mk+2)), lsmr_tol='auto').x
+            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
             omega_s = np.append(omega_s, 1.0 - sum(omega_s))
-            print(omega_s)
 
             ## Updating xk in a relaxed version
             if k >= m_Anderson:# + 1:
@@ -1792,8 +1790,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                                  len(b), False, 'singular matrix', None)
                 perf_node.linearSolve_data.append(perfNode_linSolve)
             return solk, None
+
         ## Check for convergency of the solution
-        #converged, norm = check_covergance(xks[0,::], xks[1,::], indices, sim_prop.toleranceEHL)
         converged, norm = check_covergance(xks[mk + 1, ::], xks[mk + 2, ::], indices, sim_prop.toleranceEHL)
         normlist.append(norm)
         k = k + 1
@@ -1813,7 +1811,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
 
     if sim_prop.verbosity > 1:
         print("Converged after " + repr(k) + " iterations")
-        
+
     data = [interItr[0], interItr[2], interItr[3]]
     return xks[mk + 2, ::], data
 
