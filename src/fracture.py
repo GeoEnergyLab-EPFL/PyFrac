@@ -128,7 +128,7 @@ class Fracture:
 
         self.EltChannel, self.EltTip, self.EltCrack, \
         self.EltRibbon, self.ZeroVertex, self.CellStatus, \
-        self.l, self.alpha, self.FillF, self.sgndDist, self.Ffront = generate_footprint(self.mesh,
+        self.l, self.alpha, self.FillF, self.sgndDist, self.Ffront, self.number_of_fronts = generate_footprint(self.mesh,
                                                                         surv_cells,
                                                                         inner_cells,
                                                                         surv_dist,

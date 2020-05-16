@@ -714,7 +714,9 @@ class Controller:
 
         if not time_step_given:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
-            non_zero_v = np.where(self.fracture.v > 0)[0]
+            if not np.any(self.fracture.v != np.nan):
+                non_zero_v = np.where(self.fracture.v > 0)[0]
+            else: non_zero_v=[]
             # time step is calculated with the current propagation velocity
             if len(non_zero_v) > 0:
                 if len(self.injection_prop.sourceElem) < 4:

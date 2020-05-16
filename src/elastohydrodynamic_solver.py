@@ -1667,20 +1667,15 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
 
 
         fluid_vel = np.copy(fluid_flux)
-        fluid_vel[0] /= wLftEdge
-        fluid_vel[1] /= wRgtEdge
-        fluid_vel[2] /= wBtmEdge
-        fluid_vel[3] /= wTopEdge
+        wEdges = [wLftEdge,wRgtEdge,wBtmEdge,wTopEdge]
+        for i in range(4):
+            local_nonzero_indexes=fluid_vel[i].nonzero()
+            fluid_vel[i][local_nonzero_indexes] /= wEdges[i][local_nonzero_indexes]
 
         fluid_vel_components = np.copy(fluid_flux_components)
-        fluid_vel_components[0] /= wLftEdge
-        fluid_vel_components[1] /= wLftEdge
-        fluid_vel_components[2] /= wRgtEdge
-        fluid_vel_components[3] /= wRgtEdge
-        fluid_vel_components[4] /= wBtmEdge
-        fluid_vel_components[5] /= wBtmEdge
-        fluid_vel_components[6] /= wTopEdge
-        fluid_vel_components[7] /= wTopEdge
+        for i in range(8):
+            local_nonzero_indexes=fluid_vel_components[i].nonzero()
+            fluid_vel_components[i][local_nonzero_indexes] /= wEdges[int(np.trunc(i/2))][local_nonzero_indexes]
 
         Rey_number = abs(4 / 3 * density * fluid_flux / muPrime * 12)
 

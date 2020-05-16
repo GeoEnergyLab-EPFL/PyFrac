@@ -21,7 +21,7 @@ from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
 from explicit_RKL import solve_width_pressure_RKL2
-
+from postprocess_fracture import append_to_json_file
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -538,7 +538,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             zrVertx_k_with_fully_traversed, \
             zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region, \
-            sgndDist_k_temp, Ffront = reconstruct_front_continuous(sgndDist_k,
+            sgndDist_k_temp, Ffront,number_of_fronts  = reconstruct_front_continuous(sgndDist_k,
                                                            front_region[pstv_region],
                                                            Fr_lstTmStp.EltRibbon,
                                                            Fr_lstTmStp.EltChannel,
@@ -871,7 +871,19 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.InCrack = InCrack_k
     if sim_properties.projMethod != 'LS_continousfront':
         Fr_kplus1.process_fracture_front()
-    else : Fr_kplus1.Ffront = Ffront
+    else :
+        Fr_kplus1.Ffront = Ffront
+        Fr_kplus1.number_of_fronts = number_of_fronts
+        if sim_properties.saveToDisk and sim_properties.saveStatisticsPostCoalescence and Fr_lstTmStp.number_of_fronts != Fr_kplus1.number_of_fronts:
+            myJsonName = sim_properties.set_outputFolder+"_mesh_study.json"
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.nx, 'append2keyAND2list', key='nx')
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.ny, 'append2keyAND2list', key='ny')
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.hx, 'append2keyAND2list', key='hx')
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.hy, 'append2keyAND2list', key='hy')
+            append_to_json_file(myJsonName, Fr_kplus1.EltCrack.size, 'append2keyAND2list', key='elements_in_crack')
+            append_to_json_file(myJsonName, Fr_kplus1.EltTip.size, 'append2keyAND2list', key='elements_in_tip')
+            append_to_json_file(myJsonName, Fr_kplus1.time, 'append2keyAND2list', key='coalescence_time')
+
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
@@ -1508,7 +1520,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             zrVertx_k_with_fully_traversed, \
             zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region,\
-            sgndDist_k_temp, Ffront     = reconstruct_front_continuous(sgndDist_k,
+            sgndDist_k_temp, Ffront,number_of_fronts      = reconstruct_front_continuous(sgndDist_k,
                                                                        front_region[pstv_region],
                                                                        Fr_lstTmStp.EltRibbon,
                                                                        Fr_lstTmStp.EltChannel,
@@ -1838,7 +1850,18 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.InCrack = InCrack_k
     if sim_properties.projMethod != 'LS_continousfront':
         Fr_kplus1.process_fracture_front()
-    else : Fr_kplus1.Ffront = Ffront
+    else :
+        Fr_kplus1.Ffront = Ffront
+        Fr_kplus1.number_of_fronts = number_of_fronts
+        if sim_properties.saveToDisk and sim_properties.saveStatisticsPostCoalescence and Fr_lstTmStp.number_of_fronts != Fr_kplus1.number_of_fronts:
+            myJsonName = sim_properties.set_outputFolder+"_mesh_study.json"
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.nx, 'append2keyAND2list', key='nx')
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.ny, 'append2keyAND2list', key='ny')
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.hx, 'append2keyAND2list', key='hx')
+            append_to_json_file(myJsonName, Fr_kplus1.mesh.hy, 'append2keyAND2list', key='hy')
+            append_to_json_file(myJsonName, Fr_kplus1.EltCrack.size, 'append2keyAND2list', key='elements_in_crack')
+            append_to_json_file(myJsonName, Fr_kplus1.EltTip.size, 'append2keyAND2list', key='elements_in_tip')
+            append_to_json_file(myJsonName, Fr_kplus1.time, 'append2keyAND2list', key='coalescence_time')
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
