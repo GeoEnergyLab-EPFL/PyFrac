@@ -749,6 +749,7 @@ class SimulationProperties:
         self.saveFluidFluxAsVector = simul_param.save_fluid_flux_as_vector
         self.saveFluidVelAsVector = simul_param.save_fluid_vel_as_vector
         self.saveEffVisc = simul_param.save_effective_viscosity
+        self.saveStatisticsPostCoalescence=simul_param.save_statistics_post_coalescence
         self.saveYieldRatio = simul_param.save_yield_ratio
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
