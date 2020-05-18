@@ -144,7 +144,9 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
 
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cbar, Vel)
 
-    if stagnant:
+    if dist == 0:
+        w = 0
+    elif stagnant:
         w = KIPrime * dist ** 0.5 / Eprime
     else:
         a, b = FindBracket_w(dist, Kprime, Eprime, muPrime, Cbar, Vel, regime)
@@ -164,7 +166,7 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
             print('Warning: Negative width encountered in volume integral')
             w = abs(w)
 
-    if Vel < 1e-6:
+    if Vel < 1e-6 or w == 0:
         delt = 1 / 6
     else:
         Kh = Kprime * dist ** 0.5 / (Eprime * w)
@@ -593,6 +595,9 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel, regime):
         res_func = TipAsym_UniversalW_zero_Res
     else:
         res_func = TipAsym_UniversalW_delt_Res
+
+    if dist == 0:
+        print("Zero distance!")
 
     wk = dist ** 0.5 * Kprime / Eprime
     wmtld = 4 / (15 ** (1 / 4) * (2 ** 0.5 - 1) ** (1 / 4)) * \
