@@ -1813,8 +1813,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         exitstatus = 5
         return exitstatus, None
 
-
-    fluidVel = data[0][0]
+    if data[0] != None: #todo: Check why we need this if condition in the case of volume control
+        fluidVel = data[0][0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)
@@ -1865,8 +1865,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
-    Fr_kplus1.effVisc = data[0][1]
-    Fr_kplus1.yieldRatio = data[0][2]
+    if data[0] != None: #todo: Check why we need  this if condition in the case of volume control
+        Fr_kplus1.effVisc = data[0][1]
+        Fr_kplus1.yieldRatio = data[0][2]
 
     if sim_properties.verbosity > 1:
         print("Solved...\nFinding velocity of front...")
