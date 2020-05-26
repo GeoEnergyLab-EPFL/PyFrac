@@ -42,16 +42,22 @@ Fluid = FluidProperties(viscosity=0.22, rheology='HBF', n=0.617, k=0.22, T0=2.3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 4 * 60                           # the time at which the simulation stops
+simulProp.finalTime = 6e7                           # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/HB")                # the disk address where the files are saved
-simulProp.set_simulation_name('HBF_6.17e-1_2.2e-1_2.3_41_And')
+simulProp.set_simulation_name('HBF_6.17e-1_2.2e-1_2.3_71_And_reg')
 simulProp.saveYieldRatio = True
-simulProp.plotVar = ['ev', 'w', 'y']
+simulProp.plotVar = ['ev', 'y', 'w']
 simulProp.saveEffVisc = True
 simulProp.relaxation_factor = 0.3
-simulProp.elastohydrSolver = 'implicit_Anderson'
+simulProp.tmStpPrefactor = 0.5
+# simulProp.elastohydrSolver = 'implicit_Picard'
+# simulProp.set_tipAsymptote('HBF_num_quad')
+# simulProp.frontAdvancing = 'implicit'
+simulProp.maxSolverItrs = 400
+simulProp.Anderson_parameter = 10
 simulProp.plotFigure = False
-
+# simulProp.saveToDisk = False
+# simulProp.blockFigure = True
 
 # initialization parameters
 Fr_geometry = Geometry('radial', radius=0.2)
@@ -59,14 +65,14 @@ from elasticity import load_isotropic_elasticity_matrix
 C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 init_param = InitializationParameters(Fr_geometry, regime='static', net_pressure=1e6, elasticity_matrix=C)
 
-# creating fracture object
-Fr = Fracture(Mesh,
-              init_param,
-              Solid,
-              Fluid,
-              Injection,
-              simulProp)
-
+# # creating fracture object
+# Fr = Fracture(Mesh,
+#               init_param,
+#               Solid,
+#               Fluid,
+#               Injection,
+#               simulProp)
+Fr = load_fractures(address="./Data/HB", sim_name='HBF_6.17e-1_2.2e-1_2.3_71_And_reg')[0][-1]
 # create a Controller
 controller = Controller(Fr,
                         Solid,
@@ -75,7 +81,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+# controller.run()
 
 ####################
 # plotting results #
@@ -86,10 +92,10 @@ from visualization import *
 
 # loading simulation results
 Fr_list, properties = load_fractures(address="./Data/HB",
-                                     sim_name="HBF_6.17e-1_2.2e-1_2.3_41__2020-05-13__18_54_03")      # load all fractures
+                                     sim_name="HBF_6.17e-1_2.2e-1_2.3_71_And_reg__2020-05-26__15_09_24")      # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                      # list of times
 
-
+animate_simulation_results(Fr_list, variable=['y', 'ev'])
 # plot fracture radius
 plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
 Fig_R = plot_fracture_list(Fr_list,

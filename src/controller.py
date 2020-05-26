@@ -627,7 +627,9 @@ class Controller:
                                                                        projection='2D_clrmap',
                                                                        mat_properties=self.solid_prop,
                                                                        fig=self.Figures[index],
-                                                                       elements=get_elements(suitable_elements[plt_var], Fr_advanced))
+                                                                       elements=get_elements(suitable_elements[plt_var], Fr_advanced),
+                                                                       # edge=0
+                                                                       )
                         # plotting source elements
                         plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
@@ -662,7 +664,9 @@ class Controller:
                 # plot the figure
                 print("Done! ")
                 if self.sim_prop.blockFigure:
-                    input("Press any key to continue.")
+                    # input("Press any key to continue.")
+                    print("click on the window to continue...")
+                    plt.waitforbuttonpress()
 
                 self.lastPlotTime = Fr_advanced.time
 

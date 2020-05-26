@@ -277,6 +277,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                            / Fr_kplus1.injectedVol
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
     Fr_kplus1.effVisc = return_data[0][1]
+    Fr_kplus1.yieldRatio = return_data[0][2]
     fluidVel = return_data[0][0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1091,7 +1092,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
         p[EltCrack] = sol[-1]
 
-        return_data = (None, np.asarray([]), False)
+        return_data_solve = [None, None, None]
+        return_data = [return_data_solve, np.asarray([]), np.asarray([])]
         return w, p, return_data
 
     if sim_properties.get_viscousInjection():
