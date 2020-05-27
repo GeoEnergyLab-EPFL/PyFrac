@@ -1200,7 +1200,11 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         else:
             p[EltCrack] = sol[-1]
 
-        return_data = (None, np.asarray([]), False)
+        p[EltCrack] = sol[-1]
+        
+        return_data_solve = [None, None, None]
+        return_data = [return_data_solve, np.asarray([]), False]
+
         return w, p, return_data
 
     if sim_properties.get_viscousInjection():
