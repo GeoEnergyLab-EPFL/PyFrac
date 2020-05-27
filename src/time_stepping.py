@@ -1102,8 +1102,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
         p[EltCrack] = sol[-1]
-
-        return_data = (None, np.asarray([]), False)
+        
+        return_data_solve = [None, None, None]
+        return_data = [return_data_solve, np.asarray([]), False]
+        
         return w, p, return_data
 
     if sim_properties.get_viscousInjection():
