@@ -48,6 +48,12 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     if inj_properties.sinkLocFunc is not None:
         Qin[inj_properties.sinkElem] -= inj_properties.sinkVel * Frac.mesh.EltArea
 
+    if inj_properties.delayed_second_injpoint_elem is not None:
+        if Frac.time >= inj_properties.injectionTime_delayed_second_injpoint:
+            Qin[inj_properties.delayed_second_injpoint_elem]=inj_properties.injectionRate_delayed_second_injpoint
+        else:
+            Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint
+
     if sim_properties.frontAdvancing == 'explicit':
 
         perfNode_explFront = instrument_start('extended front', perfNode)
