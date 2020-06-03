@@ -351,7 +351,8 @@ class InjectionProperties:
                                          
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None, sink_vel_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None, sink_vel_func=None
+                 ,rate_delayed_second_injpoint=None,delayed_second_injpoint_loc=None,initial_rate_delayed_second_injpoint=None):
         """
         The constructor of the InjectionProperties class.
         """
@@ -367,6 +368,33 @@ class InjectionProperties:
                 self.injectionRate = rate
         else:
             self.injectionRate = np.asarray([[0], [rate]])
+
+        if rate_delayed_second_injpoint is not None:
+            if isinstance(rate_delayed_second_injpoint, np.ndarray):
+                if rate_delayed_second_injpoint.shape[0] != 2: #todo: check the condition
+                    raise ValueError('Invalid injection rate of the delayed injection point. The list should have 2 rows (to specify time and'
+                                     ' corresponding injection rate) for each entry')
+                elif rate_delayed_second_injpoint[0, 0] == 0: #todo: check the condition
+                    raise ValueError("The injection rate of the delayed injection point should start from a time >0 second i.e. rate[0, 0] should"
+                                     " be nonzero.")
+                self.injectionRate_delayed_second_injpoint = rate_delayed_second_injpoint[1]
+                self.injectionTime_delayed_second_injpoint = rate_delayed_second_injpoint[0]
+            else:
+                raise ValueError("Bad specification of the delayed injection point"
+                                 " it should be a np.ndarray prescribing the initial nonzero time of injection and the rate.")
+        if delayed_second_injpoint_loc is not None:
+            if isinstance(delayed_second_injpoint_loc, np.ndarray):
+                self.delayed_second_injpoint_Coordinates = delayed_second_injpoint_loc
+                self.delayed_second_injpoint_elem = [mesh.locate_element(self.delayed_second_injpoint_Coordinates[0], self.delayed_second_injpoint_Coordinates[1])]
+                if initial_rate_delayed_second_injpoint is not None:
+                    self.init_rate_delayed_second_injpoint = initial_rate_delayed_second_injpoint
+                else: self.init_rate_delayed_second_injpoint = 0
+            else:
+                raise ValueError("Bad specification of the delayed injection point"
+                                 " it should be a np.array prescribing the coordinates of the point.")
+        elif rate_delayed_second_injpoint is not None:
+            raise ValueError("Delayed injection point: uknown location")
+        else: self.delayed_second_injpoint_elem = None
 
         if source_loc_func is None:
             if source_coordinates is not None:
