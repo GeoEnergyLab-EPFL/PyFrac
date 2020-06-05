@@ -119,7 +119,7 @@ class Controller:
                 self.timeToHit = np.delete(self.timeToHit, greater_finalTime)
 
         # Setting to volume control solver if viscosity is zero
-        if self.fluid_prop.viscosity < 1e-15:
+        if self.fluid_prop.rheology == 'Newtonian' and self.fluid_prop.viscosity < 1e-15:
            print("Fluid viscosity is zero. Setting solver to volume control...")
            self.sim_prop.set_volumeControl(True)
 
