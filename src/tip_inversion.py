@@ -440,8 +440,8 @@ def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, 
     """ 
     Find the valid bracket for the root evaluation function.
     """
-
-    a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
+    
+    a = -DistLstTS * (1 + np.finfo(float).eps)
     if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
         b = np.full((len(w),), 6 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
     elif simProp.get_tipAsymptote()  in ["PLF", "PLF_aprox", "PLF_num_quad"]:
