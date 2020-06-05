@@ -520,48 +520,8 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
 
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
     
-
-    # x0 = np.maximum(1 - 2 * fluidProp.T0 / wLftEdge / dpLft, np.zeros(len(wLftEdge), dtype=np.float64))
-    # cond[0, edgeInCrk_lst[0]] = fluidProp.var1 * dpLft[edgeInCrk_lst[0]] ** fluidProp.var2 * wLftEdge[edgeInCrk_lst[0]] ** \
-    #                             fluidProp.var3 * x0[edgeInCrk_lst[0]]**fluidProp.var4 * \
-    #                             (1 + 2*fluidProp.T0 / wLftEdge[edgeInCrk_lst[0]] / dpLft[edgeInCrk_lst[0]] * fluidProp.var5)
-    # x1 = np.maximum(1 - 2*fluidProp.T0 / wRgtEdge / dpRgt, np.zeros(len(wLftEdge), dtype=np.float64))
-    # cond[1, edgeInCrk_lst[1]] = fluidProp.var1 * dpRgt[edgeInCrk_lst[1]] ** fluidProp.var2 * wRgtEdge[edgeInCrk_lst[1]] ** \
-    #                             fluidProp.var3 * x1[edgeInCrk_lst[1]]**fluidProp.var4 * \
-    #                             (1 + 2*fluidProp.T0 / wRgtEdge[edgeInCrk_lst[1]] / dpRgt[edgeInCrk_lst[1]] * fluidProp.var5)
-    # x2 = np.maximum(1 - 2*fluidProp.T0 / wBtmEdge / dpBtm, np.zeros(len(wLftEdge), dtype=np.float64))
-    # cond[2, edgeInCrk_lst[2]] = fluidProp.var1 * dpBtm[edgeInCrk_lst[2]] ** fluidProp.var2 * wBtmEdge[edgeInCrk_lst[2]] ** \
-    #                             fluidProp.var3 * x2[edgeInCrk_lst[2]]**fluidProp.var4 * \
-    #                             (1 + 2*fluidProp.T0 / wBtmEdge[edgeInCrk_lst[2]] / dpBtm[edgeInCrk_lst[2]] * fluidProp.var5)
-    # x3 = np.maximum(1 - 2*fluidProp.T0 / wTopEdge / dpTop, np.zeros(len(wLftEdge), dtype=np.float64))
-    # cond[3, edgeInCrk_lst[3]] = fluidProp.var1 * dpTop[edgeInCrk_lst[3]] ** fluidProp.var2 * wTopEdge[edgeInCrk_lst[3]] ** \
-    #                             fluidProp.var3 * x3[edgeInCrk_lst[3]]**fluidProp.var4 * \
-    #                             (1 + 2*fluidProp.T0 / wTopEdge[edgeInCrk_lst[3]] / dpTop[edgeInCrk_lst[3]] * fluidProp.var5)
-    
-       
-    # x0 = np.maximum(1 - 2 * fluidProp.T0 / wLftEdge / dpLft, np.zeros(len(wLftEdge), dtype=np.float64))
-    # G0 = np.maximum(x0**fluidProp.var4 * (1 + 2*fluidProp.T0 / wLftEdge / dpLft * fluidProp.var5),
-    #                 np.full(len(x0), 1e-3, dtype=np.float64))
-    # cond[0, edgeInCrk_lst[0]] = fluidProp.var1 * dpLft[edgeInCrk_lst[0]] ** fluidProp.var2 * wLftEdge[edgeInCrk_lst[0]] ** \
-    #                             fluidProp.var3 * G0[edgeInCrk_lst[0]]
-    # x1 = np.maximum(1 - 2*fluidProp.T0 / wRgtEdge / dpRgt, np.zeros(len(wLftEdge), dtype=np.float64))
-    # G1 = np.maximum(x1**fluidProp.var4 * (1 + 2*fluidProp.T0 / wRgtEdge / dpRgt * fluidProp.var5),
-    #                 np.full(len(x1), 1e-3, dtype=np.float64))
-    # cond[1, edgeInCrk_lst[1]] = fluidProp.var1 * dpRgt[edgeInCrk_lst[1]] ** fluidProp.var2 * wRgtEdge[edgeInCrk_lst[1]] ** \
-    #                             fluidProp.var3 * G1[edgeInCrk_lst[1]]
-    # x2 = np.maximum(1 - 2*fluidProp.T0 / wBtmEdge / dpBtm, np.zeros(len(wLftEdge), dtype=np.float64))
-    # G2 = np.maximum(x2**fluidProp.var4 * (1 + 2*fluidProp.T0 / wBtmEdge / dpBtm * fluidProp.var5),
-    #                 np.full(len(x2), 1e-3, dtype=np.float64))
-    # cond[2, edgeInCrk_lst[2]] = fluidProp.var1 * dpBtm[edgeInCrk_lst[2]] ** fluidProp.var2 * wBtmEdge[edgeInCrk_lst[2]] ** \
-    #                             fluidProp.var3 * G2[edgeInCrk_lst[2]]
-    # x3 = np.maximum(1 - 2*fluidProp.T0 / wTopEdge / dpTop, np.zeros(len(wLftEdge), dtype=np.float64))
-    # G3 = np.maximum(x3**fluidProp.var4 * (1 + 2*fluidProp.T0 / wTopEdge / dpTop * fluidProp.var5),
-    #                 np.full(len(x3), 1e-3, dtype=np.float64))
-    # cond[3, edgeInCrk_lst[3]] = fluidProp.var1 * dpTop[edgeInCrk_lst[3]] ** fluidProp.var2 * wTopEdge[edgeInCrk_lst[3]] ** \
-    #                             fluidProp.var3 * G3[edgeInCrk_lst[3]]    
-    
-    eps = 1e-3
-    G_min = 1e-5
+    eps = simProp.HershBulkEpsilon
+    G_min = simProp.HershBulkGmin
     
     phi = fluidProp.T0 / wLftEdge / dpLft
     phi_p = np.minimum(phi, 0.5)
@@ -608,27 +568,14 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
             eff_mu[2, EltCrack[edgeInCrk_lst[2]]] =  wBtmEdge[edgeInCrk_lst[2]] ** 3 / (12 * cond[2, edgeInCrk_lst[2]])
             eff_mu[3, EltCrack[edgeInCrk_lst[3]]] =  wTopEdge[edgeInCrk_lst[3]] ** 3 / (12 * cond[3, edgeInCrk_lst[3]])
     
-    if simProp.saveYieldRatio:
+    yielded = None
+    if simProp.saveG:
         yielded = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
-        # yielded[0, EltCrack] = fluidProp.T0 / wLftEdge / dpLft
-        # yielded[1, EltCrack] = fluidProp.T0 / wRgtEdge / dpRgt
-        # yielded[2, EltCrack] = fluidProp.T0 / wBtmEdge / dpBtm
-        # yielded[3, EltCrack] = fluidProp.T0 / wTopEdge / dpTop
         yielded[0, EltCrack] = G0
         yielded[1, EltCrack] = G1
         yielded[2, EltCrack] = G2
         yielded[3, EltCrack] = G3
     
-    # from utility import plot_as_matrix
-    # import matplotlib.pyplot as plt
-    # K=np.full((Mesh.NumberOfElts,),np.nan)
-    # K[EltCrack]=dpLft
-    # plot_as_matrix(K, Mesh)
-    # plt.pause(0.5)
-    # plt.ion()
-    # plt.show()
-    # plt.waitforbuttonpress()
-    # plt.close()
     
     return FinDiffOprtr, eff_mu, yielded
 
