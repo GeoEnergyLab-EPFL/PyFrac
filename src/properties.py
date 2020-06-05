@@ -679,7 +679,9 @@ class SimulationProperties:
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
         self.toleranceVStagnant = simul_param.toleranceVStagnant
-
+        self.HershBulkEpsilon = simul_param.Hersh_Bulk_epsilon
+        self.HershBulkGmin = simul_param.Hersh_Bulk_Gmin
+        
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
         self.maxSolverItrs = simul_param.max_solver_itrs
@@ -749,7 +751,7 @@ class SimulationProperties:
         self.saveFluidFluxAsVector = simul_param.save_fluid_flux_as_vector
         self.saveFluidVelAsVector = simul_param.save_fluid_vel_as_vector
         self.saveEffVisc = simul_param.save_effective_viscosity
-        self.saveYieldRatio = simul_param.save_yield_ratio
+        self.saveG = simul_param.save_G
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.projMethod = simul_param.proj_method
