@@ -135,6 +135,75 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+
+def rename_simulation(address=None, sim_name='simulation', sim_name_new=None):
+    """
+    This function renames a given simulation. The time stamp of the simulation is copied from the old name.
+
+    Args:
+        address (string):               -- the folder address containing the saved files. If it is not provided,
+                                           simulation from the default folder (_simulation_data_PyFrac) will be loaded.
+        sim_name (string):              -- the simulation name which is to be renamed.
+        sim_name_new (string):          -- the name to be given to the simulation.
+
+
+    """
+
+    print('Renaming simulation...')
+
+    if sim_name_new is None:
+        sim_name_new = sim_name + 'new'
+        
+    if address is None:
+        address = '.' + slash + '_simulation_data_PyFrac'
+
+    if address[-1] != slash:
+        address = address + slash
+
+
+    if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):
+        sim_full_name = sim_name
+        sim_full_name_new = sim_full_name_new + sim_name[-20:]
+    else:
+        simulations = os.listdir(address)
+        time_stamps = []
+        for i in simulations:
+            if re.match(sim_name + '__\d+-\d+-\d+__\d+_\d+_\d+', i):
+                time_stamps.append(i[-20:])
+        if len(time_stamps) == 0:
+            raise ValueError('Simulation not found! The address might be incorrect.')
+
+        Tmst_sorted = sorted(time_stamps)
+        sim_full_name = sim_name + '__' + Tmst_sorted[-1]
+        sim_full_name_new = sim_name_new + '__' + Tmst_sorted[-1]
+        
+    sim_full_path = address +  sim_full_name
+    sim_full_path_new = address +  sim_full_name_new
+    properties_file = sim_full_path + slash + 'properties'
+    
+
+    fileNo = 0
+
+    while fileNo < 5000:
+
+        # trying to load next file. exit loop if not found
+        try:
+            os.rename(sim_full_path + slash + sim_full_name + '_file_' + repr(fileNo),
+                      sim_full_path + slash + sim_full_name_new + '_file_' + repr(fileNo))
+        except FileNotFoundError:
+            break
+
+        fileNo += 1
+
+
+    if fileNo >= 5000:
+        raise SystemExit('too many files.')
+
+    os.rename(sim_full_path , sim_full_path_new)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, source_loc=np.asarray([0,0])):
     """ This function returns the required variable from a fracture list.
 
@@ -273,7 +342,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
     
-    elif variable == 'yielded' or variable == 'y':
+    elif variable == 'prefactor G' or variable == 'G':
         if fracture_list[-1].yieldRatio is None:
             raise SystemExit(err_var_not_saved)
         for i in fracture_list:
@@ -340,6 +409,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
             y_len = np.max(y_coords) - np.min(y_coords)
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
+            
     elif variable == 'chi':
         for i in fracture_list:
             vel = np.full((i.mesh.NumberOfElts,), np.nan)
