@@ -184,7 +184,7 @@ def plot_performance(address, variable, sim_name='simulation', fig=None, plot_pr
             'tip inversion iterations'          the iterations taken by the brentq method to converge while inverting \
                                                 the tip asymptote
             'width constraint iterations'       the iterations taken to converge on closed cells
-            'Picard iterations'                 the number of times the linear system is solved
+            'non-linear solve iterations'       the number of times the linear system is solved
             'CPU time: time steps'              the CPU time taken by each of the time steps
             'CPU time: time step attempts'      the CPU time taken by each of the time step attempt
             ===============================     ================================================
@@ -205,7 +205,7 @@ def plot_performance(address, variable, sim_name='simulation', fig=None, plot_pr
         var_list, time_list, N_list = get_performance_variable(perf_data, 'Brent method', 'iterations')
     elif variable in ['width constraint iterations']:
         var_list, time_list, N_list = get_performance_variable(perf_data, 'nonlinear system solve', 'iterations')
-    elif variable in ['Picard iterations']:
+    elif variable in ['non-linear solve iterations']:
         var_list, time_list, N_list = get_performance_variable(perf_data, 'width constraint iteration', 'iterations')
     elif variable in ['RKL substeps']:
         var_list, time_list, N_list = get_performance_variable(perf_data, 'RKL time step', 'iterations')
@@ -278,7 +278,7 @@ def print_performance_data(address, sim_name=None):
 
         for i_widthConstraint, widthConstraint_Itr in enumerate(iteration_prop.widthConstraintItr_data):
             f.write(tabs + "\t--->width constraint iteration " + repr(i_widthConstraint + 1) + '\n')
-            f.write(tabs + "\t\tnumber of linear system solved for the Picard iteration = " + repr(widthConstraint_Itr.iterations) + '\n')
+            f.write(tabs + "\t\tnumber of linear system solved to solve the non-linear system = " + repr(widthConstraint_Itr.iterations) + '\n')
             f.write(tabs + "\t\tCPU time taken: " + repr(widthConstraint_Itr.CpuTime_end - widthConstraint_Itr.CpuTime_start) + " seconds" + '\n')
             f.write(tabs + "\t\tnorm for the iteration = " + repr(widthConstraint_Itr.norm) + '\n')
 
