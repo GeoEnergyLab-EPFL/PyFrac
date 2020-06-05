@@ -12,6 +12,8 @@ toleranceFractureFront = 1.0e-3         # tolerance for the fracture front posit
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
 toleranceVStagnant = 1e-6               # tolerance on the velocity to decide if a cell is stagnant.
+Hersh_Bulk_epsilon = 1e-3               # for Herschel Bulkley fluid; the value where the coefficient G is regularized.
+Hersh_Bulk_Gmin = 1e-5                  # for Herschel Bulkley fluid; the min value of the coefficient G.
 
 # max iterations
 max_front_itrs = 25                     # maximum iterations for the fracture front.
@@ -74,7 +76,7 @@ save_fluid_vel = False                  # if True, the fluid vel at each edge wi
 save_fluid_flux_as_vector = False       # if True, the fluid flux at each edge will be saved as vector, i.e. with two components.
 save_fluid_vel_as_vector = False        # if True, the fluid vel at each edge will be saved as vector, i.e. with two components.
 save_effective_viscosity = False        # if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will be saved.
-save_yield_ratio = False                # if True, the ratio of the height of fluid column yielded to total width will be saved. 
+save_G = False                          # if True, the prefactor G, giving the effect of yield stress will be saved. 
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 explicit_projection = False             # if True, direction from last time step will be used to evaluate TI parameters.
