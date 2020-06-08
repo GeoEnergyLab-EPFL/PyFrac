@@ -444,9 +444,7 @@ def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, 
     a = -DistLstTS * (1 + np.finfo(float).eps)
     if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
         b = np.full((len(w),), 6 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
-    elif simProp.get_tipAsymptote()  in ["PLF", "PLF_aprox", "PLF_num_quad"]:
-        b = (w * Eprime / Kprime)**2 - np.finfo(float).eps
-    elif simProp.get_tipAsymptote()  in ["HBF", "HBF_aprox", "HBF_num_quad"]:
+    elif simProp.get_tipAsymptote()  in ["HBF", "HBF_aprox", "HBF_num_quad", "PLF", "PLF_aprox", "PLF_num_quad"]:
         b = np.zeros(len(w), dtype=np.float64)
         for i in range(0, len(w)):
             TipAsmptargs = (w[i], Kprime[i], Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt)

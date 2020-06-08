@@ -283,6 +283,7 @@ class FluidProperties:
                 self.n = n
                 self.k = k
                 self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+                self.T0 = 0.
         else:# error
             raise ValueError('Invalid input for fluid rheology. Possible options: ' + repr(rheologyOptions))
 
