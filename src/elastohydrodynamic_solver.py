@@ -781,22 +781,9 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
-    # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
-    to_del = []
-    if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
-        for i in range(n_tip + n_act):
-                if not A[n_ch + i, :].any():
-                    to_del.append(i)
-    
-        if len(to_del) > 0:            
-            deleted = n_ch + np.asarray(to_del)
-            A = np.delete(A, deleted, 0)
-            A = np.delete(A, deleted, 1)
-            S = np.delete(S, deleted)
 
     # indices of solved width, pressure and active width constraint in the solution
-    indices = [ch_indxs, tip_indxs, act_indxs, to_del]
+    indices = [ch_indxs, tip_indxs, act_indxs]
     
     interItr_kp1[1] = below_wc
 
@@ -943,22 +930,9 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
-    # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
-    to_del = []
-    if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
-        for i in range(n_tip + n_act):
-                if not A[n_ch + i, :].any():
-                    to_del.append(i)
-    
-        if len(to_del) > 0:            
-            deleted = n_ch + np.asarray(to_del)
-            A = np.delete(A, deleted, 0)
-            A = np.delete(A, deleted, 1)
-            S = np.delete(S, deleted)
 
     # indices of solved width, pressure and active width constraint in the solution
-    indices = [ch_indxs, tip_indxs, act_indxs, to_del]
+    indices = [ch_indxs, tip_indxs, act_indxs]
     
     interItr_kp1[1] = below_wc
 
@@ -1099,22 +1073,9 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
-    # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
-    to_del = []
-    if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
-        for i in range(n_tip + n_act):
-                if not A[n_ch + i, :].any():
-                    to_del.append(i)
     
-        if len(to_del) > 0:            
-            deleted = n_ch + np.asarray(to_del)
-            A = np.delete(A, deleted, 0)
-            A = np.delete(A, deleted, 1)
-            S = np.delete(S, deleted)
-
     # indices of solved width, pressure and active width constraint in the solution
-    indices = [ch_indxs, tip_indxs, act_indxs, to_del]
+    indices = [ch_indxs, tip_indxs, act_indxs]
     
     interItr_kp1[1] = below_wc
 
@@ -1259,21 +1220,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
-    # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
-    to_del = []
-    # if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
-    #     for i in range(n_tip + n_act):
-    #             if not A[n_ch + i, :].any():
-    #                 to_del.append(i)
-    #     if len(to_del) > 0:
-    #         deleted = n_ch + np.asarray(to_del)
-    #         A = np.delete(A, deleted, 0)
-    #         A = np.delete(A, deleted, 1)
-    #         S = np.delete(S, deleted)
-
     # indices of solved width, pressure and active width constraint in the solution
-    indices = [ch_indxs, tip_indxs, act_indxs, to_del]
+    indices = [ch_indxs, tip_indxs, act_indxs]
     
     interItr_kp1[1] = below_wc
     return A, S, interItr_kp1, indices
@@ -1421,12 +1369,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
             try:
                 A, b, interItr, indices = sys_fun(solk, interItr, *args)
                 perfNode_linSolve = instrument_start("linear system solve", perf_node)
-                sol = np.linalg.solve(A, b)
-                # if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
-                #     solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
-                # else:
-                # solk = relax * solkm1 + (1 - relax) * sol 
-                solk = relax * solkm1 + (1 - relax) * sol
+                solk = relax * solkm1 + (1 - relax) * np.linalg.solve(A, b)
             except np.linalg.linalg.LinAlgError:
                 print('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
@@ -1748,11 +1691,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         # First iteration
         xks[0,::] = np.array([guess])                                       # xo
         (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
-        solk = np.linalg.solve(A, b)                                        # solve the linear system
-        # if len(indices[3]) > 0:                                             # if the size of system is varying between \
-        #     Gks[0, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
-        # else:
-        Gks[0, ::] = solk
+        Gks[0, ::] = np.linalg.solve(A, b)
         Fks[0,::] = Gks[0,::] - xks[0,::]
         xks[1,::] = Gks[0,::]                                               # x1
     except np.linalg.linalg.LinAlgError:
@@ -1776,11 +1715,6 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                 (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
             
-            solk = np.linalg.solve(A, b)
-            # if len(indices[3]) > 0:                                             # if the size of system is varying between \
-            #     Gks[mk + 1, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
-            # else:
-            #     Gks[mk + 1, ::] = solk
             Gks[mk + 1, ::] = np.linalg.solve(A, b)
             Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 
@@ -1835,44 +1769,3 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     data = [interItr[0], interItr[2], interItr[3]]
     return xks[mk + 2, ::], data
 
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def get_complete_solution(sol, indices, *args):
-    
-    print("in the function #############################################")
-
-    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
-    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
-
-    tip_act = np.concatenate((to_impose, active))
-
-    w = np.copy(frac.w)
-    w[to_solve] += sol[:len(to_solve)]
-    w[to_impose] = imposed_val
-    w[active] = wc_to_impose
-
-    [ch_indxs, tip_indxs, act_indxs, deleted] = indices
-    
-    if sim_prop.solveDeltaP:
-        values = np.dot(C[np.ix_(tip_act[deleted], EltCrack)], w[EltCrack]) + \
-                    mat_prop.SigmaO[tip_act[deleted]]- frac.pFluid[tip_act[deleted]]
-    else:
-        values = np.dot(C[np.ix_(tip_act[deleted], EltCrack)], w[EltCrack]) + \
-                    mat_prop.SigmaO[tip_act[deleted]]
-    sol_full = populate_full(indices, sol, values)
-
-    return sol_full
-
-def populate_full(indices, sol, values=None):
-
-    [ch_indxs, tip_indxs, act_indxs, deleted] = indices
-    sol_full = np.empty(len(ch_indxs) + len(tip_indxs) + len(act_indxs))
-    sol_full[:len(ch_indxs)] = sol[:len(ch_indxs)]
-
-    if values is None:
-        values = np.zeros(len(deleted))
-    sol_full[len(ch_indxs) + np.asarray(deleted, dtype=int)] = values
-    sol_full[len(ch_indxs) + np.setdiff1d(np.arange(len(tip_indxs) + len(act_indxs)), deleted)] = sol[len(ch_indxs):]
-
-    return sol_full
