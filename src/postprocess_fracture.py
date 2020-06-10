@@ -343,16 +343,16 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
     
     elif variable == 'prefactor G' or variable == 'G':
-        if fracture_list[-1].yieldRatio is None:
+        if fracture_list[-1].G is None:
             raise SystemExit(err_var_not_saved)
         for i in fracture_list:
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
-                variable_list.append(i.yieldRatio[edge])
+                variable_list.append(i.G[edge])
                 time_srs.append(i.time)
-            elif i.yieldRatio is not None:
-                variable_list.append(np.mean(i.yieldRatio, axis=0))
+            elif i.G is not None:
+                variable_list.append(np.mean(i.G, axis=0))
                 time_srs.append(i.time)
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))

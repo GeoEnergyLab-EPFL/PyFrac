@@ -568,16 +568,16 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
             eff_mu[2, EltCrack[edgeInCrk_lst[2]]] =  wBtmEdge[edgeInCrk_lst[2]] ** 3 / (12 * cond[2, edgeInCrk_lst[2]])
             eff_mu[3, EltCrack[edgeInCrk_lst[3]]] =  wTopEdge[edgeInCrk_lst[3]] ** 3 / (12 * cond[3, edgeInCrk_lst[3]])
     
-    yielded = None
+    G = None
     if simProp.saveG:
-        yielded = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
-        yielded[0, EltCrack] = G0
-        yielded[1, EltCrack] = G1
-        yielded[2, EltCrack] = G2
-        yielded[3, EltCrack] = G3
+        G = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
+        G[0, EltCrack] = G0
+        G[1, EltCrack] = G1
+        G[2, EltCrack] = G2
+        G[3, EltCrack] = G3
     
     
-    return FinDiffOprtr, eff_mu, yielded
+    return FinDiffOprtr, eff_mu, G
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------

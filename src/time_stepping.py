@@ -277,7 +277,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                            / Fr_kplus1.injectedVol
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
     Fr_kplus1.effVisc = return_data[0][1]
-    Fr_kplus1.yieldRatio = return_data[0][2]
+    Fr_kplus1.G = return_data[0][2]
     fluidVel = return_data[0][0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -893,7 +893,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         Fr_kplus1.regime = regime
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
     Fr_kplus1.effVisc = data[0][1]
-    Fr_kplus1.yieldRatio = data[0][2]
+    Fr_kplus1.G = data[0][2]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1861,7 +1861,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.Tarrival = Tarrival_k
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
     Fr_kplus1.effVisc = data[0][1]
-    Fr_kplus1.yieldRatio = data[0][2]
+    Fr_kplus1.G = data[0][2]
 
     if sim_properties.verbosity > 1:
         print("Solved...\nFinding velocity of front...")
