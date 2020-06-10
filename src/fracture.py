@@ -87,7 +87,19 @@ class Fracture:
         sgndDist_last (ndarray):    -- the signed distance of the last time step. Used for re-meshing.
         timeStep_last (float):      -- the last time step. Required for re-meshing.
         source (ndarray):           -- the list of injection cells i.e. the source elements.
-
+        FFront (ndarray)            -- the variable storing the fracture front. Each row stores the x and y coordinates
+                                       of the front lines in the tip cells. 
+        LkOff (ndarray):            -- the leak-off of the fluid in the last time step.
+        ZeroVertex (ndarray):       -- the list of zero vertices (the vertex from where the normal is drawn on the front) 
+                                       of the tip cells. 
+        effVisc (ndarray):          -- the Newtonian equivalent viscosity of the non-Newtonian fluid.
+        efficiency (float):         -- the fracturing efficiency uptil the last time step
+        injectedVol (float):        -- the total volume injected into the fracture uptil now.     
+        mesh (CartesianMesh):       -- the mesh object describing the mesh.
+        sgndDist_last (ndarray):    -- the signed dist from the previous time step. 
+        timeStep_last (float):      -- the last time step taken
+        wHist (ndarray):            -- the maximum widht until now in each of the cell.
+        G (ndarray):                -- the coefficient G (see Zia et al. 2020) for non-Newtonian fluid
     """
 
     def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
@@ -467,7 +479,7 @@ class Fracture:
 
     def plot_front(self, fig=None, plot_prop=None):
         """
-        This function plots the front lines in the tip cells of the fracture taken from the fFront variable.
+        This function plots the front lines in the tip cells of the fracture taken from the FFront variable.
         """
 
         if fig is None:
