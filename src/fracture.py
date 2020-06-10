@@ -769,7 +769,6 @@ class Fracture:
         Fr_coarse.injectedVol = self.injectedVol
         Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
         Fr_coarse.time = self.time
-        # Fr_coarse.closed = np.asarray([])
         Fr_coarse.wHist = wHist_coarse
 
         return Fr_coarse
