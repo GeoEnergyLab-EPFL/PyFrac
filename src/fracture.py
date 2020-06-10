@@ -146,9 +146,11 @@ class Fracture:
                                                    simulProp.symmetric,
                                                    solid.Eprime)
 
-            if init_param.fractureVolume is None:
+            if init_param.fractureVolume is None and init_param.time is None:
                 volume = np.sum(self.w) * mesh.EltArea
                 self.time = volume / injection.injectionRate[1, 0]
+            elif init_param.time is not None:
+                self.time = init_param.time
 
             self.v = init_param.tipVelocity
 

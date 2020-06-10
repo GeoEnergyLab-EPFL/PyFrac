@@ -49,11 +49,15 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         Qin[inj_properties.sinkElem] -= inj_properties.sinkVel * Frac.mesh.EltArea
 
     if inj_properties.delayed_second_injpoint_elem is not None:
-        if Frac.time >= inj_properties.injectionTime_delayed_second_injpoint:
-            Qin[inj_properties.delayed_second_injpoint_elem]=inj_properties.injectionRate_delayed_second_injpoint
+        if inj_properties.rate_delayed_inj_pt_func is None:
+            if Frac.time >= inj_properties.injectionTime_delayed_second_injpoint:
+                Qin[inj_properties.delayed_second_injpoint_elem]=inj_properties.injectionRate_delayed_second_injpoint
+            else:
+                Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint
         else:
-            Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint
-
+            Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.rate_delayed_inj_pt_func(Frac.time)
+    print("\n  Qmax =   " + str(Qin.max()))
+    print("\n  Q2 =   "+str(Qin[inj_properties.delayed_second_injpoint_elem]))
     if sim_properties.frontAdvancing == 'explicit':
 
         perfNode_explFront = instrument_start('extended front', perfNode)
@@ -2013,7 +2017,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.timeStep_last = timeStep
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
     if np.any(Fr_kplus1.v[new_tip]==0):
-        print('why')
+        print('why the velocity is 0?')
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
     Fr_kplus1.LkOff = LkOff
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
