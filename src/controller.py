@@ -79,7 +79,6 @@ class Controller:
         self.lastSuccessfulTS = Fracture.time
         self.maxTmStp = 0           # the maximum time step taken uptil now by the controller.
 
-
         # make a list of Nones with the size of the number of variables to plot during simulation
         self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
 
@@ -281,7 +280,7 @@ class Controller:
                 self.fullyClosed = False
 
                 # set front advancing back as set in simulation properties originally if velocity becomes available.
-                if np.max(Fr_n_pls1.v) > 0 or not np.isnan(Fr_n_pls1.v).any():
+                if np.max(Fr_n_pls1.v) > 0 and not np.isnan(Fr_n_pls1.v).any() and len(Fr_n_pls1.closed) == 0:
                     self.sim_prop.frontAdvancing = copy.copy(self.frontAdvancing)
                 else:
                     self.sim_prop.frontAdvancing = 'implicit'
