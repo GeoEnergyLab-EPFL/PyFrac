@@ -1978,8 +1978,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None
             else:
                 print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
+                # from utility import plot_as_matrix
+                # K = np.zeros((mesh.NumberOfElts,), )
+                # K[anularegion] = sgndDist_k[anularegion]
+                # plot_as_matrix(K, mesh)
                 correct_size_of_pstv_region = [False, False]
-                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None
+                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None
 
         """
         2) - define the fractures
