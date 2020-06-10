@@ -758,13 +758,18 @@ class Fracture:
             for elt in to_correct:
                 Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
                                                 Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
-
+        
+        coarse_closed = []       
+        for e in self.closed:
+            coarse_closed.append(locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
+        Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))    
+            
         Fr_coarse.LkOff = LkOff
         Fr_coarse.LkOffTotal = self.LkOffTotal
         Fr_coarse.injectedVol = self.injectedVol
         Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
         Fr_coarse.time = self.time
-        Fr_coarse.closed = np.asarray([])
+        # Fr_coarse.closed = np.asarray([])
         Fr_coarse.wHist = wHist_coarse
 
         return Fr_coarse
