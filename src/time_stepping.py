@@ -1115,7 +1115,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         perfNode_nonLinSys = instrument_start('nonlinear system solve', perfNode)
 
-        neg = np.array([], dtype=int)
+        neg = Fr_lstTmStp.closed
+        wc_to_impose = Fr_lstTmStp.w[neg]
+        
         new_neg = np.array([], dtype=int)
         active_contraint = True
         to_solve = np.setdiff1d(EltCrack, EltTip)  # only taking channel elements to solve
@@ -1130,12 +1132,12 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         imposed_val = np.delete(wTip, stagnant_tip)
         to_solve = np.append(to_solve, EltTip[stagnant_tip])
 
-        wc_to_impose = []
         fully_closed = False
         corr_ribb_flag = False
+        to_open_cumm = np.asarray([], dtype=int)
+        
         # Making and solving the system of equations. The width constraint is checked. If active, system is remade with
         # the constraint imposed and is resolved.
-
         while active_contraint:
 
             perfNode_widthConstrItr = instrument_start('width constraint iteration', perfNode_nonLinSys)
@@ -1165,7 +1167,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             EltCrack_k = np.concatenate((to_solve_k, neg))
             EltCrack_k = np.concatenate((EltCrack_k, to_impose_k))
-
+            
             # The code below finds the indices(in the EltCrack list) of the neighbours of all the cells in the crack.
             # This is done to avoid costly slicing of the large numpy arrays while making the linear system during the
             # fixed point iterations. For neighbors that are outside the fracture, len(EltCrack) + 1 is returned.
@@ -1234,10 +1236,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     guess = np.concatenate((np.full(len(to_solve_k), avg_dw, dtype=np.float64),
                                             pf_guess_neg,
                                             pf_guess_tip))
-                        
-                # guess = 1e5 * np.ones((len(EltCrack), ), float)
-                # guess[np.arange(len(to_solve_k))] = timeStep * sum(Qin) / Fr_lstTmStp.EltCrack.size \
-                                                        # * np.ones((len(to_solve_k),), float)
 
                 inter_itr_init = [vk, np.array([], dtype=int), None]
 
@@ -1299,10 +1297,11 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             w[to_solve_k] += sol[:len(to_solve_k)]
             w[to_impose_k] = imposed_val_k
             w[neg] = wc_to_impose
-
+            
             neg_km1 = np.copy(neg)
             wc_km1 = np.copy(wc_to_impose)
             below_wc_k = np.where(w[to_solve_k] < mat_properties.wc)[0]
+            
             if len(below_wc_k) > 0:
                 # for cells where max width in w history is greater than wc
                 wHst_above_wc = np.where(Fr_lstTmStp.wHist[to_solve_k] >= mat_properties.wc)[0]
@@ -1322,10 +1321,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 if len(new_neg) == 0:
                     active_contraint = False
                 else:
-                    # if sim_properties.frontAdvancing is not 'implicit':
-                    #     print('Changing front advancing scheme to implicit due to width going negative...')
-                    #     sim_properties.frontAdvancing = 'implicit'
-                    #     return np.nan, np.nan, (np.nan, np.nan)
+                    if sim_properties.frontAdvancing is not 'implicit':
+                        print('Changing front advancing scheme to implicit due to width going negative...')
+                        sim_properties.frontAdvancing = 'implicit'
+                        return np.nan, np.nan, (np.nan, np.nan)
 
                     # cumulatively add the cells with active width constraint
                     neg = np.hstack((neg_km1, new_neg))
@@ -1333,21 +1332,38 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     for i in new_neg:
                         new_wc.append(wc_k[np.where(neg_k == i)[0]][0])
                     wc_to_impose = np.hstack((wc_km1, np.asarray(new_wc)))
+                    
                     if sim_properties.verbosity > 1:
-                        print('Iterating on cells with active width constraint...')
+                        print('adding more cells with active width constraint...')
             else:
                 active_contraint = False
+            
+            # pressure is evaluated to remove cells from the active contraint list where the fluid pressure is 
+            # larger than the confining stress
+            pf_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+            # pressure evaluated by dot product of width and elasticity matrix
+            pf_k[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
+            if sim_properties.solveDeltaP:
+                pf_k[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf_k[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+            else:
+                pf_k[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf_k[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+            
+            # removing cells where the fluid pressure is greater than the confining stress. If the cells that
+            # are removed once re-appear in the set of cells where the width is less then the minimum residual
+            # width, they are not removed. In other words, the cells are removed once.
+            to_open = np.where(pf_k[neg] > mat_properties.SigmaO[neg])[0]
+            to_open = np.setdiff1d(to_open, to_open_cumm)
+            to_open_cumm = np.concatenate((to_open_cumm, to_open))
 
-
-        pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-        # pressure evaluated by dot product of width and elasticity matrix
-        pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
-        if sim_properties.solveDeltaP:
-            pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-            pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
-        else:
-            pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-            pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+            if len(to_open) > 0:
+                neg = np.delete(neg, to_open)
+                wc_to_impose = np.delete(wc_to_impose, to_open)
+                active_contraint = True
+                
+                if sim_properties.verbosity > 1:
+                        print('removing cells from the active width constraint...')
        
 
         if perfNode_nonLinSys is not None:
@@ -1358,7 +1374,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             fully_closed = True
 
         return_data = [data_nonLinSolve, neg_km1, fully_closed]
-        return w, pf, return_data
+        return w, pf_k, return_data
 
 
 # -----------------------------------------------------------------------------------------------------------------------
