@@ -221,9 +221,13 @@ class FluidProperties:
         rheology (string):       -- string specifying rheology of the fluid. Possible options:
 
                                      - "Newtonian"
-                                     - "non-Newtonian"
+                                     - "Herschel-Bulkley" or "HBF"
+                                     - "power-law" or "PLF"
         turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account
         compressibility (float): -- the compressibility of the fluid.
+        n (float):               -- flow index of the Herschel-Bulkey fluid.
+        k (float):               -- consistency index of the Herschel-Bulkey fluid.
+        T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
 
     Attributes:
         viscosity (ndarray):     -- Viscosity of the fluid (note its different from local viscosity, see
@@ -241,6 +245,7 @@ class FluidProperties:
         k (float):               -- consistency index of the Herschel-Bulkey fluid.
         T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
         Mprime                   -- 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+        var 1 to 5               -- some variables depending upon n. Saved to avoid recomputation
 
     """
 
@@ -610,8 +615,9 @@ class SimulationProperties:
                                         will be saved.
         saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture
                                         will be saved.
-        saveEffVisc (boolean)L       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
+        saveEffVisc (boolean):       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
                                         be saved.
+        saveG (boolean):             -- if True, the coefficient G (see Zia et al. 2020) would be saved for the non-Newtonian fluid
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
         explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
