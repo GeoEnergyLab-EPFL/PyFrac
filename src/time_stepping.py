@@ -1143,27 +1143,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             perfNode_widthConstrItr = instrument_start('width constraint iteration', perfNode_nonLinSys)
 
             to_solve_k = np.setdiff1d(to_solve, neg, assume_unique=True)
-            to_impose_k = to_impose
-            imposed_val_k = imposed_val
-            # the code below finds the tip cells with corresponding closed ribbon cells and add them in the list
-            # of elements to be solved.
-            if len(neg) > 0 and len(to_impose) > 0:
-                if sim_properties.solveTipCorrRib and corr_ribbon.size != 0:
-                    if not corr_ribb_flag:
-                        # do it once
-                        tip_sorted = np.argsort(EltTip)
-                        to_impose_pstn = np.searchsorted(EltTip[tip_sorted], to_impose)
-                        ind_toImps_tip = tip_sorted[to_impose_pstn]
-                        corr_ribbon_TI = corr_ribbon[ind_toImps_tip]
-                        corr_ribb_flag = True
-
-                    toImp_neg_rib = np.asarray([], dtype=np.int)
-                    for i, elem in enumerate(to_impose):
-                        if corr_ribbon_TI[i] in neg:
-                            toImp_neg_rib = np.append(toImp_neg_rib, i)
-                    to_solve_k = np.append(to_solve_k, np.setdiff1d(to_impose[toImp_neg_rib], neg))
-                    to_impose_k = np.delete(to_impose, toImp_neg_rib)
-                    imposed_val_k = np.delete(imposed_val, toImp_neg_rib)
+            _, comm_neg, comm_to_impose = np.intersect1d(neg, to_impose, return_indices=True)
+            to_impose_k = np.delete(to_impose, comm_to_impose)
+            imposed_val_k = np.delete(imposed_val, comm_to_impose)
 
             EltCrack_k = np.concatenate((to_solve_k, neg))
             EltCrack_k = np.concatenate((EltCrack_k, to_impose_k))
