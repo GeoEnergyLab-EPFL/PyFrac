@@ -187,7 +187,7 @@ class Fracture:
         self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
         # will be overwritten by None if not required
         self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
-        self.yieldRatio = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32) 
+        self.G = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32) 
         
         if simulProp.projMethod != 'LS_continousfront':
             self.process_fracture_front()
