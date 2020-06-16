@@ -843,8 +843,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if np.isnan(w_n_plus1).any():
         exitstatus = 5
         return exitstatus, None
-
-    fluidVel = data[0][0]
+    if data[0] is not None:
+        fluidVel = data[0][0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)
@@ -913,8 +913,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
-    Fr_kplus1.effVisc = data[0][1]
-    Fr_kplus1.yieldRatio = data[0][2]
+    if data[0] is not None:
+         Fr_kplus1.effVisc = data[0][1]
+         Fr_kplus1.yieldRatio = data[0][2]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
