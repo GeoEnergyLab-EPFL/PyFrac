@@ -5,6 +5,60 @@ from properties import PlotProperties
 from matplotlib.collections import PatchCollection
 from level_set import *
 
+def plotgrid(mesh,ax):
+    # plot the 2D mesh grid
+    # set the four corners of the rectangular mesh
+    ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
+    ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
+
+    # add rectangle for each cell
+    patches = []
+    for i in range(mesh.NumberOfElts):
+        polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
+        patches.append(polygon)
+
+    # if plot_prop is None:
+    plot_prop = PlotProperties()
+    plot_prop.alpha = 0.65
+    plot_prop.lineColor = '0.5'
+    plot_prop.lineWidth = 0.2
+
+    p = PatchCollection(patches,
+                        cmap=plot_prop.colorMap,
+                        alpha=plot_prop.alpha,
+                        edgecolor=plot_prop.meshEdgeColor,
+                        linewidth=plot_prop.lineWidth)
+
+    colors = np.full((mesh.NumberOfElts,), 0.5)
+
+    p.set_array(np.array(colors))
+    ax.add_collection(p)
+    plt.axis('equal')
+
+def plot_cell_lists(mesh,list,fig=None, mycolor='g',mymarker="_",shiftx=0.01,shifty=0.01,annotate_cellName=False, grid=True):
+    """
+    use this function to plot more lists and see the difference between them
+    you can curstomize the color, the shift and the marker of the different identificators
+    """
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    plt.plot(mesh.CenterCoor[list, 0] + mesh.hx * shiftx,
+             mesh.CenterCoor[list, 1] + mesh.hy * shifty, ".",marker=mymarker, color=mycolor)
+
+    if annotate_cellName:
+        x_center = mesh.CenterCoor[list,0]
+        y_center = mesh.CenterCoor[list,1]
+        for i, txt in enumerate(list):
+            ax.annotate(txt, (x_center[i], y_center[i]))
+    if grid:
+        plotgrid(mesh, ax)
+    plt.show()
+    return fig
 
 def find_indexes_repeatd_elements(arr):
     """
@@ -299,35 +353,8 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
             for i, txt in enumerate(edges_in_anularegion):
                 ax.annotate(txt, (x_center[i], y_center[i]))
 
-
         if grid:
-            # set the four corners of the rectangular mesh
-            ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
-            ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
-
-            # add rectangle for each cell
-            patches = []
-            for i in range(mesh.NumberOfElts):
-                polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
-                patches.append(polygon)
-
-            # if plot_prop is None:
-            plot_prop = PlotProperties()
-            plot_prop.alpha = 0.65
-            plot_prop.lineColor = '0.5'
-            plot_prop.lineWidth = 0.2
-
-            p = PatchCollection(patches,
-                                cmap=plot_prop.colorMap,
-                                alpha=plot_prop.alpha,
-                                edgecolor=plot_prop.meshEdgeColor,
-                                linewidth=plot_prop.lineWidth)
-
-            colors = np.full((mesh.NumberOfElts,), 0.5)
-
-            p.set_array(np.array(colors))
-            ax.add_collection(p)
-            plt.axis('equal')
+            plotgrid(mesh, ax)
         plt.show()
         return fig
 
@@ -362,33 +389,7 @@ def plot_cells(anularegion,mesh,sgndDist_k, Ribbon,list,fig=None, annotate_cellN
         for i, txt in enumerate(anularegion):
             ax.annotate(txt, (x_center[i], y_center[i]))
     if grid:
-        # set the four corners of the rectangular mesh
-        ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
-        ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
-
-        # add rectangle for each cell
-        patches = []
-        for i in range(mesh.NumberOfElts):
-            polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
-            patches.append(polygon)
-
-        # if plot_prop is None:
-        plot_prop = PlotProperties()
-        plot_prop.alpha = 0.65
-        plot_prop.lineColor = '0.5'
-        plot_prop.lineWidth = 0.2
-
-        p = PatchCollection(patches,
-                            cmap=plot_prop.colorMap,
-                            alpha=plot_prop.alpha,
-                            edgecolor=plot_prop.meshEdgeColor,
-                            linewidth=plot_prop.lineWidth)
-
-        colors = np.full((mesh.NumberOfElts,), 0.5)
-
-        p.set_array(np.array(colors))
-        ax.add_collection(p)
-        plt.axis('equal')
+        plotgrid(mesh, ax)
     plt.show()
     return fig
 
@@ -3041,7 +3042,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         #                           list_of_yintersectionsfromzerovertex,
         #                           list_of_vertexID)
 
-        number_of_fronts
         return \
             np.asarray(global_list_of_TIPcells),\
             np.asarray(global_list_of_TIPcellsONLY), \
@@ -3066,9 +3066,8 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
 
         fully_traversed = np.setdiff1d(listofTIPcells, listofTIPcellsONLY)
         EltChannel_k = np.concatenate((EltChannel_k,fully_traversed))
-        EltChannel_k_1 = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcellsONLY)
-        if np.setdiff1d(EltChannel_k_1,EltChannel_k).size>0:
-            print("ecco")
+        #EltChannel_k_1 = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcellsONLY) #another old way of computing EltChannel_k_1
+
         EltTip_k = listofTIPcellsONLY
         EltCrack_k = np.concatenate((EltChannel_k,listofTIPcellsONLY))
 
@@ -3079,7 +3078,21 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
         # plot_as_matrix(K, mesh)
 
         if np.unique(EltCrack_k).size != EltCrack_k.size:
-            raise SystemExit('FRONT RECONSTRUCTION ERROR: the front is entering more than 1 time the same cell')
+            ## uncomment this to see the source of the error:
+            # plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
+            #                        shifty=0.01, annotate_cellName=False, grid=True)
+            # plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
+            #                        annotate_cellName=False, grid=True)
+            message = 'FRONT RECONSTRUCTION ERROR: \n the source of this error can be found because of two reasons. ' \
+                      '\n1)The first reason is that the front is entering more than 1 time the same cell ' \
+                      '\n2)The second reason is more in depth in how the scheme works.\n' \
+                      '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
+                      '    some of the tip elements they will became channel element of the previous time step. ' \
+                      '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
+                      'PS: AFTER REMOVING A POINT THE LevelSet IS RECOMPUTED BY ASSUMING THE DISTANCE \nTO THE RECONSTRUCTED FRONT' \
+                      'THIS MIGHT RESULT IN A NUMERICAL RECESSION OF THE FRONT \n BUT AT WORST IT CAN BE DETECTED AND SOLVER BY REFINEMENT'
+            raise SystemExit(message)
+
         EltRibbon_k = newRibbon
 
         # Cells status list store the status of all the cells in the domain
