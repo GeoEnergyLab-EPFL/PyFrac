@@ -385,7 +385,8 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   extreme_points=extreme_points)
                 if i == 0 and export2Json: #write ones the sampling line, assuming no remeshing
                     to_write['sampling_line_out'] = sampling_line_out.tolist()    
-                to_write[str(i)] = var_value_selected.tolist()
+                if export2Json:
+                    to_write[str(i)] = var_value_selected.tolist()
             else:
                 fig = plot_fracture_slice_interpolated(var_val_copy[i],
                                                                 mesh_list[i],
