@@ -785,11 +785,16 @@ class SimulationProperties:
         self.saveYieldRatio = simul_param.save_yield_ratio
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
+        self.doublefracture = simul_param.double_fracture_vol_contr
         self.projMethod = simul_param.proj_method
         self.enableGPU = simul_param.enable_GPU
         self.nThreads = simul_param.n_threads
         if self.projMethod not in ['ILSA_orig', 'LS_grad', 'LS_continousfront']:
             raise ValueError("Projection method is not recognised!")
+        if self.projMethod is not 'LS_continousfront' and self.doublefracture:
+            raise SystemExit('You set the option doublefracture=True but\n '
+                             'The volume control solver has been implemented \n'
+                             'only with the option projMethod==LS_continousfront activated')
 
         # fracture geometry to calculate analytical solution for plotting
         self.height = simul_param.height

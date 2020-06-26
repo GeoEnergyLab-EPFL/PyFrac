@@ -5,6 +5,99 @@ from properties import PlotProperties
 from matplotlib.collections import PatchCollection
 from level_set import *
 
+def plot_ray_tracing_numpy_results(mesh,x,y,poly,inside):
+    # inside is a binary vector containing 1 (true) and 0 (false) that results from the function ray_tracing_numpy_results
+    # x is the list of x coordinates of the points elaborated by the function ray_tracing_numpy_results
+    # y is the list of x coordinates of the points elaborated by the function ray_tracing_numpy_results
+    fig = plt.figure()
+    plt.plot(x[np.nonzero(inside)], y[np.nonzero(inside)], '.', color='Green')
+    outidx = np.setdiff1d(np.arange(inside.size), np.nonzero(inside))
+    plt.plot(x[ outidx], y[ outidx], 'x', color='Red')
+    plt.plot(poly[:, 0], poly[:, 1], '.-', color='Blue')
+    # set the four corners of the rectangular mesh
+    ax = fig.get_axes()[0]
+    ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
+    ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
+
+    # add rectangle for each cell
+    patches = []
+    for i in range(mesh.NumberOfElts):
+        polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
+        patches.append(polygon)
+
+    # if plot_prop is None:
+    plot_prop = PlotProperties()
+    plot_prop.alpha = 0.65
+    plot_prop.lineColor = '0.5'
+    plot_prop.lineWidth = 0.2
+
+    p = PatchCollection(patches,
+                        cmap=plot_prop.colorMap,
+                        alpha=plot_prop.alpha,
+                        edgecolor=plot_prop.meshEdgeColor,
+                        linewidth=plot_prop.lineWidth)
+
+    colors = np.full((mesh.NumberOfElts,), 0.5)
+
+    p.set_array(np.array(colors))
+    ax.add_collection(p)
+    plt.axis('equal')
+
+def ray_tracing_numpy(x,y,poly):
+    #
+    #
+    #
+    #
+    #
+
+    # this routine will return an array with the answer to the question:
+    # is the point xi,yi inside poly?
+    # poly is a matrix with the points making the polygon
+    # the answer is obtained by drawing an horizontal line on the right side of the point
+
+    # make the array with the answer at the points (np.bool_ : Boolean(True or False) stored as a byte)
+    # assume that the points are all outside (0 is false)
+    inside = np.zeros(x.shape[1],np.bool_)
+
+    # initializing the parameters
+    p2x = 0.0
+    p2y = 0.0
+    xints = 0.0
+    p1x,p1y = poly[0]
+    n = poly.shape[0]
+    for i in range(n+1): # i in [0,1,...,n]
+        p2x,p2y = poly[i % n] # modulo returns the first index when the element n is called (starting from 0)
+        # compute the indexes of the points from which an horizontal line might intersect with the segment
+        idx = np.nonzero((y > min(p1y,p2y)) & (y <= max(p1y,p2y)) & (x <= max(p1x,p2x)))[1] # 0 is False, 1 is True
+
+        # if the front segment is not horizontal compute the x coord of the intersection of an horizontal line and the
+        # front only in the case the front is on the right side of the point (this latter requirement is expressed by
+        # the fact that we are taking y[idx]
+        if p1y != p2y:
+            xints = (y[0,idx]-p1y)*(p2x-p1x)/(p2y-p1y)+p1x #-->this might give problems of tolerance
+
+        # if the segment is vertical switch directly from true to false and vice versa
+        if p1x == p2x:
+            inside[idx] = ~inside[idx]
+
+        # if the segment is NOT vertical you have to decide:
+        #      p1
+        #       \          outside
+        #         \
+        #           \
+        #          *--\----------->
+        #               \  *------>
+        #     inside      \
+        #                   p2
+        #
+        # if x < xints the point is inside, otherwise it is outside
+        elif not idx.size == 0 :
+            idxx = idx[x[0,idx] <= xints]
+            inside[idxx] = ~inside[idxx]
+
+        p1x,p1y = p2x,p2y
+
+    return inside
 
 def find_indexes_repeatd_elements(arr):
     """
@@ -1916,7 +2009,7 @@ def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_p
             sgndDist_k[p_center.name] = + distance_center_to_front
     return sgndDist_k
 
-def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh,recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge):
+def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh,recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0 = None):
 
         """
         description of the function.
@@ -1975,7 +2068,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if np.any(sgndDist_k[mesh.Frontlist]<0):
                 print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: i make the time step failing')
                 correct_size_of_pstv_region = [False,True]
-                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None
+                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
                 print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
                 # from utility import plot_as_matrix
@@ -1983,7 +2076,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 # K[anularegion] = sgndDist_k[anularegion]
                 # plot_as_matrix(K, mesh)
                 correct_size_of_pstv_region = [False, False]
-                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None
+                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
 
         """
         2) - define the fractures
@@ -2039,7 +2132,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             else:
                                 print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tipe i cell not found in the anularegion)')
                                 correct_size_of_pstv_region = [False, False]
-                                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None
+                                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
                     else:
                         cell_type = i_1_2_3_4_FC_type[str(next_cell_name)]
@@ -2182,6 +2275,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         list_of_xintersectionsfromzerovertex =[]
         list_of_yintersectionsfromzerovertex = []
         list_of_vertexID = []
+
+        # prepare the fronts_dictionary that contains the info about the different fronts
+        fronts_dictionary = {'number_of_fronts': len(list_of_Fracturelists)}
+
         """
         We need to compute first all the closed contours because is of fundamental importance the notion of
         inside or outside of the fracture for what will follow next 
@@ -2808,6 +2905,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 list_of_xintersectionsfromzerovertex.append(xintersectionsfromzerovertex)
                 list_of_yintersectionsfromzerovertex.append(yintersectionsfromzerovertex)
                 list_of_vertexID.append(vertexID)
+                fronts_dictionary['TIPcellsONLY_'+str(j)]=listofTIPcellsONLY
+                fronts_dictionary['TIPcellsANDfullytrav_' + str(j)] = listofTIPcells #HERE THE LIST OF TIP CELLS DOES NOT CONTAIN ALL THE FULLY TRAVERSED CELLS
+                fronts_dictionary['xint_' + str(j)] = xintersection
+                fronts_dictionary['yint_' + str(j)] = yintersection
 
 
 
@@ -2816,9 +2917,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             6) - find fully traversed elements and their alphas & distances 
             """
             # find the cells that have been passed completely by the front [CCPbF]
-            # you can find them by this reasoning:
+            # you can find them by the following reasoning:
             #
-            # [CCPbF] = [cells where LS<0] - [cells at the previous channell (meaning ribbon+fracture)] - [tip cells]
+            # [CCPbF] = [cells where LS<0] - [cells at the previous channel (meaning ribbon+fracture)] - [tip cells]
             #
             # "-" means: "take away the names of"
             #
@@ -2949,10 +3050,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
 
             # Cells status list store the status of all the cells in the domain
-            # update ONLY the position of the tip cells
+            # >>>>  update ONLY the position of the tip cells <<<<<
+            #todo: the updating of the cell status seems to be duplicated in the UpdateListsFromContinuousFrontRec(..)
             CellStatusNew = np.zeros(mesh.NumberOfElts, int)
             CellStatusNew[eltsChannel] = 1
-            CellStatusNew[listofTIPcells] = 2
+            for list in global_list_of_TIPcells:
+                CellStatusNew[list] = 2
             CellStatusNew[Ribbon] = 3
 
             # In principle the following check should be activated only if the front is
@@ -2991,7 +3094,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
              global_list_of_vertexpositionwithinthecell,
              global_list_of_vertexpositionwithinthecellTIPcellsONLY,
              correct_size_of_pstv_region,
-             sgndDist_k, Ffront, number_of_fronts ] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+             sgndDist_k, Ffront, number_of_fronts, fronts_dictionary ] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0=lstTmStp_EltCrack0)
         else:
             #find the number of fronts
             number_of_fronts = len(list_of_xintersections_for_all_closed_paths)
@@ -3030,6 +3133,89 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                       xinters4all_closed_paths_2,
                                       yinters4all_closed_paths_2))
 
+        # construct the informations about the cracks
+        if fronts_dictionary['number_of_fronts'] == 2:
+            if len(fullyfractured)>0: #divide the fully traversed cells from left to right
+                isfullyfractured0 =   ray_tracing_numpy(mesh.CenterCoor[fullyfractured, 0][np.newaxis],
+                                                        mesh.CenterCoor[fullyfractured, 1][np.newaxis],
+                                                        np.column_stack((fronts_dictionary['xint_0'], fronts_dictionary['yint_0'])))
+                fullyfractured0 = fullyfractured[np.nonzero(isfullyfractured0)]
+                fullyfractured1 = np.setdiff1d(fullyfractured,fullyfractured0)
+                fronts_dictionary['TIPcellsANDfullytrav_0'].extend(fullyfractured0)
+                fronts_dictionary['TIPcellsANDfullytrav_1'].extend(fullyfractured1)
+
+            indx = np.where(sgndDist_k<=0)
+            crack_cells=ray_tracing_numpy(mesh.CenterCoor[indx,0],
+                                          mesh.CenterCoor[indx,1], np.column_stack((fronts_dictionary['xint_0'],fronts_dictionary['yint_0'])))
+            #####PLOT TO CHECK THE RESULT
+            # plot_ray_tracing_numpy_results(mesh,
+            #                                mesh.CenterCoor[indx[0],0],
+            #                                mesh.CenterCoor[indx[0],1],
+            #                                np.column_stack((fronts_dictionary['xint_0'],fronts_dictionary['yint_0'])),
+            #                                crack_cells)
+            #####
+
+            fronts_dictionary['crackcells_0']=np.unique(np.concatenate((indx[0][np.where(crack_cells==1)[0]],fronts_dictionary['TIPcellsONLY_0'])))
+
+            crack_cells=ray_tracing_numpy(mesh.CenterCoor[indx,0],
+                                          mesh.CenterCoor[indx,1], np.column_stack((fronts_dictionary['xint_1'],fronts_dictionary['yint_1'])))
+            #####PLOT TO CHECK THE RESULT
+            # plot_ray_tracing_numpy_results(mesh,
+            #                                mesh.CenterCoor[indx[0],0],
+            #                                mesh.CenterCoor[indx[0],1],
+            #                                np.column_stack((fronts_dictionary['xint_1'],fronts_dictionary['yint_1'])),
+            #                                crack_cells)
+            #####
+
+            fronts_dictionary['crackcells_1']=np.unique(np.concatenate((indx[0][np.where(crack_cells==1)[0]],fronts_dictionary['TIPcellsONLY_1'])))
+            #####PLOT TO CHECK THE RESULT
+            # newindx=np.concatenate((fronts_dictionary['crackcells_1'],fronts_dictionary['crackcells_0']))
+            # crack_cells = np.ones(newindx.size,np.bool_)
+            # plot_ray_tracing_numpy_results(mesh,
+            #                                mesh.CenterCoor[newindx, 0],
+            #                                mesh.CenterCoor[newindx, 1],
+            #                                np.column_stack((np.concatenate((fronts_dictionary['xint_0'],fronts_dictionary['xint_1'])),
+            #                                                 np.concatenate((fronts_dictionary['yint_0'], fronts_dictionary['yint_1'])))),
+            #                                                 crack_cells)
+            #
+            #
+            # crack_cells = np.ones(fronts_dictionary['crackcells_0'].size, np.bool_)
+            # plot_ray_tracing_numpy_results(mesh,
+            #                                mesh.CenterCoor[fronts_dictionary['crackcells_0'], 0],
+            #                                mesh.CenterCoor[fronts_dictionary['crackcells_0'], 1],
+            #                                np.column_stack((fronts_dictionary['xint_0'],
+            #                                                 fronts_dictionary['yint_0'])),
+            #                                                 crack_cells)
+            # crack_cells = np.ones(fronts_dictionary['crackcells_1'].size, np.bool_)
+            # plot_ray_tracing_numpy_results(mesh,
+            #                                mesh.CenterCoor[fronts_dictionary['crackcells_1'], 0],
+            #                                mesh.CenterCoor[fronts_dictionary['crackcells_1'], 1],
+            #                                np.column_stack((fronts_dictionary['xint_1'],
+            #                                                 fronts_dictionary['yint_1'])),
+            #                                                 crack_cells)
+            #####
+            if lstTmStp_EltCrack0 is not None and fronts_dictionary['number_of_fronts'] == 2:
+                # check if the left fracture is always the same
+                if not np.sum(np.ndarray.astype(np.in1d(lstTmStp_EltCrack0, fronts_dictionary['crackcells_0']),int)) > 0:
+                    temp_crackcells_0 = fronts_dictionary['crackcells_0']
+                    temp_xint_0 = fronts_dictionary['xint_0']
+                    temp_TIPcellsONLY_0 = fronts_dictionary['TIPcellsONLY_0']
+                    temp_TIPcellsANDfullytrav_0 = fronts_dictionary['TIPcellsANDfullytrav_0']
+                    fronts_dictionary['crackcells_0']          = fronts_dictionary ['crackcells_1']
+                    fronts_dictionary['xint_0']                = fronts_dictionary['xint_1']
+                    fronts_dictionary['TIPcellsONLY_0']        = fronts_dictionary['TIPcellsONLY_1']
+                    fronts_dictionary['TIPcellsANDfullytrav_0']= fronts_dictionary['TIPcellsANDfullytrav_1']
+                    fronts_dictionary['crackcells_1']          = temp_crackcells_0
+                    fronts_dictionary['xint_1']                = temp_xint_0
+                    fronts_dictionary['TIPcellsONLY_1']        = temp_TIPcellsONLY_0
+                    fronts_dictionary['TIPcellsANDfullytrav_1']= temp_TIPcellsANDfullytrav_0
+        else:
+            fronts_dictionary['crackcells_0'] = None
+            fronts_dictionary['crackcells_1'] = None
+
+
+
+        #####PLOT TO CHECK THE RESULT
         # plot_final_reconstruction(mesh,
         #                           list_of_xintersections_for_all_closed_paths,
         #                           list_of_yintersections_for_all_closed_paths,
@@ -3041,7 +3227,6 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         #                           list_of_yintersectionsfromzerovertex,
         #                           list_of_vertexID)
 
-        number_of_fronts
         return \
             np.asarray(global_list_of_TIPcells),\
             np.asarray(global_list_of_TIPcellsONLY), \
@@ -3052,7 +3237,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             np.asarray(global_list_of_vertexpositionwithinthecell),\
             np.asarray(global_list_of_vertexpositionwithinthecellTIPcellsONLY), \
             correct_size_of_pstv_region,\
-            sgndDist_k, Ffront, number_of_fronts
+            sgndDist_k, Ffront, number_of_fronts, fronts_dictionary
 
 def UpdateListsFromContinuousFrontRec(newRibbon,
                                       sgndDist_k,
@@ -3068,7 +3253,7 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
         EltChannel_k = np.concatenate((EltChannel_k,fully_traversed))
         EltChannel_k_1 = np.setdiff1d(np.where(sgndDist_k<0)[0], listofTIPcellsONLY)
         if np.setdiff1d(EltChannel_k_1,EltChannel_k).size>0:
-            print("ecco")
+            raise SystemExit('FRONT RECONSTRUCTION ERROR: possible unknown bug')
         EltTip_k = listofTIPcellsONLY
         EltCrack_k = np.concatenate((EltChannel_k,listofTIPcellsONLY))
 

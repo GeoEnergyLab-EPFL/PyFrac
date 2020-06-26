@@ -300,12 +300,12 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
             ZeroVertex_with_fully_traversed, \
             ZeroVertex, \
             correct_size_of_pstv_region,\
-            sgndDist_k_temp, Ffront  ,number_of_fronts            = reconstruct_front_continuous(sgndDist,
-                                                                       band,
-                                                                       surv_cells,
-                                                                       inner_region,
-                                                                       mesh,
-                                                                       recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+            sgndDist_k_temp, Ffront, number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist,
+                                                                           band,
+                                                                           surv_cells,
+                                                                           inner_region,
+                                                                           mesh,
+                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
             if correct_size_of_pstv_region[1]:
                 exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
                 return exitstatus, None
@@ -351,6 +351,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
                                    FillFrac_tmp,
                                    sgndDist,
                                    mesh)
+        fronts_dictionary = None #todo: implement volume control with two different pressures in the fractures in the case of proj_method = 'ILSA_orig'
 
     # removing fully traversed cells from the tip cells and other lists
     newTip_indices = np.arange(len(EltTip_tmp))[np.in1d(EltTip_tmp, EltTip)]
@@ -362,7 +363,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
         raise SystemExit("No channel elements. The initial radius is probably too small!")
 
 
-    return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist, Ffront, number_of_fronts
+    return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist, Ffront, number_of_fronts, fronts_dictionary
 
 #-----------------------------------------------------------------------------------------------------------------------
 

@@ -56,8 +56,9 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                 Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint
         else:
             Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.rate_delayed_inj_pt_func(Frac.time)
-    print("\n  Qmax =   " + str(Qin.max()))
-    print("\n  Q2 =   "+str(Qin[inj_properties.delayed_second_injpoint_elem]))
+        print("\n  max value of the array Q(x,y) =   " + str(Qin.max()))
+        print("\n  Q at the delayed inj point    =   " + str(Qin[inj_properties.delayed_second_injpoint_elem]))
+
     if sim_properties.frontAdvancing == 'explicit':
 
         perfNode_explFront = instrument_start('extended front', perfNode)
@@ -147,6 +148,8 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     norm = 10.
     k = 0
 
+    previous_norm = 100 # initially set with a big value
+
     # Fracture front loop to find the correct front location
     while norm > sim_properties.tolFractFront:
         k = k + 1
@@ -184,6 +187,16 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
         if sim_properties.verbosity > 1:
             print('Norm of subsequent filling fraction estimates = ' + repr(norm))
+
+        # sometimes the code is going to fail because of the max number of iterations due to the lack of
+        # improvement of the norm
+        if norm is not np.nan:
+            if abs((previous_norm-norm)/norm) < 0.001:
+                print( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.001')
+                exitstatus = 15
+                return exitstatus, None
+            else:
+                previous_norm = norm
 
         if k == sim_properties.maxFrontItrs:
             exitstatus = 6
@@ -246,24 +259,31 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # solve for width. All of the fracture cells are solved (tip values imposed from the last time step)
     empty = np.array([], dtype=int)
-    
-    w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
+    if sim_properties.doublefracture and Fr_lstTmStp.fronts_dictionary['number_of_fronts'] == 2: # here we save the cells in the two cracks
+        doublefracturedictionary = {"number_of_fronts": Fr_lstTmStp.fronts_dictionary['number_of_fronts'],
+                                    "crackcells_0": Fr_lstTmStp.fronts_dictionary['crackcells_0'],
+                                    "crackcells_1": Fr_lstTmStp.fronts_dictionary['crackcells_1']}
+    else:
+        doublefracturedictionary = {"number_of_fronts": Fr_lstTmStp.fronts_dictionary['number_of_fronts']}
+
+    w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
                                          sim_properties,
                                          fluid_properties,
                                          mat_properties,
-                                         empty,
-                                         empty,
+                                         empty, #EltTip
+                                         empty, #partlyFilledTip
                                          C,
                                          Fr_lstTmStp.FillF[empty],
                                          Fr_lstTmStp.EltCrack,
                                          Fr_lstTmStp.InCrack,
                                          LkOff,
-                                         empty,
+                                         empty, #wTip
                                          timeStep,
                                          Qin,
                                          perfNode,
-                                         empty,
-                                         empty)
+                                         empty, #Vel
+                                         empty, #corr_ribbon
+                                         doublefracturedictionary= doublefracturedictionary)
 
     # check if the solution is valid
     if np.isnan(w_k).any() or np.isnan(p_k).any():
@@ -286,8 +306,9 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
-    Fr_kplus1.effVisc = return_data[0][1]
-    fluidVel = return_data[0][0]
+    if return_data[0]!=None:
+        Fr_kplus1.effVisc = return_data[0][1]
+        fluidVel = return_data[0][0]
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
             ReNumb, check = turbulence_check_tip(fluidVel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
@@ -548,12 +569,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             zrVertx_k_with_fully_traversed, \
             zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region, \
-            sgndDist_k_temp, Ffront,number_of_fronts  = reconstruct_front_continuous(sgndDist_k,
-                                                           front_region[pstv_region],
-                                                           Fr_lstTmStp.EltRibbon,
-                                                           Fr_lstTmStp.EltChannel,
-                                                           Fr_lstTmStp.mesh,
-                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+            sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
+                                                                          front_region[pstv_region],
+                                                                          Fr_lstTmStp.EltRibbon,
+                                                                          Fr_lstTmStp.EltChannel,
+                                                                          Fr_lstTmStp.mesh,
+                                                                          recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
             if correct_size_of_pstv_region[1]:
                 exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
                 return exitstatus, None
@@ -820,6 +842,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if np.isnan(LkOff[EltsTipNew]).any():
         exitstatus = 13
         return exitstatus, None
+    if sim_properties.doublefracture and fronts_dictionary['number_of_fronts'] == 2:
+        doublefracturedictionary = {"number_of_fronts": fronts_dictionary['number_of_fronts'],
+                                    "crackcells_0": fronts_dictionary['crackcells_0'],
+                                    "crackcells_1": fronts_dictionary['crackcells_1'],
+                                    "TIPcellsANDfullytrav_0": fronts_dictionary['TIPcellsANDfullytrav_0'],
+                                    "TIPcellsANDfullytrav_1": fronts_dictionary['TIPcellsANDfullytrav_1']}
+    else:
+        doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
 
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                        sim_properties,
@@ -837,14 +867,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                        Qin,
                                                        perfNode,
                                                        Vel_k,
-                                                       corr_ribbon)
+                                                       corr_ribbon,
+                                                       doublefracturedictionary=doublefracturedictionary)
 
     # check if the new width is valid
     if np.isnan(w_n_plus1).any():
         exitstatus = 5
         return exitstatus, None
-
-    fluidVel = data[0][0]
+    if data[0] != None:
+        fluidVel = data[0][0]
     # setting arrival time for fully traversed tip elements (new channel elements)
     Tarrival_k = np.copy(Fr_lstTmStp.Tarrival)
     max_Tarrival = np.nanmax(Tarrival_k)
@@ -882,6 +913,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.projMethod != 'LS_continousfront':
         Fr_kplus1.process_fracture_front()
     else :
+        Fr_kplus1.fronts_dictionary = fronts_dictionary
         Fr_kplus1.Ffront = Ffront
         Fr_kplus1.number_of_fronts = number_of_fronts
         if sim_properties.saveToDisk and sim_properties.saveStatisticsPostCoalescence and Fr_lstTmStp.number_of_fronts != Fr_kplus1.number_of_fronts:
@@ -913,8 +945,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
-    Fr_kplus1.effVisc = data[0][1]
-    Fr_kplus1.yieldRatio = data[0][2]
+    if data[0] != None:
+        Fr_kplus1.effVisc = data[0][1]
+        Fr_kplus1.yieldRatio = data[0][2]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -975,7 +1008,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 # -----------------------------------------------------------------------------------------------------------------------
 
 def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,
-                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon):
+                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
+                         doublefracturedictionary = None):
     """
     This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow
     equations. The system of equations are formed according to the type of solver given in the simulation properties.
@@ -1058,17 +1092,55 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     r = 0.1
                 ac = (1 - r) / r
                 C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
+            if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts']==2:
+                #compute the channel from the last time step for the two fractures
+                EltChannelFracture0 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_0'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0'])
+                EltChannelFracture1 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_1'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_1'])
+                # from utility import plot_as_matrix
+                # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+                # K[EltChannelFracture1] = 1
+                # K[EltChannelFracture0] = 2
+                # K[Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_1']] = 3
+                # K[Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0']] = 4
+                # plot_as_matrix(K, Fr_lstTmStp.mesh)
+                if EltTip.size == 0 :
+                    EltTipFracture0 = EltTip
+                    EltTipFracture1 = EltTip
+                else:
+                    EltTipFracture0 = doublefracturedictionary['TIPcellsANDfullytrav_0']
+                    EltTipFracture1 = doublefracturedictionary['TIPcellsANDfullytrav_1']
+                wtipindexFR0 = np.where(np.in1d(EltTip, EltTipFracture0))[0]
+                wtipindexFR1 = np.where(np.in1d(EltTip, EltTipFracture1))[0]
+                wTipFR0 = wTip[wtipindexFR0]
+                wTipFR1 = wTip[wtipindexFR1]
+                QinFR0=Qin[EltChannelFracture0]
+                QinFR1=Qin[EltChannelFracture1]
 
-            A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
-                                                    wTip,
-                                                    Fr_lstTmStp.EltChannel,
-                                                    EltTip,
-                                                    mat_properties.SigmaO,
-                                                    C,
-                                                    timeStep,
-                                                    Qin,
-                                                    Fr_lstTmStp.mesh.EltArea,
-                                                    LkOff)
+                A, b = MakeEquationSystem_volumeControl_double_fracture(Fr_lstTmStp.w,
+                                                                        wTipFR0,
+                                                                        wTipFR1,
+                                                                        EltChannelFracture0,
+                                                                        EltChannelFracture1,
+                                                                        EltTipFracture0,
+                                                                        EltTipFracture1,
+                                                                        mat_properties.SigmaO,
+                                                                        C,
+                                                                        timeStep,
+                                                                        QinFR0,
+                                                                        QinFR1,
+                                                                        Fr_lstTmStp.mesh.EltArea,
+                                                                        LkOff)
+            else:
+                A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
+                                                        wTip,
+                                                        Fr_lstTmStp.EltChannel,
+                                                        EltTip,
+                                                        mat_properties.SigmaO,
+                                                        C,
+                                                        timeStep,
+                                                        Qin,
+                                                        Fr_lstTmStp.mesh.EltArea,
+                                                        LkOff)
 
             # regain original C (without filling fraction correction)
             C[np.ix_(EltTip[partlyFilledTip], EltTip[partlyFilledTip])] = C_EltTip
@@ -1107,11 +1179,21 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 w[Fr_lstTmStp.mesh.symmetricElts[wTip_sym_elts[i]]] = wTip_sym[i]
         else:
             w = np.copy(Fr_lstTmStp.w)
-            w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
-            w[EltTip] = wTip
+            if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts'] == 2:
+                w[EltChannelFracture0] += sol[np.arange(EltChannelFracture0.size)]
+                w[EltChannelFracture1] += sol[np.arange(EltChannelFracture0.size,EltChannelFracture0.size+EltChannelFracture1.size)]
+                w[EltTipFracture0] = wTipFR0
+                w[EltTipFracture1] = wTipFR1
+            else:
+                w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+                w[EltTip] = wTip
 
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-        p[EltCrack] = sol[-1]
+        if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts'] == 2:
+            p[doublefracturedictionary['crackcells_0']] = sol[-2]
+            p[doublefracturedictionary['crackcells_1']] = sol[-1]
+        else:
+            p[EltCrack] = sol[-1]
 
         return_data = (None, np.asarray([]), False)
         return w, p, return_data
@@ -1530,12 +1612,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             zrVertx_k_with_fully_traversed, \
             zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region,\
-            sgndDist_k_temp, Ffront,number_of_fronts      = reconstruct_front_continuous(sgndDist_k,
-                                                                       front_region[pstv_region],
-                                                                       Fr_lstTmStp.EltRibbon,
-                                                                       Fr_lstTmStp.EltChannel,
-                                                                       Fr_lstTmStp.mesh,
-                                                                       recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+            sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
+                                                                          front_region[pstv_region],
+                                                                          Fr_lstTmStp.EltRibbon,
+                                                                          Fr_lstTmStp.EltChannel,
+                                                                          Fr_lstTmStp.mesh,
+                                                                          recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
             if correct_size_of_pstv_region[1]:
                 exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
                 return exitstatus, None
@@ -1799,7 +1882,14 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # set leak off to zero if pressure below pore pressure
     LkOff[Fr_lstTmStp.pFluid <= mat_properties.porePressure] = 0.
-
+    if sim_properties.doublefracture and fronts_dictionary['number_of_fronts'] == 2:
+        doublefracturedictionary = {"number_of_fronts": fronts_dictionary['number_of_fronts'],
+                                    "crackcells_0": fronts_dictionary['crackcells_0'],
+                                    "crackcells_1": fronts_dictionary['crackcells_1'],
+                                    "TIPcellsANDfullytrav_0": fronts_dictionary['TIPcellsANDfullytrav_0'],
+                                    "TIPcellsANDfullytrav_1": fronts_dictionary['TIPcellsANDfullytrav_1']}
+    else:
+         doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                        sim_properties,
                                                        fluid_properties,
@@ -1816,7 +1906,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                        Qin,
                                                        perfNode,
                                                        Vel_k,
-                                                       corr_ribbon)
+                                                       corr_ribbon,
+                                                       doublefracturedictionary = doublefracturedictionary)
 
     # check if the new width is valid
     if np.isnan(w_n_plus1).any():
@@ -1861,6 +1952,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if sim_properties.projMethod != 'LS_continousfront':
         Fr_kplus1.process_fracture_front()
     else :
+        Fr_kplus1.fronts_dictionary = fronts_dictionary
         Fr_kplus1.Ffront = Ffront
         Fr_kplus1.number_of_fronts = number_of_fronts
         if sim_properties.saveToDisk and sim_properties.saveStatisticsPostCoalescence and Fr_lstTmStp.number_of_fronts != Fr_kplus1.number_of_fronts:
