@@ -368,6 +368,10 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
     if not return_time:
         return variable_list
     else:
+        # from utility import plot_as_matrix
+        # K = np.zeros((i.mesh.NumberOfElts,), )
+        # K[:] = variable_list[0].transpose()
+        # plot_as_matrix(K, i.mesh)
         return variable_list, time_srs
 
 

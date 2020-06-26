@@ -83,6 +83,7 @@ symmetric = False                       # if True, only positive quarter of the 
 enable_GPU = False                      # if True, GPU will be use to do the dense matrix vector product.
 n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
 proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
+double_fracture_vol_contr = False       # enable the volume control solver for two fractures
 
 # AM adapted to define Chi in tip cells and tip regime in adjacent cells
 save_chi = False

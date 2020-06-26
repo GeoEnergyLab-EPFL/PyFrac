@@ -382,20 +382,21 @@ suitable_elements ={
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
                     "enabled during the simulation. Enable saving it through simulation properties."
 
-TS_errorMessages = ["Propagation not attempted!",
-                     "Time step successful!",
-                     "Evaluated level set is not valid!",
-                     "Front is not tracked correctly!",
-                     "Evaluated tip volume is not valid!",
-                     "Solution obtained from the elastohydrodynamic solver is not valid!",
-                     "Did not converge after max iterations!",
-                     "Tip inversion is not correct!",
-                     "Ribbon element not found in the enclosure of the tip cell!",
-                     "Filling fraction not correct!",
-                     "Toughness iteration did not converge!",
-                     "projection could not be found!",
-                     "Reached end of grid!",
-                     "Leak off can't be evaluated!",
-                     "fracture fully closed"
+TS_errorMessages = [ "Propagation not attempted!",           #0
+                     "Time step successful!",                #1
+                     "Evaluated level set is not valid!",    #2
+                     "Front is not tracked correctly!",      #3
+                     "Evaluated tip volume is not valid!",   #4
+                     "Solution obtained from the elastohydrodynamic solver is not valid!", #5
+                     "Did not converge after max iterations!",                             #6
+                     "Tip inversion is not correct!",                                      #7
+                     "Ribbon element not found in the enclosure of the tip cell!",         #8
+                     "Filling fraction not correct!",                                      #9
+                     "Toughness iteration did not converge!",                              #10
+                     "projection could not be found!",                                     #11
+                     "Reached end of grid!",                                               #12
+                     "Leak off can't be evaluated!",                                       #13
+                     "fracture fully closed",                                              #14
+                     "iterating more is not leading the iterations on the front position to converge!" #15
                     ]
 
