@@ -263,6 +263,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         doublefracturedictionary = {"number_of_fronts": Fr_lstTmStp.fronts_dictionary['number_of_fronts'],
                                     "crackcells_0": Fr_lstTmStp.fronts_dictionary['crackcells_0'],
                                     "crackcells_1": Fr_lstTmStp.fronts_dictionary['crackcells_1']}
+    elif sim_properties.projMethod != 'LS_continousfront':
+        doublefracturedictionary = {"number_of_fronts": 1}
     else:
         doublefracturedictionary = {"number_of_fronts": Fr_lstTmStp.fronts_dictionary['number_of_fronts']}
 
@@ -848,6 +850,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                     "crackcells_1": fronts_dictionary['crackcells_1'],
                                     "TIPcellsANDfullytrav_0": fronts_dictionary['TIPcellsANDfullytrav_0'],
                                     "TIPcellsANDfullytrav_1": fronts_dictionary['TIPcellsANDfullytrav_1']}
+    elif sim_properties.projMethod != 'LS_continousfront':
+        doublefracturedictionary = {"number_of_fronts": 1}
     else:
         doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
 
@@ -1888,6 +1892,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                     "crackcells_1": fronts_dictionary['crackcells_1'],
                                     "TIPcellsANDfullytrav_0": fronts_dictionary['TIPcellsANDfullytrav_0'],
                                     "TIPcellsANDfullytrav_1": fronts_dictionary['TIPcellsANDfullytrav_1']}
+    elif sim_properties.projMethod != 'LS_continousfront':
+        doublefracturedictionary = {"number_of_fronts": 1}
     else:
          doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
