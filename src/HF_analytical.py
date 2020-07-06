@@ -175,7 +175,7 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, inj_point, R=None, t=None, requ
 
     if required[2] == '1':
         p = np.zeros((Mesh.NumberOfElts,))
-        rho = (Mesh.CenterCoor[:, 0] ** 2 + Mesh.CenterCoor[:, 1] ** 2) ** 0.5 / R # normalized distance from center
+        rho = ((Mesh.CenterCoor[:, 0] - inj_point[0]) ** 2 + (Mesh.CenterCoor[:, 1] - inj_point[1]) ** 2) ** 0.5 / R # normalized distance from center
         actvElts = np.where(rho <= 1)[0] # active cells (inside fracture)
         warnings.filterwarnings("ignore")
 
@@ -258,7 +258,7 @@ def Mp_vertex_solution(Eprime, V0, muPrime, R=None, t=None, required='111111'):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None, required='111111'):
+def K_vertex_solution(Kprime, Eprime, Q0, mesh, inj_point, R=None, t=None, required='111111'):
     """
     Analytical solution for toughness dominated (K vertex) fracture propagation, given current radius or time. The
     solution does not take leak off into account.
@@ -296,7 +296,7 @@ def K_vertex_solution(Kprime, Eprime, Q0, mesh, R=None, t=None, required='111111
 
     if required[3] == '1':
         w = np.zeros((mesh.NumberOfElts,))
-        rad = (mesh.CenterCoor[:, 0] ** 2 + mesh.CenterCoor[:, 1] ** 2) ** 0.5 # distance from center
+        rad = ((mesh.CenterCoor[:, 0] - inj_point[0]) ** 2 + (mesh.CenterCoor[:, 1] - inj_point[1]) ** 2) ** 0.5 # distance from center
         actvElts = np.where(rad < R) # active cells (inside fracture)
         w[actvElts] = (3 / 8 / np.pi) ** 0.2 * (Q0 * Kprime ** 4 * t / Eprime ** 4) ** 0.2 * (
                       1 - (rad[actvElts] / R) ** 2) ** 0.5
@@ -932,7 +932,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
     elif regime == 'Mp':
         t, r, p, w, v, actvElts = Mp_vertex_solution(Eprime, Vinj, muPrime, length, t, required)
     elif regime == 'K':
-        t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, length, t, required)
+        t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, inj_point, length, t, required)
     elif regime == 'Mt':
         t, r, p, w, v, actvElts = Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, mesh, length, t, required)
     elif regime == 'Kt':
