@@ -238,22 +238,24 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     empty = np.array([], dtype=int)
     
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp,
-                                         sim_properties,
-                                         fluid_properties,
-                                         mat_properties,
-                                         empty,
-                                         empty,
-                                         C,
-                                         Fr_lstTmStp.FillF[empty],
-                                         Fr_lstTmStp.EltCrack,
-                                         Fr_lstTmStp.InCrack,
-                                         LkOff,
-                                         empty,
-                                         timeStep,
-                                         Qin,
-                                         perfNode,
-                                         empty,
-                                         empty)
+                                                 sim_properties,
+                                                 fluid_properties,
+                                                 mat_properties,
+                                                 Fr_lstTmStp.EltTip,
+                                                 np.arange(len(Fr_lstTmStp.EltTip)),
+                                                 C,
+                                                 Fr_lstTmStp.FillF,
+                                                 Fr_lstTmStp.EltCrack,
+                                                 Fr_lstTmStp.InCrack,
+                                                 LkOff,
+                                                 Fr_lstTmStp.w[Fr_lstTmStp.EltTip],
+                                                 timeStep,
+                                                 Qin,
+                                                 perfNode,
+                                                 empty,
+                                                 empty)
+    if (w_k < 0).any():
+        print('Neg width encountered!')
 
     # check if the solution is valid
     if np.isnan(w_k).any() or np.isnan(p_k).any():
