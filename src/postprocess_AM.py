@@ -8,7 +8,7 @@ import re
 import sys
 import csv
 from postprocess_fracture import *
-import pandas as pd
+#import pandas as pd
 
 from utility import ReadFracture
 from HF_analytical import HF_analytical_sol, get_fracture_dimensions_analytical
@@ -108,10 +108,10 @@ def load_shutin_numerical_values(properties,fracture_list):
                                             - the theoretical time of arrest
 
     """
-    if os.path.isfile(properties[3]._SimulationProperties__outputAddress+'/num_data.csv'):
-        df = pd.read_csv(properties[3]._SimulationProperties__outputAddress+'/num_data.csv',
-                               header=None,squeeze=True)
-        num_results_all = df.values.tolist()
+    # if os.path.isfile(properties[3]._SimulationProperties__outputAddress+'/num_data.csv'):
+    #     df = pd.read_csv(properties[3]._SimulationProperties__outputAddress+'/num_data.csv',
+    #                            header=None,squeeze=True)
+    #     num_results_all = df.values.tolist()
 
     num_results = [None] * 8
 
@@ -145,22 +145,22 @@ def load_shutin_numerical_values(properties,fracture_list):
     intercepts = get_front_intercepts(fracture_list, [0,0])
     num_results[3] = (intercepts[-1][3] - intercepts[-1][2])/2
 
-    if 'num_results_all' in locals():
-        if any(num_results[0] in sl for sl in num_results_all):
-            ind_csv = next(i for i,v in enumerate(num_results_all) if num_results[0] in v)
-            num_results_all[ind_csv] = num_results
-        else:
-            num_results_all.append(num_results)
-
-        with open(properties[3]._SimulationProperties__outputAddress + '/num_data.csv', "w", newline="") as f:
-            writer = csv.writer(f)
-            for item in num_results_all:
-                writer.writerow(item)
-
-    else:
-        with open(properties[3]._SimulationProperties__outputAddress+'/num_data.csv', "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(num_results)
+    # if 'num_results_all' in locals():
+    #     if any(num_results[0] in sl for sl in num_results_all):
+    #         ind_csv = next(i for i,v in enumerate(num_results_all) if num_results[0] in v)
+    #         num_results_all[ind_csv] = num_results
+    #     else:
+    #         num_results_all.append(num_results)
+    #
+    #     with open(properties[3]._SimulationProperties__outputAddress + '/num_data.csv', "w", newline="") as f:
+    #         writer = csv.writer(f)
+    #         for item in num_results_all:
+    #             writer.writerow(item)
+    #
+    # else:
+    #     with open(properties[3]._SimulationProperties__outputAddress+'/num_data.csv', "w", newline="") as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow(num_results)
 
     return num_results
 

@@ -411,12 +411,12 @@ class InjectionProperties:
         #     actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
         #                                               old_mesh.CenterCoor[i, 1]))
 
-        actv_cells = np.asarray([1])
+        actv_cells = np.asarray([])
         for i in self.sourceElem:
             actv_cells = np.append(actv_cells, new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
                                                           old_mesh.CenterCoor[i, 1]))
 
-        self.sourceElem = list(actv_cells[1::])
+        self.sourceElem = list(np.unique(actv_cells.astype(np.int64)))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
