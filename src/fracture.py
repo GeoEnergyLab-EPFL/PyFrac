@@ -775,38 +775,3 @@ class Fracture:
         Fr_coarse.wHist = wHist_coarse
 
         return Fr_coarse
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-    def update_tip_regime(self, mat_prop, fluid_prop, timeStep):
-        """
-        This function calculates the color of the tip regime and the coordinate within the parametric triangle of the
-        tip asymptotes.
-        """
-
-        beta_mtilde = 4 / (15 ** (1/4) * (2 ** (1/2) - 1) ** (1/4))
-        beta_m = 2 ** (1/3) * 3 ** (5/6)
-
-        vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
-
-        wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * self.sgndDist[self.EltRibbon] ** (1/2)
-        wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3) * self.sgndDist[self.EltRibbon] ** (2/3)
-        wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime ** 2 / mat_prop.Eprime ** 2) \
-                  ** (1/8) * self.sgndDist[self.EltRibbon] ** (5/8)
-
-        nk = wk / (self.w[self.EltRibbon] - wk)
-        nm = wm / (self.w[self.EltRibbon] - wm)
-        nmtilde = wmtilde / (self.w[self.EltRibbon] - wmtilde)
-
-        Nk = nk / (nk + nm + nmtilde)
-        Nm = nm / (nk + nm + nmtilde)
-        Nmtilde = nmtilde / (nk + nm + nmtilde)
-
-        coor_tilde = np.asarray([1/2, 3 ** (1/2) / 2])
-        coor_k = np.asarray([1, 0])
-
-        xtr = coor_tilde[1] * Nmtilde + coor_k[1] * Nk
-        ytr = coor_tilde[2] * Nmtilde + coor_k[2] * Nk
-
-        self.regime_color = np.transpose(np.vstack(Nk, Nmtilde, Nm))
-        self.regime_coord = np.transpose(np.vstack(xtr, ytr))
