@@ -88,7 +88,6 @@ plot_at_sol_time_series = True          # plot when the time is in the requested
 
 # AM adapted to define Chi in tip cells and tip regime in adjacent cells
 save_chi = False
-save_tip_regime = False
 
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry.
