@@ -124,30 +124,6 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                 actual_ki = 2 * mat_properties.Cprime * mat_properties.Eprime / \
                             (np.sqrt(np.asarray(i)) * mat_properties.Kprime)
                 var_val_list.append(actual_ki.tolist())
-        elif variable == 'tip_tri':
-            width_list, time_list = get_fracture_variable(fracture_list,
-                                                        'w',
-                                                        edge=edge,
-                                                        return_time=True)
-            vel_list, time_list = get_fracture_variable(fracture_list,
-                                                        'v',
-                                                        edge=edge,
-                                                        return_time=True)
-            tip_tri = []
-            for i in range(len(width_list)):
-                width = np.full((fracture_list[i].mesh.NumberOfElts,), np.nan)
-                width[fracture_list[i].EltRibbon] = width_list[i][fracture_list[i].EltRibbon]
-                if fracture_list[i].sgndDist_last is not None:
-                    nk = np.asarray(width) - mat_properties.Kprime / mat_properties.Eprime * fracture_list[i].sgndDist_last ** (1/2) #/ \
-                        #(width - mat_properties.Kprime / mat_properties.Eprime * fracture_list[i].sgndDist ** (1/2))
-                    # nmt = mat_properties.Kprime / mat_properties.Eprime * fracture_list[i].sgndDist ** (1/2)
-                    # nm =
-                    # Nk =
-                    # Nm =
-                    # Nmt =
-                tip_tri.append(width)
-
-            var_val_list = tip_tri
         else:
             var_val_list, time_list = get_fracture_variable(fracture_list,
                                                             variable,
@@ -2320,7 +2296,6 @@ def save_images_to_video(image_folder, video_name='movie'):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def remove_zeros(var_value, mesh):
-
     zero = np.full(mesh.NumberOfElts, False, dtype=bool)
     zero[abs(var_value) < 3 * np.finfo(float).eps] = True
     for i in range(mesh.NumberOfElts-1):

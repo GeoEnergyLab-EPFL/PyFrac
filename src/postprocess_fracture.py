@@ -227,6 +227,28 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
 
+    elif variable == 'pressure gradient x' or variable == 'dpdx':
+        for i in fracture_list:
+            dpdxLft = (i.pNet[i.EltCrack] - i.pNet[i.mesh.NeiElements[i.EltCrack, 0]]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 0]]
+            dpdxRgt = (i.pNet[i.mesh.NeiElements[i.EltCrack, 1]] - i.pNet[i.EltCrack]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 1]]
+            dpdx = np.full((i.mesh.NumberOfElts, ),0.0)
+            dpdx[i.EltCrack] = np.mean([dpdxLft, dpdxRgt], axis=0)
+            variable_list.append(dpdx)
+            time_srs.append(i.time)
+
+    elif variable == 'pressure gradient y' or variable == 'dpdy':
+        for i in fracture_list:
+            dpdyBtm = (i.pNet[i.EltCrack] - i.pNet[i.mesh.NeiElements[i.EltCrack, 2]]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 2]]
+            dpdxtop = (i.pNet[i.mesh.NeiElements[i.EltCrack, 3]] - i.pNet[i.EltCrack]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 3]]
+            dpdy = np.full((i.mesh.NumberOfElts, ),0.0)
+            dpdy[i.EltCrack] = np.mean([dpdyBtm, dpdxtop], axis=0)
+            variable_list.append(dpdy)
+            time_srs.append(i.time)
+
     elif variable == 'fluid flux as vector field' or variable == 'ffvf':
         if fracture_list[-1].fluidFlux_components is None:
             raise SystemExit(err_var_not_saved)
