@@ -574,6 +574,7 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
                 IntrsctTri = 0
 
             integral[i] = TriVol - UpTriVol - RtTriVol + IntrsctTri
+
         if projMethod == 'LS_continousfront' and function == 'A' and integral[i]/ mesh.EltArea > 1.+1e-4:
             print("COMPUTATION OF THE FILLING FRACTION: Recomputing Integral over cell --> if something else goes wrong the tip volume might be the problem")
             if abs(alpha[i]) < np.pi / 2 : alpha[i]=0
@@ -745,3 +746,4 @@ def leak_off_stagnant_tip(Elts, l, alpha, vrtx_arr_time, current_time, Cprime, t
     LkOff = 2 * Cprime[Elts] * (t_since_arrival ** 0.5 - t_since_arrival_lstTS ** 0.5) * area
 
     return LkOff
+>>>>>>> Added the possibility to plot pressure gradients (rudimentary).
