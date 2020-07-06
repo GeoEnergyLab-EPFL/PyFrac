@@ -542,10 +542,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     #     exitstatus = 10
     #     return exitstatus, None
 
-    if sim_properties.saveRegime:
-        regime = find_regime(w_k, Fr_lstTmStp, mat_properties, sim_properties, timeStep, Kprime_k,
-                             -sgndDist_k[Fr_lstTmStp.EltRibbon])
-
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
     if sim_properties.projMethod == 'ILSA_orig':
@@ -946,8 +942,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+
     if sim_properties.saveRegime:
-        Fr_kplus1.regime = regime
+        regime = find_regime(w_k, Fr_lstTmStp, mat_properties, fluid_properties, sim_properties, timeStep, Kprime_k,
+                             -sgndDist_k[Fr_lstTmStp.EltRibbon])
+        Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
+        Fr_kplus1.regime =regime
+
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
     if data[0] != None:
         Fr_kplus1.effVisc = data[0][1]
@@ -2128,11 +2129,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         regime[Fr_lstTmStp.EltRibbon] = find_regime(Fr_kplus1.w,
                                                     Fr_lstTmStp,
                                                     mat_properties,
+                                                    fluid_properties,
                                                     sim_properties,
                                                     timeStep,
                                                     Kprime_k,
                                                     -sgndDist_k[Fr_lstTmStp.EltRibbon])
         Fr_kplus1.regime = regime
+        Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
