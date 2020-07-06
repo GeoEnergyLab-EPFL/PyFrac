@@ -792,8 +792,11 @@ class Fracture:
                                  / mat_prop.Eprime ** 2) ** (1 / 8) * (-self.sgndDist[self.EltRibbon]) ** (5 / 8)
 
         nk = wk / (self.w[self.EltRibbon] - wk)
+        nk[np.where(nk < 0)] = 0
         nm = wm / (self.w[self.EltRibbon] - wm)
+        nm[np.where(nm < 0)] = 0
         nmtilde = wmtilde / (self.w[self.EltRibbon] - wmtilde)
+        nmtilde[np.where(nmtilde < 0)] = 0
 
         Nk = nk / (nk + nm + nmtilde)
         Nm = nm / (nk + nm + nmtilde)
