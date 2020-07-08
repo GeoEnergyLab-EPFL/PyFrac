@@ -123,6 +123,11 @@ class Controller:
            print("Fluid viscosity is zero. Setting solver to volume control...")
            self.sim_prop.set_volumeControl(True)
 
+        if not all(elem in self.fracture.EltChannel for elem in Injection_prop.sourceElem):
+            message = 'INJECTION LOCATION ERROR: \n' \
+                      'injection points are located outisde of the fracture footprints'
+            raise SystemExit(message)
+
         # Setting whether sparse matrix is used to make fluid conductivity matrix
         if Sim_prop.solveSparse is None:
            if Fracture.mesh.NumberOfElts < 2500:
@@ -581,6 +586,9 @@ class Controller:
                                                                        projection='2D',
                                                                        fig=self.Figures[index],
                                                                        plot_prop=plot_prop)
+                        # plotting source elements
+                        plot_injection_source(self.fracture,
+                                              fig=self.Figures[index])
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
