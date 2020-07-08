@@ -51,11 +51,11 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     if inj_properties.delayed_second_injpoint_elem is not None:
         if inj_properties.rate_delayed_inj_pt_func is None:
             if Frac.time >= inj_properties.injectionTime_delayed_second_injpoint:
-                Qin[inj_properties.delayed_second_injpoint_elem]=inj_properties.injectionRate_delayed_second_injpoint
+                Qin[inj_properties.delayed_second_injpoint_elem]= inj_properties.injectionRate_delayed_second_injpoint/len(inj_properties.delayed_second_injpoint_elem)
             else:
-                Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint
+                Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint/len(inj_properties.delayed_second_injpoint_elem)
         else:
-            Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.rate_delayed_inj_pt_func(Frac.time)
+            Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.rate_delayed_inj_pt_func(Frac.time)/len(inj_properties.delayed_second_injpoint_elem)
         print("\n  max value of the array Q(x,y) =   " + str(Qin.max()))
         print("\n  Q at the delayed inj point    =   " + str(Qin[inj_properties.delayed_second_injpoint_elem]))
 
