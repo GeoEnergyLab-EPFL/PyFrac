@@ -392,6 +392,8 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     inTip = np.zeros((mesh.NumberOfElts,), bool)
     inTip[eltsTip] = True
     i = 0
+
+    #todo: the while below is probably inserting a bug - found it with poor resolution and volume control
     while i < len(eltsTip):  # to remove a special case encountered in sharp edges and rectangular cells
         neighbors = mesh.NeiElements[eltsTip[i]]
         if inTip[neighbors[0]] and inTip[neighbors[3]] and inTip[neighbors[3] - 1]:
@@ -439,6 +441,12 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
             zeroVrtx[i] = 2
 
     eltsRibbon = np.setdiff1d(eltsRibbon, eltsTip)
+    if np.any(levelSet[eltsRibbon]>0):
+        print("WARNING: There is a bug here you should find a solution")
+    # plot for checking
+    # from continuous_front_reconstruction import plot_cell_lists
+    # fig = plot_cell_lists(mesh, eltsTip, mymarker='.', mycolor='red')
+    # fig = plot_cell_lists(mesh, eltsRibbon, fig=fig, mymarker='.', mycolor='b', shiftx=0.08)
 
     # Cells status list store the status of all the cells in the domain
     CellStatusNew = np.zeros(mesh.NumberOfElts, int)
