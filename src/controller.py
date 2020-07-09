@@ -495,7 +495,7 @@ class Controller:
 
         in_req_TSrs = False
         # current time in the time series given at which the solution is to be evaluated
-        if self.sim_prop.get_solTimeSeries() is not None:
+        if self.sim_prop.get_solTimeSeries() is not None and  self.sim_prop.plotATsolTimeSeries :
             if Fr_advanced.time in self.sim_prop.get_solTimeSeries():
                 in_req_TSrs = True
 
