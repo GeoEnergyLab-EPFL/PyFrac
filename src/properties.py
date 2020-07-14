@@ -394,7 +394,7 @@ class InjectionProperties:
             self.rate_delayed_inj_pt_func=rate_delayed_inj_pt_func
 
         if initial_rate_delayed_second_injpoint is not None:
-            self.init_rate_delayed_second_injpoint = initial_rate_delayed_second_injpoint
+            self.init_rate_delayed_second_injpoint = np.asarray(initial_rate_delayed_second_injpoint)
         else:
             self.init_rate_delayed_second_injpoint = 0
 

@@ -257,7 +257,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
                 time_srs.append(i.time)
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
-                
+
     elif variable == 'effective viscosity' or variable == 'ev':
         if fracture_list[-1].effVisc is None:
             raise SystemExit(err_var_not_saved)
