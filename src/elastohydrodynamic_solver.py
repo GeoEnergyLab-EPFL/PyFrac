@@ -1632,7 +1632,7 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def pressure_gradient_form_pressure(w, pf, sigma0, Mesh, EltCrack, InCrack):
+def pressure_gradient_form_pressure( pf, Mesh, EltCrack, InCrack):
     """
     This function gives the pressure gradient at the cell edges evaluated with the pressure
     """
@@ -1657,7 +1657,7 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
     """
     if muPrime != 0:
         dp = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
-        (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient_form_pressure(w, pf, sigma0, Mesh, EltCrack, InCrack)
+        (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient_form_pressure( pf, Mesh, EltCrack, InCrack)
         # dp = [dpdxLft , dpdxRgt, dpdyBtm, dpdyTop, dpdyLft, dpdyRgt, dpdxBtm, dpdxTop]
         dp[0, EltCrack] = dpdxLft
         dp[1, EltCrack] = dpdxRgt
