@@ -407,7 +407,6 @@ class InjectionProperties:
             else:
                 raise ValueError("Bad specification of the delayed injection point"
                                  " it should be a np.array prescribing the coordinates of the point.")
-            raise ValueError("Delayed injection point: uknown location")
         elif delayed_second_injpoint_loc_func is not None:
             self.delayed_second_injpoint_loc_func = delayed_second_injpoint_loc_func
             if self.sourceElem is None:
