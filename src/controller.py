@@ -280,7 +280,7 @@ class Controller:
                 self.fullyClosed = False
 
                 # set front advancing back as set in simulation properties originally if velocity becomes available.
-                if np.max(Fr_n_pls1.v) > 0 and not np.isnan(Fr_n_pls1.v).any() and len(Fr_n_pls1.closed) == 0:
+                if np.max(Fr_n_pls1.v) > 0 and not np.isnan(Fr_n_pls1.v).any():
                     self.sim_prop.frontAdvancing = copy.copy(self.frontAdvancing)
                 else:
                     self.sim_prop.frontAdvancing = 'implicit'
