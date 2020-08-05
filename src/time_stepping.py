@@ -275,7 +275,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
-    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
+    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
+    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
     Fr_kplus1.effVisc = return_data[0][1]
     Fr_kplus1.G = return_data[0][2]
     fluidVel = return_data[0][0]
@@ -891,7 +892,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     if sim_properties.saveRegime:
         Fr_kplus1.regime = regime
-    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
+    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
+    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
     Fr_kplus1.effVisc = data[0][1]
     Fr_kplus1.G = data[0][2]
 
@@ -1303,10 +1305,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 if len(new_neg) == 0:
                     active_contraint = False
                 else:
-                    if sim_properties.frontAdvancing is not 'implicit':
-                        print('Changing front advancing scheme to implicit due to width going negative...')
-                        sim_properties.frontAdvancing = 'implicit'
-                        return np.nan, np.nan, (np.nan, np.nan)
+                    # if sim_properties.frontAdvancing is not 'implicit':
+                    #     print('Changing front advancing scheme to implicit due to width going negative...')
+                    #     sim_properties.frontAdvancing = 'implicit'
+                    #     return np.nan, np.nan, (np.nan, np.nan)
 
                     # cumulatively add the cells with active width constraint
                     neg = np.hstack((neg_km1, new_neg))
@@ -1989,7 +1991,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
-    Fr_kplus1.source = np.where(Qin != 0)[0]
+    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
+    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
 
     if sim_properties.saveRegime:
         regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)
