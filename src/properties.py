@@ -413,7 +413,7 @@ class InjectionProperties:
                 self.sourceElem = []
                 self.delayed_second_injpoint_elem = []
             for i in range(mesh.NumberOfElts):
-                if self.delayed_second_injpoint_loc_func(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                if self.delayed_second_injpoint_loc_func(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx, mesh.hy):
                     self.sourceElem.append(i)
                     self.delayed_second_injpoint_elem.append(i)
 
@@ -446,7 +446,7 @@ class InjectionProperties:
             self.sourceLocFunc = source_loc_func
             if self.sourceElem is None: self.sourceElem = []
             for i in range(mesh.NumberOfElts):
-                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx,mesh.hy):
                  self.sourceElem.append(i)
         if self.delayed_second_injpoint_elem is not None and not all(elem in self.sourceElem for elem in self.delayed_second_injpoint_elem) :
             raise ValueError("The delayed injection points elements are not contained in the list of all the injection elements")
