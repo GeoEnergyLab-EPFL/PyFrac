@@ -404,6 +404,7 @@ class InjectionProperties:
             if isinstance(delayed_second_injpoint_loc, np.ndarray):
                 self.delayed_second_injpoint_Coordinates = delayed_second_injpoint_loc
                 self.delayed_second_injpoint_elem = [mesh.locate_element(self.delayed_second_injpoint_Coordinates[0], self.delayed_second_injpoint_Coordinates[1])]
+                self.delayed_second_injpoint_loc_func = None
             else:
                 raise ValueError("Bad specification of the delayed injection point"
                                  " it should be a np.array prescribing the coordinates of the point.")
@@ -419,6 +420,7 @@ class InjectionProperties:
 
         else:
             self.delayed_second_injpoint_elem = None
+            self.delayed_second_injpoint_loc_func = None
 
 
         if source_loc_func is None:
@@ -516,9 +518,19 @@ class InjectionProperties:
         else:
             self.sourceElem = []
             for i in range(new_mesh.NumberOfElts):
-                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
                  self.sourceElem.append(i)
 
+        if  self.delayed_second_injpoint_loc_func is not None:
+            if self.sourceElem is None:
+                self.sourceElem = []
+                self.delayed_second_injpoint_elem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.delayed_second_injpoint_loc_func(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
+                    self.sourceElem.append(i)
+                    self.delayed_second_injpoint_elem.append(i)
+        else:
+            self.delayed_second_injpoint_elem = None
         
         if self.sinkLocFunc is not None:
             
