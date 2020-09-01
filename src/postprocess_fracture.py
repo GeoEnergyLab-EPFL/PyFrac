@@ -1263,7 +1263,7 @@ def get_fracture_geometric_parameters(fr_list, properties):
     iter = 0
 
     for jk in fr_list:
-        left, right = get_Ffront_as_vector(jk)[1:]
+        left, right = get_Ffront_as_vector(jk, properties)[1:]
 
         if left.shape[0] == right.shape[0]:
             breadth = np.vstack((np.abs(left - right)[::, 0], left[::, 1]))
@@ -1323,12 +1323,12 @@ def get_Ffront_as_vector(frac, properties):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_fp(fr_list):
+def get_fracture_fp(fr_list, properties):
     fp_list = []
     iter = 0
 
     for jk in fr_list:
-        fp_list.append(get_Ffront_as_vector(jk)[0])
+        fp_list.append(get_Ffront_as_vector(jk, properties)[0])
         iter = iter + 1
 
     return fp_list
