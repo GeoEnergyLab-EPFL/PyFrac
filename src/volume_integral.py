@@ -746,4 +746,3 @@ def leak_off_stagnant_tip(Elts, l, alpha, vrtx_arr_time, current_time, Cprime, t
     LkOff = 2 * Cprime[Elts] * (t_since_arrival ** 0.5 - t_since_arrival_lstTS ** 0.5) * area
 
     return LkOff
->>>>>>> Added the possibility to plot pressure gradients (rudimentary).
