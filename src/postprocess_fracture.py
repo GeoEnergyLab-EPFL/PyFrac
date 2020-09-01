@@ -1253,7 +1253,6 @@ def write_properties_csv_file(file_name, properties):
     output_list_np = np.asarray(output_list)
     np.savetxt(file_name, output_list_np, delimiter=',')
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_geometric_parameters(fr_list, properties):
