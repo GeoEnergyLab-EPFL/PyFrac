@@ -961,7 +961,14 @@ def write_fracture_mesh_csv_file(file_name, mesh_list):
         file_name = file_name + '.csv'
 
     return_list_np = np.asarray(return_list)
-    np.savetxt(file_name, return_list_np, delimiter=',')
+    # np.savetxt(file_name, return_list_np, delimiter=',')
+
+    import csv
+    # write EltCrack file
+    file2 = open(file_name, 'w')
+    writer2 = csv.writer(file2)
+    writer2.writerows(return_list_np)
+    file2.close()
 
 #-----------------------------------------------------------------------------------------------------------------------
 
