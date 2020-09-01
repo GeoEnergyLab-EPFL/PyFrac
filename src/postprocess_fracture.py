@@ -1129,3 +1129,83 @@ def write_properties_csv_file(file_name, properties):
 
     output_list_np = np.asarray(output_list)
     np.savetxt(file_name, output_list_np, delimiter=',')
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_fracture_geometric_parameters(fr_list, properties):
+    max_breadth = np.full((len(fr_list), 1), np.nan)
+    avg_breadth = np.full((len(fr_list), 1), np.nan)
+    height = np.full((len(fr_list), 1), np.nan)
+    iter = 0
+
+    for jk in fr_list:
+        left, right = get_Ffront_as_vector(jk)[1:]
+
+        if left.shape[0] == right.shape[0]:
+            breadth = np.vstack((np.abs(left - right)[::, 0], left[::, 1]))
+        else:
+            breadth = np.vstack((np.abs(left[:np.min((left.shape[0], right.shape[0])), :] -
+                                        right[:np.min((left.shape[0], right.shape[0])), :])[:, 0],
+                                 np.vstack((left[:np.min((left.shape[0], right.shape[0])), 1],
+                                            right[:np.min((left.shape[0], right.shape[0])), 1]))
+                                 [np.argmin((left.shape[0], right.shape[0])), :]))
+
+        max_breadth[iter] = np.max(breadth[0, ::])
+        avg_breadth[iter] = np.mean(breadth[0, ::])
+
+        height[iter] = np.abs(np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                              np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
+
+        iter = iter + 1
+
+    return height, max_breadth, avg_breadth
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_Ffront_as_vector(frac, properties):
+    inj_p = properties[2].sourceCoordinates
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] <= inj_p[0], frac.Ffront[::, 1] <= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] <= inj_p[0], frac.Ffront[::, 3] <= inj_p[1]]), axis=0)
+    lowLef = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    lowLef = lowLef[np.flip(lowLef[:, 1].argsort()), ::]
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] >= inj_p[0], frac.Ffront[::, 1] <= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] >= inj_p[0], frac.Ffront[::, 3] <= inj_p[1]]), axis=0)
+    lowRig = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    lowRig = lowRig[lowRig[:, 1].argsort(), ::]
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] <= inj_p[0], frac.Ffront[::, 1] >= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] <= inj_p[0], frac.Ffront[::, 3] >= inj_p[1]]), axis=0)
+    upLef = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    upLef = upLef[np.flip(upLef[:, 1].argsort()), ::]
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] >= inj_p[0], frac.Ffront[::, 1] >= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] >= inj_p[0], frac.Ffront[::, 3] >= inj_p[1]]), axis=0)
+    upRig = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    upRig = upRig[upRig[:, 1].argsort(), ::]
+
+    Ffront = np.concatenate((lowLef, lowRig, upRig, upLef, np.asarray([lowLef[0, :]])), axis=0)
+
+    left = np.concatenate((lowLef, upLef), axis=0)
+    left = np.unique(left, axis=0)[np.unique(left, axis=0)[::, 1].argsort(), ::]
+
+    right = np.concatenate((lowRig, upRig), axis=0)
+    right = np.unique(right, axis=0)[np.unique(right, axis=0)[::, 1].argsort(), ::]
+
+    return Ffront, left, right
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_fracture_fp(fr_list):
+    fp_list = []
+    iter = 0
+
+    for jk in fr_list:
+        fp_list.append(get_Ffront_as_vector(jk)[0])
+        iter = iter + 1
+
+    return fp_list
