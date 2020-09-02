@@ -313,21 +313,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in fracture_list:
             # coordinate of the zero vertex in the tip cells
-            #vertex_coord_tip = i.mesh.VertexCoor[i.mesh.Connectivity[i.EltTip, i.ZeroVertex]]
-            front_intersect_dist = np.sqrt((i.Ffront[::,[0,2]].flatten() - source_loc[0]) ** 2
-                                           + (i.Ffront[::,[1,3]].flatten() - source_loc[1]) ** 2)
+            front_intersect_dist = np.sqrt((i.Ffront[::, [0, 2]].flatten() - i.mesh.CenterCoor[i.source[0]]) ** 2
+                                           + (i.Ffront[::, [1, 3]].flatten() - i.mesh.CenterCoor[i.source[0]]) ** 2)
             if variable == 'front_dist_mean' or variable == 'd_mean':
                 variable_list.append(np.mean(front_intersect_dist))
-            #    variable_list.append(np.mean((vertex_coord_tip[:, 0] ** 2 +
-            #                                  vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             elif variable == 'front_dist_max' or variable == 'd_max':
                 variable_list.append(np.max(front_intersect_dist))
-            #    variable_list.append(max((vertex_coord_tip[:, 0] ** 2 +
-            #                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             elif variable == 'front_dist_min' or variable == 'd_min':
                 variable_list.append(np.min(front_intersect_dist))
-            #    variable_list.append(min((vertex_coord_tip[:, 0] ** 2 +
-            #                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
             time_srs.append(i.time)
     elif variable == 'mesh':
         for i in fracture_list:
@@ -362,6 +355,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
             y_len = np.max(y_coords) - np.min(y_coords)
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
+
     elif variable == 'chi':
         for i in fracture_list:
             vel = np.full((i.mesh.NumberOfElts,), np.nan)
@@ -371,13 +365,15 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
 
 
     elif variable == 'regime':
-        for i in fracture_list:
-            if hasattr(i, 'regime'):
-                variable_list.append(i.regime)
+        legend_coord = []
+        if hasattr(fracture_list[0], 'regime_color'):
+            for i in fracture_list:
+                legend_coord.append(i.regime_coord)
+                variable_list.append(i.regime_color)
                 time_srs.append(i.time)
-            else:
-                raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
-                                 ' See the saveRegime falg of SimulationProperties class.')
+        else:
+            raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
+                             ' See the saveRegime falg of SimulationProperties class.')
 
     elif variable == 'source elements' or variable == 'se':
         for fr in fracture_list:
@@ -389,11 +385,9 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
 
     if not return_time:
         return variable_list
+    elif variable == 'regime':
+        return variable_list, legend_coord, time_srs
     else:
-        # from utility import plot_as_matrix
-        # K = np.zeros((i.mesh.NumberOfElts,), )
-        # K[:] = variable_list[0].transpose()
-        # plot_as_matrix(K, i.mesh)
         return variable_list, time_srs
 
 

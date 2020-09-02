@@ -1552,15 +1552,16 @@ def check_covergance(solk, solkm1, indices, tol):
     #     norm_tr = 0.
 
     w_normalization = np.linalg.norm(solkm1[indices[0]])
-    if w_normalization >0.:
+    if w_normalization > 0.:
         norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
-    else : norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+    else:
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
 
     p_normalization = np.linalg.norm(solkm1[indices[1]])
-    if p_normalization >0.:
+    if p_normalization > 0.:
         norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
-    else : norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
-    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
+    else:
+        norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
 
     if len(indices[2]) > 0: #these are the cells with the active width constraints
         tr_normalization = np.linalg.norm(solkm1[indices[2]])
@@ -1568,12 +1569,10 @@ def check_covergance(solk, solkm1, indices, tol):
             norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / tr_normalization)
         else:
             norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
-    else :
+    else:
         norm_tr = 0.
 
-
     norm = (norm_w + norm_p + norm_tr) / 3
-    # print("w " + repr(norm_w) + " p " + repr(norm_p) + " act " + repr(norm_tr))
 
     converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
 
