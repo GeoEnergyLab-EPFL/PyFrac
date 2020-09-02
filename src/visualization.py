@@ -16,8 +16,6 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import copy
-from HF_analytical import Mp_vertex_solution
-import numpy as np
 
 # local imports
 from postprocess_fracture import *
@@ -114,7 +112,6 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
             fig = plot_injection_source(fr, fig=fig, plot_prop=plot_prop)
 
     else:
-        # AM: adapted to plot ki in tip cells and tip asymptotic regimes (need to be rethink where to put it)
         if variable == 'chi':
             vel_list, time_list = get_fracture_variable(fracture_list,
                                                             'v',
@@ -125,6 +122,14 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                 actual_ki = 2 * mat_properties.Cprime * mat_properties.Eprime / \
                             (np.sqrt(np.asarray(i)) * mat_properties.Kprime)
                 var_val_list.append(actual_ki.tolist())
+
+        elif variable == 'regime':
+            var_val_list, legend_coord, time_list = get_fracture_variable(fracture_list,
+                                                            variable,
+                                                            edge=edge,
+                                                            return_time=True,
+                                                            source_loc=source_loc)
+
         else:
             var_val_list, time_list = get_fracture_variable(fracture_list,
                                                             variable,
@@ -156,8 +161,14 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                         i_min, i_max = np.min(i), np.max(i)
                     vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
+    if variable == 'regime':
+        for i in range(len(var_val_list)):
+            fig = plot_regime(var_val_copy[i],
+                              fracture_list[i].mesh,
+                              elements=fracture_list[i].EltRibbon,
+                              fig=fig)
 
-    if variable in unidimensional_variables:
+    elif variable in unidimensional_variables:
         fig = plot_variable_vs_time(time_list,
                                     var_val_list,
                                     fig=fig,
@@ -1043,56 +1054,6 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
                                                 plot_prop.dispPrecision) + ')')
 
     ax_slice.set_xticklabels(xtick_labels)
-    if vmin is not None and vmax is not None:
-        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
-
-    return fig
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def plot_fracture_slice_GC_Mp(var_value, mesh, fig=None, plot_prop=None, vmin=None,
-                                     vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True):
-    """
-    This function plots the analytical solution for a finite pulse.
-
-    Args:
-        var_value (ndarray):                -- a ndarray with the length of the number of cells in the mesh.
-        mesh (CartesianMesh):               -- a CartesianMesh object giving the descritization of the domain.
-        point1 (list or ndarray):           -- the left point from which the slice should pass [x, y].
-        point2 (list or ndarray):           -- the right point from which the slice should pass [x, y].
-        fig (Figure):                       -- the figure to superimpose on. New figure will be made if not provided.
-        plot_prop (PlotProperties):         -- the properties to be used for the plot.
-        vmin (float):                       -- the minimum value to be used to colormap and make the colorbar.
-        vmax (float):                       -- the maximum value to be used to colormap and make the colorbar.
-        plot_colorbar (bool):               -- if True, colorbar will be plotted.
-        labels (LabelProperties):           -- the labels to be used for the plot.
-        plt_2D_image (bool):                -- if True, a subplot showing the colormap and the slice will also be
-                                                plotted.
-
-    Returns:
-        (Figure):                           -- A Figure object that can be used superimpose further plots.
-
-    """
-
-    print("Plotting slice...")
-    if fig is None:
-        fig = plt.figure()
-        ax_slice = fig.add_subplot(111)
-    else:
-        if len(fig.get_axes()) > 1:
-            ax_slice = fig.get_axes()[1]
-        else:
-            ax_slice = fig.get_axes()[0]
-
-    if plot_prop is None:
-        plot_prop = PlotProperties()
-
-    ax_slice.plot(mesh,
-                  var_value,
-                  plot_prop.lineStyle,
-                  color=plot_prop.lineColor)
-
     if vmin is not None and vmax is not None:
         ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
 
@@ -2338,3 +2299,33 @@ def get_elements(specifier, fr):
         return fr.EltChannel
     elif specifier == 'tip':
         return fr.EltTip
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_regime(var_value, mesh, fig=None, elements=None):
+
+    x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
+    y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
+
+    dx = (x[0, 1] - x[0, 0]) / 2.
+    dy = (y[1, 0] - y[0, 0]) / 2.
+    extent = [x[0, 0] - dx, x[-1, -1] + dx, y[0, 0] - dy, y[-1, -1] + dy]
+
+    if elements is not None:
+        var_value_fullMesh = np.full((mesh.NumberOfElts, 3), 1.)
+        var_value_fullMesh[elements, ::] = var_value[elements, ::]
+        var_value = var_value_fullMesh
+
+    var_value_2D = var_value.reshape((mesh.ny, mesh.nx, 3))
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    cax = ax.imshow(var_value_2D,
+          extent=extent,
+          origin='lower')
+
+    return fig

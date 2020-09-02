@@ -68,8 +68,6 @@ class Fracture:
         muPrime (ndarray):          -- local viscosity parameter
         Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
                                        cells. Each row contains the x and y coordinates of the two points.
-        regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
-                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018, IJF)
         regime_color (ndarray):     -- RGB color code of the regime on Dontsov and Peirce, 2017
         regime_coord (ndarray):     -- x and y in the triangle.
         ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
@@ -197,11 +195,9 @@ class Fracture:
 
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
         if simulProp.saveRegime:
-            self.regime = np.full((mesh.NumberOfElts,), np.nan, dtype=np.float32)
-            self.regime_color = np.full((mesh.NumberOfElts, 3), np.nan, dtype=np.float32)
+            self.regime_color = np.full((mesh.NumberOfElts, 3), 1, dtype=np.float32)
             self.regime_coord = np.full((mesh.NumberOfElts, 2), np.nan, dtype=np.float32)
         else:
-            self.regime = None
             self.regime_color = None
             self.regime_coord = None
 
@@ -797,10 +793,10 @@ class Fracture:
 
         vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
 
-        wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * self.sgndDist[self.EltRibbon] ** (1/2)
-        wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3) * self.sgndDist[self.EltRibbon] ** (2/3)
-        wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime ** 2 / mat_prop.Eprime ** 2) \
-                  ** (1/8) * self.sgndDist[self.EltRibbon] ** (5/8)
+        wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * (-self.sgndDist[self.EltRibbon]) ** (1/2)
+        wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3) * (-self.sgndDist[self.EltRibbon]) ** (2/3)
+        wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime[self.EltRibbon] ** 2
+                                 / mat_prop.Eprime ** 2) ** (1/8) * (-self.sgndDist[self.EltRibbon]) ** (5/8)
 
         nk = wk / (self.w[self.EltRibbon] - wk)
         nm = wm / (self.w[self.EltRibbon] - wm)
@@ -816,5 +812,6 @@ class Fracture:
         xtr = coor_tilde[0] * Nmtilde + coor_k[0] * Nk
         ytr = coor_tilde[1] * Nmtilde + coor_k[1] * Nk
 
-        self.regime_color[self.EltRibbon,::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
-        self.regime_coord[self.EltRibbon,::] = np.transpose(np.vstack((xtr, ytr)))
+        self.regime_color = np.full((self.mesh.NumberOfElts, 3), 1, dtype=np.float32)
+        self.regime_color[self.EltRibbon, ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
+        self.regime_coord[self.EltRibbon, ::] = np.transpose(np.vstack((xtr, ytr)))
