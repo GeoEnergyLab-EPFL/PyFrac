@@ -941,10 +941,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
 
     if sim_properties.saveRegime:
-        regime = find_regime(w_k, Fr_lstTmStp, mat_properties, fluid_properties, sim_properties, timeStep, Kprime_k,
-                             -sgndDist_k[Fr_lstTmStp.EltRibbon])
+        # regime = find_regime(w_k, Fr_lstTmStp, mat_properties, fluid_properties, sim_properties, timeStep, Kprime_k,
+        #                      -sgndDist_k[Fr_lstTmStp.EltRibbon])
         Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
-        Fr_kplus1.regime =regime
+        # Fr_kplus1.regime =regime
 
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
     if data[0] != None:
@@ -2122,16 +2122,16 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if sim_properties.saveRegime:
-        regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)
-        regime[Fr_lstTmStp.EltRibbon] = find_regime(Fr_kplus1.w,
-                                                    Fr_lstTmStp,
-                                                    mat_properties,
-                                                    fluid_properties,
-                                                    sim_properties,
-                                                    timeStep,
-                                                    Kprime_k,
-                                                    -sgndDist_k[Fr_lstTmStp.EltRibbon])
-        Fr_kplus1.regime = regime
+        # regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)
+        # regime[Fr_lstTmStp.EltRibbon] = find_regime(Fr_kplus1.w,
+        #                                             Fr_lstTmStp,
+        #                                             mat_properties,
+        #                                             fluid_properties,
+        #                                             sim_properties,
+        #                                             timeStep,
+        #                                             Kprime_k,
+        #                                             -sgndDist_k[Fr_lstTmStp.EltRibbon])
+        # Fr_kplus1.regime = regime
         Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
 
     if fluid_properties.turbulence:
