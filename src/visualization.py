@@ -2307,21 +2307,40 @@ def get_elements(specifier, fr):
 
 
 def plot_regime(var_value, mesh, fig=None, elements=None):
+    """
+       This function plots the fracture regime with the color code defined by Dontsov. Plotting is done at the ribbon
+       cells. The colorbar is replaced by the colorcoded triangle.
 
+       Args:
+           var_value (list):                   -- List containing the color code at the tip.
+           mesh (object):                      -- mesh of the current timestep
+           fig (figure):                       -- Figure of the current footprint
+           elements (ndarray):                 -- the elements to be plotted.
+
+        Return:
+           fig (figure):                       -- Adapted figure
+
+       """
+
+    # getting the extent of the figure
     x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
     y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
 
     dx = (x[0, 1] - x[0, 0]) / 2.
     dy = (y[1, 0] - y[0, 0]) / 2.
+
     extent = [x[0, 0] - dx, x[-1, -1] + dx, y[0, 0] - dy, y[-1, -1] + dy]
 
+    # selecting only the relevant elements
     if elements is not None:
         var_value_fullMesh = np.full((mesh.NumberOfElts, 3), 1.)
         var_value_fullMesh[elements, ::] = var_value[elements, ::]
         var_value = var_value_fullMesh
 
+    # re-arrange the solution for plotting
     var_value_2D = var_value.reshape((mesh.ny, mesh.nx, 3))
 
+    # use footprint if provided
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -2334,11 +2353,13 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
         for line in l:
             plt.plot(line.get_data()[0],line.get_data()[1],'k')
 
+    # plotting the colored cells
     ax = fig.get_axes()[0]
     ax.imshow(var_value_2D,
               extent=extent,
               origin='lower')
 
+    # plotting the triangle with the location of the tip cells
     leg = fig.add_subplot(122)
     leg = mkmtTriangle(leg)
     leg = fill_mkmtTriangle(leg)
@@ -2346,10 +2367,17 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
 
     return fig
 
-# The following function is drawing the Maxwell's triangle :
 def mkmtTriangle(fig):
+    """
+       This function draws the Maxwell triangle used to higlight the regime dominant in the ribbon cell.
+
+       Args:
+           fig (figure):               -- The figure to place the Maxwell triangle in.
+
+       """
+
+    # Plot the triangle
     a = 1.0 / math.sqrt(3)
-    #scatter([1, 0.5, 0], [0, 0.5/a, 0], s=40, c=[(1, 0, 0), (0, 1, 0), (0, 0, 1)])
     fig.plot([0., 1., 0.5, 0.], [0., 0., 0.5/a, 0], 'k-')
     fig.axis([-0.25, 1.2, -0.2, 1.05])
     # Remove axes
@@ -2363,13 +2391,23 @@ def mkmtTriangle(fig):
 
     return fig
 
-# The following function is coloring the interior of the Maxwell's triangle
 def fill_mkmtTriangle(fig):
+    """
+       This function colors the Maxwell triangle used to highlight the regime dominant in the ribbon cell.
+
+       Args:
+           fig (figure):               -- The figure with the Maxwell triangle to color.
+
+       """
+
+    # Generate an image with 300x300 pixels
     Nlignes = 300
     Ncol = 300
     img = np.zeros((Nlignes, Ncol, 4))
     dx = 2.0 / (Ncol - 1)
     dy = 1.0 / (Nlignes - 1)
+
+    # choose color of pixels.
     for i in range(Ncol - 1):
         for j in range(Nlignes - 1):
             x = -1.0 + i * dx
@@ -2388,18 +2426,26 @@ def fill_mkmtTriangle(fig):
 
 def plot_points_to_mkmtTriangle(fig, rgbpoints):
     """
-    This function plots a set of points in the m-k-mtilde triangle
-    The points should be given as:
+       This function plots a set of points in the m-k-mtilde triangle
 
-    """
+       Args:
+           fig (figure):               -- The figure with the Maxwell triangle to place the points.
+           rgbpoints (ndarraz):        -- Color code in RGB of the points to plot.
+
+       """
+
+    
     nOFpoits = rgbpoints.shape[0]
     x = np.zeros(nOFpoits)
     y = np.zeros(nOFpoits)
+    
+    # Transform color into coordinates
     a = 1.0 / math.sqrt(3)
     for k in range(nOFpoits):
         rgb = rgbpoints[k,:]
         somme = rgb[0] + rgb[1] + rgb[2]
         x[k] = ( (rgb[0] - rgb[2]) / math.sqrt(3) / somme) /(2*a) + 0.5
         y[k] = 0.5/a * rgb[1] / somme
-
-    fig.plot(x, y, "k.")
+    
+    # Plot the points
+    fig.plot(x, y, "k.", markersize=16)
