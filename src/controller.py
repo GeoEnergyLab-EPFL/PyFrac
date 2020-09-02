@@ -587,7 +587,7 @@ class Controller:
                                                                        fig=self.Figures[index],
                                                                        plot_prop=plot_prop)
                         # plotting source elements
-                        plot_injection_source(self.fracture,
+                        self.Figures[index] = plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
@@ -637,7 +637,7 @@ class Controller:
                                                                        fig=self.Figures[index],
                                                                        elements=get_elements(suitable_elements[plt_var], Fr_advanced))
                         # plotting source elements
-                        plot_injection_source(self.fracture,
+                        self.Figures[index] = plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
 
                     # plotting closed cells
