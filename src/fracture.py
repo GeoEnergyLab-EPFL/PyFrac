@@ -806,6 +806,14 @@ class Fracture:
         Nm = nm / (nk + nm + nmtilde)
         Nmtilde = nmtilde / (nk + nm + nmtilde)
 
+        Nk[np.where(Nk > 1.)] = 1.
+        Nm[np.where(Nm > 1.)] = 1.
+        Nmtilde[np.where(Nmtilde > 1.)] = 1.
+        
+        Nk[np.where(Nk < 0.)] = 0.
+        Nm[np.where(Nm < 0.)] = 0.
+        Nmtilde[np.where(Nmtilde < 0.)] = 0.
+
         coor_tilde = np.asarray([1 / 2, 3 ** (1 / 2) / 2])
         coor_k = np.asarray([1, 0])
 
