@@ -16,6 +16,8 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import copy
+import pickle
+import io
 
 # local imports
 from postprocess_fracture import *
@@ -251,7 +253,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         sm._A = []
         cb = plt.colorbar(sm, alpha=plot_prop.alpha)
         cb.set_label(labels.colorbarLabel)
-    elif projection in ('2D_clrmap', '2D_contours'):
+
+    elif projection in ('2D_clrmap', '2D_contours') and variable != 'regime':
         im = ax.images
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -2318,14 +2321,85 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
         var_value = var_value_fullMesh
 
     var_value_2D = var_value.reshape((mesh.ny, mesh.nx, 3))
+
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
     else:
         ax = fig.get_axes()[0]
+        l = list(ax.get_lines())
 
-    cax = ax.imshow(var_value_2D,
-          extent=extent,
-          origin='lower')
+        fig.clf()
+        fig.add_subplot(121)
+        for line in l:
+            plt.plot(line.get_data()[0],line.get_data()[1],'k')
+
+    ax = fig.get_axes()[0]
+    ax.imshow(var_value_2D,
+              extent=extent,
+              origin='lower')
+
+    leg = fig.add_subplot(122)
+    leg = mkmtTriangle(leg)
+    leg = fill_mkmtTriangle(leg)
+    plot_points_to_mkmtTriangle(leg, var_value[elements, ::])
 
     return fig
+
+# The following function is drawing the Maxwell's triangle :
+def mkmtTriangle(fig):
+    a = 1.0 / math.sqrt(3)
+    #scatter([1, 0.5, 0], [0, 0.5/a, 0], s=40, c=[(1, 0, 0), (0, 1, 0), (0, 0, 1)])
+    fig.plot([0., 1., 0.5, 0.], [0., 0., 0.5/a, 0], 'k-')
+    fig.axis([-0.25, 1.2, -0.2, 1.05])
+    # Remove axes
+    fig.axis('off')
+    #Label the corners of the triangle
+    #rc('text', usetex=True)
+    #rc('font', family='serif')
+    fig.text(1.0, 0, r"$k$", fontsize=18, verticalalignment='top')
+    fig.text(-0.1, 0, r"$m$", fontsize=18, verticalalignment='top')
+    fig.text(0.45, 0.575/a, r"$\tilde{m}$", fontsize=18, verticalalignment='top')
+
+    return fig
+
+# The following function is coloring the interior of the Maxwell's triangle
+def fill_mkmtTriangle(fig):
+    Nlignes = 300
+    Ncol = 300
+    img = np.zeros((Nlignes, Ncol, 4))
+    dx = 2.0 / (Ncol - 1)
+    dy = 1.0 / (Nlignes - 1)
+    for i in range(Ncol - 1):
+        for j in range(Nlignes - 1):
+            x = -1.0 + i * dx
+            y = j * dy
+            v = y
+            r = (x + 1 - v) / 2.0
+            b = 1.0 - v - r
+            if (r >= 0) and (r <= 1.0) and (v >= 0) and (v <= 1.0) and (b >= 0) and (b <= 1.0):
+                img[j][i] = np.array([r, v, b, 1.0])
+            else:
+                img[j][i] = np.array([1.0, 1.0, 1.0, 0.0])
+    a = 1.0 / math.sqrt(3)
+    fig.imshow(img, origin='lower', extent=[0.0, 1, 0.0, 0.5 / a])
+
+    return fig
+
+def plot_points_to_mkmtTriangle(fig, rgbpoints):
+    """
+    This function plots a set of points in the m-k-mtilde triangle
+    The points should be given as:
+
+    """
+    nOFpoits = rgbpoints.shape[0]
+    x = np.zeros(nOFpoits)
+    y = np.zeros(nOFpoits)
+    a = 1.0 / math.sqrt(3)
+    for k in range(nOFpoits):
+        rgb = rgbpoints[k,:]
+        somme = rgb[0] + rgb[1] + rgb[2]
+        x[k] = ( (rgb[0] - rgb[2]) / math.sqrt(3) / somme) /(2*a) + 0.5
+        y[k] = 0.5/a * rgb[1] / somme
+
+    fig.plot(x, y, "k.")
