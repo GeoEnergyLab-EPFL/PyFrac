@@ -21,7 +21,28 @@ def load_isotropic_elasticity_matrix(Mesh, Ep):
         Mesh (object CartesianMesh):    -- a mesh object describing the domain.
         Ep (float):                     -- plain strain modulus.
     Returns:
-        ndarray-float:                  -- the elasticity martix.
+        ndarray-float:                  -- the elasticity matrix.
+    """
+
+    """
+    a and b are the half breadth and height of a cell
+     ___________________________________
+    |           |           |           |
+    |           |           |           |
+    |     .     |     .     |     .     |
+    |           |           |           |
+    |___________|___________|___________|
+    |           |     ^     |           |
+    |           |   b |     |           |
+    |     .     |     .<--->|     .     |
+    |           |        a  |           |
+    |___________|___________|___________|
+    |           |           |           |
+    |           |           |           |
+    |     .     |     .     |     .     |
+    |           |           |           |
+    |___________|___________|___________|
+       
     """
 
     a = Mesh.hx / 2.
@@ -166,3 +187,72 @@ def load_elasticity_matrix(Mesh, EPrime):
         return C
 
 
+# -----------------------------------------------------------------------------------------------------------------------
+
+def extend_isotropic_elasticity_matrix(new_mesh, mesh, Ep, ElMat, direction = None):
+    """
+    In the case of extension of the mesh we don't need to recalculate the entire elasticity matrix. All we need to do is
+    to map all the elements to their new index and calculate what lasts
+
+    Arguments:
+        Mesh (object CartesianMesh):    -- a mesh object describing the domain.
+        Ep (float):                     -- plain strain modulus.
+        ElMat (ndarray):                -- old, partial elasticity matrix.
+    Returns:
+        C (ndarray-float):              -- the complete elasticity matrix.
+    """
+
+    a = new_mesh.hx / 2.
+    b = new_mesh.hy / 2.
+    Ne = new_mesh.NumberOfElts
+
+    new_indexes = np.array(mapping_old_indexes(new_mesh, mesh, direction))
+
+    C = np.full((Ne, Ne), 0.0, dtype=np.float32)
+
+    C[np.ix_(new_indexes, new_indexes)] = ElMat
+
+    add_el = np.setdiff1d(np.arange(Ne), new_indexes)
+
+    for i in add_el:
+        x = new_mesh.CenterCoor[i, 0] - new_mesh.CenterCoor[:, 0]
+        y = new_mesh.CenterCoor[i, 1] - new_mesh.CenterCoor[:, 1]
+
+        C[i] = (Ep / (8. * np.pi)) * (
+                np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
+            np.square(a + x) + np.square(b - y)
+        ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
+            np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
+
+    C[np.ix_(new_indexes, add_el)] = np.transpose(C[np.ix_(add_el, new_indexes)])
+
+    return C
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+def mapping_old_indexes(new_mesh, mesh, direction = None):
+    """
+    Function to get the mapping of the indexes
+    """
+    dne = (new_mesh.NumberOfElts - mesh.NumberOfElts)
+    dnx = (new_mesh.nx - mesh.nx)
+    dny = (new_mesh.ny - mesh.ny)
+
+    old_indexes = np.array(list(range(0, mesh.NumberOfElts)))
+
+    if direction == 'top':
+        new_indexes = old_indexes
+    elif direction == 'bottom':
+        new_indexes = old_indexes + dne
+    elif direction == 'left':
+        new_indexes = old_indexes + (np.floor(old_indexes / mesh.nx) + 1) * dnx
+    elif direction == 'right':
+        new_indexes = old_indexes + np.floor(old_indexes / mesh.nx) * dnx
+    elif direction == 'horizontal':
+        new_indexes = old_indexes + (np.floor(old_indexes / mesh.nx) + 1 / 2) * dnx
+    elif direction == 'vertical':
+        new_indexes = old_indexes + dne / 2
+    else:
+        new_indexes = old_indexes + 1 / 2 * dny * new_mesh.nx + (np.floor(old_indexes / mesh.nx) + 1 / 2) * dnx
+
+    return new_indexes.astype(int)
