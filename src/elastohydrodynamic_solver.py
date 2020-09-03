@@ -1754,9 +1754,9 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     relax = sim_prop.relaxation_factor
 
     ## Initialization of solution vectors
-    xks = np.full((m_Anderson+2,guess.size),0.)
-    Fks = np.full((m_Anderson+1,guess.size),0.)
-    Gks = np.full((m_Anderson+1,guess.size),0.)
+    xks = np.full((m_Anderson+2, guess.size), 0.)
+    Fks = np.full((m_Anderson+1, guess.size), 0.)
+    Gks = np.full((m_Anderson+1, guess.size), 0.)
 
     ## Initialization of iteration parameters
     k = 0
@@ -1766,16 +1766,16 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     try:
         perfNode_linSolve = instrument_start("linear system solve", perf_node)
         # First iteration
-        xks[0,::] = np.array([guess])                                       # xo
-        (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
-        solk = np.linalg.solve(A, b)                                        # solve the linear system
-        if len(indices[3]) > 0:                                             # if the size of system is varying between \
-            Gks[0, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
-        else:
-            Gks[0, ::] = solk
-        # Gks[0, ::] = np.linalg.solve(A, b)
-        Fks[0,::] = Gks[0,::] - xks[0,::]
-        xks[1,::] = Gks[0,::]                                               # x1
+        xks[0, ::] = np.array([guess])                                       # xo
+        (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
+        # solk = np.linalg.solve(A, b)                                        # solve the linear system
+        # if len(indices[3]) > 0:                                             # if the size of system is varying between \
+        #     Gks[0, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
+        # else:
+        #     Gks[0, ::] = solk
+        Gks[0, ::] = np.linalg.solve(A, b)
+        Fks[0, ::] = Gks[0, ::] - xks[0, ::]
+        xks[1, ::] = Gks[0, ::]                                               # x1
     except np.linalg.linalg.LinAlgError:
         print('singular matrix!')
         solk = np.full((len(xks[0]),), np.nan, dtype=np.float64)
@@ -1790,27 +1790,27 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         try:
             mk = np.min([k, m_Anderson-1])  # Asses the amount of solutions available for the least square problem
             if k >= m_Anderson:# + 1:
-                (A, b, interItr, indices) = sys_fun(xks[mk + 2,::], interItr, *args)
+                (A, b, interItr, indices) = sys_fun(xks[mk + 2, ::], interItr, *args)
                 Gks = np.roll(Gks, -1, axis=0)
                 Fks = np.roll(Fks, -1, axis=0)
             else:
                 (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
             
-            solk = np.linalg.solve(A, b)
-            if len(indices[3]) > 0:                                             # if the size of system is varying between \
-                Gks[mk + 1, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
-            else:
-                Gks[mk + 1, ::] = solk
-            # Gks[mk + 1, ::] = np.linalg.solve(A, b)
+            # solk = np.linalg.solve(A, b)
+            # if len(indices[3]) > 0:                                             # if the size of system is varying between \
+            #     Gks[mk + 1, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
+            # else:
+            #     Gks[mk + 1, ::] = solk
+            Gks[mk + 1, ::] = np.linalg.solve(A, b)
             Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 
             ## Setting up the Least square problem of Anderson
             A_Anderson = np.transpose(Fks[:mk+1, ::] - Fks[mk+1, ::])
-            b_Anderson = -Fks[mk+1,::]
+            b_Anderson = -Fks[mk+1, ::]
 
             # Solving the least square problem for the coefficients
-            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
+            omega_s = np.linalg.lstsq(A_Anderson, b_Anderson, rcond=None)[0]
             omega_s = np.append(omega_s, 1.0 - sum(omega_s))
 
             ## Updating xk in a relaxed version
