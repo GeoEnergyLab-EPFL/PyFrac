@@ -2367,6 +2367,9 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
 
     return fig
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 def mkmtTriangle(fig):
     """
        This function draws the Maxwell triangle used to higlight the regime dominant in the ribbon cell.
@@ -2390,6 +2393,9 @@ def mkmtTriangle(fig):
     fig.text(0.45, 0.575/a, r"$\tilde{m}$", fontsize=18, verticalalignment='top')
 
     return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 def fill_mkmtTriangle(fig):
     """
@@ -2424,6 +2430,9 @@ def fill_mkmtTriangle(fig):
 
     return fig
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 def plot_points_to_mkmtTriangle(fig, rgbpoints):
     """
        This function plots a set of points in the m-k-mtilde triangle
@@ -2448,4 +2457,4 @@ def plot_points_to_mkmtTriangle(fig, rgbpoints):
         y[k] = 0.5/a * rgb[1] / somme
     
     # Plot the points
-    fig.plot(x, y, "k.", markersize=16)
+    fig.plot(x, y, "k.", markersize=12)

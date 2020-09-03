@@ -19,7 +19,7 @@ import warnings
 # local imports
 from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
-from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix
+from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, extend_isotropic_elasticity_matrix
 from mesh import CartesianMesh
 from time_stepping import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution,\
@@ -303,15 +303,16 @@ class Controller:
                                    <= 2 * (Fr_n_pls1.mesh.nx - 3) + 1).any(),
                                   (front_indices[front_indices >= 2 * (Fr_n_pls1.mesh.nx - 2)] % 2 == 0).any(),
                                   (front_indices[front_indices >= 2 * (Fr_n_pls1.mesh.nx - 2)] % 2 != 0).any()]
+                    direction = 'all'
                     # side_bools is a set of booleans telling us which sides are touched by the remeshing. First boolean
                     # represents bottom, top, left, right
 
+                    # This is the classical remeshing where the sides of the elements are multiplied by a constant.
                     if not np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools)).any() or \
                             len(np.asarray(side_bools)[np.asarray(np.asarray(side_bools) == True)]) > 2:
-                        self.C *= 1 / self.sim_prop.remeshFactor
                         print("Remeshing by compressing the domain...")
 
-                        # AM:
+                        # We calculate the new dimension of the meshed area
                         new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
                                                                                   self.fracture.mesh.Ly])
                         new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
@@ -321,27 +322,13 @@ class Controller:
                                        - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
                                        + new_dimensions[1]/2]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx,
-                                                    self.fracture.mesh.ny,
-                                                    symmetric=self.sim_prop.symmetric)
+                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                        self.fracture = self.fracture.remesh(self.sim_prop.remeshFactor,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
-
+                     # Here we do not actually remesh but extend the mesh towards the top and bottom
                     elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[0:2:].all():
-                        print("Remeshing by extending in the vertical direction the domain...")
+                        print("Extending the domain in the vertical direction...")
 
-                        # AM:
+                        # Deciding on how many elements we need to add and defining the new limits
                         elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor * 2 - 1))
                         if elems_add % 2 != 0:
                             elems_add = elems_add + 1
@@ -350,29 +337,12 @@ class Controller:
                                       [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hy,
                                        self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hy]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx,
-                                                    self.fracture.mesh.ny + elems_add,
-                                                    symmetric=self.sim_prop.symmetric)
+                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
+                        direction = 'vertical'
 
-                        print("Recalculating the elasticity matrix...")
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                        print("Done")
-
-                        self.fracture = self.fracture.remesh(10,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
-
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[2::].all():
-                        print("Remeshing by extending in the horizontal direction the domain...")
+                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[2:].all():
+                        print("Remeshing the domain in the horizontal direction...")
 
                         elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor * 2 - 1))
                         if elems_add % 2 != 0:
@@ -383,26 +353,9 @@ class Controller:
                                       [self.fracture.mesh.domainLimits[0],
                                        self.fracture.mesh.domainLimits[1]]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx + elems_add,
-                                                    self.fracture.mesh.ny,
-                                                    symmetric=self.sim_prop.symmetric)
+                        elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                        print("Recalculating the elasticity matrix...")
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                        print("Done")
-
-                        self.fracture = self.fracture.remesh(10,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
+                        direction = 'horizontal'
 
                     elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[0]:
                         if np.asarray(side_bools)[1]:
@@ -417,6 +370,9 @@ class Controller:
                                            self.fracture.mesh.domainLimits[3]],
                                           [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hy,
                                            self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hy]]
+
+                            direction = 'vertical'
+
                         else:
                             print("Remeshing by extending towards negative y...")
 
@@ -429,26 +385,9 @@ class Controller:
                                           [self.fracture.mesh.domainLimits[0] - elems_add * self.fracture.mesh.hy,
                                            self.fracture.mesh.domainLimits[1]]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx,
-                                                    self.fracture.mesh.ny + elems_add,
-                                                    symmetric=self.sim_prop.symmetric)
+                            direction = 'bottom'
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                        print("Recalculating the elasticity matrix...")
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                        print("Done")
-
-                        self.fracture = self.fracture.remesh(10,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
+                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
                     elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[1]:
                         if np.asarray(side_bools)[0]:
@@ -463,6 +402,9 @@ class Controller:
                                            self.fracture.mesh.domainLimits[3]],
                                           [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hy,
                                            self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hy]]
+
+                            direction = 'vertical'
+
                         else:
                             print("Remeshing by extending towards positive y...")
 
@@ -475,26 +417,9 @@ class Controller:
                                           [self.fracture.mesh.domainLimits[0],
                                            self.fracture.mesh.domainLimits[1] + elems_add * self.fracture.mesh.hy]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx,
-                                                    self.fracture.mesh.ny + elems_add,
-                                                    symmetric=self.sim_prop.symmetric)
+                            direction = 'top'
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                        print("Recalculating the elasticity matrix...")
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                        print("Done")
-
-                        self.fracture = self.fracture.remesh(10,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
+                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
                     elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[2]:
                         if np.asarray(side_bools)[3]:
@@ -504,10 +429,13 @@ class Controller:
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hx,
-                                           self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hx]]
+                            new_limits = [[self.fracture.mesh.domainLimits[2] - elems_add / 2 * self.fracture.mesh.hx,
+                                           self.fracture.mesh.domainLimits[3] + elems_add / 2 * self.fracture.mesh.hx],
+                                          [self.fracture.mesh.domainLimits[0],
+                                           self.fracture.mesh.domainLimits[1]]]
+
+                            direction = 'horizontal'
+
                         else:
                             print("Remeshing by extending towards negative x...")
 
@@ -520,26 +448,9 @@ class Controller:
                                           [self.fracture.mesh.domainLimits[0],
                                            self.fracture.mesh.domainLimits[1]]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx + elems_add,
-                                                    self.fracture.mesh.ny,
-                                                    symmetric=self.sim_prop.symmetric)
+                            direction = 'left'
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                        print("Recalculating the elasticity matrix...")
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                        print("Done")
-
-                        self.fracture = self.fracture.remesh(10,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
+                        elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
 
                     elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[3]:
                         if np.asarray(side_bools)[2]:
@@ -550,10 +461,13 @@ class Controller:
                             if elems_add % 2 != 0:
                                 elems_add = elems_add + 1
 
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hx,
-                                           self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hx]]
+                            new_limits = [[self.fracture.mesh.domainLimits[2] - elems_add / 2 * self.fracture.mesh.hx,
+                                           self.fracture.mesh.domainLimits[3] + elems_add / 2 * self.fracture.mesh.hx],
+                                          [self.fracture.mesh.domainLimits[0],
+                                           self.fracture.mesh.domainLimits[1]]]
+
+                            direction = 'horizontal'
+
                         else:
                             print("Remeshing by extending towards positive x...")
 
@@ -562,36 +476,17 @@ class Controller:
                                 elems_add = elems_add + 1
 
                             new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]] + elems_add * self.fracture.mesh.hx,
+                                           self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
                                           [self.fracture.mesh.domainLimits[0],
                                            self.fracture.mesh.domainLimits[1]]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx + elems_add,
-                                                    self.fracture.mesh.ny,
-                                                    symmetric=self.sim_prop.symmetric)
+                            direction = 'right'
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                        print("Recalculating the elasticity matrix...")
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                        print("Done")
-
-                        self.fracture = self.fracture.remesh(10,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
+                        elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
 
                     else:
-                        self.C *= 1 / self.sim_prop.remeshFactor
                         print("Remeshing by compressing the domain...")
 
-                        # AM:
                         new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
                                                                                   self.fracture.mesh.Ly])
                         new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
@@ -601,22 +496,38 @@ class Controller:
                                        - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
                                        + new_dimensions[1]/2]]
 
-                        coarse_mesh = CartesianMesh(new_limits[0],
-                                                    new_limits[1],
-                                                    self.fracture.mesh.nx,
-                                                    self.fracture.mesh.ny,
-                                                    symmetric=self.sim_prop.symmetric)
 
-                        self.solid_prop.remesh(coarse_mesh)
-                        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
+                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        self.fracture = self.fracture.remesh(self.sim_prop.remeshFactor,
-                                                             self.C,
-                                                             coarse_mesh,
-                                                             self.solid_prop,
-                                                             self.fluid_prop,
-                                                             self.injection_prop,
-                                                             self.sim_prop)
+                    # Generating the new mesh (with new limits but same number of elements)
+                    coarse_mesh = CartesianMesh(new_limits[0],
+                                                new_limits[1],
+                                                elems[0],
+                                                elems[1],
+                                                symmetric=self.sim_prop.symmetric)
+
+                    # Finalizing the transfer of information from the fine to the coarse mesh
+                    self.solid_prop.remesh(coarse_mesh)
+                    self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
+
+                    # We adapt the elasticity matrix
+                    if direction == 'all':
+                        rem_factor = self.sim_prop.remeshFactor
+                        self.C *= 1 / self.sim_prop.remeshFactor
+                    else:
+                        rem_factor = 10
+                        print("Extending the elasticity matrix...")
+                        self.C = extend_isotropic_elasticity_matrix(coarse_mesh, self.fracture.mesh
+                                                                    , self.solid_prop.Eprime, self.C
+                                                                    , direction=direction)
+
+                    self.fracture = self.fracture.remesh(rem_factor,
+                                                         self.C,
+                                                         coarse_mesh,
+                                                         self.solid_prop,
+                                                         self.fluid_prop,
+                                                         self.injection_prop,
+                                                         self.sim_prop)
 
                     self.fracture.mesh = coarse_mesh
 
@@ -626,6 +537,7 @@ class Controller:
                         with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
                             dill.dump(prop, output, -1)
                     self.remeshings += 1
+
                     print("Done!")
 
                     self.write_to_log("\nRemeshed at " + repr(self.fracture.time))
