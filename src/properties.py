@@ -1010,9 +1010,9 @@ class SimulationProperties:
         """
 
         if direction == 'vertical':
-            self.meshExtension[0::1] = True
+            self.meshExtension[:2:] = [True, True]
         elif direction == 'horizontal':
-            self.meshExtension[2::-1] = True
+            self.meshExtension[2:] = [True, True]
         elif direction == 'top':
             self.meshExtension[1] = True
         elif direction == 'bottom':

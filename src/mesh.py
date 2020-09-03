@@ -102,7 +102,7 @@ class CartesianMesh:
             self.Ly = abs(Ly[0]-Ly[1]) / 2
             ylims = np.asarray([Ly[0], Ly[1]])
 
-        self.domainLimits = np.hstack((ylims,xlims))
+        self.domainLimits = np.hstack((ylims, xlims))
 
 
         # Check if the number of cells is odd to see if the origin would be at the mid point of a single cell
@@ -534,8 +534,10 @@ class CartesianMesh:
         self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - centerMesh[0]) < self.hx/2),
                                          np.where(abs(self.CenterCoor[:, 1] - centerMesh[1]) < self.hy/2))
         if len(self.CenterElts) != 1:
+            self.CenterElts = self.NumberOfElts / 2
+            print("Mesh with no center element. To be looked into")
             #todo
-            raise ValueError("Mesh with no center element. To be looked into")
+            #raise ValueError("Mesh with no center element. To be looked into")
 
         if symmetric:
             self.corresponding = corresponding_elements_in_symmetric(self)
@@ -565,6 +567,7 @@ class CartesianMesh:
 
         if x >= self.domainLimits[3] + self.hx / 2 or y >= self.domainLimits[1] + self.hy / 2\
                 or x <= self.domainLimits[2] - self.hx / 2 or y <= self.domainLimits[0] - self.hy / 2:
+            print("Point is outside domain.")
             return np.nan
 
         return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2),
