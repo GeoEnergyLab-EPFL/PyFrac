@@ -186,48 +186,6 @@ def load_elasticity_matrix(Mesh, EPrime):
         print("Done!")
         return C
 
-
-# -----------------------------------------------------------------------------------------------------------------------
-
-def extend_isotropic_elasticity_matrix(new_mesh, mesh, Ep, ElMat, direction = None):
-    """
-    In the case of extension of the mesh we don't need to recalculate the entire elasticity matrix. All we need to do is
-    to map all the elements to their new index and calculate what lasts
-
-    Arguments:
-        Mesh (object CartesianMesh):    -- a mesh object describing the domain.
-        Ep (float):                     -- plain strain modulus.
-        ElMat (ndarray):                -- old, partial elasticity matrix.
-    Returns:
-        C (ndarray-float):              -- the complete elasticity matrix.
-    """
-
-    a = new_mesh.hx / 2.
-    b = new_mesh.hy / 2.
-    Ne = new_mesh.NumberOfElts
-
-    new_indexes = np.array(mapping_old_indexes(new_mesh, mesh, direction))
-
-    C = np.full((Ne, Ne), 0.0, dtype=np.float32)
-
-    C[np.ix_(new_indexes, new_indexes)] = ElMat
-
-    add_el = np.setdiff1d(np.arange(Ne), new_indexes)
-
-    for i in add_el:
-        x = new_mesh.CenterCoor[i, 0] - new_mesh.CenterCoor[:, 0]
-        y = new_mesh.CenterCoor[i, 1] - new_mesh.CenterCoor[:, 1]
-
-        C[i] = (Ep / (8. * np.pi)) * (
-                np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
-            np.square(a + x) + np.square(b - y)
-        ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
-            np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
-
-    C[np.ix_(new_indexes, add_el)] = np.transpose(C[np.ix_(add_el, new_indexes)])
-
-    return C
-
 # -----------------------------------------------------------------------------------------------------------------------
 
 def mapping_old_indexes(new_mesh, mesh, direction = None):
