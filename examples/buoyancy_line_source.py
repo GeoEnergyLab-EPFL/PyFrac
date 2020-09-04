@@ -16,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(100, 150, 41, 61)
+Mesh = CartesianMesh(105, 150, 43, 61)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -38,12 +38,12 @@ Solid = MaterialProperties(Mesh,
                            K_Ic,
                            confining_stress_func=sigmaO_func)
 
-def source_location(x, y):
+def source_location(x, y, hx, hy):
     """ This function is used to evaluate if a point is included in source, i.e. the fluid is injected at the given
         point.
     """
     # the condition
-    return abs(x) < 75. and (y > -80. and y < -74)
+    return abs(x) < 75 and (y >= -75. -  hy / 2. and y <= -75. + hy / 2.)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -61,7 +61,8 @@ simulProp.gravity = True                # take the effect of gravity into accoun
 # initialization parameters
 Fr_geometry = Geometry(shape='height contained',
                        fracture_length=80,
-                       fracture_height=35)
+                       fracture_height=35,
+                       center = [0, -75])
 init_param = InitializationParameters(Fr_geometry, regime='PKN')
 
 # creating fracture object

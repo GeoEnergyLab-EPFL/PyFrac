@@ -121,10 +121,9 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
 
     return surv_cells, surv_dist, inner_cells
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_rectangular_survey_cells_new(mesh, length, height, rect_center = [0.,0.], inj_point=None):
+def get_rectangular_survey_cells(mesh, length, height, center):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
     lengths and height. A list of all the cells inside the fracture is also provided.
@@ -134,7 +133,6 @@ def get_rectangular_survey_cells_new(mesh, length, height, rect_center = [0.,0.]
         length (float):                     -- the half length of the rectangle.
         height (float):                     -- the height of the rectangle.
         inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
-        rect_center (list or ndarray):      -- the coordinates [x, y] of the center of the rectangle.
 
     Returns:
         - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given rectangle.
@@ -143,92 +141,42 @@ def get_rectangular_survey_cells_new(mesh, length, height, rect_center = [0.,0.]
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
-    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]-rect_center[0]) < length)[0],
-                                 np.where(abs(mesh.CenterCoor[:, 1]-rect_center[1]) < height / 2)[0])
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[np.ix_(np.arange(0, len(mesh.CenterCoor)), [0])]
+                                              - center[0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[np.ix_(np.arange(0, len(mesh.CenterCoor)), [1])]
+                                              - center[1]) < height / 2)[0])
     max_x = max(mesh.CenterCoor[inner_cells, 0])
     min_x = min(mesh.CenterCoor[inner_cells, 0])
-    min_y = min(mesh.CenterCoor[inner_cells, 1])
     max_y = max(mesh.CenterCoor[inner_cells, 1])
-
-    ribbon_max_x = np.where(abs(mesh.CenterCoor[inner_cells, 0] - max_x) < 100 * sys.float_info.epsilon)[0]
-    ribbon_max_y = np.where(abs(mesh.CenterCoor[inner_cells, 1] - max_y) < 100 * sys.float_info.epsilon)[0]
-    ribbon_min_x = np.where(abs(mesh.CenterCoor[inner_cells, 0] - min_x) < 100 * sys.float_info.epsilon)[0]
-    ribbon_min_y = np.where(abs(mesh.CenterCoor[inner_cells, 1] - min_y) < 100 * sys.float_info.epsilon)[0]
+    min_y = min(mesh.CenterCoor[inner_cells, 1])
+    ribbon_max_x = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [0])] - max_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_min_x = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [0])] - min_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_max_y = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [1])] - max_y) < 100 * sys.float_info.epsilon)[0]
+    ribbon_min_y = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [1])] - min_y) < 100 * sys.float_info.epsilon)[0]
 
     surv_cells = np.append(inner_cells[ribbon_max_x], inner_cells[ribbon_max_y])
     surv_cells = np.append(surv_cells, inner_cells[ribbon_min_x])
     surv_cells = np.append(surv_cells, inner_cells[ribbon_min_y])
+    surv_cells = np.unique(surv_cells)
 
     surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
 
     for i in range(len(surv_cells)):
-        surv_dist[i] = min([length - abs(mesh.CenterCoor[surv_cells[i], 0]-rect_center[0]),
-                            height / 2 - abs(mesh.CenterCoor[surv_cells[i], 1] - rect_center[1])
-                            ])
+        surv_dist[i] = np.min([length - float(abs(mesh.CenterCoor[surv_cells[i], 0] - center[0])),
+                              height / 2 - float(abs(mesh.CenterCoor[surv_cells[i], 1] - center[1]))])
 
     if len(inner_cells) == 0:
         raise SystemError("The given rectangular region is too small compared to the mesh!")
 
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
-
-    # from utility import plot_as_matrix
-    # K = np.zeros((mesh.NumberOfElts,), )
-    # K[surv_cells] = surv_dist
-    # plot_as_matrix(K, mesh)
-    return surv_cells, surv_dist, inner_cells
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
-    """
-    This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
-    lengths and height. A list of all the cells inside the fracture is also provided.
-
-    Arguments:
-        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
-        length (float):                     -- the half length of the rectangle.
-        height (float):                     -- the height of the rectangle.
-        inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
-
-    Returns:
-        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given rectangle.
-        - surv_dist (ndarray)               -- the list of corresponding distances of the surv_cells to the fracture\
-                                               tip.
-        - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
-    """
-
-    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]) < length)[0],
-                                 np.where(abs(mesh.CenterCoor[:, 1]) < height / 2)[0])
-    max_x = max(abs(mesh.CenterCoor[inner_cells, 0]))
-    max_y = max(abs(mesh.CenterCoor[inner_cells, 1]))
-    ribbon_x = np.where(abs(abs(mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
-    ribbon_y = np.where(abs(abs(mesh.CenterCoor[inner_cells, 1]) - max_y) < 100 * sys.float_info.epsilon)[0]
-
-    surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
-    surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
-    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]))
-    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]))
-
-    if len(inner_cells) == 0:
-        raise SystemError("The given rectangular region is too small compared to the mesh!")
-
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
+    # if inj_point is not None:
+    #     surv_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=surv_cells)
+    #     inner_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=inner_cells)
 
     return surv_cells, surv_dist, inner_cells
 
@@ -300,9 +248,8 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
                                                                            inner_region,
                                                                            mesh,
                                                                            recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if correct_size_of_pstv_region[1]:
-                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
-                return exitstatus, None
+            if correct_size_of_pstv_region[1] or correct_size_of_pstv_region[1]:
+                raise ValueError('The mesh is to small for the proposed initiation')
 
             if not correct_size_of_pstv_region[0]:
                 raise SystemExit('FRONT RECONSTRUCTION ERROR: it is not possible to initialize the front with the given distances to the front')
@@ -749,11 +696,12 @@ class Geometry:
                                        the tip of the fracture.
         inner_cells (ndarray):      -- the cells enclosed by the cells given in the survey_cells (inclusive). In other
                                        words, the cells inside the fracture.
+        center (ndarray):           -- location of the center of the geometry.
 
     """
 
     def __init__(self, shape=None, radius=None, fracture_length=None, fracture_height=None, minor_axis=None,
-                 gamma=None, survey_cells=None, tip_distances=None, inner_cells=None):
+                 gamma=None, survey_cells=None, tip_distances=None, inner_cells=None, center=None):
         self.shape = shape
         self.radius = radius
         self.fractureLength = fracture_length
@@ -767,6 +715,7 @@ class Geometry:
         self.surveyCells = survey_cells
         self.tipDistances = tip_distances
         self.innerCells = inner_cells
+        self.center = center
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -789,6 +738,14 @@ class Geometry:
             self.minorAxis = length
         elif self.shape == 'height contained':
             self.fractureLength = length
+
+# ----------------------------------------------------------------------------------------------------------------------
+    def get_center(self):
+        if self.center == None:
+            return [0., 0.]
+        else:
+            return self.center
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -823,7 +780,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
         surv_cells, surv_dist, inner_cells = get_rectangular_survey_cells(mesh,
                                                                           geometry.fractureLength,
                                                                           geometry.fractureHeight,
-                                                                          source_coord)
+                                                                          geometry.get_center())
     elif geometry.shape == 'level set':
         surv_cells = geometry.surveyCells
         surv_dist = geometry.tipDistances
