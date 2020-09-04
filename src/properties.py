@@ -1008,23 +1008,26 @@ class SimulationProperties:
                                             - Right (mesh extension towards positive x)
                                             - vertical  (mesh extension up and down)
                                             - horizontal (mesh extension left and right)
+                                            - all (extend the mesh in all directions)
         """
-
-        if direction == 'vertical':
-            self.meshExtension[:2:] = [True, True]
-        elif direction == 'horizontal':
-            self.meshExtension[2:] = [True, True]
-        elif direction == 'top':
-            self.meshExtension[1] = True
-        elif direction == 'bottom':
-            self.meshExtension[0] = True
-        elif direction == 'left':
-            self.meshExtension[2] = True
-        elif direction == 'right':
-            self.meshExtension[3] = True
-        else: # error
-            raise ValueError('Invalid mesh extension definition Possible options: top, bottom, left, right, vertical'
-                             'or horizontal')
+        for i in direction:
+            if i == 'vertical':
+                self.meshExtension[:2:] = [True, True]
+            elif i == 'horizontal':
+                self.meshExtension[2:] = [True, True]
+            elif i == 'top':
+                self.meshExtension[1] = True
+            elif i == 'bottom':
+                self.meshExtension[0] = True
+            elif i == 'left':
+                self.meshExtension[2] = True
+            elif i == 'right':
+                self.meshExtension[3] = True
+            elif i == 'all':
+                self.meshExtension = [True, True, True, True]
+            else: # error
+                raise ValueError('Invalid mesh extension definition Possible options: top, bottom, left, right, vertical'
+                                 'horizontal or all')
 
     def get_mesh_extension_direction(self):
         return self.meshExtension

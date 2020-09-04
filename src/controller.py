@@ -19,7 +19,7 @@ import warnings
 # local imports
 from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
-from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, extend_isotropic_elasticity_matrix
+from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, mapping_old_indexes
 from mesh import CartesianMesh
 from time_stepping import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution,\
@@ -303,13 +303,12 @@ class Controller:
                                    <= 2 * (Fr_n_pls1.mesh.nx - 3) + 1).any(),
                                   (front_indices[front_indices >= 2 * (Fr_n_pls1.mesh.nx - 2)] % 2 == 0).any(),
                                   (front_indices[front_indices >= 2 * (Fr_n_pls1.mesh.nx - 2)] % 2 != 0).any()]
-                    direction = 'all'
                     # side_bools is a set of booleans telling us which sides are touched by the remeshing. First boolean
                     # represents bottom, top, left, right
 
                     # This is the classical remeshing where the sides of the elements are multiplied by a constant.
-                    if not np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools)).any() or \
-                            len(np.asarray(side_bools)[np.asarray(np.asarray(side_bools) == True)]) > 2:
+                    if not np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools)).any() or\
+                            (len(np.asarray(side_bools)[np.asarray(side_bools) == True]) > 2):
                         print("Remeshing by compressing the domain...")
 
                         # We calculate the new dimension of the meshed area
@@ -324,168 +323,88 @@ class Controller:
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                     # Here we do not actually remesh but extend the mesh towards the top and bottom
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[0:2:].all():
-                        print("Extending the domain in the vertical direction...")
+                        self.remesh(new_limits, elems)
 
-                        # Deciding on how many elements we need to add and defining the new limits
-                        elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor * 2 - 1))
-                        if elems_add % 2 != 0:
-                            elems_add = elems_add + 1
-
-                        new_limits = [[self.fracture.mesh.domainLimits[2], self.fracture.mesh.domainLimits[3]],
-                                      [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hy,
-                                       self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hy]]
-
-                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
-
-                        direction = 'vertical'
-
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[2:].all():
-                        print("Remeshing the domain in the horizontal direction...")
-
-                        elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor * 2 - 1))
-                        if elems_add % 2 != 0:
-                            elems_add = elems_add + 1
-
-                        new_limits = [[self.fracture.mesh.domainLimits[2] - elems_add / 2 * self.fracture.mesh.hx,
-                                       self.fracture.mesh.domainLimits[3]] + elems_add / 2 * self.fracture.mesh.hx,
-                                      [self.fracture.mesh.domainLimits[0],
-                                       self.fracture.mesh.domainLimits[1]]]
-
-                        elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
-
-                        direction = 'horizontal'
-
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[0]:
-                        if np.asarray(side_bools)[1]:
-                            print("Remeshing by extending towards negative y, positive y hit also so extending by half "
-                                  "the factor in vertical direction...")
-                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hy,
-                                           self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hy]]
-
-                            direction = 'vertical'
-
-                        else:
-                            print("Remeshing by extending towards negative y...")
-
-                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0] - elems_add * self.fracture.mesh.hy,
-                                           self.fracture.mesh.domainLimits[1]]]
-
-                            direction = 'bottom'
-
-                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
-
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[1]:
-                        if np.asarray(side_bools)[0]:
-                            print("Remeshing by extending towards positive y, negative y hit also so extending by half "
-                                  "the factor in vertical direction...")
-
-                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0] - elems_add / 2 * self.fracture.mesh.hy,
-                                           self.fracture.mesh.domainLimits[1] + elems_add / 2 * self.fracture.mesh.hy]]
-
-                            direction = 'vertical'
-
-                        else:
-                            print("Remeshing by extending towards positive y...")
-
-                            elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0],
-                                           self.fracture.mesh.domainLimits[1] + elems_add * self.fracture.mesh.hy]]
-
-                            direction = 'top'
-
-                        elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
-
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[2]:
-                        if np.asarray(side_bools)[3]:
-                            print("Remeshing by extending towards negative x, positive x hit also so extending by half "
-                                  "the factor in vertical direction...")
-                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2] - elems_add / 2 * self.fracture.mesh.hx,
-                                           self.fracture.mesh.domainLimits[3] + elems_add / 2 * self.fracture.mesh.hx],
-                                          [self.fracture.mesh.domainLimits[0],
-                                           self.fracture.mesh.domainLimits[1]]]
-
-                            direction = 'horizontal'
-
-                        else:
-                            print("Remeshing by extending towards negative x...")
-
-                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
-                                           self.fracture.mesh.domainLimits[3]],
-                                          [self.fracture.mesh.domainLimits[0],
-                                           self.fracture.mesh.domainLimits[1]]]
-
-                            direction = 'left'
-
-                        elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
-
-                    elif np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[3]:
-                        if np.asarray(side_bools)[2]:
-                            print("Remeshing by extending towards positive x, negative x hit also so extending by half "
-                                  "the factor in vertical direction...")
-
-                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2] - elems_add / 2 * self.fracture.mesh.hx,
-                                           self.fracture.mesh.domainLimits[3] + elems_add / 2 * self.fracture.mesh.hx],
-                                          [self.fracture.mesh.domainLimits[0],
-                                           self.fracture.mesh.domainLimits[1]]]
-
-                            direction = 'horizontal'
-
-                        else:
-                            print("Remeshing by extending towards positive x...")
-
-                            elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
-                            if elems_add % 2 != 0:
-                                elems_add = elems_add + 1
-
-                            new_limits = [[self.fracture.mesh.domainLimits[2],
-                                           self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
-                                          [self.fracture.mesh.domainLimits[0],
-                                           self.fracture.mesh.domainLimits[1]]]
-
-                            direction = 'right'
-
-                        elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
+                        side_bools = [False, False, False, False]
 
                     else:
+                        for side in range(3):
+                            if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
+                                if side == 0:
+                                    print("Remeshing by extending towards negative y...")
+
+                                    elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
+                                    if elems_add % 2 != 0:
+                                        elems_add = elems_add + 1
+
+                                    new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                   self.fracture.mesh.domainLimits[3]],
+                                                  [self.fracture.mesh.domainLimits[
+                                                       0] - elems_add * self.fracture.mesh.hy,
+                                                   self.fracture.mesh.domainLimits[1]]]
+
+                                    direction = 'bottom'
+
+                                    elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
+
+                                if side == 1:
+                                    print("Remeshing by extending towards positive y...")
+
+                                    elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
+                                    if elems_add % 2 != 0:
+                                        elems_add = elems_add + 1
+
+                                    new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                   self.fracture.mesh.domainLimits[3]],
+                                                  [self.fracture.mesh.domainLimits[0],
+                                                   self.fracture.mesh.domainLimits[
+                                                       1] + elems_add * self.fracture.mesh.hy]]
+
+                                    direction = 'top'
+
+                                    elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
+
+                                if side == 2:
+                                    print("Remeshing by extending towards negative x...")
+
+                                    elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
+                                    if elems_add % 2 != 0:
+                                        elems_add = elems_add + 1
+
+                                    new_limits = [
+                                        [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
+                                         self.fracture.mesh.domainLimits[3]],
+                                        [self.fracture.mesh.domainLimits[0],
+                                         self.fracture.mesh.domainLimits[1]]]
+
+                                    direction = 'left'
+
+                                    elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
+
+                                if side == 3:
+                                    print("Remeshing by extending towards positive x...")
+
+                                    elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
+                                    if elems_add % 2 != 0:
+                                        elems_add = elems_add + 1
+
+                                    new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                   self.fracture.mesh.domainLimits[
+                                                       3] + elems_add * self.fracture.mesh.hx],
+                                                  [self.fracture.mesh.domainLimits[0],
+                                                   self.fracture.mesh.domainLimits[1]]]
+
+                                    direction = 'right'
+
+                                    elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
+
+                                self.remesh(new_limits, elems, direction=direction)
+                                side_bools[side] = False
+
+                    if np.asarray(side_bools).any():
                         print("Remeshing by compressing the domain...")
 
+                        # We calculate the new dimension of the meshed area
                         new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
                                                                                   self.fracture.mesh.Ly])
                         new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
@@ -495,49 +414,9 @@ class Controller:
                                        - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
                                        + new_dimensions[1]/2]]
 
-
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                    # Generating the new mesh (with new limits but same number of elements)
-                    coarse_mesh = CartesianMesh(new_limits[0],
-                                                new_limits[1],
-                                                elems[0],
-                                                elems[1],
-                                                symmetric=self.sim_prop.symmetric)
-
-                    # Finalizing the transfer of information from the fine to the coarse mesh
-                    self.solid_prop.remesh(coarse_mesh)
-                    self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
-
-                    # We adapt the elasticity matrix
-                    if direction == 'all':
-                        rem_factor = self.sim_prop.remeshFactor
-                        self.C *= 1 / self.sim_prop.remeshFactor
-                    else:
-                        rem_factor = 10
-                        print("Extending the elasticity matrix...")
-                        self.C = extend_isotropic_elasticity_matrix(coarse_mesh, self.fracture.mesh
-                                                                    , self.solid_prop.Eprime, self.C
-                                                                    , direction=direction)
-
-                    self.fracture = self.fracture.remesh(rem_factor,
-                                                         self.C,
-                                                         coarse_mesh,
-                                                         self.solid_prop,
-                                                         self.fluid_prop,
-                                                         self.injection_prop,
-                                                         self.sim_prop)
-
-                    self.fracture.mesh = coarse_mesh
-
-                    # update the saved properties
-                    if self.sim_prop.saveToDisk:
-                        prop = (self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
-                        with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
-                            dill.dump(prop, output, -1)
-                    self.remeshings += 1
-
-                    print("Done!")
+                        self.remesh(new_limits, elems)
 
                     self.write_to_log("\nRemeshed at " + repr(self.fracture.time))
 
@@ -1046,4 +925,85 @@ class Controller:
         with open(self.logAddress + 'log.txt', 'a+') as file:
             file.writelines(line)
 
-    
+# ------------------------------------------------------------------------------------------------------------------
+
+    def remesh(self, new_limits, elems, direction=None):
+        # Generating the new mesh (with new limits but same number of elements)
+        coarse_mesh = CartesianMesh(new_limits[0],
+                                    new_limits[1],
+                                    elems[0],
+                                    elems[1],
+                                    symmetric=self.sim_prop.symmetric)
+
+        # Finalizing the transfer of information from the fine to the coarse mesh
+        self.solid_prop.remesh(coarse_mesh)
+        self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
+
+        # We adapt the elasticity matrix
+        if direction == None:
+            rem_factor = self.sim_prop.remeshFactor
+            self.C *= 1 / self.sim_prop.remeshFactor
+        else:
+            rem_factor = 10
+            print("Extending the elasticity matrix...")
+            self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
+
+        self.fracture = self.fracture.remesh(rem_factor,
+                                             self.C,
+                                             coarse_mesh,
+                                             self.solid_prop,
+                                             self.fluid_prop,
+                                             self.injection_prop,
+                                             self.sim_prop)
+
+        self.fracture.mesh = coarse_mesh
+
+        # update the saved properties
+        if self.sim_prop.saveToDisk:
+            prop = (self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
+            with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
+                dill.dump(prop, output, -1)
+        self.remeshings += 1
+
+        print("Done!")
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+    def extend_isotropic_elasticity_matrix(self, new_mesh, direction=None):
+        """
+        In the case of extension of the mesh we don't need to recalculate the entire elasticity matrix. All we need to do is
+        to map all the elements to their new index and calculate what lasts
+
+        Arguments:
+            Mesh (object CartesianMesh):    -- a mesh object describing the domain.
+            Ep (float):                     -- plain strain modulus.
+            ElMat (ndarray):                -- old, partial elasticity matrix.
+        Returns:
+            C (ndarray-float):              -- the complete elasticity matrix.
+        """
+
+        a = new_mesh.hx / 2.
+        b = new_mesh.hy / 2.
+        Ne = new_mesh.NumberOfElts
+        Ne_old = self.fracture.mesh.NumberOfElts
+
+        new_indexes = np.array(mapping_old_indexes(new_mesh, self.fracture.mesh, direction))
+
+        self.C = np.vstack((np.hstack((self.C, np.full((Ne_old, Ne - Ne_old), 0.))),
+           np.full((Ne - Ne_old, Ne), 0.)))
+
+        self.C[np.ix_(new_indexes, new_indexes)] = self.C[np.ix_(np.arange(Ne_old), np.arange(Ne_old))]
+
+        add_el = np.setdiff1d(np.arange(Ne), new_indexes)
+
+        for i in add_el:
+            x = new_mesh.CenterCoor[i, 0] - new_mesh.CenterCoor[:, 0]
+            y = new_mesh.CenterCoor[i, 1] - new_mesh.CenterCoor[:, 1]
+
+            self.C[i] = (self.solid_prop.Eprime / (8. * np.pi)) * (
+                    np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
+                np.square(a + x) + np.square(b - y)
+            ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
+                np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
+
+        self.C[np.ix_(new_indexes, add_el)] = np.transpose(self.C[np.ix_(add_el, new_indexes)])
