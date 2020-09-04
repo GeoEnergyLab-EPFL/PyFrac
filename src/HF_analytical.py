@@ -476,7 +476,7 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, R=None, t=None, require
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='111111'):
+def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, inj_point=None, required='111111'):
     """
     Analytical solution for heigth contained hydraulic fracture (PKN geometry), given current time. The solution
     does not take leak off into account.
@@ -520,26 +520,26 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, required='11111
         anltcl_w = interpolate.interp1d(x, sol_w)
 
         # cells inside the PKN fracture
-        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= h / 2)
-        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1] - inj_point[1]) <= h / 2)[0]
+        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0] - inj_point[0]) <= ell)[0]
         actvElts = np.intersect1d(actvElts_v, actvElts_h)
 
         w = np.zeros((Mesh.NumberOfElts,), float)
         # calculating width across the cross section of the fracture from the average width.
         # The average width is given by the interpolation function.
-        w[actvElts] = 4 / np.pi * anltcl_w(Mesh.CenterCoor[actvElts, 0]) * (1 - 4 * Mesh.CenterCoor[
-                                                                    actvElts, 1] ** 2 / h ** 2) ** 0.5
+        w[actvElts] = 4 / np.pi * anltcl_w((Mesh.CenterCoor[actvElts, 0] - inj_point[0])) * (1 - 4 * (Mesh.CenterCoor[
+                                                                    actvElts, 1] - inj_point[1]) ** 2 / h ** 2) ** 0.5
     else:
         w = None
 
     if required[2] == '1':
         # cells inside the PKN fracture
-        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1]) <= h / 2)
-        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0]) <= ell)
+        actvElts_v = np.where(abs(Mesh.CenterCoor[:, 1] - inj_point[1]) <= h / 2)[0]
+        actvElts_h = np.where(abs(Mesh.CenterCoor[:, 0] - inj_point[0]) <= ell)[0]
         actvElts = np.intersect1d(actvElts_v, actvElts_h)
         # calculating pressure from width
         p = np.zeros((Mesh.NumberOfElts,), float)
-        p[actvElts] = 2 * Eprime * anltcl_w(Mesh.CenterCoor[actvElts, 0]) / (np.pi * h)
+        p[actvElts] = 2 * Eprime * anltcl_w((Mesh.CenterCoor[actvElts, 0] - inj_point[0])) / (np.pi * h)
     else:
         p = None
 
@@ -923,7 +923,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         - actvElts (ndarray)     -- list of cells inside the fracture at the given time.
 
     """
-    ## AM:
+
     if inj_point == None:
         inj_point = np.asarray([0, 0])
 
@@ -938,7 +938,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
     elif regime == 'Kt':
         t, r, p, w, v, actvElts = KT_vertex_solution(Eprime, Cprime, Q0, Kprime, mesh, length, t, required)
     elif regime == 'PKN':
-        t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t, required)
+        t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t, inj_point, required)
     elif regime == 'KGD_K':
         t, r, p, w, v, actvElts = KGD_solution_K(Eprime, Q0, Kprime, mesh, h, length, t, required)
     elif regime == 'MDR':
@@ -1076,7 +1076,7 @@ def shift_injection_point(x, y, mesh, variable=None, active_elts=None, fill=None
     if fill is None:
         fill = np.nan
 
-    if active_elts == None:
+    if isinstance(active_elts, list) == None:
         actv_given = False
         active_elts = np.arange(mesh.NumberOfElts, dtype=int)
     else:

@@ -48,7 +48,7 @@ save_TS_jump = 1                        # the number of time steps after which t
 
 # type of solver
 elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
-m_Anderson = 20                          # number of previous solutions to take into account in the Anderson scheme
+m_Anderson = 4                          # number of previous solutions to take into account in the Anderson scheme
 relaxation_param = 1.0                  # parameter defining the under-relaxation performed (default is not relaxed)
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
@@ -82,7 +82,7 @@ explicit_projection = False             # if True, direction from last time step
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
 enable_GPU = False                      # if True, GPU will be use to do the dense matrix vector product.
 n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
-proj_method = 'ILSA_orig'               # set the method to evaluate projection on front to the original ILSA method.
+proj_method = 'LS_continousfront'       # set the method to evaluate projection on front to the original ILSA method.
 double_fracture_vol_contr = False       # enable the volume control solver for two fractures
 plot_at_sol_time_series = True          # plot when the time is in the requested time series
 

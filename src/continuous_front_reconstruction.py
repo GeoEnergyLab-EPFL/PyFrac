@@ -2044,8 +2044,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # the values of the LS in the fictitius cells might be not computed at all the cells, so increase the thikness of the band
         if exitstatus:
             if np.any(sgndDist_k[mesh.Frontlist]<0):
-                print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: i make the time step failing')
-                correct_size_of_pstv_region = [False,True]
+                print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: Failing the time-step')
+                correct_size_of_pstv_region = [False, False, True]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
                 print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
@@ -2053,7 +2053,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[anularegion] = sgndDist_k[anularegion]
                 # plot_as_matrix(K, mesh)
-                correct_size_of_pstv_region = [False, False]
+                correct_size_of_pstv_region = [False, False, False]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
 
         """
@@ -2104,12 +2104,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                     if str(next_cell_name) not in i_1_2_3_4_FC_type.keys():
                         if np.any(LSet_temp > 10. ** 40):
-
-                            if np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist)).size >0:
-                                raise SystemExit('FRONT RECONSTRUCTION ERROR: The front is going outside of the mesh.')
+                            intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist))
+                            if intwithFrontlist.size >0:
+                                print('FRONT RECONSTRUCTION WARNING: The new front reaches the boundary. Remeshing')
+                                correct_size_of_pstv_region = [False, True, False]
+                                # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
+                                # (in case of anisotropic remeshing)
+                                return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                             else:
-                                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tipe i cell not found in the anularegion)')
-                                correct_size_of_pstv_region = [False, False]
+                                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tip i cell not found in the anularegion)')
+                                correct_size_of_pstv_region = [False, False, False]
                                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
                     else:
@@ -2129,8 +2133,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     list_of_Cells_type_3_list.append(Cells_type_3_list)
                     list_of_Cells_type_4_list.append(Cells_type_4_list)
                 else :
-                    if np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist)).size >0:
-                        raise SystemExit('FRONT RECONSTRUCTION ERROR: The front is going outside of the mesh.')
+                    intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))),np.asarray(mesh.Frontlist))
+                    if intwithFrontlist.size > 0:
+                        print('FRONT RECONSTRUCTION WARNING: The new front reaches the boundary. Remeshing')
+                        correct_size_of_pstv_region = [False, False, True]
+                        # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
+                        # (in case of anisotropic remeshing)
+                        return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                     else :
                         print("<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>")
                         print("set the LS of the positive cells to be -machine precision")
@@ -3084,7 +3093,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             newRibbon = newRibbon[np.nonzero(temp)]
             newRibbon = np.setdiff1d(newRibbon, np.asarray(global_list_of_TIPcellsONLY))
             global_list_of_newRibbon.extend(newRibbon.tolist())  # np
-            correct_size_of_pstv_region = [True,False]
+            correct_size_of_pstv_region = [True, False, False]
 
             # compute the coordinates for the Ffront variable in the Fracture object
             # for each cell where the front is passing you have to list the coordinates with the intersection with
@@ -3193,7 +3202,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
 
 
-        #####PLOT TO CHECK THE RESULT
+        # #####PLOT TO CHECK THE RESULT
         # plot_final_reconstruction(mesh,
         #                           list_of_xintersections_for_all_closed_paths,
         #                           list_of_yintersections_for_all_closed_paths,

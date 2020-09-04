@@ -578,8 +578,17 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
                                                                           lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
             if correct_size_of_pstv_region[1]:
-                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
-                return exitstatus, None
+                exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
+                                # or because a fictitius cell has intersected the mesh.frontlist
+                return exitstatus
+
+            if correct_size_of_pstv_region[2]:
+                Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
+                Fr_kplus1.EltTip = EltsTipNew  # !!! EltsTipNew are the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
+                # (in case of anisotropic remeshing)
+                exitstatus = 12 # You are here because the level set has negative values until the end of the mesh
+                                # or because a fictitius cell has intersected the mesh.frontlist
+                return exitstatus, Fr_kplus1
 
             if not correct_size_of_pstv_region[0]:
                 # Expand the
@@ -1626,8 +1635,18 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
                                                                           lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
             if correct_size_of_pstv_region[1]:
-                exitstatus = 7 #You are here because the level set has negative values until the end of the mesh
-                return exitstatus, None
+                exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
+                                # or because a fictitius cell has intersected the mesh.frontlist
+                return exitstatus
+
+            if correct_size_of_pstv_region[2]:
+                Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
+                Fr_kplus1.EltTip = EltsTipNew  # !!! EltsTipNew are the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
+                # (in case of anisotropic remeshing)
+                exitstatus = 12 # You are here because the level set has negative values until the end of the mesh
+                                # or because a fictitius cell has intersected the mesh.frontlist
+                return exitstatus, Fr_kplus1
+
 
             if not correct_size_of_pstv_region[0]:
                 # Expand the
