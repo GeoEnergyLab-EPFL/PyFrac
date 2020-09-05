@@ -58,6 +58,8 @@ simulProp.finalTime = 6000              # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
 simulProp.gravity = True                # take the effect of gravity into account
 
+simulProp.set_mesh_extension_direction(['left'])
+
 # initialization parameters
 Fr_geometry = Geometry(shape='height contained',
                        fracture_length=80,
