@@ -18,7 +18,7 @@ from continuous_front_reconstruction import reconstruct_front_continuous, Update
 
 
 
-def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
+def get_eliptical_survey_cells(mesh, a, b, center=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given
     lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.
@@ -36,9 +36,11 @@ def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
+    if center == None:
+        center = np.asarray([0, 0])
 
     # distances of the cell vertices
-    dist_vertx = ((mesh.VertexCoor[:, 0])/ a) ** 2 + ((mesh.VertexCoor[:, 1]) / b) ** 2 - 1.
+    dist_vertx = ((mesh.VertexCoor[:, 0] - center[0])/ a) ** 2 + ((mesh.VertexCoor[:, 1] - center[1]) / b) ** 2 - 1.
     # vertices that are inside the ellipse
     vertices = dist_vertx[mesh.Connectivity] < 0
 
@@ -54,30 +56,30 @@ def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
     for i in range(0, inner_cells.size):
         dist[i] = Distance_ellipse(a,
                                    b,
-                                   mesh.CenterCoor[inner_cells[i], 0],
-                                   mesh.CenterCoor[inner_cells[i], 1])
+                                   mesh.CenterCoor[inner_cells[i], 0] - center[0],
+                                   mesh.CenterCoor[inner_cells[i], 1] - center[1])
 
     cell_len = (mesh.hx * mesh.hx + mesh.hy * mesh.hy) ** 0.5  # one cell diagonal length
     ribbon = np.where(dist <= 2 * cell_len)[0]
     surv_cells = inner_cells[ribbon]
     surv_dist = dist[ribbon]
 
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
+    # if center is not None:
+    #     surv_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=surv_cells)
+    #     inner_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=inner_cells)
 
     return surv_cells, surv_dist, inner_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_radial_survey_cells(mesh, r, inj_point=None):
+def get_radial_survey_cells(mesh, r, center=None):
     """
     This function would provide the ribbon of cells and their distances to the front on the inside of the perimeter of
     a circle with the given radius. A list of all the cells inside the fracture is also provided.
@@ -93,11 +95,11 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given circle.
     """
-    if inj_point == None:
-        inj_point = np.asarray([0, 0])
+    if center == None:
+        center = np.asarray([0, 0])
 
     # distances of the cell vertices
-    dist_vertx = (((mesh.VertexCoor[:, 0] - inj_point[0])) ** 2 + ((mesh.VertexCoor[:, 1] - inj_point[1])) ** 2 ) \
+    dist_vertx = (((mesh.VertexCoor[:, 0] - center[0])) ** 2 + ((mesh.VertexCoor[:, 1] - center[1])) ** 2 ) \
                   ** (1 / 2) / r - 1.
 
     # vertices that are inside the ellipse
@@ -108,8 +110,8 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
                              np.logical_and(vertices[:, 2], vertices[:, 3]))
 
     inner_cells = np.where(log_and)[0]
-    dist = r - ((mesh.CenterCoor[inner_cells, 0]- inj_point[0]) ** 2
-                + (mesh.CenterCoor[inner_cells, 1]- inj_point[1]) ** 2) ** 0.5
+    dist = r - ((mesh.CenterCoor[inner_cells, 0] - center[0]) ** 2
+                + (mesh.CenterCoor[inner_cells, 1] - center[1]) ** 2) ** 0.5
 
     if len(inner_cells) == 0:
         raise SystemError("The given radius is too small!")
@@ -123,7 +125,7 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_rectangular_survey_cells(mesh, length, height, center):
+def get_rectangular_survey_cells(mesh, length, height, center=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
     lengths and height. A list of all the cells inside the fracture is also provided.
@@ -140,6 +142,9 @@ def get_rectangular_survey_cells(mesh, length, height, center):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
+
+    if center == None:
+        center = np.asarray([0, 0])
 
     inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[np.ix_(np.arange(0, len(mesh.CenterCoor)), [0])]
                                               - center[0]) < length)[0],
@@ -179,8 +184,6 @@ def get_rectangular_survey_cells(mesh, length, height, center):
     #                                              active_elts=inner_cells)
 
     return surv_cells, surv_dist, inner_cells
-
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -248,7 +251,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
                                                                            inner_region,
                                                                            mesh,
                                                                            recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
-            if correct_size_of_pstv_region[1] or correct_size_of_pstv_region[1]:
+            if correct_size_of_pstv_region[1] or correct_size_of_pstv_region[2]:
                 raise ValueError('The mesh is to small for the proposed initiation')
 
             if not correct_size_of_pstv_region[0]:
@@ -292,7 +295,8 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
                                    FillFrac_tmp,
                                    sgndDist,
                                    mesh)
-        fronts_dictionary = None #todo: implement volume control with two different pressures in the fractures in the case of proj_method = 'ILSA_orig'
+        fronts_dictionary = None
+        #todo: implement volume control with two different pressures in the fractures in the case of proj_method = 'ILSA_orig'
 
     # removing fully traversed cells from the tip cells and other lists
     newTip_indices = np.arange(len(EltTip_tmp))[np.in1d(EltTip_tmp, EltTip)]
@@ -756,12 +760,17 @@ def get_survey_points(geometry, mesh, source_coord=None):
     geometry.
     """
 
+    if geometry.center == None:
+        center = source_coord
+    else:
+        center =geometry.center
+
     if geometry.shape == 'radial':
         if geometry.radius > min(mesh.Lx, mesh.Ly):
             raise ValueError("The radius of the radial fracture is larger than domain!")
         surv_cells, surv_dist, inner_cells = get_radial_survey_cells(mesh,
                                                                     geometry.radius,
-                                                                    source_coord)
+                                                                    center)
     elif geometry.shape == 'elliptical':
         a = geometry.minorAxis * geometry.gamma
         if geometry.minorAxis > mesh.Ly or a > mesh.Lx:
@@ -771,7 +780,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
         surv_cells, surv_dist, inner_cells = get_eliptical_survey_cells(mesh,
                                                                         a,
                                                                         geometry.minorAxis,
-                                                                        source_coord)
+                                                                        center)
     elif geometry.shape == 'height contained':
         if geometry.fractureLength > mesh.Lx or geometry.fractureHeight > mesh.Ly:
             raise ValueError("The fracture is larger than domain!")
@@ -780,7 +789,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
         surv_cells, surv_dist, inner_cells = get_rectangular_survey_cells(mesh,
                                                                           geometry.fractureLength,
                                                                           geometry.fractureHeight,
-                                                                          geometry.get_center())
+                                                                          center)
     elif geometry.shape == 'level set':
         surv_cells = geometry.surveyCells
         surv_dist = geometry.tipDistances
