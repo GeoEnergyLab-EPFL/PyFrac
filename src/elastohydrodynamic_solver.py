@@ -1335,25 +1335,31 @@ def check_covergance(solk, solkm1, indices, tol):
          - norm (float)     -- the evaluated norm which is checked against tolerance
     """
 
-    # if delta w is zero in some cells
-    solkm1_is_0 = np.where(solkm1 == 0)[0]
-    if len(solkm1_is_0) > 0:
-        delw = solk[indices[0]]
-        delw_km1 = solkm1[indices[0]]
-        delw = np.delete(delw, solkm1_is_0)
-        delw_km1 = np.delete(delw_km1, solkm1_is_0)
-        norm_w = np.linalg.norm(abs(delw - delw_km1) / abs(delw_km1))
+    cnt = 0
+    w_normalization = np.linalg.norm(solkm1[indices[0]])
+    if w_normalization > 0.:
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
     else:
-        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / abs(solkm1[indices[0]]))
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+    cnt += 1
 
-    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
-    if len(indices[2]) > 0:
-        norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
+    p_normalization = np.linalg.norm(solkm1[indices[1]])
+    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
+    cnt += 1
+
+    if len(indices[2]) > 0:  # these are the cells with the active width constraints
+        p_act_normalization = np.linalg.norm(solkm1[indices[2]])
+        if p_act_normalization > 0.:
+            norm_p_act = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / p_act_normalization)
+        else:
+            norm_p_act = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
+        cnt += 1
     else:
-        norm_tr = 0.
-    norm = (norm_w + norm_p + norm_tr) / 3
+        norm_p_act = 0.
 
-    converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
+    norm = (norm_w + norm_p + norm_p_act) / cnt
+
+    converged = (norm_w <= tol and norm_p <= tol and norm_p_act <= tol)
 
     return converged, norm
 
