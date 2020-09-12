@@ -188,7 +188,7 @@ class Fracture:
         self.sink = np.asarray([], dtype=int)
         # will be overwritten by None if not required
         self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
-        self.G = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32) 
+        self.G = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
         
         if simulProp.projMethod != 'LS_continousfront':
             self.process_fracture_front()
@@ -238,6 +238,10 @@ class Fracture:
         self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
         if self.v is not None and not (np.isnan(self.v)).any():
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
+
+        if injection.modelInjLine:
+            self.pInjLine = np.float64(injection.initPressure)
+            self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

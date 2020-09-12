@@ -357,7 +357,9 @@ class InjectionProperties:
                                          
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None, sink_vel_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None,
+                 sink_vel_func=None, model_inj_line=False, il_compressibility=None, il_volume=None,
+                 perforation_friction=None, initial_pressure=None):
         """
         The constructor of the InjectionProperties class.
         """
@@ -422,7 +424,26 @@ class InjectionProperties:
             for i in range(len(self.sinkElem)):
                 self.sinkVel[i] = sink_vel_func(mesh.CenterCoor[self.sinkElem[i], 0],
                                                 mesh.CenterCoor[self.sinkElem[i], 1])
-                
+
+        self.modelInjLine = model_inj_line
+        if model_inj_line:
+            if il_compressibility is not None:
+                self.ILCompressibility = il_compressibility
+            else:
+                raise ValueError("Injection line compressibility is required!")
+            if il_volume is not None:
+                self.ILVolume = il_volume
+            else:
+                raise ValueError("Injection line volume is required!")
+            if perforation_friction is not None:
+                self.perforationFriction = perforation_friction
+            else:
+                raise ValueError("Perforation friction is required!")
+            if initial_pressure is not None:
+                self.initPressure = initial_pressure
+            else:
+                raise ValueError("initial pressure of the injection line is required!")
+
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -450,7 +471,7 @@ class InjectionProperties:
 
 
     def remesh(self, new_mesh, old_mesh):
-        """ This function is called every time the domian is remeshed.
+        """ This function is called every time the domain is remeshed.
 
         Arguments:
             new_mesh (CartesianMesh):   -- the CartesianMesh object describing the new coarse mesh.

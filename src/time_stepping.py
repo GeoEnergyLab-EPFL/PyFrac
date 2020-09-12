@@ -58,6 +58,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                                                     mat_properties,
                                                     fluid_properties,
                                                     sim_properties,
+                                                    inj_properties,
                                                     perfNode_explFront)
 
         if perfNode_explFront is not None:
@@ -80,6 +81,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                                                     mat_properties,
                                                     fluid_properties,
                                                     sim_properties,
+                                                    inj_properties,
                                                     perfNode_explFront)
 
         if perfNode_explFront is not None:
@@ -102,6 +104,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                                                     mat_properties,
                                                     fluid_properties,
                                                     sim_properties,
+                                                    inj_properties,
                                                     perfNode_sameFP)
         if perfNode_sameFP is not None:
             instrument_close(perfNode, perfNode_sameFP, None,
@@ -154,6 +157,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                                                           mat_properties,
                                                           fluid_properties,
                                                           sim_properties,
+                                                          inj_properties,
                                                           perfNode_extFront)
 
         if exitstatus == 1:
@@ -188,7 +192,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 # ----------------------------------------------------------------------------------------------------------------------
 
 def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
-                             perfNode=None):
+                             inj_properties, perfNode=None):
     """
     This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
     to be the same as in the fracture from the last time step.
@@ -241,6 +245,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                          sim_properties,
                                          fluid_properties,
                                          mat_properties,
+                                         inj_properties,
                                          empty,
                                          empty,
                                          C,
@@ -280,6 +285,19 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.effVisc = return_data[0][1]
     Fr_kplus1.G = return_data[0][2]
     fluidVel = return_data[0][0]
+
+    if len(return_data) > 3:
+        Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
+        Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + return_data[3]
+        Fr_kplus1.injectionRate[return_data[4][1]] = return_data[4][0]
+        Fr_kplus1.injectionRate[return_data[5][1]] = return_data[5][0]
+        Q_indx = np.where(abs(Qin) > 0)[0]
+        print('PIL ' + repr(Fr_kplus1.pInjLine))
+        print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
+        # print("pressure drop " + repr(
+        #     inj_properties.perforationFriction * Fr_kplus1.injectionRate[Q_indx] ** 2))
+        # print("pressure at injection " + repr(Fr_kplus1.pFluid[Q_indx]))
+
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
             ReNumb, check = turbulence_check_tip(fluidVel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
@@ -343,7 +361,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
 
 def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties,
-                                 sim_properties, perfNode=None):
+                                 sim_properties, inj_properties, perfNode=None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -817,6 +835,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                        sim_properties,
                                                        fluid_properties,
                                                        mat_properties,
+                                                       inj_properties,
                                                        EltsTipNew,
                                                        partlyFilledTip,
                                                        C,
@@ -897,6 +916,18 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.effVisc = data[0][1]
     Fr_kplus1.G = data[0][2]
 
+    if len(data) > 3:
+        Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
+        Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
+        Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
+        Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
+        Q_indx = np.where(abs(Qin)>0)[0]
+        print('PIL ' + repr(Fr_kplus1.pInjLine))
+        print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
+        # print("pressure drop " + repr(
+        #     inj_properties.perforationFriction * Fr_kplus1.injectionRate[Q_indx] ** 2))
+        # print("pressure at injection " + repr(Fr_kplus1.pFluid[Q_indx]))
+
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
             ReNumb, check = turbulence_check_tip(fluidVel, Fr_kplus1, fluid_properties, return_ReyNumb=True)
@@ -955,8 +986,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,
-                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon):
+def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, inj_properties, EltTip,
+                         partlyFilledTip, C, FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode,
+                         Vel, corr_ribbon):
     """
     This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow
     equations. The system of equations are formed according to the type of solver given in the simulation properties.
@@ -1194,7 +1226,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 LkOff,
                 neg,
                 corr_nei,
-                lst_edgeInCrk)
+                lst_edgeInCrk
+            )
             
             w_guess = np.zeros(Fr_lstTmStp.mesh.NumberOfElts, dtype=np.float64)
             avg_dw = (sum(Qin) * timeStep / Fr_lstTmStp.mesh.EltArea - sum(
@@ -1203,8 +1236,15 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             w_guess[to_impose_k] = imposed_val_k
             pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]
             pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k]
+
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
-                if sim_properties.solveDeltaP:
+                if inj_properties.modelInjLine:
+                    sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection_line
+                    guess = np.concatenate((np.full(len(to_solve_k), avg_dw, dtype=np.float64),
+                                            pf_guess_neg - Fr_lstTmStp.pFluid[neg],
+                                            pf_guess_tip - Fr_lstTmStp.pFluid[to_impose_k]))
+
+                elif sim_properties.solveDeltaP:
                     if sim_properties.solveSparse:
                         sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
                     else:
@@ -1222,6 +1262,24 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                             pf_guess_tip))
 
                 inter_itr_init = [vk, np.array([], dtype=int), None]
+
+                if inj_properties.modelInjLine:
+                    inj_cells = np.where(abs(Qin) > 0)[0]
+                    inj_ch = np.intersect1d(inj_cells, to_solve_k)
+                    inj_act = np.intersect1d(inj_cells, neg)
+                    inj_in_ch = []
+                    inj_in_act = []
+                    for m in inj_ch:
+                        inj_in_ch.append(np.where(to_solve_k == m)[0][0])
+                    for m in inj_act:
+                        inj_in_act.append(np.where(neg == m)[0][0])
+
+                    arg = (arg, inj_properties, inj_ch, inj_act, Fr_lstTmStp.pInjLine,
+                           np.asarray(inj_in_ch, dtype=int), np.asarray(inj_in_act, dtype=int))
+                    guess_il = np.zeros(len(inj_cells) + 1)
+                    guess_il[1:] = Qin[inj_cells]
+                    guess = np.concatenate((guess, guess_il))
+
 
                 if sim_properties.elastohydrSolver == 'implicit_Picard':
 
@@ -1329,10 +1387,12 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             pf_k[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
             if sim_properties.solveDeltaP:
                 pf_k[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-                pf_k[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+                pf_k[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):
+                                                                    len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
             else:
                 pf_k[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-                pf_k[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+                pf_k[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):
+                                        len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
             
             # removing cells where the fluid pressure is greater than the confining stress. If the cells that
             # are removed once re-appear in the set of cells where the width is less then the minimum residual
@@ -1357,7 +1417,21 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if len(neg) == len(to_solve):
             fully_closed = True
 
-        return_data = [data_nonLinSolve, neg_km1, fully_closed]
+        if inj_properties.modelInjLine:
+            pil_indx = len(to_solve_k) + len(neg_km1) + len(to_impose_k)
+            p_il = sol[pil_indx]
+            Q_ch = sol[pil_indx + 1: pil_indx + 1 + len(inj_ch)]
+            Q_act = sol[pil_indx + 1 + len(inj_ch): pil_indx + 1 + len(inj_ch) + len(inj_act)]
+        else:
+            p_il = None
+            Q_ch = None
+            Q_act = None
+
+        if inj_properties.modelInjLine:
+            return_data = [data_nonLinSolve, neg_km1, fully_closed, p_il, (Q_ch, inj_ch), (Q_act, inj_act)]
+        else:
+            return_data = [data_nonLinSolve, neg_km1, fully_closed]
+
         return w, pf_k, return_data
 
 
@@ -1422,7 +1496,7 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
 
 
 def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
-                             perfNode=None):
+                             inj_properties, perfNode=None):
     """
     This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
     time step (see Zia and Lecampion 2019 for details).
@@ -1784,6 +1858,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                        sim_properties,
                                                        fluid_properties,
                                                        mat_properties,
+                                                       inj_properties,
                                                        EltsTipNew,
                                                        partlyFilledTip,
                                                        C,
@@ -1846,6 +1921,18 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
     Fr_kplus1.effVisc = data[0][1]
     Fr_kplus1.G = data[0][2]
+
+    if len(data) > 3:
+        Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
+        Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
+        Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
+        Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
+        Q_indx = np.where(abs(Qin) > 0)[0]
+        print('PIL ' + repr(Fr_kplus1.pInjLine))
+        print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
+        # print("pressure drop " + repr(
+        #     inj_properties.perforationFriction * Fr_kplus1.injectionRate[Q_indx] ** 2))
+        # print("pressure at injection " + repr(Fr_kplus1.pFluid[Q_indx]))
 
     if sim_properties.verbosity > 1:
         print("Solved...\nFinding velocity of front...")

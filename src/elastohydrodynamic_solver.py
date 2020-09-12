@@ -1226,6 +1226,368 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     interItr_kp1[1] = below_wc
     return A, S, interItr_kp1, indices
 
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_injection(solk, interItr, *args):
+    """
+    This function makes the linearized system of equations to be solved by a linear system solver. The system is
+    assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
+    description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is
+    active are solved separately. The pressure in the channel cells to be solved for change in width is substituted
+    with width using the elasticity relation (see Zia and Lecamption 2019).
+
+    Arguments:
+        solk (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
+
+            - EltChannel (ndarray)          -- list of channel elements
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
+                                               the cells in the crack.
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+
+    Returns:
+        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
+        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
+                                    obtained for width, pressure and active width constraint cells.
+    """
+
+    ((EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+     sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk), inj_prop,
+     inj_ch, inj_act, p_il_0, inj_in_ch, inj_in_act) = args
+
+    wNplusOne = np.copy(frac.w)
+    wNplusOne[to_solve] += solk[:len(to_solve)]
+    wNplusOne[to_impose] = imposed_val
+    if len(wc_to_impose) > 0:
+        wNplusOne[active] = wc_to_impose
+
+    below_wc = np.where(wNplusOne[to_solve] < mat_prop.wc)[0]
+    below_wc_km1 = interItr[1]
+    below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
+    wNplusOne[to_solve[below_wc]] = mat_prop.wc
+
+    wcNplusHalf = (frac.w + wNplusOne) / 2
+
+    interItr_kp1 = [None] * 4
+    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk, frac,
+                                                EltCrack, neiInCrack, fluid_prop,
+                                                mat_prop, sim_prop, frac.mesh,
+                                                InCrack, C, interItr, to_solve,
+                                                to_impose, active, interItr_kp1,
+                                                lst_edgeInCrk)
+
+    G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
+                     frac.mesh, InCrack, sim_prop)
+
+    n_ch = len(to_solve)
+    n_act = len(active)
+    n_tip = len(imposed_val)
+    n_inj_ch = len(inj_ch)
+    n_inj_act = len(inj_act)
+    n_total = n_ch + n_act + n_tip + n_inj_ch + n_inj_act + 1
+
+    ch_indxs = np.arange(n_ch)
+    act_indxs = n_ch + np.arange(n_act)
+    # act_indxs = ch_indxs[-1] + 1 + np.arange(n_act)
+    tip_indxs = n_ch + n_act + np.arange(n_tip)
+    # tip_indxs = act_indxs[-1] + 1 + np.arange(n_tip)
+    p_il_indxs = np.asarray([n_ch + n_act + n_tip ])
+    # p_il_indxs = tip_indxs[-1] + 1
+    inj_ch_indx = n_ch + n_act + n_tip + 1 + np.arange(n_inj_ch)
+    # inj_ch_indx = p_il_indxs + 1 + np.arange(n_inj_ch)
+    inj_act_indx = n_ch + n_act + n_tip + 1 + n_inj_ch + np.arange(n_inj_act)
+    # inj_act_indx = inj_ch_indx[-1] + 1 + np.arange(n_inj_act)
+
+    A = np.zeros((n_total, n_total), dtype=np.float64)
+
+    ch_AplusCf = dt * FinDiffOprtr[np.ix_(ch_indxs, ch_indxs)]
+    ch_AplusCf[ch_indxs, ch_indxs] -= fluid_prop.compressibility * wcNplusHalf[to_solve]
+
+    A[np.ix_(ch_indxs, ch_indxs)] = - np.dot(ch_AplusCf, C[np.ix_(to_solve, to_solve)])
+    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
+
+    A[np.ix_(ch_indxs, tip_indxs)] = - dt * FinDiffOprtr[np.ix_(ch_indxs, tip_indxs)]
+    A[np.ix_(ch_indxs, act_indxs)] = - dt * FinDiffOprtr[np.ix_(ch_indxs, act_indxs)]
+    A[ch_indxs[inj_in_ch], inj_ch_indx] -= dt / frac.mesh.EltArea * np.ones(len(inj_ch_indx), dtype=np.float64)
+
+    A[np.ix_(tip_indxs, ch_indxs)] = - dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)],
+                                                   C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(tip_indxs, tip_indxs)] = - dt * FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)]
+    A[tip_indxs, tip_indxs] += fluid_prop.compressibility * wcNplusHalf[to_impose]
+    A[np.ix_(tip_indxs, act_indxs)] = - dt * FinDiffOprtr[np.ix_(tip_indxs, act_indxs)]
+
+    A[np.ix_(act_indxs, ch_indxs)] = - dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)],
+                                                   C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(act_indxs, tip_indxs)] = - dt * FinDiffOprtr[np.ix_(act_indxs, tip_indxs)]
+    A[np.ix_(act_indxs, act_indxs)] = - dt * FinDiffOprtr[np.ix_(act_indxs, act_indxs)]
+    A[act_indxs, act_indxs] += fluid_prop.compressibility * wcNplusHalf[active]
+    A[act_indxs[inj_in_act], inj_act_indx] -= dt / frac.mesh.EltArea * np.ones(len(inj_act_indx), dtype=np.float64)
+
+    A[p_il_indxs, p_il_indxs] = inj_prop.ILVolume * inj_prop.ILCompressibility
+    A[p_il_indxs, inj_ch_indx] = dt * np.ones(len(inj_ch_indx))
+    A[p_il_indxs, inj_act_indx] = dt * np.ones(len(inj_act_indx))
+
+    A[np.ix_(inj_ch_indx, ch_indxs)] = -C[np.ix_(inj_ch, to_solve)]
+    A[inj_ch_indx, p_il_indxs] = 1.
+    A[inj_ch_indx, inj_ch_indx] = -inj_prop.perforationFriction * abs(solk[inj_ch_indx])
+
+    A[np.ix_(inj_act_indx, ch_indxs)] = -C[np.ix_(inj_act, to_solve)]
+    A[inj_act_indx, p_il_indxs] = 1.
+    A[inj_act_indx, inj_act_indx] = -inj_prop.perforationFriction * abs(solk[inj_act_indx])
+
+    S = np.zeros((n_total,), dtype=np.float64)
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
+                  np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
+                  np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
+                  mat_prop.SigmaO[to_solve]
+
+    S[ch_indxs] = np.dot(ch_AplusCf, pf_ch_prime) + \
+                  dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
+                  dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, act_indxs)], frac.pFluid[active]) + \
+                  dt * G[to_solve] + \
+                  -LeakOff[to_solve] / frac.mesh.EltArea \
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
+
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)], pf_ch_prime) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, act_indxs)], frac.pFluid[active]) + \
+                   dt * G[to_impose] + \
+                   -LeakOff[to_impose] / frac.mesh.EltArea
+
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], pf_ch_prime) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
+                   dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, act_indxs)], frac.pFluid[active]) + \
+                   dt * G[active] + \
+                   -LeakOff[active] / frac.mesh.EltArea
+
+    S[p_il_indxs] = dt * sum(Q)
+
+    S[inj_ch_indx] = np.dot(C[np.ix_(inj_ch, to_solve)], frac.w[to_solve]) + \
+                     np.dot(C[np.ix_(inj_ch, active)], wc_to_impose) + \
+                     np.dot(C[np.ix_(inj_ch, to_impose)], imposed_val) + \
+                     mat_prop.SigmaO[inj_ch] - p_il_0
+
+    S[inj_act_indx] = np.dot(C[np.ix_(inj_act, to_solve)], frac.w[to_solve]) + \
+                      np.dot(C[np.ix_(inj_act, active)], wc_to_impose) + \
+                      np.dot(C[np.ix_(inj_act, to_impose)], imposed_val) + \
+                      mat_prop.SigmaO[inj_act] - p_il_0
+
+    # indices of solved width, pressure and active width constraint in the solution
+    indices = [ch_indxs, tip_indxs, act_indxs, p_il_indxs, inj_ch_indx, inj_act_indx]
+
+    interItr_kp1[1] = below_wc
+    return A, S, interItr_kp1, indices
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection_line(solk, interItr, *args):
+    """
+    This function makes the linearized system of equations to be solved by a linear system solver. The system is
+    assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
+    description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is
+    active are solved separately. The pressure in the channel cells to be solved for change in width is substituted
+    with width using the elasticity relation (see Zia and Lecamption 2019). The finite difference difference operator
+    is saved as a sparse matrix.
+
+    Arguments:
+        solk (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
+
+            - EltChannel (ndarray)          -- list of channel elements
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
+                                               the cells in the crack.
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+
+    Returns:
+        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
+        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
+                                    obtained for width, pressure and active width constraint cells.
+    """
+
+    ((EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+      sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk), inj_prop,
+     inj_ch, inj_act, p_il_0, inj_in_ch, inj_in_act) = args
+
+    wNplusOne = np.copy(frac.w)
+    wNplusOne[to_solve] += solk[:len(to_solve)]
+    wNplusOne[to_impose] = imposed_val
+    if len(wc_to_impose) > 0:
+        wNplusOne[active] = wc_to_impose
+
+    below_wc = np.where(wNplusOne[to_solve] < mat_prop.wc)[0]
+    below_wc_km1 = interItr[1]
+    below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
+    wNplusOne[to_solve[below_wc]] = mat_prop.wc
+
+    wcNplusHalf = (frac.w + wNplusOne) / 2
+
+    interItr_kp1 = [None] * 4
+    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk, frac,
+                                                EltCrack, neiInCrack, fluid_prop,
+                                                mat_prop, sim_prop, frac.mesh,
+                                                InCrack, C, interItr, to_solve,
+                                                to_impose, active, interItr_kp1,
+                                                lst_edgeInCrk)
+
+    G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
+                     frac.mesh, InCrack, sim_prop)
+
+    n_ch = len(to_solve)
+    n_act = len(active)
+    n_tip = len(imposed_val)
+    n_inj_ch = len(inj_ch)
+    n_inj_act = len(inj_act)
+    n_total = n_ch + n_act + n_tip + n_inj_ch + n_inj_act + 1
+
+    ch_indxs = np.arange(n_ch)
+    act_indxs = n_ch + np.arange(n_act)
+    tip_indxs = n_ch + n_act + np.arange(n_tip)
+    p_il_indxs = np.asarray([n_ch + n_act + n_tip])
+    inj_ch_indx = n_ch + n_act + n_tip + 1 + np.arange(n_inj_ch)
+    inj_act_indx = n_ch + n_act + n_tip + 1 + n_inj_ch + np.arange(n_inj_act)
+
+    A = np.zeros((n_total, n_total), dtype=np.float64)
+
+    ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
+                 - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0],
+                                format='csr')
+
+    A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
+
+    A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
+    A[ch_indxs[inj_in_ch], inj_ch_indx] -= dt / frac.mesh.EltArea * np.ones(len(inj_ch_indx), dtype=np.float64)
+
+    A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
+                                       sparse.diags(
+                                           [np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
+                                           [0], format='csr')).toarray()
+    A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
+
+    A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
+                                       sparse.diags(
+                                           [np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
+                                           [0], format='csr')).toarray()
+    A[act_indxs[inj_in_act], inj_act_indx] -= dt / frac.mesh.EltArea * np.ones(len(inj_act_indx), dtype=np.float64)
+
+    A[p_il_indxs, p_il_indxs] = inj_prop.ILVolume * inj_prop.ILCompressibility
+    A[p_il_indxs, inj_ch_indx] = dt * np.ones(len(inj_ch_indx))
+    A[p_il_indxs, inj_act_indx] = dt * np.ones(len(inj_act_indx))
+
+    A[np.ix_(inj_ch_indx, ch_indxs)] = -C[np.ix_(inj_ch, to_solve)]
+    A[inj_ch_indx, p_il_indxs] = 1.
+    A[inj_ch_indx, inj_ch_indx] = -inj_prop.perforationFriction * abs(solk[inj_ch_indx])
+
+    A[np.ix_(inj_act_indx, ch_indxs)] = -C[np.ix_(inj_act, to_solve)]
+    A[inj_act_indx, p_il_indxs] = 1.
+    A[inj_act_indx, inj_act_indx] = -inj_prop.perforationFriction * abs(solk[inj_act_indx])
+
+    S = np.zeros((n_total,), dtype=np.float64)
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
+                  np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
+                  np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
+                  mat_prop.SigmaO[to_solve]
+
+    S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                  dt * G[to_solve] + \
+                  -LeakOff[to_solve] / frac.mesh.EltArea \
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
+
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                   dt * G[to_impose] + \
+                   -LeakOff[to_impose] / frac.mesh.EltArea
+
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                   dt * G[active] + \
+                   -LeakOff[active] / frac.mesh.EltArea
+
+    S[p_il_indxs] = dt * sum(Q)
+
+    S[inj_ch_indx] = np.dot(C[np.ix_(inj_ch, to_solve)], frac.w[to_solve]) + \
+                     np.dot(C[np.ix_(inj_ch, active)], wc_to_impose) + \
+                     np.dot(C[np.ix_(inj_ch, to_impose)], imposed_val) + \
+                     mat_prop.SigmaO[inj_ch] - p_il_0
+
+    S[inj_act_indx] = np.dot(C[np.ix_(inj_act, to_solve)], frac.w[to_solve]) + \
+                      np.dot(C[np.ix_(inj_act, active)], wc_to_impose) + \
+                      np.dot(C[np.ix_(inj_act, to_impose)], imposed_val) + \
+                      mat_prop.SigmaO[inj_act] - p_il_0
+
+    # indices of solved width, pressure and active width constraint in the solution
+    indices = [ch_indxs, tip_indxs, act_indxs, p_il_indxs, inj_ch_indx, inj_act_indx]
+
+    interItr_kp1[1] = below_wc
+
+    return A, S, interItr_kp1, indices
+
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -1468,31 +1830,70 @@ def check_covergance(solk, solkm1, indices, tol):
     # else :
     #     norm_tr = 0.
 
+    cnt = 0
     w_normalization = np.linalg.norm(solkm1[indices[0]])
-    if w_normalization >0.:
+    if w_normalization > 0.:
         norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
-    else : norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+    else:
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+    cnt += 1
 
     p_normalization = np.linalg.norm(solkm1[indices[1]])
-    if p_normalization >0.:
-        norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
-    else : norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
+    # if p_normalization > 0.:
+    #     norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
+    # else:
+    #     norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
     norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
+    cnt += 1
 
-    if len(indices[2]) > 0: #these are the cells with the active width constraints
+    if len(indices[2]) > 0:    #these are the cells with the active width constraints
         tr_normalization = np.linalg.norm(solkm1[indices[2]])
         if tr_normalization > 0.:
             norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / tr_normalization)
         else:
             norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
-    else :
+        cnt += 1
+    else:
         norm_tr = 0.
 
+    if len(indices) > 3:
+        if len(indices[3]) > 0:
+            if abs(solkm1[indices[3]]) > 0:
+                norm_pil = abs(solk[indices[3]] - solkm1[indices[3]]) / abs(solkm1[indices[3]])
+            cnt += 1
+        else:
+            norm_pil = 0.
 
-    norm = (norm_w + norm_p + norm_tr) / 3
-    # print("w " + repr(norm_w) + " p " + repr(norm_p) + " act " + repr(norm_tr))
+        if len(indices[4]) > 0:  # these are the cells with the active width constraints
+            Q_ch_normalization = np.linalg.norm(solkm1[indices[4]])
+            if Q_ch_normalization > 0.:
+                norm_Q_ch = np.linalg.norm(abs(solk[indices[4]] - solkm1[indices[4]]) / Q_ch_normalization)
+            else:
+                norm_Q_ch = np.linalg.norm(abs(solk[indices[4]] - solkm1[indices[4]]))
+            cnt += 1
+        else:
+            norm_Q_ch = 0.
 
-    converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
+        if len(indices[5]) > 0:  # these are the cells with the active width constraints
+            Q_act_normalization = np.linalg.norm(solkm1[indices[5]])
+            if Q_act_normalization > 0.:
+                norm_Q_act = np.linalg.norm(abs(solk[indices[5]] - solkm1[indices[5]]) / Q_act_normalization)
+            else:
+                norm_Q_act = np.linalg.norm(abs(solk[indices[5]] - solkm1[indices[5]]))
+            cnt += 1
+        else:
+            norm_Q_act = 0.
+    else:
+        norm_pil = 0.
+        norm_Q_ch = 0.
+        norm_Q_act = 0.
+
+    norm = (norm_w + norm_p + norm_tr + norm_pil + norm_Q_ch + norm_Q_act) / cnt
+    # print("w " + repr(norm_w) + " p " + repr(norm_p) + " act " + repr(norm_tr) +
+          # " pil " + repr(norm_pil) + " Qch " + repr(norm_Q_ch) + " Qact " + repr(norm_Q_act))
+
+    converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol and norm_pil <= tol
+                 and norm_Q_ch <= tol and norm_Q_act < tol)
 
     return converged, norm
 
