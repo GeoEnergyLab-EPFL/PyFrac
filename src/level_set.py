@@ -64,7 +64,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
 
                 NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
                 NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
-                if  NeigxMin >= 1e50 and NeigyMin>= 1e50 :
+                if NeigxMin >= 1e50 and NeigyMin >= 1e50 :
                     print("LEVEL SET FUNCTION WARNING: You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
                     # A possible fix of this situation could be leave apart the cell and come back later
                     # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method

@@ -2054,7 +2054,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 # K[anularegion] = sgndDist_k[anularegion]
                 # plot_as_matrix(K, mesh)
                 correct_size_of_pstv_region = [False, False, False]
-                return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
+                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
 
         """
         2) - define the fractures

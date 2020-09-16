@@ -46,6 +46,7 @@ simulProp.finalTime = 1e7                           # the time at which the simu
 simulProp.saveTSJump, simulProp.plotTSJump = 5, 5   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/MtoK_leakoff")   # the disk address where the files are saved
 simulProp.frontAdvancing = 'explicit'               # setting up explicit front advancing
+simulProp.plotVar = ['regime', 'w']
 
 # initializing fracture
 Fr_geometry = Geometry('radial')

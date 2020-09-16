@@ -298,7 +298,7 @@ class Controller:
                 # re-meshing required
                 if self.sim_prop.enableRemeshing:
                     front_indices = np.intersect1d(self.fracture.mesh.Frontlist, Fr_n_pls1.EltTip, return_indices=True)[1]
-                    side_bools = [(front_indices <= Fr_n_pls1.mesh.nx -3).any(),
+                    side_bools = [(front_indices <= Fr_n_pls1.mesh.nx - 3).any(),
                                   (front_indices[front_indices > Fr_n_pls1.mesh.nx - 3]
                                    <= 2 * (Fr_n_pls1.mesh.nx - 3) + 1).any(),
                                   (front_indices[front_indices >= 2 * (Fr_n_pls1.mesh.nx - 2)] % 2 == 0).any(),
@@ -821,7 +821,8 @@ class Controller:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             if not np.any(self.fracture.v != np.nan):
                 non_zero_v = np.where(self.fracture.v > 0)[0]
-            else: non_zero_v=[]
+            else:
+                non_zero_v = []
             # time step is calculated with the current propagation velocity
             if len(non_zero_v) > 0:
                 if len(self.injection_prop.sourceElem) < 4:
@@ -875,6 +876,10 @@ class Controller:
                                               TS_fracture_length,
                                               TS_inj_cell,
                                               TS_delta_vol)
+
+            # limit time step to be max 5 * last time step
+            if (self.lstTmStp != None and not np.isinf(time_step)) and time_step > 5 * self.lstTmStp:
+                time_step = 5 * self.lstTmStp
 
         # in case of fracture not propagating
         if time_step <= 0 or np.isinf(time_step):
