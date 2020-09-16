@@ -16,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(105, 150, 43, 61)
+Mesh = CartesianMesh(110, 150, 45, 61)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -55,16 +55,14 @@ Fluid = FluidProperties(viscosity=1.1e-3, density=1000)
 # simulation properties
 simulProp = SimulationProperties()
 simulProp.finalTime = 6000              # the time at which the simulation stops
-simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/buoyant_line_source") # the disk address where the files are saved
 simulProp.gravity = True                # take the effect of gravity into account
-
-simulProp.set_mesh_extension_direction(['left'])
 
 # initialization parameters
 Fr_geometry = Geometry(shape='height contained',
                        fracture_length=80,
                        fracture_height=35,
-                       center = [0, -75])
+                       center=[0, -75])
 init_param = InitializationParameters(Fr_geometry, regime='PKN')
 
 # creating fracture object
@@ -94,7 +92,7 @@ from visualization import *
 
 # loading simulation results
 time_srs = np.linspace(1, 6000, 5)
-Fr_list, properties = load_fractures(address="./Data/M_radial_explicit",
+Fr_list, properties = load_fractures(address="./Data/buoyant_line_source",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')

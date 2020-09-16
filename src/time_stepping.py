@@ -558,7 +558,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                              Fr_lstTmStp.EltChannel,
                                                                              Fr_lstTmStp.mesh)
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = [False,False]
+        correct_size_of_pstv_region = [False, False, False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
         while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
@@ -577,12 +577,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                           Fr_lstTmStp.mesh,
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
                                                                           lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
-            if correct_size_of_pstv_region[1]:
+            if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
-                return exitstatus
+                return exitstatus, None
 
-            if correct_size_of_pstv_region[2]:
+            if correct_size_of_pstv_region[1]:
                 Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
                 Fr_kplus1.EltTip = EltsTipNew  # !!! EltsTipNew are the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                 # (in case of anisotropic remeshing)
@@ -1615,7 +1615,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                              Fr_lstTmStp.mesh)
 
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = [False,False]
+        correct_size_of_pstv_region = [False, False, False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
         while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
@@ -1634,12 +1634,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                           Fr_lstTmStp.mesh,
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
                                                                           lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
-            if correct_size_of_pstv_region[1]:
+            if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
-                return exitstatus
+                return exitstatus, None
 
-            if correct_size_of_pstv_region[2]:
+            if correct_size_of_pstv_region[1]:
                 Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
                 Fr_kplus1.EltTip = EltsTipNew  # !!! EltsTipNew are the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                 # (in case of anisotropic remeshing)

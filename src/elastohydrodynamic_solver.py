@@ -1535,22 +1535,6 @@ def check_covergance(solk, solkm1, indices, tol):
          - norm (float)     -- the evaluated norm which is checked against tolerance
     """
 
-    # if delta w is zero in some cells
-    # solkm1_is_0 = np.where(solkm1 == 0)[0]
-    # if len(solkm1_is_0) > 0:
-    #     delw = solk[indices[0]]
-    #     delw_km1 = solkm1[indices[0]]
-    #     delw = np.delete(delw, solkm1_is_0)
-    #     delw_km1 = np.delete(delw_km1, solkm1_is_0)
-    #     norm_w = np.linalg.norm(abs(delw - delw_km1) / abs(delw_km1))
-    # else:
-    #   norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / abs(solkm1[indices[0]]))
-    # norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
-    # if len(indices[2]) > 0: #these are the cells with the active width constraints
-    #     norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
-    # else :
-    #     norm_tr = 0.
-
     w_normalization = np.linalg.norm(solkm1[indices[0]])
     if w_normalization > 0.:
         norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
