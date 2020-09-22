@@ -788,19 +788,19 @@ class CartesianMesh:
 
         codes = []
         verts = []
-        verts_x = np.linspace(-self.Lx, self.Lx, 7)
-        verts_y = np.linspace(-self.Ly, self.Ly, 7)
+        verts_x = np.linspace(self.domainLimits[2], self.domainLimits[3], 7)
+        verts_y = np.linspace(self.domainLimits[0], self.domainLimits[1], 7)
         tick_len = max(self.hx / 2, self.hy / 2)
         for i in range(7):
             codes.append(Path.MOVETO)
-            elem = self.locate_element(verts_x[i], -self.Ly)
-            verts.append((self.CenterCoor[elem, 0], -self.Ly - self.hy / 2))
+            elem = self.locate_element(verts_x[i], self.domainLimits[0])
+            verts.append((self.CenterCoor[elem, 0], self.domainLimits[0] - self.hy / 2))
             codes.append(Path.LINETO)
-            verts.append((self.CenterCoor[elem, 0], -self.Ly + tick_len))
+            verts.append((self.CenterCoor[elem, 0], self.domainLimits[0] + tick_len))
             x_val = to_precision(np.round(self.CenterCoor[elem, 0], 5), plot_prop.dispPrecision)
             text3d(ax,
                    (self.CenterCoor[elem, 0] - plot_prop.dispPrecision * plot_prop.textSize / 3,
-                    -self.Ly - self.hy / 2 - plot_prop.textSize,
+                    self.domainLimits[0] - self.hy / 2 - plot_prop.textSize,
                     0),
                    x_val,
                    zdir="z",
@@ -810,13 +810,13 @@ class CartesianMesh:
                    fc=edge_color)
 
             codes.append(Path.MOVETO)
-            elem = self.locate_element(-self.Lx, verts_y[i])
-            verts.append((-self.Lx - self.hx / 2, self.CenterCoor[elem, 1]))
+            elem = self.locate_element(self.domainLimits[2], verts_y[i])
+            verts.append((self.domainLimits[2] - self.hx / 2, self.CenterCoor[elem, 1][0]))
             codes.append(Path.LINETO)
-            verts.append((-self.Lx + tick_len, self.CenterCoor[elem, 1]))
+            verts.append((self.domainLimits[2] + tick_len, self.CenterCoor[elem, 1][0]))
             y_val = to_precision(np.round(self.CenterCoor[elem, 1], 5), plot_prop.dispPrecision)
             text3d(ax,
-                   (-self.Lx - self.hx / 2 - plot_prop.dispPrecision * plot_prop.textSize,
+                   (self.domainLimits[2] - self.hx / 2 - plot_prop.dispPrecision * plot_prop.textSize,
                     self.CenterCoor[elem, 1] - plot_prop.textSize / 2,
                     0),
                    y_val,
@@ -829,7 +829,7 @@ class CartesianMesh:
         print("\tAdding labels...")
         text3d(ax,
                (0.,
-                -self.Ly - plot_prop.textSize * 3,
+                -self.domainLimits[2] - plot_prop.textSize * 3,
                 0),
                'meters',
                zdir="z",

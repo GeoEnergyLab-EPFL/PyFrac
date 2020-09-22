@@ -368,7 +368,6 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
         legend_coord = []
         if hasattr(fracture_list[0], 'regime_color'):
             for i in fracture_list:
-                legend_coord.append(i.regime_coord)
                 variable_list.append(i.regime_color)
                 time_srs.append(i.time)
         else:
