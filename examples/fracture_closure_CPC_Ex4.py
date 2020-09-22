@@ -16,7 +16,7 @@ from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 
 # creating mesh
-Mesh = CartesianMesh(99, 88, 45, 36)
+Mesh = CartesianMesh(99, 70, 45, 32)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -55,7 +55,7 @@ simulProp.finalTime = 1.8e4                       # the time at which the simula
 simulProp.set_outputFolder("./Data/fracture_closure") # the disk address where the files are saved
 simulProp.bckColor = 'confining stress'         # setting the parameter for the mesh color coding
 simulProp.plotTSJump = 3                        # set to plot every four time steps
-simulProp.plotVar = ['w', 'lk', 'footprint']    # setting the parameters that will be plotted
+simulProp.plotVar = ['regime', 'lk', 'footprint']    # setting the parameters that will be plotted
 simulProp.tmStpPrefactor = np.asarray([[0, 6000], [0.8, 0.4]]) # decreasing the time step pre-factor after 6000s
 simulProp.maxSolverItrs = 120                   # increase maximum iterations for the elastohydrodynamic solver
 simulProp.set_solTimeSeries = np.asarray([7672, 9660, 12435, 14693, 15342, 15835])

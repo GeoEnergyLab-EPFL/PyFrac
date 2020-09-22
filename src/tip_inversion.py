@@ -444,9 +444,9 @@ def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, 
     a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
     if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
         b = np.full((len(w),), 6 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
-    elif simProp.get_tipAsymptote()  in ["PLF", "PLF_aprox", "PLF_num_quad"]:
+    elif simProp.get_tipAsymptote() in ["PLF", "PLF_aprox", "PLF_num_quad"]:
         b = (w * Eprime / Kprime)**2 - np.finfo(float).eps
-    elif simProp.get_tipAsymptote()  in ["HBF", "HBF_aprox", "HBF_num_quad"]:
+    elif simProp.get_tipAsymptote() in ["HBF", "HBF_aprox", "HBF_num_quad"]:
         b = np.zeros(len(w), dtype=np.float64)
         for i in range(0, len(w)):
             TipAsmptargs = (w[i], Kprime[i], Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt)
@@ -542,7 +542,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
         raise SystemExit("Tip asymptote type not supported!")
 
     # checking propagation condition
-    stagnant = np.where(Kprime * (-frac.sgndDist[frac.EltRibbon])**0.5 / (
+    stagnant = np.where(Kprime * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
                                         Eprime * w[frac.EltRibbon]) > 1)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 

@@ -790,6 +790,8 @@ class Fracture:
 
         vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
 
+        if np.isnan(self.sgndDist[self.EltRibbon]).any():
+            print('Why nan distance?')
         wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon])) ** (1/2)
         wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3)\
              * (abs(self.sgndDist[self.EltRibbon])) ** (2/3)
