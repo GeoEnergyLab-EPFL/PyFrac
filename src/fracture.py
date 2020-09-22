@@ -69,7 +69,6 @@ class Fracture:
         Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
                                        cells. Each row contains the x and y coordinates of the two points.
         regime_color (ndarray):     -- RGB color code of the regime on Dontsov and Peirce, 2017
-        regime_coord (ndarray):     -- x and y in the triangle.
         ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
         fluidFlux (ndarray):        -- the fluid flux at each edge of the cells in the fracture. The arrangement is
@@ -130,7 +129,7 @@ class Fracture:
         self.EltChannel, self.EltTip, self.EltCrack, \
         self.EltRibbon, self.ZeroVertex, self.CellStatus, \
         self.l, self.alpha, self.FillF, self.sgndDist, \
-        self.Ffront, self.number_of_fronts, self.fronts_dictionary= generate_footprint(self.mesh,
+        self.Ffront, self.number_of_fronts, self.fronts_dictionary = generate_footprint(self.mesh,
                                                                                        surv_cells,
                                                                                        inner_cells,
                                                                                        surv_dist,
@@ -196,10 +195,8 @@ class Fracture:
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
         if simulProp.saveRegime:
             self.regime_color = np.full((mesh.NumberOfElts, 3), 1, dtype=np.float32)
-            self.regime_coord = np.full((mesh.NumberOfElts, 2), np.nan, dtype=np.float32)
         else:
             self.regime_color = None
-            self.regime_coord = None
 
         if simulProp.saveFluidFlux:
             self.fluidFlux = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
@@ -793,10 +790,11 @@ class Fracture:
 
         vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
 
-        wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * (-self.sgndDist[self.EltRibbon]) ** (1/2)
-        wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3) * (-self.sgndDist[self.EltRibbon]) ** (2/3)
+        wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon])) ** (1/2)
+        wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3)\
+             * (abs(self.sgndDist[self.EltRibbon])) ** (2/3)
         wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime[self.EltRibbon] ** 2
-                                 / mat_prop.Eprime ** 2) ** (1/8) * (-self.sgndDist[self.EltRibbon]) ** (5/8)
+                                 / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon])) ** (5/8)
 
         nk = wk / (self.w[self.EltRibbon] - wk)
         nm = wm / (self.w[self.EltRibbon] - wm)
@@ -806,20 +804,13 @@ class Fracture:
         Nm = nm / (nk + nm + nmtilde)
         Nmtilde = nmtilde / (nk + nm + nmtilde)
 
-        Nk[np.where(Nk > 1.)] = 1.
-        Nm[np.where(Nm > 1.)] = 1.
-        Nmtilde[np.where(Nmtilde > 1.)] = 1.
+        Nk[np.where(Nk > 1)] = 1.
+        Nm[np.where(Nm > 1)] = 1.
+        Nmtilde[np.where(Nmtilde > 1)] = 1.
         
-        Nk[np.where(Nk < 0.)] = 0.
-        Nm[np.where(Nm < 0.)] = 0.
-        Nmtilde[np.where(Nmtilde < 0.)] = 0.
-
-        coor_tilde = np.asarray([1 / 2, 3 ** (1 / 2) / 2])
-        coor_k = np.asarray([1, 0])
-
-        xtr = coor_tilde[0] * Nmtilde + coor_k[0] * Nk
-        ytr = coor_tilde[1] * Nmtilde + coor_k[1] * Nk
+        Nk[np.where(Nk < 0)] = 0.
+        Nm[np.where(Nm < 0)] = 0.
+        Nmtilde[np.where(Nmtilde < 0)] = 0.
 
         self.regime_color = np.full((self.mesh.NumberOfElts, 3), 1, dtype=np.float32)
         self.regime_color[self.EltRibbon, ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
-        self.regime_coord[self.EltRibbon, ::] = np.transpose(np.vstack((xtr, ytr)))

@@ -17,7 +17,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(0.070, 0.090, 41, 51)
+Mesh = CartesianMesh(0.15, [-0.175, 0.05], 47, 71)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -52,7 +52,6 @@ simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
 simulProp.plotVar = ['footprint']
-simulProp.projMethod = 'LS_continousfront'
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.019)

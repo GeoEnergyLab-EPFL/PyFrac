@@ -173,21 +173,11 @@ def get_rectangular_survey_cells(mesh, length, height, center=None):
     if len(inner_cells) == 0:
         raise SystemError("The given rectangular region is too small compared to the mesh!")
 
-    # if inj_point is not None:
-    #     surv_cells, tmp = shift_injection_point(inj_point[0],
-    #                                              inj_point[1],
-    #                                              mesh,
-    #                                              active_elts=surv_cells)
-    #     inner_cells, tmp = shift_injection_point(inj_point[0],
-    #                                              inj_point[1],
-    #                                              mesh,
-    #                                              active_elts=inner_cells)
-
     return surv_cells, surv_dist, inner_cells
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMethod):
+def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMethod):
     """
     This function takes the survey cells and their distances from the front and generate the footprint of a fracture
     using the fast marching method.
@@ -233,7 +223,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells,projMetho
     band = np.arange(mesh.NumberOfElts)
     # costruct the front
     if projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = [False,False]
+        correct_size_of_pstv_region = [False, False, False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
         while not correct_size_of_pstv_region[0]:
             EltTip_tmp, \

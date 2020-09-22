@@ -16,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(110, 150, 45, 61)
+Mesh = CartesianMesh(115, 115, 61, 61)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -43,7 +43,7 @@ def source_location(x, y, hx, hy):
         point.
     """
     # the condition
-    return abs(x) < 75 and (y >= -75. -  hy / 2. and y <= -75. + hy / 2.)
+    return abs(x) < 75 and (y >= - 75. -  hy / 2. and y <= -75. + hy / 2.)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -54,9 +54,11 @@ Fluid = FluidProperties(viscosity=1.1e-3, density=1000)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 6000              # the time at which the simulation stops
-simulProp.set_outputFolder("./Data/buoyant_line_source") # the disk address where the files are saved
-simulProp.gravity = True                # take the effect of gravity into account
+simulProp.finalTime = 1e5                                   # the time at which the simulation stops
+simulProp.set_outputFolder("./Data/buoyant_line_source")    # the disk address where the files are saved
+simulProp.gravity = True                                    # take the effect of gravity into account
+simulProp.set_mesh_extension_direction(['top'])
+simulProp.frontAdvancing = 'explicit'
 
 # initialization parameters
 Fr_geometry = Geometry(shape='height contained',
