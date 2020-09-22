@@ -328,12 +328,14 @@ class Controller:
                         side_bools = [False, False, False, False]
 
                     else:
-                        for side in range(3):
+                        nx_init = self.fracture.mesh.nx
+                        ny_init = self.fracture.mesh.ny
+                        for side in range(4):
                             if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
                                 if side == 0:
                                     print("Remeshing by extending towards negative y...")
 
-                                    elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -350,7 +352,7 @@ class Controller:
                                 if side == 1:
                                     print("Remeshing by extending towards positive y...")
 
-                                    elems_add = int(self.fracture.mesh.ny * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -367,7 +369,7 @@ class Controller:
                                 if side == 2:
                                     print("Remeshing by extending towards negative x...")
 
-                                    elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -384,7 +386,7 @@ class Controller:
                                 if side == 3:
                                     print("Remeshing by extending towards positive x...")
 
-                                    elems_add = int(self.fracture.mesh.nx * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
