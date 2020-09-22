@@ -242,10 +242,10 @@ def pointtolinedistance(x0, x1, x2, y0, y1, y2):
     :param y2: float representing the y coordinate of the second point contained by the line
     :return: float representing the shortest euclidean distance
     """
-    if x1 != x2 and  y1 != y2:
-        return np.abs((y2-y1)*x0-(x2-x1)*y0+x2*y1-y2*x1)/np.sqrt((-x1 + x2)**2 + (-y1 + y2)**2)
-    else:
+    if x1 == x2 and y1 == y2:
         raise SystemExit('FRONT RECONSTRUCTION ERROR: line definded by two coincident points')
+    else:
+        return np.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1) / np.sqrt((-x1 + x2) ** 2 + (-y1 + y2) ** 2)
 
 def elements(typeindex, nodeindex, connectivityedgeselem, Connectivitynodeselem, edgeORvertexID):
     """ This function handles two cases: a and b. It returns respectively:

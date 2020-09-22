@@ -186,3 +186,26 @@ In the above code, we first load the state of the fracture at five equidistant t
                                             point2=ext_pnts[1])
 
 Finally, in addition to the slice, solution at a single point can also be plotted using the :py:func:`visualization.plot_fracture_list_at_point` function. See the documention of the functions for details.
+
+
+Exporting selected data to JSON
+---------------------------
+You can export the result of the computations to a JSON files (JavaScript Object Notation) and then postprocess it via other programs e.g. Wolfram Mathematica. The function :py:func:`append_to_json_file` is used for creating the file and adding data to it. The function requires always at least 3 arguments: the filename, the data to be written and the operation to be done. In the following example we export to a JSON file the list of times at which the solution has been computed and saved.
+
+.. code-block:: python
+
+    from postprocess_fracture import append_to_json_file
+	myJsonName='./path/and/name/of/my/jsonfile.json'
+	 
+    Fr_list, properties = load_fractures(address='path/to/results/directory')
+    Solid, Fluid, Injection, simulProp = properties
+    
+	time_srs = get_fracture_variable(Fr_list,variable='time')
+
+    append_to_json_file(myJsonName, time_srs,
+                        'append2keyASnewlist',
+                        key='time_srs_of_Fr_list',
+                        delete_existing_filename=True)
+
+The function :py:func:`append_to_json_file` by default does not remove the existing JSON file. A new file is created if it does not exist, otherwise it is extended with the provided data. In the case of the example above the option 'delete_existing_filename=True' make sure that the data is dumped to a new file. Thus in this case the function creates a new python dictionary with one key and the associated list before dumping the dictionary to the file. 
+							
