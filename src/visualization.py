@@ -302,7 +302,8 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme
                                                points of the plotted slice. These points can be used to plot analytical
                                                solution.
-
+        export2Json (bool)                  -- If you set it to True the function will return a dictionary with the
+                                               data of the corresponding plot
     Returns:
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
