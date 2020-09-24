@@ -3345,8 +3345,8 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
                       '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
                       '    some of the tip elements they will became channel element of the previous time step. ' \
                       '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
-                      'PS: AFTER REMOVING A POINT THE LevelSet IS RECOMPUTED BY ASSUMING THE DISTANCE \nTO THE RECONSTRUCTED FRONT' \
-                      'THIS MIGHT RESULT IN A NUMERICAL RECESSION OF THE FRONT \n BUT AT WORST IT CAN BE DETECTED AND SOLVER BY REFINEMENT'
+                      'PS: After removing a point, the LevelSet is recomputed by assuming the distance  \nto the reconstructed front.' \
+                      'This might result in a numerical recession of the front \n but at worst it can be detected and solved by spatial or temporal refinement.'
             raise SystemExit(message)
 
         EltRibbon_k = newRibbon
