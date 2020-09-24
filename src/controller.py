@@ -445,11 +445,15 @@ class Controller:
                     # index of current time in the time series (first row) of the injection rate array
                     time_larger = np.where(Fr_n_pls1.time <= self.injection_prop.injectionRate[0, :])[0]
                     pos_inj = np.where(self.injection_prop.injectionRate[1, :] > 0)[0]
+                    Qact = self.injection_prop.get_injection_rate(self.fracture.time, self.fracture)
                     after_time = np.intersect1d(time_larger, pos_inj)
-                    if len(after_time) == 0:
+                    if len(after_time) == 0 and max(Q) == 0.:
                         print("Positive injection not found!")
                         break
-                    jump_to = min(self.injection_prop.injectionRate[0, np.intersect1d(time_larger, pos_inj)])
+                    elif len(after_time) == 0:
+                        jump_to = self.fracture.time + self.fracture.time * 0.1
+                    else:
+                        jump_to = min(self.injection_prop.injectionRate[0, np.intersect1d(time_larger, pos_inj)])
                     Fr_n_pls1.time = jump_to
                 elif inp == 'n' or inp == 'N':
                     self.sim_prop.solveDeltaP = True
