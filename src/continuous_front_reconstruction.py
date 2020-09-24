@@ -3081,7 +3081,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
              global_list_of_vertexpositionwithinthecell,
              global_list_of_vertexpositionwithinthecellTIPcellsONLY,
              correct_size_of_pstv_region,
-             sgndDist_k, Ffront, number_of_fronts, fronts_dictionary ] = reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0=lstTmStp_EltCrack0)
+             sgndDist_k, Ffront, number_of_fronts, fronts_dictionary ] = reconstruct_front_continuous(sgndDist_k,
+                                                                                                      anularegion,
+                                                                                                      Ribbon,
+                                                                                                      eltsChannel,
+                                                                                                      mesh,
+                                                                                                      recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                                                      lstTmStp_EltCrack0=lstTmStp_EltCrack0)
         else:
             #find the number of fronts
             number_of_fronts = len(list_of_xintersections_for_all_closed_paths)
