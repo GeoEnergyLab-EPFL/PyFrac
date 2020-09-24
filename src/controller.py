@@ -341,8 +341,8 @@ class Controller:
 
                                     new_limits = [[self.fracture.mesh.domainLimits[2],
                                                    self.fracture.mesh.domainLimits[3]],
-                                                  [self.fracture.mesh.domainLimits[
-                                                       0] - elems_add * self.fracture.mesh.hy,
+                                                  [self.fracture.mesh.domainLimits[0] -
+                                                   elems_add * self.fracture.mesh.hy,
                                                    self.fracture.mesh.domainLimits[1]]]
 
                                     direction = 'bottom'
@@ -359,8 +359,8 @@ class Controller:
                                     new_limits = [[self.fracture.mesh.domainLimits[2],
                                                    self.fracture.mesh.domainLimits[3]],
                                                   [self.fracture.mesh.domainLimits[0],
-                                                   self.fracture.mesh.domainLimits[
-                                                       1] + elems_add * self.fracture.mesh.hy]]
+                                                   self.fracture.mesh.domainLimits[1] +
+                                                   elems_add * self.fracture.mesh.hy]]
 
                                     direction = 'top'
 

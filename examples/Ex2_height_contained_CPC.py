@@ -16,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(4., 4.6, 29, 35)
+Mesh = CartesianMesh(2.75, 2.5, 29, 27)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -45,12 +45,13 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 145.              # the time at which the simulation stops
+simulProp.finalTime = 160.              # the time at which the simulation stops
 simulProp.bckColor = 'sigma0'           # setting the parameter according to which the mesh is color coded
 simulProp.set_outputFolder("./Data/height_contained")
 simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
 simulProp.plotVar = ['footprint']       # plotting footprint
 simulProp.set_mesh_extension_direction(['horizontal'])
+simulProp.meshExtensionFactor = 1.5
 
 # initializing fracture
 Fr_geometry = Geometry(shape='radial', radius=1.)
@@ -155,7 +156,7 @@ Fr_list, properties = load_fractures(address="./Data/height_contained",
                                      time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]))
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
-plot_prop_mesh = PlotProperties(text_size=1.7, use_tex=True)
+plot_prop_mesh = PlotProperties(text_size=1.7)#, use_tex=True)
 Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
                             variable='mesh',
                             projection='3D',
@@ -184,17 +185,17 @@ Fig_Fr = plot_analytical_solution('M',
                                   plot_prop=plt_prop)
 
 # Fig_Fr = None
-Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
-
-plot_prop = PlotProperties(alpha=0.2, text_size=5)           #plotting width
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='w',
-                            projection='3D',
-                            fig=Fig_Fr,
-                            plot_prop=plot_prop)
+# Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
+#                             variable='footprint',
+#                             projection='3D',
+#                             fig=Fig_Fr)
+#
+# plot_prop = PlotProperties(alpha=0.2, text_size=5)           #plotting width
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='w',
+#                             projection='3D',
+#                             fig=Fig_Fr,
+#                             plot_prop=plot_prop)
 ax = Fig_Fr.get_axes()[0]
 ax.view_init(60, -114)
 

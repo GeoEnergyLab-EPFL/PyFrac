@@ -58,7 +58,6 @@ simulProp.finalTime = 1e5                                   # the time at which 
 simulProp.set_outputFolder("./Data/buoyant_line_source")    # the disk address where the files are saved
 simulProp.gravity = True                                    # take the effect of gravity into account
 simulProp.set_mesh_extension_direction(['top'])
-simulProp.frontAdvancing = 'explicit'
 
 # initialization parameters
 Fr_geometry = Geometry(shape='height contained',
