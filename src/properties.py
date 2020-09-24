@@ -365,7 +365,8 @@ class InjectionProperties:
                  delayed_second_injpoint_loc=None,
                  initial_rate_delayed_second_injpoint=None,
                  rate_delayed_inj_pt_func=None,
-                 delayed_second_injpoint_loc_func=None):
+                 delayed_second_injpoint_loc_func=None,
+                 silent=False):
         """
         The constructor of the InjectionProperties class.
         """
@@ -432,7 +433,7 @@ class InjectionProperties:
         if source_loc_func is None:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
-                    print("Setting the source coordinates to the closest cell center...")
+                    if not silent: print("Setting the source coordinates to the closest cell center...")
                     self.sourceCoordinates = source_coordinates
                 else:
                     # error
@@ -447,7 +448,7 @@ class InjectionProperties:
             if np.isnan(self.sourceElem).any():
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
-            print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
+            if not silent: print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1][0]) + ')')
             self.sourceLocFunc = None
         else:
