@@ -15,8 +15,17 @@ Authors
 ===============
 - Haseeb Zia <haseeb.zia@epfl.ch>
 - Brice Lecampion <brice.lecampion@epfl.ch>
-- Fatima-Ezzahra Moukhtari <fatima-ezzahra.moukhtari@epfl.ch>
+- Fatima-Ezzahra Moukhtari
 - Weihan Zhang
+- Carlo Peruzzo <carlo.peruzzo@epfl.ch>
+- Andreas Mori <andreas.mori@epfl.ch>
+
+
+Support
+===============
+We have a Slack channel for PyFrac with the aim of supporting the users.
+You can Join the channel by following the link:
+https://join.slack.com/t/pyfrac/shared_invite/zt-hqt8wg1w-_7YC4PBNitp7C~a_0ygm~A
 
 ##Version
 

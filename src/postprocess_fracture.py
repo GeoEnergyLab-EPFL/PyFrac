@@ -31,7 +31,7 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, silent=False):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -53,7 +53,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
     """
 
-    print('Returning fractures...')
+    if not silent: print('Returning fractures...')
 
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
@@ -111,7 +111,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
         if 1. - next_t / ff.time >= -1e-8:
             # if the current fracture time has advanced the output time period
-            print('Returning fracture at ' + repr(ff.time) + ' s')
+            if not silent: print('Returning fracture at ' + repr(ff.time) + ' s')
 
             fracture_list.append(ff)
 
