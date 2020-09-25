@@ -3135,85 +3135,88 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                       xinters4all_closed_paths_2,
                                       yinters4all_closed_paths_2))
 
-        # construct the informations about the cracks
-        if fronts_dictionary['number_of_fronts'] == 2:
-            if len(fullyfractured)>0: #divide the fully traversed cells from left to right
-                isfullyfractured0 =   ray_tracing_numpy(mesh.CenterCoor[fullyfractured, 0][np.newaxis],
-                                                        mesh.CenterCoor[fullyfractured, 1][np.newaxis],
-                                                        np.column_stack((fronts_dictionary['xint_0'], fronts_dictionary['yint_0'])))
-                fullyfractured0 = fullyfractured[np.nonzero(isfullyfractured0)]
-                fullyfractured1 = np.setdiff1d(fullyfractured,fullyfractured0)
-                fronts_dictionary['TIPcellsANDfullytrav_0'].extend(fullyfractured0)
-                fronts_dictionary['TIPcellsANDfullytrav_1'].extend(fullyfractured1)
+        if not recompute_front: # the following should be executed only if the front has not been recomputed,
+            # otherwise fronts_dictionary has already been done
 
-            indx = np.where(sgndDist_k<=0)
-            crack_cells=ray_tracing_numpy(mesh.CenterCoor[indx,0],
-                                          mesh.CenterCoor[indx,1], np.column_stack((fronts_dictionary['xint_0'],fronts_dictionary['yint_0'])))
-            #####PLOT TO CHECK THE RESULT
-            # plot_ray_tracing_numpy_results(mesh,
-            #                                mesh.CenterCoor[indx[0],0],
-            #                                mesh.CenterCoor[indx[0],1],
-            #                                np.column_stack((fronts_dictionary['xint_0'],fronts_dictionary['yint_0'])),
-            #                                crack_cells)
-            #####
+            # construct the informations about the cracks
+            if fronts_dictionary['number_of_fronts'] == 2:
+                if len(fullyfractured)>0: #divide the fully traversed cells from left to right
+                    isfullyfractured0 =   ray_tracing_numpy(mesh.CenterCoor[fullyfractured, 0][np.newaxis],
+                                                            mesh.CenterCoor[fullyfractured, 1][np.newaxis],
+                                                            np.column_stack((fronts_dictionary['xint_0'], fronts_dictionary['yint_0'])))
+                    fullyfractured0 = fullyfractured[np.nonzero(isfullyfractured0)]
+                    fullyfractured1 = np.setdiff1d(fullyfractured,fullyfractured0)
+                    fronts_dictionary['TIPcellsANDfullytrav_0'].extend(fullyfractured0)
+                    fronts_dictionary['TIPcellsANDfullytrav_1'].extend(fullyfractured1)
 
-            fronts_dictionary['crackcells_0']=np.unique(np.concatenate((indx[0][np.where(crack_cells==1)[0]],fronts_dictionary['TIPcellsONLY_0'])))
+                indx = np.where(sgndDist_k<=0)
+                crack_cells=ray_tracing_numpy(mesh.CenterCoor[indx,0],
+                                              mesh.CenterCoor[indx,1], np.column_stack((fronts_dictionary['xint_0'],fronts_dictionary['yint_0'])))
+                #####PLOT TO CHECK THE RESULT
+                # plot_ray_tracing_numpy_results(mesh,
+                #                                mesh.CenterCoor[indx[0],0],
+                #                                mesh.CenterCoor[indx[0],1],
+                #                                np.column_stack((fronts_dictionary['xint_0'],fronts_dictionary['yint_0'])),
+                #                                crack_cells)
+                #####
 
-            crack_cells=ray_tracing_numpy(mesh.CenterCoor[indx,0],
-                                          mesh.CenterCoor[indx,1], np.column_stack((fronts_dictionary['xint_1'],fronts_dictionary['yint_1'])))
-            #####PLOT TO CHECK THE RESULT
-            # plot_ray_tracing_numpy_results(mesh,
-            #                                mesh.CenterCoor[indx[0],0],
-            #                                mesh.CenterCoor[indx[0],1],
-            #                                np.column_stack((fronts_dictionary['xint_1'],fronts_dictionary['yint_1'])),
-            #                                crack_cells)
-            #####
+                fronts_dictionary['crackcells_0']=np.unique(np.concatenate((indx[0][np.where(crack_cells==1)[0]],fronts_dictionary['TIPcellsONLY_0'])))
 
-            fronts_dictionary['crackcells_1']=np.unique(np.concatenate((indx[0][np.where(crack_cells==1)[0]],fronts_dictionary['TIPcellsONLY_1'])))
-            #####PLOT TO CHECK THE RESULT
-            # newindx=np.concatenate((fronts_dictionary['crackcells_1'],fronts_dictionary['crackcells_0']))
-            # crack_cells = np.ones(newindx.size,np.bool_)
-            # plot_ray_tracing_numpy_results(mesh,
-            #                                mesh.CenterCoor[newindx, 0],
-            #                                mesh.CenterCoor[newindx, 1],
-            #                                np.column_stack((np.concatenate((fronts_dictionary['xint_0'],fronts_dictionary['xint_1'])),
-            #                                                 np.concatenate((fronts_dictionary['yint_0'], fronts_dictionary['yint_1'])))),
-            #                                                 crack_cells)
-            #
-            #
-            # crack_cells = np.ones(fronts_dictionary['crackcells_0'].size, np.bool_)
-            # plot_ray_tracing_numpy_results(mesh,
-            #                                mesh.CenterCoor[fronts_dictionary['crackcells_0'], 0],
-            #                                mesh.CenterCoor[fronts_dictionary['crackcells_0'], 1],
-            #                                np.column_stack((fronts_dictionary['xint_0'],
-            #                                                 fronts_dictionary['yint_0'])),
-            #                                                 crack_cells)
-            # crack_cells = np.ones(fronts_dictionary['crackcells_1'].size, np.bool_)
-            # plot_ray_tracing_numpy_results(mesh,
-            #                                mesh.CenterCoor[fronts_dictionary['crackcells_1'], 0],
-            #                                mesh.CenterCoor[fronts_dictionary['crackcells_1'], 1],
-            #                                np.column_stack((fronts_dictionary['xint_1'],
-            #                                                 fronts_dictionary['yint_1'])),
-            #                                                 crack_cells)
-            #####
-            if lstTmStp_EltCrack0 is not None and fronts_dictionary['number_of_fronts'] == 2:
-                # check if the left fracture is always the same
-                if not np.sum(np.ndarray.astype(np.in1d(lstTmStp_EltCrack0, fronts_dictionary['crackcells_0']),int)) > 0:
-                    temp_crackcells_0 = fronts_dictionary['crackcells_0']
-                    temp_xint_0 = fronts_dictionary['xint_0']
-                    temp_TIPcellsONLY_0 = fronts_dictionary['TIPcellsONLY_0']
-                    temp_TIPcellsANDfullytrav_0 = fronts_dictionary['TIPcellsANDfullytrav_0']
-                    fronts_dictionary['crackcells_0']          = fronts_dictionary ['crackcells_1']
-                    fronts_dictionary['xint_0']                = fronts_dictionary['xint_1']
-                    fronts_dictionary['TIPcellsONLY_0']        = fronts_dictionary['TIPcellsONLY_1']
-                    fronts_dictionary['TIPcellsANDfullytrav_0']= fronts_dictionary['TIPcellsANDfullytrav_1']
-                    fronts_dictionary['crackcells_1']          = temp_crackcells_0
-                    fronts_dictionary['xint_1']                = temp_xint_0
-                    fronts_dictionary['TIPcellsONLY_1']        = temp_TIPcellsONLY_0
-                    fronts_dictionary['TIPcellsANDfullytrav_1']= temp_TIPcellsANDfullytrav_0
-        else:
-            fronts_dictionary['crackcells_0'] = None
-            fronts_dictionary['crackcells_1'] = None
+                crack_cells=ray_tracing_numpy(mesh.CenterCoor[indx,0],
+                                              mesh.CenterCoor[indx,1], np.column_stack((fronts_dictionary['xint_1'],fronts_dictionary['yint_1'])))
+                #####PLOT TO CHECK THE RESULT
+                # plot_ray_tracing_numpy_results(mesh,
+                #                                mesh.CenterCoor[indx[0],0],
+                #                                mesh.CenterCoor[indx[0],1],
+                #                                np.column_stack((fronts_dictionary['xint_1'],fronts_dictionary['yint_1'])),
+                #                                crack_cells)
+                #####
+
+                fronts_dictionary['crackcells_1']=np.unique(np.concatenate((indx[0][np.where(crack_cells==1)[0]],fronts_dictionary['TIPcellsONLY_1'])))
+                #####PLOT TO CHECK THE RESULT
+                # newindx=np.concatenate((fronts_dictionary['crackcells_1'],fronts_dictionary['crackcells_0']))
+                # crack_cells = np.ones(newindx.size,np.bool_)
+                # plot_ray_tracing_numpy_results(mesh,
+                #                                mesh.CenterCoor[newindx, 0],
+                #                                mesh.CenterCoor[newindx, 1],
+                #                                np.column_stack((np.concatenate((fronts_dictionary['xint_0'],fronts_dictionary['xint_1'])),
+                #                                                 np.concatenate((fronts_dictionary['yint_0'], fronts_dictionary['yint_1'])))),
+                #                                                 crack_cells)
+                #
+                #
+                # crack_cells = np.ones(fronts_dictionary['crackcells_0'].size, np.bool_)
+                # plot_ray_tracing_numpy_results(mesh,
+                #                                mesh.CenterCoor[fronts_dictionary['crackcells_0'], 0],
+                #                                mesh.CenterCoor[fronts_dictionary['crackcells_0'], 1],
+                #                                np.column_stack((fronts_dictionary['xint_0'],
+                #                                                 fronts_dictionary['yint_0'])),
+                #                                                 crack_cells)
+                # crack_cells = np.ones(fronts_dictionary['crackcells_1'].size, np.bool_)
+                # plot_ray_tracing_numpy_results(mesh,
+                #                                mesh.CenterCoor[fronts_dictionary['crackcells_1'], 0],
+                #                                mesh.CenterCoor[fronts_dictionary['crackcells_1'], 1],
+                #                                np.column_stack((fronts_dictionary['xint_1'],
+                #                                                 fronts_dictionary['yint_1'])),
+                #                                                 crack_cells)
+                #####
+                if lstTmStp_EltCrack0 is not None and fronts_dictionary['number_of_fronts'] == 2:
+                    # check if the left fracture is always the same
+                    if not np.sum(np.ndarray.astype(np.in1d(lstTmStp_EltCrack0, fronts_dictionary['crackcells_0']),int)) > 0:
+                        temp_crackcells_0 = fronts_dictionary['crackcells_0']
+                        temp_xint_0 = fronts_dictionary['xint_0']
+                        temp_TIPcellsONLY_0 = fronts_dictionary['TIPcellsONLY_0']
+                        temp_TIPcellsANDfullytrav_0 = fronts_dictionary['TIPcellsANDfullytrav_0']
+                        fronts_dictionary['crackcells_0']          = fronts_dictionary ['crackcells_1']
+                        fronts_dictionary['xint_0']                = fronts_dictionary['xint_1']
+                        fronts_dictionary['TIPcellsONLY_0']        = fronts_dictionary['TIPcellsONLY_1']
+                        fronts_dictionary['TIPcellsANDfullytrav_0']= fronts_dictionary['TIPcellsANDfullytrav_1']
+                        fronts_dictionary['crackcells_1']          = temp_crackcells_0
+                        fronts_dictionary['xint_1']                = temp_xint_0
+                        fronts_dictionary['TIPcellsONLY_1']        = temp_TIPcellsONLY_0
+                        fronts_dictionary['TIPcellsANDfullytrav_1']= temp_TIPcellsANDfullytrav_0
+            else:
+                fronts_dictionary['crackcells_0'] = None
+                fronts_dictionary['crackcells_1'] = None
 
 
 

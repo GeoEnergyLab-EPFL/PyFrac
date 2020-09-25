@@ -33,8 +33,8 @@ def My_KIc_func(x, y):
 # material properties
 def sigmaO_func(x, y):
 
-    # uncomment the following section if you would like to consider field of stress
-    # caracterized by the presence of more heterogeneities.
+    # comment the following section if you would like to consider field of stress
+    # caracterized by the presence of less heterogeneities.
     lx = 0.20
     ly = 0.20
     if math.trunc(abs(x) / lx) >0:
@@ -48,6 +48,7 @@ def sigmaO_func(x, y):
             y = abs(y) - (math.trunc(abs(y) / ly)) * ly
         else :
             y = abs(y) - (math.trunc(abs(y) / ly)+1) * ly
+    # comment up to here
 
 
     """ The function providing the confining stress"""
@@ -83,7 +84,7 @@ simulProp.bckColor = 'sigma0'
 simulProp.finalTime = 0.15                           # the time at which the simulation stops
 simulProp.outputTimePeriod = 1e-4                    # to save after every time step
 simulProp.tmStpPrefactor = 0.5                       # decrease the pre-factor due to explicit front tracking
-simulProp.set_outputFolder("./Data/localized_stress_heterogeneities") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/stress_heterogeneities") # the disk address where the files are saved
 simulProp.saveFluidFluxAsVector = True
 simulProp.plotVar = ['ffvf']
 simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
@@ -119,7 +120,7 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-Fr_list, properties = load_fractures(address="./Data/localized_stress_heterogeneities",step_size=1)       # load all fractures
+Fr_list, properties = load_fractures(address="./Data/stress_heterogeneities",step_size=1)                  # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
 Solid, Fluid, Injection, simulProp = properties
 
@@ -133,7 +134,7 @@ Fig_R = plot_fracture_list(Fr_list,
                            fig=Fig_R,
                            variable='mesh',
                            mat_properties=properties[0],
-                           backGround_param='K1c',
+                           backGround_param='sigma0',
                            plot_prop=plot_prop)
 
 # plot fracture radius
