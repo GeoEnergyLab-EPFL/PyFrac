@@ -137,23 +137,6 @@ Fig_R = plot_fracture_list(Fr_list,
                            backGround_param='sigma0',
                            plot_prop=plot_prop)
 
-# plot fracture radius
-plot_prop = PlotProperties()
-plot_prop.lineStyle = '.'               # setting the linestyle to point
-plot_prop.graphScaling = 'loglog'       # setting to log log plot
-Fig_R = plot_fracture_list(Fr_list,
-                           variable='d_mean',
-                           plot_prop=plot_prop)
-
-# plot analytical radius
-Fig_R = plot_analytical_solution(regime='M',
-                                 variable='d_mean',
-                                 mat_prop=Solid,
-                                 inj_prop=Injection,
-                                 fluid_prop=Fluid,
-                                 time_srs=time_srs,
-                                 fig=Fig_R)
-
 #  set block=True and comment last 2 lines if you want to keep the window open
 plt.show(block=True)
 # plt.show(block=False)
