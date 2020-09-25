@@ -532,6 +532,8 @@ class Controller:
         print("\n\n-----Simulation finished------")
         print("See log file for details\n\n")
 
+        return True
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 
