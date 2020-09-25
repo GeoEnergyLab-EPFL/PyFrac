@@ -2018,7 +2018,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         """
         if np.any(sgndDist_k[mesh.Frontlist] < 0):
             print('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negat')
-            negativefront = np.where(sgndDist_k[mesh.Frontlist] < 0)[0]
+            negativefront = np.where(sgndDist_k < 0)[0]
             intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
             correct_size_of_pstv_region = [False, True, False]
             return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
