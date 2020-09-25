@@ -2012,7 +2012,16 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         mac_precision = 100*np.sqrt(np.finfo(float).eps)
         zero_level_set_value = np.minimum(mesh.hx,mesh.hy)/1000.
         area_of_a_cell = mesh.hx * mesh.hy
-
+        """
+        -1) - Prerequistite to be checked here: none of the cells at the boundary should have negetive Level set
+            
+        """
+        if np.any(sgndDist_k[mesh.Frontlist] < 0):
+            print('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negat')
+            negativefront = np.where(sgndDist_k[mesh.Frontlist] < 0)[0]
+            intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
+            correct_size_of_pstv_region = [False, True, False]
+            return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
 
         """
         0) - Set all the LS==0 to -zero_level_set_value
