@@ -33,20 +33,21 @@ def My_KIc_func(x, y):
 # material properties
 def sigmaO_func(x, y):
 
-    # to be uncommented to consider an heterogeneous field of stress
-    # lx = 0.20
-    # ly = 0.20
-    # if math.trunc(abs(x) / lx) >0:
-    #     if math.trunc(abs(x) / lx) %2 == 0:
-    #         x = abs(x) - (math.trunc(abs(x) / lx)) * lx
-    #     else :
-    #         x = abs(x) - (math.trunc(abs(x) / lx) + 1) * lx
-    #
-    # if math.trunc(abs(y) / ly) > 0:
-    #     if math.trunc(abs(y) / ly) %2 == 0:
-    #         y = abs(y) - (math.trunc(abs(y) / ly)) * ly
-    #     else :
-    #         y = abs(y) - (math.trunc(abs(y) / ly)+1) * ly
+    # uncomment the following section if you would like to consider field of stress
+    # caracterized by the presence of more heterogeneities.
+    lx = 0.20
+    ly = 0.20
+    if math.trunc(abs(x) / lx) >0:
+        if math.trunc(abs(x) / lx) %2 == 0:
+            x = abs(x) - (math.trunc(abs(x) / lx)) * lx
+        else :
+            x = abs(x) - (math.trunc(abs(x) / lx) + 1) * lx
+
+    if math.trunc(abs(y) / ly) > 0:
+        if math.trunc(abs(y) / ly) %2 == 0:
+            y = abs(y) - (math.trunc(abs(y) / ly)) * ly
+        else :
+            y = abs(y) - (math.trunc(abs(y) / ly)+1) * ly
 
 
     """ The function providing the confining stress"""
@@ -82,11 +83,11 @@ simulProp.bckColor = 'sigma0'
 simulProp.finalTime = 0.15                           # the time at which the simulation stops
 simulProp.outputTimePeriod = 1e-4                    # to save after every time step
 simulProp.tmStpPrefactor = 0.5                       # decrease the pre-factor due to explicit front tracking
-simulProp.set_outputFolder("./Data/localized_stress_heterofgeneities") # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/localized_stress_heterogeneities") # the disk address where the files are saved
 simulProp.saveFluidFluxAsVector = True
 simulProp.plotVar = ['ffvf']
 simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
-simulProp.saveToDisk = False
+simulProp.saveToDisk = True
 
 # initialization parameters
 Fr_geometry = Geometry('radial', radius=0.12)
@@ -118,7 +119,7 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-Fr_list, properties = load_fractures(address="./Data/localized_stress_heterofgeneities",step_size=1)       # load all fractures
+Fr_list, properties = load_fractures(address="./Data/localized_stress_heterogeneities",step_size=1)       # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
 Solid, Fluid, Injection, simulProp = properties
 
