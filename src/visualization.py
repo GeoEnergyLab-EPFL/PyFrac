@@ -2461,4 +2461,4 @@ def plot_points_to_mkmtTriangle(fig, rgbpoints):
         y[k] = 0.5/a * rgb[1] / somme
     
     # Plot the points
-    fig.plot(x, y, "k.", markersize=12)
+    fig.plot(x, y, "k.", markersize=9)
