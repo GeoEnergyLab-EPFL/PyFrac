@@ -12,11 +12,12 @@ from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
 from fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
+from fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
+from elasticity import load_isotropic_elasticity_matrix
 
 
 # creating mesh
-Mesh = CartesianMesh(115, 115, 61, 61)
+Mesh = CartesianMesh(115, 115, 51, 51)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -54,17 +55,25 @@ Fluid = FluidProperties(viscosity=1.1e-3, density=1000)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e5                                   # the time at which the simulation stops
+simulProp.finalTime = 1.1e4                                   # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/buoyant_line_source")    # the disk address where the files are saved
 simulProp.gravity = True                                    # take the effect of gravity into account
 simulProp.set_mesh_extension_direction(['top'])
+simulProp.toleranceEHL = 1e-3
 
-# initialization parameters
-Fr_geometry = Geometry(shape='height contained',
-                       fracture_length=80,
-                       fracture_height=35,
-                       center=[0, -75])
-init_param = InitializationParameters(Fr_geometry, regime='PKN')
+# initializing fracture
+surv_cells, _, inner_cells = get_eliptical_survey_cells(Mesh, 80, 20, center=[0.0, -75.0])
+surv_cells_dist= surv_cells * 0 + (Mesh.hx ** 2 + Mesh.hy ** 2) ** (1/2)
+Fr_geometry = Geometry(shape='level set',
+                       survey_cells=surv_cells,
+                       tip_distances=surv_cells_dist,
+                       inner_cells=inner_cells)
+
+C = load_isotropic_elasticity_matrix(Mesh, Eprime)
+init_param = InitializationParameters(Fr_geometry,
+                                      regime='static',
+                                      net_pressure=5e4,
+                                      elasticity_matrix=C)
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -82,7 +91,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-controller.run()
+#controller.run()
 
 
 ####################
@@ -92,7 +101,7 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-time_srs = np.linspace(1, 6000, 5)
+time_srs = np.linspace(1, 1e4, 7)
 Fr_list, properties = load_fractures(address="./Data/buoyant_line_source",
                                      time_srs=time_srs)
 time_srs = get_fracture_variable(Fr_list,
@@ -101,7 +110,9 @@ time_srs = get_fracture_variable(Fr_list,
 # plot footprint
 Fig_FP = plot_fracture_list(Fr_list,
                             variable='mesh',
-                            projection='2D')
+                            projection='2D',
+                            mat_properties=properties[0],
+                            backGround_param='confining stress')
 Fig_FP = plot_fracture_list(Fr_list,
                             variable='footprint',
                             projection='2D',
@@ -116,17 +127,17 @@ Fig_WS = plot_fracture_list_slice(Fr_list,
                                   plot_cell_center=True,
                                   orientation='vertical')
 
-#plotting in 3D
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='3D')
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='width',
-                            projection='3D',
-                            fig=Fig_Fr)
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
+# #plotting in 3D
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='mesh',
+#                             projection='3D')
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='width',
+#                             projection='3D',
+#                             fig=Fig_Fr)
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='footprint',
+#                             projection='3D',
+#                             fig=Fig_Fr)
 
 plt.show(block=True)

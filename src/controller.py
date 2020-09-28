@@ -1000,21 +1000,22 @@ class Controller:
 
         new_indexes = np.array(mapping_old_indexes(new_mesh, self.fracture.mesh, direction))
 
-        self.C = np.vstack((np.hstack((self.C, np.full((Ne_old, Ne - Ne_old), 0.))),
-           np.full((Ne - Ne_old, Ne), 0.)))
+        if len(self.C) != Ne:
+            self.C = np.vstack((np.hstack((self.C, np.full((Ne_old, Ne - Ne_old), 0.))),
+               np.full((Ne - Ne_old, Ne), 0.)))
 
-        self.C[np.ix_(new_indexes, new_indexes)] = self.C[np.ix_(np.arange(Ne_old), np.arange(Ne_old))]
+            self.C[np.ix_(new_indexes, new_indexes)] = self.C[np.ix_(np.arange(Ne_old), np.arange(Ne_old))]
 
-        add_el = np.setdiff1d(np.arange(Ne), new_indexes)
+            add_el = np.setdiff1d(np.arange(Ne), new_indexes)
 
-        for i in add_el:
-            x = new_mesh.CenterCoor[i, 0] - new_mesh.CenterCoor[:, 0]
-            y = new_mesh.CenterCoor[i, 1] - new_mesh.CenterCoor[:, 1]
+            for i in add_el:
+                x = new_mesh.CenterCoor[i, 0] - new_mesh.CenterCoor[:, 0]
+                y = new_mesh.CenterCoor[i, 1] - new_mesh.CenterCoor[:, 1]
 
-            self.C[i] = (self.solid_prop.Eprime / (8. * np.pi)) * (
-                    np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
-                np.square(a + x) + np.square(b - y)
-            ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
-                np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
+                self.C[i] = (self.solid_prop.Eprime / (8. * np.pi)) * (
+                        np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
+                    np.square(a + x) + np.square(b - y)
+                ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
+                    np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
 
-        self.C[np.ix_(new_indexes, add_el)] = np.transpose(self.C[np.ix_(add_el, new_indexes)])
+            self.C[np.ix_(new_indexes, add_el)] = np.transpose(self.C[np.ix_(add_el, new_indexes)])
