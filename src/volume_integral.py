@@ -649,7 +649,7 @@ def FindBracket_w_HB(a, b, *args):
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
     log = logging.getLogger('PyFrac.FindBracket_w_HB')
-    
+
     ((l, Kprime, Eprime, muPrime, Cbar, Vel, n, k, T0), dist) = args
 
     Mprime = 2 ** (n + 1) * (2 * n + 1) ** n / n ** n * k
