@@ -14,6 +14,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from visualization import *
+from utility import setup_logging_to
+
+# setting up the logging options
+setup_logging_to(logging_to_file_level='debug',logging_to_console_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)
