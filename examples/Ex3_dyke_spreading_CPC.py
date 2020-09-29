@@ -63,9 +63,10 @@ simulProp.tolFractFront = 3e-3              # increase the tolerance for fractur
 simulProp.plotTSJump = 4                    # plot every fourth time step
 simulProp.saveTSJump = 2                    # save every second time step
 simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
-simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.3, 0.1]]) # set up the time step prefactor
+simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.5, 0.1]]) # set up the time step prefactor
 simulProp.timeStepLimit = 5000              # time step limit
-simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
+simulProp.plotVar = ['w', 'v', 'regime']              # plot fracture width and fracture front velocity
+simulProp.projMethod = 'ILSA_orig'
 
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
