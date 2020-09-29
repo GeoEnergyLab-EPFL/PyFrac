@@ -2070,7 +2070,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             orthogonaldistances (float): -- descriptions.
 
         """
-        log = logging.getlogger('PyFrac.continuous_front_reconstruction')
+        log = logging.getLogger('PyFrac.continuous_front_reconstruction')
         recompute_front = False
         float_precision = np.float64
         mac_precision = 100*np.sqrt(np.finfo(float).eps)
