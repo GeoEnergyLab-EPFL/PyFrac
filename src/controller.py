@@ -447,7 +447,7 @@ class Controller:
                     pos_inj = np.where(self.injection_prop.injectionRate[1, :] > 0)[0]
                     Qact = self.injection_prop.get_injection_rate(self.fracture.time, self.fracture)
                     after_time = np.intersect1d(time_larger, pos_inj)
-                    if len(after_time) == 0 and max(Q) == 0.:
+                    if len(after_time) == 0 and max(Qact) == 0.:
                         print("Positive injection not found!")
                         break
                     elif len(after_time) == 0:
@@ -883,9 +883,13 @@ class Controller:
                                               TS_inj_cell,
                                               TS_delta_vol)
 
-            # limit time step to be max 5 * last time step
-            if (self.lstTmStp != None and not np.isinf(time_step)) and time_step > 5 * self.lstTmStp:
-                time_step = 5 * self.lstTmStp
+            # limit time step to be max 2 * last time step
+            if (self.lstTmStp != None and not np.isinf(time_step)) and time_step > 2 * self.lstTmStp:
+                time_step = 2 * self.lstTmStp
+
+            # limit the time step to be at max 25% of the actual time
+            if time_step > 0.15 * self.fracture.time:
+                time_step = 0.15 * self.fracture.time
 
         # in case of fracture not propagating
         if time_step <= 0 or np.isinf(time_step):
