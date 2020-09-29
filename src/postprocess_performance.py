@@ -16,6 +16,7 @@ else:
 
 import dill
 import numpy as np
+import logging
 import re
 import os
 

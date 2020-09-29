@@ -6,7 +6,7 @@ Created by Haseeb Zia on 11.05.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
+import logging
 import copy
 import matplotlib.pyplot as plt
 import dill
@@ -53,6 +53,7 @@ class Controller:
            C (ndarray):                             -- the elasticity matrix.
 
         """
+        log = logging.getLogger('PyFrac.controller')
         self.fracture = Fracture
         self.solid_prop = Solid_prop
         self.fluid_prop = Fluid_prop
@@ -121,7 +122,7 @@ class Controller:
 
         # Setting to volume control solver if viscosity is zero
         if self.fluid_prop.viscosity < 1e-15:
-           print("Fluid viscosity is zero. Setting solver to volume control...")
+           log.info('Fluid viscosity is zero. Setting solver to volume control...')
            self.sim_prop.set_volumeControl(True)
 
         if not all(elem in self.fracture.EltChannel for elem in Injection_prop.sourceElem):
@@ -174,7 +175,7 @@ class Controller:
         the documentation of the :py:class:`properties.SimulationProperties` class to get details of the parameters
         controlling the simulation run.
         """
-
+        log = logging.getLogger('PyFrac.controller.run')
         # output initial fracture
         if self.sim_prop.saveToDisk:
             # save properties
@@ -207,7 +208,7 @@ class Controller:
 
         # load elasticity matrix
         if self.C is None:
-            print("Making elasticity matrix...")
+            log.info("Making elasticity matrix...")
             if self.sim_prop.symmetric:
                 if not self.sim_prop.get_volumeControl():
                     raise ValueError("Symmetric fracture is only supported for inviscid fluid yet!")
@@ -232,15 +233,14 @@ class Controller:
                     self.C = symmetric_elasticity_matrix_from_full(C, self.fracture.mesh)
                 else:
                     self.C = C
-
-            print('Done!')
+            log.info('Done!')
 
         # # perform first time step with implicit front advancing due to non-availability of velocity
         # if not self.sim_prop.symmetric:
         #     if self.sim_prop.frontAdvancing == "predictor-corrector":
         #         self.sim_prop.frontAdvancing = "implicit"
 
-        print("Starting time = " + repr(self.fracture.time))
+        log.info("Starting time = " + repr(self.fracture.time))
         # starting time stepping loop
         while self.fracture.time < 0.999 * self.sim_prop.finalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
 
@@ -267,7 +267,7 @@ class Controller:
 
             if status == 1:
             # Successful time step
-                print("Time step successful!")
+                log.info("Time step successful!")
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
                 self.lstTmStp = Fr_n_pls1.time - self.fracture.time
                 # output
@@ -306,7 +306,7 @@ class Controller:
                     self.sim_prop.frontAdvancing = 'implicit'
 
                 if self.TmStpCount == self.sim_prop.maxTimeSteps:
-                    print("Max time steps reached!")
+                    log.warning("Max time steps reached!")
 
             elif status == 12:
                 # re-meshing required
@@ -323,7 +323,7 @@ class Controller:
                     # This is the classical remeshing where the sides of the elements are multiplied by a constant.
                     if not np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools)).any() or\
                             (len(np.asarray(side_bools)[np.asarray(side_bools) == True]) > 2):
-                        print("Remeshing by compressing the domain...")
+                        log.info("Remeshing by compressing the domain...")
 
                         # We calculate the new dimension of the meshed area
                         new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
@@ -347,7 +347,7 @@ class Controller:
                         for side in range(4):
                             if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
                                 if side == 0:
-                                    print("Remeshing by extending towards negative y...")
+                                    log.info("Remeshing by extending towards negative y...")
 
                                     elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
@@ -364,7 +364,7 @@ class Controller:
                                     elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
                                 if side == 1:
-                                    print("Remeshing by extending towards positive y...")
+                                    log.info("Remeshing by extending towards positive y...")
 
                                     elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
@@ -381,7 +381,7 @@ class Controller:
                                     elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
                                 if side == 2:
-                                    print("Remeshing by extending towards negative x...")
+                                    log.info("Remeshing by extending towards negative x...")
 
                                     elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
@@ -398,7 +398,7 @@ class Controller:
                                     elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
 
                                 if side == 3:
-                                    print("Remeshing by extending towards positive x...")
+                                    log.info("Remeshing by extending towards positive x...")
 
                                     elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor - 1))
                                     if elems_add % 2 != 0:
@@ -418,7 +418,7 @@ class Controller:
                                 side_bools[side] = False
 
                     if np.asarray(side_bools).any():
-                        print("Remeshing by compressing the domain...")
+                        log.info("Remeshing by compressing the domain...")
 
                         # We calculate the new dimension of the meshed area
                         new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
@@ -437,7 +437,7 @@ class Controller:
                     self.write_to_log("\nRemeshed at " + repr(self.fracture.time))
 
                 else:
-                    print("Reached end of the domain. Exiting...")
+                    log.info("Reached end of the domain. Exiting...")
                     break
 
             elif status == 14:
@@ -462,7 +462,7 @@ class Controller:
                     Qact = self.injection_prop.get_injection_rate(self.fracture.time, self.fracture)
                     after_time = np.intersect1d(time_larger, pos_inj)
                     if len(after_time) == 0 and max(Qact) == 0.:
-                        print("Positive injection not found!")
+                        log.warning("Positive injection not found!")
                         break
                     elif len(after_time) == 0:
                         jump_to = self.fracture.time + self.fracture.time * 0.1
@@ -505,19 +505,18 @@ class Controller:
 
                     self.chkPntReattmpts += 1
                     self.fracture = copy.deepcopy(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5])
-                    print("Time step have failed despite of reattempts with slightly smaller/bigger time steps...\n"
-                          "Going " + repr(5 - self.chkPntReattmpts) + " time steps back and re-attempting with the"
-                            " time step pre-factor of " + repr(current_PreFctr))
-                    self.write_to_log("\nTime step have failed. Going " + repr(6 - self.chkPntReattmpts) + " time steps"
-                                                                                                      " back...\n")
+                    log.warning("Time step have failed despite of reattempts with slightly smaller/bigger time steps...\n"
+                                  "Going " + repr(5 - self.chkPntReattmpts) + " time steps back and re-attempting with the"
+                                    " time step pre-factor of " + repr(current_PreFctr))
                     self.failedTimeSteps += 1
 
             self.TmStpCount += 1
 
-        self.write_to_log("\n\n-----Simulation finished------")
-        self.write_to_log("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
-        self.write_to_log("\nfailed time steps = " + repr(self.failedTimeSteps))
-        self.write_to_log("\nnumber of remeshings = " + repr(self.remeshings))
+        log.info("\nFinal time = " + repr(self.fracture.time))
+        log.info("\n\n-----Simulation finished------")
+        log.info("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
+        log.info("\nfailed time steps = " + repr(self.failedTimeSteps))
+        log.info("\nnumber of remeshings = " + repr(self.remeshings))
 
         plt.show(block=False)
         plt.close('all')
@@ -527,11 +526,6 @@ class Controller:
             os.makedirs(os.path.dirname(file_address), exist_ok=True)
             with open(file_address, 'wb') as output:
                 dill.dump(self.perfData, output, -1)
-
-        print("\nFinal time = " + repr(self.fracture.time))
-        print("\n\n-----Simulation finished------")
-        print("See log file for details\n\n")
-
         return True
 
 
@@ -552,7 +546,7 @@ class Controller:
             - exitstatus (int)        -- see documentation for possible values.
             - Fr (Fracture)           -- fracture after advancing time step.
         """
-
+        log = logging.getLogger('PyFrac.controller.advance_time_step')
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
             # smaller time step to reattempt time stepping; equal to the given time step on first iteration
@@ -564,12 +558,12 @@ class Controller:
 
             # check for final time
             if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.finalTime:
-                print(repr(Frac.time + tmStp_to_attempt))
+                log.info(repr(Frac.time + tmStp_to_attempt))
                 return status, Fr
 
-            print('\nEvaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
+            log.info('\nEvaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
             if self.sim_prop.verbosity > 1:
-                print("Attempting time step of " + repr(tmStp_to_attempt) + " sec...")
+                log.info("Attempting time step of " + repr(tmStp_to_attempt) + " sec...")
 
             perfNode_TmStpAtmpt = instrument_start('time step attempt', perfNode)
 
@@ -592,9 +586,8 @@ class Controller:
             if status in [1, 12, 14]:
                 break
             else:
-                if self.sim_prop.verbosity > 1:
-                    print(self.errorMessages[status])
-                print("Time step failed...")
+                log.warning(self.errorMessages[status])
+                log.warning("Time step failed...")
 
 
         return status, Fr
@@ -611,7 +604,7 @@ class Controller:
             Fr_advanced (Fracture object):       -- fracture after time step is advanced.
 
         """
-
+        log = logging.getLogger('Pyfrac.output')
         in_req_TSrs = False
         # current time in the time series given at which the solution is to be evaluated
         if self.sim_prop.get_solTimeSeries() is not None and  self.sim_prop.plotATsolTimeSeries :
@@ -640,12 +633,12 @@ class Controller:
             if save_TP_exceeded or in_req_TSrs or save_TS_exceeded:
 
                 # save fracture to disk
-                print("Saving solution at " + repr(Fr_advanced.time) + "...")
+                log.info("Saving solution at " + repr(Fr_advanced.time) + "...")
                 Fr_advanced.SaveFracture(self.sim_prop.get_outputFolder() +
                                          self.sim_prop.get_simulation_name() +
                                          '_file_' + repr(self.lastSavedFile))
                 self.lastSavedFile += 1
-                print("Done! ")
+                log.info("Done! ")
 
                 self.lastSavedTime = Fr_advanced.time
 
@@ -668,7 +661,7 @@ class Controller:
             if plot_TP_exceeded or in_req_TSrs or plot_TS_exceeded:
 
                 for index, plt_var in enumerate(self.sim_prop.plotVar):
-                    print("Plotting solution at " + repr(Fr_advanced.time) + "...")
+                    log.info("Plotting solution at " + repr(Fr_advanced.time) + "...")
                     plot_prop = PlotProperties()
 
                     if self.Figures[index]:
@@ -787,7 +780,7 @@ class Controller:
                     self.setFigPos = False
 
                 # plot the figure
-                print("Done! ")
+                log.info("Done! ")
                 if self.sim_prop.blockFigure:
                     input("Press any key to continue.")
 
@@ -814,7 +807,7 @@ class Controller:
             - time_step (float)   -- the appropriate time step.
 
         """
-
+        log = logging.getLogger('PyFrac.get_time_step')
         time_step_given = False
         if self.sim_prop.fixedTmStp is not None:
             # fixed time step
@@ -842,7 +835,7 @@ class Controller:
         if not time_step_given:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             if np.any(self.fracture.v == np.nan):
-                print("WARNING: you should not get nan velocities")
+                log.warning("you should not get nan velocities")
             non_zero_v = np.where(self.fracture.v > 0)[0]
             # time step is calculated with the current propagation velocity
             if len(non_zero_v) > 0:
@@ -913,8 +906,8 @@ class Controller:
                 self.stagnant_TS = time_step * 1.2
             else:
                 TS_obtained = False
-                print("The fracture front is stagnant and there is no injection. In these conditions, "
-                        "there is no criterion to calculate time step size.")
+                log.warning("The fracture front is stagnant and there is no injection. In these conditions, "
+                            "there is no criterion to calculate time step size.")
                 while not TS_obtained:
                     try:
                         inp = input("Enter the time step size(seconds) you would like to try:")
@@ -945,7 +938,7 @@ class Controller:
 
         # checking if the time step is above the limit
         if self.sim_prop.timeStepLimit is not None and time_step > self.sim_prop.timeStepLimit:
-            print("Evaluated/given time step is more than the time step limit! Limiting time step...")
+            log.warning("Evaluated/given time step is more than the time step limit! Limiting time step...")
             time_step = self.sim_prop.timeStepLimit
 
         return time_step
@@ -958,6 +951,7 @@ class Controller:
 # ------------------------------------------------------------------------------------------------------------------
 
     def remesh(self, new_limits, elems, direction=None):
+        log = logging.getLogger('PyFrac.remesh')
         # Generating the new mesh (with new limits but same number of elements)
         coarse_mesh = CartesianMesh(new_limits[0],
                                     new_limits[1],
@@ -976,7 +970,7 @@ class Controller:
                 self.C *= 1 / self.sim_prop.remeshFactor
             else:
                 rem_factor = 10
-                print("Extending the elasticity matrix...")
+                log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         else:
             if direction == None:
@@ -984,7 +978,6 @@ class Controller:
             else:
                 rem_factor = 10
             self.C.reload(coarse_mesh)
-
 
         self.fracture = self.fracture.remesh(rem_factor,
                                              self.C,
@@ -1005,7 +998,7 @@ class Controller:
                 dill.dump(prop, output, -1)
         self.remeshings += 1
 
-        print("Done!")
+        log.info("Done!")
 
 # -----------------------------------------------------------------------------------------------------------------------
 

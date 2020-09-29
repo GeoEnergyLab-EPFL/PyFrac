@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
+import logging
 import json
 import subprocess
 import pickle
@@ -206,7 +207,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
     Returns:
         C (ndarray):                        -- the elasticity matrix.
     """
-
+    log = logging.getLogger('PyFrac.load_TI_elasticity_matrix')
     data = {'Solid parameters': {'C11': mat_prop.Cij[0][0],
                                  'C12': mat_prop.Cij[0][1],
                                  'C13': mat_prop.Cij[0][2],
@@ -218,7 +219,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
                                  'n3': Mesh.ny}
             }
 
-    print('Writing parameters to a file...')
+    log.info('Writing parameters to a file...')
     curr_directory = os.getcwd()
     os.chdir(sim_prop.TI_KernelExecPath)
     with open('stiffness_matrix.json', 'w') as outfile:
@@ -230,10 +231,10 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
         suffix = "./"
 
     # Read the elasticity matrix from the npy file
-    print('running C++ process...')
+    log.info('running C++ process...')
     subprocess.run(suffix + 'TI_elasticity_kernel', shell=True)
 
-    print('Reading global TI elasticity matrix...')
+    log.info('Reading global TI elasticity matrix...')
     try:
         file = open('StrainResult.bin', "rb")
         C = array('d')
@@ -267,7 +268,8 @@ def load_elasticity_matrix(Mesh, EPrime):
     Returns:
          C (ndarray):                   -- the elasticity matrix.
     """
-    print('Reading global elasticity matrix...')
+    log = logging.getLogger('PyFrac.load_elasticity_matrix')
+    log.info('Reading global elasticity matrix...')
     try:
         with open('CMatrix', 'rb') as input_file:
             (C, MeshLoaded, EPrimeLoaded) = pickle.load(input_file)
@@ -276,23 +278,23 @@ def load_elasticity_matrix(Mesh, EPrime):
                                                             MeshLoaded.Ly, EPrimeLoaded):
             return C
         else:
-            print(
+            log.warning(
                 'The loaded matrix is not correct with respect to the current mesh or the current plain strain modulus.'
                 '\nMaking global matrix...')
             C = load_isotropic_elasticity_matrix(Mesh, EPrime)
             Elast = (C, Mesh, EPrime)
             with open('CMatrix', 'wb') as output:
                 pickle.dump(Elast, output, -1)
-            print("Done!")
+            log.info("Done!")
             return C
     except FileNotFoundError:
         # if 'CMatrix' file is not found
-        print('file not found\nBuilding the global elasticity matrix...')
+        log.error('file not found\nBuilding the global elasticity matrix...')
         C = load_isotropic_elasticity_matrix(Mesh, EPrime)
         Elast = (C, Mesh, EPrime)
         with open('CMatrix', 'wb') as output:
             pickle.dump(Elast, output, -1)
-        print("Done!")
+        log.info("Done!")
         return C
 
 # -----------------------------------------------------------------------------------------------------------------------

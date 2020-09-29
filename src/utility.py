@@ -134,6 +134,8 @@ def setup_logging_to(logging_to_file_level='debug',logging_to_console_level='deb
         logger1.error('error message')
         logger1.critical('critical message')
 
+        4) IMPORTANT TO KNOW: SystemExit and KeyboardInterrupt exceptions are never swallowed by the logging package .
+
     :param logging_to_file_level: string that defines the level of logging concerning the file:
                                  'debug'    - Detailed information, typically of interest only when diagnosing problems.
                                  'info'     - Confirmation that things are working as expected.
@@ -161,9 +163,12 @@ def setup_logging_to(logging_to_file_level='debug',logging_to_console_level='deb
     ch = logging.StreamHandler(stream = sys.stdout)
     ch.setLevel(consoleLvl)
     # create formatter and add it to the handlers
-    formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',datefmt='%m-%d %H:%M')
+    formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',datefmt='%m-%d-%y %H:%M')
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)
     # add the handlers to logger
     logger.addHandler(ch)
     logger.addHandler(fh)
+
+    log = logging.getLogger('PyFrac.general')
+    log.info('Logger set up correctly')

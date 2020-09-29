@@ -8,7 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import copy
-
+import logging
 # local imports
 from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from symmetry import get_symetric_elements, self_influence
@@ -43,7 +43,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         - exitstatus (int)      -- see documentation for possible values.
         - Fr_k (Fracture)       -- fracture after advancing time step.
     """
-
+    log = logging.getLogger('PyFrac.attempt_time_step')
     Qin = inj_properties.get_injection_rate(Frac.time, Frac)
     if inj_properties.sinkLocFunc is not None:
         Qin[inj_properties.sinkElem] -= inj_properties.sinkVel * Frac.mesh.EltArea
@@ -56,8 +56,8 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                 Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.init_rate_delayed_second_injpoint/len(inj_properties.delayed_second_injpoint_elem)
         else:
             Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.rate_delayed_inj_pt_func(Frac.time)/len(inj_properties.delayed_second_injpoint_elem)
-        print("\n  max value of the array Q(x,y) =   " + str(Qin.max()))
-        print("\n  Q at the delayed inj point    =   " + str(Qin[inj_properties.delayed_second_injpoint_elem]))
+        log.debug("\n  max value of the array Q(x,y) =   " + str(Qin.max()))
+        log.debug("\n  Q at the delayed inj point    =   " + str(Qin[inj_properties.delayed_second_injpoint_elem]))
 
     if sim_properties.frontAdvancing == 'explicit':
 
@@ -81,7 +81,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
     elif sim_properties.frontAdvancing == 'predictor-corrector':
         if sim_properties.verbosity > 1:
-            print('Advancing front with velocity from last time-step...')
+            log.info('Advancing front with velocity from last time-step...')
 
         perfNode_explFront = instrument_start('extended front', perfNode)
         exitstatus, Fr_k = time_step_explicit_front(Frac,
@@ -101,11 +101,11 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
     elif sim_properties.frontAdvancing == 'implicit':
         if sim_properties.verbosity > 1:
-            print('Solving ElastoHydrodynamic equations with same footprint...')
+            log.info('Solving ElastoHydrodynamic equations with same footprint...')
 
         perfNode_sameFP = instrument_start('same front', perfNode)
 
-        # width by injecting the fracture with the same foot print (balloon like inflation)
+        # width by injecting the fracture with the same footprint (balloon like inflation)
         exitstatus, Fr_k = injection_same_footprint(Frac,
                                                     C,
                                                     timeStep,
@@ -143,7 +143,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         return 1, Fr_k
 
     if sim_properties.verbosity > 1:
-        print('Starting Fracture Front loop...')
+        log.info('Starting Fracture Front loop...')
 
     norm = 10.
     k = 0
@@ -154,7 +154,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     while norm > sim_properties.tolFractFront:
         k = k + 1
         if sim_properties.verbosity > 1:
-            print('\nIteration ' + repr(k))
+            log.info('\nIteration ' + repr(k))
         fill_frac_last = np.copy(Fr_k.FillF)
 
         perfNode_extFront = instrument_start('extended front', perfNode)
@@ -186,13 +186,13 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
             return exitstatus, Fr_k
 
         if sim_properties.verbosity > 1:
-            print('Norm of subsequent filling fraction estimates = ' + repr(norm))
+            log.info('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
         # sometimes the code is going to fail because of the max number of iterations due to the lack of
         # improvement of the norm
         if norm is not np.nan:
             if abs((previous_norm-norm)/norm) < 0.001:
-                print( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.001')
+                log.info( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.001')
                 exitstatus = 15
                 return exitstatus, None
             else:
@@ -203,7 +203,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
             return exitstatus, None
 
     if sim_properties.verbosity > 1:
-        print("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
+        log.info("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
 
     return exitstatus, Fr_k
 
@@ -231,7 +231,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         - Fr_kplus1 (Fracture)      -- the fracture after injection with the same footprint.
 
     """
-
+    log = logging.getLogger('PyFrac.injection_same_footprint')
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltCrack]) > 0.:
         # the tip cells are assumed to be stagnant in same footprint evaluation
@@ -293,7 +293,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         return exitstatus, None
 
     if (w_k < 0).any():
-        print('Neg width encountered!')
+        log.warning('Neg width encountered!')
 
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
     Fr_kplus1.time += timeStep
@@ -416,7 +416,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         - Fracture:            fracture after advancing time step.
 
     """
-
+    log = logging.getLogger('PyFrac.injection_extended_footprint')
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
 
@@ -533,13 +533,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
         if norm < sim_properties.toleranceProjection:
             if sim_properties.verbosity > 1:
-                print("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+                log.info("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
             break
 
         alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
         if sim_properties.verbosity > 1:
-            print("iterating on projection... norm " + repr(norm))
+            log.info("iterating on projection... norm " + repr(norm))
         itr += 1
 
     # if itr == sim_properties.maxProjItrs:
@@ -693,7 +693,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
     if sim_properties.verbosity > 1:
-        print('Solving the EHL system with the new trial footprint')
+        log.info('Solving the EHL system with the new trial footprint')
 
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
@@ -739,7 +739,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     # we need to remove it:
     # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
     #     if sim_properties.verbosity > 1:
-    #         print("Stagnant front is only supported with universal tip asymptote. continuing...")
+    #         log.warning("Stagnant front is only supported with universal tip asymptote. continuing...")
     #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if perfNode is not None:
@@ -1026,7 +1026,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow
     equations. The system of equations are formed according to the type of solver given in the simulation properties.
     """
-
+    log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
 
         if sim_properties.symmetric and not sim_properties.useBlockToeplizCompression:
@@ -1453,7 +1453,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     active_contraint = False
                 else:
                     # if sim_properties.frontAdvancing is not 'implicit':
-                    #     print('Changing front advancing scheme to implicit due to width going negative...')
+                    #     log.warning('Changing front advancing scheme to implicit due to width going negative...')
                     #     sim_properties.frontAdvancing = 'implicit'
                     #     return np.nan, np.nan, (np.nan, np.nan)
 
@@ -1464,7 +1464,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                         new_wc.append(wc_k[np.where(neg_k == i)[0]][0])
                     wc_to_impose = np.hstack((wc_km1, np.asarray(new_wc)))
                     if sim_properties.verbosity > 1:
-                        print('Iterating on cells with active width constraint...')
+                        log.info('Iterating on cells with active width constraint...')
             else:
                 active_contraint = False
 
@@ -1589,7 +1589,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         - Fracture:            fracture after advancing time step.
 
     """
-
+    log = logging.getLogger('PyFrac.time_step_explicit_front')
     sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
                                                                           # float value. (algorithm requires inf)
     sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
@@ -1769,7 +1769,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
 
     if sim_properties.verbosity > 1:
-        print('Solving the EHL system with the new trial footprint')
+        log.info('Solving the EHL system with the new trial footprint')
 
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
@@ -1812,7 +1812,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # we need to remove it:
     # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
     #     if sim_properties.verbosity > 1:
-    #         print("Stagnant front is only supported with universal tip asymptote. Continuing...")
+    #         log.warning("Stagnant front is only supported with universal tip asymptote. Continuing...")
     #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if stagnant.any():
@@ -1961,7 +1961,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
     if np.any(Vel_k[new_channel]==0):
-        print("why we have zeros?")
+        log.debug("why we have zeros?")
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
     max_l = Fr_lstTmStp.mesh.hx * np.cos(alpha_k[new_channel]) + Fr_lstTmStp.mesh.hy * np.sin(alpha_k[new_channel])
     t_leave = Fr_lstTmStp.time + timeStep - (l_k[new_channel] - max_l) / Vel_k[new_channel]
@@ -2009,7 +2009,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.yieldRatio = data[0][2]
 
     if sim_properties.verbosity > 1:
-        print("Solved...\nFinding velocity of front...")
+        log.info("Solved...\nFinding velocity of front...")
 
     itr = 0
     # toughness iteration loop
@@ -2128,12 +2128,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
         if norm < sim_properties.toleranceProjection:
             if sim_properties.verbosity > 1:
-                print("Projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+                log.info("Projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
             break
         alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
         if sim_properties.verbosity > 1:
-            print("iterating on projection... norm = " + repr(norm))
+            log.info("iterating on projection... norm = " + repr(norm))
         itr += 1
 
     # todo Hack!!! keep going if projection does not converge

@@ -8,7 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # local
-
+import logging
 import numpy as np
 from scipy.interpolate import griddata
 import dill
@@ -52,8 +52,8 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         fracture_list(list):            -- a list of fractures.
 
     """
-
-    if not silent: print('Returning fractures...')
+    log = logging.getLogger('PyFrac.load_fractures')
+    if not silent: log.info('Returning fractures...')
 
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
@@ -111,7 +111,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
         if 1. - next_t / ff.time >= -1e-8:
             # if the current fracture time has advanced the output time period
-            if not silent: print('Returning fracture at ' + repr(ff.time) + ' s')
+            if not silent: log.info('Returning fracture at ' + repr(ff.time) + ' s')
 
             fracture_list.append(ff)
 
@@ -413,7 +413,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
             - time_srs (list)           -- a list of times at which the fractures are stored.
 
     """
-
+    log = logging.getLogger('PyFrac.get_fracture_variable_at_point')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -442,7 +442,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                                        method='linear',
                                        fill_value=np.nan)
                 if np.isnan(value_point):
-                    print('Point outside fracture.')
+                    log.warning('Point outside fracture.')
 
                 return_list.append(value_point[0])
 
@@ -876,7 +876,7 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
 
 
     """
-
+    log = logging.getLogger('PyFrac.write_fracture_variable_csv_file')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -897,7 +897,7 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
                                    method='linear',
                                    fill_value=np.nan)
             if np.isnan(value_point):
-                print('Point outside fracture.')
+                log.warning('Point outside fracture.')
             return_list.append(value_point[0])
 
     if file_name[-4:] != '.csv':
@@ -1006,7 +1006,7 @@ def append_to_json_file(file_name, content, action, key=None, delete_existing_fi
     # 3)check if the file already exist
     if os.path.isfile(file_name) and delete_existing_filename:
         os.remove(file_name)
-        print("File " +file_name +"  existed and it will be Removed!")
+        log.warning("File " +file_name +"  existed and it will be Removed!")
 
     # 4)check if the file already exist
     if os.path.isfile(file_name):
@@ -1113,14 +1113,14 @@ def get_front_intercepts(fr_list, point):
           intercepts (list):        -- list of top, bottom, left and right intercepts for each fracture in the list
 
     """
-
+    log = logging.getLogger('PyFrac.get_front_intercepts')
     intercepts = []
 
     for fr in fr_list:
         intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
         pnt_cell = fr.mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
         if pnt_cell not in fr.EltChannel:
-            print("Point is not inside fracture!")
+            log.warning("Point is not inside fracture!")
         else:
             pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
             cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0]    # all the cells with the same y coord

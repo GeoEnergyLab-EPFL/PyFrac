@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import math
 import numpy as np
+import logging
 import time
 import datetime
 from matplotlib.colors import to_rgb
@@ -365,12 +366,12 @@ class InjectionProperties:
                  delayed_second_injpoint_loc=None,
                  initial_rate_delayed_second_injpoint=None,
                  rate_delayed_inj_pt_func=None,
-                 delayed_second_injpoint_loc_func=None,
-                 silent=False):
+                 delayed_second_injpoint_loc_func=None):
         """
         The constructor of the InjectionProperties class.
         """
         # check if the rate is provided otherwise throw an error
+        log = logging.getLogger('PyFrac.InjectionProperties')
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
                 raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and'
@@ -433,7 +434,7 @@ class InjectionProperties:
         if source_loc_func is None:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
-                    if not silent: print("Setting the source coordinates to the closest cell center...")
+                    log.info("Setting the source coordinates to the closest cell center...")
                     self.sourceCoordinates = source_coordinates
                 else:
                     # error
@@ -448,7 +449,7 @@ class InjectionProperties:
             if np.isnan(self.sourceElem).any():
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
-            if not silent: print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
+            log.info("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1][0]) + ')')
             self.sourceLocFunc = None
         else:
