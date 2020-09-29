@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
+import logging
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from properties import PlotProperties
@@ -220,7 +221,7 @@ def copute_area_of_a_polygon(x,y):
     :return: float representing the area of the polygon
     """
     # todo: remove for speed
-    if  x.size !=  y.size : raise SystemExit('FRONT RECONSTRUCTION ERROR: bad coordinate sizes')
+    if  x.size !=  y.size : raise SystemExit('FRONT RECONSTRUCTION ERROR: bad coordinate size.')
     n = x.size
 
     area = \
@@ -710,8 +711,8 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
 
     try:
         if i_indexes_of_fictitius_cells.size < 1:
-            raise FileNotFoundError
-    except FileNotFoundError:
+            raise Exception("FRONT RECONSTRUCTION ERROR: The front does not exist")
+    except RuntimeError:
         print("FRONT RECONSTRUCTION ERROR: The front does not exist")
 
     if np.any(np.ndarray.flatten(LS[i_indexes_of_fictitius_cells,:]) > 10.**40):
@@ -832,8 +833,8 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         # the following is a test that can be removed for speed
         # try:
         #     if np.setdiff1d(anularegion[i_indexes_of_fictitius_cells],np.concatenate((anularegion[i_indexes_of_TYPE_1_cells], anularegion[i_indexes_of_TYPE_2_cells], anularegion[i_indexes_of_TYPE_3_cells], anularegion[i_indexes_of_TYPE_4_cells]))).size > 0:
-        #         raise FileNotFoundError
-        # except FileNotFoundError:
+        #         raise Exception('FRONT RECONSTRUCTION ERROR: this function has an error')
+        # except RuntimeError:
         #     print("FRONT RECONSTRUCTION ERROR: this function has an error")
 
         # make dictionaries:
@@ -1943,10 +1944,10 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
 
     try:
         if str(previous_cell_name) not in dict_of_possibilities.keys():
-            raise FileNotFoundError
+            raise RuntimeError
         else:
             return dict_of_possibilities[str(previous_cell_name)]
-    except FileNotFoundError:
+    except RuntimeError:
         print("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
@@ -2069,7 +2070,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             orthogonaldistances (float): -- descriptions.
 
         """
-
+        log = logging.getlogger('PyFrac.continuous_front_reconstruction')
         recompute_front = False
         float_precision = np.float64
         mac_precision = 100*np.sqrt(np.finfo(float).eps)
@@ -2116,11 +2117,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # the values of the LS in the fictitius cells might be not computed at all the cells, so increase the thikness of the band
         if exitstatus:
             if np.any(sgndDist_k[mesh.Frontlist]<0):
-                print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: Failing the time-step')
+                log.info('increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: Failing the time-step')
                 correct_size_of_pstv_region = [False, False, True]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
-                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
+                log.debug('I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
                 # from utility import plot_as_matrix
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[anularegion] = sgndDist_k[anularegion]
@@ -2178,13 +2179,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         if np.any(LSet_temp > 10. ** 40):
                             intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist))
                             if intwithFrontlist.size >0:
-                                print('FRONT RECONSTRUCTION WARNING: The new front reaches the boundary. Remeshing')
+                                log.info('The new front reaches the boundary. Remeshing')
                                 correct_size_of_pstv_region = [False, True, False]
                                 # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                                 # (in case of anisotropic remeshing)
                                 return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                             else:
-                                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tip i cell not found in the anularegion)')
+                                log.debug('I am increasing the thickness of the band (tip i cell not found in the anularegion)')
                                 correct_size_of_pstv_region = [False, False, False]
                                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
@@ -2207,14 +2208,14 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 else :
                     intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))),np.asarray(mesh.Frontlist))
                     if intwithFrontlist.size > 0:
-                        print('FRONT RECONSTRUCTION WARNING: The new front reaches the boundary. Remeshing')
+                        log.info('The new front reaches the boundary. Remeshing')
                         correct_size_of_pstv_region = [False, False, True]
                         # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                         # (in case of anisotropic remeshing)
                         return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                     else :
-                        print("<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>")
-                        print("set the LS of the positive cells to be -machine precision")
+                        log.debug('<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>')
+                        log.debug('set the LS of the positive cells to be -machine precision')
                         all_cells_of_all_FC_of_this_small_fracture = np.unique(
                             np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                         index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture] > 0)[0]
@@ -2307,7 +2308,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 closed_front_area=copute_area_of_a_polygon(np.asarray(xintersection),np.asarray(yintersection))
             else: closed_front_area = 0
             if closed_front_area <= area_of_a_cell*1.01:
-                print("A small front of area ="+str(100*closed_front_area/area_of_a_cell)[:4]+"% of the single cell has been deleted")
+                log.debug("A small front of area ="+str(100*closed_front_area/area_of_a_cell)[:4]+"% of the single cell has been deleted")
                 # set the level set of all the positive cells in fracture list to be positive
                 all_cells_of_all_FC_of_this_small_fracture = np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                 index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture]>0)[0]
@@ -2402,7 +2403,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     counter = counter + 1
                 if counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " points on the same edge but close to each other")
+                    log.debug("deleted " + str(counter) + " points on the same edge but close to each other")
                 """
                 new cleaning: 
                 clean only if the elements belong to the same edge
@@ -2440,7 +2441,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     else: recursive_counter = recursive_counter + counter
                 if recursive_counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(recursive_counter) + " points on the same edge that leads to sub resolution")
+                    log.debug("deleted " + str(recursive_counter) + " points on the same edge that leads to sub resolution")
 
                 """
                 CASE 1: 
@@ -2646,7 +2647,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                 else:
                                     add_at_the_end = add_at_the_end + 1
                 if counter > 0:
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter+add_at_the_end) + " edge and corner points")
+                    log.debug("deleted " + str(counter+add_at_the_end) + " edge and corner points")
                     del n1, n2, edges_of_the_corner_vertex, index_to_delete, add_at_the_end
                 if vertex_indexes.size > 0 : del jjj, vertex_indexes, vijjj, vertex_name, edge_name_previous_point, edge_name_next_point
 
@@ -2810,8 +2811,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 if dup.size > 1:
                     recompute_front = True
                     # set the repeated cells artificially inside the fracture
-                    print("FRONT RECONSTRUCTION MESSAGE: Recomputing the fracture front because one or more coalescing point have been found")
-                    print("FRONT RECONSTRUCTION MESSAGE: set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
+                    log.debug("Recomputing the fracture front because one or more coalescing point have been found")
+                    log.debug("set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
                     sgndDist_k[dup] = -zero_level_set_value
                     break  # break here
 
@@ -3134,7 +3135,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 # needed. In the next front reconstruction we will propagate inward the level set from the tip cells
                 recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
                 # set the repeated cells artificially inside the fracture
-                print("FRONT RECONSTRUCTION MESSAGE: set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
+                log.debug("set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
                 sgndDist_k[dup]=-zero_level_set_value         #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, dup, None, True)
             else: recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
 

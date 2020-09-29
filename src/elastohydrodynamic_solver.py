@@ -7,6 +7,7 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+import logging
 from scipy import sparse
 from scipy.optimize import brentq
 import numpy as np
@@ -1428,6 +1429,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
         - solk (ndarray)       -- solution at the end of iteration.
         - data (tuple)         -- any data to be returned
     """
+    log = logging.getLogger('PyFrac.Picard_Newton')
     relax = sim_prop.relaxation_factor
     solk = guess
     k = 0
@@ -1456,7 +1458,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
                 else:
                     solk = relax * solkm1 + (1 - relax) * sol 
             except np.linalg.linalg.LinAlgError:
-                print('singular matrix!')
+                log.error('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 if perf_node is not None:
                     instrument_close(perf_node, perfNode_linSolve, None,
@@ -1473,7 +1475,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
             perf_node.linearSolve_data.append(perfNode_linSolve)
 
         if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
-            print('Picard iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
+            log.warning('Picard iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
                   ' iterations, norm:' + repr(norm))
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             if perf_node is not None:
@@ -1482,7 +1484,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
             return solk, None
 
     if sim_prop.verbosity > 1:
-        print("Converged after " + repr(k) + " iterations")
+        log.info("Converged after " + repr(k) + " iterations")
     data = [interItr[0], interItr[2], interItr[3]]
     return solk, data
 
@@ -1734,6 +1736,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         - Xks[mk+1] (ndarray)  -- final solution at the end of the iterations.
         - data (tuple)         -- any data to be returned
     """
+    log=logging.getLogger('PyFrac.Anderson')
     m_Anderson = sim_prop.Anderson_parameter
     relax = sim_prop.relaxation_factor
 
@@ -1761,7 +1764,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         Fks[0, ::] = Gks[0, ::] - xks[0, ::]
         xks[1, ::] = Gks[0, ::]                                               # x1
     except np.linalg.linalg.LinAlgError:
-        print('singular matrix!')
+        log.error('singular matrix!')
         solk = np.full((len(xks[0]),), np.nan, dtype=np.float64)
         if perf_node is not None:
             instrument_close(perf_node, perfNode_linSolve, None,
@@ -1805,7 +1808,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                  + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
 
         except np.linalg.linalg.LinAlgError:
-            print('singular matrix!')
+            log.error('singular matrix!')
             solk = np.full((len(xks[mk]),), np.nan, dtype=np.float64)
             if perf_node is not None:
                 instrument_close(perf_node, perfNode_linSolve, None,
@@ -1823,7 +1826,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             perf_node.linearSolve_data.append(perfNode_linSolve)
 
         if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
-            print('Anderson iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
+            log.warning('Anderson iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
                   ' iterations, norm:' + repr(norm))
             solk = np.full((np.size(xks[0,::]),), np.nan, dtype=np.float64)
             if perf_node is not None:
@@ -1832,7 +1835,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             return solk, None
 
     if sim_prop.verbosity > 1:
-        print("Converged after " + repr(k) + " iterations")
+        log.info("Converged after " + repr(k) + " iterations")
 
     data = [interItr[0], interItr[2], interItr[3]]
     return xks[mk + 2, ::], data

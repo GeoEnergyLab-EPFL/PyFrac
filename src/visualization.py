@@ -6,7 +6,7 @@ Created by Haseeb Zia on Friday, July 06, 2018.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019. All rights
 reserved. See the LICENSE.TXT file for more details.
 """
-
+import logging
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -57,7 +57,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    print("Plotting " + variable + '...')
+    log = logging.getLogger('PyFrac.plot_fracture_list')
+    log.info("Plotting " + variable + '...')
 
     if not isinstance(fracture_list, list):
         raise ValueError("The provided fracture_list is not list type object!")
@@ -929,8 +930,8 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting slice...")
+    log = logging.getLogger('PyFrac.plot_fracture_slice_interpolated')
+    log.info("Plotting slice...")
     if plt_2D_image:
         if fig is None:
             fig = plt.figure()
@@ -1100,8 +1101,8 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting slice...")
+    log = logging.getLogger('PyFrac.plot_fracture_slice_cell_center')
+    log.info("Plotting slice...")
     if plt_2D_image:
         if fig is None:
             fig = plt.figure()
@@ -1426,7 +1427,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-
+    log = logging.getLogger('PyFrac.plot_analytical_solution_at_point')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -1474,7 +1475,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if variable in ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
                     'front_dist_mean', 'd_mean']:
-        print("The given variable does not vary spatially.")
+        log.warning("The given variable does not vary spatially.")
 
     plot_prop_cp.lineColor = plot_prop.lineColorAnal
     plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
@@ -1503,8 +1504,8 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
 def plot_scale_3D(fracture, fig=None, plot_prop=None):
     """ This function plots lines with dimensions on the 3D fracture plot."""
-
-    print('Plotting scale...')
+    log = logging.getLogger('PyFrac.plot_scale_3D')
+    log.info('Plotting scale...')
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -1595,7 +1596,8 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    print('Plotting slice in 3D...')
+    log = logging.getLogger('PyFrac.plot_slice_3D')
+    log.info('Plotting slice in 3D...')
 
     if fig is None:
         fig = plt.figure()
@@ -1677,7 +1679,8 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-    print("Plotting analytical footprint...")
+    log = logging.getLogger('PyFrac.plot_footprint_analytical')
+    log.info("Plotting analytical footprint...")
 
     if fig is None:
         fig = plt.figure()
@@ -1761,8 +1764,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting analytical " + variable + " " + regime + " solution...")
+    log = logging.getLogger('PyFrac.plot_analytical_solution')
+    log.info("Plotting analytical " + variable + " " + regime + " solution...")
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -2029,7 +2032,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
         pause_time (float):                 -- time (in seconds) between two successive updates of frames.
 
     """
-
+    log = logging.getLogger('PyFrac.animate_simulation_results')
     if not isinstance(variable, list):
         variable = [variable]
     figures = [None for i in range(len(variable))]
@@ -2037,7 +2040,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
     setFigPos = True
     for fracture in fracture_list:
         for indx, plt_var in enumerate(variable):
-            print("Plotting solution at " + repr(fracture.time) + "...")
+            log.info("Plotting solution at " + repr(fracture.time) + "...")
             if plot_prop is None:
                 plot_prop = PlotProperties()
 
@@ -2260,7 +2263,7 @@ def save_images_to_video(image_folder, video_name='movie'):
     """ This function makes a video from the images in the given folder."""
     import cv2
     import os
-
+    log = logging.getLogger('PyFrac.save_images_to_video')
     if ".avi" not in video_name:
         video_name = video_name + '.avi'
 
@@ -2272,7 +2275,7 @@ def save_images_to_video(image_folder, video_name='movie'):
 
     img_no = 0
     for image in images:
-        print("adding image no " + repr(img_no))
+        log.info("adding image no " + repr(img_no))
         video.write(cv2.imread(os.path.join(image_folder, image)))
         cv2.waitKey(1)
         img_no += 1
