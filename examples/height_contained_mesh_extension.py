@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 This file is part of PyFrac.
+
 Created by Haseeb Zia on Fri June 16 17:49:21 2017.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019. All rights reserved.
 See the LICENSE.TXT file for more details.
@@ -15,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(20, 2.3, 125, 35)
+Mesh = CartesianMesh(2.75, 3, 25, 27)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -49,7 +50,8 @@ simulProp.bckColor = 'sigma0'           # setting the parameter according to whi
 simulProp.set_outputFolder("./Data/height_contained")
 simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
 simulProp.plotVar = ['footprint']       # plotting footprint
-simulProp.projMethod = 'ILSA_orig'
+simulProp.set_mesh_extension_direction(['horizontal'])
+simulProp.meshExtensionFactor = 1.35
 
 # initializing fracture
 Fr_geometry = Geometry(shape='radial', radius=1.)
@@ -154,7 +156,7 @@ Fr_list, properties = load_fractures(address="./Data/height_contained",
                                      time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]))
 time_srs = get_fracture_variable(Fr_list,
                                  variable='time')
-plot_prop_mesh = PlotProperties(text_size=1.7)
+plot_prop_mesh = PlotProperties(text_size=1.7)#, use_tex=True)
 Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
                             variable='mesh',
                             projection='3D',
@@ -183,17 +185,17 @@ Fig_Fr = plot_analytical_solution('M',
                                   plot_prop=plt_prop)
 
 # Fig_Fr = None
-Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
-
-plot_prop = PlotProperties(alpha=0.2, text_size=5)           #plotting width
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='w',
-                            projection='3D',
-                            fig=Fig_Fr,
-                            plot_prop=plot_prop)
+# Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
+#                             variable='footprint',
+#                             projection='3D',
+#                             fig=Fig_Fr)
+#
+# plot_prop = PlotProperties(alpha=0.2, text_size=5)           #plotting width
+# Fig_Fr = plot_fracture_list(Fr_list,
+#                             variable='w',
+#                             projection='3D',
+#                             fig=Fig_Fr,
+#                             plot_prop=plot_prop)
 ax = Fig_Fr.get_axes()[0]
 ax.view_init(60, -114)
 

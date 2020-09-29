@@ -688,8 +688,8 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
         p[actvElts] = KIc_max * special.ellipe(eccentricity ** 2) / (np.pi * b) ** 0.5
         w = np.zeros((mesh.NumberOfElts,))
         w[actvElts] = 4 * b * p[mesh.CenterElts] / (Eprime * special.ellipe(eccentricity ** 2)) * (1 -
-                    ((mesh.CenterCoor[:, 0] - inj_point[0]) / a) ** 2 - ((mesh.CenterCoor[:, 1] - inj_point[1])
-                                                                         / b) ** 2) ** 0.5
+                    ((mesh.CenterCoor[actvElts, 0] - inj_point[0]) / a) ** 2 - ((mesh.CenterCoor[actvElts, 1]
+                                                                                 - inj_point[1]) / b) ** 2) ** 0.5
     else:
         p = None
         w = None
@@ -865,8 +865,8 @@ def TI_Elasticity_elliptical_solution(mesh, inj_point, gamma, Cij, Kc3, Ep3, Q0,
         p[actvElts] = 4 * Kc3 / ((np.pi * a) ** 0.5 * w0 * Ep3)
         u0 =  w0 * p * (b*a)**0.5
         w = np.zeros((mesh.NumberOfElts,))
-        w[actvElts] = u0[actvElts] * (1 - ((mesh.CenterCoor[:, 0] - inj_point[0]) / a) ** 2 - (
-                                        (mesh.CenterCoor[:, 1] - inj_point[1]) / b) ** 2)**0.5
+        w[actvElts] = u0[actvElts] * (1 - ((mesh.CenterCoor[actvElts, 0] - inj_point[0]) / a) ** 2 - (
+                                        (mesh.CenterCoor[actvElts, 1] - inj_point[1]) / b) ** 2)**0.5
     else:
         p = None
         w = None
