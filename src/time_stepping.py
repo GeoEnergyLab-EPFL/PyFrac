@@ -7,8 +7,7 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-import copy
-import logging
+
 # local imports
 from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from symmetry import get_symetric_elements, self_influence
@@ -149,7 +148,8 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     # Fracture front loop to find the correct front location
     while norm > sim_properties.tolFractFront:
         k = k + 1
-        log.debug('\nIteration ' + repr(k))
+        log.debug(' ')
+        log.debug('Iteration ' + repr(k))
         fill_frac_last = np.copy(Fr_k.FillF)
 
         perfNode_extFront = instrument_start('extended front', perfNode)
@@ -186,7 +186,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         # improvement of the norm
         if norm is not np.nan:
             if abs((previous_norm-norm)/norm) < 0.001:
-                log.info( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.001')
+                log.debug( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.001')
                 exitstatus = 15
                 return exitstatus, None
             else:
