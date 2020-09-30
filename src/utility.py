@@ -163,8 +163,8 @@ def setup_logging_to(logging_to_file_level='debug',logging_to_console_level='deb
     ch = logging.StreamHandler(stream = sys.stdout)
     ch.setLevel(consoleLvl)
     # create formatter and add it to the handlers
-    formatterch = logging.Formatter(fmt='%(levelname)s - %(message)s')
-    formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m-%d-%y %H:%M')
+    formatterch = logging.Formatter(fmt='%(levelname)s:     %(message)s')
+    formatter = logging.Formatter(fmt='%(asctime)s: %(name)s: %(levelname)s: %(message)s', datefmt='%m-%d-%y %H:%M')
     ch.setFormatter(formatterch)
     fh.setFormatter(formatter)
     # add the handlers to logger

@@ -2008,8 +2008,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.effVisc = data[0][1]
         Fr_kplus1.yieldRatio = data[0][2]
 
-    if sim_properties.verbosity > 1:
-        log.info("Solved...\nFinding velocity of front...")
+
+    log.info("Solved...")
+    log.info("Finding velocity of front...")
 
     itr = 0
     # toughness iteration loop

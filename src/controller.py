@@ -512,11 +512,18 @@ class Controller:
 
             self.TmStpCount += 1
 
-        log.info("\nFinal time = " + repr(self.fracture.time))
-        log.info("\n\n-----Simulation finished------")
-        log.info("\n\nnumber of time steps = " + repr(self.successfulTimeSteps))
-        log.info("\nfailed time steps = " + repr(self.failedTimeSteps))
-        log.info("\nnumber of remeshings = " + repr(self.remeshings))
+        print("\n")
+        log.info("Final time = " + repr(self.fracture.time))
+        print("\n")
+        print("\n")
+        log.info("-----Simulation finished------")
+        print("\n")
+        print("\n")
+        log.info("number of time steps = " + repr(self.successfulTimeSteps))
+        print("\n")
+        log.info("failed time steps = " + repr(self.failedTimeSteps))
+        print("\n")
+        log.info("number of remeshings = " + repr(self.remeshings))
 
         plt.show(block=False)
         plt.close('all')
@@ -560,8 +567,8 @@ class Controller:
             if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.finalTime:
                 log.info(repr(Frac.time + tmStp_to_attempt))
                 return status, Fr
-
-            log.info('\nEvaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
+            print('\n')
+            log.info('Evaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
             if self.sim_prop.verbosity > 1:
                 log.info("Attempting time step of " + repr(tmStp_to_attempt) + " sec...")
 
