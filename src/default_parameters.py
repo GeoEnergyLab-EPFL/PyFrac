@@ -62,8 +62,8 @@ solve_sparse = None                     # if True, the fluid conductivity matrix
 # miscellaneous
 tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
 save_regime = True                      # if True, the the regime of the ribbon cells will also be saved.
+verbosity_level = 'debug'               # the level of details about the ongoing simulation to be written to the log file ('debug','info','warning','error','critical').
 use_block_toepliz_compression = False   # if True, only the unique coeff. of the elasticity matrix will be saved. It saves memory but it does more operations per time step.
-verbosity = 2                           # the level of details about the ongoing simulation to be plotted.
 enable_remeshing = True                 # if true, computation domain will be remeshed after reaching end of the domain.
 remesh_factor = 2.                      # the factor by which the mesh is compressed.
 front_advancing = 'predictor-corrector' # possible options include 'implicit', 'explicit' and 'predictor-corrector'.

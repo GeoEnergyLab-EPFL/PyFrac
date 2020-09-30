@@ -86,8 +86,8 @@ def logging_level(logging_level_string):
     else:
         SystemExit('Options are: debug, info, warning, error, critical')
 
-def setup_logging_to(logging_to_file_level='debug',logging_to_console_level='debug'):
-    """This function sets up the log, both to the file and to the console
+def setup_logging_to_console(verbosity_level='debug'):
+    """This function sets up the log to the console
         Note: from any module in the code you can use the logging capabilities. You just have to:
 
         1) import the module
@@ -106,9 +106,11 @@ def setup_logging_to(logging_to_file_level='debug',logging_to_console_level='deb
         logger1.error('error message')
         logger1.critical('critical message')
 
-        4) IMPORTANT TO KNOW: SystemExit and KeyboardInterrupt exceptions are never swallowed by the logging package .
+        4) IMPORTANT TO KNOW:
+           1-If you want to log only to the console in the abobe example you have to use: logger1 = logging.getLogger('PyFrac_LC.frontrec')
+           2-SystemExit and KeyboardInterrupt exceptions are never swallowed by the logging package .
 
-    :param logging_to_file_level: string that defines the level of logging concerning the file:
+    :param verbosity_level: string that defines the level of logging concerning the console:
                                  'debug'    - Detailed information, typically of interest only when diagnosing problems.
                                  'info'     - Confirmation that things are working as expected.
                                  'warning'  - An indication that something unexpected happened, or indicative of some
@@ -118,30 +120,34 @@ def setup_logging_to(logging_to_file_level='debug',logging_to_console_level='deb
                                               some function.
                                  'critical' - A serious error, indicating that the program itself may be unable to
                                               continue running.
-
-    :param logging_to_console_level: string that defines the level of logging concerning the console. See above.
     :return: -
     """
-    fileLvl = logging_level(logging_to_file_level)
-    consoleLvl = logging_level(logging_to_console_level)
+    consoleLvl = logging_level(verbosity_level)
 
     logger = logging.getLogger('PyFrac')
     logger.setLevel(logging.DEBUG)
 
-    # create file handler which logs debug messages to the file
-    fh = logging.FileHandler('pyfrac.log',mode='w')
-    fh.setLevel(fileLvl)
     # create console handler with a higher log level
     ch = logging.StreamHandler(stream = sys.stdout)
     ch.setLevel(consoleLvl)
+
     # create formatter and add it to the handlers
-    formatterch = logging.Formatter(fmt='%(levelname)s:     %(message)s')
-    formatter = logging.Formatter(fmt='%(asctime)-15s%(name)-40s%(levelname)-8s  %(message)-20s', datefmt='%m-%d-%y %H:%M')
+    formatterch = logging.Formatter(fmt='%(levelname)-8s:     %(message)s')
     ch.setFormatter(formatterch)
-    fh.setFormatter(formatter)
+
     # add the handlers to logger
     logger.addHandler(ch)
-    logger.addHandler(fh)
 
     log = logging.getLogger('PyFrac.general')
-    log.info('Logger set up correctly')
+    log.info('Console logger set up correctly')
+
+    # create a logger that logs only to the console and not on the file:
+    logger_to_console = logging.getLogger('PyFrac_LC')
+    logger_to_console.setLevel(logging.DEBUG)
+
+    # add the handlers to logger
+    logger_to_console.addHandler(ch)
+
+    # usage example
+    # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
+    # logger_to_files.info('this comment will go only to the log file')

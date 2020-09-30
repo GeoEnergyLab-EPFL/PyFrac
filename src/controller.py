@@ -176,6 +176,8 @@ class Controller:
         controlling the simulation run.
         """
         log = logging.getLogger('PyFrac.controller.run')
+        log_only_to_logfile = logging.getLogger('PyFrac_LF.controller.run')
+
         # output initial fracture
         if self.sim_prop.saveToDisk:
             # save properties
@@ -191,11 +193,7 @@ class Controller:
             self.output(self.fracture)
             self.lastSavedTime = self.fracture.time
 
-        if self.sim_prop.saveToDisk:
-            if os.path.exists(self.logAddress + "log.txt"):
-                os.remove(self.logAddress + "log.txt")
-            with open(self.logAddress + 'log.txt', 'w+') as file:
-                file.writelines('log file, simulation run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n')
+        self.sim_prop.set_logging_to_file(self.logAddress)
 
         # deactivate the block_toepliz_compression functions
         # DO THIS CHECK BEFORE COMPUTING C!
@@ -434,7 +432,7 @@ class Controller:
 
                         self.remesh(new_limits, elems)
 
-                    self.write_to_log("\nRemeshed at " + repr(self.fracture.time))
+                    log_only_to_logfile.info("\nRemeshed at " + repr(self.fracture.time))
 
                 else:
                     log.info("Reached end of the domain. Exiting...")
@@ -514,15 +512,9 @@ class Controller:
 
         print("\n")
         log.info("Final time = " + repr(self.fracture.time))
-        print("\n")
-        print("\n")
         log.info("-----Simulation finished------")
-        print("\n")
-        print("\n")
         log.info("number of time steps = " + repr(self.successfulTimeSteps))
-        print("\n")
         log.info("failed time steps = " + repr(self.failedTimeSteps))
-        print("\n")
         log.info("number of remeshings = " + repr(self.remeshings))
 
         plt.show(block=False)
@@ -569,8 +561,7 @@ class Controller:
                 return status, Fr
             print('\n')
             log.info('Evaluating solution at time = ' + repr(Frac.time+tmStp_to_attempt) + " ...")
-            if self.sim_prop.verbosity > 1:
-                log.info("Attempting time step of " + repr(tmStp_to_attempt) + " sec...")
+            log.debug("Attempting time step of " + repr(tmStp_to_attempt) + " sec...")
 
             perfNode_TmStpAtmpt = instrument_start('time step attempt', perfNode)
 
@@ -949,11 +940,6 @@ class Controller:
             time_step = self.sim_prop.timeStepLimit
 
         return time_step
-
-    def write_to_log(self, line):
-        """ This function writes the given line to the log file."""
-        with open(self.logAddress + 'log.txt', 'a+') as file:
-            file.writelines(line)
 
 # ------------------------------------------------------------------------------------------------------------------
 
