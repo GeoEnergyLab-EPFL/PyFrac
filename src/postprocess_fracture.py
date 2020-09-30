@@ -996,7 +996,7 @@ def append_to_json_file(file_name, content, action, key=None, delete_existing_fi
 
     """
     log = logging.getLogger('PyFrac.append_to_json_file')
-    
+
     # 0)transform np.ndarray to list before output
     if isinstance(content, np.ndarray):
         content = np.ndarray.tolist(content)
