@@ -652,6 +652,9 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
                 closest = EltRibbon[np.argmin(RibbonCellsDist)]
                 KIPrime[i] = w[closest] * Eprime[i] / (-lvlSetData[closest]) ** 0.5
 
+            if KIPrime[i] < 0.:
+                KIPrime[i] = 0.
+
     return KIPrime
 
 #-----------------------------------------------------------------------------------------------------------------------
