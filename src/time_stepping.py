@@ -12,7 +12,6 @@ import logging
 # local imports
 from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from symmetry import get_symetric_elements, self_influence
-from utility import find_regime
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
 from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
