@@ -663,8 +663,9 @@ class SimulationProperties:
         solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
         saveRegime (boolean):        -- if True, the regime of the propagation as observed in the ribbon cell (see Zia
                                         and Lecampion 2018, IJF) will be saved.
-        verbosity (int):             -- the level of details about the ongoing simulation to be written on the log file
+        verbosity (string):          -- the level of details about the ongoing simulation to be written on the log file
                                         (currently the levels 'debug', 'info', 'warning' and 'error' are supported).
+        log2file (bool):             -- True if you want to log to a file, otherwise set it to false
         enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by
                                         by the variable remeshFactor after the fracture front reaches the end of the
                                         domain.
@@ -815,7 +816,8 @@ class SimulationProperties:
 
         # miscellaneous
         self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
-        self.verbosity_level = simul_param.verbosity_level
+        self.verbositylevel = simul_param.verbosity_level
+        self.log2file = simul_param.log_to_file
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.enableRemeshing = simul_param.enable_remeshing
@@ -903,7 +905,7 @@ class SimulationProperties:
 
         from utility import logging_level
         if verbosity_level is None:
-            fileLvl = logging_level(self.verbosity_level)
+            fileLvl = logging_level(self.verbositylevel)
         else:
             fileLvl = logging_level(verbosity_level)
 

@@ -193,7 +193,8 @@ class Controller:
             self.output(self.fracture)
             self.lastSavedTime = self.fracture.time
 
-        self.sim_prop.set_logging_to_file(self.logAddress)
+        if self.sim_prop.log2file:
+            self.sim_prop.set_logging_to_file(self.logAddress)
 
         # deactivate the block_toepliz_compression functions
         # DO THIS CHECK BEFORE COMPUTING C!
