@@ -1483,8 +1483,8 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
                 perfNode_linSolve.status = 'failed'
             return solk, None
 
-    if sim_prop.verbosity > 1:
-        log.info("Converged after " + repr(k) + " iterations")
+
+    log.debug("Converged after " + repr(k) + " iterations")
     data = [interItr[0], interItr[2], interItr[3]]
     return solk, data
 
@@ -1834,8 +1834,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                 perfNode_linSolve.status = 'failed'
             return solk, None
 
-    if sim_prop.verbosity > 1:
-        log.info("Converged after " + repr(k) + " iterations")
+    log.debug("Converged after " + repr(k) + " iterations")
 
     data = [interItr[0], interItr[2], interItr[3]]
     return xks[mk + 2, ::], data

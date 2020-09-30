@@ -79,8 +79,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         return exitstatus, Fr_k
 
     elif sim_properties.frontAdvancing == 'predictor-corrector':
-        if sim_properties.verbosity > 1:
-            log.info('Advancing front with velocity from last time-step...')
+        log.debug('Advancing front with velocity from last time-step...')
 
         perfNode_explFront = instrument_start('extended front', perfNode)
         exitstatus, Fr_k = time_step_explicit_front(Frac,
@@ -99,8 +98,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
             perfNode.extendedFront_data.append(perfNode_explFront)
 
     elif sim_properties.frontAdvancing == 'implicit':
-        if sim_properties.verbosity > 1:
-            log.info('Solving ElastoHydrodynamic equations with same footprint...')
+        log.debug('Solving ElastoHydrodynamic equations with same footprint...')
 
         perfNode_sameFP = instrument_start('same front', perfNode)
 
@@ -141,8 +139,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     if np.all(stagnant):
         return 1, Fr_k
 
-    if sim_properties.verbosity > 1:
-        log.info('Starting Fracture Front loop...')
+    log.debug('Starting Fracture Front loop...')
 
     norm = 10.
     k = 0
@@ -152,8 +149,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
     # Fracture front loop to find the correct front location
     while norm > sim_properties.tolFractFront:
         k = k + 1
-        if sim_properties.verbosity > 1:
-            log.info('\nIteration ' + repr(k))
+        log.debug('\nIteration ' + repr(k))
         fill_frac_last = np.copy(Fr_k.FillF)
 
         perfNode_extFront = instrument_start('extended front', perfNode)
@@ -184,8 +180,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         if exitstatus != 1:
             return exitstatus, Fr_k
 
-        if sim_properties.verbosity > 1:
-            log.info('Norm of subsequent filling fraction estimates = ' + repr(norm))
+        log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
         # sometimes the code is going to fail because of the max number of iterations due to the lack of
         # improvement of the norm
@@ -201,8 +196,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
             exitstatus = 6
             return exitstatus, None
 
-    if sim_properties.verbosity > 1:
-        log.info("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
+    log.debug("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
 
     return exitstatus, Fr_k
 
@@ -531,14 +525,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
         if norm < sim_properties.toleranceProjection:
-            if sim_properties.verbosity > 1:
-                log.info("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+            log.debug("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
             break
 
         alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
-        if sim_properties.verbosity > 1:
-            log.info("iterating on projection... norm " + repr(norm))
+        log.debug("iterating on projection... norm " + repr(norm))
         itr += 1
 
     # if itr == sim_properties.maxProjItrs:
@@ -691,8 +683,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                            
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
-    if sim_properties.verbosity > 1:
-        log.info('Solving the EHL system with the new trial footprint')
+    log.debug('Solving the EHL system with the new trial footprint')
 
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
@@ -737,8 +728,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
     # we need to remove it:
     # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
-    #     if sim_properties.verbosity > 1:
-    #         log.warning("Stagnant front is only supported with universal tip asymptote. continuing...")
+    #     log.warning("Stagnant front is only supported with universal tip asymptote. continuing...")
     #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if perfNode is not None:
@@ -1462,8 +1452,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     for i in new_neg:
                         new_wc.append(wc_k[np.where(neg_k == i)[0]][0])
                     wc_to_impose = np.hstack((wc_km1, np.asarray(new_wc)))
-                    if sim_properties.verbosity > 1:
-                        log.info('Iterating on cells with active width constraint...')
+                    log.debug('Iterating on cells with active width constraint...')
             else:
                 active_contraint = False
 
@@ -1767,8 +1756,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # EletsTipNew may contain fully filled elements also. Identifying only the partially filled elements
     partlyFilledTip = np.arange(EltsTipNew.shape[0])[np.in1d(EltsTipNew, EltTip_k)]
 
-    if sim_properties.verbosity > 1:
-        log.info('Solving the EHL system with the new trial footprint')
+    log.debug('Solving the EHL system with the new trial footprint')
 
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
@@ -1810,8 +1798,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
     # we need to remove it:
     # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
-    #     if sim_properties.verbosity > 1:
-    #         log.warning("Stagnant front is only supported with universal tip asymptote. Continuing...")
+    #     log.warning("Stagnant front is only supported with universal tip asymptote. Continuing...")
     #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
     if stagnant.any():
@@ -2008,8 +1995,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.yieldRatio = data[0][2]
 
 
-    log.info("Solved...")
-    log.info("Finding velocity of front...")
+    log.debug("Solved...")
+    log.debug("Finding velocity of front...")
 
     itr = 0
     # toughness iteration loop
@@ -2127,13 +2114,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
         if norm < sim_properties.toleranceProjection:
-            if sim_properties.verbosity > 1:
-                log.info("Projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
+            log.debug("Projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
             break
         alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
-        if sim_properties.verbosity > 1:
-            log.info("iterating on projection... norm = " + repr(norm))
+        log.debug("iterating on projection... norm = " + repr(norm))
         itr += 1
 
     # todo Hack!!! keep going if projection does not converge
