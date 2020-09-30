@@ -31,7 +31,7 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, silent=False):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -53,7 +53,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
     """
     log = logging.getLogger('PyFrac.load_fractures')
-    if not silent: log.info('Returning fractures...')
+    log.info('Returning fractures...')
 
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
@@ -111,7 +111,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
         if 1. - next_t / ff.time >= -1e-8:
             # if the current fracture time has advanced the output time period
-            if not silent: log.info('Returning fracture at ' + repr(ff.time) + ' s')
+            log.info('Returning fracture at ' + repr(ff.time) + ' s')
 
             fracture_list.append(ff)
 
@@ -995,6 +995,8 @@ def append_to_json_file(file_name, content, action, key=None, delete_existing_fi
                                        You will dump only the content of the dictionary
 
     """
+    log = logging.getLogger('PyFrac.append_to_json_file')
+    
     # 0)transform np.ndarray to list before output
     if isinstance(content, np.ndarray):
         content = np.ndarray.tolist(content)
