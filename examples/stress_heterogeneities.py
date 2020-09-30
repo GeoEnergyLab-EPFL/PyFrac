@@ -14,10 +14,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 import math
-from utility import setup_logging_to
+from utility import setup_logging_to_console
 
-# setting up the logging options
-setup_logging_to(logging_to_file_level='debug',logging_to_console_level='info')
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(0.65, 0.65, 69, 69)
