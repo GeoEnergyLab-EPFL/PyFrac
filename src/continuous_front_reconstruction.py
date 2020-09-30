@@ -2211,8 +2211,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if len(indexesFC_TYPE_4) > 0:
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
             if len(indexesFC_TYPE_2) > 0:
+                print('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
+                correct_size_of_pstv_region = [False, False, True]
+                return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                 #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
-                raise SystemExit('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
+                #raise SystemExit('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
 
             del indexesFC_TYPE_1, indexesFC_TYPE_2, indexesFC_TYPE_3, indexesFC_TYPE_4, Args
             """
@@ -3268,11 +3271,11 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
         # plot_as_matrix(K, mesh)
 
         if np.unique(EltCrack_k).size != EltCrack_k.size:
-            ## uncomment this to see the source of the error:
-            # plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
-            #                        shifty=0.01, annotate_cellName=False, grid=True)
-            # plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
-            #                        annotate_cellName=False, grid=True)
+            # uncomment this to see the source of the error:
+            plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
+                                   shifty=0.01, annotate_cellName=False, grid=True)
+            plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
+                                   annotate_cellName=False, grid=True)
             message = 'FRONT RECONSTRUCTION ERROR: \n the source of this error can be found because of two reasons. ' \
                       '\n1)The first reason is that the front is entering more than 1 time the same cell ' \
                       '\n2)The second reason is more in depth in how the scheme works.\n' \
