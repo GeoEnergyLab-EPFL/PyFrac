@@ -12,7 +12,6 @@ import math
 import sys
 from level_set import SolveFMM, reconstruct_front, UpdateLists
 from volume_integral import Integral_over_cell
-from HF_analytical import shift_injection_point
 from symmetry import self_influence
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 

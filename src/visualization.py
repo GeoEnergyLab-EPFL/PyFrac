@@ -133,15 +133,13 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
             var_val_list, legend_coord, time_list = get_fracture_variable(fracture_list,
                                                             variable,
                                                             edge=edge,
-                                                            return_time=True,
-                                                            source_loc=source_loc)
+                                                            return_time=True)
 
         else:
             var_val_list, time_list = get_fracture_variable(fracture_list,
                                                             variable,
                                                             edge=edge,
-                                                            return_time=True,
-                                                            source_loc=source_loc)
+                                                            return_time=True)
 
         var_val_copy = np.copy(var_val_list)
         for i in range(len(var_val_copy)):
@@ -1315,12 +1313,15 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                       gamma=gamma)
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
+        if variable in ('pn', 'pressure'):
+            analytical_list[i][(analytical_list[i] < 0)] = 0.
 
     # finding maximum and minimum values in complete list
     analytical_value = np.copy(analytical_list)
     vmin, vmax = np.inf, -np.inf
     for i in analytical_value:
         i = np.delete(i, np.where(np.isinf(i))[0])
+        i = np.delete(i, np.where(np.isneginf(i))[0])
         i = np.delete(i, np.where(np.isnan(i))[0])
         if variable in ('p', 'pressure'):
             non_zero = np.where(abs(i) > 0)[0]
