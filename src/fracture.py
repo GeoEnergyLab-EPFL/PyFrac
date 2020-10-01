@@ -781,38 +781,47 @@ class Fracture:
 
     def update_tip_regime(self, mat_prop, fluid_prop, timeStep):
         """
-        This function calculates the color of the tip regime and the coordinate within the parametric triangle of the
-        tip asymptotes.
+        This function calculates the color of the tip regime relative to the tip asymptotes.
         """
 
+        # fixed parameters
         beta_mtilde = 4 / (15 ** (1/4) * (2 ** (1/2) - 1) ** (1/4))
         beta_m = 2 ** (1/3) * 3 ** (5/6)
 
+        # initiate with all cells white
+        self.regime_color = np.full((self.mesh.NumberOfElts, 3), 1, dtype=np.float32)
+
+        # calculate velocity
         vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
 
-        if np.isnan(self.sgndDist[self.EltRibbon]).any():
-            print('Why nan distance?')
-        wk = mat_prop.Kprime[self.EltRibbon] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon])) ** (1/2)
-        wm = beta_m * (fluid_prop.muPrime * vel / mat_prop.Eprime) ** (1/3)\
-             * (abs(self.sgndDist[self.EltRibbon])) ** (2/3)
-        wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime[self.EltRibbon] ** 2
-                                 / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon])) ** (5/8)
+        # decide on moving cells
+        stagnant = np.where(mat_prop.Kprime[self.EltRibbon] * (abs(self.sgndDist[self.EltRibbon])) ** 0.5 / (
+                mat_prop.Eprime * self.w[self.EltRibbon]) > 1)[0]
+        moving = np.arange(self.EltRibbon.shape[0])[~np.in1d(self.EltRibbon, self.EltRibbon[stagnant])]
 
-        nk = wk / (self.w[self.EltRibbon] - wk)
-        nm = wm / (self.w[self.EltRibbon] - wm)
-        nmtilde = wmtilde / (self.w[self.EltRibbon] - wmtilde)
+        for i in moving:
+            if np.isnan(self.sgndDist[self.EltRibbon]).any():
+                print('Why nan distance?')
+            wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
+            wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
+                 * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
+            wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime[self.EltRibbon[i]] ** 2
+                                     / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
 
-        Nk = nk / (nk + nm + nmtilde)
-        Nm = nm / (nk + nm + nmtilde)
-        Nmtilde = nmtilde / (nk + nm + nmtilde)
+            nk = wk / (self.w[self.EltRibbon[i]] - wk)
+            nm = wm / (self.w[self.EltRibbon[i]] - wm)
+            nmtilde = wmtilde / (self.w[self.EltRibbon[i]] - wmtilde)
 
-        Nk[np.where(Nk > 1)] = 1.
-        Nm[np.where(Nm > 1)] = 1.
-        Nmtilde[np.where(Nmtilde > 1)] = 1.
-        
-        Nk[np.where(Nk < 0)] = 0.
-        Nm[np.where(Nm < 0)] = 0.
-        Nmtilde[np.where(Nmtilde < 0)] = 0.
+            Nk = nk / (nk + nm + nmtilde)
+            Nm = nm / (nk + nm + nmtilde)
+            Nmtilde = nmtilde / (nk + nm + nmtilde)
 
-        self.regime_color = np.full((self.mesh.NumberOfElts, 3), 1, dtype=np.float32)
-        self.regime_color[self.EltRibbon, ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
+            Nk[np.where(Nk > 1)] = 1.
+            Nm[np.where(Nm > 1)] = 1.
+            Nmtilde[np.where(Nmtilde > 1)] = 1.
+
+            Nk[np.where(Nk < 0)] = 0.
+            Nm[np.where(Nm < 0)] = 0.
+            Nmtilde[np.where(Nmtilde < 0)] = 0.
+
+            self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
