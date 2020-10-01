@@ -59,6 +59,7 @@ simulProp.finalTime = 1.1e4                                   # the time at whic
 simulProp.set_outputFolder("./Data/buoyant_line_source")    # the disk address where the files are saved
 simulProp.gravity = True                                    # take the effect of gravity into account
 simulProp.set_mesh_extension_direction(['top'])
+simulProp.plotVar = ['w', 'regime']
 simulProp.toleranceEHL = 1e-3
 
 # initializing fracture
@@ -91,7 +92,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-#controller.run()
+controller.run()
 
 
 ####################

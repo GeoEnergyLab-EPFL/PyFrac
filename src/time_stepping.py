@@ -287,13 +287,13 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                          empty, #corr_ribbon
                                          doublefracturedictionary= doublefracturedictionary)
 
-    if (w_k < 0).any():
-        print('Neg width encountered!')
-
     # check if the solution is valid
     if np.isnan(w_k).any() or np.isnan(p_k).any():
         exitstatus = 5
         return exitstatus, None
+
+    if (w_k < 0).any():
+        print('Neg width encountered!')
 
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
     Fr_kplus1.time += timeStep

@@ -135,7 +135,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, source_loc=np.asarray([0,0])):
+def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     """ This function returns the required variable from a fracture list.
 
     Args:
@@ -312,9 +312,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False, so
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in fracture_list:
+            if len(i.source) != 0:
+                source_loc = i.mesh.CenterCoor[i.source[0]]
             # coordinate of the zero vertex in the tip cells
-            front_intersect_dist = np.sqrt((i.Ffront[::, [0, 2]].flatten() - i.mesh.CenterCoor[i.source[0]][0]) ** 2
-                                           + (i.Ffront[::, [1, 3]].flatten() - i.mesh.CenterCoor[i.source[0]][1]) ** 2)
+            front_intersect_dist = np.sqrt((i.Ffront[::, [0, 2]].flatten() - source_loc[0]) ** 2
+                                           + (i.Ffront[::, [1, 3]].flatten() - source_loc[1]) ** 2)
             if variable == 'front_dist_mean' or variable == 'd_mean':
                 variable_list.append(np.mean(front_intersect_dist))
             elif variable == 'front_dist_max' or variable == 'd_max':

@@ -2213,7 +2213,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if len(indexesFC_TYPE_2) > 0:
                 print('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
                 correct_size_of_pstv_region = [False, False, True]
-                return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
+                return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                 #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
                 #raise SystemExit('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
 
