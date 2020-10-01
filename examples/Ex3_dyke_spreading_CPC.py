@@ -66,7 +66,8 @@ simulProp.maxSolverItrs = 200               # increase the Picard iteration limi
 simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.5, 0.1]]) # set up the time step prefactor
 simulProp.timeStepLimit = 5000              # time step limit
 simulProp.plotVar = ['w', 'v', 'regime']              # plot fracture width and fracture front velocity
-simulProp.projMethod = 'ILSA_orig'
+simulProp.frontAdvancing = 'implicit'
+#simulProp.projMethod = 'ILSA_orig'
 
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)

@@ -201,7 +201,7 @@ def M_vertex_solution(Eprime, Q0, muPrime, Mesh, inj_point, R=None, t=None, requ
 
 def Mp_vertex_solution(Eprime, V0, muPrime, Mesh, inj_point, R=None, t=None, required='111111'):
     """
-    Analytical solution for Viscosity dominated (M vertex) fracture propagation, given fracture radius or the time
+    Semi-Analytical solution for Viscosity dominated (Mp vertex) pulse, given fracture radius or the time
     since the start of the injection. The solution does not take leak off into account.
 
     Arguments:
@@ -219,7 +219,7 @@ def Mp_vertex_solution(Eprime, V0, muPrime, Mesh, inj_point, R=None, t=None, req
         - p (ndarray)          -- pressure at each cell when the fracture has propagated to the given radius
         - w (ndarray)          -- width opening at each cell when the fracture has propagated to the given radius or time
         - v (float)            -- fracture propagation velocity
-        - coords (ndarray)     -- coordinates of points around center
+        - actElts (ndarray)    -- active Elements inside the fracture
     """
 
     if R is None and t is None:
@@ -553,7 +553,54 @@ def K_vertex_solution(Kprime, Eprime, Q0, mesh, inj_point, R=None, t=None, requi
 
     return t, R, p, w, v, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def Toughness_arrest(Kprime, Eprime, V0, mesh, inj_point, required='111111'):
+    """
+    Analytical solution for the radius of arrest when the arrest is toughness dominated.
+    The solution does not take leak off into account.
+
+    Arguments:
+        Kprime (float):          -- 4*(2/pi)**0.5 * K1c, where K1c is the linear-elastic plane-strain fracture toughness
+        Eprime (float):          -- plain strain elastic modulus
+        V0 (float):              -- injected volume
+        mesh (CartesianMesh):    -- a CartesianMesh class object describing the grid.
+        inj_point (ndarray):     -- the point where the injection takes place.
+        required (string):       -- a mask giving which of the variables are required.
+
+    Returns:
+        - R (float)               -- radius of the fracture at the given time.
+        - p (ndarray)             -- pressure at each cell when the fracture has propagated to the given radius
+        - w (ndarray)             -- width opening at each cell when the fracture has propagated to the given radius or time
+        - actvElts (ndarray)      -- list of cells inside the fracture at the given time
+    """
+
+    R = (3 ** 2 * Eprime ** 2 * V0 ** 2 / (2 * np.pi() ** 2 * Kprime ** 2)) ** (1 / 5)
+
+    if required[3] == '1':
+        w = np.zeros((mesh.NumberOfElts,))
+        rho = ((mesh.CenterCoor[:, 0] - inj_point[0]) ** 2 + (mesh.CenterCoor[:, 1] - inj_point[1]) ** 2) ** 0.5 / R # distance from center
+        actvElts = np.where(rho < 1.) # active cells (inside fracture)
+        w[actvElts] = (3 / (8 * np.pi())) ** (1/5) * (Kprime ** 4 * V0 / Eprime ** 4) ** (1/5) \
+                      * np.sqrt(1 - rho[actvElts] ** 2)
+    else:
+        w = None
+
+    if required[2] == '1':
+        p = np.zeros((mesh.NumberOfElts,))
+        rho = ((mesh.CenterCoor[:, 0] - inj_point[0]) ** 2 + (mesh.CenterCoor[:, 1] - inj_point[1]) ** 2) ** 0.5 / R # distance from center
+        actvElts = np.where(rho < 1.) # active cells (inside fracture)
+        p[actvElts] = (np.pi() ** 6 / (3 * 2 ** 17)) ** (1/5) * (Kprime ** 6 / (V0 * Eprime)) ** (1/5)
+
+    else:
+        p = None
+
+    return None, R, p, w, np.zeros((mesh.NumberOfElts,)), actvElts
+
+
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, inj_point, R=None, t=None, required='111111'):
@@ -643,7 +690,7 @@ def Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, Mesh, inj_point, R=None, t=N
 
     return t, R, p, w, v, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, inj_point, R=None, t=None, required='111111'):
@@ -714,7 +761,32 @@ def KT_vertex_solution(Eprime, Cprime, Q0, Kprime, Mesh, inj_point, R=None, t=No
 
     return t, R, p, w, v, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def LeakOff_arrest(Eprime, Cprime, V0, muPrime):
+    """
+    Numerical solution for the radius of arrest when the arrest is due to fluid leak-off.
+    The solution does not depend on leak-off.
+
+    Arguments:
+        Eprime (float):          -- plain strain elastic modulus
+        Cprime (float):          -- adapted leak-off coefficient
+        V0 (float):              -- injected volume
+        muPrime (float):         -- 12 * viscosity
+        inj_point (ndarray):     -- the point where the injection takes place.
+        required (string):       -- a mask giving which of the variables are required.
+
+    Returns:
+        - R (float)               -- arrest radius of the fracture
+    """
+
+    R = 0.521771773755632468 * (Eprime * V0 ** 5 / (Cprime ** 2 * muPrime)) ** (1/13)
+
+    return None, R, None, None, None, None
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, inj_point=None, required='111111'):
@@ -797,7 +869,7 @@ def PKN_solution(Eprime, Q0, muPrime, Mesh, h, ell=None, t=None, inj_point=None,
     return t, ell, p, w, v, actvElts
 
 
-# -----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def KGD_solution_K(Eprime, Q0, Kprime, Mesh, inj_point, height, ell=None, t=None, required='111111'):
     """
@@ -879,7 +951,7 @@ def KGD_solution_K(Eprime, Q0, Kprime, Mesh, inj_point, height, ell=None, t=None
     return t, ell, p, w, v, actvElts
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh, inj_point, b=None, t=None, required='111111'):
     """
@@ -943,7 +1015,7 @@ def anisotropic_toughness_elliptical_solution(KIc_max, KIc_min, Eprime, Q0, mesh
 
     return t, b, p, w, v, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def TI_Elasticity_elliptical_solution_Fabrikant(mesh, inj_point, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None, required='111111'):
@@ -1023,7 +1095,7 @@ def TI_Elasticity_elliptical_solution_Fabrikant(mesh, inj_point, gamma, Cij, Kc3
     return t, b, p, w, None, actvElts, None
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def TI_elasticity_sigma(theta, *args):
 
@@ -1049,7 +1121,7 @@ def TI_elasticity_sigma(theta, *args):
 
     return sigma
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def TI_Elasticity_elliptical_solution(mesh, inj_point, gamma, Cij, Kc3, Ep3, Q0, t=None, b=None, required='111111'):
@@ -1112,7 +1184,7 @@ def TI_Elasticity_elliptical_solution(mesh, inj_point, gamma, Cij, Kc3, Ep3, Q0,
                                                                                  
     return t, b, p, w, None, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kprime=None, Cprime=None, length=None,
@@ -1175,10 +1247,14 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
         t, r, p, w, v, actvElts = Mp_vertex_solution(Eprime, Vinj, muPrime, mesh, inj_point, length, t, required)
     elif regime == 'K':
         t, r, p, w, v, actvElts = K_vertex_solution(Kprime, Eprime, Q0, mesh, inj_point, length, t, required)
+    elif regime == 'Ka':
+        t, r, p, w, v, actvElts = Toughness_arrest(Kprime, Eprime, Vinj, mesh, inj_point, required)
     elif regime == 'Mt':
         t, r, p, w, v, actvElts = Mt_vertex_solution(Eprime, Cprime, Q0, muPrime, mesh, inj_point, length, t, required)
     elif regime == 'Kt':
         t, r, p, w, v, actvElts = KT_vertex_solution(Eprime, Cprime, Q0, Kprime, mesh, inj_point, length, t, required)
+    elif regime == 'La':
+        t, r, p, w, v, actvElts = LeakOff_arrest(Eprime, Cprime, Vinj, muPrime)
     elif regime == 'PKN':
         t, r, p, w, v, actvElts = PKN_solution(Eprime, Q0, muPrime, mesh, h, length, t, inj_point, required)
     elif regime == 'KGD_K':
@@ -1198,7 +1274,7 @@ def HF_analytical_sol(regime, mesh, Eprime, Q0, inj_point=None, muPrime=None, Kp
 
     return t, r, p, w, v, actvElts
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kprime=None, Cprime=None,
@@ -1252,12 +1328,14 @@ def get_fracture_dimensions_analytical(regime, t, Eprime, Q0, muPrime=None, Kpri
         x_len = y_len = 0.836406 * Eprime ** (1 / 9) * Vinj ** (1 / 3) * t ** (1 / 9) / muPrime ** (1 / 9)
     elif regime == 'K':
         x_len = y_len = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
-    elif regime == 'Kp':
+    elif regime == 'Ka':
         x_len = y_len = (3 / 2 ** (1 / 2) / np.pi * Vinj * Eprime / Kprime) ** (2 / 5)
     elif regime == 'Mt':
         x_len = y_len = (2 * Q0 / Cprime) ** 0.5 * t ** 0.25 / np.pi
     elif regime == 'Kt':
         x_len = y_len = 2 ** 0.5 * Q0 ** 0.5 * t ** (1 / 4) / Cprime ** 0.5 / np.pi
+    elif regime == 'La':
+        x_len = y_len = 0.521771773755632468 * (Eprime * Vinj ** 5 / (Cprime ** 2 * muPrime)) ** (1/13)
     elif regime == 'PKN':
         x_len = 1.001 * (Q0 ** 3 * Eprime * t ** 4 / (4 * np.pi ** 3 * (muPrime / 12) * h ** 4)) ** (1 / 5)
         y_len = h / 2
