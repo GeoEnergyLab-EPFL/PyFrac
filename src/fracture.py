@@ -800,12 +800,12 @@ class Fracture:
         moving = np.arange(self.EltRibbon.shape[0])[~np.in1d(self.EltRibbon, self.EltRibbon[stagnant])]
 
         for i in moving:
-            if np.isnan(self.sgndDist[self.EltRibbon]).any():
+            if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
                 print('Why nan distance?')
             wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
             wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
                  * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
-            wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel * mat_prop.Cprime[self.EltRibbon[i]] ** 2
+            wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel[i] * mat_prop.Cprime[self.EltRibbon[i]] ** 2
                                      / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
 
             nk = wk / (self.w[self.EltRibbon[i]] - wk)
@@ -816,12 +816,17 @@ class Fracture:
             Nm = nm / (nk + nm + nmtilde)
             Nmtilde = nmtilde / (nk + nm + nmtilde)
 
-            Nk[np.where(Nk > 1)] = 1.
-            Nm[np.where(Nm > 1)] = 1.
-            Nmtilde[np.where(Nmtilde > 1)] = 1.
-
-            Nk[np.where(Nk < 0)] = 0.
-            Nm[np.where(Nm < 0)] = 0.
-            Nmtilde[np.where(Nmtilde < 0)] = 0.
+            if Nk > 1.:
+                Nk = 1
+            elif Nk < 0.:
+                Nk = 0
+            if Nm > 1.:
+                Nm = 1
+            elif Nm < 0.:
+                Nm = 0
+            if Nmtilde > 1.:
+                Nmtilde = 1
+            elif Nmtilde < 0.:
+                Nmtilde = 0
 
             self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
