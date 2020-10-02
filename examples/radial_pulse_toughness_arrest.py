@@ -43,7 +43,7 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 5e6                          # the time at which the simulation stops
+simulProp.finalTime = 1e8                          # the time at which the simulation stops
 simulProp.saveTSJump, simulProp.plotTSJump = 3, 3   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/Pulse")   # the disk address where the files are saved
 
@@ -133,47 +133,5 @@ Fig_R = plot_analytical_solution(regime='Ka',
                                  time_srs=time_srs,
                                  plot_prop=plt_prop,
                                  fig=Fig_R)
-
-# # plot slice of width
-# time_slice = np.asarray([0.5, 5, 45, 5e4, 5e5, 5e6])
-# Fr_slice, properties = load_fractures(address="./Data/Mpulse",
-#                                       time_srs=time_slice)       # load specific fractures
-# time_slice = get_fracture_variable(Fr_slice,
-#                                    variable='time')
-#
-# ext_pnts = np.empty((2, 2), dtype=np.float64)
-# Fig_WS_M = plot_fracture_list_slice(Fr_slice[:3],
-#                                   variable='w',
-#                                   projection='2D',
-#                                   plot_cell_center=True,
-#                                   extreme_points=ext_pnts)
-# # plot slice of width analytical
-# Fig_WS_M = plot_analytical_solution_slice('M',
-#                                         'w',
-#                                         Solid,
-#                                         Injection,
-#                                         time_srs=time_slice[:3],
-#                                         fluid_prop=Fluid,
-#                                         fig=Fig_WS_M,
-#                                         point1=ext_pnts[0],
-#                                         point2=ext_pnts[1])
-#
-#
-# ext_pnts = np.empty((2, 2), dtype=np.float64)
-# Fig_WS_Mp = plot_fracture_list_slice(Fr_slice[3:],
-#                                   variable='w',
-#                                   projection='2D',
-#                                   plot_cell_center=True,
-#                                   extreme_points=ext_pnts)
-# # plot slice of width analytical
-# Fig_WS_Mp = plot_analytical_solution_slice('Mp',
-#                                         'w',
-#                                         Solid,
-#                                         Injection,
-#                                         time_srs=time_slice[3:],
-#                                         fluid_prop=Fluid,
-#                                         fig=Fig_WS_Mp,
-#                                         point1=ext_pnts[0],
-#                                         point2=ext_pnts[1])
 
 plt.show(block=True)

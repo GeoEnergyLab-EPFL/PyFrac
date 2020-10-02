@@ -823,7 +823,7 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
     else:
         density = None
 
-    if regime in ('M', 'Mt', 'PKN', 'MDR', 'Mp'):
+    if regime in ('M', 'Mt', 'PKN', 'MDR', 'Mp', 'La'):
         if fluid_prop is None:
             raise ValueError('Fluid properties required to evaluate analytical solution')
         muPrime = fluid_prop.muPrime
