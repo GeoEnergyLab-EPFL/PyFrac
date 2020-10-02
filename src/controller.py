@@ -974,6 +974,8 @@ class Controller:
 
         # update the saved properties
         if self.sim_prop.saveToDisk:
+            if os.path.exists(self.sim_prop.get_outputFolder() + "properties"):
+                os.remove(self.sim_prop.get_outputFolder() + "properties")
             prop = (self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
             with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
                 dill.dump(prop, output, -1)
