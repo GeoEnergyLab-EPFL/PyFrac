@@ -81,7 +81,7 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 # simulation properties
 simulProp = SimulationProperties()
 simulProp.bckColor = 'sigma0'
-simulProp.finalTime = 0.15                           # the time at which the simulation stops
+simulProp.finalTime = 0.28                          # the time at which the simulation stops
 simulProp.outputTimePeriod = 1e-4                    # to save after every time step
 simulProp.tmStpPrefactor = 0.5                       # decrease the pre-factor due to explicit front tracking
 simulProp.set_outputFolder("./Data/stress_heterogeneities") # the disk address where the files are saved
@@ -89,6 +89,9 @@ simulProp.saveFluidFluxAsVector = True
 simulProp.plotVar = ['ffvf']
 simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
 simulProp.saveToDisk = True
+simulProp.meshExtensionFactor = 1.1
+simulProp.set_mesh_extension_direction(['all'])
+simulProp.useBlockToeplizCompression = True
 
 # initialization parameters
 Fr_geometry = Geometry('radial', radius=0.12)
@@ -120,7 +123,7 @@ controller.run()
 from visualization import *
 
 # loading simulation results
-Fr_list, properties = load_fractures(address="./Data/stress_heterogeneities",step_size=1)                  # load all fractures
+Fr_list, properties = load_fractures(address="./Data/stress_heterogeneities",step_size=10)                  # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
 Solid, Fluid, Injection, simulProp = properties
 
@@ -136,6 +139,24 @@ Fig_R = plot_fracture_list(Fr_list,
                            mat_properties=properties[0],
                            backGround_param='sigma0',
                            plot_prop=plot_prop)
+
+
+# plot fracture radius
+plot_prop = PlotProperties()
+plot_prop.lineStyle = '.'               # setting the linestyle to point
+plot_prop.graphScaling = 'loglog'       # setting to log log plot
+Fig_R = plot_fracture_list(Fr_list,
+                           variable='d_mean',
+                           plot_prop=plot_prop)
+
+# plot analytical radius
+Fig_R = plot_analytical_solution(regime='K',
+                                 variable='d_mean',
+                                 mat_prop=Solid,
+                                 inj_prop=Injection,
+                                 fluid_prop=Fluid,
+                                 time_srs=time_srs,
+                                 fig=Fig_R)
 
 #  set block=True and comment last 2 lines if you want to keep the window open
 plt.show(block=True)
