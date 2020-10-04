@@ -62,7 +62,164 @@ def load_isotropic_elasticity_matrix(Mesh, Ep):
             np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
 
     return C
+# -----------------------------------------------------------------------------------------------------------------------
 
+class load_isotropic_elasticity_matrix_toepliz():
+    def __init__(self, Mesh, Ep):
+        self.Ep = Ep
+        const = (Ep / (8. * np.pi))
+        self.const = const
+        self.reload(Mesh)
+
+    def reload(self, Mesh):
+        hx = Mesh.hx
+        hy = Mesh.hy
+        a = hx / 2.
+        b = hy / 2.
+        nx = Mesh.nx
+        ny = Mesh.ny
+        self.a = a
+        self.b = b
+        self.nx = nx
+        const = self.const
+
+        """
+        Let us make some definitions:
+        cartesian mesh             := a structured rectangular mesh of (nx,ny) cells of rectaungular shape
+        
+                                            |<------------nx----------->|
+                                        _    ___ ___ ___ ___ ___ ___ ___
+                                        |   | . | . | . | . | . | . | . |
+                                        |   |___|___|___|___|___|___|___|
+                                        ny  | . | . | . | . | . | . | . |  
+                                        |   |___|___|___|___|___|___|___|   y
+                                        |   | . | . | . | . | . | . | . |   |
+                                        -   |___|___|___|___|___|___|___|   |____x  
+                                       
+                                       the cell centers are marked by .
+         
+        set of unique distances    := given a set of cells in a cartesian mesh, consider the set of unique distances 
+                                      between any pair of cell centers.
+        set of unique coefficients := given a set of unique distances then consider the interaction coefficients
+                                      obtained from them
+                                      
+        C_toeplotz_coe             := A matrix of size (nx,ny), populated with the unique coefficients. 
+        
+        Matematically speaking:
+        for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
+        """
+        if a != b:
+            self.C_toeplotz_coe = np.empty((ny, nx), dtype=np.float32)
+            xrange = np.asarray([j * hx for j in range(nx)])
+            for i in range(ny):
+                self.C_toeplotz_coe[i, :] = isotropic_influence_coefficient(xrange, i*hy, a, b, const) #python access to local variables is faster
+        else: #there is a minor symmetry
+            h = hx
+            nmin = min(nx,ny)
+            nmax = max(nx,ny)
+            C_toeplotz_coe_sym  = np.empty((nmin, nmin), dtype=np.float32)
+            for j in range(nmin):
+                for i in range(j+1):
+                    C_toeplotz_coe_sym[i, j] = isotropic_influence_coefficient( j * h, i * h, a, a, const)
+                    C_toeplotz_coe_sym[j, i] = C_toeplotz_coe_sym[i, j]
+            if not nx == ny:
+                C_toeplotz_coe_rect  =  np.empty((nmin, nmax - min), dtype=np.float32)
+                min_range = [j * h for j in range(nmin)] # remember h = hx = hy = 2a = 2b
+                for i in range(nmin + 1,nmax):
+                    C_toeplotz_coe_rect[i-nmin, :] = isotropic_influence_coefficient(min_range, i*h, a, a, const) #python access to local variables is faster
+            else: #nx = ny
+                self.C_toeplotz_coe = C_toeplotz_coe_sym
+            if nx > ny:
+                self.C_toeplotz_coe = np.hstack(C_toeplotz_coe_sym,C_toeplotz_coe_rect)
+            elif nx < ny:
+                self.C_toeplotz_coe = np.vstack(C_toeplotz_coe_sym,C_toeplotz_coe_rect.transpose())
+
+    def get_Cij_submatrix(self,elements):
+        dim = len(elements) # number of elements to consider
+        rangeel = range(dim)
+        C_sub = np.empty((dim,dim), dtype=np.float32) # submatrix of C
+        nx = self.nx # number of element in x direction in the global mesh
+        i = [el//nx for el in elements]
+        j=[ elements[ind] - nx*i[ind] for ind in rangeel]
+
+        # recap:
+        # i and j are the index of row and column of the elements in the mesh and in the matrix self.C_toeplotz_coe
+
+        for iter1 in rangeel:
+            i1 = i[iter1]
+            j1 = j[iter1]
+            for iter2 in range(iter1+1):
+                C_sub[iter1, iter2] = self.C_toeplotz_coe[abs(i[iter2] - i1), abs(j[iter2] - j1)]
+                C_sub[iter2, iter1] = C_sub[iter1, iter2]
+
+        """ 
+        the naive way:
+        
+            for iter1 in range(dim):
+                i1 = i[iter1]
+                j1 = j[iter1]
+                for iter2 in range(dim):
+                    i2 = i[iter2]
+                    j2 = j[iter2]
+                    ii = abs(i1 - i2)
+                    jj = abs(j1 - j2)
+                    C_sub[iter1, iter2] = self.C_toeplotz_coe[ii, jj]
+        """
+
+        return C_sub
+
+    def get_Cij_submatrix_indexed(self,elemY,elemX):
+        """
+
+        :param elemX: columns to take
+        :param elemY: rows to take
+        :return: submatrix of C
+        """
+        dimX = len(elemX)  # number of elements to consider on x axis
+        dimY = len(elemY)  # number of elements to consider on y axis
+        rangeX = range(dimX)
+        rangeY = range(dimY)
+        nx = self.nx  # number of element in x direction in the global mesh
+        C_sub = np.zeros((dimY, dimX), dtype=np.float32)  # submatrix of C
+
+        iY = [el // nx for el in elemY]
+        jY = [elemY[ind] - nx * iY[ind] for ind in rangeY]
+
+        iX = [el // nx for el in elemX]
+        jX = [elemX[ind] - nx * iX[ind] for ind in rangeX]
+
+        for iter1 in rangeY:
+            i1 = iY[iter1]
+            j1 = jY[iter1]
+            for iter2 in rangeX:
+                ii = abs(i1 - iX[iter2])
+                jj = abs(j1 - jX[iter2])
+                C_sub[iter1, iter2] = self.C_toeplotz_coe[ii, jj]
+        return C_sub
+
+    def __getitem__(self, elementsXY):
+        elemX = elementsXY[1].flatten()
+        elemY = elementsXY[0].flatten()
+        if elemX.size == 0 or elemY.size==0:
+            return np.empty((elemY.size, elemX.size),dtype=np.float32)
+        elif elemX.size != elemY.size:
+            return self.get_Cij_submatrix_indexed(elemY, elemX)
+        elif elemX.size == elemY.size and (elemY == elemX).all():
+                return self.get_Cij_submatrix( elemX)
+        else:
+            return self.get_Cij_submatrix_indexed(elemY, elemX)
+
+def isotropic_influence_coefficient( x, y, a, b, const):
+    amx = a - x
+    apx = a + x
+    bmy = b - y
+    bpy = b + y
+    coef = const * (
+              np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
+            + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
+            + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
+            + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
+    return coef
 
 # -----------------------------------------------------------------------------------------------------------------------
 def get_Cij_Matrix(youngs_mod, nu):
