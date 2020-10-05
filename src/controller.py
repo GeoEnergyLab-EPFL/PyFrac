@@ -196,6 +196,15 @@ class Controller:
             with open(self.logAddress + 'log.txt', 'w+') as file:
                 file.writelines('log file, simulation run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n')
 
+        # deactivate the block_toepliz_compression functions
+        # DO THIS CHECK BEFORE COMPUTING C!
+        if self.C is not None: # in the case C is provided
+            self.sim_prop.useBlockToeplizCompression = False
+        elif self.solid_prop.TI_elasticity: # in case of TI_elasticity
+            self.sim_prop.useBlockToeplizCompression = False
+        elif not self.solid_prop.TI_elasticity and self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
+            self.sim_prop.useBlockToeplizCompression = False
+
         # load elasticity matrix
         if self.C is None:
             print("Making elasticity matrix...")
@@ -225,13 +234,6 @@ class Controller:
                     self.C = C
 
             print('Done!')
-        # deactivate the block_toepliz_compression functions
-        if self.C is not None:
-            self.sim_prop.useBlockToeplizCompression = False
-        elif self.solid_prop.TI_elasticity:
-            self.sim_prop.useBlockToeplizCompression = False
-        elif not self.solid_prop.TI_elasticity and self.sim_prop.symmetric:
-            self.sim_prop.useBlockToeplizCompression = False
 
         # # perform first time step with implicit front advancing due to non-availability of velocity
         # if not self.sim_prop.symmetric:
@@ -974,7 +976,12 @@ class Controller:
                 rem_factor = 10
                 print("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
-        else: self.C.reload(coarse_mesh)
+        else:
+            if direction == None:
+                rem_factor = self.sim_prop.remeshFactor
+            else:
+                rem_factor = 10
+            self.C.reload(coarse_mesh)
 
 
         self.fracture = self.fracture.remesh(rem_factor,
