@@ -570,8 +570,10 @@ class CartesianMesh:
             print("Point is outside domain.")
             return np.nan
 
-        return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2),
-                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2 ))
+        precision = np.finfo(np.double).precision
+
+        return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2 + np.sqrt(10 ** -precision)),
+                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2 + np.sqrt(10 ** -precision)))
 
 #-----------------------------------------------------------------------------------------------------------------------
 
