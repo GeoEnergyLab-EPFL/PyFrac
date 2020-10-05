@@ -976,7 +976,12 @@ class Controller:
                 rem_factor = 10
                 print("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
-        else: self.C.reload(coarse_mesh)
+        else:
+            if direction == None:
+                rem_factor = self.sim_prop.remeshFactor
+            else:
+                rem_factor = 10
+            self.C.reload(coarse_mesh)
 
 
         self.fracture = self.fracture.remesh(rem_factor,
