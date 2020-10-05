@@ -103,58 +103,35 @@ class load_isotropic_elasticity_matrix_toepliz():
         set of unique coefficients := given a set of unique distances then consider the interaction coefficients
                                       obtained from them
                                       
-        C_toeplotz_coe             := A matrix of size (nx,ny), populated with the unique coefficients. 
+        C_toeplotz_coe             := An array of size (nx*ny), populated with the unique coefficients. 
         
         Matematically speaking:
         for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
         """
-        if a != b:
-            self.C_toeplotz_coe = np.empty((ny, nx), dtype=np.float32)
-            xrange = np.asarray([j * hx for j in range(nx)])
-            for i in range(ny):
-                self.C_toeplotz_coe[i, :] = isotropic_influence_coefficient(xrange, i*hy, a, b, const) #python access to local variables is faster
-        else: #there is a minor symmetry
-            h = hx
-            nmin = min(nx,ny)
-            nmax = max(nx,ny)
-            C_toeplotz_coe_sym  = np.empty((nmin, nmin), dtype=np.float32)
-            for j in range(nmin):
-                for i in range(j+1):
-                    C_toeplotz_coe_sym[i, j] = isotropic_influence_coefficient( j * h, i * h, a, a, const)
-                    C_toeplotz_coe_sym[j, i] = C_toeplotz_coe_sym[i, j]
-            if not nx == ny:
-                C_toeplotz_coe_rect  =  np.empty((nmin, nmax - min), dtype=np.float32)
-                min_range = [j * h for j in range(nmin)] # remember h = hx = hy = 2a = 2b
-                for i in range(nmin + 1,nmax):
-                    C_toeplotz_coe_rect[i-nmin, :] = isotropic_influence_coefficient(min_range, i*h, a, a, const) #python access to local variables is faster
-            else: #nx = ny
-                self.C_toeplotz_coe = C_toeplotz_coe_sym
-            if nx > ny:
-                self.C_toeplotz_coe = np.hstack(C_toeplotz_coe_sym,C_toeplotz_coe_rect)
-            elif nx < ny:
-                self.C_toeplotz_coe = np.vstack(C_toeplotz_coe_sym,C_toeplotz_coe_rect.transpose())
+        C_toeplotz_coe = np.empty(ny*nx, dtype=np.float32)
+        xindrange = np.asarray(range(nx))
+        xrange = xindrange * hx
+        for i in range(ny):
+            y = i*hy
+            amx = a - xrange
+            apx = a + xrange
+            bmy = b - y
+            bpy = b + y
+            C_toeplotz_coe[i*nx:(i+1)*nx] = const * (np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
+                                                            + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
+                                                            + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
+                                                            + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
+        self.C_toeplotz_coe = C_toeplotz_coe
 
     def get_Cij_submatrix(self,elements):
-        dim = len(elements) # number of elements to consider
-        rangeel = range(dim)
-        C_sub = np.empty((dim,dim), dtype=np.float32) # submatrix of C
-        nx = self.nx # number of element in x direction in the global mesh
-        i = [el//nx for el in elements]
-        j=[ elements[ind] - nx*i[ind] for ind in rangeel]
+        """
 
-        # recap:
-        # i and j are the index of row and column of the elements in the mesh and in the matrix self.C_toeplotz_coe
-
-        for iter1 in rangeel:
-            i1 = i[iter1]
-            j1 = j[iter1]
-            for iter2 in range(iter1+1):
-                C_sub[iter1, iter2] = self.C_toeplotz_coe[abs(i[iter2] - i1), abs(j[iter2] - j1)]
-                C_sub[iter2, iter1] = C_sub[iter1, iter2]
-
-        """ 
+        :param elements: (numpy array) columns (and rows) to take
+        :return: submatrix of C
+        """
+        """
         the naive way:
-        
+
             for iter1 in range(dim):
                 i1 = i[iter1]
                 j1 = j[iter1]
@@ -165,36 +142,44 @@ class load_isotropic_elasticity_matrix_toepliz():
                     jj = abs(j1 - j2)
                     C_sub[iter1, iter2] = self.C_toeplotz_coe[ii, jj]
         """
+        dim = elements.size # number of elements to consider
+        nx = self.nx # number of element in x direction in the global mesh
+        localC_toeplotz_coe = np.copy(self.C_toeplotz_coe) #local access is faster
 
+        i = np.floor_divide(elements,nx)
+        j = elements - nx*i
+
+        C_sub = np.zeros((dim,dim), dtype=np.float32) # submatrix of C
+        for iter1 in range(dim):
+            i1 = i[iter1]
+            j1 = j[iter1]
+            C_sub[iter1, 0:dim] = localC_toeplotz_coe[np.abs(j - j1)+nx*np.abs(i - i1)]
         return C_sub
 
     def get_Cij_submatrix_indexed(self,elemY,elemX):
         """
 
-        :param elemX: columns to take
-        :param elemY: rows to take
+        :param elemX: (numpy array) columns to take
+        :param elemY: (numpy array) rows to take
         :return: submatrix of C
         """
-        dimX = len(elemX)  # number of elements to consider on x axis
-        dimY = len(elemY)  # number of elements to consider on y axis
-        rangeX = range(dimX)
-        rangeY = range(dimY)
+        dimX = elemX.size  # number of elements to consider on x axis
+        dimY = elemY.size  # number of elements to consider on y axis
+
         nx = self.nx  # number of element in x direction in the global mesh
         C_sub = np.zeros((dimY, dimX), dtype=np.float32)  # submatrix of C
 
-        iY = [el // nx for el in elemY]
-        jY = [elemY[ind] - nx * iY[ind] for ind in rangeY]
+        localC_toeplotz_coe = np.copy(self.C_toeplotz_coe) #local access is faster
+        iY = np.floor_divide(elemY,nx)
+        jY = elemY - nx * iY
 
-        iX = [el // nx for el in elemX]
-        jX = [elemX[ind] - nx * iX[ind] for ind in rangeX]
+        iX = np.floor_divide(elemX,nx)
+        jX = elemX - nx * iX
 
-        for iter1 in rangeY:
+        for iter1 in range(dimY):
             i1 = iY[iter1]
             j1 = jY[iter1]
-            for iter2 in rangeX:
-                ii = abs(i1 - iX[iter2])
-                jj = abs(j1 - jX[iter2])
-                C_sub[iter1, iter2] = self.C_toeplotz_coe[ii, jj]
+            C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx*np.abs(i1 - iX)]
         return C_sub
 
     def __getitem__(self, elementsXY):
