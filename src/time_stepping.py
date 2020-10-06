@@ -1029,7 +1029,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
     if sim_properties.get_volumeControl():
 
-        if sim_properties.symmetric:
+        if sim_properties.symmetric and not sim_properties.useBlockToeplizCompression:
             try:
                 Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
             except AttributeError:
@@ -1092,18 +1092,20 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             C[np.ix_(EltTip_sym[partlyFilledTip_sym], EltTip_sym[partlyFilledTip_sym])] = C_EltTip
         else:
-            C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
-                                        EltTip[partlyFilledTip])])  # keeping the tip element entries to restore current
-            #  tip correction. This is done to avoid copying the full elasticity matrix.
+            # CARLO: we can remove it because the diagonal terms of C are never accessed
+            # C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
+            #                             EltTip[partlyFilledTip])])  # keeping the tip element entries to restore current
+            # #  tip correction. This is done to avoid copying the full elasticity matrix.
+            #
+            # # filling fraction correction for element in the tip region
+            # FillF = FillFrac[partlyFilledTip]
+            # for e in range(0, len(partlyFilledTip)):
+            #     r = FillF[e] - .25
+            #     if r < 0.1:
+            #         r = 0.1
+            #     ac = (1 - r) / r
+            #     C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
 
-            # filling fraction correction for element in the tip region
-            FillF = FillFrac[partlyFilledTip]
-            for e in range(0, len(partlyFilledTip)):
-                r = FillF[e] - .25
-                if r < 0.1:
-                    r = 0.1
-                ac = (1 - r) / r
-                C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
             if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts']==2:
                 #compute the channel from the last time step for the two fractures
                 EltChannelFracture0 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_0'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0'])
@@ -1128,6 +1130,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 QinFR0=Qin[EltChannelFracture0]
                 QinFR1=Qin[EltChannelFracture1]
 
+                # CARLO: I check if can be possible to have a Channel to be tip
+                if np.any(np.isin(np.concatenate((EltChannelFracture0, EltChannelFracture1)),np.concatenate((EltTipFracture0, EltTipFracture1)),assume_unique=True)):
+                    SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
+
                 A, b = MakeEquationSystem_volumeControl_double_fracture(Fr_lstTmStp.w,
                                                                         wTipFR0,
                                                                         wTipFR1,
@@ -1143,19 +1149,22 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                                         Fr_lstTmStp.mesh.EltArea,
                                                                         LkOff)
             else:
+                # CARLO: I check if can be possible to have a Channel to be tip
+                if np.any(np.isin(Fr_lstTmStp.EltChannel,EltTip,assume_unique=True)):
+                    SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
                 A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
-                                                        wTip,
-                                                        Fr_lstTmStp.EltChannel,
-                                                        EltTip,
-                                                        mat_properties.SigmaO,
-                                                        C,
-                                                        timeStep,
-                                                        Qin,
-                                                        Fr_lstTmStp.mesh.EltArea,
-                                                        LkOff)
-
-            # regain original C (without filling fraction correction)
-            C[np.ix_(EltTip[partlyFilledTip], EltTip[partlyFilledTip])] = C_EltTip
+                                                    wTip,
+                                                    Fr_lstTmStp.EltChannel,
+                                                    EltTip,
+                                                    mat_properties.SigmaO,
+                                                    C,
+                                                    timeStep,
+                                                    Qin,
+                                                    Fr_lstTmStp.mesh.EltArea,
+                                                    LkOff)
+            # CARLO: we can remove it because the diagonal terms of C are never accessed
+            # # regain original C (without filling fraction correction)
+            # C[np.ix_(EltTip[partlyFilledTip], EltTip[partlyFilledTip])] = C_EltTip
 
         perfNode_nonLinSys = instrument_start('nonlinear system solve', perfNode)
         perfNode_widthConstrItr = instrument_start('width constraint iteration', perfNode_nonLinSys)
