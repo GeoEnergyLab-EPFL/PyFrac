@@ -49,7 +49,6 @@ simulProp.bckColor = 'sigma0'           # setting the parameter according to whi
 simulProp.set_outputFolder("./Data/height_contained")
 simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
 simulProp.plotVar = ['footprint']       # plotting footprint
-simulProp.frontAdvancing = 'implicit'
 
 # initializing fracture
 Fr_geometry = Geometry(shape='radial', radius=1.)
