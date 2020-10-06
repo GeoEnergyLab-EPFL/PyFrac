@@ -812,6 +812,7 @@ class SimulationProperties:
         self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
+        self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
         self.verbosity = simul_param.verbosity
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
