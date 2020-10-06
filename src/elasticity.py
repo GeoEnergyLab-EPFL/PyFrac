@@ -123,88 +123,55 @@ class load_isotropic_elasticity_matrix_toepliz():
                                                             + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
         self.C_toeplotz_coe = C_toeplotz_coe
 
-    def get_Cij_submatrix(self,elements):
+    def __getitem__(self, elementsXY):
         """
-
-        :param elements: (numpy array) columns (and rows) to take
-        :return: submatrix of C
-        """
-        """
-        the naive way:
-
-            for iter1 in range(dim):
-                i1 = i[iter1]
-                j1 = j[iter1]
-                for iter2 in range(dim):
-                    i2 = i[iter2]
-                    j2 = j[iter2]
-                    ii = abs(i1 - i2)
-                    jj = abs(j1 - j2)
-                    C_sub[iter1, iter2] = self.C_toeplotz_coe[ii, jj]
-        """
-        dim = elements.size # number of elements to consider
-        nx = self.nx # number of element in x direction in the global mesh
-        localC_toeplotz_coe = np.copy(self.C_toeplotz_coe) #local access is faster
-
-        i = np.floor_divide(elements,nx)
-        j = elements - nx*i
-
-        C_sub = np.zeros((dim,dim), dtype=np.float32) # submatrix of C
-        for iter1 in range(dim):
-            i1 = i[iter1]
-            j1 = j[iter1]
-            C_sub[iter1, 0:dim] = localC_toeplotz_coe[np.abs(j - j1)+nx*np.abs(i - i1)]
-        return C_sub
-
-    def get_Cij_submatrix_indexed(self,elemY,elemX):
-        """
-
+        critical call: it should be as fast as possible
         :param elemX: (numpy array) columns to take
         :param elemY: (numpy array) rows to take
         :return: submatrix of C
         """
+
+        elemX = elementsXY[1].flatten()
+        elemY = elementsXY[0].flatten()
         dimX = elemX.size  # number of elements to consider on x axis
         dimY = elemY.size  # number of elements to consider on y axis
 
-        nx = self.nx  # number of element in x direction in the global mesh
-        C_sub = np.zeros((dimY, dimX), dtype=np.float32)  # submatrix of C
-
-        localC_toeplotz_coe = np.copy(self.C_toeplotz_coe) #local access is faster
-        iY = np.floor_divide(elemY,nx)
-        jY = elemY - nx * iY
-
-        iX = np.floor_divide(elemX,nx)
-        jX = elemX - nx * iX
-
-        for iter1 in range(dimY):
-            i1 = iY[iter1]
-            j1 = jY[iter1]
-            C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx*np.abs(i1 - iX)]
-        return C_sub
-
-    def __getitem__(self, elementsXY):
-        elemX = elementsXY[1].flatten()
-        elemY = elementsXY[0].flatten()
-        if elemX.size == 0 or elemY.size==0:
-            return np.empty((elemY.size, elemX.size),dtype=np.float32)
-        elif elemX.size != elemY.size:
-            return self.get_Cij_submatrix_indexed(elemY, elemX)
-        elif elemX.size == elemY.size and (elemY == elemX).all():
-                return self.get_Cij_submatrix( elemX)
+        if dimX == 0 or dimY == 0:
+            return np.empty((dimY, dimX),dtype=np.float32)
         else:
-            return self.get_Cij_submatrix_indexed(elemY, elemX)
+            nx = self.nx  # number of element in x direction in the global mesh
+            C_sub = np.empty((dimY, dimX), dtype=np.float32)  # submatrix of C
+            localC_toeplotz_coe = np.copy(self.C_toeplotz_coe)  # local access is faster
+            if dimX != dimY:
+                iY = np.floor_divide(elemY, nx)
+                jY = elemY - nx * iY
+                iX = np.floor_divide(elemX, nx)
+                jX = elemX - nx * iX
+                for iter1 in range(dimY):
+                    i1 = iY[iter1]
+                    j1 = jY[iter1]
+                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                return C_sub
 
-def isotropic_influence_coefficient( x, y, a, b, const):
-    amx = a - x
-    apx = a + x
-    bmy = b - y
-    bpy = b + y
-    coef = const * (
-              np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
-            + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
-            + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
-            + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
-    return coef
+            elif dimX == dimY and np.all((elemY == elemX)):
+                i = np.floor_divide(elemX, nx)
+                j = elemX - nx * i
+                for iter1 in range(dimX):
+                    i1 = i[iter1]
+                    j1 = j[iter1]
+                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+                return C_sub
+
+            else:
+                iY = np.floor_divide(elemY, nx)
+                jY = elemY - nx * iY
+                iX = np.floor_divide(elemX, nx)
+                jX = elemX - nx * iX
+                for iter1 in range(dimY):
+                    i1 = iY[iter1]
+                    j1 = jY[iter1]
+                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                return C_sub
 
 # -----------------------------------------------------------------------------------------------------------------------
 def get_Cij_Matrix(youngs_mod, nu):

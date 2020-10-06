@@ -145,6 +145,7 @@ class Fracture:
                                                    init_param.netPressure,
                                                    init_param.fractureVolume,
                                                    simulProp.symmetric,
+                                                   simulProp.useBlockToeplizCompression,
                                                    solid.Eprime)
 
             if init_param.fractureVolume is None and init_param.time is None:
