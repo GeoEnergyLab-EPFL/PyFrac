@@ -679,6 +679,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
     remembrer the usage of NeiElements[i]->[left, right, bottom, up]
                                               0     1      2      3
     """
+    log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     LS = get_LS_on_i_fictitius_cell("icba",anularegion, NeiElements, sgndDist_k)
 
     """
@@ -713,7 +714,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         if i_indexes_of_fictitius_cells.size < 1:
             raise Exception("FRONT RECONSTRUCTION ERROR: The front does not exist")
     except RuntimeError:
-        print("FRONT RECONSTRUCTION ERROR: The front does not exist")
+        log.error("FRONT RECONSTRUCTION ERROR: The front does not exist")
 
     if np.any(np.ndarray.flatten(LS[i_indexes_of_fictitius_cells,:]) > 10.**40):
         exitstatus = True
@@ -835,7 +836,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         #     if np.setdiff1d(anularegion[i_indexes_of_fictitius_cells],np.concatenate((anularegion[i_indexes_of_TYPE_1_cells], anularegion[i_indexes_of_TYPE_2_cells], anularegion[i_indexes_of_TYPE_3_cells], anularegion[i_indexes_of_TYPE_4_cells]))).size > 0:
         #         raise Exception('FRONT RECONSTRUCTION ERROR: this function has an error')
         # except RuntimeError:
-        #     print("FRONT RECONSTRUCTION ERROR: this function has an error")
+        #     log.error("FRONT RECONSTRUCTION ERROR: this function has an error")
 
         # make dictionaries:
         i_1_2_3_4_FC_type = dict(zip(anularegion[i_indexes_of_TYPE_1_cells].astype(str).tolist(), np.ones(i_indexes_of_TYPE_1_cells.size).astype(int).tolist()))
@@ -908,6 +909,7 @@ def define_orientation_type2(T2_other_intersections, mesh, sgndDist_k):
     return np.transpose(LS_TYPE_2 > 0.)
 
 def define_orientation_type3OR4(type,Tx_other_intersections, mesh, sgndDist_k):
+    #log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     """
                         type 3        |                 |                 |                 |
                         3(+) & 1(-)   |                 |                 |                 |
@@ -935,7 +937,7 @@ def define_orientation_type3OR4(type,Tx_other_intersections, mesh, sgndDist_k):
         LS_TYPE_3or4[i,:]=np.multiply(LS_TYPE_3or4[i,:], testvector)
 
     # if (np.sum(LS_TYPE_3or4, axis=1)-1)[0] == 4 :
-    #  print("stop")
+    #  log.debug("stop")
     return (np.sum(LS_TYPE_3or4, axis=1)-1)
 
 def move_intersections_to_the_center_when_inRibbon_type3(indexesFC_T3_central_inters,
@@ -1883,6 +1885,7 @@ def process_fictitius_cells_2(indexesFC_TYPE_4,Args, x, y, typeindex,edgeORverte
     return [ x, y, typeindex, edgeORvertexID]
 
 def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
+    log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     [mesh,dict_Ribbon,sgndDist_k] = Args
     dict_of_possibilities = {}
     """
@@ -1948,7 +1951,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
         else:
             return dict_of_possibilities[str(previous_cell_name)]
     except RuntimeError:
-        print("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
+        log.debug("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
     """
@@ -1980,6 +1983,7 @@ def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
 
 from itertools import chain
 def itertools_chain_from_iterable(lsts):
+    log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     """
     :param lsts: example lsts=[[1],[], [2,3],[4],[],[5,6]]
     :return: [1,2,3,4,5,6]
@@ -1989,7 +1993,7 @@ def itertools_chain_from_iterable(lsts):
     try :
       to_be_returned =list(chain.from_iterable(lsts))
     except:
-      print("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
+      log.error("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
     return to_be_returned
 
 def append_to_typelists(cell_index,cell_type,type1,type2,type3,type4):
@@ -2081,7 +2085,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             
         """
         if np.any(sgndDist_k[mesh.Frontlist] < 0):
-            print('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negat')
+            log.warning('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negative level set')
             negativefront = np.where(sgndDist_k < 0)[0]
             intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
             correct_size_of_pstv_region = [False, True, False]
@@ -2275,7 +2279,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if len(indexesFC_TYPE_4) > 0:
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
             if len(indexesFC_TYPE_2) > 0:
-                print('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
+                log.debug('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
                 correct_size_of_pstv_region = [False, False, True]
                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                 #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)

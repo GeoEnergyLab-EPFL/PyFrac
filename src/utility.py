@@ -38,7 +38,7 @@ def save_images_to_video(image_folder, video_name='movie'):
 
     import cv2
     import os
-
+    log = logging.getLogger('PyFrac.save_images_to_video')
     if ".avi" not in video_name:
         video_name = video_name + '.avi'
 
@@ -50,7 +50,7 @@ def save_images_to_video(image_folder, video_name='movie'):
 
     img_no = 0
     for image in images:
-        print("adding image no " + repr(img_no))
+        log.info("adding image no " + repr(img_no))
         video.write(cv2.imread(os.path.join(image_folder, image)))
         cv2.waitKey(1)
         img_no += 1
