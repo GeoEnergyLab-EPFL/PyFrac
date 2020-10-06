@@ -1042,25 +1042,26 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             EltTip_sym = Fr_lstTmStp.mesh.corresponding[EltTip]
             EltTip_sym = np.unique(EltTip_sym)
 
-            FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-            FillF_mesh[EltTip] = FillFrac
-            FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]]
-            partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
+            # CARLO: we can remove it because the diagonal terms of C are never accessed
+            # FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+            # FillF_mesh[EltTip] = FillFrac
+            # FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]]
+            # partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
 
-            C_EltTip = np.copy(C[np.ix_(EltTip_sym[partlyFilledTip_sym],
-                                        EltTip_sym[
-                                            partlyFilledTip_sym])])  # keeping the tip element entries to restore current
-
-            # filling fraction correction for element in the tip region
-            FillF = FillF_sym[partlyFilledTip_sym]
-            for e in range(len(partlyFilledTip_sym)):
-                r = FillF[e] - .25
-                if r < 0.1:
-                    r = 0.1
-                ac = (1 - r) / r
-                self_infl = self_influence(Fr_lstTmStp.mesh, mat_properties.Eprime)
-                C[EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += \
-                    ac * np.pi / 4. * self_infl
+            # C_EltTip = np.copy(C[np.ix_(EltTip_sym[partlyFilledTip_sym],
+            #                             EltTip_sym[
+            #                                 partlyFilledTip_sym])])  # keeping the tip element entries to restore current
+            #
+            # # filling fraction correction for element in the tip region
+            # FillF = FillF_sym[partlyFilledTip_sym]
+            # for e in range(len(partlyFilledTip_sym)):
+            #     r = FillF[e] - .25
+            #     if r < 0.1:
+            #         r = 0.1
+            #     ac = (1 - r) / r
+            #     self_infl = self_influence(Fr_lstTmStp.mesh, mat_properties.Eprime)
+            #     C[EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += \
+            #         ac * np.pi / 4. * self_infl
 
             wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
             wTip_sym_elts = Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]
@@ -1089,8 +1090,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                                               Fr_lstTmStp.mesh.volWeights,
                                                               Fr_lstTmStp.mesh.activeSymtrc,
                                                               dwTip)
-
-            C[np.ix_(EltTip_sym[partlyFilledTip_sym], EltTip_sym[partlyFilledTip_sym])] = C_EltTip
+            # CARLO: we can remove it because the diagonal terms of C are never accessed
+            # C[np.ix_(EltTip_sym[partlyFilledTip_sym], EltTip_sym[partlyFilledTip_sym])] = C_EltTip
         else:
             # CARLO: we can remove it because the diagonal terms of C are never accessed
             # C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
