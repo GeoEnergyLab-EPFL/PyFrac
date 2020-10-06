@@ -108,29 +108,6 @@ controller = Controller(Fr,
                         Injection,
                         simulProp)
 
-from visualization import *
-
-Fr_list, properties = load_fractures(address="./Data/TI_elasticity_ellipse",
-                                     sim_name='TI_ellasticy_benchmark')
-
-Fr=Fr_list[-3]
-
-Solid,Fluid,Injection,simulProp = properties
-
-simulProp.saveToDisk = False
-
-# create a Controller
-
-controller = Controller(Fr,
-
-                        Solid,
-
-                        Fluid,
-
-                        Injection,
-
-                        simulProp)
-
 #run the simulation
 controller.run()
 
