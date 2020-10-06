@@ -55,6 +55,7 @@ simulProp.set_outputFolder("./Data/toughness_jump") # the disk address where the
 simulProp.set_simulation_name('anisotropic_toughness_jump')
 simulProp.symmetric = True            # set the fracture to symmetric
 simulProp.projMethod = 'ILSA_orig'
+simulProp.set_tipAsymptote('U')
 
 # initializing fracture
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
