@@ -62,7 +62,116 @@ def load_isotropic_elasticity_matrix(Mesh, Ep):
             np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
 
     return C
+# -----------------------------------------------------------------------------------------------------------------------
 
+class load_isotropic_elasticity_matrix_toepliz():
+    def __init__(self, Mesh, Ep):
+        self.Ep = Ep
+        const = (Ep / (8. * np.pi))
+        self.const = const
+        self.reload(Mesh)
+
+    def reload(self, Mesh):
+        hx = Mesh.hx
+        hy = Mesh.hy
+        a = hx / 2.
+        b = hy / 2.
+        nx = Mesh.nx
+        ny = Mesh.ny
+        self.a = a
+        self.b = b
+        self.nx = nx
+        const = self.const
+
+        """
+        Let us make some definitions:
+        cartesian mesh             := a structured rectangular mesh of (nx,ny) cells of rectaungular shape
+        
+                                            |<------------nx----------->|
+                                        _    ___ ___ ___ ___ ___ ___ ___
+                                        |   | . | . | . | . | . | . | . |
+                                        |   |___|___|___|___|___|___|___|
+                                        ny  | . | . | . | . | . | . | . |  
+                                        |   |___|___|___|___|___|___|___|   y
+                                        |   | . | . | . | . | . | . | . |   |
+                                        -   |___|___|___|___|___|___|___|   |____x  
+                                       
+                                       the cell centers are marked by .
+         
+        set of unique distances    := given a set of cells in a cartesian mesh, consider the set of unique distances 
+                                      between any pair of cell centers.
+        set of unique coefficients := given a set of unique distances then consider the interaction coefficients
+                                      obtained from them
+                                      
+        C_toeplotz_coe             := An array of size (nx*ny), populated with the unique coefficients. 
+        
+        Matematically speaking:
+        for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
+        """
+        C_toeplotz_coe = np.empty(ny*nx, dtype=np.float32)
+        xindrange = np.asarray(range(nx))
+        xrange = xindrange * hx
+        for i in range(ny):
+            y = i*hy
+            amx = a - xrange
+            apx = a + xrange
+            bmy = b - y
+            bpy = b + y
+            C_toeplotz_coe[i*nx:(i+1)*nx] = const * (np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
+                                                            + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
+                                                            + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
+                                                            + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
+        self.C_toeplotz_coe = C_toeplotz_coe
+
+    def __getitem__(self, elementsXY):
+        """
+        critical call: it should be as fast as possible
+        :param elemX: (numpy array) columns to take
+        :param elemY: (numpy array) rows to take
+        :return: submatrix of C
+        """
+
+        elemX = elementsXY[1].flatten()
+        elemY = elementsXY[0].flatten()
+        dimX = elemX.size  # number of elements to consider on x axis
+        dimY = elemY.size  # number of elements to consider on y axis
+
+        if dimX == 0 or dimY == 0:
+            return np.empty((dimY, dimX),dtype=np.float32)
+        else:
+            nx = self.nx  # number of element in x direction in the global mesh
+            C_sub = np.empty((dimY, dimX), dtype=np.float32)  # submatrix of C
+            localC_toeplotz_coe = np.copy(self.C_toeplotz_coe)  # local access is faster
+            if dimX != dimY:
+                iY = np.floor_divide(elemY, nx)
+                jY = elemY - nx * iY
+                iX = np.floor_divide(elemX, nx)
+                jX = elemX - nx * iX
+                for iter1 in range(dimY):
+                    i1 = iY[iter1]
+                    j1 = jY[iter1]
+                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                return C_sub
+
+            elif dimX == dimY and np.all((elemY == elemX)):
+                i = np.floor_divide(elemX, nx)
+                j = elemX - nx * i
+                for iter1 in range(dimX):
+                    i1 = i[iter1]
+                    j1 = j[iter1]
+                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+                return C_sub
+
+            else:
+                iY = np.floor_divide(elemY, nx)
+                jY = elemY - nx * iY
+                iX = np.floor_divide(elemX, nx)
+                jX = elemX - nx * iX
+                for iter1 in range(dimY):
+                    i1 = iY[iter1]
+                    j1 = jY[iter1]
+                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                return C_sub
 
 # -----------------------------------------------------------------------------------------------------------------------
 def get_Cij_Matrix(youngs_mod, nu):

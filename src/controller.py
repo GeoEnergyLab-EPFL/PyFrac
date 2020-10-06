@@ -20,6 +20,7 @@ import warnings
 from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
 from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, mapping_old_indexes
+from elasticity import load_isotropic_elasticity_matrix_toepliz
 from mesh import CartesianMesh
 from time_stepping import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution,\
@@ -195,6 +196,15 @@ class Controller:
             with open(self.logAddress + 'log.txt', 'w+') as file:
                 file.writelines('log file, simulation run at: ' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '\n\n')
 
+        # deactivate the block_toepliz_compression functions
+        # DO THIS CHECK BEFORE COMPUTING C!
+        if self.C is not None: # in the case C is provided
+            self.sim_prop.useBlockToeplizCompression = False
+        elif self.solid_prop.TI_elasticity: # in case of TI_elasticity
+            self.sim_prop.useBlockToeplizCompression = False
+        elif not self.solid_prop.TI_elasticity and self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
+            self.sim_prop.useBlockToeplizCompression = False
+
         # load elasticity matrix
         if self.C is None:
             print("Making elasticity matrix...")
@@ -207,8 +217,12 @@ class Controller:
                     self.C = load_isotropic_elasticity_matrix_symmetric(self.fracture.mesh,
                                                                         self.solid_prop.Eprime)
                 else:
-                    self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
-                                                              self.solid_prop.Eprime)
+                    if not self.sim_prop.useBlockToeplizCompression:
+                        self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
+                                                                  self.solid_prop.Eprime)
+                    else:
+                        self.C = load_isotropic_elasticity_matrix_toepliz(self.fracture.mesh,
+                                                                          self.solid_prop.Eprime)
             else:
                 C = load_TI_elasticity_matrix(self.fracture.mesh,
                                                    self.solid_prop,
@@ -954,13 +968,21 @@ class Controller:
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
         # We adapt the elasticity matrix
-        if direction == None:
-            rem_factor = self.sim_prop.remeshFactor
-            self.C *= 1 / self.sim_prop.remeshFactor
+        if not self.sim_prop.useBlockToeplizCompression:
+            if direction == None:
+                rem_factor = self.sim_prop.remeshFactor
+                self.C *= 1 / self.sim_prop.remeshFactor
+            else:
+                rem_factor = 10
+                print("Extending the elasticity matrix...")
+                self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         else:
-            rem_factor = 10
-            print("Extending the elasticity matrix...")
-            self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
+            if direction == None:
+                rem_factor = self.sim_prop.remeshFactor
+            else:
+                rem_factor = 10
+            self.C.reload(coarse_mesh)
+
 
         self.fracture = self.fracture.remesh(rem_factor,
                                              self.C,
@@ -974,6 +996,8 @@ class Controller:
 
         # update the saved properties
         if self.sim_prop.saveToDisk:
+            if os.path.exists(self.sim_prop.get_outputFolder() + "properties"):
+                os.remove(self.sim_prop.get_outputFolder() + "properties")
             prop = (self.solid_prop, self.fluid_prop, self.injection_prop, self.sim_prop)
             with open(self.sim_prop.get_outputFolder() + "properties", 'wb') as output:
                 dill.dump(prop, output, -1)

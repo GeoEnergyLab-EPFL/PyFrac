@@ -52,6 +52,7 @@ simulProp.remeshFactor = 1.5            # the factor by which the mesh will be c
 simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
+simulProp.projMethod = 'ILSA_orig'
 
 # initializing fracture
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2

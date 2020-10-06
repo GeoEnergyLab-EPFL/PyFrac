@@ -80,11 +80,12 @@ simulProp.set_volumeControl(True)       # to set up the solver in volume control
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
 simulProp.frontAdvancing = "implicit"   # set the front advancing scheme to implicit
 simulProp.set_tipAsymptote('K')         # set the tip asymptote to toughness dominated
-simulProp.set_outputFolder("./data/TI_elasticity_ellipse")  # setting the output folder
+simulProp.set_outputFolder("./Data/TI_elasticity_ellipse")  # setting the output folder
 simulProp.set_simulation_name('TI_ellasticy_benchmark')     # setting the simulation name
 simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the executable that calculates TI kernel
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 simulProp.remeshFactor = 1.5            # the factor by which the domain is expanded
+simulProp.projMethod = 'ILSA_orig'
 
 # initialization parameters
 Fr_geometry = Geometry('elliptical',
