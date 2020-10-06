@@ -18,7 +18,7 @@ from fracture_initialization import Geometry, InitializationParameters
 from elasticity import load_isotropic_elasticity_matrix
 
 # creating mesh
-Mesh = CartesianMesh(3200, 2800, 83, 83)
+Mesh = CartesianMesh(500, 450, 23, 21)
 
 # solid properties
 nu = 0.25                           # Poisson's ratio
@@ -30,8 +30,8 @@ def sigmaO_func(x, y):
     """ This function provides the confining stress over the domain"""
     density_high = 2700
     density_low = 2300
-    layer = 1500
-    Ly = 2800
+    layer = 2900
+    Ly = 3400
     if y > layer:
         return (Ly - y) * density_low * 9.8
 
@@ -48,8 +48,7 @@ Solid = MaterialProperties(Mesh,
 Q0 = np.asarray([[0.0,  500],
                 [2000,    0]])  # injection rate
 Injection = InjectionProperties(Q0,
-                                Mesh,
-                                source_coordinates=[0, -1400])
+                                Mesh)
 
 # fluid properties
 Fluid = FluidProperties(viscosity=30, density=2400)
@@ -65,7 +64,10 @@ simulProp.saveTSJump = 2                    # save every second time step
 simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
 simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.5, 0.1]]) # set up the time step prefactor
 simulProp.timeStepLimit = 5000              # time step limit
-simulProp.plotVar = ['w', 'v', 'regime']              # plot fracture width and fracture front velocity
+simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
+simulProp.set_mesh_extension_direction(['top', 'horizontal'])
+simulProp.meshExtensionFactor = 1.4
+
 
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
@@ -74,6 +76,7 @@ init_param = InitializationParameters(Fr_geometry,
                                       regime='static',
                                       net_pressure=0.5e6,
                                       elasticity_matrix=C)
+
 Fr = Fracture(Mesh,
               init_param,
               Solid,
@@ -118,17 +121,5 @@ Fig_FP = plot_fracture_list(Fr_list,
                             projection='2D',
                             fig=Fig_FP,
                             plot_prop=plt_prop)
-
-# plot width in 3D
-plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
-Fig_Fr = plot_fracture_list(Fr_list[2:],
-                            variable='width',
-                            projection='3D',
-                            plot_prop=plot_prop_magma
-                            )
-Fig_Fr = plot_fracture_list(Fr_list[1:],
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
 
 plt.show(block=True)
