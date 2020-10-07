@@ -124,7 +124,7 @@ class load_isotropic_elasticity_matrix_toepliz():
                                                             + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
         self.C_toeplotz_coe = C_toeplotz_coe
 
-    def __getitem__(self, elementsXY):
+    def __getitem__(self, elementsXY,different_strategy=False):
         """
         critical call: it should be as fast as possible
         :param elemX: (numpy array) columns to take
@@ -148,19 +148,39 @@ class load_isotropic_elasticity_matrix_toepliz():
                 jY = elemY - nx * iY
                 iX = np.floor_divide(elemX, nx)
                 jX = elemX - nx * iX
-                for iter1 in range(dimY):
-                    i1 = iY[iter1]
-                    j1 = jY[iter1]
-                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                if not different_strategy:
+                    # strategy 1
+                    for iter1 in range(dimY):
+                        i1 = iY[iter1]
+                        j1 = jY[iter1]
+                        C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                else:
+                    # strategy 2 - more memory expensive than 1
+                    #C_sub=np.take(localC_toeplotz_coe, np.abs(np.array([jY]).T- jX)+ nx * np.abs(np.array([iY]).T- iX))
+
+                    # strategy 3 - more memory expensive than 1
+                    J1, J2 = np.meshgrid(jX, jY)
+                    I1, I2 = np.meshgrid(iX, iY)
+                    C_sub = np.take(localC_toeplotz_coe, np.abs(J1 - J2) + nx * np.abs(I1 - I2))
                 return C_sub
 
             elif dimX == dimY and np.all((elemY == elemX)):
                 i = np.floor_divide(elemX, nx)
                 j = elemX - nx * i
-                for iter1 in range(dimX):
-                    i1 = i[iter1]
-                    j1 = j[iter1]
-                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+                if not different_strategy:
+                    # strategy 1
+                    for iter1 in range(dimX):
+                        i1 = i[iter1]
+                        j1 = j[iter1]
+                        C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+                else:
+                        # strategy 2 - more memory expensive than 1
+                        #C_sub = np.take(localC_toeplotz_coe, np.abs(np.array([j]).T - j) + nx * np.abs(np.array([i]).T - i))
+
+                        # strategy 3 - more memory expensive than 1
+                        J1, J2 = np.meshgrid(j, j)
+                        I1, I2 = np.meshgrid(i, i)
+                        C_sub = np.take(localC_toeplotz_coe, np.abs(J1-J2) + nx * np.abs(I1-I2))
                 return C_sub
 
             else:
@@ -168,10 +188,20 @@ class load_isotropic_elasticity_matrix_toepliz():
                 jY = elemY - nx * iY
                 iX = np.floor_divide(elemX, nx)
                 jX = elemX - nx * iX
-                for iter1 in range(dimY):
-                    i1 = iY[iter1]
-                    j1 = jY[iter1]
-                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                if not different_strategy:
+                    # strategy 1
+                    for iter1 in range(dimY):
+                        i1 = iY[iter1]
+                        j1 = jY[iter1]
+                        C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                else:
+                    # strategy 2 - more memory expensive than 1
+                    #C_sub=np.take(localC_toeplotz_coe, np.abs(np.array([jY]).T- jX)+ nx * np.abs(np.array([iY]).T- iX))
+
+                    # strategy 3 - more memory expensive than 1
+                    J1, J2 = np.meshgrid(jX, jY)
+                    I1, I2 = np.meshgrid(iX, iY)
+                    C_sub = np.take(localC_toeplotz_coe, np.abs(J2 - J1) + nx * np.abs(I2 - I1))
                 return C_sub
 
 # -----------------------------------------------------------------------------------------------------------------------
