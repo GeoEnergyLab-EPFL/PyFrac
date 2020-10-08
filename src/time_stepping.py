@@ -412,7 +412,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         | 12      -- reached end of grid
         | 13      -- leak off can't be evaluated
         | 14      -- fracture fully closed
-        | 15      -- fracture cell limit reached
+        | 15      -- iterations on front will not converge (continuous front)
+        | 16      -- max number of cells achieved. Reducing the number of cells
 
         - Fracture:            fracture after advancing time step.
 
@@ -1582,7 +1583,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             | 12      -- reached end of grid
             | 13      -- leak off can't be evaluated
             | 14      -- fracture fully closed
-            | 15      -- fracture cell limit reached
+            | 15      -- iterations on front will not converge (continuous front)
+            | 16      -- max number of cells achieved. Reducing the number of cells
 
         - Fracture:            fracture after advancing time step.
 
