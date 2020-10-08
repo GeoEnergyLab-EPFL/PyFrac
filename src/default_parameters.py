@@ -93,6 +93,8 @@ save_chi = False                        # Question if we save the tip asymptotic
 # Mesh extension
 mesh_extension_direction = [False] * 4  # Per default the mesh is not extended in any direction
 mesh_extension_factor = 2               # How many total elements we will have in this direction
+mesh_extension_all_sides = False        # To allow the fracture to extend in all directions simultaneously
+mesh_reduction_factor = 2               # the factor by which we reduce the number of elements
 
 # fracture geometry
 height = None                           # fracture height to calculate the analytical solution for PKN or KGD geometry.
