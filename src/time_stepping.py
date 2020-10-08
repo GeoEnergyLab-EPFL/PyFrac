@@ -16,7 +16,7 @@ from utility import find_regime
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
 from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
-from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
+from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, you_advance_more_than_2_cells
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
@@ -76,6 +76,13 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
                              len(Frac.EltCrack), exitstatus == 1,
                              TS_errorMessages[exitstatus], Frac.time)
             perfNode.extendedFront_data.append(perfNode_explFront)
+
+        # check if we advanced more than two cells
+        if exitstatus ==1:
+            if you_advance_more_than_2_cells(Fr_k.fully_traversed, Frac.EltRibbon, Frac.mesh.NeiElements) and \
+                sim_properties.limitAdancementTo2cells:
+                exitstatus = 17
+                return exitstatus, Frac
 
         return exitstatus, Fr_k
 
@@ -201,6 +208,13 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         if k == sim_properties.maxFrontItrs:
             exitstatus = 6
             return exitstatus, None
+
+    # check if we advanced more than two cells
+    if exitstatus == 1:
+        if you_advance_more_than_2_cells(Fr_k.fully_traversed, Frac.EltRibbon, Frac.mesh.NeiElements) and \
+                sim_properties.limitAdancementTo2cells:
+            exitstatus = 17
+            return exitstatus, Frac
 
     if sim_properties.verbosity > 1:
         print("Fracture front converged after " + repr(k) + " iterations with norm = " + repr(norm))
@@ -414,7 +428,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         | 14      -- fracture fully closed
         | 15      -- iterations on front will not converge (continuous front)
         | 16      -- max number of cells achieved. Reducing the number of cells
-
+        | 17      -- you advanced more than two cells in a row. Repeating with a smaller time step
         - Fracture:            fracture after advancing time step.
 
     """
@@ -676,7 +690,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
          EltCrack_k,
          EltRibbon_k,
          zrVertx_k,
-         CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
+         CellStatus_k,
+         fully_traversed_k) = UpdateLists(Fr_lstTmStp.EltChannel,
                                      EltsTipNew,
                                      FillFrac_k,
                                      sgndDist_k,
@@ -687,7 +702,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
          EltTip_k,
          EltCrack_k,
          EltRibbon_k,
-         CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+         CellStatus_k,
+         fully_traversed_k) = UpdateListsFromContinuousFrontRec(newRibbon,
                                                            sgndDist_k,
                                                            Fr_lstTmStp.EltChannel,
                                                            EltsTipNew,
@@ -919,6 +935,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.EltRibbon = EltRibbon_k
     Fr_kplus1.ZeroVertex = zrVertx_k
     Fr_kplus1.sgndDist = sgndDist_k
+    Fr_kplus1.fully_traversed = fully_traversed_k
     Fr_kplus1.alpha = alpha_k[partlyFilledTip]
     Fr_kplus1.l = l_k[partlyFilledTip]
     Fr_kplus1.v = Vel_k[partlyFilledTip]
@@ -1757,7 +1774,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
          EltCrack_k,
          EltRibbon_k,
          zrVertx_k,
-         CellStatus_k) = UpdateLists(Fr_lstTmStp.EltChannel,
+         CellStatus_k,
+         fully_traversed_k) = UpdateLists(Fr_lstTmStp.EltChannel,
                                      EltsTipNew,
                                      FillFrac_k,
                                      sgndDist_k,
@@ -1770,7 +1788,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
          EltTip_k,
          EltCrack_k,
          EltRibbon_k,
-         CellStatus_k) = UpdateListsFromContinuousFrontRec(newRibbon,
+         CellStatus_k,
+         fully_traversed_k) = UpdateListsFromContinuousFrontRec(newRibbon,
                                                            sgndDist_k,
                                                            Fr_lstTmStp.EltChannel,
                                                            EltsTipNew,
@@ -1993,6 +2012,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.time += timeStep
     Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
+    Fr_kplus1.fully_traversed = fully_traversed_k
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
     Fr_kplus1.EltCrack = EltCrack_k

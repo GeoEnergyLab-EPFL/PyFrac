@@ -70,6 +70,7 @@ class Controller:
         self.lastPlotTime = np.NINF
         self.TmStpCount = 0
         self.chkPntReattmpts = 0    # the number of re-attempts done from the checkpoint. Simulation is declared failed after 5 attempts.
+        self.TmStpReductions = 0    # the number of times the time step has been reattempted because the fracture it was advancing too fast
         self.delta_w = None         # change in width between successive time steps. Used to limit time step.
         self.lstTmStp = None
         self.solveDetlaP_cp = self.sim_prop.solveDeltaP # copy of the flag indicating the solver to solve for pressure or delta p
@@ -289,7 +290,10 @@ class Controller:
                     # set the prefactor to the original value after four time steps (after the 5 time steps back jump)
                     self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_copy
                 self.successfulTimeSteps += 1
-
+                # set to 0 the counter of time step reductions
+                if self.TmStpReductions > 0:
+                    self.TmStpReductions = 0
+                    self.sim_prop.tmStpPrefactor = self.tmStpPrefactor_copy
                 # resetting the parameters for closure
                 if self.fullyClosed:
                     # set to solve for pressure if the fracture was fully closed in last time step and is open now
@@ -524,7 +528,33 @@ class Controller:
                     self.sim_prop.solveDeltaP = True
                 self.fullyClosed = True
                 self.fracture = copy.deepcopy(Fr_n_pls1)
+            elif status == 17:
+                # time step too big: you advanced more than one cell
+                print("The fracture is advancing more than two cells in a row at time "+ repr(self.fracture.time))
 
+                if self.TmStpReductions == self.sim_prop.maxReattemptsFracAdvMore2Cells:
+                    print("We can not reduce the time step more than that")
+                    if self.sim_prop.collectPerfData:
+                        if self.sim_prop.saveToDisk:
+                            file_address = self.sim_prop.get_outputFolder() + "perf_data.dat"
+                        else:
+                            file_address = "./perf_data.dat"
+                        with open(file_address, 'wb') as perf_output:
+                            dill.dump(self.perfData, perf_output, -1)
+
+                    self.write_to_log("\n\n---Simulation failed---")
+
+                    raise SystemExit("Simulation failed.")
+                else:
+                    print("- limiting the time step - ")
+                    # decrease time step pre-factor before taking the next fracture in the queue having last
+                    # five time steps
+                    if isinstance(self.sim_prop.tmStpPrefactor, np.ndarray):
+                        indxCurTime = max(np.where(self.fracture.time >= self.sim_prop.tmStpPrefactor[0, :])[0])
+                        self.sim_prop.tmStpPrefactor[1, indxCurTime] *= 0.8
+                    else:
+                        self.sim_prop.tmStpPrefactor *= 0.8
+                    self.TmStpReductions += 1
             else:
                 # time step failed
                 self.write_to_log("\n" + self.errorMessages[status])
@@ -638,7 +668,7 @@ class Controller:
                                  self.errorMessages[status], Frac.time)
                 perfNode.attempts_data.append(perfNode_TmStpAtmpt)
 
-            if status in [1, 12, 14, 16]:
+            if status in [1, 12, 14, 16, 17]:
                 break
             else:
                 if self.sim_prop.verbosity > 1:
@@ -951,7 +981,7 @@ class Controller:
             if (self.lstTmStp != None and not np.isinf(time_step)) and time_step > 2 * self.lstTmStp:
                 time_step = 2 * self.lstTmStp
 
-            # limit the time step to be at max 25% of the actual time
+            # limit the time step to be at max 15% of the actual time
             if time_step > 0.15 * self.fracture.time:
                 time_step = 0.15 * self.fracture.time
 
