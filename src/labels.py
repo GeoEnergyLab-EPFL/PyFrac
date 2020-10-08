@@ -412,6 +412,7 @@ TS_errorMessages = [ "Propagation not attempted!",                              
                      "Reached end of grid!",                                                           #12
                      "Leak off can't be evaluated!",                                                   #13
                      "fracture fully closed",                                                          #14
-                     "iterating more is not leading the iterations on the front position to converge!" #15
+                     "iterating more is not leading the iterations on the front position to converge!",#15
+                     "maximum number of elements in the crack reached!"                                #16
                     ]
 

@@ -672,6 +672,7 @@ class SimulationProperties:
                                         direction or if it should get compressed. The distribution is bottom, top,
                                         left, right
         meshExtensionFactor (float): -- factor by which the current mesh is extended in the extension direction
+        meshExtendAllDir (bool):     -- allow the mesh to extend in all directions
 
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
 
@@ -821,6 +822,11 @@ class SimulationProperties:
 
         self.meshExtension = simul_param.mesh_extension_direction
         self.meshExtensionFactor = simul_param.mesh_extension_factor
+        self.meshExtensionAllDir = simul_param.mesh_extension_all_sides
+        self.maxElementIn = np.inf
+        self.maxCellSize = np.inf
+        self.meshReductionFactor = simul_param.mesh_reduction_factor
+        self.meshReductionPossible = True
 
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
