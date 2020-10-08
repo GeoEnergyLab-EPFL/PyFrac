@@ -271,7 +271,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
                              fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal',
-                             extreme_points=None, export2Json=False):
+                             extreme_points=None, export2Json=False, export2Json_assuming_no_remeshing=True):
     """
     This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be
     joined to form the slice. The values on the slice are either interpolated from the values available on the cell
@@ -366,7 +366,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
         if '2D' in projection:
             if plot_cell_center:
-                fig ,sampling_line_out, var_value_selected= plot_fracture_slice_cell_center(var_val_copy[i],
+                fig ,sampling_line_out, var_value_selected, sampling_cells = plot_fracture_slice_cell_center(var_val_copy[i],
                                                                   mesh_list[i],
                                                                   point=point1,
                                                                   orientation=orientation,
@@ -376,10 +376,16 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   vmax=vmax,
                                                                   plot_colorbar=False,
                                                                   labels=labels,
-                                                                  extreme_points=extreme_points)
-                if i == 0 and export2Json: #write ones the sampling line, assuming no remeshing
-                    to_write['sampling_line_out'] = sampling_line_out.tolist()    
-                if export2Json:
+                                                                  extreme_points=extreme_points,
+                                                                  export2Json = export2Json)
+                if i == 0 and export2Json and export2Json_assuming_no_remeshing: #write ones the sampling line, assuming no remeshing
+                    to_write['sampling_line_out'] = sampling_line_out.tolist()
+                    to_write['sampling_cells']  = sampling_cells.tolist()
+                if export2Json and not export2Json_assuming_no_remeshing:
+                    to_write['sampling_line_out_'+str(i)] = sampling_line_out.tolist()
+                    to_write['sampling_cells_'+str(i)] = sampling_cells.tolist()
+                    to_write[variable+'_'+str(i)] = var_value_selected.tolist()
+                if export2Json and export2Json_assuming_no_remeshing:
                     to_write[str(i)] = var_value_selected.tolist()
             else:
                 fig = plot_fracture_slice_interpolated(var_val_copy[i],
@@ -392,23 +398,24 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                 vmax=vmax,
                                                                 plot_colorbar=False,
                                                                 labels=labels)
-            ax_tv = fig.get_axes()[0]
-            ax_tv.set_xlabel('meter')
-            ax_tv.set_ylabel('meter')
-            ax_tv.set_title('Top View')
+            if not export2Json:
+                ax_tv = fig.get_axes()[0]
+                ax_tv.set_xlabel('meter')
+                ax_tv.set_ylabel('meter')
+                ax_tv.set_title('Top View')
 
-            # making colorbar
-            im = ax_tv.images
-            divider = make_axes_locatable(ax_tv)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
-            cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
-            cb.set_label(labels.colorbarLabel)
+                # making colorbar
+                im = ax_tv.images
+                divider = make_axes_locatable(ax_tv)
+                cax = divider.append_axes('right', size='5%', pad=0.05)
+                cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
+                cb.set_label(labels.colorbarLabel)
 
-            ax_slice = fig.get_axes()[1]
-            ax_slice.set_ylabel(labels.colorbarLabel)
-            ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
+                ax_slice = fig.get_axes()[1]
+                ax_slice.set_ylabel(labels.colorbarLabel)
+                ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
 
-        elif projection == '3D':
+        elif projection == '3D' and not export2Json:
             fig = plot_slice_3D(var_val_copy[i],
                                 mesh_list[i],
                                 point1=point1,
@@ -426,7 +433,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         else:
             raise ValueError("Given Projection is not correct!")
 
-    if plot_prop.plotLegend:
+    if plot_prop.plotLegend and not export2Json:
         ax_slice.legend()
 
     if export2Json:
@@ -1072,7 +1079,7 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
-                                extreme_points=None):
+                                extreme_points=None,export2Json=False):
     """
     This function plots the fracture on a given slice of the domain. A points along with the direction of the slice is
     given to form the slice. The slice is made from the center of the cell containing the given point along the given
@@ -1103,27 +1110,28 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     """
     log = logging.getLogger('PyFrac.plot_fracture_slice_cell_center')
     log.info("Plotting slice...")
-    if plt_2D_image:
-        if fig is None:
-            fig = plt.figure()
-            ax_2D = fig.add_subplot(211)
-            ax_slice = fig.add_subplot(212)
+    if not export2Json:
+        if plt_2D_image:
+            if fig is None:
+                fig = plt.figure()
+                ax_2D = fig.add_subplot(211)
+                ax_slice = fig.add_subplot(212)
+            else:
+                ax_2D = fig.get_axes()[0]
+                ax_slice = fig.get_axes()[1]
         else:
-            ax_2D = fig.get_axes()[0]
-            ax_slice = fig.get_axes()[1]
-    else:
-        if fig is None:
-            fig = plt.figure()
-            ax_slice = fig.add_subplot(111)
-        else:
-            ax_slice = fig.get_axes()[0]
+            if fig is None:
+                fig = plt.figure()
+                ax_slice = fig.add_subplot(111)
+            else:
+                ax_slice = fig.get_axes()[0]
 
     if plot_prop is None:
         plot_prop = PlotProperties()
         plot_prop.lineStyle = '.'
 
 
-    if plt_2D_image:
+    if plt_2D_image and not export2Json:
         x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
         y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
 
@@ -1182,7 +1190,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
 
-    if plt_2D_image:
+    if plt_2D_image and not export2Json:
         ax_2D.plot(mesh.CenterCoor[sampling_cells, 0],
                    mesh.CenterCoor[sampling_cells, 1],
                    'k.',
@@ -1196,12 +1204,12 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
     # analytical solution plots.
     sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
-
-    ax_slice.plot(sampling_line,
-                  var_value[sampling_cells],
-                  plot_prop.lineStyle,
-                  color=plot_prop.lineColor,
-                  label=labels.legend)
+    if not export2Json:
+        ax_slice.plot(sampling_line,
+                      var_value[sampling_cells],
+                      plot_prop.lineStyle,
+                      color=plot_prop.lineColor,
+                      label=labels.legend)
 
     if len(sampling_cells) > 7:
         mid = len(sampling_cells) // 2
@@ -1212,7 +1220,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         x_ticks = np.hstack((half_1st[:3], np.array([mid], dtype=int)))
         x_ticks = np.hstack((x_ticks, half_2nd))
 
-    ax_slice.set_xticks(sampling_line[x_ticks])
+    if not export2Json: ax_slice.set_xticks(sampling_line[x_ticks])
 
     xtick_labels = []
     for i in x_ticks:
@@ -1220,16 +1228,17 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                                                 plot_prop.dispPrecision) + ', ' +
                                   to_precision(np.round(mesh.CenterCoor[sampling_cells[i], 1], 3),
                                                 plot_prop.dispPrecision) + ')')
-
-    ax_slice.set_xticklabels(xtick_labels)
-    if vmin is not None and vmax is not None:
-        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+    if not export2Json:
+        ax_slice.set_xticklabels(xtick_labels)
+        if vmin is not None and vmax is not None:
+            ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
 
     if extreme_points is not None:
         extreme_points[0] = mesh.CenterCoor[sampling_cells[0]]
         extreme_points[1] = mesh.CenterCoor[sampling_cells[-1]]
 
-    return fig, sampling_line, var_value[sampling_cells]
+    if export2Json: fig = None
+    return fig, sampling_line, var_value[sampling_cells], sampling_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
