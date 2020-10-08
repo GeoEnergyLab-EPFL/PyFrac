@@ -412,6 +412,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         | 12      -- reached end of grid
         | 13      -- leak off can't be evaluated
         | 14      -- fracture fully closed
+        | 15      -- iterations on front will not converge (continuous front)
+        | 16      -- max number of cells achieved. Reducing the number of cells
 
         - Fracture:            fracture after advancing time step.
 
@@ -639,6 +641,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
     InCrack_k[Fr_lstTmStp.EltChannel] = 1
     InCrack_k[EltsTipNew] = 1  #EltsTipNew is new tip + fully traversed
+
+    if len(InCrack_k[np.where(InCrack_k == 1)]) > sim_properties.maxElementIn and \
+            sim_properties.meshReductionPossible:
+        exitstatus = 16
+        return exitstatus, Fr_lstTmStp
+
 
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
@@ -1585,6 +1593,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
             | 12      -- reached end of grid
             | 13      -- leak off can't be evaluated
             | 14      -- fracture fully closed
+            | 15      -- iterations on front will not converge (continuous front)
+            | 16      -- max number of cells achieved. Reducing the number of cells
 
         - Fracture:            fracture after advancing time step.
 
@@ -1716,6 +1726,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     InCrack_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.int8)
     InCrack_k[Fr_lstTmStp.EltChannel] = 1
     InCrack_k[EltsTipNew] = 1
+
+    if len(InCrack_k[np.where(InCrack_k == 1)]) > sim_properties.maxElementIn and \
+            sim_properties.meshReductionPossible:
+        exitstatus = 16
+        return exitstatus, Fr_lstTmStp
 
     # Calculate filling fraction of the tip cells for the current fracture position
     FillFrac_k = Integral_over_cell(EltsTipNew,
