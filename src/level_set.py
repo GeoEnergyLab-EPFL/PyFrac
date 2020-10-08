@@ -454,7 +454,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     CellStatusNew[eltsTip] = 2
     CellStatusNew[eltsRibbon] = 3
 
-    return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew
+    return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew, newEltChannel
 
     # -----------------------------------------------------------------------------------------------------------------------
 
