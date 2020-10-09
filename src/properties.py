@@ -672,6 +672,7 @@ class SimulationProperties:
                                         direction or if it should get compressed. The distribution is bottom, top,
                                         left, right
         meshExtensionFactor (float): -- factor by which the current mesh is extended in the extension direction
+        meshExtendAllDir (bool):     -- allow the mesh to extend in all directions
 
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
 
@@ -717,6 +718,8 @@ class SimulationProperties:
         aspectRatio (float):        -- this parameters is only used in the case of elliptical hydraulic fracture
                                        plots, e.g. to plot analytical solutions of anisotropic toughness or TI
                                        elasticity.
+        maxReattemptsFracAdvMore2Cells -- number of time reduction that are made if the fracture is advancing more than two cells (e.g. because of an heterogeneity)
+
         Attention:
             These attributes below are private:
 
@@ -781,6 +784,7 @@ class SimulationProperties:
         # time step re-attempt
         self.maxReattempts = simul_param.max_reattemps
         self.reAttemptFactor = simul_param.reattempt_factor
+        self.maxReattemptsFracAdvMore2Cells = simul_param.max_reattemps_FracAdvMore2Cells
 
         # output parameters
         self.plotFigure = simul_param.plot_figure
@@ -821,7 +825,12 @@ class SimulationProperties:
 
         self.meshExtension = simul_param.mesh_extension_direction
         self.meshExtensionFactor = simul_param.mesh_extension_factor
-
+        self.meshExtensionAllDir = simul_param.mesh_extension_all_sides
+        self.maxElementIn = np.inf
+        self.maxCellSize = np.inf
+        self.meshReductionFactor = simul_param.mesh_reduction_factor
+        self.meshReductionPossible = True
+        self.limitAdancementTo2cells = simul_param.limit_Adancement_To_2_cells
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.paramFromTip = simul_param.param_from_tip
