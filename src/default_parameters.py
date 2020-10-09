@@ -41,6 +41,8 @@ plot_var = ['w']                        # the list of variables to be plotted du
 plot_proj = '2D_clrmap'                 # projection to be plotted with.
 plot_time_period = None                 # the time period after which the variables given in plot_var are plotted.
 plot_TS_jump = 1                        # the number of time steps after which the given variables are plotted.
+plot_at_sol_time_series = True          # plot when the time is in the requested time series
+verbosity_level = 'debug'               # the level of details about the ongoing simulation to be written to the log file ('debug','info','warning','error','critical').
 
 # Saving options
 output_folder = None                    # the address to save the output data.
@@ -58,6 +60,7 @@ save_effective_viscosity = False        # if True, the Newtonian equivalent visc
 save_yield_ratio = False                # if True, the ratio of the height of fluid column yielded to total width will be saved.
 save_statistics_post_coalescence=False  # if True, the statistics post coalescence of two fractures are saved to json file
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree.
+log_to_file = True                      # set it True or False depending if you would like to log the messages to a log file
 
 # type of solver
 elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
@@ -75,8 +78,6 @@ solve_sparse = None                     # if True, the fluid conductivity matrix
 
 # miscellaneous
 tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
-verbosity = 2                           # the level of details about the ongoing simulation to be plotted.
-plot_at_sol_time_series = True          # plot when the time is in the requested time series
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 

@@ -19,6 +19,7 @@ from properties import PlotProperties
 from visualization import zoom_factory, to_precision, text3d
 from symmetry import *
 import numpy as np
+import logging
 
 class CartesianMesh:
     """Class defining a Cartesian Mesh.
@@ -87,7 +88,7 @@ class CartesianMesh:
                                     symmetric fracture solver.
 
         """
-
+        log = logging.getLogger('PyFrac.mesh')
         if not isinstance(Lx, list):
             self.Lx = Lx
             xlims = np.asarray([-Lx, Lx])
@@ -107,14 +108,14 @@ class CartesianMesh:
 
         # Check if the number of cells is odd to see if the origin would be at the mid point of a single cell
         if nx % 2 == 0:
-            print("Number of elements in x-direction are even. Using " + repr(nx+1) + " elements to have origin at a "
+            log.warning("Number of elements in x-direction are even. Using " + repr(nx+1) + " elements to have origin at a "
                                                                                       "cell center...")
             self.nx = nx+1
         else:
             self.nx = nx
 
         if ny % 2 == 0:
-            print("Number of elements in y-direction are even. Using " + repr(ny+1) + " elements to have origin at a "
+            log.warning("Number of elements in y-direction are even. Using " + repr(ny+1) + " elements to have origin at a "
                                                                                       "cell center...")
             self.ny = ny+1
         else:
@@ -535,7 +536,7 @@ class CartesianMesh:
                                          np.where(abs(self.CenterCoor[:, 1] - centerMesh[1]) < self.hy/2))
         if len(self.CenterElts) != 1:
             self.CenterElts = self.NumberOfElts / 2
-            print("Mesh with no center element. To be looked into")
+            log.debug("Mesh with no center element. To be looked into")
             #todo
             #raise ValueError("Mesh with no center element. To be looked into")
 
@@ -564,10 +565,10 @@ class CartesianMesh:
             elt (int):  -- the element containing the given coordinates.
 
         """
-
+        log = logging.getLogger('PyFrac.locate_element')
         if x >= self.domainLimits[3] + self.hx / 2 or y >= self.domainLimits[1] + self.hy / 2\
                 or x <= self.domainLimits[2] - self.hx / 2 or y <= self.domainLimits[0] - self.hy / 2:
-            print("Point is outside domain.")
+            log.warning("Point is outside domain.")
             return np.nan
 
         precision = np.finfo(np.double).precision
@@ -715,11 +716,11 @@ class CartesianMesh:
             (Figure):                            -- A Figure object to superimpose.
 
         """
-
+        log = logging.getLogger('PyFrac.plot3D')
         if backGround_param is not None and material_prop is None:
             raise ValueError("Material properties are required to plot the background parameter.")
         if material_prop is not None and backGround_param is None:
-            print("back ground parameter not provided. Plotting confining stress...")
+            log.warning("back ground parameter not provided. Plotting confining stress...")
             backGround_param = 'sigma0'
 
         if fig is None:
@@ -737,7 +738,7 @@ class CartesianMesh:
         if plot_prop.textSize is None:
             plot_prop.textSize = max(self.Lx / 15, self.Ly / 15)
 
-        print("Plotting mesh in 3D...")
+        log.info("Plotting mesh in 3D...")
         if material_prop is not None and backGround_param is not None:
             min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
                                                                                         backGround_param)
@@ -780,8 +781,8 @@ class CartesianMesh:
         This function plots the scale of the fracture by adding lines giving the length dimensions of the fracture.
 
         """
-
-        print("\tPlotting scale...")
+        log = logging.getLogger('PyFrac.plot_scale_3d')
+        log.info("\tPlotting scale...")
 
         Path = mpath.Path
 
@@ -828,7 +829,7 @@ class CartesianMesh:
                    ec="none",
                    fc=edge_color)
 
-        print("\tAdding labels...")
+        log.info("\tAdding labels...")
         text3d(ax,
                (0.,
                 -self.domainLimits[2] - plot_prop.textSize * 3,
@@ -916,8 +917,8 @@ def make_3D_colorbar(mesh, material_prop, backGround_param, ax, plot_prop):
     material properties.
 
     """
-
-    print("\tMaking colorbar...")
+    log = logging.getLogger('PyFrac.make_3D_colorbar')
+    log.info("\tMaking colorbar...")
 
     min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
                                                                                 backGround_param)

@@ -17,6 +17,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from anisotropy import TI_plain_strain_modulus
+from utility import setup_logging_to_console
+
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)

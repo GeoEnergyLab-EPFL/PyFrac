@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # imports
+import logging
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import mpl_toolkits.mplot3d.art3d as art3d
@@ -781,6 +782,7 @@ class Fracture:
 #-----------------------------------------------------------------------------------------------------------------------
 
     def update_tip_regime(self, mat_prop, fluid_prop, timeStep):
+        log = logging.getLogger('PyFrac.update_tip_regime')
         """
         This function calculates the color of the tip regime relative to the tip asymptotes.
         """
@@ -802,7 +804,7 @@ class Fracture:
 
         for i in moving:
             if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
-                print('Why nan distance?')
+                log.debug('Why nan distance?')
             wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
             wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
                  * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)

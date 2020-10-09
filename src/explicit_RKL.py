@@ -9,6 +9,7 @@ reserved. See the LICENSE.TXT file for more details.
 
 from elastohydrodynamic_solver import finiteDiff_operator_laminar, FiniteDiff_operator_turbulent_implicit, Gravity_term
 import numpy as np
+import logging
 from math import ceil
 import sys
 from properties import instrument_start, instrument_close
@@ -29,7 +30,7 @@ for j in range(2, s_max):
 
 # @profile
 def solve_width_pressure_RKL2(Eprime, GPU, n_threads, perf_node, *args):
-
+    log = logging.getLogger('PyFrac.solve_width_pressure_RKL2')
     perfNode_RKL = instrument_start("linear system solve", perf_node)
 
     (to_solve, to_impose, wLastTS, pfLastTS, imposed_val, EltCrack, Mesh, dt, Q, C, muPrime, rho, InCrack, LeakOff,
@@ -38,7 +39,7 @@ def solve_width_pressure_RKL2(Eprime, GPU, n_threads, perf_node, *args):
     viscosity = muPrime / 12
     dt_CFL = 5 * np.min(viscosity) * min(Mesh.hx, Mesh.hy) ** 3 / (Eprime * np.max(wLastTS) ** 3)
     s = ceil(-0.5 + (8 + 16 * dt / dt_CFL) ** 0.5 / 2)
-    print("no. of sub-steps = " + repr(s))
+    log.info("no. of sub-steps = " + repr(s))
 
     delt_wTip = imposed_val - wLastTS[to_impose]
     tip_delw_step = delt_wTip / s
@@ -199,8 +200,9 @@ def pardot(a, b, nblocks, mblocks, dot_func=do_dot):
     The product is split into nblocks * mblocks partitions that are performed
     in parallel threads.
     """
+    log = logging.getLogger('PyFrac.pardot')
     n_jobs = nblocks * mblocks
-    print('running {} jobs in parallel'.format(n_jobs))
+    log.info('running {} jobs in parallel'.format(n_jobs))
 
     if len(b.shape) == 1:
         b = b.reshape((b.shape[0], 1))
@@ -233,7 +235,8 @@ def pardot_matrix_vector(a, b, nblocks, dot_func=do_dot):
     in parallel threads.
     """
     n_jobs = nblocks
-    # print('running {} jobs in parallel'.format(n_jobs))
+    # log=logging.getLogger('PyFrac.pardot_matrix_vector')
+    # log.info('running {} jobs in parallel'.format(n_jobs))
 
     out = np.empty((a.shape[0]), dtype=a.dtype)
 

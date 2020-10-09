@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # imports
+import logging
 from properties import instrument_start, instrument_close
 import numpy as np
 from scipy.optimize import brentq
@@ -503,7 +504,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
     Returns:
         dist (ndarray):                     -- distance (unsigned) from the front to the ribbon cells.
     """
-
+    log = logging.getLogger('PyFrac.TipAsymInversion')
     if Kprime_k is None:
         Kprime = matProp.Kprime[frac.EltRibbon]
     else:
@@ -590,7 +591,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
             dist[moving[i]] = np.nan
         except ValueError:
             if simParmtrs.get_tipAsymptote() == 'U1':
-                print("WARNING: First order did not converged: try with zero order.")
+                log.warning("First order did not converged: try with zero order.")
                 try:
                     if perfNode is None:
                         dist[moving[i]] = brentq(TipAsym_Universal_zrthOrder_Res, a[i], b[i], TipAsmptargs)
