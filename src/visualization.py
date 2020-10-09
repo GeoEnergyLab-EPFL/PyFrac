@@ -6,7 +6,7 @@ Created by Haseeb Zia on Friday, July 06, 2018.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019. All rights
 reserved. See the LICENSE.TXT file for more details.
 """
-
+import logging
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -57,7 +57,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    print("Plotting " + variable + '...')
+    log = logging.getLogger('PyFrac.plot_fracture_list')
+    log.info("Plotting " + variable + '...')
 
     if not isinstance(fracture_list, list):
         raise ValueError("The provided fracture_list is not list type object!")
@@ -270,7 +271,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
                              fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal',
-                             extreme_points=None, export2Json=False):
+                             extreme_points=None, export2Json=False, export2Json_assuming_no_remeshing=True):
     """
     This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be
     joined to form the slice. The values on the slice are either interpolated from the values available on the cell
@@ -302,7 +303,8 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme
                                                points of the plotted slice. These points can be used to plot analytical
                                                solution.
-
+        export2Json (bool)                  -- If you set it to True the function will return a dictionary with the
+                                               data of the corresponding plot
     Returns:
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
@@ -364,7 +366,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
         if '2D' in projection:
             if plot_cell_center:
-                fig ,sampling_line_out, var_value_selected= plot_fracture_slice_cell_center(var_val_copy[i],
+                fig ,sampling_line_out, var_value_selected, sampling_cells = plot_fracture_slice_cell_center(var_val_copy[i],
                                                                   mesh_list[i],
                                                                   point=point1,
                                                                   orientation=orientation,
@@ -374,10 +376,16 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   vmax=vmax,
                                                                   plot_colorbar=False,
                                                                   labels=labels,
-                                                                  extreme_points=extreme_points)
-                if i == 0 and export2Json: #write ones the sampling line, assuming no remeshing
-                    to_write['sampling_line_out'] = sampling_line_out.tolist()    
-                if export2Json:
+                                                                  extreme_points=extreme_points,
+                                                                  export2Json = export2Json)
+                if i == 0 and export2Json and export2Json_assuming_no_remeshing: #write ones the sampling line, assuming no remeshing
+                    to_write['sampling_line_out'] = sampling_line_out.tolist()
+                    to_write['sampling_cells']  = sampling_cells.tolist()
+                if export2Json and not export2Json_assuming_no_remeshing:
+                    to_write['sampling_line_out_'+str(i)] = sampling_line_out.tolist()
+                    to_write['sampling_cells_'+str(i)] = sampling_cells.tolist()
+                    to_write[variable+'_'+str(i)] = var_value_selected.tolist()
+                if export2Json and export2Json_assuming_no_remeshing:
                     to_write[str(i)] = var_value_selected.tolist()
             else:
                 fig = plot_fracture_slice_interpolated(var_val_copy[i],
@@ -390,23 +398,24 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                 vmax=vmax,
                                                                 plot_colorbar=False,
                                                                 labels=labels)
-            ax_tv = fig.get_axes()[0]
-            ax_tv.set_xlabel('meter')
-            ax_tv.set_ylabel('meter')
-            ax_tv.set_title('Top View')
+            if not export2Json:
+                ax_tv = fig.get_axes()[0]
+                ax_tv.set_xlabel('meter')
+                ax_tv.set_ylabel('meter')
+                ax_tv.set_title('Top View')
 
-            # making colorbar
-            im = ax_tv.images
-            divider = make_axes_locatable(ax_tv)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
-            cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
-            cb.set_label(labels.colorbarLabel)
+                # making colorbar
+                im = ax_tv.images
+                divider = make_axes_locatable(ax_tv)
+                cax = divider.append_axes('right', size='5%', pad=0.05)
+                cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
+                cb.set_label(labels.colorbarLabel)
 
-            ax_slice = fig.get_axes()[1]
-            ax_slice.set_ylabel(labels.colorbarLabel)
-            ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
+                ax_slice = fig.get_axes()[1]
+                ax_slice.set_ylabel(labels.colorbarLabel)
+                ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
 
-        elif projection == '3D':
+        elif projection == '3D' and not export2Json:
             fig = plot_slice_3D(var_val_copy[i],
                                 mesh_list[i],
                                 point1=point1,
@@ -424,7 +433,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         else:
             raise ValueError("Given Projection is not correct!")
 
-    if plot_prop.plotLegend:
+    if plot_prop.plotLegend and not export2Json:
         ax_slice.legend()
 
     if export2Json:
@@ -928,8 +937,8 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting slice...")
+    log = logging.getLogger('PyFrac.plot_fracture_slice_interpolated')
+    log.info("Plotting slice...")
     if plt_2D_image:
         if fig is None:
             fig = plt.figure()
@@ -1070,7 +1079,7 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
-                                extreme_points=None):
+                                extreme_points=None,export2Json=False):
     """
     This function plots the fracture on a given slice of the domain. A points along with the direction of the slice is
     given to form the slice. The slice is made from the center of the cell containing the given point along the given
@@ -1099,29 +1108,30 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting slice...")
-    if plt_2D_image:
-        if fig is None:
-            fig = plt.figure()
-            ax_2D = fig.add_subplot(211)
-            ax_slice = fig.add_subplot(212)
+    log = logging.getLogger('PyFrac.plot_fracture_slice_cell_center')
+    log.info("Plotting slice...")
+    if not export2Json:
+        if plt_2D_image:
+            if fig is None:
+                fig = plt.figure()
+                ax_2D = fig.add_subplot(211)
+                ax_slice = fig.add_subplot(212)
+            else:
+                ax_2D = fig.get_axes()[0]
+                ax_slice = fig.get_axes()[1]
         else:
-            ax_2D = fig.get_axes()[0]
-            ax_slice = fig.get_axes()[1]
-    else:
-        if fig is None:
-            fig = plt.figure()
-            ax_slice = fig.add_subplot(111)
-        else:
-            ax_slice = fig.get_axes()[0]
+            if fig is None:
+                fig = plt.figure()
+                ax_slice = fig.add_subplot(111)
+            else:
+                ax_slice = fig.get_axes()[0]
 
     if plot_prop is None:
         plot_prop = PlotProperties()
         plot_prop.lineStyle = '.'
 
 
-    if plt_2D_image:
+    if plt_2D_image and not export2Json:
         x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
         y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
 
@@ -1180,7 +1190,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
 
-    if plt_2D_image:
+    if plt_2D_image and not export2Json:
         ax_2D.plot(mesh.CenterCoor[sampling_cells, 0],
                    mesh.CenterCoor[sampling_cells, 1],
                    'k.',
@@ -1194,12 +1204,12 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
     # analytical solution plots.
     sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
-
-    ax_slice.plot(sampling_line,
-                  var_value[sampling_cells],
-                  plot_prop.lineStyle,
-                  color=plot_prop.lineColor,
-                  label=labels.legend)
+    if not export2Json:
+        ax_slice.plot(sampling_line,
+                      var_value[sampling_cells],
+                      plot_prop.lineStyle,
+                      color=plot_prop.lineColor,
+                      label=labels.legend)
 
     if len(sampling_cells) > 7:
         mid = len(sampling_cells) // 2
@@ -1210,7 +1220,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         x_ticks = np.hstack((half_1st[:3], np.array([mid], dtype=int)))
         x_ticks = np.hstack((x_ticks, half_2nd))
 
-    ax_slice.set_xticks(sampling_line[x_ticks])
+    if not export2Json: ax_slice.set_xticks(sampling_line[x_ticks])
 
     xtick_labels = []
     for i in x_ticks:
@@ -1218,16 +1228,17 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                                                 plot_prop.dispPrecision) + ', ' +
                                   to_precision(np.round(mesh.CenterCoor[sampling_cells[i], 1], 3),
                                                 plot_prop.dispPrecision) + ')')
-
-    ax_slice.set_xticklabels(xtick_labels)
-    if vmin is not None and vmax is not None:
-        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+    if not export2Json:
+        ax_slice.set_xticklabels(xtick_labels)
+        if vmin is not None and vmax is not None:
+            ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
 
     if extreme_points is not None:
         extreme_points[0] = mesh.CenterCoor[sampling_cells[0]]
         extreme_points[1] = mesh.CenterCoor[sampling_cells[-1]]
 
-    return fig, sampling_line, var_value[sampling_cells]
+    if export2Json: fig = None
+    return fig, sampling_line, var_value[sampling_cells], sampling_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -1425,7 +1436,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-
+    log = logging.getLogger('PyFrac.plot_analytical_solution_at_point')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -1473,7 +1484,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if variable in ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
                     'front_dist_mean', 'd_mean']:
-        print("The given variable does not vary spatially.")
+        log.warning("The given variable does not vary spatially.")
 
     plot_prop_cp.lineColor = plot_prop.lineColorAnal
     plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
@@ -1502,8 +1513,8 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
 def plot_scale_3D(fracture, fig=None, plot_prop=None):
     """ This function plots lines with dimensions on the 3D fracture plot."""
-
-    print('Plotting scale...')
+    log = logging.getLogger('PyFrac.plot_scale_3D')
+    log.info('Plotting scale...')
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -1594,7 +1605,8 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    print('Plotting slice in 3D...')
+    log = logging.getLogger('PyFrac.plot_slice_3D')
+    log.info('Plotting slice in 3D...')
 
     if fig is None:
         fig = plt.figure()
@@ -1676,7 +1688,8 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-    print("Plotting analytical footprint...")
+    log = logging.getLogger('PyFrac.plot_footprint_analytical')
+    log.info("Plotting analytical footprint...")
 
     if fig is None:
         fig = plt.figure()
@@ -1760,8 +1773,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting analytical " + variable + " " + regime + " solution...")
+    log = logging.getLogger('PyFrac.plot_analytical_solution')
+    log.info("Plotting analytical " + variable + " " + regime + " solution...")
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -2028,7 +2041,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
         pause_time (float):                 -- time (in seconds) between two successive updates of frames.
 
     """
-
+    log = logging.getLogger('PyFrac.animate_simulation_results')
     if not isinstance(variable, list):
         variable = [variable]
     figures = [None for i in range(len(variable))]
@@ -2036,7 +2049,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
     setFigPos = True
     for fracture in fracture_list:
         for indx, plt_var in enumerate(variable):
-            print("Plotting solution at " + repr(fracture.time) + "...")
+            log.info("Plotting solution at " + repr(fracture.time) + "...")
             if plot_prop is None:
                 plot_prop = PlotProperties()
 
@@ -2259,7 +2272,7 @@ def save_images_to_video(image_folder, video_name='movie'):
     """ This function makes a video from the images in the given folder."""
     import cv2
     import os
-
+    log = logging.getLogger('PyFrac.save_images_to_video')
     if ".avi" not in video_name:
         video_name = video_name + '.avi'
 
@@ -2271,7 +2284,7 @@ def save_images_to_video(image_folder, video_name='movie'):
 
     img_no = 0
     for image in images:
-        print("adding image no " + repr(img_no))
+        log.info("adding image no " + repr(img_no))
         video.write(cv2.imread(os.path.join(image_folder, image)))
         cv2.waitKey(1)
         img_no += 1
