@@ -16,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(2.75, 2.4, 25, 23)
+Mesh = CartesianMesh(2.75, 2.3, 17, 35)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -52,6 +52,7 @@ simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
 simulProp.plotVar = ['footprint']       # plotting footprint
 simulProp.set_mesh_extension_direction(['horizontal'])
 simulProp.meshExtensionFactor = 1.35
+simulProp.useBlockToeplizCompression = True
 
 # initializing fracture
 Fr_geometry = Geometry(shape='radial', radius=1.)
