@@ -35,7 +35,7 @@ def get_eliptical_survey_cells(mesh, a, b, center=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
-    if center == None:
+    if center is None:
         center = np.asarray([0, 0])
 
     # distances of the cell vertices
@@ -94,7 +94,7 @@ def get_radial_survey_cells(mesh, r, center=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given circle.
     """
-    if center == None:
+    if center is None:
         center = np.asarray([0, 0])
 
     # distances of the cell vertices
@@ -142,7 +142,7 @@ def get_rectangular_survey_cells(mesh, length, height, center=None):
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
-    if center == None:
+    if center is None:
         center = np.asarray([0, 0])
 
     inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[np.ix_(np.arange(0, len(mesh.CenterCoor)), [0])]
@@ -783,7 +783,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
     geometry.
     """
 
-    if geometry.center == None:
+    if geometry.center is None:
         center = source_coord
     else:
         center =geometry.center

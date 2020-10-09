@@ -16,7 +16,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(2.75, 3, 25, 27)
+Mesh = CartesianMesh(2.75, 2.4, 25, 23)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
