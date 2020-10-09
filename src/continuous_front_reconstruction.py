@@ -1,4 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+This file is part of PyFrac.
+
+Created by Carlo Peruzzo on 01.01.19.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
+All rights reserved. See the LICENSE.TXT file for more details.
+"""
+
 import numpy as np
+import logging
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from properties import PlotProperties
@@ -6,7 +16,12 @@ from matplotlib.collections import PatchCollection
 from level_set import *
 
 def plotgrid(mesh,ax):
-    # plot the 2D mesh grid
+    """Plots the 2D mesh grid
+    :param mesh: mesh object
+    :param ax: a list of axes of a matplotlib.pyplot.figure object
+    :return: nothing - it only plots the mesh grid
+    """
+
     # set the four corners of the rectangular mesh
     ax.set_xlim([-mesh.Lx - mesh.hx / 2, mesh.Lx + mesh.hx / 2])
     ax.set_ylim([-mesh.Ly - mesh.hy / 2, mesh.Ly + mesh.hy / 2])
@@ -36,9 +51,22 @@ def plotgrid(mesh,ax):
     plt.axis('equal')
 
 def plot_cell_lists(mesh,list,fig=None, mycolor='g',mymarker="_",shiftx=0.01,shifty=0.01,annotate_cellName=False, grid=True):
-    """
-    use this function to plot more lists and see the difference between them
-    you can curstomize the color, the shift and the marker of the different identificators
+    """Plot an identifier at the position of each cell in a given list.
+
+    Use this function to plot even more than one list and see the difference between them.
+    You can customize the color, specify the shift of the identifier with respect to the cell center.
+    You can customize the marker used for the identifier.
+
+    :param mesh: mesh object
+    :param list: a list of int representing the cell names you want to mark
+    :param fig: a matplotlib.pyplot.figure object
+    :param mycolor: a valid string that specify the color - see matplotlib.pyplot.plot documentation
+    :param mymarker: a valid format string characters to control the marker - see matplotlib.pyplot.plot documentation
+    :param shiftx: float representing the amount of shift of the identifier from the cell center. The number represents the percentage of the cell size in x direction to be added to the coordinate of the cell center
+    :param shifty: float representing the amount of shift of the identifier from the cell center. The number represents the percentage of the cell size in y direction to be added to the coordinate of the cell center
+    :param annotate_cellName: True or False, (or equivalent to the booleans 1 and 0) to decide if you want to plot the cell name
+    :param grid: True or False, (or equivalent to the booleans 1 and 0) to decide if you want to plot the grid
+    :return: matplotlib.pyplot.figure object
     """
 
     if fig is None:
@@ -60,11 +88,16 @@ def plot_cell_lists(mesh,list,fig=None, mycolor='g',mymarker="_",shiftx=0.01,shi
     plt.show()
     return fig
 
-
 def plot_ray_tracing_numpy_results(mesh,x,y,poly,inside):
-    # inside is a binary vector containing 1 (true) and 0 (false) that results from the function ray_tracing_numpy_results
-    # x is the list of x coordinates of the points elaborated by the function ray_tracing_numpy_results
-    # y is the list of x coordinates of the points elaborated by the function ray_tracing_numpy_results
+    """plot the results from the function "ray_tracing_numpy"
+
+    :param mesh: mesh object
+    :param x: an array containing the x coordinates of the points tested e.g.: np.asarray([[0.,5.]])
+    :param y: an array containing the y coordinates of the points tested e.g.: np.asarray([[0.,5.]])
+    :param poly: a matrix containing the x and y coordinated of the polygon e.g.: np.asarray([[-1,-1],[1,-1],[0,1]])
+    :param inside: inside is a binary vector containing 1 (true) and 0 (false) that results from the function ray_tracing_numpy_results
+    :return: nothing - it only plots the mesh grid
+    """
     fig = plt.figure()
     plt.plot(x[np.nonzero(inside)], y[np.nonzero(inside)], '.', color='Green')
     outidx = np.setdiff1d(np.arange(inside.size), np.nonzero(inside))
@@ -75,19 +108,21 @@ def plot_ray_tracing_numpy_results(mesh,x,y,poly,inside):
     plotgrid(mesh, ax)
 
 def ray_tracing_numpy(x,y,poly):
-    #
-    #
-    #
-    #
-    #
+    """given a polygon this function tests if each of the points in a given set is inside or outside
 
-    # this routine will return an array with the answer to the question:
-    # is the point xi,yi inside poly?
-    # poly is a matrix with the points making the polygon
-    # the answer is obtained by drawing an horizontal line on the right side of the point
+    The answer is obtained by drawing an horizontal line on the right side of the point
+
+    :param x: an array containing the x coordinates of the points to be tested e.g.: np.asarray([[0.,5.]])
+    :param y: an array containing the y coordinates of the points to be tested e.g.: np.asarray([[0.,5.]])
+    :param poly: a matrix containing the x and y coordinated of the poligons e.g.: np.asarray([[-1,-1],[1,-1],[0,1]])
+    :return: an array of booleans ordered as x
+    """
 
     # make the array with the answer at the points (np.bool_ : Boolean(True or False) stored as a byte)
     # assume that the points are all outside (0 is false)
+    if isinstance(x, (int, float, complex)) and not isinstance(x, bool):
+        x = np.asarray([[x]])
+        y = np.asarray([[y]])
     inside = np.zeros(x.shape[1],np.bool_)
 
     # initializing the parameters
@@ -130,16 +165,20 @@ def ray_tracing_numpy(x,y,poly):
 
     return inside
 
-def find_indexes_repeatd_elements(arr):
-    """
-    This function takes
+def find_indexes_repeatd_elements(list):
+    """This function returns all the indexes of the repeated elements
+
+    Example: giving the following list:
           0  1  2  3  4  5  6  7
-    arr=[10,15,33,33,18,22,16,22]
-    return all indexes of repeated elements [2,3,5,7]
+    list=[10,15,33,33,18,22,16,22]
+    it returns all indexes of repeated elements [2,3,5,7]
+
+    :param arr: list e.g.: [10,15,33,33,18,22,16,22]
+    :return: list with all the indexes of the repeated elements
     """
-    sort_indexes = np.argsort(arr)
-    arr = np.asarray(arr)[sort_indexes]
-    vals, first_indexes,  counts = np.unique(arr,
+    sort_indexes = np.argsort(list)
+    list = np.asarray(list)[sort_indexes]
+    vals, first_indexes,  counts = np.unique(list,
         return_index=True, return_counts=True)
     indexes = np.split(sort_indexes, first_indexes[1:])
     for x in indexes:
@@ -151,50 +190,77 @@ def find_indexes_repeatd_elements(arr):
     else: return []
 
 class Point:
+    """This class represents the concept of a point
+    """
     # Define the object point
     def __init__(self,name,x,y):
+        """Constructor method
+
+        :param name: point name
+        :param x: x coordinate of a point
+        :param y: y coordinate of a point
+        """
         self.name = name
         self.x = x
         self.y = y
 
 def distance(p1, p2):
-    # USING OBJECTS: POINT
-    #
-    # Compute the euclidean distance between two points
+    """compute the euclidean distance between the two points
+
+    :param p1: object of type Point - first point
+    :param p2: object of type Point - second point
+    :return: float - euclidean distance between the points
+    """
     return np.sqrt((-p1.x + p2.x)**2 + (-p1.y + p2.y)**2)
 
-def copute_area_of_a_closed_front(xintersection,yintersection):
+def copute_area_of_a_polygon(x,y):
+    """use the Shoelace formula (Gauss area formula or surveyor's formula) to compute the area of a polygon
+
+    :param x: x coordinates of the points defining the polygon (closed front) e.g.: np.asarray([0,1,0]) for a triangle
+    :param y: y coordinates of the points defining the polygon (closed front) e.g.: np.asarray([0,0,1]) for a triangle
+    :return: float representing the area of the polygon
+    """
     # todo: remove for speed
-    if  xintersection.size !=  yintersection.size : raise SystemExit('FRONT RECONSTRUCTION ERROR: bad coordinate sizes')
-
-    # use the Shoelace formula (Gauss area formula or surveyor's formula) to compute the area of a polygon
-    # Performed tests:
-    # copute_area_of_a_closed_front(np.asarray([0,1,0]),np.asarray([0,0,1])) == 0.5
-    # copute_area_of_a_closed_front(np.asarray([1,38,9]),np.asarray([2,2,20])) == 333
-    # copute_area_of_a_closed_front(np.asarray([0,2,3,0.5]),np.asarray([0,0,3,3])) == 6.75
-
-    n = xintersection.size
+    if  x.size !=  y.size : raise SystemExit('FRONT RECONSTRUCTION ERROR: bad coordinate size.')
+    n = x.size
 
     area = \
-    np.abs( np.dot(xintersection[0:n-1],yintersection[1:n]) \
-                 + xintersection[n-1] * yintersection[0] \
-          - np.dot(xintersection[1:n],  yintersection[0:(n-1)]) \
-                 - xintersection[0]   * yintersection[n-1])/2.
+    np.abs( np.dot(x[0:n-1],y[1:n]) \
+                 + x[n-1] * y[0] \
+          - np.dot(x[1:n],  y[0:(n-1)]) \
+                 - x[0]   * y[n-1])/2.
     return area
 
 def pointtolinedistance(x0, x1, x2, y0, y1, y2):
-    # USING OBJECTS: POINT
-    #
-    # Compute the minimum distance from a point of coordinates (x0,y0) to a the line passing through 2 points.
-    # The function works only for planar problems.
-    return np.abs((y2-y1)*x0-(x2-x1)*y0+x2*y1-y2*x1)/np.sqrt((-x1 + x2)**2 + (-y1 + y2)**2)
+    """compute the minimum euclidean distance from a point of coordinates (x0,y0) to a the line passing through 2 points.
+    The function works only for planar problems.
+
+    :param x0: float representing the x coordinate of the point
+    :param x1: float representing the x coordinate of the first point contained by the line
+    :param x2: float representing the x coordinate of the second point contained by the line
+    :param y0: float representing the y coordinate of the point
+    :param y1: float representing the y coordinate of the first point contained by the line
+    :param y2: float representing the y coordinate of the second point contained by the line
+    :return: float representing the shortest euclidean distance
+    """
+    if x1 == x2 and y1 == y2:
+        raise SystemExit('FRONT RECONSTRUCTION ERROR: line definded by two coincident points')
+    else:
+        return np.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1) / np.sqrt((-x1 + x2) ** 2 + (-y1 + y2) ** 2)
 
 def elements(typeindex, nodeindex, connectivityedgeselem, Connectivitynodeselem, edgeORvertexID):
-    # This function returns in the case:
-    #  a) -> two element names <=> NODE ON EDGE
-    #  b) -> four element names  <=> NODE ON VERTEX
-    #
-    #
+    """ This function handles two cases: a and b. It returns respectively:
+     - in case a), the names of the 2 elements bounded by the EDGE where the node lies
+     - in case b), the names of the 4 elements having the node as a VERTEX
+
+    :param typeindex: set of booleans that tells if 0 that the corresponding node is on the edge of a cell otherwise it is coincident to a vertex
+    :param nodeindex: the index, in edgeORvertexID, of the node that we are selecting
+    :param connectivityedgeselem: see mesh.Connectivityedgeselem
+    :param Connectivitynodeselem: see mesh.Connectivitynodeselem
+    :param edgeORvertexID: set of IDs with the meaning of vertex ID or edge ID
+    :return: set of cell names
+    """
+
     # CASE a)
     if typeindex[nodeindex] == 0:  # the node is one the edge of a cell
         cellOfNodei = connectivityedgeselem[edgeORvertexID[nodeindex]]
@@ -204,8 +270,7 @@ def elements(typeindex, nodeindex, connectivityedgeselem, Connectivitynodeselem,
     return cellOfNodei
 
 def findcommon(nodeindex0, nodeindex1, typeindex, connectivityedgeselem, Connectivitynodeselem, edgeORvertexID):
-    """
-    Given two points we return the cells that are in common between them
+    """Given two points we return the cells that are in common between them
 
     :param nodeindex0: position of the node 0 inside the list of the found intersections that defines the front
     :param nodeindex1: position of the node 1 inside the list of the found intersections that defines the front
@@ -287,8 +352,7 @@ def ISinsideFracture(i,mesh,sgndDist_k):
     return answer_on_vertexes
 
 def findangle(x1, y1, x2, y2, x0, y0, mac_precision):
-    """
-    Compute the angle with respect to the horizontal direction between the segment from a point of coordinates (x0,y0)
+    """Compute the angle with respect to the horizontal direction between the segment from a point of coordinates (x0,y0)
     and orthogonal to a the line passing through 2 points. The function works only for planar problems.
 
     Args:
@@ -615,6 +679,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
     remembrer the usage of NeiElements[i]->[left, right, bottom, up]
                                               0     1      2      3
     """
+    log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     LS = get_LS_on_i_fictitius_cell("icba",anularegion, NeiElements, sgndDist_k)
 
     """
@@ -647,9 +712,9 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
 
     try:
         if i_indexes_of_fictitius_cells.size < 1:
-            raise FileNotFoundError
-    except FileNotFoundError:
-        print("FRONT RECONSTRUCTION ERROR: The front does not exist")
+            raise Exception("FRONT RECONSTRUCTION ERROR: The front does not exist")
+    except RuntimeError:
+        log.error("FRONT RECONSTRUCTION ERROR: The front does not exist")
 
     if np.any(np.ndarray.flatten(LS[i_indexes_of_fictitius_cells,:]) > 10.**40):
         exitstatus = True
@@ -769,9 +834,9 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         # the following is a test that can be removed for speed
         # try:
         #     if np.setdiff1d(anularegion[i_indexes_of_fictitius_cells],np.concatenate((anularegion[i_indexes_of_TYPE_1_cells], anularegion[i_indexes_of_TYPE_2_cells], anularegion[i_indexes_of_TYPE_3_cells], anularegion[i_indexes_of_TYPE_4_cells]))).size > 0:
-        #         raise FileNotFoundError
-        # except FileNotFoundError:
-        #     print("FRONT RECONSTRUCTION ERROR: this function has an error")
+        #         raise Exception('FRONT RECONSTRUCTION ERROR: this function has an error')
+        # except RuntimeError:
+        #     log.error("FRONT RECONSTRUCTION ERROR: this function has an error")
 
         # make dictionaries:
         i_1_2_3_4_FC_type = dict(zip(anularegion[i_indexes_of_TYPE_1_cells].astype(str).tolist(), np.ones(i_indexes_of_TYPE_1_cells.size).astype(int).tolist()))
@@ -844,6 +909,7 @@ def define_orientation_type2(T2_other_intersections, mesh, sgndDist_k):
     return np.transpose(LS_TYPE_2 > 0.)
 
 def define_orientation_type3OR4(type,Tx_other_intersections, mesh, sgndDist_k):
+    #log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     """
                         type 3        |                 |                 |                 |
                         3(+) & 1(-)   |                 |                 |                 |
@@ -871,7 +937,7 @@ def define_orientation_type3OR4(type,Tx_other_intersections, mesh, sgndDist_k):
         LS_TYPE_3or4[i,:]=np.multiply(LS_TYPE_3or4[i,:], testvector)
 
     # if (np.sum(LS_TYPE_3or4, axis=1)-1)[0] == 4 :
-    #  print("stop")
+    #  log.debug("stop")
     return (np.sum(LS_TYPE_3or4, axis=1)-1)
 
 def move_intersections_to_the_center_when_inRibbon_type3(indexesFC_T3_central_inters,
@@ -1819,6 +1885,7 @@ def process_fictitius_cells_2(indexesFC_TYPE_4,Args, x, y, typeindex,edgeORverte
     return [ x, y, typeindex, edgeORvertexID]
 
 def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
+    log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     [mesh,dict_Ribbon,sgndDist_k] = Args
     dict_of_possibilities = {}
     """
@@ -1880,11 +1947,11 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
 
     try:
         if str(previous_cell_name) not in dict_of_possibilities.keys():
-            raise FileNotFoundError
+            raise RuntimeError
         else:
             return dict_of_possibilities[str(previous_cell_name)]
-    except FileNotFoundError:
-        print("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
+    except RuntimeError:
+        log.debug("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
     """
@@ -1916,6 +1983,7 @@ def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
 
 from itertools import chain
 def itertools_chain_from_iterable(lsts):
+    log = logging.getLogger('PyFrac.continuous_front_reconstruction')
     """
     :param lsts: example lsts=[[1],[], [2,3],[4],[],[5,6]]
     :return: [1,2,3,4,5,6]
@@ -1925,7 +1993,7 @@ def itertools_chain_from_iterable(lsts):
     try :
       to_be_returned =list(chain.from_iterable(lsts))
     except:
-      print("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
+      log.error("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
     return to_be_returned
 
 def append_to_typelists(cell_index,cell_type,type1,type2,type3,type4):
@@ -1952,10 +2020,10 @@ def is_inside_the_triangle(p_center, p_zero_vertex, p1, p2, mac_precision, area_
     T3y = np.asarray([p_center.y,p2.y,p_zero_vertex.y])
     Tx = np.asarray([p1.x,p2.x,p_zero_vertex.x])
     Ty = np.asarray([p1.y,p2.y,p_zero_vertex.y])
-    if    (copute_area_of_a_closed_front(T1x, T1y)
-        + copute_area_of_a_closed_front(T2x, T2y)
-        + copute_area_of_a_closed_front(T3x, T3y)
-        - copute_area_of_a_closed_front(Tx, Ty) )/area_of_a_cell < mac_precision:
+    if    (copute_area_of_a_polygon(T1x, T1y)
+        + copute_area_of_a_polygon(T2x, T2y)
+        + copute_area_of_a_polygon(T3x, T3y)
+        - copute_area_of_a_polygon(Tx, Ty) )/area_of_a_cell < mac_precision:
         return True
     else:
         return False
@@ -2006,7 +2074,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             orthogonaldistances (float): -- descriptions.
 
         """
-
+        log = logging.getLogger('PyFrac.continuous_front_reconstruction')
         recompute_front = False
         float_precision = np.float64
         mac_precision = 100*np.sqrt(np.finfo(float).eps)
@@ -2017,7 +2085,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             
         """
         if np.any(sgndDist_k[mesh.Frontlist] < 0):
-            print('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negat')
+            log.warning('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negative level set')
             negativefront = np.where(sgndDist_k < 0)[0]
             intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
             correct_size_of_pstv_region = [False, True, False]
@@ -2053,11 +2121,11 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         # the values of the LS in the fictitius cells might be not computed at all the cells, so increase the thikness of the band
         if exitstatus:
             if np.any(sgndDist_k[mesh.Frontlist]<0):
-                print('FRONT RECONSTRUCTION WARNING: increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: Failing the time-step')
+                log.info('increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: Failing the time-step')
                 correct_size_of_pstv_region = [False, False, True]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
-                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
+                log.debug('I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
                 # from utility import plot_as_matrix
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[anularegion] = sgndDist_k[anularegion]
@@ -2115,13 +2183,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                         if np.any(LSet_temp > 10. ** 40):
                             intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist))
                             if intwithFrontlist.size >0:
-                                print('FRONT RECONSTRUCTION WARNING: The new front reaches the boundary. Remeshing')
+                                log.info('The new front reaches the boundary. Remeshing')
                                 correct_size_of_pstv_region = [False, True, False]
                                 # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                                 # (in case of anisotropic remeshing)
                                 return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                             else:
-                                print('FRONT RECONSTRUCTION WARNING: I am increasing the thickness of the band (tip i cell not found in the anularegion)')
+                                log.debug('I am increasing the thickness of the band (tip i cell not found in the anularegion)')
                                 correct_size_of_pstv_region = [False, False, False]
                                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
@@ -2144,14 +2212,14 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 else :
                     intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))),np.asarray(mesh.Frontlist))
                     if intwithFrontlist.size > 0:
-                        print('FRONT RECONSTRUCTION WARNING: The new front reaches the boundary. Remeshing')
+                        log.info('The new front reaches the boundary. Remeshing')
                         correct_size_of_pstv_region = [False, False, True]
                         # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                         # (in case of anisotropic remeshing)
                         return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                     else :
-                        print("<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>")
-                        print("set the LS of the positive cells to be -machine precision")
+                        log.debug('<< I REJECT A POSSIBLE FRCTURE FRONT BECAUSE IS TOO SMALL >>')
+                        log.debug('set the LS of the positive cells to be -machine precision')
                         all_cells_of_all_FC_of_this_small_fracture = np.unique(
                             np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                         index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture] > 0)[0]
@@ -2211,7 +2279,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if len(indexesFC_TYPE_4) > 0:
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
             if len(indexesFC_TYPE_2) > 0:
-                print('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
+                log.debug('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
                 correct_size_of_pstv_region = [False, False, True]
                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                 #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
@@ -2241,10 +2309,10 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                          - set the level set of the positive cells artificially to be -mac precision       
             """
             if len(xintersection)>0:
-                closed_front_area=copute_area_of_a_closed_front(np.asarray(xintersection),np.asarray(yintersection))
+                closed_front_area=copute_area_of_a_polygon(np.asarray(xintersection),np.asarray(yintersection))
             else: closed_front_area = 0
             if closed_front_area <= area_of_a_cell*1.01:
-                print("A small front of area ="+str(100*closed_front_area/area_of_a_cell)[:4]+"% of the single cell has been deleted")
+                log.debug("A small front of area ="+str(100*closed_front_area/area_of_a_cell)[:4]+"% of the single cell has been deleted")
                 # set the level set of all the positive cells in fracture list to be positive
                 all_cells_of_all_FC_of_this_small_fracture = np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                 index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture]>0)[0]
@@ -2339,7 +2407,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     counter = counter + 1
                 if counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter) + " points on the same edge but close to each other")
+                    log.debug("deleted " + str(counter) + " points on the same edge but close to each other")
                 """
                 new cleaning: 
                 clean only if the elements belong to the same edge
@@ -2377,7 +2445,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     else: recursive_counter = recursive_counter + counter
                 if recursive_counter > 0:
                     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(recursive_counter) + " points on the same edge that leads to sub resolution")
+                    log.debug("deleted " + str(recursive_counter) + " points on the same edge that leads to sub resolution")
 
                 """
                 CASE 1: 
@@ -2583,7 +2651,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                                 else:
                                     add_at_the_end = add_at_the_end + 1
                 if counter > 0:
-                    print("FRONT RECONSTRUCTION MESSAGE: deleted " + str(counter+add_at_the_end) + " edge and corner points")
+                    log.debug("deleted " + str(counter+add_at_the_end) + " edge and corner points")
                     del n1, n2, edges_of_the_corner_vertex, index_to_delete, add_at_the_end
                 if vertex_indexes.size > 0 : del jjj, vertex_indexes, vijjj, vertex_name, edge_name_previous_point, edge_name_next_point
 
@@ -2747,8 +2815,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 if dup.size > 1:
                     recompute_front = True
                     # set the repeated cells artificially inside the fracture
-                    print("FRONT RECONSTRUCTION MESSAGE: Recomputing the fracture front because one or more coalescing point have been found")
-                    print("FRONT RECONSTRUCTION MESSAGE: set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
+                    log.debug("Recomputing the fracture front because one or more coalescing point have been found")
+                    log.debug("set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
                     sgndDist_k[dup] = -zero_level_set_value
                     break  # break here
 
@@ -3071,7 +3139,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 # needed. In the next front reconstruction we will propagate inward the level set from the tip cells
                 recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = True
                 # set the repeated cells artificially inside the fracture
-                print("FRONT RECONSTRUCTION MESSAGE: set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
+                log.debug("set the repeated cells artificially inside the fracture: volume error equal to " + str(dup.size) + " cells")
                 sgndDist_k[dup]=-zero_level_set_value         #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, dup, None, True)
             else: recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
 
@@ -3282,8 +3350,8 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
                       '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
                       '    some of the tip elements they will became channel element of the previous time step. ' \
                       '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
-                      'PS: AFTER REMOVING A POINT THE LevelSet IS RECOMPUTED BY ASSUMING THE DISTANCE \nTO THE RECONSTRUCTED FRONT' \
-                      'THIS MIGHT RESULT IN A NUMERICAL RECESSION OF THE FRONT \n BUT AT WORST IT CAN BE DETECTED AND SOLVER BY REFINEMENT'
+                      'PS: After removing a point, the LevelSet is recomputed by assuming the distance  \nto the reconstructed front.' \
+                      'This might result in a numerical recession of the front \n but at worst it can be detected and solved by spatial or temporal refinement.'
             raise SystemExit(message)
 
         EltRibbon_k = newRibbon

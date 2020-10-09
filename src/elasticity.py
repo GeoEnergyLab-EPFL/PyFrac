@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
+import logging
 import json
 import subprocess
 import pickle
@@ -123,7 +124,7 @@ class load_isotropic_elasticity_matrix_toepliz():
                                                             + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
         self.C_toeplotz_coe = C_toeplotz_coe
 
-    def __getitem__(self, elementsXY):
+    def __getitem__(self, elementsXY,different_strategy=True):
         """
         critical call: it should be as fast as possible
         :param elemX: (numpy array) columns to take
@@ -147,19 +148,45 @@ class load_isotropic_elasticity_matrix_toepliz():
                 jY = elemY - nx * iY
                 iX = np.floor_divide(elemX, nx)
                 jX = elemX - nx * iX
+                #if not different_strategy:
+                # strategy 1
                 for iter1 in range(dimY):
                     i1 = iY[iter1]
                     j1 = jY[iter1]
                     C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                # else:
+                    # strategy 2 - more memory expensive than 1
+                    #C_sub=np.take(localC_toeplotz_coe, np.abs(np.array([jY]).T- jX)+ nx * np.abs(np.array([iY]).T- iX))
+
+                    # strategy 3 - more memory expensive than 1
+                    # J1, J2 = np.meshgrid(jX, jY)
+                    # I1, I2 = np.meshgrid(iX, iY)
+                    # C_sub = np.take(localC_toeplotz_coe, np.abs(J1 - J2) + nx * np.abs(I1 - I2))
+
+                    # strategy 4 - slower
+                    #C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(jY[x] - jX) + nx * np.abs(iY[x] - iX)],range(dimY))))
                 return C_sub
 
             elif dimX == dimY and np.all((elemY == elemX)):
                 i = np.floor_divide(elemX, nx)
                 j = elemX - nx * i
+                # if not different_strategy:
+                    # strategy 1
                 for iter1 in range(dimX):
                     i1 = i[iter1]
                     j1 = j[iter1]
                     C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+                # else:
+                        # strategy 2 - more memory expensive than 1
+                        #C_sub = np.take(localC_toeplotz_coe, np.abs(np.array([j]).T - j) + nx * np.abs(np.array([i]).T - i))
+
+                        # strategy 3 - more memory expensive than 1
+                        # J1, J2 = np.meshgrid(j, j)
+                        # I1, I2 = np.meshgrid(i, i)
+                        # C_sub = np.take(localC_toeplotz_coe, np.abs(J1-J2) + nx * np.abs(I1-I2))
+
+                        # strategy 4 - slower
+                        # C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(j[x] - j) + nx * np.abs(i[x] - i)],range(dimY))))
                 return C_sub
 
             else:
@@ -167,10 +194,24 @@ class load_isotropic_elasticity_matrix_toepliz():
                 jY = elemY - nx * iY
                 iX = np.floor_divide(elemX, nx)
                 jX = elemX - nx * iX
+                # if not different_strategy:
+                    # strategy 1
                 for iter1 in range(dimY):
                     i1 = iY[iter1]
                     j1 = jY[iter1]
                     C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+                # else:
+                    # strategy 2 - more memory expensive than 1
+                    #C_sub=np.take(localC_toeplotz_coe, np.abs(np.array([jY]).T- jX)+ nx * np.abs(np.array([iY]).T- iX))
+
+                    # strategy 3 - more memory expensive than 1
+                    # J1, J2 = np.meshgrid(jX, jY)
+                    # I1, I2 = np.meshgrid(iX, iY)
+                    # C_sub = np.take(localC_toeplotz_coe, np.abs(J2 - J1) + nx * np.abs(I2 - I1))
+
+                    # strategy 4 - slower
+                    # C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(jY[x] - jX) + nx * np.abs(iY[x] - iX)],range(dimY))))
+
                 return C_sub
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -206,7 +247,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
     Returns:
         C (ndarray):                        -- the elasticity matrix.
     """
-
+    log = logging.getLogger('PyFrac.load_TI_elasticity_matrix')
     data = {'Solid parameters': {'C11': mat_prop.Cij[0][0],
                                  'C12': mat_prop.Cij[0][1],
                                  'C13': mat_prop.Cij[0][2],
@@ -218,7 +259,7 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
                                  'n3': Mesh.ny}
             }
 
-    print('Writing parameters to a file...')
+    log.info('Writing parameters to a file...')
     curr_directory = os.getcwd()
     os.chdir(sim_prop.TI_KernelExecPath)
     with open('stiffness_matrix.json', 'w') as outfile:
@@ -230,10 +271,10 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
         suffix = "./"
 
     # Read the elasticity matrix from the npy file
-    print('running C++ process...')
+    log.info('running C++ process...')
     subprocess.run(suffix + 'TI_elasticity_kernel', shell=True)
 
-    print('Reading global TI elasticity matrix...')
+    log.info('Reading global TI elasticity matrix...')
     try:
         file = open('StrainResult.bin', "rb")
         C = array('d')
@@ -267,7 +308,8 @@ def load_elasticity_matrix(Mesh, EPrime):
     Returns:
          C (ndarray):                   -- the elasticity matrix.
     """
-    print('Reading global elasticity matrix...')
+    log = logging.getLogger('PyFrac.load_elasticity_matrix')
+    log.info('Reading global elasticity matrix...')
     try:
         with open('CMatrix', 'rb') as input_file:
             (C, MeshLoaded, EPrimeLoaded) = pickle.load(input_file)
@@ -276,23 +318,23 @@ def load_elasticity_matrix(Mesh, EPrime):
                                                             MeshLoaded.Ly, EPrimeLoaded):
             return C
         else:
-            print(
+            log.warning(
                 'The loaded matrix is not correct with respect to the current mesh or the current plain strain modulus.'
                 '\nMaking global matrix...')
             C = load_isotropic_elasticity_matrix(Mesh, EPrime)
             Elast = (C, Mesh, EPrime)
             with open('CMatrix', 'wb') as output:
                 pickle.dump(Elast, output, -1)
-            print("Done!")
+            log.info("Done!")
             return C
     except FileNotFoundError:
         # if 'CMatrix' file is not found
-        print('file not found\nBuilding the global elasticity matrix...')
+        log.error('file not found\nBuilding the global elasticity matrix...')
         C = load_isotropic_elasticity_matrix(Mesh, EPrime)
         Elast = (C, Mesh, EPrime)
         with open('CMatrix', 'wb') as output:
             pickle.dump(Elast, output, -1)
-        print("Done!")
+        log.info("Done!")
         return C
 
 # -----------------------------------------------------------------------------------------------------------------------
