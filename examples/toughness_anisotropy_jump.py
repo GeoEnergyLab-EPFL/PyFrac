@@ -84,51 +84,56 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+# batch run or not
+try : batch
+except NameError: batch = False
 
-# loading simulation results
-time_srs = 2 ** np.linspace(np.log2(40), np.log2(5000), 8)
-Fr_list, properties = load_fractures(address="./Data/toughness_jump",
+if not batch :
+    from visualization import *
+
+    # loading simulation results
+    time_srs = 2 ** np.linspace(np.log2(40), np.log2(5000), 8)
+    Fr_list, properties = load_fractures(address="./Data/toughness_jump",
                                     sim_name ='anisotropic_toughness_jump',
                                     time_srs=time_srs)
-# plotting footprint
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D')
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP)
+    # plotting footprint
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D')
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP)
 
-#plotting toughness dominated radial and elliptical solutions
-plot_prop = PlotProperties(line_color_anal='orange')
-Fig_FP = plot_analytical_solution('K',
-                                  'footprint',
-                                  Solid,
-                                  Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_FP,
-                                  plot_prop=plot_prop,
-                                  projection='2D',
-                                  time_srs=[Fr_list[-1].time])
-plot_prop.lineColorAnal = 'b'
-Fig_FP = plot_analytical_solution('E_K',
-                                  'footprint',
-                                  Solid,
-                                  Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_FP,
-                                  plot_prop=plot_prop,
-                                  projection='2D',
-                                  time_srs=[Fr_list[-1].time])
+    #plotting toughness dominated radial and elliptical solutions
+    plot_prop = PlotProperties(line_color_anal='orange')
+    Fig_FP = plot_analytical_solution('K',
+                                      'footprint',
+                                      Solid,
+                                      Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_FP,
+                                      plot_prop=plot_prop,
+                                      projection='2D',
+                                      time_srs=[Fr_list[-1].time])
+    plot_prop.lineColorAnal = 'b'
+    Fig_FP = plot_analytical_solution('E_K',
+                                      'footprint',
+                                      Solid,
+                                      Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_FP,
+                                      plot_prop=plot_prop,
+                                      projection='2D',
+                                      time_srs=[Fr_list[-1].time])
 
-# loading all fractures
-Fr_list, properties = load_fractures(address="./Data/toughness_jump",
-                                     sim_name='anisotropic_toughness_jump')
-plot_prop = PlotProperties(line_style='.-',
-                           graph_scaling='semilogx')
-Fig_len_a = plot_fracture_list(Fr_list,
-                                variable='ar',
-                                plot_prop=plot_prop)
+    # loading all fractures
+    Fr_list, properties = load_fractures(address="./Data/toughness_jump",
+                                         sim_name='anisotropic_toughness_jump')
+    plot_prop = PlotProperties(line_style='.-',
+                               graph_scaling='semilogx')
+    Fig_len_a = plot_fracture_list(Fr_list,
+                                    variable='ar',
+                                    plot_prop=plot_prop)
 
-plt.show(block=True)
+    plt.show(block=True)
