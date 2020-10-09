@@ -86,6 +86,7 @@ simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the execut
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 simulProp.remeshFactor = 1.5            # the factor by which the domain is expanded
 simulProp.projMethod = 'ILSA_orig'
+simulProp.set_tipAsymptote('U')
 
 # initialization parameters
 Fr_geometry = Geometry('elliptical',
