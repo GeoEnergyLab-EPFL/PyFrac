@@ -13,6 +13,10 @@ from properties import MaterialProperties, FluidProperties, InjectionProperties,
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
+from utility import setup_logging_to_console
+
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(0.3, 0.3, 41, 41, symmetric=True)

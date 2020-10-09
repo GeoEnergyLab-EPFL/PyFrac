@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import math
 import numpy as np
+import logging
 import time
 import datetime
 from matplotlib.colors import to_rgb
@@ -370,6 +371,7 @@ class InjectionProperties:
         The constructor of the InjectionProperties class.
         """
         # check if the rate is provided otherwise throw an error
+        log = logging.getLogger('PyFrac.InjectionProperties')
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
                 raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and'
@@ -432,7 +434,7 @@ class InjectionProperties:
         if source_loc_func is None:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
-                    print("Setting the source coordinates to the closest cell center...")
+                    log.info("Setting the source coordinates to the closest cell center...")
                     self.sourceCoordinates = source_coordinates
                 else:
                     # error
@@ -447,7 +449,7 @@ class InjectionProperties:
             if np.isnan(self.sourceElem).any():
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
-            print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
+            log.info("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1][0]) + ')')
             self.sourceLocFunc = None
         else:
@@ -661,8 +663,9 @@ class SimulationProperties:
         solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
         saveRegime (boolean):        -- if True, the regime of the propagation as observed in the ribbon cell (see Zia
                                         and Lecampion 2018, IJF) will be saved.
-        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
-                                        two levels 1 and 2 are supported).
+        verbosity (string):          -- the level of details about the ongoing simulation to be written on the log file
+                                        (currently the levels 'debug', 'info', 'warning' and 'error' are supported).
+        log2file (bool):             -- True if you want to log to a file, otherwise set it to false
         enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by
                                         by the variable remeshFactor after the fracture front reaches the end of the
                                         domain.
@@ -817,7 +820,8 @@ class SimulationProperties:
 
         # miscellaneous
         self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
-        self.verbosity = simul_param.verbosity
+        self.verbositylevel = simul_param.verbosity_level
+        self.log2file = simul_param.log_to_file
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.enableRemeshing = simul_param.enable_remeshing
@@ -868,7 +872,83 @@ class SimulationProperties:
         self.saveChi = simul_param.save_chi
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def set_logging_to_file(self, address, verbosity_level=None):
+        """This function sets up the log, both to the file and to the file
+            Note: from any module in the code you can use the logging capabilities. You just have to:
 
+            1) import the module
+
+            import logging
+
+            2) create a child of the logger named 'PyFrac' defined in this function. Use a pertinent name as 'Pyfrac.frontrec'
+
+            logger1 = logging.getLogger('PyFrac.frontrec')
+
+            3) use the object to send messages in the module, such as
+
+            logger1.debug('debug message')
+            logger1.info('info message')
+            logger1.warning('warn message')
+            logger1.error('error message')
+            logger1.critical('critical message')
+
+            4) IMPORTANT TO KNOW:
+               1-If you want to log only to the file in the abobe example you have to use: logger1 = logging.getLogger('PyFrac_LF.frontrec')
+               2-SystemExit and KeyboardInterrupt exceptions are never swallowed by the logging package .
+
+        :param         address: string that defines the location where to save the log file
+        :param verbosity_level: string that defines the level of logging concerning the file:
+                                     'debug'    - Detailed information, typically of interest only when diagnosing problems.
+                                     'info'     - Confirmation that things are working as expected.
+                                     'warning'  - An indication that something unexpected happened, or indicative of some
+                                                  problem in the near future (e.g. ‘disk space low’). The software is still
+                                                  working as expected.
+                                     'error'    - Due to a more serious problem, the software has not been able to perform
+                                                  some function.
+                                     'critical' - A serious error, indicating that the program itself may be unable to
+                                                  continue running.
+
+        :return: -
+        """
+        # check if you did setup the folder
+
+        from utility import logging_level
+        if verbosity_level is None:
+            fileLvl = logging_level(self.verbositylevel)
+        else:
+            fileLvl = logging_level(verbosity_level)
+
+        logger = logging.getLogger('PyFrac')
+        logger.setLevel(logging.DEBUG)
+
+        # create file handler which logs debug messages to the file
+        fh = logging.FileHandler(address+'PyFrac_log.txt', mode='w')
+        fh.setLevel(fileLvl)
+
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter(fmt='%(asctime)-15s %(name)-40s %(levelname)-8s  %(message)s',
+                                      datefmt='%m-%d-%y %H:%M')
+        fh.setFormatter(formatter)
+
+        # add the handlers to logger
+        logger.addHandler(fh)
+
+
+        log = logging.getLogger('PyFrac.general')
+        log.info('Log file set up')
+
+        # create a logger that logs only to the file and not on the console:
+        logger_to_file = logging.getLogger('PyFrac_LF')
+        logger_to_file.setLevel(logging.DEBUG)
+
+        # add the handlers to logger
+        logger_to_file.addHandler(fh)
+
+        # usage example
+        # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
+        # logger_to_files.info('this comment will go only to the log file')
+
+    # ----------------------------------------------------------------------------------------------------------------------
     # setter and getter functions
 
     def set_tipAsymptote(self, tip_asymptote):

@@ -16,6 +16,7 @@ else:
 
 import dill
 import numpy as np
+import logging
 import re
 import os
 
@@ -36,8 +37,8 @@ def load_performance_data(address, sim_name='simulation'):
         perf_data (list):       -- the loaded performance data in the form of a list of IterationProperties objects.( \
                                     see :py:class:`properties.IterationProperties` for details).
     """
-
-    print("---loading performance data---\n")
+    log = logging.getLogger('PyFrac.load_performace_data')
+    log.info("---loading performance data---\n")
 
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
@@ -264,9 +265,10 @@ def print_performance_data(address, sim_name=None):
         address (string):              -- the disk location where the results of the simulation were saved.
         sim_name(string):              -- the name of the simulation.
     """
+    log = logging.getLogger('PyFrac.print_performance_data')
     perf_data = load_performance_data(address, sim_name)
 
-    print("---saving iterations data---\n")
+    log.info("---saving iterations data---\n")
 
     f = open('performance_data.txt', 'w+')
 

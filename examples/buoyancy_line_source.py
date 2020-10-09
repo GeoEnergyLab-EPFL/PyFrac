@@ -14,7 +14,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
 from elasticity import load_isotropic_elasticity_matrix
+from utility import setup_logging_to_console
 
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(115, 115, 51, 51)
