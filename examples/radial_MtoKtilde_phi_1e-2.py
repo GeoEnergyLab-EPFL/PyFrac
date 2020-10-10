@@ -7,6 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 import numpy as np
 
 # local imports
@@ -81,55 +84,57 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures("./Data/MtoK_leakoff",
-                                     sim_name=simname)
-time_srs = get_fracture_variable(Fr_list,
-                                 'time')
-# plotting efficiency
-plot_prop = PlotProperties(graph_scaling='loglog',
-                           line_style='.')
-label = LabelProperties('efficiency')
-label.legend = 'fracturing efficiency'
-Fig_eff = plot_fracture_list(Fr_list,
-                           variable='efficiency',
-                           plot_prop=plot_prop,
-                           labels=label)
-t = np.asarray([0.001, 0.00160372, 0.00257191, 0.00412463, 0.00661474, 0.0106082,
-0.0170125, 0.0272833, 0.0437548, 0.0701704, 0.112534, 0.180472,
-0.289427, 0.464159, 0.74438, 1.19378, 1.91448, 3.07029, 4.92388,
-7.89652, 12.6638, 20.3092, 32.5702, 52.2335, 83.7678, 134.34,
-215.443, 345.511, 554.102, 888.624, 1425.1, 2285.46, 3665.24,
-5878.02, 9426.68, 15117.8, 24244.6, 38881.6, 62355.1, 100000.])
-# solution taken from matlab code provided by Dontsov EV (2016)
-eff_analytical = np.asarray([0.995112, 0.994179, 0.993034, 0.991678, 0.99007, 0.98789, 0.985505,
-0.982858, 0.979418, 0.975125, 0.97028, 0.964953, 0.958285, 0.950267,
-0.940702, 0.928993, 0.916286, 0.90124, 0.883589, 0.862549, 0.838824,
-0.812694, 0.783958, 0.74958, 0.711572, 0.671169, 0.629418, 0.583406,
-0.536243, 0.488384, 0.440254, 0.393285, 0.348094, 0.305188, 0.267377,
-0.230932, 0.197317, 0.168732, 0.144201, 0.122716])
-ax_eff = Fig_eff.get_axes()[0]
-ax_eff.semilogx(t, eff_analytical, 'r-', label='semi-analytical fracturing efficiency')
-ax_eff.legend()
+    from visualization import *
+
+    # loading simulation results
+    Fr_list, properties = load_fractures("./Data/MtoK_leakoff",
+                                         sim_name=simname)
+    time_srs = get_fracture_variable(Fr_list,
+                                     'time')
+    # plotting efficiency
+    plot_prop = PlotProperties(graph_scaling='loglog',
+                               line_style='.')
+    label = LabelProperties('efficiency')
+    label.legend = 'fracturing efficiency'
+    Fig_eff = plot_fracture_list(Fr_list,
+                               variable='efficiency',
+                               plot_prop=plot_prop,
+                               labels=label)
+    t = np.asarray([0.001, 0.00160372, 0.00257191, 0.00412463, 0.00661474, 0.0106082,
+    0.0170125, 0.0272833, 0.0437548, 0.0701704, 0.112534, 0.180472,
+    0.289427, 0.464159, 0.74438, 1.19378, 1.91448, 3.07029, 4.92388,
+    7.89652, 12.6638, 20.3092, 32.5702, 52.2335, 83.7678, 134.34,
+    215.443, 345.511, 554.102, 888.624, 1425.1, 2285.46, 3665.24,
+    5878.02, 9426.68, 15117.8, 24244.6, 38881.6, 62355.1, 100000.])
+    # solution taken from matlab code provided by Dontsov EV (2016)
+    eff_analytical = np.asarray([0.995112, 0.994179, 0.993034, 0.991678, 0.99007, 0.98789, 0.985505,
+    0.982858, 0.979418, 0.975125, 0.97028, 0.964953, 0.958285, 0.950267,
+    0.940702, 0.928993, 0.916286, 0.90124, 0.883589, 0.862549, 0.838824,
+    0.812694, 0.783958, 0.74958, 0.711572, 0.671169, 0.629418, 0.583406,
+    0.536243, 0.488384, 0.440254, 0.393285, 0.348094, 0.305188, 0.267377,
+    0.230932, 0.197317, 0.168732, 0.144201, 0.122716])
+    ax_eff = Fig_eff.get_axes()[0]
+    ax_eff.semilogx(t, eff_analytical, 'r-', label='semi-analytical fracturing efficiency')
+    ax_eff.legend()
 
 
-label = LabelProperties('d_mean')
-label.legend = 'radius'
-Fig_r = plot_fracture_list(Fr_list,
-                           variable='d_mean',
-                           plot_prop=plot_prop,
-                           labels=label)
-# solution taken from matlab code provided by Dontsov EV (2016)
-r_analytical = np.asarray([0.1726, 0.212748, 0.262185, 0.323053, 0.397975, 0.490095, 0.603465,
-0.742955, 0.914298, 1.12467, 1.38308, 1.70045, 2.08924, 2.56516,
-3.14698, 3.85638, 4.72309, 5.77686, 7.05496, 8.59759, 10.4592,
-12.7025, 15.3974, 18.5791, 22.3335, 26.7772, 32.0535, 38.0903,
-45.0873, 53.1663, 62.3592, 72.8777, 84.817, 98.2476, 113.145,
-130.122, 149.291, 170.609, 194.392, 221.091])
-ax_r = Fig_r.get_axes()[0]
-ax_r.loglog(t, r_analytical, 'r-', label='semi-anlytical radius')
-ax_r.legend()
+    label = LabelProperties('d_mean')
+    label.legend = 'radius'
+    Fig_r = plot_fracture_list(Fr_list,
+                               variable='d_mean',
+                               plot_prop=plot_prop,
+                               labels=label)
+    # solution taken from matlab code provided by Dontsov EV (2016)
+    r_analytical = np.asarray([0.1726, 0.212748, 0.262185, 0.323053, 0.397975, 0.490095, 0.603465,
+    0.742955, 0.914298, 1.12467, 1.38308, 1.70045, 2.08924, 2.56516,
+    3.14698, 3.85638, 4.72309, 5.77686, 7.05496, 8.59759, 10.4592,
+    12.7025, 15.3974, 18.5791, 22.3335, 26.7772, 32.0535, 38.0903,
+    45.0873, 53.1663, 62.3592, 72.8777, 84.817, 98.2476, 113.145,
+    130.122, 149.291, 170.609, 194.392, 221.091])
+    ax_r = Fig_r.get_axes()[0]
+    ax_r.loglog(t, r_analytical, 'r-', label='semi-anlytical radius')
+    ax_r.legend()
 
-plt.show(block=True)
+    plt.show(block=True)

@@ -7,13 +7,15 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 # local imports
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
-import os
 from utility import setup_logging_to_console
 
 # setting up the verbosity level of the log at console
@@ -76,7 +78,6 @@ controller.run()
 ####################
 # plotting results #
 ####################
-
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 

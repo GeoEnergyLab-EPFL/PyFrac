@@ -7,6 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 import numpy as np
 
 # local imports
@@ -88,59 +91,61 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures(address="./Data/star")
-time_srs = get_fracture_variable(Fr_list,
-                                 'time')
+    from visualization import *
 
-# plotting maximum distance of the front from the injection point
-plot_prop = PlotProperties(line_style='.')
-Fig_d = plot_fracture_list(Fr_list,
-                           variable='d_max',
-                           plot_prop=plot_prop)
-Fig_FP = plot_analytical_solution(regime='K',
-                                 variable='d_max',
-                                 mat_prop=Solid,
-                                 inj_prop=Injection,
-                                 fig=Fig_d,
-                                 time_srs=time_srs)
+    # loading simulation results
+    Fr_list, properties = load_fractures(address="./Data/star")
+    time_srs = get_fracture_variable(Fr_list,
+                                     'time')
 
-# loading five fractures from the simulation separated with equal time period
-Fr_list, properties = load_fractures(address="./Data/star",
-                                     time_srs=np.linspace(0, 50, 5))
-# getting exact time of the loaded fractures
-time_srs = get_fracture_variable(Fr_list,
-                                 'time')
+    # plotting maximum distance of the front from the injection point
+    plot_prop = PlotProperties(line_style='.')
+    Fig_d = plot_fracture_list(Fr_list,
+                               variable='d_max',
+                               plot_prop=plot_prop)
+    Fig_FP = plot_analytical_solution(regime='K',
+                                     variable='d_max',
+                                     mat_prop=Solid,
+                                     inj_prop=Injection,
+                                     fig=Fig_d,
+                                     time_srs=time_srs)
 
-# plotting footprint
-Fig_FP = plot_fracture_list(Fr_list,
-                                variable='mesh')
-Fig_FP = plot_fracture_list(Fr_list,
+    # loading five fractures from the simulation separated with equal time period
+    Fr_list, properties = load_fractures(address="./Data/star",
+                                         time_srs=np.linspace(0, 50, 5))
+    # getting exact time of the loaded fractures
+    time_srs = get_fracture_variable(Fr_list,
+                                     'time')
+
+    # plotting footprint
+    Fig_FP = plot_fracture_list(Fr_list,
+                                    variable='mesh')
+    Fig_FP = plot_fracture_list(Fr_list,
+                                    variable='footprint',
+                                    fig=Fig_FP)
+    Fig_FP = plot_analytical_solution(regime='K',
+                                     variable='footprint',
+                                     mat_prop=Solid,
+                                     inj_prop=Injection,
+                                     fig=Fig_FP,
+                                     time_srs=time_srs)
+
+    # plotting fracture in 3D
+    Fig_3D = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='3D')
+    Fig_3D = plot_fracture_list(Fr_list,
                                 variable='footprint',
-                                fig=Fig_FP)
-Fig_FP = plot_analytical_solution(regime='K',
-                                 variable='footprint',
-                                 mat_prop=Solid,
-                                 inj_prop=Injection,
-                                 fig=Fig_FP,
-                                 time_srs=time_srs)
-
-# plotting fracture in 3D
-Fig_3D = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='3D')
-Fig_3D = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_3D)
-plot_prop = PlotProperties(alpha=0.3)
-Fig_3D = plot_fracture_list(Fr_list,
-                            variable='surface',
-                            projection='3D',
-                            fig=Fig_3D,
-                            plot_prop=plot_prop)
+                                projection='3D',
+                                fig=Fig_3D)
+    plot_prop = PlotProperties(alpha=0.3)
+    Fig_3D = plot_fracture_list(Fr_list,
+                                variable='surface',
+                                projection='3D',
+                                fig=Fig_3D,
+                                plot_prop=plot_prop)
 
 
-plt.show(block=True)
+    plt.show(block=True)
