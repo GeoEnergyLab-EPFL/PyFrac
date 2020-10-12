@@ -276,6 +276,15 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     else:
         doublefracturedictionary = {"number_of_fronts": Fr_lstTmStp.fronts_dictionary['number_of_fronts']}
 
+    # todo: make tip correction while injecting in the same footprint
+    ##########################################################################################
+    #                                                                                        #
+    #  when we inject on the same footprint we should make the tip correction at the tip     #
+    #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
+    #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
+    #  the position of the front.                                                            #
+    #                                                                                        #
+    ##########################################################################################
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
                                          sim_properties,
                                          fluid_properties,
@@ -587,7 +596,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                           Fr_lstTmStp.EltChannel,
                                                                           Fr_lstTmStp.mesh,
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
-                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
+                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'], oldfront=Fr_lstTmStp.Ffront)
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
@@ -1059,6 +1068,16 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             EltTip_sym = Fr_lstTmStp.mesh.corresponding[EltTip]
             EltTip_sym = np.unique(EltTip_sym)
 
+            # todo: make tip correction while injecting in the same footprint
+            ##########################################################################################
+            #                                                                                        #
+            #  when we inject on the same footprint we should make the tip correction at the tip     #
+            #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
+            #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
+            #  the position of the front.                                                            #
+            #                                                                                        #
+            ##########################################################################################
+
             # CARLO: we can remove it because the diagonal terms of C are never accessed
             # FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
             # FillF_mesh[EltTip] = FillFrac
@@ -1110,6 +1129,15 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # CARLO: we can remove it because the diagonal terms of C are never accessed
             # C[np.ix_(EltTip_sym[partlyFilledTip_sym], EltTip_sym[partlyFilledTip_sym])] = C_EltTip
         else:
+            # todo: make tip correction while injecting in the same footprint
+            ##########################################################################################
+            #                                                                                        #
+            #  when we inject on the same footprint we should make the tip correction at the tip     #
+            #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
+            #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
+            #  the position of the front.                                                            #
+            #                                                                                        #
+            ##########################################################################################
             # CARLO: we can remove it because the diagonal terms of C are never accessed
             # C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
             #                             EltTip[partlyFilledTip])])  # keeping the tip element entries to restore current
@@ -1666,7 +1694,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                           Fr_lstTmStp.EltChannel,
                                                                           Fr_lstTmStp.mesh,
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
-                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
+                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'], oldfront=Fr_lstTmStp.Ffront)
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
