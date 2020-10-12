@@ -7,7 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
+# import
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -100,39 +102,41 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = np.asarray([50, 350,  700, 1100, 2500, 12000, 50000, 560000])
-Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
-                                     time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-# plot footprint
-Fig_FP = None
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D',
-                            mat_properties=Solid,
-                            backGround_param='confining stress')
-plt_prop = PlotProperties(plot_FP_time=False)
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP,
-                            plot_prop=plt_prop)
+    # loading simulation results
+    time_srs = np.asarray([50, 350,  700, 1100, 2500, 12000, 50000, 560000])
+    Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
+                                         time_srs=time_srs)
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-# plot width in 3D
-plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
-Fig_Fr = plot_fracture_list(Fr_list[2:],
-                            variable='width',
-                            projection='3D',
-                            plot_prop=plot_prop_magma
-                            )
-Fig_Fr = plot_fracture_list(Fr_list[1:],
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
+    # plot footprint
+    Fig_FP = None
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D',
+                                mat_properties=Solid,
+                                backGround_param='confining stress')
+    plt_prop = PlotProperties(plot_FP_time=False)
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP,
+                                plot_prop=plt_prop)
 
-plt.show(block=True)
+    # plot width in 3D
+    plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
+    Fig_Fr = plot_fracture_list(Fr_list[2:],
+                                variable='width',
+                                projection='3D',
+                                plot_prop=plot_prop_magma
+                                )
+    Fig_Fr = plot_fracture_list(Fr_list[1:],
+                                variable='footprint',
+                                projection='3D',
+                                fig=Fig_Fr)
+
+    plt.show(block=True)

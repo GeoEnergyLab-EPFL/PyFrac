@@ -6,7 +6,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -91,35 +93,37 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = [230, 1000, 2200, 3200, 4500, 6000, 10388]
-Fr_list, properties = load_fractures(address="./Data/fracture_closure",
-                                     time_srs=time_srs)
+    from visualization import *
 
-# plot footprint
-plt_prop = PlotProperties(color_map='Wistia', line_width=0.2)
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D',
-                            mat_properties=Solid,
-                            backGround_param='confining stress',
-                            plot_prop=plt_prop
-                            )
-plot_prop1 = PlotProperties(plot_FP_time=False)
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP,
-                            plot_prop=plot_prop1)
-Fig_FP.set_size_inches(5, 4)
+    # loading simulation results
+    time_srs = [230, 1000, 2200, 3200, 4500, 6000, 10388]
+    Fr_list, properties = load_fractures(address="./Data/fracture_closure",
+                                         time_srs=time_srs)
 
-plt.show(block=True)
+    # plot footprint
+    plt_prop = PlotProperties(color_map='Wistia', line_width=0.2)
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D',
+                                mat_properties=Solid,
+                                backGround_param='confining stress',
+                                plot_prop=plt_prop
+                                )
+    plot_prop1 = PlotProperties(plot_FP_time=False)
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP,
+                                plot_prop=plot_prop1)
+    Fig_FP.set_size_inches(5, 4)
 
-# loading fractures at the different stages
-time_srs = [230, 1000, 7672, 9660, 12435, 14693, 15342, 15835, 16500]
-Fr_list, properties = load_fractures(address="./Data/fracture_closure",
-                                     time_srs=time_srs)
+    plt.show(block=True)
 
-animate_simulation_results(Fr_list, ['w'], block_figure=False)
+    # loading fractures at the different stages
+    time_srs = [230, 1000, 7672, 9660, 12435, 14693, 15342, 15835, 16500]
+    Fr_list, properties = load_fractures(address="./Data/fracture_closure",
+                                         time_srs=time_srs)
+
+    animate_simulation_results(Fr_list, ['w'], block_figure=False)
