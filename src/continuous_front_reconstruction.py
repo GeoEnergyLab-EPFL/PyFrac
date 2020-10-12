@@ -406,7 +406,8 @@ def plot_final_reconstruction(mesh,
                               listofTIPcells,
                               list_of_xintersectionsfromzerovertex,
                               list_of_yintersectionsfromzerovertex,
-                              list_of_vertexID):
+                              list_of_vertexID,
+                              oldRibbon):
     A = np.full(mesh.NumberOfElts, np.nan)
     A[anularegion] = sgndDist_k[anularegion]
     from visualization import plot_fracture_variable_as_image
@@ -431,9 +432,10 @@ def plot_final_reconstruction(mesh,
         plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
         plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
     plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
+    plt.plot(mesh.CenterCoor[oldRibbon,0]*1.05, mesh.CenterCoor[oldRibbon,1], '.',color='green')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
 
-def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True):
+def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=None):
         #fig = None
         if fig is None:
             fig = plt.figure()
@@ -489,6 +491,12 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
 
         if grid:
             plotgrid(mesh, ax)
+
+        if oldfront is not None:
+            n = oldfront.shape[0]
+            for i in range(0, n):
+                plt.plot([oldfront[i, 0], oldfront[i, 2]],
+                         [oldfront[i, 1], oldfront[i, 3]], '-g')
         plt.show()
         return fig
 
@@ -2055,7 +2063,7 @@ def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_p
             sgndDist_k[p_center.name] = + distance_center_to_front
     return sgndDist_k
 
-def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh,recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0 = None):
+def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh,recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0 = None, oldfront=None):
 
         """
         description of the function.
@@ -2327,7 +2335,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
 
         # plot reconstructed front
-        # fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersections_for_all_closed_paths[0], fig=None)
+        #fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersections_for_all_closed_paths[0], fig=None, oldfront=oldfront)
         # for j in range(1,len(list_of_xintersections_for_all_closed_paths)):
         #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[j], list_of_yintersections_for_all_closed_paths[j], fig1)
         # del j, fig1
@@ -2364,7 +2372,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 """
                 new cleaning:
                 I found this situation that needs to be resolved before proceding with the next correction.
-                I will delete just one point in this case otherwise I can not identify the tip cell
+                I will delete just one point in this case otherwise I can not identify the tip cell.
+                Note that removing one of the two points will not change the choice of the tip cell.
                     
                                  A
                  |___________|___**______|___________|_   
@@ -2412,6 +2421,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 new cleaning: 
                 clean only if the elements belong to the same edge
                 A and C are the corners to be deleted
+                Note that removing one of the two points MIGHT change the choice of the tip cell.
                 
                      ___|__________|___
                       \\|          |//   
@@ -2449,7 +2459,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                 """
                 CASE 1: 
-                C is the corner to be deleted
+                C is the corner to be deleted unless B and D are on edges defining the same ribbon cell. In the latter case delete B and D
                 Loop over the corner nodes, check if the previous point is really on edge
                                             check if the next point is really on edge
                                             check if the next and previous points shares an edge of the edges exiting front C
@@ -2471,7 +2481,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 """
                 """
                 CASE 2: 
-                B is the corner to be deleted
+                B is the corner to be deleted.
+                Note that removing one of the two points will not change the choice of the tip cell.
                 This case DO NOT CONSIDER WHEN D IS NOT IN THE SAME EDGE OF C AND IN THE SAME CELL OF B AND C
                 Loop over the corner nodes, check if the previous point is really on edge and next really on vertex
                                             or vice versa...
@@ -2494,7 +2505,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 """
                 """
                 CASE 3: 
-                B is the corner to be deleted
+                B is the corner to be deleted.
+                Note that removing one of the two points will not change the choice of the tip cell.
                 This case DO NOT CONSIDER WHEN G IS NOT IN ONE EDGE OF [CFED]
 
                      ___L___________K____________J   
@@ -2537,20 +2549,44 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     vertex_name = edgeORvertexID[vijjj]
                     edge_name_previous_point = edgeORvertexID[vijjj-1]
                     edge_name_next_point = edgeORvertexID[(vijjj+1)%(len(edgeORvertexID))]
-                    # CASE 1 - removing the corner point
+                    # CASE 1 - removing the corner point or the two edge points (see above)
                     if typeindex[vijjj-1] == 0 and typeindex[(vijjj+1)%(len(edgeORvertexID))] == 0:
-                        edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name]
+                        edges_of_the_corner_vertex = mesh.Connectivitynodesedges[vertex_name] #4 edges
                         n1 = np.intersect1d(edges_of_the_corner_vertex, edge_name_previous_point)
                         n2 = np.intersect1d(edges_of_the_corner_vertex, edge_name_next_point )
-                        if np.intersect1d(mesh.Connectivityedgeselem[n1],mesh.Connectivityedgeselem[n2]).size>0:
-                            index_to_delete = vijjj
-                            del xintersection[index_to_delete]
-                            del yintersection[index_to_delete]
-                            del typeindex[index_to_delete]
-                            del edgeORvertexID[index_to_delete]
-                            if index_to_delete != -1:
-                                counter = counter + 1
-                            else: add_at_the_end = add_at_the_end + 1
+                        common_elem_name = np.intersect1d(mesh.Connectivityedgeselem[n1],mesh.Connectivityedgeselem[n2])
+                        if common_elem_name.size>0:
+                            # now check if the element is in ribbon:
+                            if np.any(np.isin(Ribbon,common_elem_name[0])):
+                                index_to_delete = (vijjj+1)%(len(edgeORvertexID))
+                                del xintersection[index_to_delete]
+                                del yintersection[index_to_delete]
+                                del typeindex[index_to_delete]
+                                del edgeORvertexID[index_to_delete]
+                                if index_to_delete != -1:
+                                    counter = counter + 1
+                                else: add_at_the_end = add_at_the_end + 1
+
+                                if index_to_delete ==0:
+                                    index_to_delete = vijjj - 2
+                                else:
+                                    index_to_delete = vijjj - 1
+                                del xintersection[index_to_delete]
+                                del yintersection[index_to_delete]
+                                del typeindex[index_to_delete]
+                                del edgeORvertexID[index_to_delete]
+                                if index_to_delete != -1:
+                                    counter = counter + 1
+                                else: add_at_the_end = add_at_the_end + 1
+                            else: # in case the element is not in ribbon
+                                index_to_delete = vijjj
+                                del xintersection[index_to_delete]
+                                del yintersection[index_to_delete]
+                                del typeindex[index_to_delete]
+                                del edgeORvertexID[index_to_delete]
+                                if index_to_delete != -1:
+                                    counter = counter + 1
+                                else: add_at_the_end = add_at_the_end + 1
                         else : cases_1and2_passed = True
                     # CASE 2 - removing the edge point
                     # previous vertex is on cell node & next vertex is on cell edge
@@ -3301,7 +3337,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         #                           global_list_of_TIPcells,
         #                           list_of_xintersectionsfromzerovertex,
         #                           list_of_yintersectionsfromzerovertex,
-        #                           list_of_vertexID)
+        #                           list_of_vertexID, Ribbon)
 
         return \
             np.asarray(global_list_of_TIPcells),\
