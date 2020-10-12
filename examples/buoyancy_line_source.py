@@ -136,17 +136,17 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
                                       plot_cell_center=True,
                                       orientation='vertical')
 
-    # #plotting in 3D
-    # Fig_Fr = plot_fracture_list(Fr_list,
-    #                             variable='mesh',
-    #                             projection='3D')
-    # Fig_Fr = plot_fracture_list(Fr_list,
-    #                             variable='width',
-    #                             projection='3D',
-    #                             fig=Fig_Fr)
-    # Fig_Fr = plot_fracture_list(Fr_list,
-    #                             variable='footprint',
-    #                             projection='3D',
-    #                             fig=Fig_Fr)
+    #plotting in 3D
+    Fig_Fr = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='3D')
+    Fig_Fr = plot_fracture_list(Fr_list,
+                                variable='width',
+                                projection='3D',
+                                fig=Fig_Fr)
+    Fig_Fr = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='3D',
+                                fig=Fig_Fr)
 
-plt.show(block=True)
+    plt.show(block=True)

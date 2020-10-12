@@ -153,6 +153,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
             if plot_non_zero:
                 var_value_tmp = var_value_tmp[var_value_tmp != 0]
             vmin, vmax = np.inf, -np.inf
+            if len(np.shape(var_value_tmp)) > 1:
+                var_value_tmp = list(var_value_tmp[0])
             for i in var_value_tmp:
                 if plot_non_zero:
                     i = i[i != 0]
@@ -347,7 +349,7 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                 non_zero = np.where(abs(i) > 0)[0]
                 i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
             else:
-                if len(i) >0:
+                if len(i) > 0:
                     i_min, i_max = np.min(i), np.max(i)
                 else:
                     i_min, i_max = np.inf, -np.inf
@@ -1168,9 +1170,10 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     if orientation == 'vertical':
         sampling_cells = np.hstack((np.arange(zero_cell, 0, -mesh.nx)[::-1],
                                     np.arange(zero_cell, mesh.NumberOfElts, mesh.nx)))
+        x_plot_coord = mesh.CenterCoor[sampling_cells, 1]
     elif orientation == 'horizontal':
         sampling_cells = np.arange(zero_cell // mesh.nx * mesh.nx, (zero_cell // mesh.nx + 1) * mesh.nx)
-
+        x_plot_coord = mesh.CenterCoor[sampling_cells, 0]
     elif orientation == 'increasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx - 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] >
@@ -1179,6 +1182,11 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         top_half = np.delete(top_half, np.where(mesh.CenterCoor[top_half, 0] <
                                                 mesh.CenterCoor[zero_cell, 0])[0])
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
+
+        x_plot_coord = np.hstack((- np.sqrt([sum(tup) for tup in (mesh.CenterCoor[bottom_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2]),
+                                 np.sqrt([sum(tup) for tup in (mesh.CenterCoor[top_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2])))
 
     elif orientation == 'decreasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx + 1)
@@ -1190,6 +1198,12 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
 
+        x_plot_coord = np.hstack((- np.sqrt([sum(tup) for tup in (mesh.CenterCoor[bottom_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2]),
+                                 np.sqrt([sum(tup) for tup in (mesh.CenterCoor[top_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2])))
+
+
     if plt_2D_image and not export2Json:
         ax_2D.plot(mesh.CenterCoor[sampling_cells, 0],
                    mesh.CenterCoor[sampling_cells, 1],
@@ -1198,14 +1212,19 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                    alpha=plot_prop.alpha,
                    markersize='1')
 
-    sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
-                   (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
-
-    # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
-    # analytical solution plots.
-    sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
+    # sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
+    #                (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
+    #
+    # # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
+    # # analytical solution plots.
+    # sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
     if not export2Json:
-        ax_slice.plot(sampling_line,
+        # ax_slice.plot(sampling_line,
+        #               var_value[sampling_cells],
+        #               plot_prop.lineStyle,
+        #               color=plot_prop.lineColor,
+        #               label=labels.legend)
+        ax_slice.plot(x_plot_coord,
                       var_value[sampling_cells],
                       plot_prop.lineStyle,
                       color=plot_prop.lineColor,
@@ -1219,8 +1238,12 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
             half_2nd = np.append(half_2nd, len(sampling_cells) - 1)
         x_ticks = np.hstack((half_1st[:3], np.array([mid], dtype=int)))
         x_ticks = np.hstack((x_ticks, half_2nd))
+    else:
+        x_ticks = len(sampling_cells)
 
-    if not export2Json: ax_slice.set_xticks(sampling_line[x_ticks])
+    # if not export2Json: ax_slice.set_xticks(sampling_line[x_ticks])
+
+    if not export2Json: ax_slice.set_xticks(x_plot_coord[x_ticks])
 
     xtick_labels = []
     for i in x_ticks:
@@ -1228,6 +1251,7 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                                                 plot_prop.dispPrecision) + ', ' +
                                   to_precision(np.round(mesh.CenterCoor[sampling_cells[i], 1], 3),
                                                 plot_prop.dispPrecision) + ')')
+
     if not export2Json:
         ax_slice.set_xticklabels(xtick_labels)
         if vmin is not None and vmax is not None:
@@ -1238,7 +1262,8 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         extreme_points[1] = mesh.CenterCoor[sampling_cells[-1]]
 
     if export2Json: fig = None
-    return fig, sampling_line, var_value[sampling_cells], sampling_cells
+    # return fig, sampling_line, var_value[sampling_cells], sampling_cells
+    return fig, x_plot_coord, var_value[sampling_cells], sampling_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -2358,6 +2383,9 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
     # re-arrange the solution for plotting
     var_value_2D = var_value.reshape((mesh.ny, mesh.nx, 3))
 
+    # decide where we are not stagnant
+    non_stagnant = np.where(np.prod(var_value[elements, ::] == [1., 1., 1.], axis=1) != 1.)[0]
+
     # use footprint if provided
     if fig is None:
         fig = plt.figure()
@@ -2381,7 +2409,7 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
     leg = fig.add_subplot(122)
     leg = mkmtTriangle(leg)
     leg = fill_mkmtTriangle(leg)
-    plot_points_to_mkmtTriangle(leg, var_value[elements, ::])
+    plot_points_to_mkmtTriangle(leg, var_value[elements[non_stagnant], ::])
 
     return fig
 
@@ -2404,8 +2432,6 @@ def mkmtTriangle(fig):
     # Remove axes
     fig.axis('off')
     #Label the corners of the triangle
-    #rc('text', usetex=True)
-    #rc('font', family='serif')
     fig.text(1.0, 0, r"$k$", fontsize=18, verticalalignment='top')
     fig.text(-0.1, 0, r"$m$", fontsize=18, verticalalignment='top')
     fig.text(0.45, 0.575/a, r"$\tilde{m}$", fontsize=18, verticalalignment='top')

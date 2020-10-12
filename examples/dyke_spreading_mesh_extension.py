@@ -17,7 +17,7 @@ from properties import MaterialProperties, FluidProperties, InjectionProperties,
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
-from elasticity import load_isotropic_elasticity_matrix
+from elasticity import load_isotropic_elasticity_matrix_toepliz
 
 # creating mesh
 Mesh = CartesianMesh(500, 450, 23, 21)
@@ -69,10 +69,11 @@ simulProp.timeStepLimit = 5000              # time step limit
 simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
 simulProp.set_mesh_extension_direction(['top', 'horizontal'])
 simulProp.meshExtensionFactor = 1.4
+simulProp.useBlockToeplizCompression = True
 
 
 # initializing a static fracture
-C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
+C = load_isotropic_elasticity_matrix_toepliz(Mesh, Solid.Eprime)
 Fr_geometry = Geometry('radial', radius=300)
 init_param = InitializationParameters(Fr_geometry,
                                       regime='static',
@@ -125,5 +126,17 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
                                 projection='2D',
                                 fig=Fig_FP,
                                 plot_prop=plt_prop)
+
+    # plot width in 3D
+    plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
+    Fig_Fr = plot_fracture_list(Fr_list[2:],
+                                variable='width',
+                                projection='3D',
+                                plot_prop=plot_prop_magma
+                                )
+    Fig_Fr = plot_fracture_list(Fr_list[1:],
+                                variable='footprint',
+                                projection='3D',
+                                fig=Fig_Fr)
 
     plt.show(block=True)
