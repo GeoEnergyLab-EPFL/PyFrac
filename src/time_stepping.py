@@ -596,7 +596,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                                           Fr_lstTmStp.EltChannel,
                                                                           Fr_lstTmStp.mesh,
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
-                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
+                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'], oldfront=Fr_lstTmStp.Ffront)
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
@@ -1694,7 +1694,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                           Fr_lstTmStp.EltChannel,
                                                                           Fr_lstTmStp.mesh,
                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
-                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'])
+                                                                          lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'], oldfront=Fr_lstTmStp.Ffront)
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
