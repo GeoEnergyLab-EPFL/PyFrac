@@ -7,7 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -77,63 +79,65 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures(address="./Data/Pulse")       # load all fractures
-time_srs = get_fracture_variable(Fr_list,                             # list of times
-                                 variable='time')
+    from visualization import *
 
-# plot fracture radius
-plot_prop = PlotProperties()
-plot_prop.lineStyle = '.'               # setting the linestyle to point
-plot_prop.graphScaling = 'loglog'       # setting to log log plot
-label = LabelProperties('d_mean')
-label.legend = 'radius'
-Fig_R = plot_fracture_list(Fr_list,
-                           variable='d_mean',
-                           plot_prop=plot_prop) # numerical radius
+    # loading simulation results
+    Fr_list, properties = load_fractures(address="./Data/Pulse")       # load all fractures
+    time_srs = get_fracture_variable(Fr_list,                             # list of times
+                                     variable='time')
 
-# plot analytical M-vertex solution for radius
-plt_prop = PlotProperties(line_color_anal='b')
-label = LabelProperties('d_mean')
-label.legend = 'M solution'
-Fig_R = plot_analytical_solution(regime='M',
-                                 variable='d_mean',
-                                 labels=label,
-                                 mat_prop=properties[0],
-                                 inj_prop=properties[2],
-                                 fluid_prop=properties[1],
-                                 time_srs=time_srs,
-                                 plot_prop=plt_prop,
-                                 fig=Fig_R)
+    # plot fracture radius
+    plot_prop = PlotProperties()
+    plot_prop.lineStyle = '.'               # setting the linestyle to point
+    plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    label = LabelProperties('d_mean')
+    label.legend = 'radius'
+    Fig_R = plot_fracture_list(Fr_list,
+                               variable='d_mean',
+                               plot_prop=plot_prop) # numerical radius
 
-# plot analytical M-pulse-vertex solution for radius
-plt_prop = PlotProperties(line_color_anal='m')
-label = LabelProperties('d_mean')
-label.legend = 'M-pulse solution'
-Fig_R = plot_analytical_solution(regime='Mp',
-                                 variable='d_mean',
-                                 labels=label,
-                                 mat_prop=properties[0],
-                                 inj_prop=properties[2],
-                                 fluid_prop=properties[1],
-                                 time_srs=time_srs,
-                                 plot_prop=plt_prop,
-                                 fig=Fig_R)
+    # plot analytical M-vertex solution for radius
+    plt_prop = PlotProperties(line_color_anal='b')
+    label = LabelProperties('d_mean')
+    label.legend = 'M solution'
+    Fig_R = plot_analytical_solution(regime='M',
+                                     variable='d_mean',
+                                     labels=label,
+                                     mat_prop=properties[0],
+                                     inj_prop=properties[2],
+                                     fluid_prop=properties[1],
+                                     time_srs=time_srs,
+                                     plot_prop=plt_prop,
+                                     fig=Fig_R)
 
-# plot the toughness arrest radius
-plt_prop = PlotProperties(line_color_anal='g')
-label = LabelProperties('d_mean')
-label.legend = 'Leak-off arrest'
-Fig_R = plot_analytical_solution(regime='La',
-                                 variable='d_mean',
-                                 labels=label,
-                                 mat_prop=properties[0],
-                                 inj_prop=properties[2],
-                                 fluid_prop=properties[1],
-                                 time_srs=time_srs,
-                                 plot_prop=plt_prop,
-                                 fig=Fig_R)
+    # plot analytical M-pulse-vertex solution for radius
+    plt_prop = PlotProperties(line_color_anal='m')
+    label = LabelProperties('d_mean')
+    label.legend = 'M-pulse solution'
+    Fig_R = plot_analytical_solution(regime='Mp',
+                                     variable='d_mean',
+                                     labels=label,
+                                     mat_prop=properties[0],
+                                     inj_prop=properties[2],
+                                     fluid_prop=properties[1],
+                                     time_srs=time_srs,
+                                     plot_prop=plt_prop,
+                                     fig=Fig_R)
 
-plt.show(block=True)
+    # plot the toughness arrest radius
+    plt_prop = PlotProperties(line_color_anal='g')
+    label = LabelProperties('d_mean')
+    label.legend = 'Leak-off arrest'
+    Fig_R = plot_analytical_solution(regime='La',
+                                     variable='d_mean',
+                                     labels=label,
+                                     mat_prop=properties[0],
+                                     inj_prop=properties[2],
+                                     fluid_prop=properties[1],
+                                     time_srs=time_srs,
+                                     plot_prop=plt_prop,
+                                     fig=Fig_R)
+
+    plt.show(block=True)

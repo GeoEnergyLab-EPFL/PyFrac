@@ -7,7 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -88,11 +90,8 @@ controller.run()
 # plotting results #
 ####################
 
-# batch run or not
-try : batch
-except NameError: batch = False
+if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
-if not batch :
     from visualization import *
 
     # loading simulation results

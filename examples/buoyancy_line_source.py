@@ -7,6 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 # local imports
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
@@ -102,46 +105,48 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = np.linspace(1, 1e4, 7)
-Fr_list, properties = load_fractures(address="./Data/buoyant_line_source",
-                                     time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-# plot footprint
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D',
-                            mat_properties=properties[0],
-                            backGround_param='confining stress')
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP)
+    # loading simulation results
+    time_srs = np.linspace(1, 1e4, 7)
+    Fr_list, properties = load_fractures(address="./Data/buoyant_line_source",
+                                         time_srs=time_srs)
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-# plot slice
-plot_prop = PlotProperties(line_style='.-')
-Fig_WS = plot_fracture_list_slice(Fr_list,
-                                  variable='w',
-                                  projection='2D',
-                                  plot_prop=plot_prop,
-                                  plot_cell_center=True,
-                                  orientation='vertical')
+    # plot footprint
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D',
+                                mat_properties=properties[0],
+                                backGround_param='confining stress')
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP)
 
-# #plotting in 3D
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='mesh',
-#                             projection='3D')
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='width',
-#                             projection='3D',
-#                             fig=Fig_Fr)
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='footprint',
-#                             projection='3D',
-#                             fig=Fig_Fr)
+    # plot slice
+    plot_prop = PlotProperties(line_style='.-')
+    Fig_WS = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_prop=plot_prop,
+                                      plot_cell_center=True,
+                                      orientation='vertical')
+
+    # #plotting in 3D
+    # Fig_Fr = plot_fracture_list(Fr_list,
+    #                             variable='mesh',
+    #                             projection='3D')
+    # Fig_Fr = plot_fracture_list(Fr_list,
+    #                             variable='width',
+    #                             projection='3D',
+    #                             fig=Fig_Fr)
+    # Fig_Fr = plot_fracture_list(Fr_list,
+    #                             variable='footprint',
+    #                             projection='3D',
+    #                             fig=Fig_Fr)
 
 plt.show(block=True)

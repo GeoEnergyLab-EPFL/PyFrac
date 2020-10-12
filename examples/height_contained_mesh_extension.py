@@ -7,6 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 # local imports
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
@@ -16,7 +19,7 @@ from fracture_initialization import Geometry, InitializationParameters
 
 
 # creating mesh
-Mesh = CartesianMesh(2.75, 2.4, 25, 23)
+Mesh = CartesianMesh(2.75, 2.3, 17, 35)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -52,6 +55,7 @@ simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
 simulProp.plotVar = ['footprint']       # plotting footprint
 simulProp.set_mesh_extension_direction(['horizontal'])
 simulProp.meshExtensionFactor = 1.35
+simulProp.useBlockToeplizCompression = True
 
 # initializing fracture
 Fr_geometry = Geometry(shape='radial', radius=1.)
@@ -79,124 +83,126 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures(address="./Data/height_contained")
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-label = LabelProperties('d_max')
-label.legend = 'fracture length'
+    # loading simulation results
+    Fr_list, properties = load_fractures(address="./Data/height_contained")
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-plot_prop = PlotProperties(line_style='.',
-                           graph_scaling='loglog')
+    label = LabelProperties('d_max')
+    label.legend = 'fracture length'
 
-Fig_r = plot_fracture_list(Fr_list,            #plotting footprint
-                           variable='d_max',
-                           plot_prop=plot_prop,
-                           labels=label)
+    plot_prop = PlotProperties(line_style='.',
+                               graph_scaling='loglog')
 
-label.legend = 'fracture length analytical (PKN)'
-Fig_r = plot_analytical_solution('PKN',
-                                  variable='d_max',
-                                  mat_prop=Solid,
-                                  inj_prop=Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_r,
-                                  time_srs=time_srs,
-                                  h=7.0,
-                                  labels=label)
-label.legend = 'radius analytical (viscosity dominated)'
-plot_prop.lineColorAnal = 'b'
-Fig_r = plot_analytical_solution('M',
-                                  variable='d_max',
-                                  mat_prop=Solid,
-                                  inj_prop=Injection,
-                                  fig=Fig_r,
-                                  fluid_prop=Fluid,
-                                  time_srs=time_srs,
-                                  plot_prop=plot_prop,
-                                  labels=label)
+    Fig_r = plot_fracture_list(Fr_list,            #plotting footprint
+                               variable='d_max',
+                               plot_prop=plot_prop,
+                               labels=label)
 
-label = LabelProperties(variable='w', data_subset='point')
-plot_prop = PlotProperties(line_style='.',
-                           graph_scaling='loglog')
-Fig_w = plot_fracture_list_at_point(Fr_list,            #plotting footprint
-                           variable='w',
-                           plot_prop=plot_prop,
-                           labels=label)
+    label.legend = 'fracture length analytical (PKN)'
+    Fig_r = plot_analytical_solution('PKN',
+                                      variable='d_max',
+                                      mat_prop=Solid,
+                                      inj_prop=Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_r,
+                                      time_srs=time_srs,
+                                      h=7.0,
+                                      labels=label)
+    label.legend = 'radius analytical (viscosity dominated)'
+    plot_prop.lineColorAnal = 'b'
+    Fig_r = plot_analytical_solution('M',
+                                      variable='d_max',
+                                      mat_prop=Solid,
+                                      inj_prop=Injection,
+                                      fig=Fig_r,
+                                      fluid_prop=Fluid,
+                                      time_srs=time_srs,
+                                      plot_prop=plot_prop,
+                                      labels=label)
+
+    label = LabelProperties(variable='w', data_subset='point')
+    plot_prop = PlotProperties(line_style='.',
+                               graph_scaling='loglog')
+    Fig_w = plot_fracture_list_at_point(Fr_list,            #plotting footprint
+                               variable='w',
+                               plot_prop=plot_prop,
+                               labels=label)
 
 
-label.legend = 'width at injection point (analytical PKN)'
-Fig_w = plot_analytical_solution_at_point('PKN',
-                                  variable='w',
-                                  mat_prop=Solid,
-                                  inj_prop=Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_w,
-                                  time_srs=time_srs,
-                                  h=7.,
-                                  labels=label)
+    label.legend = 'width at injection point (analytical PKN)'
+    Fig_w = plot_analytical_solution_at_point('PKN',
+                                      variable='w',
+                                      mat_prop=Solid,
+                                      inj_prop=Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_w,
+                                      time_srs=time_srs,
+                                      h=7.,
+                                      labels=label)
 
-label.legend = 'width at injection point (viscosity dominated)'
-plot_prop.lineColorAnal = 'b'
-Fig_w = plot_analytical_solution_at_point('M',
-                                  variable='w',
-                                  mat_prop=Solid,
-                                  inj_prop=Injection,
-                                  fig=Fig_w,
-                                  fluid_prop=Fluid,
-                                  time_srs=time_srs,
-                                  plot_prop=plot_prop,
-                                  labels=label)
+    label.legend = 'width at injection point (viscosity dominated)'
+    plot_prop.lineColorAnal = 'b'
+    Fig_w = plot_analytical_solution_at_point('M',
+                                      variable='w',
+                                      mat_prop=Solid,
+                                      inj_prop=Injection,
+                                      fig=Fig_w,
+                                      fluid_prop=Fluid,
+                                      time_srs=time_srs,
+                                      plot_prop=plot_prop,
+                                      labels=label)
 
-# plotting in 3D
-Fr_list, properties = load_fractures(address="./Data/height_contained",
-                                     time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]))
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
-plot_prop_mesh = PlotProperties(text_size=1.7)#, use_tex=True)
-Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
-                            variable='mesh',
-                            projection='3D',
-                            backGround_param='sigma0',
-                            mat_properties=properties[0],
-                            plot_prop=plot_prop_mesh)
-Fig_Fr = plot_analytical_solution('PKN',
-                                  variable='footprint',
-                                  mat_prop=Solid,
-                                  inj_prop=Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_Fr,
-                                  projection='3D',
-                                  time_srs=time_srs[2:],
-                                  h=7.0)
-plt_prop = PlotProperties(line_color_anal='b')
-Fig_Fr = plot_analytical_solution('M',
-                                  variable='footprint',
-                                  mat_prop=Solid,
-                                  inj_prop=Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_Fr,
-                                  projection='3D',
-                                  time_srs=time_srs[:2],
-                                  h=7.0,
-                                  plot_prop=plt_prop)
+    # plotting in 3D
+    Fr_list, properties = load_fractures(address="./Data/height_contained",
+                                         time_srs=np.asarray([1, 5, 20, 50, 80, 110, 140]))
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
+    plot_prop_mesh = PlotProperties(text_size=1.7)#, use_tex=True)
+    Fig_Fr = plot_fracture_list(Fr_list,            #plotting mesh
+                                variable='mesh',
+                                projection='3D',
+                                backGround_param='sigma0',
+                                mat_properties=properties[0],
+                                plot_prop=plot_prop_mesh)
+    Fig_Fr = plot_analytical_solution('PKN',
+                                      variable='footprint',
+                                      mat_prop=Solid,
+                                      inj_prop=Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_Fr,
+                                      projection='3D',
+                                      time_srs=time_srs[2:],
+                                      h=7.0)
+    plt_prop = PlotProperties(line_color_anal='b')
+    Fig_Fr = plot_analytical_solution('M',
+                                      variable='footprint',
+                                      mat_prop=Solid,
+                                      inj_prop=Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_Fr,
+                                      projection='3D',
+                                      time_srs=time_srs[:2],
+                                      h=7.0,
+                                      plot_prop=plt_prop)
 
-# Fig_Fr = None
-# Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
-#                             variable='footprint',
-#                             projection='3D',
-#                             fig=Fig_Fr)
-#
-# plot_prop = PlotProperties(alpha=0.2, text_size=5)           #plotting width
-# Fig_Fr = plot_fracture_list(Fr_list,
-#                             variable='w',
-#                             projection='3D',
-#                             fig=Fig_Fr,
-#                             plot_prop=plot_prop)
-ax = Fig_Fr.get_axes()[0]
-ax.view_init(60, -114)
+    # Fig_Fr = None
+    # Fig_Fr = plot_fracture_list(Fr_list,            #plotting footprint
+    #                             variable='footprint',
+    #                             projection='3D',
+    #                             fig=Fig_Fr)
+    #
+    # plot_prop = PlotProperties(alpha=0.2, text_size=5)           #plotting width
+    # Fig_Fr = plot_fracture_list(Fr_list,
+    #                             variable='w',
+    #                             projection='3D',
+    #                             fig=Fig_Fr,
+    #                             plot_prop=plot_prop)
+    ax = Fig_Fr.get_axes()[0]
+    ax.view_init(60, -114)
 
-plt.show(block=True)
+    plt.show(block=True)

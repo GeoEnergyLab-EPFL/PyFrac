@@ -23,6 +23,8 @@ Authors :
     - Brice Lecampion <brice.lecampion@epfl.ch>
     - Weihan Zhang
     - Fatima-Ezzahra Moukhtari <fatima-ezzahra.moukhtari@epfl.ch>
+    - Carlo Peruzzo <carlo.peruzzo@epfl.ch>
+    - Andreas Möri <andreas.mori@epfl.ch>
 
 .. toctree::
    :maxdepth: 2
