@@ -91,3 +91,30 @@ After specifying all the properties and initializing the fracture, we will set u
    controller.run()
 
 The :py:func:`controller.Controller.run` function will advance the simulation according to the parameters set in the simulation properties. The state of the fracture is stored in the form of the fracture object in the output folder set up in the simulation properties. A new folder with the name of the simulation and the time stamp at which the simulation was run is created for each of the simulation. If a folder or name is not provided, the simulation will be saved in the default folder (_simulation_data_PyFrac) with the default name (simulation). After the simulation is finished, the results can be post-processed and visualized using the provided visualization routines.
+
+Meshing during simulations
+-----------------------------------------
+
+PyFrac is based on a structure rectangular mesh created at the beginning of all simulations. In the beginning of this
+chapter you've seen how to generate a mesh centered on [0, 0]. It is, however, possible to generate a mesh centered
+around any point you wish by executing the following:
+
+.. code-block:: python
+
+   from mesh import CartesianMesh
+
+   Mesh = CartesianMesh(0.15, [-0.175, 0.05], 47, 71)
+
+This will generate a mesh having dimensions of [x_min=-0.15, x_max=0.15, y_min=-0.175, y_max=0.05] meters. You can pass
+an array of two variables defining the limits of your mesh instead of a half length. Combinations of the two options are
+freely possible. In a next step we need to decide on how the mesh should evolve during the simulation. The default
+settings are such that we double the height and breadth of our cells once we reach the boundary of our mesh. For this
+remeshing the number of cells remains the same, so a doubling of the height and breadth results in a doubling of the
+discretized domain. As an example for the mesh given above the dimensions after remeshing would be
+[x_min=-0.30, x_max=0.30, y_min=-0.35, y_max=0.1]. If you want to coarsen your mesh less the remeshing factor can be
+adpated with:
+
+.. code-block:: python
+
+   simulProp.remeshFactor = 1.5
+
