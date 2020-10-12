@@ -239,7 +239,8 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
                                                                            surv_cells,
                                                                            inner_region,
                                                                            mesh,
-                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge)
+                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                           oldfront=None)
             if correct_size_of_pstv_region[1] or correct_size_of_pstv_region[2]:
                 raise ValueError('The mesh is to small for the proposed initiation')
 
