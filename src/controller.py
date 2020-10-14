@@ -350,10 +350,10 @@ class Controller:
                             side_bools = [False, False, False, False]
 
                     elif status == 12:
-                        if self.sim_prop.meshExtensionAllDir:
-                            # we extend no matter which boundary we've hit
-                            # ensure all directions to extend are true
-                            self.sim_prop.set_mesh_extension_direction(['all'])
+                        # if self.sim_prop.meshExtensionAllDir:
+                        #     # we extend no matter how many boundaries we have hit
+                        #     # ensure all directions to extend are true
+                        #     self.sim_prop.set_mesh_extension_direction(['all'])
 
                         front_indices = \
                         np.intersect1d(self.fracture.mesh.Frontlist, Fr_n_pls1.EltTip, return_indices=True)[1]
@@ -401,7 +401,7 @@ class Controller:
                                 if side == 0:
                                     log.info("Remeshing by extending towards negative y...")
 
-                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -418,7 +418,7 @@ class Controller:
                                 if side == 1:
                                     log.info("Remeshing by extending towards positive y...")
 
-                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -435,7 +435,7 @@ class Controller:
                                 if side == 2:
                                     log.info("Remeshing by extending towards negative x...")
 
-                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -452,7 +452,7 @@ class Controller:
                                 if side == 3:
                                     log.info("Remeshing by extending towards positive x...")
 
-                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor - 1))
+                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
@@ -1086,11 +1086,7 @@ class Controller:
         to map all the elements to their new index and calculate what lasts
 
         Arguments:
-            Mesh (object CartesianMesh):    -- a mesh object describing the domain.
-            Ep (float):                     -- plain strain modulus.
-            ElMat (ndarray):                -- old, partial elasticity matrix.
-        Returns:
-            C (ndarray-float):              -- the complete elasticity matrix.
+            new_mesh (object CartesianMesh):    -- a mesh object describing the domain.
         """
 
         a = new_mesh.hx / 2.

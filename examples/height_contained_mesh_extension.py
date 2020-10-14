@@ -48,14 +48,14 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 145.              # the time at which the simulation stops
-simulProp.bckColor = 'sigma0'           # setting the parameter according to which the mesh is color coded
-simulProp.set_outputFolder("./Data/height_contained")
-simulProp.tmStpPrefactor = 1.0          # decreasing the size of time step
-simulProp.plotVar = ['footprint']       # plotting footprint
-simulProp.set_mesh_extension_direction(['horizontal'])
-simulProp.meshExtensionFactor = 1.35
-simulProp.useBlockToeplizCompression = True
+simulProp.finalTime = 145.                              # the time at which the simulation stops
+simulProp.bckColor = 'sigma0'                           # setting the parameter according to which the mesh is colored
+simulProp.set_outputFolder("./Data/height_contained")   # set the directory to save the simulation
+simulProp.tmStpPrefactor = 1.0                          # decreasing the size of time step
+simulProp.plotVar = ['footprint']                       # plotting footprint
+simulProp.set_mesh_extension_direction(['horizontal'])  # allow the mesh to extend horizontally
+simulProp.set_mesh_extension_factor(1.35)               # setting the mesh extension factor
+simulProp.useBlockToeplizCompression = True             # use the Toepliz elasticity to save memory
 
 # initializing fracture
 Fr_geometry = Geometry(shape='radial', radius=1.)

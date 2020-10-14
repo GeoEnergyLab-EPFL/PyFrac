@@ -2376,7 +2376,7 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
 
     # selecting only the relevant elements
     if elements is not None:
-        var_value_fullMesh = np.full((mesh.NumberOfElts, 3), 1.)
+        var_value_fullMesh = np.full((mesh.NumberOfElts, 3), 0.)
         var_value_fullMesh[elements, ::] = var_value[elements, ::]
         var_value = var_value_fullMesh
 
@@ -2384,7 +2384,7 @@ def plot_regime(var_value, mesh, fig=None, elements=None):
     var_value_2D = var_value.reshape((mesh.ny, mesh.nx, 3))
 
     # decide where we are not stagnant
-    non_stagnant = np.where(np.prod(var_value[elements, ::] == [1., 1., 1.], axis=1) != 1.)[0]
+    non_stagnant = np.where(np.prod(var_value[elements, ::] == [0., 0., 0.], axis=1) != 1.)[0]
 
     # use footprint if provided
     if fig is None:
