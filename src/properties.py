@@ -1122,8 +1122,28 @@ class SimulationProperties:
     def get_mesh_extension_direction(self):
         return self.meshExtension
 
-    def set_mesh_extension_factor(self, c):
-        self.meshExtensionFactor = c
+    def set_mesh_extension_factor(self, ext_factor):
+        """
+        The function to set up the factor deciding on the number of elements to add in the corresponding direction
+
+        Arguments:
+            ext_factor (list or float):     -- the factor either given:
+                                                - a float: all directions extend by the same amount
+                                                - a list with two entries: the first gives the factor in x the second in
+                                                  y direction
+                                                - a list with four entries: the entries respectively correspond to
+                                                 'left', 'right', 'bottom', 'top'.
+        """
+        if not isinstance(ext_factor, list):
+            self.meshExtensionFactor = [ext_factor, ext_factor, ext_factor, ext_factor]
+        elif len(ext_factor) == 2:
+            self.meshExtensionFactor = [ext_factor[1], ext_factor[1], ext_factor[0], ext_factor[0]]
+        elif len(ext_factor) == 4:
+            self.meshExtensionFactor = [ext_factor[2], ext_factor[3], ext_factor[0], ext_factor[1]]
+        else:
+            raise ValueError("The given form of the factor is not supporte. Either give a common factor (float) a " 
+                             "list of two entires (x and y direction) or a list of four entries " 
+                             "['left', 'right', 'bottom', 'top']")
 
     def get_mesh_extension_factor(self):
         return self.meshExtensionFactor

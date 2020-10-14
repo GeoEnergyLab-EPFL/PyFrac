@@ -18,6 +18,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from elasticity import load_isotropic_elasticity_matrix_toepliz
+from utility import setup_logging_to_console
+
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(500, 450, 23, 21)
@@ -57,19 +61,21 @@ Fluid = FluidProperties(viscosity=30, density=2400)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 560000                # the time at which the simulation stops
-simulProp.set_outputFolder("./Data/neutral_buoyancy") # the disk address where the files are saved
-simulProp.gravity = True                    # set up the gravity flag
-simulProp.tolFractFront = 3e-3              # increase the tolerance for fracture front iteration
-simulProp.plotTSJump = 4                    # plot every fourth time step
-simulProp.saveTSJump = 2                    # save every second time step
-simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
+simulProp.finalTime = 560000                                    # the time at which the simulation stops
+simulProp.set_outputFolder("./Data/neutral_buoyancy")           # the disk address where the files are saved
+simulProp.gravity = True                                        # set up the gravity flag
+simulProp.tolFractFront = 3e-3                                  # increase the tolerance for fracture
+                                                                # front iteration
+simulProp.plotTSJump = 4                                        # plot every fourth time step
+simulProp.saveTSJump = 2                                        # save every second time step
+simulProp.maxSolverItrs = 200                                   # increase the Anderson iteration limit for the
+                                                                # elastohydrodynamic solver
 simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.5, 0.1]]) # set up the time step prefactor
-simulProp.timeStepLimit = 5000              # time step limit
-simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
-simulProp.set_mesh_extension_direction(['top', 'horizontal'])
-simulProp.meshExtensionFactor = 1.4
-simulProp.useBlockToeplizCompression = True
+simulProp.timeStepLimit = 5000                                  # time step limit
+simulProp.plotVar = ['w', 'v']                                  # plot fracture width and fracture front velocity
+simulProp.set_mesh_extension_direction(['top', 'horizontal'])   # allow the fracture to extend in positive y and x
+simulProp.set_mesh_extension_factor(1.4)                        # set the extension factor to 1.4
+simulProp.useBlockToeplizCompression = True                     # use the Toepliz elasticity matrix to save memory
 
 
 # initializing a static fracture
