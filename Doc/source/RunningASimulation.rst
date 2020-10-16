@@ -196,4 +196,25 @@ Examples of different mesh extensions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We illustrate the different re-meshing options by several examples as to familiarize the user with the different
-options.
+options. Our first example has its focus on a propagating dike. The following initial mesh is and re-meshing properties
+are specified:
+
+.. code-block:: python
+
+   from mesh import CartesianMesh
+   from properties import SimulationProperties
+
+   # creating mesh
+   Mesh = CartesianMesh(0.01, 0.01, 31, 31)
+
+   # define the re-meshing parameters
+   simulProp.set_mesh_extension_factor(1.5)
+   simulProp.set_mesh_extension_direction(['top', 'horizontal'])
+
+In words we start a simulation where we allow the fracture to extend in horizontal (positive and negative x-direction)
+as well as to the top (in positive y-dircetion). The mesh extension factor is set to 1.5 and the mesh compression factor
+remains at it's default value of 2.
+
+.. image:: /images/width_contours.png
+    :align:   center
+    :scale: 80 %
