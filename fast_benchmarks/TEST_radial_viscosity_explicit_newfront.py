@@ -23,10 +23,10 @@ def test_radial_M_expl_newfront():
                     "finalTime": 1e5, "initialR": 0.1}
 
     # running the simulation
-    #exitcode, outputfolder = run_radial_vertex(my_front_reconstruction,my_front_advancement,my_vertex,my_param)
+    exitcode, outputfolder = run_radial_vertex(my_front_reconstruction,my_front_advancement,my_vertex,my_param)
     #
-    #assert exitcode == True, " error during the computation of the numerical solution"
-    outputfolder = "./Temp_Data/M_radial_explicit_LS_continousfront"
+    assert exitcode == True, " error during the computation of the numerical solution"
+    #outputfolder = "./Temp_Data/M_radial_explicit_LS_continousfront"
 
     ########################
     # checking the results #
@@ -45,8 +45,9 @@ def test_radial_M_expl_newfront():
     Solid, Fluid, Injection, simulProp = properties
     time_srs = get_fracture_variable(Fr_list, variable='time')
 
-    #
-    # comparing the analytical and the numerical radius
+    #############################################
+    # comparing analytical and numerical radius #
+    #############################################
     Rmean_num_list = []
     Rmax_num_list = []
     Rmin_num_list = []
@@ -77,8 +78,9 @@ def test_radial_M_expl_newfront():
 
 
 
-    #
-    # comparing the analytical and the numerical width at the fracture center
+    #################################################################
+    # comparing analytical and numerical fracture opening at center #
+    #################################################################
     w_num_point_values, time_list = get_fracture_variable_at_point(Fr_list,
                                                             'w',
                                                             point=[0., 0.])
@@ -116,8 +118,9 @@ def test_radial_M_expl_newfront():
     #                                           fig=Fig_w)
 
 
-    #
-    # comparing the analytical and the numerical slice
+    #####################################################################
+    # comparing analytical and numerical fracture opening along a slice #
+    #####################################################################
     time_srs = np.asarray([2, 200, 5000, 30000, 100000])
     Fr_list, properties = load_fractures(address=outputfolder, time_srs=time_srs)
     #get the true times
@@ -164,7 +167,29 @@ def test_radial_M_expl_newfront():
         assert diff_i.max() < diff_i_limit[i]
         assert diff < diff_limit[i]
 
+    ####### useful for debugging ###
+    # from visualization import *
+    # # plot slice
+    # ext_pnts = np.empty((2, 2), dtype=np.float64)
+    # Fig_WS = plot_fracture_list_slice(Fr_list,
+    #                                   variable='w',
+    #                                   projection='2D',
+    #                                   plot_cell_center=True,
+    #                                   extreme_points=ext_pnts)
+    # # plot slice analytical
+    # Fig_WS = plot_analytical_solution_slice('M',
+    #                                         'w',
+    #                                         Solid,
+    #                                         Injection,
+    #                                         fluid_prop=Fluid,
+    #                                         fig=Fig_WS,
+    #                                         time_srs=time_srs,
+    #                                         point1=ext_pnts[0],
+    #                                         point2=ext_pnts[1])
 
+    #####################################################################
+    # comparing analytical and numerical pressure along a slice         #
+    #####################################################################
     for i in range(len(Fr_list)):
         ext_pnts = np.empty((2, 2), dtype=np.float64)
         numerical_results_dict = plot_fracture_list_slice([Fr_list[i]],
@@ -209,13 +234,13 @@ def test_radial_M_expl_newfront():
     # # plot slice
     # ext_pnts = np.empty((2, 2), dtype=np.float64)
     # Fig_WS = plot_fracture_list_slice(Fr_list,
-    #                                   variable='w',
+    #                                   variable='pn',
     #                                   projection='2D',
     #                                   plot_cell_center=True,
     #                                   extreme_points=ext_pnts)
     # # plot slice analytical
     # Fig_WS = plot_analytical_solution_slice('M',
-    #                                         'w',
+    #                                         'pn',
     #                                         Solid,
     #                                         Injection,
     #                                         fluid_prop=Fluid,
