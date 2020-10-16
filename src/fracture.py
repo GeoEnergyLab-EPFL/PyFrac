@@ -196,7 +196,7 @@ class Fracture:
 
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
         if simulProp.saveRegime:
-            self.regime_color = np.full((mesh.NumberOfElts, 3), 0., dtype=np.float32)
+            self.regime_color = np.full((mesh.NumberOfElts, 3), 1., dtype=np.float32)
         else:
             self.regime_color = None
 
@@ -792,7 +792,7 @@ class Fracture:
         beta_m = 2 ** (1/3) * 3 ** (5/6)
 
         # initiate with all cells white
-        self.regime_color = np.full((self.mesh.NumberOfElts, 3), 0., dtype=np.float32)
+        self.regime_color = np.full((self.mesh.NumberOfElts, 3), 1., dtype=np.float32)
 
         # calculate velocity
         vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
