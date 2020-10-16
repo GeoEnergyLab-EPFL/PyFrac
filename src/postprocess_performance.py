@@ -16,6 +16,7 @@ else:
 
 import dill
 import numpy as np
+import logging
 import re
 import os
 
@@ -36,13 +37,13 @@ def load_performance_data(address, sim_name='simulation'):
         perf_data (list):       -- the loaded performance data in the form of a list of IterationProperties objects.( \
                                     see :py:class:`properties.IterationProperties` for details).
     """
-
-    print("---loading performance data---\n")
+    log = logging.getLogger('PyFrac.load_performace_data')
+    log.info("---loading performance data---\n")
 
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
 
-    if address[-1] is not slash:
+    if address[-1] != slash:
         address = address + slash
 
     if re.match('\d+-\d+-\d+__\d+_\d+_\d+', sim_name[-20:]):
@@ -120,6 +121,10 @@ def get_performance_variable(perf_data, iteration, variable):
                                                                                 widthConstraint_Itr.linearSolve_data):
                                                 if iteration == 'linear system solve':
                                                     append_variable(linearSolve_Itr, variable)
+                                            for i_RKLSolve, RKLSolve_Itr in enumerate(
+                                                                                widthConstraint_Itr.RKL_data):
+                                                if iteration == 'RKL time step':
+                                                    append_variable(RKLSolve_Itr, variable)
 
                     for i_extFP_inj, extFP_inj in enumerate(TS_attempt.extendedFront_data):
                         if iteration == 'extended front':
@@ -154,6 +159,10 @@ def get_performance_variable(perf_data, iteration, variable):
                                                                                 widthConstraint_Itr.linearSolve_data):
                                                 if iteration == 'linear system solve':
                                                     append_variable(linearSolve_Itr, variable)
+                                            for i_RKLSolve, RKLSolve_Itr in enumerate(
+                                                                                widthConstraint_Itr.RKL_data):
+                                                if iteration == 'RKL time step':
+                                                    append_variable(RKLSolve_Itr, variable)
 
     return var_list, time_list, N_list
 
@@ -199,6 +208,8 @@ def plot_performance(address, variable, sim_name='simulation', fig=None, plot_pr
         var_list, time_list, N_list = get_performance_variable(perf_data, 'nonlinear system solve', 'iterations')
     elif variable in ['Picard iterations']:
         var_list, time_list, N_list = get_performance_variable(perf_data, 'width constraint iteration', 'iterations')
+    elif variable in ['RKL substeps']:
+        var_list, time_list, N_list = get_performance_variable(perf_data, 'RKL time step', 'iterations')
     elif variable in ['CPU time: time steps']:
         t_start_list, time_list, N_list = get_performance_variable(perf_data, 'time step', 'CpuTime_start')
         del time_list, N_list
@@ -254,9 +265,10 @@ def print_performance_data(address, sim_name=None):
         address (string):              -- the disk location where the results of the simulation were saved.
         sim_name(string):              -- the name of the simulation.
     """
+    log = logging.getLogger('PyFrac.print_performance_data')
     perf_data = load_performance_data(address, sim_name)
 
-    print("---saving iterations data---\n")
+    log.info("---saving iterations data---\n")
 
     f = open('performance_data.txt', 'w+')
 

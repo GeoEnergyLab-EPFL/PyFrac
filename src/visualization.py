@@ -6,7 +6,7 @@ Created by Haseeb Zia on Friday, July 06, 2018.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019. All rights
 reserved. See the LICENSE.TXT file for more details.
 """
-
+import logging
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -16,16 +16,19 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import copy
+import pickle
+import io
 
 # local imports
 from postprocess_fracture import *
 from properties import PlotProperties, LabelProperties
-from labels import supported_variables, supported_projections, unidimensional_variables
+from labels import supported_variables, supported_projections, \
+                   unidimensional_variables, suitable_elements
 
 
 def plot_fracture_list(fracture_list, variable='footprint', projection=None, elements=None, plot_prop=None, fig=None,
                        edge=4, contours_at=None, labels=None, mat_properties=None, backGround_param=None,
-                       plot_non_zero=True):
+                       plot_non_zero=True, source_loc=np.asarray([0,0])):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -54,7 +57,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    print("Plotting " + variable + '...')
+    log = logging.getLogger('PyFrac.plot_fracture_list')
+    log.info("Plotting " + variable + '...')
 
     if not isinstance(fracture_list, list):
         raise ValueError("The provided fracture_list is not list type object!")
@@ -78,15 +82,19 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         labels = LabelProperties(variable, 'whole mesh', projection)
 
     max_Lx = 0.
+    max_Ly = 0.
     for i in fracture_list:
         if i.mesh.Lx > max_Lx:
             largest_mesh = i.mesh
             max_Lx = i.mesh.Lx
+        if i.mesh.Ly > max_Ly:
+            largest_mesh = i.mesh
+            max_Ly = i.mesh.Ly
 
     if variable == 'mesh':
         if backGround_param is not None and mat_properties is None:
             raise ValueError("Material properties are required to color code background")
-        if projection is '2D':
+        if projection == '2D':
             fig = largest_mesh.plot(fig=fig,
                                     material_prop=mat_properties,
                                     backGround_param=backGround_param,
@@ -99,7 +107,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                  plot_prop=plot_prop)
 
     elif variable == 'footprint':
-        if projection is '2D':
+        if projection == '2D':
             for i in fracture_list:
                 fig = i.plot_front(fig=fig, plot_prop=plot_prop)
         else:
@@ -111,7 +119,25 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
             fig = plot_injection_source(fr, fig=fig, plot_prop=plot_prop)
 
     else:
-        var_val_list, time_list = get_fracture_variable(fracture_list,
+        if variable == 'chi':
+            vel_list, time_list = get_fracture_variable(fracture_list,
+                                                            'v',
+                                                            edge=edge,
+                                                            return_time=True)
+            var_val_list = []
+            for i in vel_list:
+                actual_ki = 2 * mat_properties.Cprime * mat_properties.Eprime / \
+                            (np.sqrt(np.asarray(i)) * mat_properties.Kprime)
+                var_val_list.append(actual_ki.tolist())
+
+        elif variable == 'regime':
+            var_val_list, legend_coord, time_list = get_fracture_variable(fracture_list,
+                                                            variable,
+                                                            edge=edge,
+                                                            return_time=True)
+
+        else:
+            var_val_list, time_list = get_fracture_variable(fracture_list,
                                                             variable,
                                                             edge=edge,
                                                             return_time=True)
@@ -120,39 +146,49 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         for i in range(len(var_val_copy)):
             var_val_copy[i] /= labels.unitConversion
 
-
-        var_value_tmp = np.copy(var_val_copy)
-        if plot_non_zero:
-            var_value_tmp = var_value_tmp[var_value_tmp != 0]
-        vmin, vmax = np.inf, -np.inf
-        for i in var_value_tmp:
+        if projection != '2D_vectorfield':
+            var_value_tmp = np.copy(var_val_copy)
+            if elements is not None:
+                var_value_tmp = var_value_tmp[:, elements]
             if plot_non_zero:
-                i = i[i != 0]
-            i = np.delete(i, np.where(np.isinf(i))[0])
-            i = np.delete(i, np.where(np.isnan(i))[0])
-            if not (not isinstance(i, float) and len(i) == 0):
-                if variable in ('p', 'pressure'):
-                    non_zero = np.where(abs(i) > 0)[0]
-                    i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
-                else:
-                    i_min, i_max = np.min(i), np.max(i)
-                vmin, vmax = min(vmin, i_min), max(vmax, i_max)
+                var_value_tmp = var_value_tmp[var_value_tmp != 0]
+            vmin, vmax = np.inf, -np.inf
+            if len(np.shape(var_value_tmp)) > 1:
+                var_value_tmp = list(var_value_tmp[0])
+            for i in var_value_tmp:
+                if plot_non_zero:
+                    i = i[i != 0]
+                i = np.delete(i, np.where(np.isinf(i))[0])
+                i = np.delete(i, np.where(np.isnan(i))[0])
+                if not (not isinstance(i, float) and len(i) == 0):
+                    if variable in ('p', 'pressure'):
+                        non_zero = np.where(abs(i) > 0)[0]
+                        i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
+                    else:
+                        i_min, i_max = np.min(i), np.max(i)
+                    vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
+    if variable == 'regime':
+        for i in range(len(var_val_list)):
+            fig = plot_regime(var_val_copy[i],
+                              fracture_list[i].mesh,
+                              elements=fracture_list[i].EltRibbon,
+                              fig=fig)
 
-    if variable in unidimensional_variables:
+    elif variable in unidimensional_variables:
         fig = plot_variable_vs_time(time_list,
                                     var_val_list,
                                     fig=fig,
                                     plot_prop=plot_prop,
                                     label=labels.legend)
-
+    #todo: the following was elif variable not in ['mesh', 'footprint']:
     elif variable in bidimensional_variables:
+        if projection != '2D_vectorfield':
+            if plot_non_zero:
+                for indx, value in enumerate(var_val_copy):
+                    remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
 
-        if plot_non_zero:
-            for indx, value in enumerate(var_val_copy):
-                remove_zeros(value, fracture_list[indx].mesh)#i[np.where(abs(i) < 1e-16)[0]] = np.nan
-
-        if variable is 'surface':
+        if variable == 'surface':
             plot_prop.colorMap = 'cool'
             for i in range(len(var_val_list)):
                 fig = plot_fracture_surface(var_val_copy[i],
@@ -164,7 +200,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                             vmin=vmin,
                                             vmax=vmax)
 
-        elif projection is '2D_clrmap':
+        elif projection == '2D_clrmap':
             for i in range(len(var_val_list)):
                 fig = plot_fracture_variable_as_image(var_val_copy[i],
                                                           fracture_list[i].mesh,
@@ -174,7 +210,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                           plt_colorbar=False,
                                                           vmin=vmin,
                                                           vmax=vmax)
-        elif projection is '2D_contours':
+        elif projection == '2D_contours':
             for i in range(len(var_val_list)):
                 labels.legend = 't= ' + to_precision(time_list[i], plot_prop.dispPrecision)
                 plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
@@ -186,7 +222,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                          plt_colorbar=False,
                                                          vmin=vmin,
                                                          vmax=vmax)
-        elif projection is '3D':
+        elif projection == '3D':
             for i in range(len(var_val_list)):
                 fig = plot_fracture_variable_as_surface(var_val_copy[i],
                                                         fracture_list[i].mesh,
@@ -196,12 +232,25 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                         elements=elements,
                                                         vmin=vmin,
                                                         vmax=vmax)
+        elif projection == '2D_vectorfield' and not np.isnan(var_val_copy[i]).any():
+            # fracture_list[i].EltCrack => ribbon+tip+other in crack
+            # fracture_list[i].EltChannel => ribbon+other in crack
+
+            # multiple options:
+            # elements_where_to_plot = fracture_list[i].EltCrack
+            elements_where_to_plot = fracture_list[i].EltChannel
+            # elements_where_to_plot = np.setdiff1d(fracture_list[i].EltChannel,fracture_list[i].EltRibbon)
+            # elements_where_to_plot = np.setdiff1d(elements_where_to_plot, np.unique(np.ndarray.flatten(fracture_list[i].mesh.NeiElements[fracture_list[i].EltRibbon])))
+            fig = plot_fracture_variable_as_vector(var_val_copy[i],
+                                                      fracture_list[i].mesh,
+                                                      elements_where_to_plot,
+                                                      fig=fig)
 
     ax = fig.get_axes()[0]
     ax.set_xlabel(labels.xLabel)
     ax.set_ylabel(labels.yLabel)
     ax.set_title(labels.figLabel)
-    if projection is '3D' and variable not in ['mesh', 'footprint', 'se', 'source elements']:
+    if projection == '3D' and variable not in ['mesh', 'footprint', 'se', 'source elements']:
         ax.set_zlabel(labels.zLabel)
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                    norm=plt.Normalize(vmin=vmin,
@@ -209,7 +258,8 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
         sm._A = []
         cb = plt.colorbar(sm, alpha=plot_prop.alpha)
         cb.set_label(labels.colorbarLabel)
-    elif projection in ('2D_clrmap', '2D_contours'):
+
+    elif projection in ('2D_clrmap', '2D_contours') and variable != 'regime':
         im = ax.images
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -223,7 +273,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
 def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point2=None, projection='2D', plot_prop=None,
                              fig=None, edge=4, labels=None, plot_cell_center=False, orientation='horizontal',
-                             extreme_points=None):
+                             extreme_points=None, export2Json=False, export2Json_assuming_no_remeshing=True):
     """
     This function plots the fracture evolution on a given slice of the domain. Two points are to be given that will be
     joined to form the slice. The values on the slice are either interpolated from the values available on the cell
@@ -255,7 +305,8 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         extreme_points (ndarray)            -- An empty array of shape (2, 2). It will be used to return the extreme
                                                points of the plotted slice. These points can be used to plot analytical
                                                solution.
-
+        export2Json (bool)                  -- If you set it to True the function will return a dictionary with the
+                                               data of the corresponding plot
     Returns:
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
@@ -298,20 +349,26 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                 non_zero = np.where(abs(i) > 0)[0]
                 i_min, i_max = -0.2 * np.median(i[non_zero]), 1.5 * np.median(i[non_zero])
             else:
-                if len(i) >0:
+                if len(i) > 0:
                     i_min, i_max = np.min(i), np.max(i)
                 else:
                     i_min, i_max = np.inf, -np.inf
             vmin, vmax = min(vmin, i_min), max(vmax, i_max)
 
     label = labels.legend
+
+    if export2Json:
+        to_write = {
+            'size_of_data': len(time_list),
+            'time_list': time_list}
+
     for i in range(len(var_val_list)):
         labels.legend = label + ' t= ' + to_precision(time_list[i],
                                                       plot_prop.dispPrecision)
         plot_prop.lineColor = plot_prop.colorsList[i % len(plot_prop.colorsList)]
         if '2D' in projection:
             if plot_cell_center:
-                fig = plot_fracture_slice_cell_center(var_val_copy[i],
+                fig ,sampling_line_out, var_value_selected, sampling_cells = plot_fracture_slice_cell_center(var_val_copy[i],
                                                                   mesh_list[i],
                                                                   point=point1,
                                                                   orientation=orientation,
@@ -321,7 +378,17 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   vmax=vmax,
                                                                   plot_colorbar=False,
                                                                   labels=labels,
-                                                                  extreme_points=extreme_points)
+                                                                  extreme_points=extreme_points,
+                                                                  export2Json = export2Json)
+                if i == 0 and export2Json and export2Json_assuming_no_remeshing: #write ones the sampling line, assuming no remeshing
+                    to_write['sampling_line_out'] = sampling_line_out.tolist()
+                    to_write['sampling_cells']  = sampling_cells.tolist()
+                if export2Json and not export2Json_assuming_no_remeshing:
+                    to_write['sampling_line_out_'+str(i)] = sampling_line_out.tolist()
+                    to_write['sampling_cells_'+str(i)] = sampling_cells.tolist()
+                    to_write[variable+'_'+str(i)] = var_value_selected.tolist()
+                if export2Json and export2Json_assuming_no_remeshing:
+                    to_write[str(i)] = var_value_selected.tolist()
             else:
                 fig = plot_fracture_slice_interpolated(var_val_copy[i],
                                                                 mesh_list[i],
@@ -333,23 +400,24 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                 vmax=vmax,
                                                                 plot_colorbar=False,
                                                                 labels=labels)
-            ax_tv = fig.get_axes()[0]
-            ax_tv.set_xlabel('meter')
-            ax_tv.set_ylabel('meter')
-            ax_tv.set_title('Top View')
+            if not export2Json:
+                ax_tv = fig.get_axes()[0]
+                ax_tv.set_xlabel('meter')
+                ax_tv.set_ylabel('meter')
+                ax_tv.set_title('Top View')
 
-            # making colorbar
-            im = ax_tv.images
-            divider = make_axes_locatable(ax_tv)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
-            cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
-            cb.set_label(labels.colorbarLabel)
+                # making colorbar
+                im = ax_tv.images
+                divider = make_axes_locatable(ax_tv)
+                cax = divider.append_axes('right', size='5%', pad=0.05)
+                cb = fig.colorbar(im[-1], cax=cax, orientation='vertical')
+                cb.set_label(labels.colorbarLabel)
 
-            ax_slice = fig.get_axes()[1]
-            ax_slice.set_ylabel(labels.colorbarLabel)
-            ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
+                ax_slice = fig.get_axes()[1]
+                ax_slice.set_ylabel(labels.colorbarLabel)
+                ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
 
-        elif projection is '3D':
+        elif projection == '3D' and not export2Json:
             fig = plot_slice_3D(var_val_copy[i],
                                 mesh_list[i],
                                 point1=point1,
@@ -367,10 +435,13 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
         else:
             raise ValueError("Given Projection is not correct!")
 
-    if plot_prop.plotLegend:
+    if plot_prop.plotLegend and not export2Json:
         ax_slice.legend()
 
-    return fig
+    if export2Json:
+        return to_write
+    else:
+        return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -458,6 +529,59 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def plot_fracture_variable_as_vector(var_value, mesh, Elements_to_plot, fig=None):
+    """
+    This function plots a given 2D vector field.
+
+    Args:
+        var_value:                      -- an array with each column having the following information:
+                                            [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge,
+                                             fy bottom edge, fx top edge, fy top edge]
+                                            note that "fx left edge" is the component along the x direction of the
+                                            vector at the left edge of the cell. The name of the cell is coincident with
+                                            the column position.
+        mesh (CartesianMesh):           -- a CartesianMesh object giving the descritization of the domain.
+        Elements_to_plot:               -- list of cell names on whose edges plot the vectors.
+        fig (Figure):                   -- the figure to superimpose on. New figure will be made if not provided.
+
+    Returns:
+        (Figure):                       -- A Figure object that can be used superimpose further plots.
+
+    """
+
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+
+    U = np.vstack((var_value[0,Elements_to_plot], var_value[2,Elements_to_plot]))
+    U = np.vstack((U, var_value[4,Elements_to_plot]))
+    U = np.vstack((U, var_value[6,Elements_to_plot]))
+    U = np.ndarray.flatten(U)
+
+    V = np.vstack((var_value[1,Elements_to_plot], var_value[3,Elements_to_plot]))
+    V = np.vstack((V, var_value[5,Elements_to_plot]))
+    V = np.vstack((V, var_value[7,Elements_to_plot]))
+    V = np.ndarray.flatten(V)
+
+    X = np.vstack((mesh.CenterCoor[Elements_to_plot,0]-mesh.hx*0.5, mesh.CenterCoor[Elements_to_plot,0]+mesh.hx*0.5))
+    X = np.vstack((X, mesh.CenterCoor[Elements_to_plot,0]))
+    X = np.vstack((X, mesh.CenterCoor[Elements_to_plot,0]))
+    X = np.ndarray.flatten(X)
+
+    Y = np.vstack((mesh.CenterCoor[Elements_to_plot,1], mesh.CenterCoor[Elements_to_plot,1]))
+    Y = np.vstack((Y, mesh.CenterCoor[Elements_to_plot,1]-mesh.hy*0.5))
+    Y = np.vstack((Y, mesh.CenterCoor[Elements_to_plot,1]+mesh.hy*0.5))
+    Y = np.ndarray.flatten(Y)
+
+    M = np.hypot(U, V)
+
+    ax.quiver(X,Y,U,V,M,pivot='mid')
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label=None):
     """
@@ -489,28 +613,28 @@ def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label
     else:
         label_copy = None
 
-    if plot_prop.graphScaling is 'linear':
+    if plot_prop.graphScaling == 'linear':
         ax.plot(time_list,
                 value_list,
                 plot_prop.lineStyle,
                 color=plot_prop.lineColor,
                 label=label_copy)
 
-    elif plot_prop.graphScaling is 'loglog':
+    elif plot_prop.graphScaling == 'loglog':
         ax.loglog(time_list,
                   value_list,
                   plot_prop.lineStyle,
                   color=plot_prop.lineColor,
                   label=label_copy)
 
-    elif plot_prop.graphScaling is 'semilogx':
+    elif plot_prop.graphScaling == 'semilogx':
         ax.semilogx(time_list,
                     value_list,
                     plot_prop.lineStyle,
                     color=plot_prop.lineColor,
                     label=label_copy)
 
-    elif plot_prop.graphScaling is 'semilogy':
+    elif plot_prop.graphScaling == 'semilogy':
         ax.semilogy(time_list,
                     value_list,
                     plot_prop.lineStyle,
@@ -544,12 +668,9 @@ def plot_fracture_variable_as_image(var_value, mesh, fig=None, plot_prop=None, e
     """
 
     if elements is not None:
-        if len(var_value) == len(elements):
-            var_value_fullMesh = np.full((mesh.NumberOfElts, ), np.nan)
-            var_value_fullMesh[elements] = var_value
-            var_value = var_value_fullMesh
-        else:
-            raise ValueError("The var_value and elements arguments should have same lengths.")
+        var_value_fullMesh = np.full((mesh.NumberOfElts, ), np.nan)
+        var_value_fullMesh[elements] = var_value[elements]
+        var_value = var_value_fullMesh
 
     if fig is None:
         fig = plt.figure()
@@ -818,8 +939,8 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting slice...")
+    log = logging.getLogger('PyFrac.plot_fracture_slice_interpolated')
+    log.info("Plotting slice...")
     if plt_2D_image:
         if fig is None:
             fig = plt.figure()
@@ -954,12 +1075,13 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 
     return fig
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
-                                extreme_points=None):
+                                extreme_points=None,export2Json=False):
     """
     This function plots the fracture on a given slice of the domain. A points along with the direction of the slice is
     given to form the slice. The slice is made from the center of the cell containing the given point along the given
@@ -988,29 +1110,30 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting slice...")
-    if plt_2D_image:
-        if fig is None:
-            fig = plt.figure()
-            ax_2D = fig.add_subplot(211)
-            ax_slice = fig.add_subplot(212)
+    log = logging.getLogger('PyFrac.plot_fracture_slice_cell_center')
+    log.info("Plotting slice...")
+    if not export2Json:
+        if plt_2D_image:
+            if fig is None:
+                fig = plt.figure()
+                ax_2D = fig.add_subplot(211)
+                ax_slice = fig.add_subplot(212)
+            else:
+                ax_2D = fig.get_axes()[0]
+                ax_slice = fig.get_axes()[1]
         else:
-            ax_2D = fig.get_axes()[0]
-            ax_slice = fig.get_axes()[1]
-    else:
-        if fig is None:
-            fig = plt.figure()
-            ax_slice = fig.add_subplot(111)
-        else:
-            ax_slice = fig.get_axes()[0]
+            if fig is None:
+                fig = plt.figure()
+                ax_slice = fig.add_subplot(111)
+            else:
+                ax_slice = fig.get_axes()[0]
 
     if plot_prop is None:
         plot_prop = PlotProperties()
         plot_prop.lineStyle = '.'
 
 
-    if plt_2D_image:
+    if plt_2D_image and not export2Json:
         x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
         y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
 
@@ -1044,13 +1167,14 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
     if np.isnan(zero_cell):
         raise ValueError("The given point does not lie in the grid!")
 
-    if orientation is 'vertical':
+    if orientation == 'vertical':
         sampling_cells = np.hstack((np.arange(zero_cell, 0, -mesh.nx)[::-1],
                                     np.arange(zero_cell, mesh.NumberOfElts, mesh.nx)))
-    elif orientation is 'horizontal':
+        x_plot_coord = mesh.CenterCoor[sampling_cells, 1]
+    elif orientation == 'horizontal':
         sampling_cells = np.arange(zero_cell // mesh.nx * mesh.nx, (zero_cell // mesh.nx + 1) * mesh.nx)
-
-    elif orientation is 'increasing':
+        x_plot_coord = mesh.CenterCoor[sampling_cells, 0]
+    elif orientation == 'increasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx - 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] >
                                                       mesh.CenterCoor[zero_cell, 0])[0])
@@ -1059,7 +1183,12 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                                                 mesh.CenterCoor[zero_cell, 0])[0])
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
-    elif orientation is 'decreasing':
+        x_plot_coord = np.hstack((- np.sqrt([sum(tup) for tup in (mesh.CenterCoor[bottom_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2]),
+                                 np.sqrt([sum(tup) for tup in (mesh.CenterCoor[top_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2])))
+
+    elif orientation == 'decreasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx + 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] <
                                                       mesh.CenterCoor[zero_cell, 0])[0])
@@ -1069,7 +1198,13 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
 
-    if plt_2D_image:
+        x_plot_coord = np.hstack((- np.sqrt([sum(tup) for tup in (mesh.CenterCoor[bottom_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2]),
+                                 np.sqrt([sum(tup) for tup in (mesh.CenterCoor[top_half] -
+                                                               mesh.CenterCoor[zero_cell]) ** 2])))
+
+
+    if plt_2D_image and not export2Json:
         ax_2D.plot(mesh.CenterCoor[sampling_cells, 0],
                    mesh.CenterCoor[sampling_cells, 1],
                    'k.',
@@ -1077,18 +1212,23 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                    alpha=plot_prop.alpha,
                    markersize='1')
 
-    sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
-                   (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
-
-    # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
-    # analytical solution plots.
-    sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
-
-    ax_slice.plot(sampling_line,
-                  var_value[sampling_cells],
-                  plot_prop.lineStyle,
-                  color=plot_prop.lineColor,
-                  label=labels.legend)
+    # sampling_len = ((mesh.CenterCoor[sampling_cells[0], 0] - mesh.CenterCoor[sampling_cells[-1], 0]) ** 2 + \
+    #                (mesh.CenterCoor[sampling_cells[0], 1] - mesh.CenterCoor[sampling_cells[-1], 1]) ** 2) ** 0.5
+    #
+    # # making x-axis centered at zero for the 1D slice. Necessary to have same reference with different meshes and
+    # # analytical solution plots.
+    # sampling_line = np.linspace(0, sampling_len, len(sampling_cells)) - sampling_len / 2
+    if not export2Json:
+        # ax_slice.plot(sampling_line,
+        #               var_value[sampling_cells],
+        #               plot_prop.lineStyle,
+        #               color=plot_prop.lineColor,
+        #               label=labels.legend)
+        ax_slice.plot(x_plot_coord,
+                      var_value[sampling_cells],
+                      plot_prop.lineStyle,
+                      color=plot_prop.lineColor,
+                      label=labels.legend)
 
     if len(sampling_cells) > 7:
         mid = len(sampling_cells) // 2
@@ -1098,8 +1238,12 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
             half_2nd = np.append(half_2nd, len(sampling_cells) - 1)
         x_ticks = np.hstack((half_1st[:3], np.array([mid], dtype=int)))
         x_ticks = np.hstack((x_ticks, half_2nd))
+    else:
+        x_ticks = len(sampling_cells)
 
-    ax_slice.set_xticks(sampling_line[x_ticks])
+    # if not export2Json: ax_slice.set_xticks(sampling_line[x_ticks])
+
+    if not export2Json: ax_slice.set_xticks(x_plot_coord[x_ticks])
 
     xtick_labels = []
     for i in x_ticks:
@@ -1108,15 +1252,18 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
                                   to_precision(np.round(mesh.CenterCoor[sampling_cells[i], 1], 3),
                                                 plot_prop.dispPrecision) + ')')
 
-    ax_slice.set_xticklabels(xtick_labels)
-    if vmin is not None and vmax is not None:
-        ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
+    if not export2Json:
+        ax_slice.set_xticklabels(xtick_labels)
+        if vmin is not None and vmax is not None:
+            ax_slice.set_ylim((vmin - 0.1*vmin, vmax + 0.1*vmax))
 
     if extreme_points is not None:
         extreme_points[0] = mesh.CenterCoor[sampling_cells[0]]
         extreme_points[1] = mesh.CenterCoor[sampling_cells[-1]]
 
-    return fig
+    if export2Json: fig = None
+    # return fig, sampling_line, var_value[sampling_cells], sampling_cells
+    return fig, x_plot_coord, var_value[sampling_cells], sampling_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -1136,6 +1283,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
             option      limiting solution
             ========    ============================
             'M'         viscosity storage
+            'Mp'        finite pulse viscosity storage
             'Mt'        viscosity leak-off
             'K'         toughness storage
             'Kt'        toughness leak-off
@@ -1199,15 +1347,17 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
                                                       h=h,
                                                       samp_cell=samp_cell,
                                                       gamma=gamma)
-
     for i in range(len(analytical_list)):
         analytical_list[i] /= labels.unitConversion
+        if variable in ('pn', 'pressure'):
+            analytical_list[i][(analytical_list[i] < 0)] = 0.
 
     # finding maximum and minimum values in complete list
     analytical_value = np.copy(analytical_list)
     vmin, vmax = np.inf, -np.inf
     for i in analytical_value:
         i = np.delete(i, np.where(np.isinf(i))[0])
+        i = np.delete(i, np.where(np.isneginf(i))[0])
         i = np.delete(i, np.where(np.isnan(i))[0])
         if variable in ('p', 'pressure'):
             non_zero = np.where(abs(i) > 0)[0]
@@ -1223,6 +1373,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
         labels.legend = 'analytical (' + regime + ') t= ' + to_precision(time_srs[i],
                                                              plot_prop.dispPrecision)
         plot_prop_cp.lineColor = plot_prop_cp.colorsList[i % len(plot_prop.colorsList)]
+
         fig = plot_fracture_slice_interpolated(analytical_list[i],
                                                 mesh_list[i],
                                                 point1=point1,
@@ -1310,7 +1461,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-
+    log = logging.getLogger('PyFrac.plot_analytical_solution_at_point')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -1358,7 +1509,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if variable in ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max', 'd_max',
                     'front_dist_mean', 'd_mean']:
-        print("The given variable does not vary spatially.")
+        log.warning("The given variable does not vary spatially.")
 
     plot_prop_cp.lineColor = plot_prop.lineColorAnal
     plot_prop_cp.lineStyle = plot_prop.lineStyleAnal
@@ -1387,8 +1538,8 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
 def plot_scale_3D(fracture, fig=None, plot_prop=None):
     """ This function plots lines with dimensions on the 3D fracture plot."""
-
-    print('Plotting scale...')
+    log = logging.getLogger('PyFrac.plot_scale_3D')
+    log.info('Plotting scale...')
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -1479,7 +1630,8 @@ def plot_slice_3D(var_value, mesh, point1=None, point2=None, fig=None, plot_prop
         (Figure):                           -- A Figure object that can be used superimpose further plots.
 
     """
-    print('Plotting slice in 3D...')
+    log = logging.getLogger('PyFrac.plot_slice_3D')
+    log.info('Plotting slice in 3D...')
 
     if fig is None:
         fig = plt.figure()
@@ -1561,7 +1713,8 @@ def plot_footprint_analytical(regime, mat_prop, inj_prop, fluid_prop=None, time_
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-    print("Plotting analytical footprint...")
+    log = logging.getLogger('PyFrac.plot_footprint_analytical')
+    log.info("Plotting analytical footprint...")
 
     if fig is None:
         fig = plt.figure()
@@ -1645,8 +1798,8 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         (Figure):                               -- A Figure object that can be used superimpose further plots.
 
     """
-
-    print("Plotting analytical " + variable + " " + regime + " solution...")
+    log = logging.getLogger('PyFrac.plot_analytical_solution')
+    log.info("Plotting analytical " + variable + " " + regime + " solution...")
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -1656,7 +1809,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
     else:
         labels_given = True
 
-    if variable is 'footprint':
+    if variable == 'footprint':
         fig = plot_footprint_analytical(regime,
                                         mat_prop,
                                         inj_prop,
@@ -1711,7 +1864,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                         label=labels.legend)
             projection = '2D'
         else:
-            if projection is '2D_clrmap':
+            if projection == '2D_clrmap':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_image(analytical_list[i],
                                                           mesh_list[i],
@@ -1719,7 +1872,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                                           plot_prop=plot_prop_cp,
                                                           vmin=vmin,
                                                           vmax=vmax)
-            elif projection is '2D_contours':
+            elif projection == '2D_contours':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_contours(analytical_list[i],
                                                              mesh_list[i],
@@ -1728,7 +1881,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                                              contours_at=contours_at,
                                                              vmin=vmin,
                                                              vmax=vmax)
-            elif projection is '3D':
+            elif projection == '3D':
                 for i in range(len(analytical_list)):
                     fig = plot_fracture_variable_as_surface(analytical_list[i],
                                                             mesh_list[i],
@@ -1743,7 +1896,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
     ax.set_ylabel(labels.yLabel)
     ax.set_title(labels.figLabel)
     if variable not in ['footprint']:
-        if projection is '3D':
+        if projection == '3D':
             ax.set_zlabel(labels.zLabel)
             sm = plt.cm.ScalarMappable(cmap=plot_prop_cp.colorMap,
                                        norm=plt.Normalize(vmin=vmin,
@@ -1755,7 +1908,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
             im = ax.images
             cb = im[-1].colorbar
             cb.set_label(labels.colorbarLabel + ' analytical')
-        elif projection is '2D':
+        elif projection == '2D':
             ax.set_title(labels.figLabel)
             if plot_prop_cp.plotLegend:
                 ax.legend()
@@ -1772,12 +1925,12 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
     if time_srs is None:
         raise ValueError("Time series is to be provided.")
 
-    if regime is 'E_K':
+    if regime == 'E_K':
         Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
 
-    if regime is "MDR":
+    if regime == "MDR":
         density = fluid_prop.density
     else:
         density = None
@@ -1790,49 +1943,63 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
     else:
         Cprime = mat_prop.Cprime[samp_cell]
 
-    if regime is 'K':
+    if regime == 'K':
         muPrime = None
     else:
         muPrime = fluid_prop.muPrime
 
-    if regime is 'M':
+    if regime == 'M':
         Kprime = None
     else:
         Kprime = mat_prop.Kprime[samp_cell]
 
-    if regime is 'PKN' and h is None:
+    if regime == 'PKN' and h is None:
         raise ValueError("Fracture height is required to plot PKN fracture!")
 
-    return_pathces = []
+    if len(inj_prop.injectionRate[0]) > 1:
+        V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
+    else:
+        V0=None
+
+    return_patches = []
     for i in time_srs:
+        if len(inj_prop.injectionRate[0]) > 1:
+            if i > inj_prop.injectionRate[0, 1]:
+                Q0 = 0.0
+            else:
+                Q0 = inj_prop.injectionRate[1, 0]
+        else:
+            Q0 = inj_prop.injectionRate[1,0]
+
         x_len, y_len = get_fracture_dimensions_analytical(regime,
                                                           i,
                                                           mat_prop.Eprime,
-                                                          inj_prop.injectionRate[1, 0],
+                                                          Q0,
                                                           muPrime=muPrime,
                                                           Kprime=Kprime,
                                                           Cprime=Cprime,
                                                           Kc_1=Kc_1,
                                                           h=h,
                                                           density=density,
-                                                          gamma=gamma)
+                                                          gamma=gamma,
+                                                          Vinj=V0)
 
         if inj_point is None:
             inj_point = [0., 0.]
 
         if regime in ('M', 'Mt', 'K', 'Kt', 'E', 'MDR'):
-            return_pathces.append(mpatches.Circle((inj_point[0], inj_point[1]),
+            return_patches.append(mpatches.Circle((inj_point[0], inj_point[1]),
                                    x_len,
                                    edgecolor=plot_prop.lineColorAnal,
                                    facecolor='none'))
         elif regime in ('PKN', 'KGD_K'):
-            return_pathces.append(mpatches.Rectangle(xy=(-x_len + inj_point[0], -y_len + inj_point[1]),
+            return_patches.append(mpatches.Rectangle(xy=(-x_len + inj_point[0], -y_len + inj_point[1]),
                                       width=2 * x_len,
                                       height=2 * y_len,
                                       edgecolor=plot_prop.lineColorAnal,
                                       facecolor='none'))
         elif regime in ('E_K', 'E_E'):
-            return_pathces.append(mpatches.Ellipse(xy=(inj_point[0], inj_point[1]),
+            return_patches.append(mpatches.Ellipse(xy=(inj_point[0], inj_point[1]),
                                    width=2 * x_len,
                                    height=2 * y_len,
                                    edgecolor=plot_prop.lineColorAnal,
@@ -1840,7 +2007,7 @@ def get_HF_analytical_solution_footprint(regime, mat_prop, inj_prop, plot_prop, 
         else:
             raise ValueError("Regime not supported.")
 
-    return return_pathces
+    return return_patches
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -1870,7 +2037,7 @@ def plot_injection_source(frac, fig=None, plot_prop=None):
 
 def animate_simulation_results(fracture_list, variable='footprint', projection=None, elements=None,
                                  plot_prop=None, edge=4, contours_at=None, labels=None, mat_properties=None,
-                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.001):
+                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.2):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -1899,7 +2066,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
         pause_time (float):                 -- time (in seconds) between two successive updates of frames.
 
     """
-
+    log = logging.getLogger('PyFrac.animate_simulation_results')
     if not isinstance(variable, list):
         variable = [variable]
     figures = [None for i in range(len(variable))]
@@ -1907,7 +2074,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
     setFigPos = True
     for fracture in fracture_list:
         for indx, plt_var in enumerate(variable):
-            print("Plotting solution at " + repr(fracture.time) + "...")
+            log.info("Plotting solution at " + repr(fracture.time) + "...")
             if plot_prop is None:
                 plot_prop = PlotProperties()
 
@@ -1918,7 +2085,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                 plt.clf()  # clear figure
                 figures[indx].add_axes(ax)  # add axis to the figure
 
-            if plt_var is 'footprint':
+            if plt_var == 'footprint':
                 figures[indx] = fracture.plot_fracture(variable='mesh',
                                                        mat_properties=mat_properties,
                                                        projection=projection,
@@ -1947,10 +2114,14 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                        projection=fp_projection,
                                                        fig=figures[indx],
                                                        labels=fig_labels)
-
+                
+                if elements is None:
+                    elems = get_elements(suitable_elements[plt_var], fracture)
+                else:
+                    elems = elements
                 figures[indx] = fracture.plot_fracture(variable=plt_var,
                                                        projection=projection,
-                                                       elements=elements,
+                                                       elements=elems,
                                                        mat_properties=mat_properties,
                                                        fig=figures[indx],
                                                        plot_prop=plot_prop,
@@ -1961,7 +2132,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
 
             # plotting source elements
             plot_injection_source(fracture, fig=figures[indx])
-            
+
             # plotting closed cells
             if len(fracture.closed) > 0:
                 plot_prop.lineColor = 'orangered'
@@ -1970,7 +2141,9 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                                                                         plot_prop=plot_prop,
                                                                         plot_mesh=False,
                                                                         print_number=False)
-
+            # plot the figure
+            plt.ion()
+            plt.pause(pause_time)
         # set figure position
         if setFigPos:
             for i in range(len(variable)):
@@ -1987,9 +2160,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
                     pass
             setFigPos = False
 
-        # plot the figure
-        plt.ion()
-        plt.pause(pause_time)
+        
         if block_figure:
             input("Press any key to continue.")
     plt.show(block=True)
@@ -2126,7 +2297,7 @@ def save_images_to_video(image_folder, video_name='movie'):
     """ This function makes a video from the images in the given folder."""
     import cv2
     import os
-
+    log = logging.getLogger('PyFrac.save_images_to_video')
     if ".avi" not in video_name:
         video_name = video_name + '.avi'
 
@@ -2138,7 +2309,7 @@ def save_images_to_video(image_folder, video_name='movie'):
 
     img_no = 0
     for image in images:
-        print("adding image no " + repr(img_no))
+        log.info("adding image no " + repr(img_no))
         video.write(cv2.imread(os.path.join(image_folder, image)))
         cv2.waitKey(1)
         img_no += 1
@@ -2148,15 +2319,186 @@ def save_images_to_video(image_folder, video_name='movie'):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def remove_zeros(var_value, mesh):
+def remove_zeros(var_value, mesh, plot_boundary=False):
 
-    zero = np.full(mesh.NumberOfElts, False, dtype=bool)
-    zero[abs(var_value) < 3 * np.finfo(float).eps] = True
-    for i in range(mesh.NumberOfElts-1):
-        not_left = zero[i] and zero[i + 1]
-        not_right = zero[i] and zero[i - 1]
-        not_bottom = zero[i] and zero[i - mesh.nx]
-        not_top = zero[i] and zero[(i + mesh.nx) % mesh.NumberOfElts]
-        if not_left and not_right and not_bottom and not_top:
-            var_value[i] = np.nan
-    var_value[mesh.NumberOfElts - 1] = np.nan
+    if plot_boundary:
+        zero = np.full(mesh.NumberOfElts, False, dtype=bool)
+        zero[abs(var_value) < 3 * np.finfo(float).eps] = True
+        for i in range(mesh.NumberOfElts-1):
+            not_left = zero[i] and zero[i + 1]
+            not_right = zero[i] and zero[i - 1]
+            not_bottom = zero[i] and zero[i - mesh.nx]
+            not_top = zero[i] and zero[(i + mesh.nx) % mesh.NumberOfElts]
+            if not_left and not_right and not_bottom and not_top:
+                var_value[i] = np.nan
+        var_value[mesh.NumberOfElts - 1] = np.nan
+    else:
+        var_value[abs(var_value) < 3 * np.finfo(float).eps] = np.nan
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_elements(specifier, fr):
+    if specifier == 'crack':
+        return fr.EltCrack
+    elif specifier == 'channel':
+        return fr.EltChannel
+    elif specifier == 'tip':
+        return fr.EltTip
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_regime(var_value, mesh, fig=None, elements=None):
+    """
+       This function plots the fracture regime with the color code defined by Dontsov. Plotting is done at the ribbon
+       cells. The colorbar is replaced by the colorcoded triangle.
+
+       Args:
+           var_value (list):                   -- List containing the color code at the tip.
+           mesh (object):                      -- mesh of the current timestep
+           fig (figure):                       -- Figure of the current footprint
+           elements (ndarray):                 -- the elements to be plotted.
+
+        Return:
+           fig (figure):                       -- Adapted figure
+
+       """
+
+    # getting the extent of the figure
+    x = mesh.CenterCoor[:, 0].reshape((mesh.ny, mesh.nx))
+    y = mesh.CenterCoor[:, 1].reshape((mesh.ny, mesh.nx))
+
+    dx = (x[0, 1] - x[0, 0]) / 2.
+    dy = (y[1, 0] - y[0, 0]) / 2.
+
+    extent = [x[0, 0] - dx, x[-1, -1] + dx, y[0, 0] - dy, y[-1, -1] + dy]
+
+    # selecting only the relevant elements
+    if elements is not None:
+        var_value_fullMesh = np.full((mesh.NumberOfElts, 3), 0.)
+        var_value_fullMesh[elements, ::] = var_value[elements, ::]
+        var_value = var_value_fullMesh
+
+    # re-arrange the solution for plotting
+    var_value_2D = var_value.reshape((mesh.ny, mesh.nx, 3))
+
+    # decide where we are not stagnant
+    non_stagnant = np.where(np.prod(var_value[elements, ::] == [0., 0., 0.], axis=1) != 1.)[0]
+
+    # use footprint if provided
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.get_axes()[0]
+        l = list(ax.get_lines())
+
+        fig.clf()
+        fig.add_subplot(121)
+        for line in l:
+            plt.plot(line.get_data()[0],line.get_data()[1],'k')
+
+    # plotting the colored cells
+    ax = fig.get_axes()[0]
+    ax.imshow(var_value_2D,
+              extent=extent,
+              origin='lower')
+
+    # plotting the triangle with the location of the tip cells
+    leg = fig.add_subplot(122)
+    leg = mkmtTriangle(leg)
+    leg = fill_mkmtTriangle(leg)
+    plot_points_to_mkmtTriangle(leg, var_value[elements[non_stagnant], ::])
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def mkmtTriangle(fig):
+    """
+       This function draws the Maxwell triangle used to higlight the regime dominant in the ribbon cell.
+
+       Args:
+           fig (figure):               -- The figure to place the Maxwell triangle in.
+
+       """
+
+    # Plot the triangle
+    a = 1.0 / math.sqrt(3)
+    fig.plot([0., 1., 0.5, 0.], [0., 0., 0.5/a, 0], 'k-')
+    fig.axis([-0.25, 1.2, -0.2, 1.05])
+    # Remove axes
+    fig.axis('off')
+    #Label the corners of the triangle
+    fig.text(1.0, 0, r"$k$", fontsize=18, verticalalignment='top')
+    fig.text(-0.1, 0, r"$m$", fontsize=18, verticalalignment='top')
+    fig.text(0.45, 0.575/a, r"$\tilde{m}$", fontsize=18, verticalalignment='top')
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def fill_mkmtTriangle(fig):
+    """
+       This function colors the Maxwell triangle used to highlight the regime dominant in the ribbon cell.
+
+       Args:
+           fig (figure):               -- The figure with the Maxwell triangle to color.
+
+       """
+
+    # Generate an image with 300x300 pixels
+    Nlignes = 300
+    Ncol = 300
+    img = np.zeros((Nlignes, Ncol, 4))
+    dx = 2.0 / (Ncol - 1)
+    dy = 1.0 / (Nlignes - 1)
+
+    # choose color of pixels.
+    for i in range(Ncol - 1):
+        for j in range(Nlignes - 1):
+            x = -1.0 + i * dx
+            y = j * dy
+            v = y
+            r = (x + 1 - v) / 2.0
+            b = 1.0 - v - r
+            if (r >= 0) and (r <= 1.0) and (v >= 0) and (v <= 1.0) and (b >= 0) and (b <= 1.0):
+                img[j][i] = np.array([r, v, b, 1.0])
+            else:
+                img[j][i] = np.array([1.0, 1.0, 1.0, 0.0])
+    a = 1.0 / math.sqrt(3)
+    fig.imshow(img, origin='lower', extent=[0.0, 1, 0.0, 0.5 / a])
+
+    return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_points_to_mkmtTriangle(fig, rgbpoints):
+    """
+       This function plots a set of points in the m-k-mtilde triangle
+
+       Args:
+           fig (figure):               -- The figure with the Maxwell triangle to place the points.
+           rgbpoints (ndarraz):        -- Color code in RGB of the points to plot.
+
+       """
+
+    
+    nOFpoits = rgbpoints.shape[0]
+    x = np.zeros(nOFpoits)
+    y = np.zeros(nOFpoits)
+    
+    # Transform color into coordinates
+    a = 1.0 / math.sqrt(3)
+    for k in range(nOFpoits):
+        rgb = rgbpoints[k,:]
+        somme = rgb[0] + rgb[1] + rgb[2]
+        x[k] = ( (rgb[0] - rgb[2]) / math.sqrt(3) / somme) /(2*a) + 0.5
+        y[k] = 0.5/a * rgb[1] / somme
+    
+    # Plot the points
+    fig.plot(x, y, "k.", markersize=9)

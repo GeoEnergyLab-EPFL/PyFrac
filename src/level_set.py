@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # local imports
 import numpy as np
+import logging
 import warnings
 from scipy.optimize import fsolve
 
@@ -31,7 +32,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
         Note:
             Does not return anything. The levelSet is updated in place.
     """
-
+    log = logging.getLogger('PyFrac.SolveFMM')
     # todo: This method is inefficient. It can be implemented with heap for better efficiency
 
     # for Elements radialy outward from ribbon cells
@@ -64,6 +65,10 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
 
                 NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
                 NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
+                if NeigxMin >= 1e50 and NeigyMin >= 1e50 :
+                    log.warning("You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
+                    # A possible fix of this situation could be leave apart the cell and come back later
+                    # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method
                 delT = NeigyMin - NeigxMin
 
                 theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2
@@ -125,6 +130,11 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                                    positive_levelSet[mesh.NeiElements[neighbor, 1]])
                     NeigyMin = min(positive_levelSet[mesh.NeiElements[neighbor, 2]],
                                    positive_levelSet[mesh.NeiElements[neighbor, 3]])
+                    if NeigxMin >= 1e50 and NeigyMin >= 1e50:
+                        log.warning(
+                            "You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
+                        # A possible fix of this situation could be leave apart the cell and come back later
+                        # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method
                     beta = mesh.hx / mesh.hy
                     delT = NeigyMin - NeigxMin
                     theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * delT ** 2
@@ -153,7 +163,24 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                        levelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikonal equation function
             guess = np.max(levelSet[neighbors])  # initial starting guess for the numerical solver
             levelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
-
+# from visualization import plot_fracture_variable_as_image
+# import matplotlib.pyplot as plt
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# A = np.full(mesh.NumberOfElts, -1.)
+# A[farAwayPstv] = levelSet[farAwayPstv]
+# A[farAwayNgtv] = levelSet[farAwayNgtv]
+# A[EltRibbon] = levelSet[EltRibbon]
+#
+# for i in range(mesh.NumberOfElts):
+#     if A[i] < -10000 or A[i] > 10000:
+#         A[i] = -1
+# fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
+# ax = fig.get_axes()[0]
+# x_center = mesh.CenterCoor[Alive, 0]
+# y_center = mesh.CenterCoor[Alive, 1]
+# for i, txt in enumerate(Alive):
+#     ax.annotate(txt, (x_center[i], y_center[i]))
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -358,7 +385,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
                                        right and 3 signifying top left vertex).
         - CellStatusNew (ndarray):  -- specifies which region each element currently belongs to.
     """
-
+    log = logging.getLogger('PyFrac.UpdateLists')
     # new tip elements contain only the partially filled elements
     eltsTip = EltsTipNew[np.where(FillFrac <= 0.9999)]
 
@@ -366,6 +393,8 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     inTip = np.zeros((mesh.NumberOfElts,), bool)
     inTip[eltsTip] = True
     i = 0
+
+    #todo: the while below is probably inserting a bug - found it with poor resolution and volume control
     while i < len(eltsTip):  # to remove a special case encountered in sharp edges and rectangular cells
         neighbors = mesh.NeiElements[eltsTip[i]]
         if inTip[neighbors[0]] and inTip[neighbors[3]] and inTip[neighbors[3] - 1]:
@@ -413,6 +442,12 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
             zeroVrtx[i] = 2
 
     eltsRibbon = np.setdiff1d(eltsRibbon, eltsTip)
+    if np.any(levelSet[eltsRibbon]>0):
+        log.debug("Probably there is a bug here....")
+    # plot for checking
+    # from continuous_front_reconstruction import plot_cell_lists
+    # fig = plot_cell_lists(mesh, eltsTip, mymarker='.', mycolor='red')
+    # fig = plot_cell_lists(mesh, eltsRibbon, fig=fig, mymarker='.', mycolor='b', shiftx=0.08)
 
     # Cells status list store the status of all the cells in the domain
     CellStatusNew = np.zeros(mesh.NumberOfElts, int)
@@ -420,7 +455,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     CellStatusNew[eltsTip] = 2
     CellStatusNew[eltsRibbon] = 3
 
-    return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew
+    return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew, newEltChannel
 
     # -----------------------------------------------------------------------------------------------------------------------
 

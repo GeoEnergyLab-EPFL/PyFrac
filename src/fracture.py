@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # imports
+import logging
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import mpl_toolkits.mplot3d.art3d as art3d
@@ -68,8 +69,7 @@ class Fracture:
         muPrime (ndarray):          -- local viscosity parameter
         Ffront (ndarray):           -- a list containing the intersection of the front and grid lines for the tip
                                        cells. Each row contains the x and y coordinates of the two points.
-        regime (ndarray):           -- the regime of the ribbon cells (0 to 1, where 0 is fully toughness dominated,
-                                       and 1 is fully viscosity dominated; See Zia and Lecampion 2018, IJF)
+        regime_color (ndarray):     -- RGB color code of the regime on Dontsov and Peirce, 2017
         ReynoldsNumber (ndarray):   -- the reynolds number at each edge of the cells in the fracture. The
                                        arrangement is left, right, bottom, top.
         fluidFlux (ndarray):        -- the fluid flux at each edge of the cells in the fracture. The arrangement is
@@ -88,6 +88,7 @@ class Fracture:
         timeStep_last (float):      -- the last time step. Required for re-meshing.
         source (ndarray):           -- the list of injection cells i.e. the source elements.
 
+
     """
 
     def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
@@ -98,7 +99,7 @@ class Fracture:
 
         self.mesh = mesh
 
-        if init_param.regime is not 'static':
+        if init_param.regime != 'static':
 
             # get appropriate length dimension variable
             length = init_param.geometry.get_length_dimension()
@@ -128,12 +129,14 @@ class Fracture:
 
         self.EltChannel, self.EltTip, self.EltCrack, \
         self.EltRibbon, self.ZeroVertex, self.CellStatus, \
-        self.l, self.alpha, self.FillF, self.sgndDist = generate_footprint(self.mesh,
-                                                                        surv_cells,
-                                                                        inner_cells,
-                                                                        surv_dist)
+        self.l, self.alpha, self.FillF, self.sgndDist, \
+        self.Ffront, self.number_of_fronts, self.fronts_dictionary = generate_footprint(self.mesh,
+                                                                                       surv_cells,
+                                                                                       inner_cells,
+                                                                                       surv_dist,
+                                                                                       simulProp.projMethod)
         # for static fracture initialization
-        if init_param.regime is 'static':
+        if init_param.regime == 'static':
             self.w, self.pNet = get_width_pressure(self.mesh,
                                                    self.EltCrack,
                                                    self.EltTip,
@@ -143,11 +146,14 @@ class Fracture:
                                                    init_param.netPressure,
                                                    init_param.fractureVolume,
                                                    simulProp.symmetric,
+                                                   simulProp.useBlockToeplizCompression,
                                                    solid.Eprime)
 
-            if init_param.fractureVolume is None:
+            if init_param.fractureVolume is None and init_param.time is None:
                 volume = np.sum(self.w) * mesh.EltArea
                 self.time = volume / injection.injectionRate[1, 0]
+            elif init_param.time is not None:
+                self.time = init_param.time
 
             self.v = init_param.tipVelocity
 
@@ -172,8 +178,12 @@ class Fracture:
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
         self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
-
-        self.process_fracture_front()
+        # will be overwritten by None if not required
+        self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
+        self.yieldRatio = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32) 
+        
+        if simulProp.projMethod != 'LS_continousfront':
+            self.process_fracture_front()
 
         # local viscosity
         if fluid is not None:
@@ -186,23 +196,38 @@ class Fracture:
 
         # regime variable (goes from 0 for fully toughness dominated and one for fully viscosity dominated propagation)
         if simulProp.saveRegime:
-            self.regime = np.full((mesh.NumberOfElts,), np.nan, dtype=np.float32)
+            self.regime_color = np.full((mesh.NumberOfElts, 3), 0., dtype=np.float32)
         else:
-            self.regime = None
+            self.regime_color = None
 
         if simulProp.saveFluidFlux:
             self.fluidFlux = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
+            self.fluidFlux_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
         else:
             self.fluidFlux = None
+            self.fluidFlux_components = None
 
         if simulProp.saveFluidVel:
             self.fluidVelocity = np.full((4, mesh.NumberOfElts), np.nan, dtype=np.float32)
+            self.fluidVelocity_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
         else:
             self.fluidVelocity = None
+            self.fluidVelocity_components = None
+
+        if simulProp.saveFluidFluxAsVector:
+            self.fluidFlux_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidFlux_components = None
+
+        if simulProp.saveFluidVelAsVector:
+            self.fluidVelocity_components = np.full((8, mesh.NumberOfElts), np.nan, dtype=np.float32)
+        else:
+            self.fluidVelocity_components = None
 
         self.closed = np.array([], dtype=int)
 
         self.TarrvlZrVrtx = np.full((mesh.NumberOfElts,), np.nan, dtype=np.float64)
+        self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
         if self.v is not None:
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
 
@@ -247,7 +272,7 @@ class Fracture:
         if variable in unidimensional_variables:
             raise ValueError("The variable does not vary spatially!")
 
-        if variable is 'complete':
+        if variable == 'complete':
             proj = '3D'
             if '2D' in projection:
                 proj = '2D'
@@ -275,7 +300,7 @@ class Fracture:
                                      labels=labels)
             variable = 'width'
 
-        if projection is '3D':
+        if projection == '3D':
             plot_non_zero = False
 
         fig = plot_fracture_list([self],
@@ -559,6 +584,9 @@ class Fracture:
             Fr_coarse (Fracture):   -- the new fracture after re-meshing.
         """
 
+        if self.sgndDist_last is None:
+            self.sgndDist_last = self.sgndDist
+
         # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,
                  self.EltRibbon,
@@ -602,8 +630,8 @@ class Fracture:
             # getting the corresponding cells of the coarse mesh in the fine mesh
             corresponding = []
             for i in intersecting:
-                corresponding.append(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
-                                                            coarse_mesh.CenterCoor[i, 1]))
+                corresponding.append(list(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
+                                                            coarse_mesh.CenterCoor[i, 1]))[0])
             corresponding = np.asarray(corresponding, dtype=int)
 
             # weighted sum to conserve volume upto machine precision
@@ -697,6 +725,8 @@ class Fracture:
                  cells_outside,
                  [])
 
+        if self.timeStep_last is None:
+            self.timeStep_last = 1
         Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
                         sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
 
@@ -719,7 +749,7 @@ class Fracture:
         # fine mesh. If not available, average is taken of the enclosing elements
         to_correct = []
         for indx, elt in enumerate(Fr_coarse.EltTip):
-            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])
+            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])[0]
             if np.isnan(self.TarrvlZrVrtx[corr_tip]):
                 TarrvlZrVrtx = 0
                 cnt = 0
@@ -748,3 +778,58 @@ class Fracture:
         Fr_coarse.wHist = wHist_coarse
 
         return Fr_coarse
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+    def update_tip_regime(self, mat_prop, fluid_prop, timeStep):
+        log = logging.getLogger('PyFrac.update_tip_regime')
+        """
+        This function calculates the color of the tip regime relative to the tip asymptotes.
+        """
+
+        # fixed parameters
+        beta_mtilde = 4 / (15 ** (1/4) * (2 ** (1/2) - 1) ** (1/4))
+        beta_m = 2 ** (1/3) * 3 ** (5/6)
+
+        # initiate with all cells white
+        self.regime_color = np.full((self.mesh.NumberOfElts, 3), 0., dtype=np.float32)
+
+        # calculate velocity
+        vel = -(self.sgndDist[self.EltRibbon] - self.sgndDist_last[self.EltRibbon]) / timeStep
+
+        # decide on moving cells
+        stagnant = np.where(mat_prop.Kprime[self.EltRibbon] * (abs(self.sgndDist[self.EltRibbon])) ** 0.5 / (
+                mat_prop.Eprime * self.w[self.EltRibbon]) > 1)[0]
+        moving = np.arange(self.EltRibbon.shape[0])[~np.in1d(self.EltRibbon, self.EltRibbon[stagnant])]
+
+        for i in moving:
+            if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
+                log.debug('Why nan distance?')
+            wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
+            wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
+                 * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
+            wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel[i] * mat_prop.Cprime[self.EltRibbon[i]] ** 2
+                                     / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
+
+            nk = wk / (self.w[self.EltRibbon[i]] - wk)
+            nm = wm / (self.w[self.EltRibbon[i]] - wm)
+            nmtilde = wmtilde / (self.w[self.EltRibbon[i]] - wmtilde)
+
+            Nk = nk / (nk + nm + nmtilde)
+            Nm = nm / (nk + nm + nmtilde)
+            Nmtilde = nmtilde / (nk + nm + nmtilde)
+
+            if Nk > 1.:
+                Nk = 1
+            elif Nk < 0.:
+                Nk = 0
+            if Nm > 1.:
+                Nm = 1
+            elif Nm < 0.:
+                Nm = 0
+            if Nmtilde > 1.:
+                Nmtilde = 1
+            elif Nmtilde < 0.:
+                Nmtilde = 0
+
+            self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
