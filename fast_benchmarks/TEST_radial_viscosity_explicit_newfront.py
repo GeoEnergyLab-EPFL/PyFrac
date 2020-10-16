@@ -23,9 +23,9 @@ def test_radial_M_expl_newfront():
                     "finalTime": 1e5, "initialR": 0.1}
 
     # running the simulation
-    # exitcode, outputfolder = run_radial_vertex(my_front_reconstruction,my_front_advancement,my_vertex,my_param)
+    #exitcode, outputfolder = run_radial_vertex(my_front_reconstruction,my_front_advancement,my_vertex,my_param)
     #
-    # assert exitcode == True, " error during the computation of the numerical solution"
+    #assert exitcode == True, " error during the computation of the numerical solution"
     outputfolder = "./Temp_Data/M_radial_explicit_LS_continousfront"
 
     ########################
@@ -175,34 +175,34 @@ def test_radial_M_expl_newfront():
                                           export2Json=True,
                                           export2Json_assuming_no_remeshing=False)
 
-        # from postprocess_fracture import get_HF_analytical_solution
-        # labels = LabelProperties('pf', 'slice', '2D')
-        # analytical_list, mesh_list = get_HF_analytical_solution('M',
-        #                                                           'pn',
-        #                                                           Solid,
-        #                                                           Injection,
-        #                                                           mesh=Fr_list[i].mesh,
-        #                                                           fluid_prop=Fluid,
-        #                                                           time_srs=[time_srs[i]],
-        #                                                           length_srs=None,
-        #                                                           h=None,
-        #                                                           samp_cell=None,
-        #                                                           gamma=None)
-        # for j in range(len(analytical_list)):
-        #     analytical_list[j] /= labels.unitConversion
-        # sampling_cells = np.asarray(numerical_results_dict['sampling_cells_0'],dtype=int)
-        # analytical_p = np.asarray(analytical_list[0])[sampling_cells]
-        # numerical_p = np.asarray(numerical_results_dict['pn_0'])
-        # diff = 0.
-        # diff_i = []
-        # diff_i_limit = np.array([3.1 / 10., 1.1 /100., 1.7/100., 1.1 /100., 1.8/100])
-        # diff_limit =   np.array([1.4,       14./100.,  0.18,     0.2,       0.19])
-        # for j in range(numerical_p.size):
-        #     diff = diff + abs(numerical_p[j]-analytical_p[j])
-        #     diff_i.append(abs(numerical_p[j]-analytical_p[j]))
-        # diff_i = np.asarray(diff_i)
-        # assert diff_i.max() < diff_i_limit[i]
-        # assert diff < diff_limit[i]
+        from postprocess_fracture import get_HF_analytical_solution
+        labels = LabelProperties('pf', 'slice', '2D')
+        analytical_list, mesh_list = get_HF_analytical_solution('M',
+                                                                  'pn',
+                                                                  Solid,
+                                                                  Injection,
+                                                                  mesh=Fr_list[i].mesh,
+                                                                  fluid_prop=Fluid,
+                                                                  time_srs=[time_srs[i]],
+                                                                  length_srs=None,
+                                                                  h=None,
+                                                                  samp_cell=None,
+                                                                  gamma=None)
+        for j in range(len(analytical_list)):
+            analytical_list[j] /= labels.unitConversion
+        sampling_cells = np.asarray(numerical_results_dict['sampling_cells_0'],dtype=int)
+        analytical_p = np.asarray(analytical_list[0])[sampling_cells]
+        numerical_p = np.asarray(numerical_results_dict['pn_0'])
+        diff = 0.
+        diff_i = []
+        diff_i_limit = np.array([3.1 / 10., 8.1 /100., 2.5/100., 2.9 /100., 1.8/100])
+        diff_limit =   np.array([1.4,       38./100.,  0.18,     0.2,       0.19])
+        for j in range(numerical_p.size):
+            diff = diff + abs(numerical_p[j]-analytical_p[j])
+            diff_i.append(abs(numerical_p[j]-analytical_p[j]))
+        diff_i = np.asarray(diff_i)
+        assert diff_i.max() < diff_i_limit[i]
+        assert diff < diff_limit[i]
 
     ####### useful for debugging ###
     # from visualization import *
