@@ -7,6 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 # local imports
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
@@ -14,6 +17,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from visualization import *
+from utility import setup_logging_to_console
+
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)
@@ -52,6 +59,8 @@ simulProp.remeshFactor = 1.5            # the factor by which the mesh will be c
 simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
+simulProp.projMethod = 'ILSA_orig'
+simulProp.set_tipAsymptote('U')
 
 # initializing fracture
 gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
@@ -83,99 +92,100 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = np.geomspace(1, 500, 8)
-Fr_list, properties = load_fractures(address="./Data/ellipse",
-                                    sim_name='anisotropic_toughness_benchmark',
-                                    time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-# plotting footprint
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D')
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP)
-Fig_FP = plot_analytical_solution('E_K',
-                                  'footprint',
-                                  Solid,
-                                  Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_FP,
-                                  projection='2D',
-                                  time_srs=time_srs)
+    # loading simulation results
+    time_srs = np.geomspace(1, 500, 8)
+    Fr_list, properties = load_fractures(address="./Data/ellipse",
+                                        sim_name='anisotropic_toughness_benchmark',
+                                        time_srs=time_srs)
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-#plotting width
-Fig_w_slice = plot_fracture_list_slice(Fr_list,
-                                       variable='width',
-                                       point1=[-Fr_list[-1].mesh.Lx, 0],
-                                       point2=[Fr_list[-1].mesh.Lx, 0],
-                                       plot_prop=PlotProperties(line_style='.'))
-Fig_w_slice = plot_analytical_solution_slice('E_K',
-                                             variable='width',
-                                             mat_prop=Solid,
-                                             inj_prop=Injection,
-                                             fluid_prop=Fluid,
-                                             fig=Fig_w_slice,
-                                             point1=[-Fr_list[-1].mesh.Lx, 0],
-                                             point2=[Fr_list[-1].mesh.Lx, 0],
-                                             time_srs=time_srs,
-                                             plt_top_view=True)
+    # plotting footprint
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D')
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP)
+    Fig_FP = plot_analytical_solution('E_K',
+                                      'footprint',
+                                      Solid,
+                                      Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_FP,
+                                      projection='2D',
+                                      time_srs=time_srs)
 
-# loading all fractures
-Fr_list, properties = load_fractures(address="./Data/ellipse",
-                                     sim_name ='anisotropic_toughness_benchmark')
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    #plotting width
+    Fig_w_slice = plot_fracture_list_slice(Fr_list,
+                                           variable='width',
+                                           point1=[-Fr_list[-1].mesh.Lx, 0],
+                                           point2=[Fr_list[-1].mesh.Lx, 0],
+                                           plot_prop=PlotProperties(line_style='.'))
+    Fig_w_slice = plot_analytical_solution_slice('E_K',
+                                                 variable='width',
+                                                 mat_prop=Solid,
+                                                 inj_prop=Injection,
+                                                 fluid_prop=Fluid,
+                                                 fig=Fig_w_slice,
+                                                 point1=[-Fr_list[-1].mesh.Lx, 0],
+                                                 point2=[Fr_list[-1].mesh.Lx, 0],
+                                                 time_srs=time_srs,
+                                                 plt_top_view=True)
 
-# making a plot properties object with desired line style and scaling
-plot_prop = PlotProperties(line_style='.',
-                           graph_scaling='loglog')
-# plotting minor axis length
-labels = LabelProperties('d_min')
-labels.figLabel = 'Minor axis length'
-Fig_len_a = plot_fracture_list(Fr_list,
-                             variable='d_min',
-                             plot_prop=plot_prop,
-                             labels=labels)
-Fig_len_a = plot_analytical_solution('E_K',
-                                   'd_min',
-                                   Solid,
-                                   Injection,
-                                   fluid_prop=Fluid,
-                                   fig=Fig_len_a,
-                                   time_srs=time_srs,
-                                   labels=labels)
+    # loading all fractures
+    Fr_list, properties = load_fractures(address="./Data/ellipse",
+                                         sim_name ='anisotropic_toughness_benchmark')
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-# plotting major axis length
-labels.figLabel = 'Major axis length'
-Fig_len_b = plot_fracture_list(Fr_list,
-                             variable='d_max',
-                             plot_prop=plot_prop,
-                             labels=labels)
-Fig_len_b = plot_analytical_solution('E_K',
-                                   'd_max',
-                                   Solid,
-                                   Injection,
-                                   fluid_prop=Fluid,
-                                   fig=Fig_len_b,
-                                   time_srs=time_srs,
-                                   labels=labels)
+    # making a plot properties object with desired line style and scaling
+    plot_prop = PlotProperties(line_style='.',
+                               graph_scaling='loglog')
+    # plotting minor axis length
+    labels = LabelProperties('d_min')
+    labels.figLabel = 'Minor axis length'
+    Fig_len_a = plot_fracture_list(Fr_list,
+                                 variable='d_min',
+                                 plot_prop=plot_prop,
+                                 labels=labels)
+    Fig_len_a = plot_analytical_solution('E_K',
+                                       'd_min',
+                                       Solid,
+                                       Injection,
+                                       fluid_prop=Fluid,
+                                       fig=Fig_len_a,
+                                       time_srs=time_srs,
+                                       labels=labels)
 
-# plotting major axis length
-labels.figLabel = 'aspect ratio'
-plot_prop = PlotProperties(line_style = '.', graph_scaling='semilogx')
-Fig_ar = plot_fracture_list(Fr_list,
-                             variable='ar',
-                             plot_prop=plot_prop,
-                             labels=labels)
-ax = Fig_ar.get_axes()[0]
-ax.set_ylim(1.5, 2.5)
+    # plotting major axis length
+    labels.figLabel = 'Major axis length'
+    Fig_len_b = plot_fracture_list(Fr_list,
+                                 variable='d_max',
+                                 plot_prop=plot_prop,
+                                 labels=labels)
+    Fig_len_b = plot_analytical_solution('E_K',
+                                       'd_max',
+                                       Solid,
+                                       Injection,
+                                       fluid_prop=Fluid,
+                                       fig=Fig_len_b,
+                                       time_srs=time_srs,
+                                       labels=labels)
 
-plt.show(block=True)
+    # plotting major axis length
+    labels.figLabel = 'aspect ratio'
+    plot_prop = PlotProperties(line_style = '.', graph_scaling='semilogx')
+    Fig_ar = plot_fracture_list(Fr_list,
+                                 variable='ar',
+                                 plot_prop=plot_prop,
+                                 labels=labels)
+    ax = Fig_ar.get_axes()[0]
+    ax.set_ylim(1.5, 2.5)
 
+    plt.show(block=True)

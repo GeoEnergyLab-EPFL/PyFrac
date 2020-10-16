@@ -12,12 +12,12 @@ import math
 import sys
 from level_set import SolveFMM, reconstruct_front, UpdateLists
 from volume_integral import Integral_over_cell
-from HF_analytical import shift_injection_point
 from symmetry import self_influence
+from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 
 
 
-def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
+def get_eliptical_survey_cells(mesh, a, b, center=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of an ellipse with the given
     lengths of the major and minor axes. A list of all the cells inside the fracture is also provided.
@@ -35,9 +35,11 @@ def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
+    if center is None:
+        center = np.asarray([0, 0])
 
     # distances of the cell vertices
-    dist_vertx = ((mesh.VertexCoor[:, 0])/ a) ** 2 + ((mesh.VertexCoor[:, 1]) / b) ** 2 - 1.
+    dist_vertx = ((mesh.VertexCoor[:, 0] - center[0])/ a) ** 2 + ((mesh.VertexCoor[:, 1] - center[1]) / b) ** 2 - 1.
     # vertices that are inside the ellipse
     vertices = dist_vertx[mesh.Connectivity] < 0
 
@@ -53,30 +55,30 @@ def get_eliptical_survey_cells(mesh, a, b, inj_point=None):
     for i in range(0, inner_cells.size):
         dist[i] = Distance_ellipse(a,
                                    b,
-                                   mesh.CenterCoor[inner_cells[i], 0],
-                                   mesh.CenterCoor[inner_cells[i], 1])
+                                   mesh.CenterCoor[inner_cells[i], 0] - center[0],
+                                   mesh.CenterCoor[inner_cells[i], 1] - center[1])
 
     cell_len = (mesh.hx * mesh.hx + mesh.hy * mesh.hy) ** 0.5  # one cell diagonal length
     ribbon = np.where(dist <= 2 * cell_len)[0]
     surv_cells = inner_cells[ribbon]
     surv_dist = dist[ribbon]
 
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
+    # if center is not None:
+    #     surv_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=surv_cells)
+    #     inner_cells, tmp = shift_injection_point(inj_point[0],
+    #                                              inj_point[1],
+    #                                              mesh,
+    #                                              active_elts=inner_cells)
 
     return surv_cells, surv_dist, inner_cells
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_radial_survey_cells(mesh, r, inj_point=None):
+def get_radial_survey_cells(mesh, r, center=None):
     """
     This function would provide the ribbon of cells and their distances to the front on the inside of the perimeter of
     a circle with the given radius. A list of all the cells inside the fracture is also provided.
@@ -92,19 +94,23 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given circle.
     """
+    if center is None:
+        center = np.asarray([0, 0])
 
     # distances of the cell vertices
-    dist_vertx = ((mesh.VertexCoor[:, 0]) / r) ** 2 + ((mesh.VertexCoor[:, 1]) / r) ** 2 - 1.
+    dist_vertx = (((mesh.VertexCoor[:, 0] - center[0])) ** 2 + ((mesh.VertexCoor[:, 1] - center[1])) ** 2 ) \
+                  ** (1 / 2) / r - 1.
+
     # vertices that are inside the ellipse
-    vertices = dist_vertx[mesh.Connectivity] < 0
+    vertices = dist_vertx[mesh.Connectivity] <= 0
 
     # cells with all four vertices inside
     log_and = np.logical_and(np.logical_and(vertices[:, 0], vertices[:, 1]),
                              np.logical_and(vertices[:, 2], vertices[:, 3]))
 
     inner_cells = np.where(log_and)[0]
-    dist = r - ((mesh.CenterCoor[inner_cells, 0]) ** 2
-                + (mesh.CenterCoor[inner_cells, 1]) ** 2) ** 0.5
+    dist = r - ((mesh.CenterCoor[inner_cells, 0] - center[0]) ** 2
+                + (mesh.CenterCoor[inner_cells, 1] - center[1]) ** 2) ** 0.5
 
     if len(inner_cells) == 0:
         raise SystemError("The given radius is too small!")
@@ -114,22 +120,11 @@ def get_radial_survey_cells(mesh, r, inj_point=None):
     surv_cells = inner_cells[ribbon]
     surv_dist = dist[ribbon]
 
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
-
     return surv_cells, surv_dist, inner_cells
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
+def get_rectangular_survey_cells(mesh, length, height, center=None):
     """
     This function would provide the ribbon of cells on the inside of the perimeter of a rectangle with the given
     lengths and height. A list of all the cells inside the fracture is also provided.
@@ -147,37 +142,41 @@ def get_rectangular_survey_cells(mesh, length, height, inj_point=None):
         - inner_cells (ndarray)             -- the list of cells inside the given ellipse.
     """
 
-    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0]) < length)[0],
-                                 np.where(abs(mesh.CenterCoor[:, 1]) < height / 2)[0])
-    max_x = max(abs(mesh.CenterCoor[inner_cells, 0]))
-    max_y = max(abs(mesh.CenterCoor[inner_cells, 1]))
-    ribbon_x = np.where(abs(abs(mesh.CenterCoor[inner_cells, 0]) - max_x) < 100 * sys.float_info.epsilon)[0]
-    ribbon_y = np.where(abs(abs(mesh.CenterCoor[inner_cells, 1]) - max_y) < 100 * sys.float_info.epsilon)[0]
+    if center is None:
+        center = np.asarray([0, 0])
 
-    surv_cells = np.append(inner_cells[ribbon_x], inner_cells[ribbon_y])
+    inner_cells = np.intersect1d(np.where(abs(mesh.CenterCoor[np.ix_(np.arange(0, len(mesh.CenterCoor)), [0])]
+                                              - center[0]) < length)[0],
+                                 np.where(abs(mesh.CenterCoor[np.ix_(np.arange(0, len(mesh.CenterCoor)), [1])]
+                                              - center[1]) < height / 2)[0])
+    max_x = max(mesh.CenterCoor[inner_cells, 0])
+    min_x = min(mesh.CenterCoor[inner_cells, 0])
+    max_y = max(mesh.CenterCoor[inner_cells, 1])
+    min_y = min(mesh.CenterCoor[inner_cells, 1])
+    ribbon_max_x = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [0])] - max_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_min_x = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [0])] - min_x) < 100 * sys.float_info.epsilon)[0]
+    ribbon_max_y = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [1])] - max_y) < 100 * sys.float_info.epsilon)[0]
+    ribbon_min_y = np.where(abs(mesh.CenterCoor[np.ix_(inner_cells, [1])] - min_y) < 100 * sys.float_info.epsilon)[0]
+
+    surv_cells = np.append(inner_cells[ribbon_max_x], inner_cells[ribbon_max_y])
+    surv_cells = np.append(surv_cells, inner_cells[ribbon_min_x])
+    surv_cells = np.append(surv_cells, inner_cells[ribbon_min_y])
+    surv_cells = np.unique(surv_cells)
+
     surv_dist = np.zeros((len(surv_cells),), dtype=np.float64)
-    surv_dist[0:len(ribbon_x)] = length - float(abs(mesh.CenterCoor[inner_cells[ribbon_x[0]], 0]))
-    surv_dist[len(ribbon_x):len(surv_cells)] = height / 2 - float(abs(mesh.CenterCoor[inner_cells[ribbon_y[0]], 1]))
+
+    for i in range(len(surv_cells)):
+        surv_dist[i] = np.min([length - float(abs(mesh.CenterCoor[surv_cells[i], 0] - center[0])),
+                              height / 2 - float(abs(mesh.CenterCoor[surv_cells[i], 1] - center[1]))])
 
     if len(inner_cells) == 0:
         raise SystemError("The given rectangular region is too small compared to the mesh!")
 
-    if inj_point is not None:
-        surv_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=surv_cells)
-        inner_cells, tmp = shift_injection_point(inj_point[0],
-                                                 inj_point[1],
-                                                 mesh,
-                                                 active_elts=inner_cells)
-
     return surv_cells, surv_dist, inner_cells
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
+def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMethod):
     """
     This function takes the survey cells and their distances from the front and generate the footprint of a fracture
     using the fast marching method.
@@ -222,7 +221,39 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
 
     band = np.arange(mesh.NumberOfElts)
     # costruct the front
-    (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, band, inner_region, mesh)
+    if projMethod == 'LS_continousfront':
+        correct_size_of_pstv_region = [False, False, False]
+        recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
+        while not correct_size_of_pstv_region[0]:
+            EltTip_tmp, \
+            listofTIPcellsONLY, \
+            l_tmp, \
+            alpha_tmp, \
+            CellStatus, \
+            newRibbon, \
+            ZeroVertex_with_fully_traversed, \
+            ZeroVertex, \
+            correct_size_of_pstv_region,\
+            sgndDist_k_temp, Ffront, number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist,
+                                                                           band,
+                                                                           surv_cells,
+                                                                           inner_region,
+                                                                           mesh,
+                                                                           recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                           oldfront=None)
+            if correct_size_of_pstv_region[1] or correct_size_of_pstv_region[2]:
+                raise ValueError('The mesh is to small for the proposed initiation')
+
+            if not correct_size_of_pstv_region[0]:
+                raise SystemExit('FRONT RECONSTRUCTION ERROR: it is not possible to initialize the front with the given distances to the front')
+        sgndDist = sgndDist_k_temp
+        del correct_size_of_pstv_region
+
+    else:
+        (EltTip_tmp, l_tmp, alpha_tmp, CSt) = reconstruct_front(sgndDist, band, inner_region, mesh)
+        Ffront = 'It will be computed later by the method process_fracture_front()'
+        number_of_fronts=None
+
 
     # get the filling fraction of the tip cells
     FillFrac_tmp = Integral_over_cell(EltTip_tmp,
@@ -232,16 +263,32 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
                               'A') / mesh.EltArea
 
     # generate cell lists
-    (EltChannel,
-     EltTip,
-     EltCrack,
-     EltRibbon,
-     ZeroVertex,
-     CellStatus) = UpdateLists(inner_region,
-                               EltTip_tmp,
-                               FillFrac_tmp,
-                               sgndDist,
-                               mesh)
+    if projMethod == 'LS_continousfront':
+        (EltChannel,
+         EltTip,
+         EltCrack,
+         EltRibbon,
+         CellStatus,
+         fully_traversed) = UpdateListsFromContinuousFrontRec(newRibbon,
+                                                         sgndDist,
+                                                         inner_region,
+                                                         EltTip_tmp,
+                                                         listofTIPcellsONLY,
+                                                         mesh)
+    else:
+        (EltChannel,
+         EltTip,
+         EltCrack,
+         EltRibbon,
+         ZeroVertex,
+         CellStatus,
+         fully_traversed) = UpdateLists(inner_region,
+                                   EltTip_tmp,
+                                   FillFrac_tmp,
+                                   sgndDist,
+                                   mesh)
+        fronts_dictionary = None
+        #todo: implement volume control with two different pressures in the fractures in the case of proj_method = 'ILSA_orig'
 
     # removing fully traversed cells from the tip cells and other lists
     newTip_indices = np.arange(len(EltTip_tmp))[np.in1d(EltTip_tmp, EltTip)]
@@ -253,12 +300,12 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells):
         raise SystemExit("No channel elements. The initial radius is probably too small!")
 
 
-    return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist
+    return EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, l, alpha, FillFrac, sgndDist, Ffront, number_of_fronts, fronts_dictionary
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False,
+def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False, useBlockToeplizCompression=False,
                        Eprime=None):
     """
     This function calculates the width and pressure depending on the provided data. If only volume is provided, the
@@ -304,7 +351,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
     if not w is None and not p is None:
         return w_calculated, p_calculated
 
-    if symmetric:
+    if symmetric and not useBlockToeplizCompression:
 
         CrackElts_sym = mesh.corresponding[EltCrack]
         CrackElts_sym = np.unique(CrackElts_sym)
@@ -358,6 +405,38 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
         # recover original C (without filling fraction correction)
         C[np.ix_(EltTip_sym, EltTip_sym)] = C_EltTip
+
+    elif useBlockToeplizCompression:
+        C_Crack = C[np.ix_(EltCrack, EltCrack)]
+        EltTip_positions = np.where(np.in1d(EltCrack,EltTip))[0]
+
+        # filling fraction correction for element in the tip region
+        r = FillFrac - .25
+        indx = np.where(np.less(r,0.1))[0]
+        r[indx] = 0.1
+        ac = (1 - r) / r
+        C_Crack[EltTip_positions,EltTip_positions]=C_Crack[EltTip_positions,EltTip_positions] * (1. + ac * np.pi / 4.)
+
+        if w is None and not p is None:
+            w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack])
+
+        if not w is None and p is None:
+            p_calculated[EltCrack] = np.dot(C_Crack, w[EltCrack])
+
+        # calculate the width and pressure by considering fracture as a static fracture.
+        if w is None and p is None:
+
+            A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
+            A = np.vstack((A, np.ones((1, EltCrack.size + 1), dtype=np.float64)))
+            A[-1, -1] = 0
+
+            b = np.zeros((len(EltCrack)+1, ), dtype=np.float64)
+            b[-1] = volume / mesh.EltArea
+
+            sol = np.linalg.solve(A, b)
+
+            w_calculated[EltCrack] = sol[np.arange(EltCrack.size)]
+            p_calculated[EltCrack] = sol[EltCrack.size]
 
     else:
         C_EltTip = np.copy(C[np.ix_(EltTip, EltTip)])  # keeping the tip element entries to restore current tip correction. This is
@@ -645,11 +724,12 @@ class Geometry:
                                        the tip of the fracture.
         inner_cells (ndarray):      -- the cells enclosed by the cells given in the survey_cells (inclusive). In other
                                        words, the cells inside the fracture.
+        center (ndarray):           -- location of the center of the geometry.
 
     """
 
     def __init__(self, shape=None, radius=None, fracture_length=None, fracture_height=None, minor_axis=None,
-                 gamma=None, survey_cells=None, tip_distances=None, inner_cells=None):
+                 gamma=None, survey_cells=None, tip_distances=None, inner_cells=None, center=None):
         self.shape = shape
         self.radius = radius
         self.fractureLength = fracture_length
@@ -663,6 +743,7 @@ class Geometry:
         self.surveyCells = survey_cells
         self.tipDistances = tip_distances
         self.innerCells = inner_cells
+        self.center = center
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -686,6 +767,14 @@ class Geometry:
         elif self.shape == 'height contained':
             self.fractureLength = length
 
+# ----------------------------------------------------------------------------------------------------------------------
+    def get_center(self):
+        if self.center == None:
+            return [0., 0.]
+        else:
+            return self.center
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -695,12 +784,17 @@ def get_survey_points(geometry, mesh, source_coord=None):
     geometry.
     """
 
+    if geometry.center is None:
+        center = source_coord
+    else:
+        center =geometry.center
+
     if geometry.shape == 'radial':
         if geometry.radius > min(mesh.Lx, mesh.Ly):
             raise ValueError("The radius of the radial fracture is larger than domain!")
         surv_cells, surv_dist, inner_cells = get_radial_survey_cells(mesh,
                                                                     geometry.radius,
-                                                                    source_coord)
+                                                                    center)
     elif geometry.shape == 'elliptical':
         a = geometry.minorAxis * geometry.gamma
         if geometry.minorAxis > mesh.Ly or a > mesh.Lx:
@@ -710,7 +804,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
         surv_cells, surv_dist, inner_cells = get_eliptical_survey_cells(mesh,
                                                                         a,
                                                                         geometry.minorAxis,
-                                                                        source_coord)
+                                                                        center)
     elif geometry.shape == 'height contained':
         if geometry.fractureLength > mesh.Lx or geometry.fractureHeight > mesh.Ly:
             raise ValueError("The fracture is larger than domain!")
@@ -719,7 +813,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
         surv_cells, surv_dist, inner_cells = get_rectangular_survey_cells(mesh,
                                                                           geometry.fractureLength,
                                                                           geometry.fractureHeight,
-                                                                          source_coord)
+                                                                          center)
     elif geometry.shape == 'level set':
         surv_cells = geometry.surveyCells
         surv_dist = geometry.tipDistances

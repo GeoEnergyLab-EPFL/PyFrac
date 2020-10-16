@@ -20,10 +20,18 @@ Fig_labels = {
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
     'Re': 'Reynold\'s number',
+    'dpdx': 'horizontal pressure gradient',
+    'pressure gradient x': 'horizontal pressure gradient',
+    'dpdy': 'vertical pressure gradient',
+    'pressure gradient y': 'vertical pressure gradient',
     'fluid flux': 'Fluid Flux',
     'ff': 'Fluid Flux',
     'fluid velocity': 'Fluid Velocity',
     'fv': 'Fluid Velocity',
+    'fluid velocity as vector field': 'Fluid Velocity',
+    'fvvf': 'Fluid Velocity',
+    'fluid flux as vector field': 'Fluid Flux',
+    'ffvf': 'Fluid Flux',
     'front_dist_min': 'Closest Distance to Front',
     'd_min': 'Closest Distance to Front',
     'front_dist_max': 'Farthest Distance to Front',
@@ -43,9 +51,14 @@ Fig_labels = {
     'mesh': 'Mesh',
     'footprint': 'Fracture Footprint',
     'surface': 'Fracture Surface',
-    'regime': 'Propagation Regime (M-K)',
+    'chi': 'Tip leak-off parameter',
+    'regime': 'Propagation Regime',
     'source elements': 'Source Elements',
-    'se': 'Source Elements'
+    'se': 'Source Elements',
+    'effective viscosity': 'Effective Viscosity',
+    'ev': 'Effective Viscosity',
+    'yield ratio': 'Yield Ratio',
+    'y': 'Yield Ratio'
 }
 
 var_labels = {
@@ -61,10 +74,18 @@ var_labels = {
     'v': 'Front Velocity',
     'Reynolds number': 'Reynold\'s number',
     'Re': 'Reynold\'s number',
+    'dpdx': 'horizontal pressure gradient',
+    'pressure gradient x': 'horizontal pressure gradient',
+    'dpdy': 'vertical pressure gradient',
+    'pressure gradient y': 'vertical pressure gradient',
     'fluid flux': 'fluid flux',
     'ff': 'fluid flux',
     'fluid velocity': 'fluid velocity',
     'fv': 'fluid velocity',
+    'fluid velocity as vector field': 'fluid velocity',
+    'fvvf': 'fluid velocity',
+    'fluid flux as vector field': 'fluid flux',
+    'ffvf': 'fluid flux',
     'front_dist_min': '$R_{min}$',
     'd_min': '$R_{min}$',
     'front_dist_max': '$R_{max}$',
@@ -84,9 +105,14 @@ var_labels = {
     'mesh': '',
     'footprint': '',
     'surface': '',
-    'regime': 'regime (M = 1, K = 0)',
+    'chi': '',
+    'regime': 'regime',
     'source elements': 'source elements',
-    'se': 'source elements'
+    'se': 'source elements',
+    'effective viscosity': 'effective viscosity',
+    'ev': 'effective viscosity',
+    'yield ratio': 'yield ratio',
+    'y': 'yield ratio'
 }
 
 units = {
@@ -102,10 +128,18 @@ units = {
     'v': ' ($m/s$)',
     'Reynolds number': '',
     'Re': '',
+    'dpdx': '($MPa/m$)',
+    'pressure gradient x': '($MPa/m$)',
+    'dpdy': '($MPa/m$)',
+    'pressure gradient y': '($MPa/m$)',
     'fluid flux': ' ($m^2/s$)',
     'ff': ' ($m^2/s$)',
     'fluid velocity': ' ($m/s$)',
     'fv': ' ($m/s$)',
+    'fluid velocity as vector field': ' ($m/s$)',
+    'fvvf': ' ($m/s$)',
+    'fluid flux as vector field': ' ($m^2/s$)',
+    'ffvf': ' ($m^2/s$)',
     'front_dist_min': ' ($meters$)',
     'd_min': ' ($meters$)',
     'front_dist_max': ' ($meters$)',
@@ -125,9 +159,14 @@ units = {
     'mesh': '',
     'footprint': '',
     'surface': ' ($mm$)',
+    'chi': '',
     'regime': '',
     'source elements': '',
-    'se': ''
+    'se': '',
+    'effective viscosity': '($Pa\cdot s$)',
+    'ev': '($Pa\cdot s$)',
+    'yield ratio': '',
+    'y': ''
 }
 
 unit_conversion = {
@@ -143,10 +182,18 @@ unit_conversion = {
     'v': 1.,
     'Reynolds number': 1.,
     'Re': 1.,
+    'dpdx': 1.e6,
+    'pressure gradient x': 1.e6,
+    'dpdy': 1.e6,
+    'pressure gradient y': 1.e6,
     'fluid flux': 1.,
     'ff': 1.,
     'fluid velocity': 1.,
     'fv': 1.,
+    'fluid velocity as vector field': 1.,
+    'fvvf': 1.,
+    'fluid flux as vector field': 1.,
+    'ffvf': 1.,
     'front_dist_min': 1.,
     'd_min': 1.,
     'front_dist_max': 1.,
@@ -166,28 +213,39 @@ unit_conversion = {
     'mesh': None,
     'footprint': None,
     'surface': 1.e-3,
+    'chi': 1,
     'regime': 1.,
     'source elements': 1.,
-    'se': 1.
+    'se': 1.,
+    'effective viscosity': 1.,
+    'ev': 1.,
+    'yield ratio': 1.,
+    'y': 1.
 }
 
 
 supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                        'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
-                       'fluid velocity', 'fv', 'front_dist_min', 'd_min',
+                       'fluid velocity', 'fv',
+                       'dpdx', 'pressure gradient x', 'dpdy', 'pressure gradient y',
+                       'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
+                       'front_dist_min', 'd_min',
                        'front_dist_max', 'd_max', 'front_dist_mean',
                        'd_mean', 'mesh', 'footprint', 't', 'time', 'volume',
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
-                       'regime', 'source elements', 'se']
+                       'chi', 'regime', 'source elements', 'se', 'effective viscosity', 'ev',
+                       'yield ratio', 'y']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
                             'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total']
 bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
+                           'dpdx', 'pressure gradient x', 'dpdy', 'pressure gradient y',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
+                           'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
                            'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi',
-                           'regime']
+                           'chi', 'regime', 'effective viscosity', 'ev', 'yield ratio', 'y']
 
 required_string = {
     't': '100000',
@@ -226,9 +284,12 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'lkt\' or \'leaked off total\'\n' \
                     '-- \'ar\' or \'aspect ratio\'\n' \
                     '-- \'ef\' or \'efficiency\'\n' \
-                    '-- \'surface\'\n' \
+                    '-- \'surface\'\n'\
+                    '-- \'chi\'\n'\
                     '-- \'regime\'\n' \
-                    '-- \'se\' or \'source elements\''
+                    '-- \'se\' or \'source elements\'\n' \
+                    '-- \'ev\' or \'effective viscosity\'\n' \
+                    '-- \'yielded\' or \'y\'\n'
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -241,10 +302,18 @@ supported_projections ={
     'v': ['2D_clrmap', '2D_contours'],
     'Reynolds number': ['2D_clrmap', '2D_contours', '3D'],
     'Re': ['2D_clrmap', '2D_contours', '3D'],
+    'dpdx' : ['2D_clrmap', '2D_contours'],
+    'pressure gradient x' : ['2D_clrmap', '2D_contours'],
+    'dpdy' : ['2D_clrmap', '2D_contours'],
+    'pressure gradient y': ['2D_clrmap', '2D_contours'],
     'fluid flux': ['2D_clrmap', '2D_contours', '3D'],
     'ff': ['2D_clrmap', '2D_contours', '3D'],
     'fluid velocity': ['2D_clrmap', '2D_contours', '3D'],
     'fv': ['2D_clrmap', '2D_contours', '3D'],
+    'fluid flux as vector field': ['2D_vectorfield'],
+    'ffvf': ['2D_vectorfield'],
+    'fluid velocity as vector field': ['2D_vectorfield'],
+    'fvvf': ['2D_vectorfield'],
     'front_dist_min': ['1D'],
     'd_min': ['1D'],
     'front_dist_max': ['1D'],
@@ -266,28 +335,84 @@ supported_projections ={
     'efficiency': ['1D'],
     'ef': ['1D'],
     'surface': ['3D'],
+    'chi': ['2D_clrmap', '2D_contours'],
     'regime': ['2D_clrmap', '2D_contours', '3D'],
     'source elements': ['2D_clrmap', '2D_contours', '3D'],
-    'se': ['2D_clrmap', '2D_contours', '3D']
+    'se': ['2D_clrmap', '2D_contours', '3D'],
+    'effective viscosity': ['2D_clrmap', '2D_contours', '3D'],
+    'ev': ['2D_clrmap', '2D_contours', '3D'],
+    'yield ratio': ['2D_clrmap', '2D_contours', '3D'],
+    'y': ['2D_clrmap', '2D_contours', '3D']
 }
 
+suitable_elements ={
+    'w': 'crack',
+    'width': 'crack',
+    'pf': 'crack',
+    'fluid pressure': 'crack',
+    'pn': 'crack',
+    'net pressure': 'crack',
+    'front velocity': 'crack',
+    'v': 'crack',
+    'Reynolds number': 'channel',
+    'Re': 'channel',
+    'fluid flux': 'channel',
+    'ff': 'channel',
+    'fluid velocity': 'channel',
+    'fv': 'channel',
+    'fluid flux as vector field': 'channel',
+    'ffvf': 'channel',
+    'fluid velocity as vector field': 'channel',
+    'fvvf': 'channel',
+    'front_dist_min': None,
+    'd_min': None,
+    'front_dist_max': None,
+    'd_max': None,
+    'front_dist_mean': None,
+    'd_mean': None,
+    'mesh': None,
+    'footprint': None,
+    't': None,
+    'time': None,
+    'volume': None,
+    'V': None,
+    'lk': 'crack',
+    'leak off': 'crack',
+    'lkt': None,
+    'leaked off total': None,
+    'ar': None,
+    'aspect ratio': None,
+    'efficiency': None,
+    'ef': None,
+    'surface': 'crack',
+    'chi': 'crack',
+    'regime': 'crack',
+    'source elements': 'crack',
+    'se': 'crack',
+    'effective viscosity': 'channel',
+    'ev': 'channel',
+    'yield ratio': 'channel',
+    'y': 'channel',
+}
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
                     "enabled during the simulation. Enable saving it through simulation properties."
 
-TS_errorMessages = ["Propagation not attempted!",
-                     "Time step successful!",
-                     "Evaluated level set is not valid!",
-                     "Front is not tracked correctly!",
-                     "Evaluated tip volume is not valid!",
-                     "Solution obtained from the elastohydrodynamic solver is not valid!",
-                     "Did not converge after max iterations!",
-                     "Tip inversion is not correct!",
-                     "Ribbon element not found in the enclosure of the tip cell!",
-                     "Filling fraction not correct!",
-                     "Toughness iteration did not converge!",
-                     "projection could not be found!",
-                     "Reached end of grid!",
-                     "Leak off can't be evaluated!",
-                     "fracture fully closed"
+TS_errorMessages = [ "Propagation not attempted!",                                                     #0
+                     "Time step successful!",                                                          #1
+                     "Evaluated level set is not valid!",                                              #2
+                     "Front is not tracked correctly!",                                                #3
+                     "Evaluated tip volume is not valid!",                                             #4
+                     "Solution obtained from the elastohydrodynamic solver is not valid!",             #5
+                     "Did not converge after max iterations!",                                         #6
+                     "Tip inversion is not correct!",                                                  #7
+                     "Ribbon element not found in the enclosure of the tip cell!",                     #8
+                     "Filling fraction not correct!",                                                  #9
+                     "Toughness iteration did not converge!",                                          #10
+                     "projection could not be found!",                                                 #11
+                     "Reached end of grid!",                                                           #12
+                     "Leak off can't be evaluated!",                                                   #13
+                     "fracture fully closed",                                                          #14
+                     "iterating more is not leading the iterations on the front position to converge!",#15
+                     "maximum number of elements in the crack reached!"                                #16
                     ]
 

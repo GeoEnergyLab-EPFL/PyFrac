@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import math
 import numpy as np
+import logging
 import time
 import datetime
 from matplotlib.colors import to_rgb
@@ -195,11 +196,15 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(np.pi/2)
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
+        else:
+            self.Kprime = np.full((mesh.NumberOfElts,), self.Kprime[0])
 
         if self.SigmaOFunc is not None:
             self.SigmaO = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.SigmaO[i] = self.SigmaOFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+        else:
+            self.SigmaO = np.full((mesh.NumberOfElts,), self.SigmaO[0])
 
         if self.ClFunc is not None:
             self.Cl = np.empty((mesh.NumberOfElts,), dtype=np.float64)
@@ -207,6 +212,8 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.Cl[i] = self.ClFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
             self.Cprime = 2 * self.Cl
+        else:
+            self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -230,15 +237,22 @@ class FluidProperties:
                                     fracture class for local viscosity).
         muPrime (float):         -- 12 * viscosity (parallel plates viscosity factor).
         rheology (string):       -- string specifying rheology of the fluid. Possible options:
+            
                                      - "Newtonian"
-                                     - "non-Newtonian"
+                                     - "Herschel-Bulkley" or "HBF"
+                                     - "power-law" or "PLF"
         density (float):         -- density of the fluid.
         turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account.
         compressibility (float): -- the compressibility of the fluid.
+        n (float):               -- flow index of the Herschel-Bulkey fluid.
+        k (float):               -- consistency index of the Herschel-Bulkey fluid.
+        T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
+        Mprime                   -- 2**(n + 1) * (2 * n + 1)**n / n**n  * k
 
     """
 
-    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0):
+    def __init__(self, viscosity=None, density=1000., rheology="Newtonian", turbulence=False, compressibility=0,
+                 n=None, k=None, T0=None):
         """
         Constructor function.
 
@@ -254,14 +268,30 @@ class FluidProperties:
             self.viscosity = viscosity
             self.muPrime = 12. * self.viscosity  # the geometric viscosity in the parallel plate solution
 
-        rheologyOptions = ("Newtonian", "non-Newtonian")
+        rheologyOptions = ["Newtonian", "Herschel-Bulkley", "HBF", "power-law", "PLF"]
         if rheology in rheologyOptions:  # check if rheology match to any rheology option
-            if rheology is "Newtonian":
-                self.rheology = rheology
-            elif rheology is "non-Newtonian":
-                raise ValueError("Non-Newtonian rheology not yet supported")
+            self.rheology = rheology
+            if rheology in ["Herschel-Bulkley", "HBF"]:
+                if n is None or k is None or T0 is None:
+                    raise ValueError("n (flow index), k(consistency index) and T0 (yield stress) are required for a \
+                                     Herscel-Bulkley type fluid!")
+                self.n = n
+                self.k = k
+                self.T0 = T0
+                self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+                self.var1 = self.Mprime ** (-1 / n)
+                self.var2 = 1/n - 1.
+                self.var3 = 2. + 1/n
+                self.var4 = 1. + 1/n
+                self.var5 = n / (n + 1.)   
+            elif rheology in ["power-law", "PLF"]:
+                if n is None or k is None:
+                    raise ValueError("n (flow index) and k(consistency index) are required for a power-law type fluid!")
+                self.n = n
+                self.k = k
+                self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
         else:# error
-            raise ValueError('Invalid input for rheology. Possible options: ' + repr(rheologyOptions))
+            raise ValueError('Invalid input for fluid rheology. Possible options: ' + repr(rheologyOptions))
 
         self.density = density
 
@@ -298,7 +328,16 @@ class InjectionProperties:
                                          a source element. It should have to arguments (x, y) and return True or False.
                                          It is also called upon re-meshing to get the source elements on the coarse
                                          mesh.
-
+       sink_loc_func (function):      -- the sink location function is used to get the elements where there is a fixed rate
+                                         sink. It should take the x and y coordinates and return True or False
+                                         depending upon if the sink is present on these coordinates. This function is
+                                         evaluated at each of the cell centre coordinates to determine if the cell is
+                                         a sink element. It should have to arguments (x, y) and return True or False.
+                                         It is also called upon re-meshing to get the source elements on the coarse
+                                         mesh.
+                                             
+      sink_vel_func (function):       -- this function gives the sink velocity at the given (x, y) point.
+                                   
     Attributes:
         injectionRate (ndarray):      -- array specifying the time series (row 0) and the corresponding injection
                                          rates (row 1). The time series provide the time when the injection rate
@@ -314,13 +353,25 @@ class InjectionProperties:
                                          a source element. It should have to arguments (x, y) and return True or False.
                                          It is also called upon re-meshing to get the source elements on the coarse
                                          mesh.
+        sinkLocFunc (function):      --  see description of arguments.
+        sink_vel_func (function):    --  see description of arguments.
+                                         
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None,
+                 source_loc_func=None,
+                 sink_loc_func=None,
+                 sink_vel_func=None,
+                 rate_delayed_second_injpoint=None,
+                 delayed_second_injpoint_loc=None,
+                 initial_rate_delayed_second_injpoint=None,
+                 rate_delayed_inj_pt_func=None,
+                 delayed_second_injpoint_loc_func=None):
         """
         The constructor of the InjectionProperties class.
         """
-
+        # check if the rate is provided otherwise throw an error
+        log = logging.getLogger('PyFrac.InjectionProperties')
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
                 raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and'
@@ -333,10 +384,57 @@ class InjectionProperties:
         else:
             self.injectionRate = np.asarray([[0], [rate]])
 
+        if rate_delayed_second_injpoint is not None and rate_delayed_inj_pt_func is None:
+            if isinstance(rate_delayed_second_injpoint, np.ndarray):
+                if rate_delayed_second_injpoint.shape[0] != 2: #todo: check the condition
+                    raise ValueError('Invalid injection rate of the delayed injection point. The list should have 2 rows (to specify time and'
+                                     ' corresponding injection rate) for each entry')
+                elif rate_delayed_second_injpoint[0, 0] == 0: #todo: check the condition
+                    raise ValueError("The injection rate of the delayed injection point should start from a time >0 second i.e. rate[0, 0] should"
+                                     " be nonzero.")
+                self.injectionRate_delayed_second_injpoint = rate_delayed_second_injpoint[1]
+                self.injectionTime_delayed_second_injpoint = rate_delayed_second_injpoint[0]
+                self.rate_delayed_inj_pt_func=None
+            else:
+                raise ValueError("Bad specification of the delayed injection point"
+                                 " it should be a np.ndarray prescribing the initial nonzero time of injection and the rate.")
+        else:
+            self.rate_delayed_inj_pt_func=rate_delayed_inj_pt_func
+
+        if initial_rate_delayed_second_injpoint is not None:
+            self.init_rate_delayed_second_injpoint = np.asarray(initial_rate_delayed_second_injpoint)
+        else:
+            self.init_rate_delayed_second_injpoint = 0
+
+        self.sourceElem = None
+
+        if delayed_second_injpoint_loc is not None:
+            if isinstance(delayed_second_injpoint_loc, np.ndarray):
+                self.delayed_second_injpoint_Coordinates = delayed_second_injpoint_loc
+                self.delayed_second_injpoint_elem = [mesh.locate_element(self.delayed_second_injpoint_Coordinates[0], self.delayed_second_injpoint_Coordinates[1])]
+                self.delayed_second_injpoint_loc_func = None
+            else:
+                raise ValueError("Bad specification of the delayed injection point"
+                                 " it should be a np.array prescribing the coordinates of the point.")
+        elif delayed_second_injpoint_loc_func is not None:
+            self.delayed_second_injpoint_loc_func = delayed_second_injpoint_loc_func
+            if self.sourceElem is None:
+                self.sourceElem = []
+                self.delayed_second_injpoint_elem = []
+            for i in range(mesh.NumberOfElts):
+                if self.delayed_second_injpoint_loc_func(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx, mesh.hy):
+                    self.sourceElem.append(i)
+                    self.delayed_second_injpoint_elem.append(i)
+
+        else:
+            self.delayed_second_injpoint_elem = None
+            self.delayed_second_injpoint_loc_func = None
+
+
         if source_loc_func is None:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
-                    print("Setting the source coordinates to the closest cell center...")
+                    log.info("Setting the source coordinates to the closest cell center...")
                     self.sourceCoordinates = source_coordinates
                 else:
                     # error
@@ -347,24 +445,44 @@ class InjectionProperties:
             else:
                 self.sourceCoordinates = [0., 0.]
 
-            self.sourceElem = [mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])]
-            if np.isnan(self.sourceElem):
+            self.sourceElem = mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
+            if np.isnan(self.sourceElem).any():
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
-            print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
+            log.info("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1][0]) + ')')
             self.sourceLocFunc = None
         else:
             self.sourceLocFunc = source_loc_func
-            self.sourceElem = []
+            if self.sourceElem is None:
+                self.sourceElem = []
             for i in range(mesh.NumberOfElts):
-             if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx, mesh.hy):
                  self.sourceElem.append(i)
+        if self.delayed_second_injpoint_elem is not None and not all(elem in self.sourceElem for elem in self.delayed_second_injpoint_elem) :
+            raise ValueError("The delayed injection points elements are not contained in the list of all the injection elements")
 
         if len(self.sourceElem) == 0:
             raise ValueError("No source element found!")
         self.sourceCoordinates = [np.mean(mesh.CenterCoor[self.sourceElem, 0]),
                                   np.mean(mesh.CenterCoor[self.sourceElem, 1])]
+        
+        self.sinkLocFunc = sink_loc_func
+        self.sinkVelFunc = sink_vel_func
+        if sink_loc_func is not None:
+            if sink_vel_func is None:
+                raise ValueError("Sink velocity function is required for sink elements!")
+            
+            self.sinkElem = []
+            for i in range(mesh.NumberOfElts):
+                if self.sinkLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
+                 self.sinkElem.append(i)
+            
+            self.sinkVel = np.empty(len(self.sinkElem))
+            for i in range(len(self.sinkElem)):
+                self.sinkVel[i] = sink_vel_func(mesh.CenterCoor[self.sinkElem[i], 0],
+                                                mesh.CenterCoor[self.sinkElem[i], 1])
+                
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -400,12 +518,42 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        actv_cells = set()
-        for i in self.sourceElem:
-            actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                      old_mesh.CenterCoor[i, 1]))
+        if self.sourceLocFunc is None:
+            actv_cells = np.asarray([1])
+            for i in self.sourceElem:
+                actv_cells = np.append(actv_cells, new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                                           old_mesh.CenterCoor[i, 1]))
 
-        self.sourceElem = list(actv_cells)
+            self.sourceElem = list(actv_cells[1::])
+        else:
+            self.sourceElem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
+                 self.sourceElem.append(i)
+
+        if  self.delayed_second_injpoint_loc_func is not None:
+            if self.sourceElem is None:
+                self.sourceElem = []
+                self.delayed_second_injpoint_elem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.delayed_second_injpoint_loc_func(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
+                    self.sourceElem.append(i)
+                    self.delayed_second_injpoint_elem.append(i)
+        else:
+            self.delayed_second_injpoint_elem = None
+        
+        if self.sinkLocFunc is not None:
+            
+            self.sinkElem = []
+            for i in range(new_mesh.NumberOfElts):
+                if self.sinkLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
+                 self.sinkElem.append(i)
+            
+            self.sinkVel = np.empty(len(self.sinkElem))
+            for i in range(len(self.sinkElem)):
+                    self.sinkVel[i] = self.sinkVelFunc(new_mesh.CenterCoor[self.sinkElem[i], 0],
+                                                       new_mesh.CenterCoor[self.sinkElem[i], 1])
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -422,7 +570,7 @@ class LoadingProperties:
 
     def __init__(self,  displ_rate=0., loaded_elts=None):
         """
-        The constructor of the InjectionProperties class.
+        The constructor of the LoadingProperties class.
 
         Arguments:
             displ_rate (float):     -- the rate at which the elements in the EltLoaded list are displaced due to the
@@ -439,7 +587,6 @@ class LoadingProperties:
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-
 class SimulationProperties:
     """
     Class defining the simulation properties.
@@ -451,6 +598,7 @@ class SimulationProperties:
     Attributes:
         tolFractFront (float):       -- tolerance for the fracture front loop.
         toleranceEHL (float):        -- tolerance for the Elastohydrodynamic solver.
+        toleranceVStagnant (float):  -- tolerance on the velocity to decide if a cell is stagnant.
         toleranceProjection (float): -- tolerance for projection iteration for anisotropic case
         maxFrontItrs (int):          -- maximum iterations to for the fracture front loop.
         maxSolverItrs (int):         -- maximum iterations for the EHL iterative solver (Picard-Newton hybrid) in this
@@ -496,6 +644,12 @@ class SimulationProperties:
         saveTimePeriod (float):      -- the time period after which the results are saved to disk during simulation.
         saveTSJump (int):            -- the number of time steps after which the results are saved to disk, e.g. a value
                                         of 4 will result in plotting every four time steps.
+        elastohydrSolver (string):   -- the type of solver to solve the elasto-hydrodynamic system. At the moment, two
+                                        main solvers can be specified.
+
+                                            - 'implicit_Picard'
+                                            - 'implicit_Anderson'
+                                            - 'RKL2'
         substitutePressure(bool):    -- a flag specifying the solver to be used. If True, the pressure will be
                                         substituted in the channel elements (see Zia and Lecampion, 2019).
         solveDeltaP (bool):          -- a flag specifying the solver to be used. If True, the change in pressure,
@@ -509,12 +663,20 @@ class SimulationProperties:
         solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
         saveRegime (boolean):        -- if True, the regime of the propagation as observed in the ribbon cell (see Zia
                                         and Lecampion 2018, IJF) will be saved.
-        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
-                                        two levels 1 and 2 are supported).
+        verbosity (string):          -- the level of details about the ongoing simulation to be written on the log file
+                                        (currently the levels 'debug', 'info', 'warning' and 'error' are supported).
+        log2file (bool):             -- True if you want to log to a file, otherwise set it to false
         enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by
                                         by the variable remeshFactor after the fracture front reaches the end of the
                                         domain.
         remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.
+
+        meshExtension (bool array):  -- an array of booleans defining if the mesh should be extended in the given
+                                        direction or if it should get compressed. The distribution is bottom, top,
+                                        left, right
+        meshExtensionFactor (float): -- factor by which the current mesh is extended in the extension direction
+        meshExtendAllDir (bool):     -- allow the mesh to extend in all directions
+
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
 
                                             - 'explicit'
@@ -532,6 +694,8 @@ class SimulationProperties:
                                         will be saved.
         saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture
                                         will be saved.
+        saveEffVisc (boolean)L       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
+                                        be saved.
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
         explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
@@ -542,6 +706,11 @@ class SimulationProperties:
                                         Attention:
                                             The symmetric fracture is only implemented in the toughness dominated case.\
                                             Use full domain if viscous fluid is injected.
+        enableGPU                    -- if True, the dense matrix vector product for the RKL scheme would be done using
+                                        GPU. If False, multithreaded dot product implemented in the explicit_RKL module
+                                        will be used to do it.
+        nThreads                     -- The number of threads to be used for the dense matrix dot product in the RKL
+                                        scheme. By default set to 4.
         projMethod (string):         -- the method by which the angle prescribed by the projections onto the front
                                         are evaluated. Possible options are:
 
@@ -552,6 +721,8 @@ class SimulationProperties:
         aspectRatio (float):        -- this parameters is only used in the case of elliptical hydraulic fracture
                                        plots, e.g. to plot analytical solutions of anisotropic toughness or TI
                                        elasticity.
+        maxReattemptsFracAdvMore2Cells -- number of time reduction that are made if the fracture is advancing more than two cells (e.g. because of an heterogeneity)
+
         Attention:
             These attributes below are private:
 
@@ -594,6 +765,7 @@ class SimulationProperties:
         self.tolFractFront = simul_param.toleranceFractureFront
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
+        self.toleranceVStagnant = simul_param.toleranceVStagnant
 
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
@@ -615,6 +787,7 @@ class SimulationProperties:
         # time step re-attempt
         self.maxReattempts = simul_param.max_reattemps
         self.reAttemptFactor = simul_param.reattempt_factor
+        self.maxReattemptsFracAdvMore2Cells = simul_param.max_reattemps_FracAdvMore2Cells
 
         # output parameters
         self.plotFigure = simul_param.plot_figure
@@ -630,8 +803,12 @@ class SimulationProperties:
         self.plotVar = simul_param.plot_var
         self.saveTSJump = simul_param.save_TS_jump
         self.saveTimePeriod = simul_param.save_time_period
+        self.plotATsolTimeSeries = simul_param.plot_at_sol_time_series
 
         # solver type
+        self.elastohydrSolver = simul_param.elastohydr_solver
+        self.Anderson_parameter = simul_param.m_Anderson
+        self.relaxation_factor = simul_param.relaxation_param
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
@@ -642,11 +819,22 @@ class SimulationProperties:
         self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
-        self.verbosity = simul_param.verbosity
+        self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
+        self.verbositylevel = simul_param.verbosity_level
+        self.log2file = simul_param.log_to_file
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.enableRemeshing = simul_param.enable_remeshing
         self.remeshFactor = simul_param.remesh_factor
+
+        self.meshExtension = simul_param.mesh_extension_direction
+        self.meshExtensionFactor = simul_param.mesh_extension_factor
+        self.meshExtensionAllDir = simul_param.mesh_extension_all_sides
+        self.maxElementIn = np.inf
+        self.maxCellSize = np.inf
+        self.meshReductionFactor = simul_param.mesh_reduction_factor
+        self.meshReductionPossible = True
+        self.limitAdancementTo2cells = simul_param.limit_Adancement_To_2_cells
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.paramFromTip = simul_param.param_from_tip
@@ -658,18 +846,109 @@ class SimulationProperties:
         self.saveReynNumb = simul_param.save_ReyNumb
         self.saveFluidFlux = simul_param.save_fluid_flux
         self.saveFluidVel = simul_param.save_fluid_vel
+        self.saveFluidFluxAsVector = simul_param.save_fluid_flux_as_vector
+        self.saveFluidVelAsVector = simul_param.save_fluid_vel_as_vector
+        self.saveEffVisc = simul_param.save_effective_viscosity
+        self.saveStatisticsPostCoalescence=simul_param.save_statistics_post_coalescence
+        self.saveYieldRatio = simul_param.save_yield_ratio
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
+        self.doublefracture = simul_param.double_fracture_vol_contr
         self.projMethod = simul_param.proj_method
-        if self.projMethod not in ['ILSA_orig', 'LS_grad']:
+        self.enableGPU = simul_param.enable_GPU
+        self.nThreads = simul_param.n_threads
+        if self.projMethod not in ['ILSA_orig', 'LS_grad', 'LS_continousfront']:
             raise ValueError("Projection method is not recognised!")
+        if self.projMethod is not 'LS_continousfront' and self.doublefracture:
+            raise SystemExit('You set the option doublefracture=True but\n '
+                             'The volume control solver has been implemented \n'
+                             'only with the option projMethod==LS_continousfront activated')
 
         # fracture geometry to calculate analytical solution for plotting
         self.height = simul_param.height
         self.aspectRatio = simul_param.aspect_ratio
 
-# ----------------------------------------------------------------------------------------------------------------------
+        # parameter deciding to save the leak-off tip parameter
+        self.saveChi = simul_param.save_chi
 
+# ----------------------------------------------------------------------------------------------------------------------
+    def set_logging_to_file(self, address, verbosity_level=None):
+        """This function sets up the log, both to the file and to the file
+            Note: from any module in the code you can use the logging capabilities. You just have to:
+
+            1) import the module
+
+            import logging
+
+            2) create a child of the logger named 'PyFrac' defined in this function. Use a pertinent name as 'Pyfrac.frontrec'
+
+            logger1 = logging.getLogger('PyFrac.frontrec')
+
+            3) use the object to send messages in the module, such as
+
+            logger1.debug('debug message')
+            logger1.info('info message')
+            logger1.warning('warn message')
+            logger1.error('error message')
+            logger1.critical('critical message')
+
+            4) IMPORTANT TO KNOW:
+               1-If you want to log only to the file in the abobe example you have to use: logger1 = logging.getLogger('PyFrac_LF.frontrec')
+               2-SystemExit and KeyboardInterrupt exceptions are never swallowed by the logging package .
+
+        :param         address: string that defines the location where to save the log file
+        :param verbosity_level: string that defines the level of logging concerning the file:
+                                     'debug'    - Detailed information, typically of interest only when diagnosing problems.
+                                     'info'     - Confirmation that things are working as expected.
+                                     'warning'  - An indication that something unexpected happened, or indicative of some
+                                                  problem in the near future (e.g. ‘disk space low’). The software is still
+                                                  working as expected.
+                                     'error'    - Due to a more serious problem, the software has not been able to perform
+                                                  some function.
+                                     'critical' - A serious error, indicating that the program itself may be unable to
+                                                  continue running.
+
+        :return: -
+        """
+        # check if you did setup the folder
+
+        from utility import logging_level
+        if verbosity_level is None:
+            fileLvl = logging_level(self.verbositylevel)
+        else:
+            fileLvl = logging_level(verbosity_level)
+
+        logger = logging.getLogger('PyFrac')
+        logger.setLevel(logging.DEBUG)
+
+        # create file handler which logs debug messages to the file
+        fh = logging.FileHandler(address+'PyFrac_log.txt', mode='w')
+        fh.setLevel(fileLvl)
+
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter(fmt='%(asctime)-15s %(name)-40s %(levelname)-8s  %(message)s',
+                                      datefmt='%m-%d-%y %H:%M')
+        fh.setFormatter(formatter)
+
+        # add the handlers to logger
+        logger.addHandler(fh)
+
+
+        log = logging.getLogger('PyFrac.general')
+        log.info('Log file set up')
+
+        # create a logger that logs only to the file and not on the console:
+        logger_to_file = logging.getLogger('PyFrac_LF')
+        logger_to_file.setLevel(logging.DEBUG)
+
+        # add the handlers to logger
+        logger_to_file.addHandler(fh)
+
+        # usage example
+        # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
+        # logger_to_files.info('this comment will go only to the log file')
+
+    # ----------------------------------------------------------------------------------------------------------------------
     # setter and getter functions
 
     def set_tipAsymptote(self, tip_asymptote):
@@ -683,10 +962,27 @@ class SimulationProperties:
                                             - M  (viscosity dominated regime, without leak off)
                                             - Mt (viscosity dominated regime , with leak off)
                                             - U  (Universal regime accommodating viscosity, toughness\
-                                                 and leak off (see Donstov and Pierce, 2017))
+                                                 and leak off (see Donstov and Pierce, 2017), 0 order)
+                                            - U1  (Universal regime accommodating viscosity, toughness\
+                                                 and leak off (see Donstov and Pierce, 2017), delta correction)
                                             - MK (viscosity to toughness transition regime)
+                                            - MDR (Maximum drag reduction asymptote, see Lecampion & Zia 2019)
+                                            - M_MDR (Maximum drag reduction asymptote in viscosity sotrage \ 
+                                                  regime, see Lecampion & Zia 2019)
+                                            - HBF or HBF_aprox (Herschel-Bulkley fluid, see Bessmertnykh and \
+                                                  Dontsov 2019; the tip volume is evaluated with a fast aproximation)
+                                            - HBF_num_quad (Herschel-Bulkley fluid, see Bessmertnykh and \
+                                                  Dontsov 2019; the tip volume is evaluated with numerical quadrature of the\ 
+                                                  approximate function, which makes it very slow)
+                                            - PLF or PLF_aprox (power law fluid, see Dontsov and \
+                                                  Kresse 2017; the tip volume is evaluated with a fast aproximation)
+                                            - PLF_num_quad (power law fluid, see Dontsov and \
+                                                  Kresse 2017; the tip volume is evaluated with numerical quadrature of the\ 
+                                                  approximate function, which makes it very slow)
+                                            = PLF_M (power law fluid in viscosity storage regime; see Desroche et al.)
         """
-        tipAssymptOptions = ("K", "M", "Mt", "U", "MK", "MDR", "M_MDR")
+        tipAssymptOptions = ["K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR", "HBF", "HBF_aprox", 
+                             "HBF_num_quad", "PLF", "PLF_aprox", "PLF_num_quad", "PLF_M"]
         if tip_asymptote in tipAssymptOptions:  # check if tip asymptote matches any option
             self.__tipAsymptote = tip_asymptote
         else: # error
@@ -729,7 +1025,7 @@ class SimulationProperties:
         if output_address is not None:
             self.saveToDisk = True
 
-            if output_address[-1] is slash:
+            if output_address[-1] == slash:
                 output_address = output_address[:-1]
 
             self.__outputAddress = output_address
@@ -743,10 +1039,10 @@ class SimulationProperties:
         return self.__outputFolder
 
     def set_solTimeSeries(self, sol_t_srs):
-        if isinstance(sol_t_srs, np.ndarray):
-            self.__solTimeSeries = sol_t_srs
-        elif sol_t_srs is None:
+        if sol_t_srs is None:
             self.__solTimeSeries = None
+        elif isinstance(sol_t_srs, np.ndarray):
+            self.__solTimeSeries = sol_t_srs
         else:
             raise ValueError("The given solution time series is not a numpy array!")
 
@@ -788,6 +1084,69 @@ class SimulationProperties:
                                  "pre-factor in the second row.")
         else:
             return self.tmStpPrefactor
+
+    def set_mesh_extension_direction(self, direction):
+        """
+        The function to set up in which directions the mesh should be extended
+
+        Arguments:
+            direction (string):       -- direction where the mesh should be extended:
+
+                                            - top  (mesh extension towards positive y)
+                                            - bottom  (mesh extension towards negative y)
+                                            - Left (mesh extension towards negative x)
+                                            - Right (mesh extension towards positive x)
+                                            - vertical  (mesh extension up and down)
+                                            - horizontal (mesh extension left and right)
+                                            - all (extend the mesh in all directions)
+        """
+        for i in direction:
+            if i == 'vertical':
+                self.meshExtension[:2:] = [True, True]
+            elif i == 'horizontal':
+                self.meshExtension[2:] = [True, True]
+            elif i == 'top':
+                self.meshExtension[1] = True
+            elif i == 'bottom':
+                self.meshExtension[0] = True
+            elif i == 'left':
+                self.meshExtension[2] = True
+            elif i == 'right':
+                self.meshExtension[3] = True
+            elif i == 'all':
+                self.meshExtension = [True, True, True, True]
+            else: # error
+                raise ValueError('Invalid mesh extension definition Possible options: top, bottom, left, right, vertical'
+                                 'horizontal or all')
+
+    def get_mesh_extension_direction(self):
+        return self.meshExtension
+
+    def set_mesh_extension_factor(self, ext_factor):
+        """
+        The function to set up the factor deciding on the number of elements to add in the corresponding direction
+
+        Arguments:
+            ext_factor (list or float):     -- the factor either given:
+                                                - a float: all directions extend by the same amount
+                                                - a list with two entries: the first gives the factor in x the second in
+                                                  y direction
+                                                - a list with four entries: the entries respectively correspond to
+                                                 'left', 'right', 'bottom', 'top'.
+        """
+        if not isinstance(ext_factor, list):
+            self.meshExtensionFactor = [ext_factor, ext_factor, ext_factor, ext_factor]
+        elif len(ext_factor) == 2:
+            self.meshExtensionFactor = [ext_factor[1], ext_factor[1], ext_factor[0], ext_factor[0]]
+        elif len(ext_factor) == 4:
+            self.meshExtensionFactor = [ext_factor[2], ext_factor[3], ext_factor[0], ext_factor[1]]
+        else:
+            raise ValueError("The given form of the factor is not supporte. Either give a common factor (float) a " 
+                             "list of two entires (x and y direction) or a list of four entries " 
+                             "['left', 'right', 'bottom', 'top']")
+
+    def get_mesh_extension_factor(self):
+        return self.meshExtensionFactor
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -842,6 +1201,7 @@ class IterationProperties:
             self.widthConstraintItr_data = []
         elif itr_type == 'width constraint iteration':
             self.linearSolve_data = []
+            self.RKL_data = []
         elif itr_type == 'linear system solve':
             pass
         elif itr_type == 'Brent method':
@@ -936,18 +1296,18 @@ class LabelProperties:
             projection = '1D'
 
         if data_subset in ('whole mesh', 'wm'):
-            if projection in ('2D_clrmap', '2D_contours', '3D', '2D'):
+            if projection in ('2D_clrmap', '2D_contours', '2D_vectorfield', '3D', '2D'):
                 self.yLabel = 'meters'
                 self.xLabel = 'meters'
                 self.zLabel = var_labels[variable] + units[variable]
-            elif projection is '1D':
+            elif projection == '1D':
                 self.xLabel = 'time $(s)$'
                 self.yLabel = var_labels[variable] + units[variable]
         elif data_subset in ('slice', 's'):
             if '2D' in projection:
                 self.xLabel = 'meters'
                 self.yLabel = var_labels[variable] + units[variable]
-            elif projection is '3D':
+            elif projection == '3D':
                 self.yLabel = 'meters'
                 self.xLabel = 'meters'
                 self.zLabel = var_labels[variable] + units[variable]

@@ -8,13 +8,14 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # local
-
+import logging
 import numpy as np
 from scipy.interpolate import griddata
 import dill
 import os
 import re
 import sys
+import json
 
 from utility import ReadFracture
 from HF_analytical import HF_analytical_sol, get_fracture_dimensions_analytical
@@ -51,13 +52,13 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         fracture_list(list):            -- a list of fractures.
 
     """
-
-    print('Returning fractures...')
+    log = logging.getLogger('PyFrac.load_fractures')
+    log.info('Returning fractures...')
 
     if address is None:
         address = '.' + slash + '_simulation_data_PyFrac'
 
-    if address[-1] is not slash:
+    if address[-1] != slash:
         address = address + slash
 
     if isinstance(time_srs, float) or isinstance(time_srs, int):
@@ -110,7 +111,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
         if 1. - next_t / ff.time >= -1e-8:
             # if the current fracture time has advanced the output time period
-            print('Returning fracture at ' + repr(ff.time) + ' s')
+            log.info('Returning fracture at ' + repr(ff.time) + ' s')
 
             fracture_list.append(ff)
 
@@ -221,25 +222,107 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list.append(i.fluidVelocity[edge])
                 time_srs.append(i.time)
-            elif i.fluidFlux is not None:
+            elif i.fluidVelocity is not None:
                 variable_list.append(np.mean(i.fluidVelocity, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+
+    elif variable == 'pressure gradient x' or variable == 'dpdx':
+        for i in fracture_list:
+            dpdxLft = (i.pNet[i.EltCrack] - i.pNet[i.mesh.NeiElements[i.EltCrack, 0]]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 0]]
+            dpdxRgt = (i.pNet[i.mesh.NeiElements[i.EltCrack, 1]] - i.pNet[i.EltCrack]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 1]]
+            dpdx = np.full((i.mesh.NumberOfElts, ),0.0)
+            dpdx[i.EltCrack] = np.mean([dpdxLft, dpdxRgt], axis=0)
+            variable_list.append(dpdx)
+            time_srs.append(i.time)
+
+    elif variable == 'pressure gradient y' or variable == 'dpdy':
+        for i in fracture_list:
+            dpdyBtm = (i.pNet[i.EltCrack] - i.pNet[i.mesh.NeiElements[i.EltCrack, 2]]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 2]]
+            dpdxtop = (i.pNet[i.mesh.NeiElements[i.EltCrack, 3]] - i.pNet[i.EltCrack]) \
+                      * i.InCrack[i.mesh.NeiElements[i.EltCrack, 3]]
+            dpdy = np.full((i.mesh.NumberOfElts, ),0.0)
+            dpdy[i.EltCrack] = np.mean([dpdyBtm, dpdxtop], axis=0)
+            variable_list.append(dpdy)
+            time_srs.append(i.time)
+
+    elif variable == 'fluid flux as vector field' or variable == 'ffvf':
+        if fracture_list[-1].fluidFlux_components is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidFlux_components[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux_components is not None:
+                variable_list.append(i.fluidFlux_components)
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts,), np.nan))
+
+    elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
+        if fracture_list[-1].fluidVelocity_components is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.fluidVelocity_components[edge])
+                time_srs.append(i.time)
+            elif i.fluidFlux_components is not None:
+                variable_list.append(i.fluidVelocity_components)
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+
+    elif variable == 'effective viscosity' or variable == 'ev':
+        if fracture_list[-1].effVisc is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.effVisc[edge])
+                time_srs.append(i.time)
+            elif i.effVisc is not None:
+                variable_list.append(np.mean(i.effVisc, axis=0))
+                time_srs.append(i.time)
+            else:
+                variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
+    
+    elif variable == 'yielded' or variable == 'y':
+        if fracture_list[-1].yieldRatio is None:
+            raise SystemExit(err_var_not_saved)
+        for i in fracture_list:
+            if edge < 0 or edge > 4:
+                raise ValueError('Edge can be an integer between and including 0 and 4.')
+            if edge < 4:
+                variable_list.append(i.yieldRatio[edge])
+                time_srs.append(i.time)
+            elif i.yieldRatio is not None:
+                variable_list.append(np.mean(i.yieldRatio, axis=0))
                 time_srs.append(i.time)
             else:
                 variable_list.append(np.full((i.mesh.NumberOfElts, ), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in fracture_list:
+            if len(i.source) != 0:
+                source_loc = i.mesh.CenterCoor[i.source[0]]
             # coordinate of the zero vertex in the tip cells
-            vertex_coord_tip = i.mesh.VertexCoor[i.mesh.Connectivity[i.EltTip, i.ZeroVertex]]
+            front_intersect_dist = np.sqrt((i.Ffront[::, [0, 2]].flatten() - source_loc[0]) ** 2
+                                           + (i.Ffront[::, [1, 3]].flatten() - source_loc[1]) ** 2)
             if variable == 'front_dist_mean' or variable == 'd_mean':
-                variable_list.append(np.mean((vertex_coord_tip[:, 0] ** 2 +
-                                              vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+                variable_list.append(np.mean(front_intersect_dist))
             elif variable == 'front_dist_max' or variable == 'd_max':
-                variable_list.append(max((vertex_coord_tip[:, 0] ** 2 +
-                                          vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+                variable_list.append(np.max(front_intersect_dist))
             elif variable == 'front_dist_min' or variable == 'd_min':
-                variable_list.append(min((vertex_coord_tip[:, 0] ** 2 +
-                                          vertex_coord_tip[:, 1] ** 2) ** 0.5 + i.l))
+                variable_list.append(np.min(front_intersect_dist))
             time_srs.append(i.time)
     elif variable == 'mesh':
         for i in fracture_list:
@@ -275,14 +358,23 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             variable_list.append(x_len / y_len)
             time_srs.append(fr.time)
 
-    elif variable == 'regime':
+    elif variable == 'chi':
         for i in fracture_list:
-            if hasattr(i, 'regime'):
-                variable_list.append(i.regime)
+            vel = np.full((i.mesh.NumberOfElts,), np.nan)
+            vel[i.EltTip] = i.v
+            variable_list.append(vel)
+            time_srs.append(i.time)
+
+
+    elif variable == 'regime':
+        legend_coord = []
+        if hasattr(fracture_list[0], 'regime_color'):
+            for i in fracture_list:
+                variable_list.append(i.regime_color)
                 time_srs.append(i.time)
-            else:
-                raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
-                                 ' See the saveRegime falg of SimulationProperties class.')
+        else:
+            raise ValueError('The regime cannot be found. Saving of regime is most likely not enabled.\n'
+                             ' See the saveRegime falg of SimulationProperties class.')
 
     elif variable == 'source elements' or variable == 'se':
         for fr in fracture_list:
@@ -294,6 +386,8 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
 
     if not return_time:
         return variable_list
+    elif variable == 'regime':
+        return variable_list, legend_coord, time_srs
     else:
         return variable_list, time_srs
 
@@ -319,7 +413,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
             - time_srs (list)           -- a list of times at which the fractures are stored.
 
     """
-
+    log = logging.getLogger('PyFrac.get_fracture_variable_at_point')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -348,7 +442,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                                        method='linear',
                                        fill_value=np.nan)
                 if np.isnan(value_point):
-                    print('Point outside fracture.')
+                    log.warning('Point outside fracture.')
 
                 return_list.append(value_point[0])
 
@@ -484,13 +578,13 @@ def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orienta
     if zero_cell == np.nan:
         raise ValueError("The given point does not lie in the grid!")
 
-    if orientation is 'vertical':
+    if orientation == 'vertical':
         sampling_cells = np.hstack((np.arange(zero_cell, 0, -mesh.nx)[::-1],
                                     np.arange(zero_cell, mesh.NumberOfElts, mesh.nx)))
-    elif orientation is 'horizontal':
+    elif orientation == 'horizontal':
         sampling_cells = np.arange(zero_cell // mesh.nx * mesh.nx, (zero_cell // mesh.nx + 1) * mesh.nx)
 
-    elif orientation is 'increasing':
+    elif orientation == 'increasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx - 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] >
                                                       mesh.CenterCoor[zero_cell, 0])[0])
@@ -499,7 +593,7 @@ def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orienta
                                                 mesh.CenterCoor[zero_cell, 0])[0])
         sampling_cells = np.hstack((bottom_half[::-1], top_half))
 
-    elif orientation is 'decreasing':
+    elif orientation == 'decreasing':
         bottom_half = np.arange(zero_cell, 0, -mesh.nx + 1)
         bottom_half = np.delete(bottom_half, np.where(mesh.CenterCoor[bottom_half, 0] <
                                                       mesh.CenterCoor[zero_cell, 0])[0])
@@ -526,22 +620,27 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
     if time_srs is None and length_srs is None:
         raise ValueError('Either time series or lengths series is to be provided.')
 
-    if regime is 'E_K':
+    if regime == 'E_K':
         Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
 
-    if regime is 'E_E':
+    if regime == 'E_E':
         Cij = mat_prop.Cij
     else:
         Cij = None
 
-    if regime is 'MDR':
+    if regime == 'MDR':
         density = fluid_prop.density
     else:
         density = None
 
-    if regime in ['M', 'MDR', 'Mt', 'PKN']:
+    if inj_prop.injectionRate.size > 2:
+        V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
+    else:
+        V0 = None
+
+    if regime in ['M', 'MDR', 'Mt', 'PKN', 'Mp']:
         if fluid_prop is None:
             raise ValueError('Fluid properties required for ' + regime + ' type analytical solution')
         muPrime = fluid_prop.muPrime
@@ -587,7 +686,6 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                 mesh_i = CartesianMesh(x_len, y_len, 151, 151)
             else:
                 mesh_i = mesh
-            mesh_list.append(mesh_i)
 
             t, r, p, w, v, actvElts = HF_analytical_sol(regime,
                                                         mesh_i,
@@ -604,15 +702,17 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                         density=density,
                                                         Cij=Cij,
                                                         gamma=gamma,
-                                                        required=required_string[variable])
+                                                        required=required_string[variable],
+                                                        Vinj=V0)
+            mesh_list.append(mesh_i)
 
-            if variable is 'time' or variable is 't':
+            if variable == 'time' or variable == 't':
                 return_list.append(t)
-            elif variable is 'width' or variable is 'w':
+            elif variable == 'width' or variable == 'w':
                 return_list.append(w)
-            elif variable is 'net pressure' or variable is 'pn':
+            elif variable == 'net pressure' or variable == 'pn':
                 return_list.append(p)
-            elif variable is 'front velocity' or variable is 'v':
+            elif variable == 'front velocity' or variable == 'v':
                 return_list.append(v)
 
         elif variable in ['front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean',
@@ -625,13 +725,13 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                                               h=h,
                                                                               samp_cell=samp_cell,
                                                                               gamma=gamma)
-            if variable is 'radius' or variable is 'r':
+            if variable == 'radius' or variable == 'r':
                 return_list.append(x_len)
-            elif variable is 'front_dist_min' or variable is 'd_min':
+            elif variable == 'front_dist_min' or variable == 'd_min':
                 return_list.append(y_len)
-            elif variable is 'front_dist_max' or variable is 'd_max':
+            elif variable == 'front_dist_max' or variable == 'd_max':
                 return_list.append(x_len)
-            elif variable is 'front_dist_mean' or variable is 'd_mean':
+            elif variable == 'front_dist_mean' or variable == 'd_mean':
                 if regime in ('E_K', 'E_E'):
                     raise ValueError('Mean distance not available.')
                 else:
@@ -713,17 +813,17 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
                                               h=None, samp_cell=None, gamma=None):
 
 
-    if regime is 'E_K':
+    if regime == 'E_K':
         Kc_1 = mat_prop.Kc1
     else:
         Kc_1 = None
 
-    if regime is 'MDR':
+    if regime == 'MDR':
         density = fluid_prop.density
     else:
         density = None
 
-    if regime in ('M', 'Mt', 'PKN', 'MDR'):
+    if regime in ('M', 'Mt', 'PKN', 'MDR', 'Mp', 'La'):
         if fluid_prop is None:
             raise ValueError('Fluid properties required to evaluate analytical solution')
         muPrime = fluid_prop.muPrime
@@ -733,17 +833,25 @@ def get_fracture_dimensions_analytical_with_properties(regime, time_srs, mat_pro
     if samp_cell is None:
         samp_cell = int(len(mat_prop.Kprime) / 2)
 
+    if inj_prop.injectionRate.size > 2:
+        V0 = inj_prop.injectionRate[0, 1] * inj_prop.injectionRate[1, 0]
+    else:
+        V0=None
+
+    Q0 = inj_prop.injectionRate[1, 0]
+
     x_len, y_len = get_fracture_dimensions_analytical(regime,
                                                       np.max(time_srs),
                                                       mat_prop.Eprime,
-                                                      inj_prop.injectionRate[1, 0],
+                                                      Q0,
                                                       muPrime,
                                                       Kprime=mat_prop.Kprime[samp_cell],
                                                       Cprime=mat_prop.Cprime[samp_cell],
                                                       Kc_1=Kc_1,
                                                       h=h,
                                                       density=density,
-                                                      gamma=gamma)
+                                                      gamma=gamma,
+                                                      Vinj=V0)
 
     return x_len, y_len
 
@@ -768,7 +876,7 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
 
 
     """
-
+    log = logging.getLogger('PyFrac.write_fracture_variable_csv_file')
     if variable not in supported_variables:
         raise ValueError(err_msg_variable)
 
@@ -779,7 +887,7 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
                                                     edge=edge,
                                                     return_time=True)
 
-    if point is None:
+    if point == None:
         return_list = var_values
     else:
         for i in range(len(fracture_list)):
@@ -789,14 +897,21 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
                                    method='linear',
                                    fill_value=np.nan)
             if np.isnan(value_point):
-                print('Point outside fracture.')
+                log.warning('Point outside fracture.')
             return_list.append(value_point[0])
 
     if file_name[-4:] != '.csv':
         file_name = file_name + '.csv'
 
     return_list_np = np.asarray(return_list)
-    np.savetxt(file_name, return_list_np, delimiter=',')
+    # np.savetxt(file_name, return_list_np, delimiter=',')
+
+    import csv
+    # write EltCrack file
+    file2 = open(file_name, 'w')
+    writer2 = csv.writer(file2)
+    writer2.writerows(return_list_np)
+    file2.close()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -818,10 +933,129 @@ def read_fracture_variable_csv_file(file_name):
 
     return np.genfromtxt(file_name, delimiter=',')
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def write_fracture_mesh_csv_file(file_name, mesh_list):
+    """ This function writes important data of a mesh as a csv file. The csv contains (in a row vector) the number of
+    elements, hx, hy, nx, ny, the flattened connectivity matrix and the flattened node coordinates. Each row of the csv
+    corresponds to an entry in the mesh_list
+
+        Args:
+            file_name (string):         -- the name of the file to be written.
+            mesh_list (list):       -- the fracture list from which the variable is to be extracted.
+
+    """
+
+    return_list = []
+
+    for i in mesh_list:
+        export_mesh = np.array([i.NumberOfElts])
+        export_mesh = np.append(export_mesh, [i.hx, i.hy, i.nx, i.ny])
+        export_mesh = np.append(export_mesh, i.Connectivity.flatten())
+        export_mesh = np.append(export_mesh, i.VertexCoor.flatten())
+        return_list.append(export_mesh)
+
+    if file_name[-4:] != '.csv':
+        file_name = file_name + '.csv'
+
+    return_list_np = np.asarray(return_list)
+    # np.savetxt(file_name, return_list_np, delimiter=',')
+
+    import csv
+    # write EltCrack file
+    file2 = open(file_name, 'w')
+    writer2 = csv.writer(file2)
+    writer2.writerows(return_list_np)
+    file2.close()
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_extermities_cells(Fr_list):
+
+def append_to_json_file(file_name, content, action, key=None, delete_existing_filename=False):
+    """ This function appends data of a mesh as a json file.
+
+        Args:
+            file_name (string):     -- the name of the file to be written.
+            key (string):           -- a string that describes the information you are passing.
+            content (list):         -- a list of some informations
+            action (string):        -- action to take. Current options are:
+                                       'append2keyASnewlist'
+                                       This option means that you load the json file, you take the content of the key
+                                       and then you append the new content as a new list in a list of lists
+                                       if the existing content was not a list it will be put in a list
+
+                                       'append2keyAND2list'
+                                       This option means that you load the json file, you take the content of the key
+                                       and, supposing that it is a key, you append the new content to it
+                                       if the existing content was not a list it will be put in a list and the new content
+                                       will be appended to it
+
+                                       'dump_this_dictionary'
+                                       You will dump only the content of the dictionary
+
+    """
+    log = logging.getLogger('PyFrac.append_to_json_file')
+
+    # 0)transform np.ndarray to list before output
+    if isinstance(content, np.ndarray):
+        content = np.ndarray.tolist(content)
+
+    # 1)check if the file_name is a Json file
+    if file_name[-5:] != '.json':
+        file_name = file_name + '.json'
+
+    # 3)check if the file already exist
+    if os.path.isfile(file_name) and delete_existing_filename:
+        os.remove(file_name)
+        log.warning("File " +file_name +"  existed and it will be Removed!")
+
+    # 4)check if the file already exist
+    if os.path.isfile(file_name):
+        # The file exist
+
+        with open(file_name, "r+") as json_file:
+            data = json.load(json_file) # get the data
+            if action in ['append2keyASnewlist', 'append2keyAND2list'] and not key == None:
+                if key in data: # the key exist and we need just to add the value
+                    if isinstance(data[key], list): # the data that is already there is a list and a key is provided
+                        data[key].append(content)
+                    elif action == 'append2keyAND2list':
+                        data[key] = [data[key], content]
+                    elif action == 'append2keyASnewlist':
+                        data[key] = [[data[key]], [content]]
+                else:
+                    if action == 'append2keyAND2list':
+                        to_write = {key: content,}
+                    elif action == 'append2keyASnewlist':
+                        to_write = {key: [content],}
+                    data.update(to_write)
+                    json_file.seek(0)
+                    return json.dump(data, json_file) # dump directly the content referenced by the key to the file
+            elif action == 'dump_this_dictionary':
+                return json.dump(content, json_file) # dump directly the dictionary to the file
+            elif action == 'extend_dictionary':
+                if isinstance(content, dict):
+                    data.update(content)
+                    json_file.seek(0)  # return to the beginning of the file
+                    return json.dump(data, json_file) # dump directly the dictionary to the file
+                else: raise SystemExit('DUMP TO JSON ERROR: You should provide a dictionary')
+            else: raise SystemExit('DUMP TO JSON ERROR: action not supported OR key not provided')
+            json_file.seek(0)           # return to the beginning of the file
+            return json.dump(data, json_file)  # dump the updated data
+    else:
+        # The file do not exist, create a new one
+        with open(file_name, "w") as json_file:
+            if action == 'append2keyAND2list' or action == 'append2keyASnewlist':
+                to_write = {key: content,}
+                return json.dump(to_write, json_file) # dump directly the content referenced by the key to the file
+            elif action == 'dump_this_dictionary':
+                return json.dump(content, json_file) # dump directly the dictionary to the file
+            else: raise SystemExit('DUMP TO JSON ERROR: action not supported')
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_extremities_cells(Fr_list):
     """
     This function returns the extreme points for each of the fracture in the list.
 
@@ -881,14 +1115,14 @@ def get_front_intercepts(fr_list, point):
           intercepts (list):        -- list of top, bottom, left and right intercepts for each fracture in the list
 
     """
-
+    log = logging.getLogger('PyFrac.get_front_intercepts')
     intercepts = []
 
     for fr in fr_list:
         intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
         pnt_cell = fr.mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
         if pnt_cell not in fr.EltChannel:
-            print("Point is not inside fracture!")
+            log.warning("Point is not inside fracture!")
         else:
             pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
             cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0]    # all the cells with the same y coord
@@ -978,3 +1212,244 @@ def get_front_intercepts(fr_list, point):
         intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
 
     return intercepts
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def write_properties_csv_file(file_name, properties):
+    """ This function writes the properties of a simulatio as a csv file. The csv contains (in a row vector) Eprime, K1c
+    , Cl, mu, rho_f, Q and t_inj
+
+        Args:
+            file_name (string):         -- the name of the file to be written.
+            properties (tuple):         -- the properties of the fracture loaded
+
+    """
+
+    if len(properties[2].injectionRate[0]) > 1:
+        output_list = [None] * 7
+    else:
+        output_list = [None] * 6
+
+    output_list[0] = properties[0].Eprime
+    output_list[1] = properties[0].K1c[0]
+    output_list[2] = properties[0].Cl
+    output_list[3] = properties[1].viscosity
+    output_list[4] = properties[1].density
+
+    if len(properties[2].injectionRate[0]) > 1:
+        output_list[5] = properties[2].injectionRate[1][0]
+        output_list[6] = properties[2].injectionRate[0][1]
+    else:
+        output_list[5] = properties[2].injectionRate[1][0]
+
+
+    if file_name[-4:] != '.csv':
+        file_name = file_name + '.csv'
+
+    output_list_np = np.asarray(output_list)
+    np.savetxt(file_name, output_list_np, delimiter=',')
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_geometric_parameters(fr_list, properties):
+    max_breadth = np.full((len(fr_list), 1), np.nan)
+    avg_breadth = np.full((len(fr_list), 1), np.nan)
+    height = np.full((len(fr_list), 1), np.nan)
+    iter = 0
+
+    for jk in fr_list:
+        left, right = get_Ffront_as_vector(jk, properties)[1:]
+
+        if left.shape[0] == right.shape[0]:
+            breadth = np.vstack((np.abs(left - right)[::, 0], left[::, 1]))
+        else:
+            breadth = np.vstack((np.abs(left[:np.min((left.shape[0], right.shape[0])), :] -
+                                        right[:np.min((left.shape[0], right.shape[0])), :])[:, 0],
+                                 np.vstack((left[:np.min((left.shape[0], right.shape[0])), 1],
+                                            right[:np.min((left.shape[0], right.shape[0])), 1]))
+                                 [np.argmin((left.shape[0], right.shape[0])), :]))
+
+        max_breadth[iter] = np.max(breadth[0, ::])
+        avg_breadth[iter] = np.mean(breadth[0, ::])
+
+        height[iter] = np.abs(np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                              np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
+
+        iter = iter + 1
+
+    return height, max_breadth, avg_breadth
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_Ffront_as_vector(frac, properties):
+    inj_p = properties[2].sourceCoordinates
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] <= inj_p[0], frac.Ffront[::, 1] <= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] <= inj_p[0], frac.Ffront[::, 3] <= inj_p[1]]), axis=0)
+    lowLef = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    lowLef = lowLef[np.flip(lowLef[:, 1].argsort()), ::]
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] >= inj_p[0], frac.Ffront[::, 1] <= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] >= inj_p[0], frac.Ffront[::, 3] <= inj_p[1]]), axis=0)
+    lowRig = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    lowRig = lowRig[lowRig[:, 1].argsort(), ::]
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] <= inj_p[0], frac.Ffront[::, 1] >= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] <= inj_p[0], frac.Ffront[::, 3] >= inj_p[1]]), axis=0)
+    upLef = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    upLef = upLef[np.flip(upLef[:, 1].argsort()), ::]
+
+    mask13 = np.all(np.asarray([frac.Ffront[::, 0] >= inj_p[0], frac.Ffront[::, 1] >= inj_p[1]]), axis=0)
+    mask24 = np.all(np.asarray([frac.Ffront[::, 2] >= inj_p[0], frac.Ffront[::, 3] >= inj_p[1]]), axis=0)
+    upRig = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
+    upRig = upRig[upRig[:, 1].argsort(), ::]
+
+    Ffront = np.concatenate((lowLef, lowRig, upRig, upLef, np.asarray([lowLef[0, :]])), axis=0)
+
+    left = np.concatenate((lowLef, upLef), axis=0)
+    left = np.unique(left, axis=0)[np.unique(left, axis=0)[::, 1].argsort(), ::]
+
+    right = np.concatenate((lowRig, upRig), axis=0)
+    right = np.unique(right, axis=0)[np.unique(right, axis=0)[::, 1].argsort(), ::]
+
+    return Ffront, left, right
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_fp(fr_list, properties):
+    fp_list = []
+    iter = 0
+
+    for jk in fr_list:
+        fp_list.append(get_Ffront_as_vector(jk, properties)[0])
+        iter = iter + 1
+
+    return fp_list
+
+#-----------------------------------------------------------------------------------------------------------------------
+from elastohydrodynamic_solver import calculate_fluid_flow_characteristics_laminar
+
+def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
+    """This function gets the velocity components of the fluid flux for a given list of fractures
+
+    :param Solid: Instance of the class MaterialProperties - see related documentation
+    :param Fluid: Instance of the class FluidProperties - see related documentation
+    :param Fr_list: List of Instances of the class Fracture - see related documentation
+    :return: List containing a matrix with the information about the fluid velocity for each of the edges of any mesh element,
+             List of time stations
+    """
+    fluid_vel_list = []
+    time_srs = []
+    for i in Fr_list:
+
+        fluid_flux, \
+        fluid_vel, \
+        Rey_num, \
+        fluid_flux_components, \
+        fluid_vel_components = calculate_fluid_flow_characteristics_laminar(i.w,
+                                                                            i.pFluid,
+                                                                            Solid.SigmaO,
+                                                                            i.mesh,
+                                                                            i.EltCrack,
+                                                                            i.InCrack,
+                                                                            Fluid.muPrime,
+                                                                            Fluid.density)
+        # fluid_vel_components_for_one_elem = [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge, fy bottom edge, fx top edge, fy top edge]
+        #
+        #                 6  7
+        #               (ux,uy)
+        #           o---top edge---o
+        #     0  1  |              |    2  3
+        #   (ux,uy)left          right(ux,uy)
+        #           |              |
+        #           o-bottom edge--o
+        #               (ux,uy)
+        #                 4  5
+        #
+        fluid_vel_list.append(fluid_vel_components)
+        time_srs.append(i.time)
+
+    return fluid_vel_list, time_srs
+
+#-----------------------------------------------------------------------------------------------------------------------
+def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux',orientation='horizontal'): #CP 2020
+    """This function returns, at each time station, the velocity component in x or y direction along a horizontal or vertical section passing
+    through a given point.
+
+    :param Solid: Instance of the class MaterialProperties - see related documentation
+    :param Fluid: Instance of the class FluidProperties - see related documentation
+    :param Fr_list: List of Instances of the class Fracture - see related documentation
+    :param initial_point: coordinates of the point where to draw the slice
+    :param vel_direction: component of the velocity vector, it can be 'ux' or 'uy'
+    :param orientation: it can be 'horizontal' or 'vertical'
+    :return: set of velocities
+             set of times
+             set of points along the slice, where the velocity is given
+    """
+    # initial_point - of the slice
+    fluid_vel_list, time_srs = get_velocity_as_vector(Solid, Fluid, Fr_list)
+
+    # fluid_vel_list is a list containing a matrix with the information about the fluid velocity for each of the edges of any mesh element
+    # fluid_vel_components_for_one_elem = [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge, fy bottom edge, fx top edge, fy top edge]
+    #
+    #                 6  7
+    #               (ux,uy)
+    #           o---top edge---o
+    #     0  1  |              |    2  3
+    #   (ux,uy)left          right(ux,uy)
+    #           |              |
+    #           o-bottom edge--o
+    #               (ux,uy)
+    #                 4  5
+    #
+    vector_to_be_lost = np.zeros(Fr_list[0].mesh.NumberOfElts,dtype=np.int)
+    NotUsd_var_values, sampling_line_center, sampling_cells = get_fracture_variable_slice_cell_center(vector_to_be_lost,
+                                                                                        Fr_list[0].mesh,
+                                                                                        point = initial_point,
+                                                                                        orientation = orientation)
+    hx = Fr_list[0].mesh.hx
+    hy = Fr_list[0].mesh.hy
+    if vel_direction ==  'ux' and orientation == 'horizontal': # take ux on the vertical edges
+        indx1 = 0 #left
+        indx2 = 2 #right
+        sampling_line_center1=sampling_line_center-hx*.5
+        sampling_line_center2=sampling_line_center+hx*.5
+    elif vel_direction ==  'ux' and orientation == 'vertical': # take ux on the horizontal edges
+        indx1 = 4 #bottom
+        indx2 = 6 #top
+        sampling_line_center1=sampling_line_center-hy*.5
+        sampling_line_center2=sampling_line_center+hy*.5
+    elif vel_direction == 'uy' and orientation == 'horizontal': # take uy on the vertical edges
+        indx1 = 1 #left
+        indx2 = 3 #rigt
+        sampling_line_center1=sampling_line_center-hx*.5
+        sampling_line_center2=sampling_line_center+hx*.5
+    elif vel_direction == 'uy' and orientation == 'vertical': # take uy on the horizontal edges
+        indx1 = 5 #bottom
+        indx2 = 7 #top
+        sampling_line_center1=sampling_line_center-hy*.5
+        sampling_line_center2=sampling_line_center+hy*.5
+
+    sampling_line = [None] * (len(sampling_line_center1) + len(sampling_line_center2))
+    sampling_line[::2] = sampling_line_center1
+    sampling_line[1::2] = sampling_line_center2
+
+    fluid_vel_list_final = []
+    for i in range(len(time_srs)):
+        EltCrack_i = Fr_list[i].EltCrack
+        fluid_vel_list_i=fluid_vel_list[i]
+
+        vector_to_be_lost1  = np.zeros(Fr_list[0].mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost1[EltCrack_i] = fluid_vel_list_i[indx1,:]
+        vector_to_be_lost2 = np.zeros(Fr_list[0].mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost2[EltCrack_i] = fluid_vel_list_i[indx2,:]
+
+        fluid_vel_list_final_i = [None] * (len(vector_to_be_lost1[sampling_cells]) + len(vector_to_be_lost2[sampling_cells]))
+        fluid_vel_list_final_i[::2] = vector_to_be_lost1[sampling_cells]
+        fluid_vel_list_final_i[1::2] = vector_to_be_lost2[sampling_cells]
+        fluid_vel_list_final.append(fluid_vel_list_final_i)
+
+    return fluid_vel_list_final, time_srs, sampling_line
