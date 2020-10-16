@@ -541,7 +541,7 @@ class Controller:
                         with open(file_address, 'wb') as perf_output:
                             dill.dump(self.perfData, perf_output, -1)
 
-                    self.write_to_log("\n\n---Simulation failed---")
+                    log.info("\n\n---Simulation failed---")
 
                     raise SystemExit("Simulation failed.")
                 else:
@@ -556,8 +556,8 @@ class Controller:
                     self.TmStpReductions += 1
             else:
                 # time step failed
-                self.write_to_log("\n" + self.errorMessages[status])
-                self.write_to_log("\nTime step failed at = " + repr(self.fracture.time))
+                log.warning("\n" + self.errorMessages[status])
+                log.warning("\nTime step failed at = " + repr(self.fracture.time))
                 # check if the queue with last 5 time steps is not empty, or max check points jumps done
                 if self.fr_queue[self.successfulTimeSteps % 5] is None or \
                    self.chkPntReattmpts == 4:
@@ -569,7 +569,7 @@ class Controller:
                         with open(file_address, 'wb') as perf_output:
                             dill.dump(self.perfData, perf_output, -1)
 
-                    self.write_to_log("\n\n---Simulation failed---")
+                    log.info("\n\n---Simulation failed---")
 
                     raise SystemExit("Simulation failed.")
                 else:
