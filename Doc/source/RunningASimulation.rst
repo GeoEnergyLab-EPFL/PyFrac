@@ -163,7 +163,7 @@ positive x, negative y and positive y direction). Two important notes on the mes
 
 1. Whenever the fracture reaches a boundary where mesh extension has not been turned on, a re-meshing by compressing the
    domain is performed.
-2. Whenever the fracture reaches the boundary in three or four directions simultaneously, a re-meshing by compression of
+2. Whenever the fracture reaches the boundary in all four directions simultaneously, a re-meshing by compression of
    the domain is done.
 
 The second point can be disabled by setting
