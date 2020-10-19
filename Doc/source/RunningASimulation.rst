@@ -215,6 +215,12 @@ In words we start a simulation where we allow the fracture to extend in horizont
 as well as to the top (in positive y-dircetion). The mesh extension factor is set to 1.5 and the mesh compression factor
 remains at it's default value of 2.
 
-.. image:: /images/width_contours.png
-    :align:   center
-    :scale: 80 %
+.. image:: /images/MeshCompression_allDirections.png
+    :width: 45 %
+.. image:: /images/MeshCompression_allDirections_after.png
+    :width: 45 %
+
+From the left picture we see that in the next time step all four boundaries will be reached (note that we re-mesh when
+the front enters the cell just inside of the boundary layer). As this activates the condition of four boundaries reached
+at the same moment the domain will be compressed. You can see the result on the right picture. The number of elements
+remains the same whereas the surface covered has doubled in breadth and height
