@@ -859,7 +859,7 @@ class SimulationProperties:
         self.nThreads = simul_param.n_threads
         if self.projMethod not in ['ILSA_orig', 'LS_grad', 'LS_continousfront']:
             raise ValueError("Projection method is not recognised!")
-        if self.projMethod is not 'LS_continousfront' and self.doublefracture:
+        if self.projMethod != 'LS_continousfront' and self.doublefracture:
             raise SystemExit('You set the option doublefracture=True but\n '
                              'The volume control solver has been implemented \n'
                              'only with the option projMethod==LS_continousfront activated')
