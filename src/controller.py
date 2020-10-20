@@ -320,9 +320,9 @@ class Controller:
                         # we reached cell number limit so we adapt by compressing the domain accordingly
 
                         # calculate the new number of cells
-                        new_elems = [int(self.fracture.mesh.nx + np.round(self.sim_prop.meshReductionFactor, 0)
+                        new_elems = [int((self.fracture.mesh.nx + np.round(self.sim_prop.meshReductionFactor, 0))
                                          / self.sim_prop.meshReductionFactor),
-                                     int(self.fracture.mesh.ny + np.round(self.sim_prop.meshReductionFactor, 0)
+                                     int((self.fracture.mesh.ny + np.round(self.sim_prop.meshReductionFactor, 0))
                                          / self.sim_prop.meshReductionFactor)]
                         if new_elems[0] % 2 == 0:
                             new_elems[0] = new_elems[0] + 1
@@ -345,8 +345,8 @@ class Controller:
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hx,
                                           [self.fracture.mesh.domainLimits[0] +
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hy,
-                                          self.fracture.mesh.domainLimits[1]] +
-                                           np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hy]
+                                          self.fracture.mesh.domainLimits[1] +
+                                           np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hy]]
 
                             elems = new_elems
 
