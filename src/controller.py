@@ -341,8 +341,8 @@ class Controller:
                             # We calculate the new dimension of the meshed area
                             new_limits = [[self.fracture.mesh.domainLimits[2] +
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hx,
-                                           self.fracture.mesh.domainLimits[3]] +
-                                           np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hx,
+                                           self.fracture.mesh.domainLimits[3] +
+                                           np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hx],
                                           [self.fracture.mesh.domainLimits[0] +
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hy,
                                           self.fracture.mesh.domainLimits[1] +
