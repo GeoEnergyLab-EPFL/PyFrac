@@ -722,7 +722,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
         if i_indexes_of_fictitius_cells.size < 1:
             raise Exception("FRONT RECONSTRUCTION ERROR: The front does not exist")
     except RuntimeError:
-        log.error("FRONT RECONSTRUCTION ERROR: The front does not exist")
+        log.error("The front does not exist")
 
     if np.any(np.ndarray.flatten(LS[i_indexes_of_fictitius_cells,:]) > 10.**40):
         exitstatus = True
@@ -1959,7 +1959,7 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
         else:
             return dict_of_possibilities[str(previous_cell_name)]
     except RuntimeError:
-        log.debug("FRONT RECONSTRUCTION ERROR: The previous fictitious cell is not neighbour of the current fictitious cell")
+        log.debug("The previous fictitious cell is not neighbour of the current fictitious cell")
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
     """
@@ -2001,7 +2001,7 @@ def itertools_chain_from_iterable(lsts):
     try :
       to_be_returned =list(chain.from_iterable(lsts))
     except:
-      log.error("FRONT RECONSTRUCTION ERROR: The list contains an element not between square brakets")
+      log.error("The list contains an element not between square brakets")
     return to_be_returned
 
 def append_to_typelists(cell_index,cell_type,type1,type2,type3,type4):
@@ -2093,7 +2093,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             
         """
         if np.any(sgndDist_k[mesh.Frontlist] < 0):
-            log.warning('FRONT RECONSTRUCTION WARNING: some cells at the boundary of the mesh have negative level set')
+            log.warning('Some cells at the boundary of the mesh have negative level set')
             negativefront = np.where(sgndDist_k < 0)[0]
             intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
             correct_size_of_pstv_region = [False, True, False]
@@ -2287,7 +2287,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             if len(indexesFC_TYPE_4) > 0:
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
             if len(indexesFC_TYPE_2) > 0:
-                log.debug('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
+                log.debug('Type 2 to be tested')
                 correct_size_of_pstv_region = [False, False, True]
                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                 #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
