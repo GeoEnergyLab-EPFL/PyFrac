@@ -339,11 +339,11 @@ class Controller:
 
                             log.info("Reducing cell number...")
                             # We calculate the new dimension of the meshed area
-                            new_limits = [[self.fracture.mesh.domainLimits[2] +
+                            new_limits = [[self.fracture.mesh.domainLimits[2] -
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hx,
                                            self.fracture.mesh.domainLimits[3] +
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hx],
-                                          [self.fracture.mesh.domainLimits[0] +
+                                          [self.fracture.mesh.domainLimits[0] -
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hy,
                                           self.fracture.mesh.domainLimits[1] +
                                            np.round(self.sim_prop.meshReductionFactor, 0) * self.fracture.mesh.hy]]
@@ -385,11 +385,11 @@ class Controller:
                         new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
                                                                                   self.fracture.mesh.Ly])
                         new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
-                                       - new_dimensions[0]/2, (self.fracture.mesh.domainLimits[2]+
+                                       - new_dimensions[0]/2, (self.fracture.mesh.domainLimits[2] +
                                                                self.fracture.mesh.domainLimits[3]) / 2
                                        + new_dimensions[0]/2],
                                       [(self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
-                                       - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0]+
+                                       - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0] +
                                                                self.fracture.mesh.domainLimits[1]) / 2
                                        + new_dimensions[1]/2]]
 
