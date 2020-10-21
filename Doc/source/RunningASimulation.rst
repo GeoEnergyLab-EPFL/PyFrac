@@ -212,7 +212,7 @@ are specified:
    simulProp.set_mesh_extension_direction(['top', 'horizontal'])
 
 In words we start a simulation where we allow the fracture to extend in horizontal (positive and negative x-direction)
-as well as to the top (in positive y-dircetion). The mesh extension factor is set to 1.5 and the mesh compression factor
+as well as to the top (in positive y-dircetion). The mesh extension factor is set to 1.5 and the mesh re-meshing factor
 remains at it's default value of 2.
 
 .. image:: /images/MeshCompression_allDirections.png
@@ -223,4 +223,92 @@ remains at it's default value of 2.
 From the left picture we see that in the next time step all four boundaries will be reached (note that we re-mesh when
 the front enters the cell just inside of the boundary layer). As this activates the condition of four boundaries reached
 at the same moment the domain will be compressed. You can see the result on the right picture. The number of elements
-remains the same whereas the surface covered has doubled in breadth and height
+remains the same (31x31), whereas the surface covered has doubled in breadth and height [-0.02, 0.02, -0.02, 0.02]. To
+achieve the next configuration we skipped a extension of the mesh in positive-y direction. After this extension the mesh
+has the following dimensions: nx = 31, ny = 47, with dimensions [xmin = -0.02, xmax = 0.02, ymin = -0.02, ymax = 0.04].
+We show now that the fracture reaches the boundary at three location, in negative and positive x-direction and on the
+bottom (negative-y). This has the following consequences. The horizontal extension will take place in both directions.
+As there is a boundary reached where no extension is enabled (negative-y) the entire new domain will then be compressed.
+The dimensions after re-meshing (see right picture) are: nx = 63, ny = 47, [xmin = -0.08, xmax = 0.08, ymin = -0.05,
+ymax = 0.07].
+
+.. image:: /images/pre_HorExt_Comp.png
+    :width: 45 %
+.. image:: /images/after_HorExt_comp.png
+    :width: 45 %
+
+The next re-meshing in this situation is because the fracture reaches the lower boundary. As this boundary is not
+allowed to perform mesh extension a simple mesh compression like in the first example is performed. Figures before and
+after this compression are shown hereafter. The new dimensions are: nx = 63, ny = 47, [xmin = -0.16, xmax = 0.16, ymin =
+-0.11, ymax = 0.13].
+
+.. image:: /images/pre_Comp_LowB.png
+    :width: 45 %
+.. image:: /images/after_Comp_LowB.png
+    :width: 45 %
+
+Finally, the fracture starts growing vertically and only reaches the upper boundary. As there mesh extension is allowed,
+we will simply add elements on the positive y-direction and the new mesh is given by:  nx = 63, ny = 71, [xmin = -0.16,
+xmax = 0.16, ymin = -0.11, ymax = 0.25].
+
+.. image:: /images/pre_ExtTop.png
+    :width: 45 %
+.. image:: /images/after_ExtTop.png
+    :width: 45 %
+
+This first example mainly shows the capabilities of the mesh extension and mesh compression re-meshing properties.
+
+We switch now to a second example where we want to highlight how the mesh reduction works. For this second example  we
+initiate the problem with the following re-meshing properties:
+
+.. code-block:: python
+
+   from mesh import CartesianMesh
+   from properties import SimulationProperties
+
+   # creating mesh
+   Mesh = CartesianMesh(0.3, 0.3, 21, 21)
+
+   # define the re-meshing parameters
+   simulProp.meshExtensionAllDir = True
+   simulProp.set_mesh_extension_direction(['all'])
+   simulProp.set_mesh_extension_factor(1.15)
+   simulProp.maxElementIn = 750
+   simulProp.maxCellSize = 50
+
+In words we start a simulation where we allow the fracture to extend in all directions and enable an extension even if
+all four boundaries get reached simultaneously. The mesh extension factor is set to 1.15 and the mesh reduction factor
+remains at it's default value of 2. Once the number of cells inside the fracture reaches 750 or more, we will reduce the
+number of elements inside the domain. Finally, the maximum breadth of the cell is set to 50[m] and because cells are
+squared the maximum height is 50[m] as well. The initial dimensions of the mesh are: nx = 21, ny = 21, [xmin
+= -0.3, xmax = 0.3, ymin = -0.3, ymax = 0.3]. As our simulation is radial, we will reach all four boundaries
+simultaneously. With the given configuration this leads to a extension of the mesh in all directions and thus to the
+adding of elements.
+
+.. image:: /images/pre_ExtAll.png
+    :width: 45 %
+.. image:: /images/after_ExtAll.png
+    :width: 45 %
+
+The new dimensions of the mesh are: nx = 29, ny = 29, [xmin = -0.414, xmax = 0.414, ymin = -0.414, ymax = 0.414]. The
+simulation continues and after some other extension reaches the point where the maximum number of cells inside the
+fracture footprint is reached (left figure).
+
+.. image:: /images/pre_Reduction.png
+    :width: 45 %
+.. image:: /images/after_Reduction.png
+    :width: 45 %
+
+We will now reduce the number of cells by the default factor of 2 in x and y. Before the reduction, the mesh has 37x37
+elements in total and extents of [xmin = -0.53, xmax = 0.53, ymin = -0.53, ymax = 0.53]. There are some subtle tricks
+ensuring that the mesh reduction will work. We encapsules the details by simply telling you that we add two elements
+on all sides as not to ensure a we are not reaching a boundary during mesh reduction. The new number of elements is thus
+19x19 and the domain is slightly bigger [xmin = -0.62, xmax = 0.62, ymin = -0.62, ymax = 0.62]. The import point of this
+operation is that the total number of elements has reduced from 1'369 to 361. This represents a significant reduction in
+computational cost. In turn the precision in the process is reduced as well. We recommend mesh reduction only for
+situations where the number of elements is significantly larger than in this example and where the reduction wills still
+ensure sufficient precision.
+
+Note that the game between extension and reduction will go on until the cell size becomes bigger or equal than 50[m].
+From this point on, mesh reduction will be disabled and the number of cells will only increase when the simulation goes
+on.
