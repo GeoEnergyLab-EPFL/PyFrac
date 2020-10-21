@@ -356,10 +356,10 @@ class Controller:
                             side_bools = [False, False, False, False]
 
                     elif status == 12:
-                        # if self.sim_prop.meshExtensionAllDir:
-                        #     # we extend no matter how many boundaries we have hit
-                        #     # ensure all directions to extend are true
-                        #     self.sim_prop.set_mesh_extension_direction(['all'])
+                        if self.sim_prop.meshExtensionAllDir:
+                            # we extend no matter how many boundaries we have hit
+                            # ensure all directions to extend are true
+                            self.sim_prop.set_mesh_extension_direction(['all'])
 
                         front_indices = \
                         np.intersect1d(self.fracture.mesh.Frontlist, Fr_n_pls1.EltTip, return_indices=True)[1]
