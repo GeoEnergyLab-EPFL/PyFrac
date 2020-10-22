@@ -1376,8 +1376,11 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
 
 #-----------------------------------------------------------------------------------------------------------------------
 def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux',orientation='horizontal'): #CP 2020
-    """This function returns, at each time station, the velocity component in x or y direction along a horizontal or vertical section passing
+    """
+    This function returns, at each time station, the velocity component in x or y direction along a horizontal or vertical section passing
     through a given point.
+
+    WARNING: ASSUMING NO MESH COARSENING OR REMESHING WITH DOMAIN COMPRESSION
 
     :param Solid: Instance of the class MaterialProperties - see related documentation
     :param Fluid: Instance of the class FluidProperties - see related documentation
@@ -1405,13 +1408,13 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux
     #               (ux,uy)
     #                 4  5
     #
-    vector_to_be_lost = np.zeros(Fr_list[0].mesh.NumberOfElts,dtype=np.int)
+    vector_to_be_lost = np.zeros(Fr_list[-1].mesh.NumberOfElts,dtype=np.int) #made it large to account for a mesh extension
     NotUsd_var_values, sampling_line_center, sampling_cells = get_fracture_variable_slice_cell_center(vector_to_be_lost,
-                                                                                        Fr_list[0].mesh,
+                                                                                        Fr_list[-1].mesh,
                                                                                         point = initial_point,
                                                                                         orientation = orientation)
-    hx = Fr_list[0].mesh.hx
-    hy = Fr_list[0].mesh.hy
+    hx = Fr_list[-1].mesh.hx
+    hy = Fr_list[-1].mesh.hy
     if vel_direction ==  'ux' and orientation == 'horizontal': # take ux on the vertical edges
         indx1 = 0 #left
         indx2 = 2 #right
@@ -1442,9 +1445,9 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux
         EltCrack_i = Fr_list[i].EltCrack
         fluid_vel_list_i=fluid_vel_list[i]
 
-        vector_to_be_lost1  = np.zeros(Fr_list[0].mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost1  = np.zeros(Fr_list[-1].mesh.NumberOfElts, dtype=np.float)
         vector_to_be_lost1[EltCrack_i] = fluid_vel_list_i[indx1,:]
-        vector_to_be_lost2 = np.zeros(Fr_list[0].mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost2 = np.zeros(Fr_list[-1].mesh.NumberOfElts, dtype=np.float)
         vector_to_be_lost2[EltCrack_i] = fluid_vel_list_i[indx2,:]
 
         fluid_vel_list_final_i = [None] * (len(vector_to_be_lost1[sampling_cells]) + len(vector_to_be_lost2[sampling_cells]))
