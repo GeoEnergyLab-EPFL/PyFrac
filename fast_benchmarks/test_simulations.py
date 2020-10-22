@@ -52,11 +52,11 @@ class TestClass:
             print("File or dir {} has not been removed.".format(path))
             # raise ValueError("file {} is not a file or dir.".format(path))
 
-    def run_radial_vertex(self, my_front_reconstruction, my_front_advancement, my_vertex, my_param):
+    def run_radial_simul(self, my_front_reconstruction, my_front_advancement, my_vertex_or_path, my_param):
         # setting up the verbosity level of the log at console
         # setup_logging_to_console(verbosity_level='error')
 
-        outputfolder = "./Temp_Data/" + my_vertex + "_radial_" + my_front_advancement + "_" + my_front_reconstruction
+        outputfolder = "./Temp_Data/" + my_vertex_or_path + "_radial_" + my_front_advancement + "_" + my_front_reconstruction
         self.remove(outputfolder)
 
         # creating mesh
@@ -82,7 +82,7 @@ class TestClass:
         # simulation properties
         simulProp = SimulationProperties()
         simulProp.finalTime = my_param['finalTime']  # the time at which the simulation stops
-        simulProp.set_tipAsymptote(my_vertex)  # tip asymptote is evaluated with the viscosity dominated assumption
+        simulProp.set_tipAsymptote(my_vertex_or_path)  # tip asymptote is evaluated with the viscosity dominated assumption
         simulProp.frontAdvancing = my_front_advancement  # to set explicit front tracking
         simulProp.plotFigure = False
         simulProp.set_solTimeSeries(np.asarray([2, 200, 5000, 30000, 100000]))
@@ -93,7 +93,7 @@ class TestClass:
 
         # initialization parameters
         Fr_geometry = Geometry('radial', radius=my_param['initialR'])
-        init_param = InitializationParameters(Fr_geometry, regime=my_vertex)
+        init_param = InitializationParameters(Fr_geometry, regime=my_vertex_or_path)
 
         # creating fracture object
         Fr = Fracture(Mesh,
@@ -118,7 +118,11 @@ class TestClass:
         if testname in testnames.keys():
             my_front_advancement = testnames[testname]['front_advancement']
             my_front_reconstruction = testnames[testname]['front_reconstruction']
-            my_vertex = testnames[testname]['vertex']
+            if 'vertex' in testnames[testname].keys():
+                my_vertex_or_path = testnames[testname]['vertex']
+            elif 'path' in testnames[testname].keys():
+                my_vertex_or_path = testnames[testname]['path']
+            else:  SystemExit('You must specify vertex or path inside simulparam_and_tolerances !')
             my_param = simulparam[testnames[testname]['simulparam']]
             toll = tolerances[testname]
         else:
@@ -126,25 +130,24 @@ class TestClass:
 
         if run:
             # running the simulation
-            exitcode, outputfolder = self.run_radial_vertex(my_front_reconstruction, my_front_advancement, my_vertex,
-                                                       my_param)
+            exitcode, outputfolder = self.run_radial_simul(my_front_reconstruction, my_front_advancement, my_vertex_or_path, my_param)
             #
             assert exitcode == True, " error during the computation of the numerical solution"
         else:
-            outputfolder = "./Temp_Data/" + my_vertex + "_radial_" + my_front_advancement + "_" + my_front_reconstruction
+            outputfolder = "./Temp_Data/" + my_vertex_or_path + "_radial_" + my_front_advancement + "_" + my_front_reconstruction
 
         if not run:
             delete = False
         else:
             delete = True
 
-        return outputfolder, my_vertex, toll, delete
+        return outputfolder, my_vertex_or_path, toll, delete
 
     def test_radial_vertex(self, testname):
         ########################
         # running a simulation #
         ########################
-        outputfolder, my_vertex, toll, delete = self.compute(testname, True)
+        outputfolder, my_vertex, toll, delete = self.compute(testname, True) #-->>true if you want to rerun because you do not have results to check
 
         ########################
         # checking the results #
@@ -286,7 +289,7 @@ class TestClass:
             diff_i = np.asarray(diff_i)
             diff_max_vs_time.append(diff_i.max())
             diff_total_vs_time.append(diff)
-
+        #print('here')
         for i in range(len(Fr_list)):
             assert diff_max_vs_time[i] < toll['w_section_toll_max_value'][i]
             assert diff_total_vs_time[i] < toll['w_section_toll_cumulative_value'][i]
@@ -327,7 +330,7 @@ class TestClass:
                                                               export2Json_assuming_no_remeshing=False)
 
             from postprocess_fracture import get_HF_analytical_solution
-            labels = LabelProperties('pf', 'slice', '2D')
+            labels = LabelProperties('pn', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'pn',
                                                                     Solid,
@@ -352,7 +355,7 @@ class TestClass:
             diff_i = np.asarray(diff_i)
             diff_max_vs_time.append(diff_i.max())
             diff_total_vs_time.append(diff)
-
+        #print('here')
         for i in range(len(Fr_list)):
             assert diff_max_vs_time[i] < toll['p_section_toll_max_value'][i]
             assert diff_total_vs_time[i] < toll['p_section_toll_cumulative_value'][i]
