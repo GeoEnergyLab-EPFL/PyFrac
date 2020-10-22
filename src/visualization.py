@@ -1163,8 +1163,8 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
         raise ValueError("Given orientation is not supported. Possible options:\n 'horizontal', 'vertical',"
                          " 'increasing', 'decreasing'")
 
-    zero_cell = mesh.locate_element(point[0], point[1])
-    if np.isnan(zero_cell):
+    zero_cell = mesh.locate_element(point[0], point[1])[0]
+    if np.isnan(zero_cell).any():
         raise ValueError("The given point does not lie in the grid!")
 
     if orientation == 'vertical':
