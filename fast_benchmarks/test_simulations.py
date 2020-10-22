@@ -85,6 +85,7 @@ class TestClass:
         simulProp.set_tipAsymptote(my_vertex)  # tip asymptote is evaluated with the viscosity dominated assumption
         simulProp.frontAdvancing = my_front_advancement  # to set explicit front tracking
         simulProp.plotFigure = False
+        simulProp.set_solTimeSeries([2, 200, 5000, 30000, 100000])
         simulProp.saveTSJump, simulProp.plotTSJump = 5, 5  # save and plot after every five time steps
         simulProp.set_outputFolder(outputfolder)
         simulProp.projMethod = my_front_reconstruction
