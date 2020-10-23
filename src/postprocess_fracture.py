@@ -18,7 +18,7 @@ import sys
 import json
 
 from utility import ReadFracture
-from HF_analytical import HF_analytical_sol, get_fracture_dimensions_analytical
+from HF_reference_solutions import HF_analytical_sol, get_fracture_dimensions_analytical
 from labels import *
 # import FractureInitialization
 
