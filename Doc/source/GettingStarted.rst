@@ -78,8 +78,8 @@ Mac
          cmake ..
          make
 
-Documentation
-=============
+Generating the documentation
+============================
 You can generate documentation locally using sphinx. First install shpinx using pip::
 
     pip install sphinx
