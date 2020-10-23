@@ -40,9 +40,9 @@ windows
 
          pacman -S base-devel gcc vim cmake
    4. In case you have downloaded binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
-   5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   5. Change directory to the TI_Kernel\ folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
-         cmake ..
+         cmake .
          make
 
    6. Add MSYS2 libraries path (typically C:\\msys64\\usr\\bin) to the windows `PATH` environment variable.
@@ -58,9 +58,9 @@ Linux
 
          sudo apt-get -y install cmake
 
-   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   3. Change directory to the TI_Kernel folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
-         cmake ..
+         cmake .
          make
 
 Mac
@@ -73,9 +73,9 @@ Mac
 
          brew install cmake
 
-   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   3. Change directory to the TI_Kernel folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
-         cmake ..
+         cmake .
          make
 
 Generating the documentation
