@@ -14,11 +14,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Contributors
 ===============
 - Haseeb Zia (2016-)
-- Brice Lecampion (2016-)
 - Carlo Peruzzo (2019-)
 - Andreas Mori (2019-)
-- Fatima-Ezzahra Moukhtari (2018-2019)
-- Weihan Zhang (2018)
+- Brice Lecampion (2016-)
+- Fatima-Ezzahra Moukhtari (2017-2019)
+- Weihan Zhang (2017)
  
 
 Support

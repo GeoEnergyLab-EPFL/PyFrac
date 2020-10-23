@@ -20,9 +20,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 Contributors :
     - Haseeb Zia (2016-)
-    - Brice Lecampion (2016-)
     - Carlo Peruzzo (2019-)
     - Andreas Möri (2019-)
+    - Brice Lecampion (2016-)
     - Weihan Zhang (2017)
     - Fatima-Ezzahra Moukhtari (2017-2019)
 
