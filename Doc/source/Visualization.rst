@@ -189,7 +189,7 @@ Finally, in addition to the slice, solution at a single point can also be plotte
 
 
 Exporting selected data to JSON
----------------------------
+----------------------------------
 You can export the data to one or more JSON files (JavaScript Object Notation) and then post-process them via other programs e.g. Wolfram Mathematica. The function :py:func:`append_to_json_file` is used for both creating and adding data to the file. The function behaves differently in the case the JSON file exists or not. In the latter case, it creates a Python dictionary while in the former case it will be imported from the file. Currently, the imported dictionary is obscure to the user i.e. the function provides to the user only a way to write to JSON and not to read what is saved in it. Think to the function as a tool to create a Python dictionary that will be "the box" where to store and organize data using the labels you decide (keys). The function requires a minimum number of 3 to 4 arguments depending on what you decide to do:
     - In the case you have a python dictionary that you would like to dump to a new file, the function :py:func:`append_to_json_file` requires at least 3 arguments: the filename, the data to be written (a python dictionary) and the operation to be done, that is 'dump_this_dictionary'.	
     - the same 3 arguments must be provided in the case you want to extend an exixting JSON file with a python dictionary: the filename, the data to be written (a python dictionary) and the operation to be done, that is 'extend_dictionary'.
