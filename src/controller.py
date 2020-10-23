@@ -535,10 +535,10 @@ class Controller:
                 self.fracture = copy.deepcopy(Fr_n_pls1)
             elif status == 17:
                 # time step too big: you advanced more than one cell
-                print("The fracture is advancing more than two cells in a row at time "+ repr(self.fracture.time))
+                log.info("The fracture is advancing more than two cells in a row at time "+ repr(self.fracture.time))
 
                 if self.TmStpReductions == self.sim_prop.maxReattemptsFracAdvMore2Cells:
-                    print("We can not reduce the time step more than that")
+                    log.warning("We can not reduce the time step more than that")
                     if self.sim_prop.collectPerfData:
                         if self.sim_prop.saveToDisk:
                             file_address = self.sim_prop.get_outputFolder() + "perf_data.dat"
@@ -551,7 +551,7 @@ class Controller:
 
                     raise SystemExit("Simulation failed.")
                 else:
-                    print("- limiting the time step - ")
+                    log.info("- limiting the time step - ")
                     # decrease time step pre-factor before taking the next fracture in the queue having last
                     # five time steps
                     if isinstance(self.sim_prop.tmStpPrefactor, np.ndarray):
