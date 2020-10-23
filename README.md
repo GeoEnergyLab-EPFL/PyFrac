@@ -1,6 +1,6 @@
 # PyFrac
 
-PyFrac is a fluid driven planar 3D fractures simulator written in Python and based on the implicit level set algorithm.
+PyFrac is a simulator for the propagation of planar 3D fluid driven fractures written in Python. It is based on the implicit level set algorithm.
 
 Copyright © ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
 All rights reserved.
@@ -11,25 +11,25 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Authors
+Contributors
 ===============
-- Haseeb Zia <haseeb.zia@epfl.ch>
-- Brice Lecampion <brice.lecampion@epfl.ch>
-- Fatima-Ezzahra Moukhtari
-- Weihan Zhang
-- Carlo Peruzzo <carlo.peruzzo@epfl.ch>
-- Andreas Mori <andreas.mori@epfl.ch>
-
+- Haseeb Zia (2016-)
+- Brice Lecampion (2016-)
+- Carlo Peruzzo (2019-)
+- Andreas Mori (2019-)
+- Fatima-Ezzahra Moukhtari (2018-2019)
+- Weihan Zhang (2018)
+ 
 
 Support
 ===============
-We have a Slack channel for PyFrac with the aim of supporting the users.
+We have a Slack channel for PyFrac where users can post questions.
 You can Join the channel by following the link:
 https://join.slack.com/t/pyfrac/shared_invite/zt-hqt8wg1w-_7YC4PBNitp7C~a_0ygm~A
 
 ##Version
 
-1.0
+1.1 (October 2020)
 
 Getting started
 ===============
@@ -127,6 +127,6 @@ Change directory to the folder containing the PyFrac code. An example can be run
 
     python ./examples/radial_viscosity_explicit.py
 
-There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications (see it on arxiv). The corresponding example number from the paper is mentioned in the name of these scripts.
+There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications (https://doi.org/10.1016/j.cpc.2020.107368). The corresponding example number from the paper is mentioned in the name of these scripts.
 
 **Note:**   Some of the examples may take upto 2 hours to run.
