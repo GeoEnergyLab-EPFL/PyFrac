@@ -500,6 +500,36 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
         plt.show()
         return fig
 
+
+def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True):
+    # fig = None
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        A = np.full(mesh.NumberOfElts, np.nan)
+        from visualization import plot_fracture_variable_as_image
+        fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
+    else:
+        ax = fig.get_axes()[0]
+
+    if grid:
+        plotgrid(mesh, ax)
+
+    if oldfront is not None:
+        n = oldfront.shape[0]
+        for i in range(0, n):
+            plt.plot([oldfront[i, 0], oldfront[i, 2]],
+                     [oldfront[i, 1], oldfront[i, 3]], '-g')
+
+    if newfront is not None:
+        n = newfront.shape[0]
+        for i in range(0, n):
+            plt.plot([newfront[i, 0], newfront[i, 2]],
+                     [newfront[i, 1], newfront[i, 3]], '-b')
+
+    plt.show()
+    return fig
+
 def plot_cells(anularegion,mesh,sgndDist_k, Ribbon,list,fig=None, annotate_cellName=False, grid=True):
     if fig is None:
         fig = plt.figure()
