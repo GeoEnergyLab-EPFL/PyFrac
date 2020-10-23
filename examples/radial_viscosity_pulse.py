@@ -70,7 +70,7 @@ controller = Controller(Fr,
                         simulProp)
 
 # run the simulation
-#controller.run()
+controller.run()
 
 
 ####################
