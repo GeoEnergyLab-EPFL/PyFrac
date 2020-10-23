@@ -7,7 +7,7 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 import numpy as np
-tollerance = 1.05
+tollerance = 1.13
 testnames = dict(
     radial_M_explicit_newfront={'front_reconstruction': 'LS_continousfront',
                                 'front_advancement': 'explicit',
