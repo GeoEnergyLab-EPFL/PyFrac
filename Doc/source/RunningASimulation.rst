@@ -320,3 +320,34 @@ than in this example and where the reduction will still ensure sufficient precis
 Note that the interplay of extension and reduction will go on until the cell size becomes bigger or equal than 50[m].
 From this point on, mesh reduction will be disabled and the number of cells will only increase for an ongoing
 simulation.
+
+Running the regression tests
+-----------------------------------------
+
+The regression test suite is a set of tests that are meant to check the proper behaviour of some internal functions. In order to run the tests, we need to make sure that the package pytest is installed in your machine. From the shell execute:
+
+.. code-block:: shell-session
+
+   pip install -U pytest
+   
+To run the tests point the shell to the main directory of PyFrac (i.e.: the one containing the folder named "regression_tests") and run: 
+
+.. code-block:: shell-session
+
+   pytest regression_tests/*
+   
+Running the benchmarks
+-----------------------------------------
+
+The benchmarks test suite is meant to check the code accuracy against analytical solutions and against a set of reference numerical solutions obtained with PyFrac itself.
+In order to run the tests, we need to make sure that the package pytest is installed in your machine. From the shell execute:
+
+.. code-block:: shell-session
+
+   pip install -U pytest
+   
+To run the tests point the shell to the main directory of PyFrac (i.e.: the one containing the folder named "regression_tests") and run: 
+
+.. code-block:: shell-session
+
+   pytest benchmarks/test_simulations.py 
