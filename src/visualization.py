@@ -1060,10 +1060,11 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
                   color=plot_prop.lineColor,
                   label=legend)
 
-    ax_slice.set_xticks(np.hstack((sampling_line[[0, 20, 41, 62, 83, 104]], sampling_line[104])))
+    #ax_slice.set_xticks(np.hstack((sampling_line[[0, 20, 41, 62, 83, 104]], sampling_line[104])))
+    ax_slice.set_xticks(np.hstack((sampling_line[[0, 20, 41, 52, 62, 83, 104]])))
 
     xtick_labels = []
-    for i in [0, 20, 41, 62, 83, 104]:
+    for i in [0, 20, 41, 52, 62, 83, 104]:
         xtick_labels.append('(' + to_precision(sampling_points[i, 0],
                                                 plot_prop.dispPrecision) + ', ' +
                                   to_precision(sampling_points[i, 1],
