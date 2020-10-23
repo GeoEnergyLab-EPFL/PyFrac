@@ -4,7 +4,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Wed Nov 16 18:33:56 2016.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 
 Hydraulic fracture propagation Analytical solutions notably for
