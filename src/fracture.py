@@ -25,7 +25,7 @@ from level_set import SolveFMM
 from volume_integral import Pdistance
 from fracture_initialization import get_survey_points, get_width_pressure, generate_footprint
 from fracture_initialization import Geometry, InitializationParameters
-from HF_analytical import HF_analytical_sol
+from HF_reference_solutions import HF_analytical_sol
 from visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory
 from labels import unidimensional_variables
 from properties import PlotProperties
