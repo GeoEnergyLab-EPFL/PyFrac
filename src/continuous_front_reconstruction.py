@@ -3405,7 +3405,9 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
 
 # check if:
 def you_advance_more_than_2_cells(fully_traversed_k,EltRibbon_last_tmstp,NeiElements):
+    log = logging.getLogger('PyFrac.you_advance_more_than_2_cells')
     # in the case there is a fully traversed cell not in the Neighbor of a ribbon of the previous time step then you advanced two cells
+    log.debug(np.setdiff1d(fully_traversed_k,np.unique(NeiElements[EltRibbon_last_tmstp].flatten())).size)
     if np.setdiff1d(fully_traversed_k,np.unique(NeiElements[EltRibbon_last_tmstp].flatten())).size > 0:
         return True
     else: #==0
