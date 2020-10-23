@@ -214,6 +214,7 @@ In the following example, we export to a JSON file the list of times at which th
 The following piece of code can follow the previous one. Here we are interested in saving the fracture opening 'w' as a function of time at a specific point (coordinates x=-0.02 m and y=0.0 m). 
 
 .. code-block:: python
+
 	from postprocess_fracture import get_fracture_variable_at_point
     wATpointA, time = get_fracture_variable_at_point(Fr_list, variable='w', point=[-0.02, 0])
     append_to_json_file(myJsonName, wATpointA, 'append2keyASnewlist', key='wATpointA')
