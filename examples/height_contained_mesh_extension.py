@@ -22,7 +22,7 @@ from utility import setup_logging_to_console
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(2.75, 2.5, 17, 35)
+Mesh = CartesianMesh(2.75, 2.4, 17, 35)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
