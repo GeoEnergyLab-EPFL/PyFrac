@@ -9,13 +9,14 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 import shutil
 import os
-from fast_benchmarks.simulparam_and_tolerances import *
+from benchmarks.simulparam_and_tolerances import *
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 import numpy as np
+from visualization import *
 
 def pytest_generate_tests(metafunc):
     # called once per each test function
@@ -361,8 +362,7 @@ class TestClass:
             assert diff_total_vs_time[i] < toll['p_section_toll_cumulative_value'][i]
 
         # ####### useful for debugging ###
-        # from visualization import *
-        # # plot slice
+        # plot slice
         # ext_pnts = np.empty((2, 2), dtype=np.float64)
         # Fig_WS = plot_fracture_list_slice(Fr_list,
         #                                   variable='pn',
