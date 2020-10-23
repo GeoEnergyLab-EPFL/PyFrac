@@ -130,7 +130,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     # plot slice of width
     time_slice = np.asarray([0.5, 5, 45, 5e4, 5e5, 5e6])
-    Fr_slice, properties = load_fractures(address="./Data/Mpulse",
+    Fr_slice, properties = load_fractures(address="./Data/pulse",
                                           time_srs=time_slice)       # load specific fractures
     time_slice = get_fracture_variable(Fr_slice,
                                        variable='time')
