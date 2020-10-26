@@ -1415,7 +1415,7 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux
 
     for i in range(nOFtimes): #each fr has its own mesh
         # 1) get the coordinates of the points in the slices
-        vector_to_be_lost = np.zeros(Fr_list[-1].mesh.NumberOfElts,dtype=np.int)
+        vector_to_be_lost = np.zeros(Fr_list[i].mesh.NumberOfElts,dtype=np.int)
         NotUsd_var_values, sampling_line_center, sampling_cells = get_fracture_variable_slice_cell_center(vector_to_be_lost,
                                                                                                             Fr_list[i].mesh,
                                                                                                             point = initial_point,
