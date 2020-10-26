@@ -501,12 +501,12 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
         return fig
 
 
-def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True):
+def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = None):
     # fig = None
     if fig is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        A = np.full(mesh.NumberOfElts, np.nan)
+        A = np.full(mesh.NumberOfElts, 0.)
         from visualization import plot_fracture_variable_as_image
         fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
     else:
@@ -526,6 +526,9 @@ def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True):
         for i in range(0, n):
             plt.plot([newfront[i, 0], newfront[i, 2]],
                      [newfront[i, 1], newfront[i, 3]], '-b')
+
+    if cells is not None:
+        plt.plot(mesh.CenterCoor[cells, 0], mesh.CenterCoor[cells, 1], ".", marker="_", color='g')
 
     plt.show()
     return fig
@@ -3434,11 +3437,25 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
         return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, CellStatus_k, fully_traversed
 
 # check if:
-def you_advance_more_than_2_cells(fully_traversed_k,EltRibbon_last_tmstp,NeiElements):
-    log = logging.getLogger('PyFrac.you_advance_more_than_2_cells')
-    # in the case there is a fully traversed cell not in the Neighbor of a ribbon of the previous time step then you advanced two cells
-    log.debug(np.setdiff1d(fully_traversed_k,np.unique(NeiElements[EltRibbon_last_tmstp].flatten())).size)
-    if np.setdiff1d(fully_traversed_k,np.unique(NeiElements[EltRibbon_last_tmstp].flatten())).size > 0:
+def you_advance_more_than_2_cells(fully_traversed_k,EltTip_last_tmstp,NeiElements,oldfront,newfront,mesh):
+    """The following function is checking if there exixt a fully traversed element that is not a neighbour tip cells
+    at the end of the previous time step. If this is the case then fail the time step and take a smaller one.
+
+    :param fully_traversed_k: names of the fully traversed elements at the current time step
+    :param EltTip_last_tmstp: names of the tip cells at the end of the previous time step
+    :param NeiElements: list of neighbour elements for each cell
+    :param oldfront: coordinates defining the front at the end of the previous time step -- used only for plotting
+    :param newfront: coordinates defining the front at the end of the current time step -- used only for plotting
+    :param mesh: mesh object -- used only for plotting
+    :return: True or False
+    """
+
+
+    #log = logging.getLogger('PyFrac.you_advance_more_than_2_cells')
+    difference = np.setdiff1d(fully_traversed_k,np.unique(NeiElements[EltTip_last_tmstp].flatten()))
+    if difference.size > 0:
+        #log.debug(difference.size)
+        #plot_two_fronts(mesh, newfront=newfront, oldfront=oldfront, fig=None, grid=True, cells=difference)
         return True
     else: #==0
         return False

@@ -381,11 +381,11 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                   extreme_points=extreme_points,
                                                                   export2Json = export2Json)
                 if i == 0 and export2Json and export2Json_assuming_no_remeshing: #write ones the sampling line, assuming no remeshing
-                    to_write['sampling_line_out'] = sampling_line_out.tolist()
-                    to_write['sampling_cells']  = sampling_cells.tolist()
+                    to_write[variable+'_sampling_coords_'] = sampling_line_out.tolist()
+                    to_write[variable+'_sampling_cells']  = sampling_cells.tolist()
                 if export2Json and not export2Json_assuming_no_remeshing:
-                    to_write['sampling_line_out_'+str(i)] = sampling_line_out.tolist()
-                    to_write['sampling_cells_'+str(i)] = sampling_cells.tolist()
+                    to_write[variable+'_sampling_coords_'+str(i)] = sampling_line_out.tolist()
+                    to_write[variable+'_sampling_cells_'+str(i)] = sampling_cells.tolist()
                     to_write[variable+'_'+str(i)] = var_value_selected.tolist()
                 if export2Json and export2Json_assuming_no_remeshing:
                     to_write[str(i)] = var_value_selected.tolist()
@@ -399,7 +399,8 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                                 vmin=vmin,
                                                                 vmax=vmax,
                                                                 plot_colorbar=False,
-                                                                labels=labels)
+                                                                labels=labels,
+                                                                export2Json = export2Json)
             if not export2Json:
                 ax_tv = fig.get_axes()[0]
                 ax_tv.set_xlabel('meter')
@@ -915,7 +916,7 @@ def plot_fracture_variable_as_contours(var_value, mesh, fig=None, plot_prop=None
 
 
 def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, fig=None, plot_prop=None, vmin=None,
-                                     vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True):
+                                     vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True, export2Json = False):
     """
     This function plots the fracture on a given slice of the domain. Two points are to be given that will be
     joined to form the slice. The values on the slice are interpolated from the values available on the cell
@@ -940,7 +941,8 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 
     """
     log = logging.getLogger('PyFrac.plot_fracture_slice_interpolated')
-    log.info("Plotting slice...")
+    if not export2Json:
+        log.info("Plotting slice...")
     if plt_2D_image:
         if fig is None:
             fig = plt.figure()
@@ -1112,8 +1114,8 @@ def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='ho
 
     """
     log = logging.getLogger('PyFrac.plot_fracture_slice_cell_center')
-    log.info("Plotting slice...")
     if not export2Json:
+        log.info("Plotting slice...")
         if plt_2D_image:
             if fig is None:
                 fig = plt.figure()

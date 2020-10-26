@@ -78,7 +78,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
         # check if we advanced more than two cells
         if exitstatus == 1:
-            if you_advance_more_than_2_cells(Fr_k.fully_traversed, Frac.EltRibbon, Frac.mesh.NeiElements) and \
+            if you_advance_more_than_2_cells(Fr_k.fully_traversed, Frac.EltTip, Frac.mesh.NeiElements, Frac.Ffront, Fr_k.Ffront, Fr_k.mesh) and \
                 sim_properties.limitAdancementTo2cells:
                 exitstatus = 17
                 return exitstatus, Frac
@@ -206,7 +206,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
     # check if we advanced more than two cells
     if exitstatus == 1:
-        if you_advance_more_than_2_cells(Fr_k.fully_traversed, Frac.EltRibbon, Frac.mesh.NeiElements) and \
+        if you_advance_more_than_2_cells(Fr_k.fully_traversed, Frac.EltTip, Frac.mesh.NeiElements, Frac.Ffront, Fr_k.Ffront, Fr_k.mesh) and \
                 sim_properties.limitAdancementTo2cells:
             exitstatus = 17
             return exitstatus, Frac
