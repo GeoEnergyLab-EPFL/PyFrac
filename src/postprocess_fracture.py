@@ -1259,7 +1259,7 @@ def get_fracture_geometric_parameters(fr_list, properties):
     iter = 0
 
     for jk in fr_list:
-        left, right = get_Ffront_as_vector(jk, properties)[1:]
+        left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
 
         if left.shape[0] == right.shape[0]:
             breadth = np.vstack((np.abs(left - right)[::, 0], left[::, 1]))
@@ -1278,13 +1278,12 @@ def get_fracture_geometric_parameters(fr_list, properties):
 
         iter = iter + 1
 
-    return height, max_breadth, avg_breadth
+    return height.flatten().flatten(), max_breadth.flatten().flatten(), avg_breadth.flatten().flatten()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_Ffront_as_vector(frac, properties):
-    inj_p = properties[2].sourceCoordinates
+def get_Ffront_as_vector(frac, inj_p):
 
     mask13 = np.all(np.asarray([frac.Ffront[::, 0] <= inj_p[0], frac.Ffront[::, 1] <= inj_p[1]]), axis=0)
     mask24 = np.all(np.asarray([frac.Ffront[::, 2] <= inj_p[0], frac.Ffront[::, 3] <= inj_p[1]]), axis=0)
@@ -1306,7 +1305,10 @@ def get_Ffront_as_vector(frac, properties):
     upRig = np.concatenate((frac.Ffront[mask13, :2:], frac.Ffront[mask24, 2::]), axis=0)
     upRig = upRig[upRig[:, 1].argsort(), ::]
 
-    Ffront = np.concatenate((lowLef, lowRig, upRig, upLef, np.asarray([lowLef[0, :]])), axis=0)
+    if len(lowLef) != 0:
+        Ffront = np.concatenate((lowLef, lowRig, upRig, upLef, np.asarray([lowLef[0, :]])), axis=0)
+    else:
+        Ffront = np.concatenate((upRig, upLef, np.asarray([upRig[0, :]])), axis=0)
 
     left = np.concatenate((lowLef, upLef), axis=0)
     left = np.unique(left, axis=0)[np.unique(left, axis=0)[::, 1].argsort(), ::]
@@ -1324,7 +1326,7 @@ def get_fracture_fp(fr_list, properties):
     iter = 0
 
     for jk in fr_list:
-        fp_list.append(get_Ffront_as_vector(jk, properties)[0])
+        fp_list.append(get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[0])
         iter = iter + 1
 
     return fp_list
