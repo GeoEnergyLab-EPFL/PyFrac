@@ -12,7 +12,6 @@ import os
 import matplotlib.pyplot as plt
 import sys
 import glob
-import importlib
 import datetime
 import socket
 
@@ -43,7 +42,7 @@ with open('timing__' + socket.gethostname() + '__' + datetime.datetime.now().str
         example_start = datetime.datetime.now()
 
         # Running the example
-        importlib.import_module(example)
+        exec(open(example).read())
         if len(plt.get_fignums()) > 0: # closes figures if still open
             plt.close('all')
 
