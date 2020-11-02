@@ -244,6 +244,30 @@ The following example is more advanced. By adding the argument 'export2Json=True
 
     towrite =  {'intersectionVslice':fracture_list_slice}
     append_to_json_file(myJsonName, towrite, 'extend_dictionary') 
+
+In the script above, "fracture_list_slice" contains a list of coordinates ad a series of lists containing the fracture opening "w" at the same locations but  at different times (provided by "Fr_list"). If you are using any kind of remeshing, the mesh will change. This means that, before and after the remeshing,  the locations where you get the fracture opening "w" along your slice are different. Thus you must provide the option "export2Json_assuming_no_remeshing=False" as in the script below. This option will make sure that for each time you will export a list of coordinates with the location of the points in the mesh where you get the values of "w".
+
+
+.. code-block:: python
+
+    from postprocess_fracture import append_to_json_file
+    from visualization import plot_fracture_list_slice
+    ########## TAKE A VERTICAL SECTION (along y axis) TO GET w AT THE MIDDLE ########
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    print("\n 8) getting the slice along the y axis to get w(y)... ")
+    fracture_list_slice = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_cell_center=True,
+                                      extreme_points=ext_pnts,
+                                      orientation='vertical',
+                                      point1=[-0.0007,-0.008],
+                                      point2=[-0.0007,0.008], 
+                                      export2Json=True,
+                                      export2Json_assuming_no_remeshing=False)
+
+    towrite =  {'intersectionVslice':fracture_list_slice}
+    append_to_json_file(myJsonName, towrite, 'extend_dictionary') 
 	
 In the following example we create a dictionary and then we save it to a JSON file under the key 'complete_footrints'. Note that in this case we are building a structure made of nested dictionaries. This example allows you to export the coordinates of the points defining the fracture front in each cell of the mesh ('fracture.Ffront') and for each time of the simulation.
 	
