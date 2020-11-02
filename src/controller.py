@@ -1046,7 +1046,7 @@ class Controller:
 
         # We adapt the elasticity matrix
         if not self.sim_prop.useBlockToeplizCompression:
-            if direction == None:
+            if direction is None:
                 rem_factor = self.sim_prop.remeshFactor
                 self.C *= 1 / self.sim_prop.remeshFactor
             elif direction == 'reduce':
@@ -1057,7 +1057,7 @@ class Controller:
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         else:
-            if direction == None:
+            if direction is None:
                 rem_factor = self.sim_prop.remeshFactor
             else:
                 rem_factor = 10
