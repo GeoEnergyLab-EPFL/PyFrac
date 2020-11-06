@@ -25,11 +25,12 @@ fp.close()
 example_list = glob.glob('*.py')
 example_list.remove('batch_run.py')
 
-var_keep = ['fp', 'example_list', 'output', 'batch_start', 'example', 'example_start', 'datetime', 'time_since_start',
-            'sys', 'glob', 'os', 'socket', 'plt', 'var_keep', 'gc']
+# get the name of the file
+filename = 'timing__' + socket.gethostname() + '__' + datetime.datetime.now().strftime("%Y-%m-%d__%H_%M_%S")
+filename = filename.replace('.', '_')
 
 # Open the timing file. The name gives the Machine and the starting time
-with open('timing__' + socket.gethostname() + '__' + datetime.datetime.now().strftime("%Y-%m-%d__%H_%M_%S"), 'w') \
+with open(filename, 'w') \
         as output:
     output.write("++++++++++++++ Batch run ++++++++++++++\n")
 
@@ -46,7 +47,6 @@ with open('timing__' + socket.gethostname() + '__' + datetime.datetime.now().str
         example_start = datetime.datetime.now()
 
         # Running the example
-        #exec(open(example).read())
         subprocess.call(["python3", example])
 
         # write the runtime and the time since the start of the example to the log file
