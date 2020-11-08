@@ -602,10 +602,12 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
         pf[to_solve] = np.dot(C[np.ix_(to_solve, EltCrack)], wNplusOne[EltCrack]) +  mat_prop.SigmaO[to_solve]
         if sim_prop.solveDeltaP:
             pf[active] = frac_n.pFluid[active] + sol[len(to_solve):len(to_solve) + len(active)]
-            pf[to_impose] = frac_n.pFluid[to_impose] + sol[len(to_solve) + len(active):]
+            pf[to_impose] = frac_n.pFluid[to_impose] + sol[len(to_solve) + len(active):
+                                                            len(to_solve) + len(active) + len(to_impose)]
         else:
             pf[active] = sol[len(to_solve):len(to_solve) + len(active)]
-            pf[to_impose] = sol[len(to_solve) + len(active):]
+            pf[to_impose] = sol[len(to_solve) + len(active):
+                                len(to_solve) + len(active) + len(to_impose)]
             
         
         if fluid_prop.turbulence:
@@ -1460,7 +1462,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
 
     ((EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
       sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk), inj_prop,
-     inj_ch, inj_act, p_il_0, inj_in_ch, inj_in_act) = args
+     inj_ch, inj_act, sink_cells, p_il_0, inj_in_ch, inj_in_act, Q0, sink) = args
 
     wNplusOne = np.copy(frac.w)
     wNplusOne[to_solve] += solk[:len(to_solve)]
@@ -1538,7 +1540,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
     A[inj_ch_indx, p_il_indxs] = 1.
     A[inj_ch_indx, inj_ch_indx] = -inj_prop.perforationFriction * abs(solk[inj_ch_indx])
 
-    A[np.ix_(inj_act_indx, ch_indxs)] = -C[np.ix_(inj_act, to_solve)]
+    A[inj_act_indx, act_indxs[inj_in_act]] = -1.
     A[inj_act_indx, p_il_indxs] = 1.
     A[inj_act_indx, inj_act_indx] = -inj_prop.perforationFriction * abs(solk[inj_act_indx])
 
@@ -1552,7 +1554,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
                   dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                   dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                   dt * G[to_solve] + \
-                  -LeakOff[to_solve] / frac.mesh.EltArea \
+                  -(LeakOff[to_solve] + dt * sink[to_solve]) / frac.mesh.EltArea \
                   + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
 
     S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
@@ -1560,26 +1562,23 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[to_impose] + \
-                   -LeakOff[to_impose] / frac.mesh.EltArea
+                   -(LeakOff[to_impose] + 0*dt * sink[to_impose]) / frac.mesh.EltArea \
 
     S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[active] + \
-                   -LeakOff[active] / frac.mesh.EltArea
+                   -(LeakOff[active] + dt * sink[active]) / frac.mesh.EltArea
 
-    S[p_il_indxs] = dt * sum(Q)
+    S[p_il_indxs] = dt * Q0
 
     S[inj_ch_indx] = np.dot(C[np.ix_(inj_ch, to_solve)], frac.w[to_solve]) + \
                      np.dot(C[np.ix_(inj_ch, active)], wc_to_impose) + \
                      np.dot(C[np.ix_(inj_ch, to_impose)], imposed_val) + \
                      mat_prop.SigmaO[inj_ch] - p_il_0
 
-    S[inj_act_indx] = np.dot(C[np.ix_(inj_act, to_solve)], frac.w[to_solve]) + \
-                      np.dot(C[np.ix_(inj_act, active)], wc_to_impose) + \
-                      np.dot(C[np.ix_(inj_act, to_impose)], imposed_val) + \
-                      mat_prop.SigmaO[inj_act] - p_il_0
+    S[inj_act_indx] = frac.pFluid[inj_act] - p_il_0
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs, p_il_indxs, inj_ch_indx, inj_act_indx]
@@ -2093,8 +2092,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         xks[0,::] = np.array([guess])                                       # xo
         (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
         Gks[0, ::] = np.linalg.solve(A, b)
-        Fks[0,::] = Gks[0,::] - xks[0,::]
-        xks[1,::] = Gks[0,::]                                               # x1
+        Fks[0, ::] = Gks[0, ::] - xks[0, ::]
+        xks[1, ::] = Gks[0, ::]                                               # x1
     except np.linalg.linalg.LinAlgError:
         print('singular matrix!')
         solk = np.full((len(xks[0]),), np.nan, dtype=np.float64)

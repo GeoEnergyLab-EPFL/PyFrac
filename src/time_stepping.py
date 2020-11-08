@@ -292,6 +292,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.injectionRate[return_data[4][1]] = return_data[4][0]
         Fr_kplus1.injectionRate[return_data[5][1]] = return_data[5][0]
         Q_indx = np.where(abs(Qin) > 0)[0]
+        print('dPIL ' + repr(return_data[3]))
         print('PIL ' + repr(Fr_kplus1.pInjLine))
         print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
         # print("pressure drop " + repr(
@@ -922,6 +923,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
         Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
         Q_indx = np.where(abs(Qin)>0)[0]
+        print('dPIL ' + repr(data[3]))
         print('PIL ' + repr(Fr_kplus1.pInjLine))
         print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
         # print("pressure drop " + repr(
@@ -1234,8 +1236,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     imposed_val_k - Fr_lstTmStp.w[to_impose_k])) / len(to_solve_k)
             w_guess[to_solve_k] = Fr_lstTmStp.w[to_solve_k] + avg_dw
             w_guess[to_impose_k] = imposed_val_k
-            pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]
-            pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k]
+            pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) + mat_properties.SigmaO[neg]
+            pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) + mat_properties.SigmaO[to_impose_k]
 
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if inj_properties.modelInjLine:
@@ -1264,7 +1266,17 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 inter_itr_init = [vk, np.array([], dtype=int), None]
 
                 if inj_properties.modelInjLine:
-                    inj_cells = np.where(abs(Qin) > 0)[0]
+                    # inj_cells = np.where(Qin > 0)[0]
+                    inj_cells = np.intersect1d(inj_properties.sourceElem, Fr_lstTmStp.EltChannel)
+                    sink_cells = np.intersect1d(inj_properties.sourceElem, Fr_lstTmStp.EltCrack)
+
+                    sink = np.zeros(Fr_lstTmStp.mesh.NumberOfElts)
+                    if inj_properties.sinkElem:
+                        sink[inj_properties.sinkElem] = inj_properties.sinkVel * Fr_lstTmStp.mesh.EltArea
+
+                    indxCurTime = max(np.where(Fr_lstTmStp.time + timeStep >= inj_properties.injectionRate[0, :])[0])
+                    currentRate = inj_properties.injectionRate[1, indxCurTime]  # current injection rate
+
                     inj_ch = np.intersect1d(inj_cells, to_solve_k)
                     inj_act = np.intersect1d(inj_cells, neg)
                     inj_in_ch = []
@@ -1274,8 +1286,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     for m in inj_act:
                         inj_in_act.append(np.where(neg == m)[0][0])
 
-                    arg = (arg, inj_properties, inj_ch, inj_act, Fr_lstTmStp.pInjLine,
-                           np.asarray(inj_in_ch, dtype=int), np.asarray(inj_in_act, dtype=int))
+                    arg = (arg, inj_properties, inj_ch, inj_act, sink_cells, Fr_lstTmStp.pInjLine,
+                           np.asarray(inj_in_ch, dtype=int), np.asarray(inj_in_act, dtype=int), currentRate, sink)
+
                     guess_il = np.zeros(len(inj_cells) + 1)
                     guess_il[1:] = Qin[inj_cells]
                     guess = np.concatenate((guess, guess_il))
@@ -1419,7 +1432,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         if inj_properties.modelInjLine:
             pil_indx = len(to_solve_k) + len(neg_km1) + len(to_impose_k)
-            p_il = sol[pil_indx]
+            dp_il = sol[pil_indx]
             Q_ch = sol[pil_indx + 1: pil_indx + 1 + len(inj_ch)]
             Q_act = sol[pil_indx + 1 + len(inj_ch): pil_indx + 1 + len(inj_ch) + len(inj_act)]
         else:
@@ -1428,7 +1441,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             Q_act = None
 
         if inj_properties.modelInjLine:
-            return_data = [data_nonLinSolve, neg_km1, fully_closed, p_il, (Q_ch, inj_ch), (Q_act, inj_act)]
+            return_data = [data_nonLinSolve, neg_km1, fully_closed, dp_il, (Q_ch, inj_ch), (Q_act, inj_act)]
         else:
             return_data = [data_nonLinSolve, neg_km1, fully_closed]
 
@@ -1928,6 +1941,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
         Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
         Q_indx = np.where(abs(Qin) > 0)[0]
+        print('dPIL ' + repr(data[3]))
         print('PIL ' + repr(Fr_kplus1.pInjLine))
         print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
         # print("pressure drop " + repr(

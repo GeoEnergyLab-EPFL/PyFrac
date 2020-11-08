@@ -411,6 +411,8 @@ class InjectionProperties:
         
         self.sinkLocFunc = sink_loc_func
         self.sinkVelFunc = sink_vel_func
+        self.sinkElem = []
+        self.sinkVel = []
         if sink_loc_func is not None:
             if sink_vel_func is None:
                 raise ValueError("Sink velocity function is required for sink elements!")
@@ -462,7 +464,7 @@ class InjectionProperties:
         Qin = np.zeros(frac.mesh.NumberOfElts, float)
         indxCurTime = max(np.where(tm >= self.injectionRate[0, :])[0])
         currentRate = self.injectionRate[1, indxCurTime]  # current injection rate
-        currentSource = np.intersect1d(self.sourceElem, frac.EltCrack)
+        currentSource = np.intersect1d(self.sourceElem, frac.EltChannel)
         Qin[currentSource] = currentRate / len(currentSource)
 
         return Qin
@@ -491,14 +493,13 @@ class InjectionProperties:
                 if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
                  self.sourceElem.append(i)
 
-        
+
         if self.sinkLocFunc is not None:
-            
             self.sinkElem = []
             for i in range(new_mesh.NumberOfElts):
                 if self.sinkLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
                  self.sinkElem.append(i)
-            
+
             self.sinkVel = np.empty(len(self.sinkElem))
             for i in range(len(self.sinkElem)):
                     self.sinkVel[i] = self.sinkVelFunc(new_mesh.CenterCoor[self.sinkElem[i], 0],

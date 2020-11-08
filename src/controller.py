@@ -769,8 +769,9 @@ class Controller:
             current_prefactor = self.sim_prop.get_time_step_prefactor(self.fracture.time)
             time_step = current_prefactor * min(TS_cell_length,
                                               TS_fracture_length,
-                                              TS_inj_cell,
-                                              TS_delta_vol)
+                                              # TS_inj_cell,
+                                              TS_delta_vol
+                                                )
 
         # in case of fracture not propagating
         if time_step <= 0 or np.isinf(time_step):

@@ -109,6 +109,9 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
         fileNo += step_size
 
+        if ff.time == 0.:
+            ff.time = 1e-16
+
         if 1. - next_t / ff.time >= -1e-8:
             # if the current fracture time has advanced the output time period
             print('Returning fracture at ' + repr(ff.time) + ' s')

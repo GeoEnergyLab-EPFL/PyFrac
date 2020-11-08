@@ -778,7 +778,7 @@ class Fracture:
         
         coarse_closed = []       
         for e in self.closed:
-            coarse_closed.append(locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
+            coarse_closed.append(self.mesh.locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
         Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))    
             
         Fr_coarse.LkOff = LkOff
@@ -788,4 +788,7 @@ class Fracture:
         Fr_coarse.time = self.time
         Fr_coarse.wHist = wHist_coarse
 
+        if inj_prop.modelInjLine:
+            Fr_coarse.pInjLine = self.pInjLine
+            # self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
         return Fr_coarse

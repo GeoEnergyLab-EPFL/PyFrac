@@ -2189,7 +2189,11 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
 
         
         if block_figure:
-            input("Press any key to continue.")
+            plt.pause(0.5)
+            plt.ion()
+            plt.show()
+            plt.waitforbuttonpress()
+            # input("Press any key to continue.")
     plt.show(block=True)
 
 #-----------------------------------------------------------------------------------------------------------------------
