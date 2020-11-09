@@ -506,10 +506,11 @@ class Controller:
                 if self.PstvInjJmp is None:
                     inp = input("Fracture is fully closed.\n\nDo you want to jump to"
                             " the time of next positive injection? [y/n]")
-                    while inp not in ['y', 'Y', 'n', 'N']:
+                    t0 = time.time()
+                    while inp not in ['y', 'Y', 'n', 'N'] and time.time() - t0 < 600:
                         inp = input("Press y or n")
 
-                    if inp == 'y' or inp == 'Y':
+                    if inp == 'y' or inp == 'Y' or time.time() - t0 >= 600:
                         self.PstvInjJmp = True
                     else:
                         self.PstvInjJmp = False
