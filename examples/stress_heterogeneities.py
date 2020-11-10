@@ -96,7 +96,7 @@ simulProp.saveFluidFluxAsVector = True
 simulProp.plotVar = ['ffvf']
 simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
 simulProp.saveToDisk = True
-simulProp.meshExtensionFactor = 1.1
+simulProp.set_mesh_extension_factor(1.1)
 simulProp.set_mesh_extension_direction(['all'])
 simulProp.useBlockToeplizCompression = True
 
