@@ -479,7 +479,7 @@ class Controller:
                                              self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
                                             [self.fracture.mesh.domainLimits[0],
                                              self.fracture.mesh.domainLimits[1]]]
-                                        side_bools[0] = False
+                                        side_bools[3] = False
 
                                     direction = 'left'
 
@@ -505,7 +505,7 @@ class Controller:
                                              self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
                                             [self.fracture.mesh.domainLimits[0],
                                              self.fracture.mesh.domainLimits[1]]]
-                                        side_bools[0] = False
+                                        side_bools[2] = False
 
                                     direction = 'right'
 
