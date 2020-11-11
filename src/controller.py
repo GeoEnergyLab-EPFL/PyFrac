@@ -405,68 +405,107 @@ class Controller:
                         for side in range(4):
                             if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
                                 if side == 0:
-                                    log.info("Remeshing by extending towards negative y...")
 
                                     elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
-                                    new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                   self.fracture.mesh.domainLimits[3]],
-                                                  [self.fracture.mesh.domainLimits[0] -
-                                                   elems_add * self.fracture.mesh.hy,
-                                                   self.fracture.mesh.domainLimits[1]]]
+                                    if not self.sim_prop.symmetric:
+                                        log.info("Remeshing by extending towards negative y...")
+                                        new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                       self.fracture.mesh.domainLimits[3]],
+                                                      [self.fracture.mesh.domainLimits[0] -
+                                                       elems_add * self.fracture.mesh.hy,
+                                                       self.fracture.mesh.domainLimits[1]]]
+                                    else:
+                                        log.info("Remeshing by extending in vertical direction to keep symmetry...")
+                                        new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                       self.fracture.mesh.domainLimits[3]],
+                                                      [self.fracture.mesh.domainLimits[0] -
+                                                       elems_add * self.fracture.mesh.hy,
+                                                       self.fracture.mesh.domainLimits[1] +
+                                                       elems_add * self.fracture.mesh.hy]]
+                                        side_bools[1] = False
 
                                     direction = 'bottom'
 
                                     elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
+
                                 if side == 1:
-                                    log.info("Remeshing by extending towards positive y...")
 
                                     elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
-                                    new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                   self.fracture.mesh.domainLimits[3]],
-                                                  [self.fracture.mesh.domainLimits[0],
-                                                   self.fracture.mesh.domainLimits[1] +
-                                                   elems_add * self.fracture.mesh.hy]]
+                                    if not self.sim_prop.symmetric:
+                                        log.info("Remeshing by extending towards positive y...")
+                                        new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                       self.fracture.mesh.domainLimits[3]],
+                                                      [self.fracture.mesh.domainLimits[0],
+                                                       self.fracture.mesh.domainLimits[1] +
+                                                       elems_add * self.fracture.mesh.hy]]
+                                    else:
+                                        log.info("Remeshing by extending in vertical direction to keep symmetry...")
+                                        new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                       self.fracture.mesh.domainLimits[3]],
+                                                      [self.fracture.mesh.domainLimits[0] -
+                                                       elems_add * self.fracture.mesh.hy,
+                                                       self.fracture.mesh.domainLimits[1] +
+                                                       elems_add * self.fracture.mesh.hy]]
+                                        side_bools[0] = False
 
                                     direction = 'top'
 
                                     elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
 
                                 if side == 2:
-                                    log.info("Remeshing by extending towards negative x...")
 
                                     elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
-                                    new_limits = [
-                                        [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
-                                         self.fracture.mesh.domainLimits[3]],
-                                        [self.fracture.mesh.domainLimits[0],
-                                         self.fracture.mesh.domainLimits[1]]]
+                                    if not self.sim_prop.symmetric:
+                                        log.info("Remeshing by extending towards negative x...")
+                                        new_limits = [
+                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
+                                             self.fracture.mesh.domainLimits[3]],
+                                            [self.fracture.mesh.domainLimits[0],
+                                             self.fracture.mesh.domainLimits[1]]]
+                                    else:
+                                        log.info("Remeshing by extending in horizontal direction to keep symmetry...")
+                                        new_limits = [
+                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
+                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
+                                            [self.fracture.mesh.domainLimits[0],
+                                             self.fracture.mesh.domainLimits[1]]]
+                                        side_bools[0] = False
 
                                     direction = 'left'
 
                                     elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
 
                                 if side == 3:
-                                    log.info("Remeshing by extending towards positive x...")
 
                                     elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
                                     if elems_add % 2 != 0:
                                         elems_add = elems_add + 1
 
-                                    new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                   self.fracture.mesh.domainLimits[
-                                                       3] + elems_add * self.fracture.mesh.hx],
-                                                  [self.fracture.mesh.domainLimits[0],
-                                                   self.fracture.mesh.domainLimits[1]]]
+                                    if not self.sim_prop.symmetric:
+                                        log.info("Remeshing by extending towards positive x...")
+                                        new_limits = [[self.fracture.mesh.domainLimits[2],
+                                                       self.fracture.mesh.domainLimits[
+                                                           3] + elems_add * self.fracture.mesh.hx],
+                                                      [self.fracture.mesh.domainLimits[0],
+                                                       self.fracture.mesh.domainLimits[1]]]
+                                    else:
+                                        log.info("Remeshing by extending in horizontal direction to keep symmetry...")
+                                        new_limits = [
+                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
+                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
+                                            [self.fracture.mesh.domainLimits[0],
+                                             self.fracture.mesh.domainLimits[1]]]
+                                        side_bools[0] = False
 
                                     direction = 'right'
 
