@@ -1103,7 +1103,7 @@ class Controller:
 
         new_indexes = np.array(mapping_old_indexes(new_mesh, self.fracture.mesh, direction))
 
-        if len(self.C) != Ne:
+        if np.prod(np.asarray(self.C).shape)!= Ne:
             self.C = np.vstack((np.hstack((self.C, np.full((Ne_old, Ne - Ne_old), 0.))),
                np.full((Ne - Ne_old, Ne), 0.)))
 
@@ -1122,3 +1122,6 @@ class Controller:
                     np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
 
             self.C[np.ix_(new_indexes, add_el)] = np.transpose(self.C[np.ix_(add_el, new_indexes)])
+
+        else:
+            self.C = load_isotropic_elasticity_matrix(new_mesh, self.solid_prop.Eprime)
