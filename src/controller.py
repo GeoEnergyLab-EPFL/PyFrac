@@ -1052,7 +1052,10 @@ class Controller:
                 self.C *= 1 / self.sim_prop.remeshFactor
             elif direction == 'reduce':
                 rem_factor = 10
-                self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
+                if not self.sim_prop.symmetric:
+                    self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
+                else:
+                    self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
             else:
                 rem_factor = 10
                 log.info("Extending the elasticity matrix...")
