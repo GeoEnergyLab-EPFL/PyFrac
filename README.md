@@ -26,16 +26,19 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 - H. Zia and B. Lecampion. PyFrac: a planar 3D hydraulic fracturing simulator. *Comp. Phys. Comm.*, 255:107368, (2020). https://doi.org/10.1016/j.cpc.2020.107368
 
 
+## Current Version
+
+1.1 (October 2020)
+
 
 ## Support
 
-We have created a Slack channel for PyFrac where users can post questions.
+We do not have the capacities to provide support, but will do our best to address users questions. 
+To do so, we have created a Slack channel for PyFrac where you can post questions. 
 You can join the channel via the following link:
 https://join.slack.com/t/pyfrac/shared_invite/zt-hqt8wg1w-_7YC4PBNitp7C~a_0ygm~A
 
-##Current Version
-
-1.1 (October 2020)
+Bugs should be reported as issues via GitHub.
 
 ## Getting started
 
