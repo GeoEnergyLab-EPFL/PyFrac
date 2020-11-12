@@ -24,7 +24,7 @@ from utility import setup_logging_to_console
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(500, 450, 19, 15)
+Mesh = CartesianMesh(425, [-425, 455], 13, 15)
 
 # solid properties
 nu = 0.25                           # Poisson's ratio
@@ -74,7 +74,7 @@ simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.5, 0.1]]) # set up the tim
 simulProp.timeStepLimit = 5000                                  # time step limit
 simulProp.plotVar = ['w', 'v']                                  # plot fracture width and fracture front velocity
 simulProp.set_mesh_extension_direction(['top', 'horizontal'])   # allow the fracture to extend in positive y and x
-simulProp.set_mesh_extension_factor(1.3)                        # set the extension factor to 1.4
+simulProp.set_mesh_extension_factor(1.2)                        # set the extension factor to 1.4
 simulProp.useBlockToeplizCompression = True                     # use the Toepliz elasticity matrix to save memory
 
 
