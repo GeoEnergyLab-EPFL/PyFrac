@@ -168,6 +168,14 @@ class Controller:
                 warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'U\'")
                 self.sim_prop.set_tipAsymptote('U1')
 
+        # if you set the code to advance max 1 cell then remove the SimulProp.timeStepLimit
+        if self.sim_prop.timeStepLimit is not None and self.sim_prop.limitAdancementTo2cells is True:
+            if self.sim_prop.forceTmStpLmtANDLmtAdvTo2cells == False:
+                warnings.warn("You have set sim_prop.limitAdancementTo2cells = True. This imply that sim_prop.timeStepLimit will be deactivated.")
+                self.sim_prop.timeStepLimit = None
+            else:
+                warnings.warn(
+                    "You have forced <limitAdancementTo2cells> to be True and set <timeStepLimit> - the first one might be uneffective onto the second one until the prefactor has been reduced to produce a time step < timeStepLimit")
 #-----------------------------------------------------------------------------------------------------------------------
 
     def run(self):

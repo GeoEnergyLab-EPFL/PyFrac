@@ -722,6 +722,7 @@ class SimulationProperties:
                                        plots, e.g. to plot analytical solutions of anisotropic toughness or TI
                                        elasticity.
         maxReattemptsFracAdvMore2Cells -- number of time reduction that are made if the fracture is advancing more than two cells (e.g. because of an heterogeneity)
+        force_time_step_limit_and_max_adv_to_2_cells -- this will force the contemporaneity of timeStepLimit and limitAdancementTo2cells
 
         Attention:
             These attributes below are private:
@@ -835,6 +836,7 @@ class SimulationProperties:
         self.meshReductionFactor = simul_param.mesh_reduction_factor
         self.meshReductionPossible = True
         self.limitAdancementTo2cells = simul_param.limit_Adancement_To_2_cells
+        self.forceTmStpLmtANDLmtAdvTo2cells = simul_param.force_time_step_limit_and_max_adv_to_2_cells
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.paramFromTip = simul_param.param_from_tip

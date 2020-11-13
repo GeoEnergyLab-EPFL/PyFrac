@@ -93,6 +93,7 @@ explicit_projection = False             # if True, direction from last time step
 front_advancing = 'predictor-corrector' # possible options include 'implicit', 'explicit' and 'predictor-corrector'.
 param_from_tip = False                  # set the space dependant tip parameters to be taken from ribbon cell.
 limit_Adancement_To_2_cells = False     # limit the timestep in such a way that the front will advance less than 2 cells in a row
+force_time_step_limit_and_max_adv_to_2_cells = False # this will force the contemporaneity of timeStepLimit and limitAdancementTo2cells
 max_reattemps_FracAdvMore2Cells = 50    # number of time reduction that are made if the fracture is advancing more than two cells (e.g. because of an heterogeneity)
 
 # Mesh extension
