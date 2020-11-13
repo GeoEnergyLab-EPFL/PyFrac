@@ -777,6 +777,8 @@ class Fracture:
         Fr_coarse.closed = np.asarray([])
         Fr_coarse.wHist = wHist_coarse
 
+        self.source = np.intersect1d(inj_prop.sourceElem, Fr_coarse.EltCrack)
+
         return Fr_coarse
 
 #-----------------------------------------------------------------------------------------------------------------------
