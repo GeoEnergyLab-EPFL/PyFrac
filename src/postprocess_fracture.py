@@ -1252,14 +1252,17 @@ def write_properties_csv_file(file_name, properties):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_geometric_parameters(fr_list, properties):
+def get_fracture_geometric_parameters(fr_list):
     max_breadth = np.full((len(fr_list), 1), np.nan)
     avg_breadth = np.full((len(fr_list), 1), np.nan)
     height = np.full((len(fr_list), 1), np.nan)
     iter = 0
 
     for jk in fr_list:
-        left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+        if len(jk.source) != 0:
+            left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+        else:
+            left, right = get_Ffront_as_vector(jk, [0., 0.])[1:]
 
         if left.shape[0] == right.shape[0]:
             breadth = np.vstack((np.abs(left - right)[::, 0], left[::, 1]))
@@ -1321,12 +1324,15 @@ def get_Ffront_as_vector(frac, inj_p):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_fp(fr_list, properties):
+def get_fracture_fp(fr_list):
     fp_list = []
     iter = 0
 
     for jk in fr_list:
-        fp_list.append(get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[0])
+        if len(jk.source) != 0:
+            left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+        else:
+            left, right = get_Ffront_as_vector(jk, [0., 0.])[1:]
         iter = iter + 1
 
     return fp_list
