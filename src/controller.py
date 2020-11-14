@@ -604,9 +604,9 @@ class Controller:
                     # five time steps
                     if isinstance(self.sim_prop.tmStpPrefactor, np.ndarray):
                         indxCurTime = max(np.where(self.fracture.time >= self.sim_prop.tmStpPrefactor[0, :])[0])
-                        self.sim_prop.tmStpPrefactor[1, indxCurTime] *= 0.8
+                        self.sim_prop.tmStpPrefactor[1, indxCurTime] *= 0.5**self.TmStpReductions
                     else:
-                        self.sim_prop.tmStpPrefactor *= 0.8
+                        self.sim_prop.tmStpPrefactor *= 0.5**self.TmStpReductions
                     self.TmStpReductions += 1
             else:
                 # time step failed
