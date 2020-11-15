@@ -357,15 +357,15 @@ class Controller:
 
 
                             # We calculate the new dimension of the meshed area
-                            new_limits = [[cent_point[0] - (int((new_elems[0] - 1)/(1 / col_frac + 1)) + 1./2.) *
-                                           self.fracture.mesh.hx/self.sim_prop.meshReductionFactor,
+                            new_limits = [[cent_point[0] - int((new_elems[0] - 1)/(1 / col_frac + 1)) *
+                                           self.fracture.mesh.hx * self.sim_prop.meshReductionFactor,
                                            cent_point[0] + (new_elems[0] - int((new_elems[0] - 1)/(1 / col_frac + 1))
-                                                            - 1./2.) *  self.fracture.mesh.hx /
+                                                            - 1) * self.fracture.mesh.hx *
                                            self.sim_prop.meshReductionFactor],
-                                          [cent_point[1] - (int((new_elems[1] - 1) / (row_frac + 1)) + 1. / 2.) *
-                                           self.fracture.mesh.hy / self.sim_prop.meshReductionFactor,
+                                          [cent_point[1] - int((new_elems[1] - 1) / (row_frac + 1)) *
+                                           self.fracture.mesh.hy * self.sim_prop.meshReductionFactor,
                                            cent_point[1] + (new_elems[1] - int((new_elems[1] - 1) / (row_frac + 1))
-                                                            - 1. / 2.) * self.fracture.mesh.hy /
+                                                            - 1) * self.fracture.mesh.hy *
                                            self.sim_prop.meshReductionFactor]]
 
                             elems = new_elems
