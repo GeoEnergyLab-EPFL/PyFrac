@@ -360,17 +360,17 @@ class Controller:
 
                                 if self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] == \
                                         self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]:
-                                    elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] -
-                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]) / \
-                                                  self.fracture.mesh.hx)
+                                    elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] -
+                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]) / \
+                                                  self.fracture.mesh.hy)
                                     new_inter = int(np.ceil(elems_inter/self.sim_prop.meshReductionFactor))
                                     reduction_factor = elems_inter / new_inter
 
                                 elif self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] == \
                                         self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]:
-                                    elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] -
-                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]) / \
-                                                  self.fracture.mesh.hy)
+                                    elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] -
+                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]) / \
+                                                  self.fracture.mesh.hx)
                                     new_inter = int(np.ceil(elems_inter / self.sim_prop.meshReductionFactor))
                                     reduction_factor = elems_inter / new_inter
 
@@ -391,15 +391,26 @@ class Controller:
                             row_frac = (self.fracture.mesh.ny - (row + 1))/row
                             col_frac = column/(self.fracture.mesh.nx - (column + 1))
 
+                            # calculate the new number of cells
+                            new_elems = [int((self.fracture.mesh.nx + np.round(reduction_factor, 0))
+                                             / reduction_factor),
+                                         int((self.fracture.mesh.ny + np.round(reduction_factor, 0))
+                                             / reduction_factor)]
+                            if new_elems[0] % 2 == 0:
+                                new_elems[0] = new_elems[0] + 1
+                            if new_elems[1] % 2 == 0:
+                                new_elems[1] = new_elems[1] + 1
+
+
                             # We calculate the new dimension of the meshed area
-                            new_limits = [[cent_point[0] - int((new_elems[0] - 1)/(1 / col_frac + 1)) *
+                            new_limits = [[cent_point[0] - round((new_elems[0] - 1)/(1 / col_frac + 1)) *
                                            self.fracture.mesh.hx * reduction_factor,
-                                           cent_point[0] + (new_elems[0] - int((new_elems[0] - 1)/(1 / col_frac + 1))
+                                           cent_point[0] + (new_elems[0] - round((new_elems[0] - 1)/(1 / col_frac + 1))
                                                             - 1) * self.fracture.mesh.hx *
                                            reduction_factor],
-                                          [cent_point[1] - int((new_elems[1] - 1) / (row_frac + 1)) *
+                                          [cent_point[1] - round((new_elems[1] - 1) / (row_frac + 1)) *
                                            self.fracture.mesh.hy * reduction_factor,
-                                           cent_point[1] + (new_elems[1] - int((new_elems[1] - 1) / (row_frac + 1))
+                                           cent_point[1] + (new_elems[1] - round((new_elems[1] - 1) / (row_frac + 1))
                                                             - 1) * self.fracture.mesh.hy *
                                            reduction_factor]]
 
