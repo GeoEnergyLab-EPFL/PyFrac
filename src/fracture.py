@@ -17,6 +17,7 @@ import dill
 import numpy as np
 import math
 from scipy.interpolate import griddata
+from elasticity import mapping_old_indexes
 
 # local import
 # import fracture_initialization
@@ -560,7 +561,7 @@ class Fracture:
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def remesh(self, factor, C, coarse_mesh, material_prop, fluid_prop, inj_prop, sim_prop):
+    def remesh(self, factor, C, coarse_mesh, material_prop, fluid_prop, inj_prop, sim_prop, direction):
         """
         This function compresses the fracture by the given factor once it has reached the end of the mesh. If the
         compression factor is two, each set of four cells in the fine mesh is replaced by a single cell. The volume of
@@ -586,6 +587,12 @@ class Fracture:
 
         if self.sgndDist_last is None:
             self.sgndDist_last = self.sgndDist
+
+        if direction != None and direction != 'reduce':
+            elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
+                                np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction)))
+        else:
+            elts = np.arange(coarse_mesh.NumberOfElts)
 
         # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,
@@ -704,8 +711,7 @@ class Fracture:
         # evaluate current level set on the coarse mesh
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
-        cells_outside = np.arange(coarse_mesh.NumberOfElts)
-        cells_outside = np.delete(cells_outside, EltChannel)
+        cells_outside = np.setdiff1d(elts,EltChannel)
         SolveFMM(sgndDist_copy,
                  EltRibbon,
                  EltChannel,
@@ -716,8 +722,7 @@ class Fracture:
         # evaluate last level set on the coarse mesh to evaluate velocity of the tip
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
-        cells_outside = np.arange(coarse_mesh.NumberOfElts)
-        cells_outside = np.delete(cells_outside, EltChannel)
+        cells_outside = np.setdiff1d(elts,EltChannel)
         SolveFMM(sgndDist_last_coarse,
                  EltRibbon,
                  EltChannel,
