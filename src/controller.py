@@ -1178,7 +1178,8 @@ class Controller:
                                              self.solid_prop,
                                              self.fluid_prop,
                                              self.injection_prop,
-                                             self.sim_prop)
+                                             self.sim_prop,
+                                             direction)
 
         self.fracture.mesh = coarse_mesh
 
