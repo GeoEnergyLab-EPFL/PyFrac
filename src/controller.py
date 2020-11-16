@@ -347,14 +347,43 @@ class Controller:
 
                             log.info("Reducing cell number...")
 
-                            # We need to make sure the injection point stays where it is....
-
-                            if len(self.fracture.source) != 0:
+                            # We need to make sure the injection point stays where it is. We also do this for two points
+                            # on same x or y
+                            if len(self.fracture.source) == 1:
                                 index = self.fracture.source[0]
                                 cent_point = self.fracture.mesh.CenterCoor[self.fracture.source[0]]
+
+                                reduction_factor = self.sim_prop.meshReductionFactor
+                            elif len(self.fracture.source) == 2:
+                                index = self.fracture.source[0]
+                                cent_point = self.fracture.mesh.CenterCoor[self.fracture.source[0]]
+
+                                if self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] == \
+                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]:
+                                    elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] -
+                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]) / \
+                                                  self.fracture.mesh.hx)
+                                    new_inter = int(np.ceil(elems_inter/self.sim_prop.meshReductionFactor))
+                                    reduction_factor = elems_inter / new_inter
+
+                                elif self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] == \
+                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]:
+                                    elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] -
+                                        self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]) / \
+                                                  self.fracture.mesh.hy)
+                                    new_inter = int(np.ceil(elems_inter / self.sim_prop.meshReductionFactor))
+                                    reduction_factor = elems_inter / new_inter
+
+                                else:
+                                    reduction_factor = self.sim_prop.meshReductionFactor
+
+                                log.info("The real reduction factor used is " + repr(reduction_factor))
+
                             else:
                                 index = self.fracture.mesh.locate_element(0., 0.)
                                 cent_point = np.asarray([0., 0.])
+
+                                reduction_factor = self.sim_prop.meshReductionFactor
 
                             row = int(index/self.fracture.mesh.nx)
                             column = index - self.fracture.mesh.nx * row
@@ -362,19 +391,17 @@ class Controller:
                             row_frac = (self.fracture.mesh.ny - (row + 1))/row
                             col_frac = column/(self.fracture.mesh.nx - (column + 1))
 
-
-
                             # We calculate the new dimension of the meshed area
                             new_limits = [[cent_point[0] - int((new_elems[0] - 1)/(1 / col_frac + 1)) *
-                                           self.fracture.mesh.hx * self.sim_prop.meshReductionFactor,
+                                           self.fracture.mesh.hx * reduction_factor,
                                            cent_point[0] + (new_elems[0] - int((new_elems[0] - 1)/(1 / col_frac + 1))
                                                             - 1) * self.fracture.mesh.hx *
-                                           self.sim_prop.meshReductionFactor],
+                                           reduction_factor],
                                           [cent_point[1] - int((new_elems[1] - 1) / (row_frac + 1)) *
-                                           self.fracture.mesh.hy * self.sim_prop.meshReductionFactor,
+                                           self.fracture.mesh.hy * reduction_factor,
                                            cent_point[1] + (new_elems[1] - int((new_elems[1] - 1) / (row_frac + 1))
                                                             - 1) * self.fracture.mesh.hy *
-                                           self.sim_prop.meshReductionFactor]]
+                                           reduction_factor]]
 
                             elems = new_elems
 
