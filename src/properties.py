@@ -531,7 +531,13 @@ class InjectionProperties:
                 if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
                  self.sourceElem.append(i)
 
-        if  self.delayed_second_injpoint_loc_func is not None:
+        self.sourceCoordinates = []
+        for elem in self.sourceElem:
+            self.sourceCoordinates.append(new_mesh.CenterCoor[elem])
+        self.sourceCoordinates = [np.mean(new_mesh.CenterCoor[self.sourceElem, 0]),
+                                  np.mean(new_mesh.CenterCoor[self.sourceElem, 1])]
+
+        if self.delayed_second_injpoint_loc_func is not None:
             if self.sourceElem is None:
                 self.sourceElem = []
                 self.delayed_second_injpoint_elem = []
