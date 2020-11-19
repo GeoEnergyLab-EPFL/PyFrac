@@ -276,6 +276,11 @@ class Controller:
             if status == 1:
             # Successful time step
                 log.info("Time step successful!")
+                log.debug("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
+                log.debug("Nx: " + str(Fr_n_pls1.mesh.nx))
+                log.debug("Ny: " + str(Fr_n_pls1.mesh.nx))
+                log.debug("hx: " + str(Fr_n_pls1.mesh.hx))
+                log.debug("hy: " + str(Fr_n_pls1.mesh.hy))
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
                 self.lstTmStp = Fr_n_pls1.time - self.fracture.time
                 # output
@@ -447,21 +452,80 @@ class Controller:
                     if compress:
                         log.info("Remeshing by compressing the domain...")
 
+                        # We need to make sure the injection point stays where it is. We also do this for two points
+                        # on same x or y
+                        if len(self.fracture.source) == 1:
+                            index = self.fracture.source[0]
+                            cent_point = self.fracture.mesh.CenterCoor[self.fracture.source[0]]
+
+                            compression_factor = self.sim_prop.remeshFactor
+                        elif len(self.fracture.source) == 2:
+                            index = self.fracture.source[0]
+                            cent_point = self.fracture.mesh.CenterCoor[self.fracture.source[0]]
+
+                            if self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] == \
+                                    self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]:
+                                elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] -
+                                                      self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]) / \
+                                                  self.fracture.mesh.hy)
+                                new_inter = int(np.ceil(elems_inter / self.sim_prop.remeshFactor))
+                                compression_factor = elems_inter / new_inter
+
+                            elif self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] == \
+                                    self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]:
+                                elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] -
+                                                      self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]) / \
+                                                  self.fracture.mesh.hx)
+                                new_inter = int(np.ceil(elems_inter / self.sim_prop.remeshFactor))
+                                compression_factor = elems_inter / new_inter
+
+                            else:
+                                compression_factor = self.sim_prop.remeshFactor
+
+                            log.info("The real reduction factor used is " + repr(compression_factor))
+
+                        else:
+                            index = self.fracture.mesh.locate_element(0., 0.)
+                            cent_point = np.asarray([0., 0.])
+
+                            compression_factor = self.sim_prop.remeshFactor
+
+                        row = int(index / self.fracture.mesh.nx)
+                        column = index - self.fracture.mesh.nx * row
+
+                        row_frac = (self.fracture.mesh.ny - (row + 1)) / row
+                        col_frac = column / (self.fracture.mesh.nx - (column + 1))
+
                         # We calculate the new dimension of the meshed area
-                        new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
-                                                                                  self.fracture.mesh.Ly])
-                        new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
-                                       - new_dimensions[0]/2, (self.fracture.mesh.domainLimits[2] +
-                                                               self.fracture.mesh.domainLimits[3]) / 2
-                                       + new_dimensions[0]/2],
-                                      [(self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
-                                       - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0] +
-                                                               self.fracture.mesh.domainLimits[1]) / 2
-                                       + new_dimensions[1]/2]]
+                        new_limits = [[cent_point[0] - round((self.fracture.mesh.nx - 1) / (1 / col_frac + 1)) *
+                                       self.fracture.mesh.hx * compression_factor,
+                                       cent_point[0] + (self.fracture.mesh.nx - round((self.fracture.mesh.nx - 1) /
+                                                                                      (1 / col_frac + 1)) - 1) *
+                                       self.fracture.mesh.hx * compression_factor],
+                                      [cent_point[1] - round((self.fracture.mesh.ny - 1) / (row_frac + 1)) *
+                                       self.fracture.mesh.hy * compression_factor,
+                                       cent_point[1] + (self.fracture.mesh.ny - round((self.fracture.mesh.ny - 1) /
+                                                                                       (row_frac + 1)) - 1) *
+                                       self.fracture.mesh.hy * compression_factor]]
+
+                        # # We calculate the new dimension of the meshed area
+                        # new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
+                        #                                                           self.fracture.mesh.Ly])
+                        # new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
+                        #                - new_dimensions[0]/2, (self.fracture.mesh.domainLimits[2] +
+                        #                                        self.fracture.mesh.domainLimits[3]) / 2
+                        #                + new_dimensions[0]/2],
+                        #               [(self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
+                        #                - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0] +
+                        #                                        self.fracture.mesh.domainLimits[1]) / 2
+                        #                + new_dimensions[1]/2]]
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        self.remesh(new_limits, elems)
+                        if len(np.intersect1d(self.fracture.mesh.CenterElts, cent_point)) == 0:
+                            compression_factor = 10
+
+                        self.remesh(new_limits, elems, rem_factor=compression_factor)
 
                         side_bools = [False, False, False, False]
 
@@ -583,21 +647,80 @@ class Controller:
                     if np.asarray(side_bools).any():
                         log.info("Remeshing by compressing the domain...")
 
+                        # We need to make sure the injection point stays where it is. We also do this for two points
+                        # on same x or y
+                        if len(self.fracture.source) == 1:
+                            index = self.fracture.source[0]
+                            cent_point = self.fracture.mesh.CenterCoor[self.fracture.source[0]]
+
+                            compression_factor = self.sim_prop.remeshFactor
+                        elif len(self.fracture.source) == 2:
+                            index = self.fracture.source[0]
+                            cent_point = self.fracture.mesh.CenterCoor[self.fracture.source[0]]
+
+                            if self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] == \
+                                    self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]:
+                                elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] -
+                                                      self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]) / \
+                                                  self.fracture.mesh.hy)
+                                new_inter = int(np.ceil(elems_inter / self.sim_prop.remeshFactor))
+                                compression_factor = elems_inter / new_inter
+
+                            elif self.fracture.mesh.CenterCoor[self.fracture.source[0]][1] == \
+                                    self.fracture.mesh.CenterCoor[self.fracture.source[1]][1]:
+                                elems_inter = int(abs(self.fracture.mesh.CenterCoor[self.fracture.source[0]][0] -
+                                                      self.fracture.mesh.CenterCoor[self.fracture.source[1]][0]) / \
+                                                  self.fracture.mesh.hx)
+                                new_inter = int(np.ceil(elems_inter / self.sim_prop.remeshFactor))
+                                compression_factor = elems_inter / new_inter
+
+                            else:
+                                compression_factor = self.sim_prop.remeshFactor
+
+                            log.info("The real reduction factor used is " + repr(compression_factor))
+
+                        else:
+                            index = self.fracture.mesh.locate_element(0., 0.)
+                            cent_point = np.asarray([0., 0.])
+
+                            compression_factor = self.sim_prop.remeshFactor
+
+                        row = int(index / self.fracture.mesh.nx)
+                        column = index - self.fracture.mesh.nx * row
+
+                        row_frac = (self.fracture.mesh.ny - (row + 1)) / row
+                        col_frac = column / (self.fracture.mesh.nx - (column + 1))
+
                         # We calculate the new dimension of the meshed area
-                        new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
-                                                                                  self.fracture.mesh.Ly])
-                        new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
-                                       - new_dimensions[0]/2, (self.fracture.mesh.domainLimits[2]+
-                                                               self.fracture.mesh.domainLimits[3]) / 2
-                                       + new_dimensions[0]/2],
-                                      [(self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
-                                       - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0]+
-                                                               self.fracture.mesh.domainLimits[1]) / 2
-                                       + new_dimensions[1]/2]]
+                        new_limits = [[cent_point[0] - round((self.fracture.mesh.nx - 1) / (1 / col_frac + 1)) *
+                                       self.fracture.mesh.hx * compression_factor,
+                                       cent_point[0] + (self.fracture.mesh.nx - round((self.fracture.mesh.nx - 1) /
+                                                                                      (1 / col_frac + 1)) - 1) *
+                                       self.fracture.mesh.hx * compression_factor],
+                                      [cent_point[1] - round((self.fracture.mesh.ny - 1) / (row_frac + 1)) *
+                                       self.fracture.mesh.hy * compression_factor,
+                                       cent_point[1] + (self.fracture.mesh.ny - round((self.fracture.mesh.ny - 1) /
+                                                                                      (row_frac + 1)) - 1) *
+                                       self.fracture.mesh.hy * compression_factor]]
+
+                        # # We calculate the new dimension of the meshed area
+                        # new_dimensions = 2 * self.sim_prop.remeshFactor * np.asarray([self.fracture.mesh.Lx,
+                        #                                                           self.fracture.mesh.Ly])
+                        # new_limits = [[(self.fracture.mesh.domainLimits[2]+self.fracture.mesh.domainLimits[3]) / 2
+                        #                - new_dimensions[0]/2, (self.fracture.mesh.domainLimits[2] +
+                        #                                        self.fracture.mesh.domainLimits[3]) / 2
+                        #                + new_dimensions[0]/2],
+                        #               [(self.fracture.mesh.domainLimits[0]+self.fracture.mesh.domainLimits[1]) / 2
+                        #                - new_dimensions[1]/2, (self.fracture.mesh.domainLimits[0] +
+                        #                                        self.fracture.mesh.domainLimits[1]) / 2
+                        #                + new_dimensions[1]/2]]
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        self.remesh(new_limits, elems)
+                        if len(np.intersect1d(self.fracture.mesh.CenterElts, cent_point)) == 0:
+                            compression_factor = 10
+
+                        self.remesh(new_limits, elems, rem_factor=compression_factor)
 
                     log_only_to_logfile.info("\nRemeshed at " + repr(self.fracture.time))
 
@@ -1137,7 +1260,7 @@ class Controller:
 
 # ------------------------------------------------------------------------------------------------------------------
 
-    def remesh(self, new_limits, elems, direction=None):
+    def remesh(self, new_limits, elems, direction=None, rem_factor=10):
         log = logging.getLogger('PyFrac.remesh')
         # Generating the new mesh (with new limits but same number of elements)
         coarse_mesh = CartesianMesh(new_limits[0],
@@ -1153,23 +1276,23 @@ class Controller:
         # We adapt the elasticity matrix
         if not self.sim_prop.useBlockToeplizCompression:
             if direction is None:
-                rem_factor = self.sim_prop.remeshFactor
+                #rem_factor = self.sim_prop.remeshFactor
                 self.C *= 1 / self.sim_prop.remeshFactor
             elif direction == 'reduce':
-                rem_factor = 10
+                #rem_factor = 10
                 if not self.sim_prop.symmetric:
                     self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
                 else:
                     self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
             else:
-                rem_factor = 10
+                #rem_factor = 10
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         else:
-            if direction is None:
-                rem_factor = self.sim_prop.remeshFactor
-            else:
-                rem_factor = 10
+            # if direction is None:
+            #     rem_factor = self.sim_prop.remeshFactor
+            # else:
+            #     rem_factor = 10
             self.C.reload(coarse_mesh)
 
         self.fracture = self.fracture.remesh(rem_factor,

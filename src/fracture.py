@@ -711,7 +711,7 @@ class Fracture:
         # evaluate current level set on the coarse mesh
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
-        cells_outside = np.setdiff1d(elts,EltChannel)
+        cells_outside = np.setdiff1d(elts, EltChannel)
         SolveFMM(sgndDist_copy,
                  EltRibbon,
                  EltChannel,
@@ -722,7 +722,7 @@ class Fracture:
         # evaluate last level set on the coarse mesh to evaluate velocity of the tip
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
-        cells_outside = np.setdiff1d(elts,EltChannel)
+        cells_outside = np.setdiff1d(elts, EltChannel)
         SolveFMM(sgndDist_last_coarse,
                  EltRibbon,
                  EltChannel,
