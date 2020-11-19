@@ -276,6 +276,11 @@ class Controller:
             if status == 1:
             # Successful time step
                 log.info("Time step successful!")
+                log.debug("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
+                log.debug("Nx: " + str(Fr_n_pls1.mesh.nx))
+                log.debug("Ny: " + str(Fr_n_pls1.mesh.nx))
+                log.debug("hx: " + str(Fr_n_pls1.mesh.hx))
+                log.debug("hy: " + str(Fr_n_pls1.mesh.hy))
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
                 self.lstTmStp = Fr_n_pls1.time - self.fracture.time
                 # output
