@@ -240,6 +240,12 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     """
     log = logging.getLogger('PyFrac.injection_same_footprint')
+
+    if len(Fr_lstTmStp.InCrack[np.where(Fr_lstTmStp.InCrack == 1)]) > sim_properties.maxElementIn and \
+            sim_properties.meshReductionPossible:
+        exitstatus = 16
+        return exitstatus, Fr_lstTmStp
+
     LkOff = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltCrack]) > 0.:
         # the tip cells are assumed to be stagnant in same footprint evaluation
