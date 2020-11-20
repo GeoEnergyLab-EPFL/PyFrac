@@ -521,7 +521,8 @@ class InjectionProperties:
         if self.sourceLocFunc == None:
             new_source_elem = []
             for i in self.sourceElem:
-                new_source_elem.append(new_mesh.locate_element(old_mesh.CenterCoor[i, 0], old_mesh.CenterCoor[i, 1]))
+                new_source_elem.append(list(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                                    old_mesh.CenterCoor[i, 1]))[0])
 
             self.sourceElem = new_source_elem
         else:
