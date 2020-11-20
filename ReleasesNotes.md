@@ -1,6 +1,6 @@
 # PyFrac Releases Notes
 
-Version 1.1 (October 2020)
+Version 1.1 (November 2020)
 -----
 
 - Numerics:
