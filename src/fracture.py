@@ -714,7 +714,7 @@ class Fracture:
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
         cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-        if len(ind_old_elts) == 0:
+        if len(ind_old_elts) != 0:
             sgndDist_copy[ind_old_elts] = self.sgndDist
         SolveFMM(sgndDist_copy,
                  EltRibbon,
@@ -727,7 +727,7 @@ class Fracture:
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
         cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-        if len(ind_old_elts) == 0:
+        if len(ind_old_elts) != 0:
             sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
         SolveFMM(sgndDist_last_coarse,
                  EltRibbon,
