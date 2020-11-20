@@ -1276,8 +1276,15 @@ class Controller:
         # We adapt the elasticity matrix
         if not self.sim_prop.useBlockToeplizCompression:
             if direction is None:
+                if rem_factor == self.sim_prop.remeshFactor:
+                    self.C *= 1 / self.sim_prop.remeshFactor
+                else:
+                    if not self.sim_prop.symmetric:
+                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
+                    else:
+                        self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
                 #rem_factor = self.sim_prop.remeshFactor
-                self.C *= 1 / rem_factor
+                #self.C *= 1 / rem_factor
             elif direction == 'reduce':
                 #rem_factor = 10
                 if not self.sim_prop.symmetric:
