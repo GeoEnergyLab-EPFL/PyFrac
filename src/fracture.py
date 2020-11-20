@@ -594,7 +594,7 @@ class Fracture:
             ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
         else:
             ind_new_elts = np.arange(coarse_mesh.NumberOfElts)
-            ind_old_elts = None
+            ind_old_elts = []
 
         # interpolate the level set by first advancing and then interpolating
         SolveFMM(self.sgndDist,
@@ -714,7 +714,7 @@ class Fracture:
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
         cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-        if ind_old_elts != None:
+        if len(ind_old_elts) == 0:
             sgndDist_copy[ind_old_elts] = self.sgndDist
         SolveFMM(sgndDist_copy,
                  EltRibbon,
@@ -727,7 +727,7 @@ class Fracture:
         EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
         EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
         cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-        if ind_old_elts != None:
+        if len(ind_old_elts) == 0:
             sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
         SolveFMM(sgndDist_last_coarse,
                  EltRibbon,
