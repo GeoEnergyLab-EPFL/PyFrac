@@ -385,7 +385,7 @@ class Controller:
                                 log.info("The real reduction factor used is " + repr(reduction_factor))
 
                             else:
-                                index = self.fracture.mesh.locate_element(0., 0.)
+                                index = self.fracture.mesh.locate_element(0., 0.)[0]
                                 cent_point = np.asarray([0., 0.])
 
                                 reduction_factor = self.sim_prop.meshReductionFactor
@@ -485,7 +485,7 @@ class Controller:
                             log.info("The real reduction factor used is " + repr(compression_factor))
 
                         else:
-                            index = self.fracture.mesh.locate_element(0., 0.)
+                            index = self.fracture.mesh.locate_element(0., 0.)[0]
                             cent_point = np.asarray([0., 0.])
 
                             compression_factor = self.sim_prop.remeshFactor
@@ -552,9 +552,9 @@ class Controller:
                                         new_limits = [[self.fracture.mesh.domainLimits[2],
                                                        self.fracture.mesh.domainLimits[3]],
                                                       [self.fracture.mesh.domainLimits[0] -
-                                                       elems_add * self.fracture.mesh.hy,
+                                                       elems_add * self.fracture.mesh.hy/2,
                                                        self.fracture.mesh.domainLimits[1] +
-                                                       elems_add * self.fracture.mesh.hy]]
+                                                       elems_add * self.fracture.mesh.hy/2]]
                                         side_bools[1] = False
 
                                     direction = 'bottom'
@@ -580,9 +580,9 @@ class Controller:
                                         new_limits = [[self.fracture.mesh.domainLimits[2],
                                                        self.fracture.mesh.domainLimits[3]],
                                                       [self.fracture.mesh.domainLimits[0] -
-                                                       elems_add * self.fracture.mesh.hy,
+                                                       elems_add * self.fracture.mesh.hy/2,
                                                        self.fracture.mesh.domainLimits[1] +
-                                                       elems_add * self.fracture.mesh.hy]]
+                                                       elems_add * self.fracture.mesh.hy/2]]
                                         side_bools[0] = False
 
                                     direction = 'top'
@@ -605,8 +605,8 @@ class Controller:
                                     else:
                                         log.info("Remeshing by extending in horizontal direction to keep symmetry...")
                                         new_limits = [
-                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
-                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
+                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx/2,
+                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx/2],
                                             [self.fracture.mesh.domainLimits[0],
                                              self.fracture.mesh.domainLimits[1]]]
                                         side_bools[3] = False
@@ -631,8 +631,8 @@ class Controller:
                                     else:
                                         log.info("Remeshing by extending in horizontal direction to keep symmetry...")
                                         new_limits = [
-                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
-                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx],
+                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx/2,
+                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx/2],
                                             [self.fracture.mesh.domainLimits[0],
                                              self.fracture.mesh.domainLimits[1]]]
                                         side_bools[2] = False
@@ -1276,8 +1276,15 @@ class Controller:
         # We adapt the elasticity matrix
         if not self.sim_prop.useBlockToeplizCompression:
             if direction is None:
+                if rem_factor == self.sim_prop.remeshFactor:
+                    self.C *= 1 / self.sim_prop.remeshFactor
+                else:
+                    if not self.sim_prop.symmetric:
+                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
+                    else:
+                        self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
                 #rem_factor = self.sim_prop.remeshFactor
-                self.C *= 1 / self.sim_prop.remeshFactor
+                #self.C *= 1 / rem_factor
             elif direction == 'reduce':
                 #rem_factor = 10
                 if not self.sim_prop.symmetric:

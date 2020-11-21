@@ -28,7 +28,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ## Current Version
 
-1.1 (October 2020)
+1.1.1 (November 2020)
 
 
 ## Support

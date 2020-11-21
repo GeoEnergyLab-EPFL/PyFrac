@@ -518,13 +518,13 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        if self.sourceLocFunc is None:
-            actv_cells = np.asarray([1])
+        if self.sourceLocFunc == None:
+            new_source_elem = []
             for i in self.sourceElem:
-                actv_cells = np.append(actv_cells, new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                                           old_mesh.CenterCoor[i, 1]))
+                new_source_elem.append(list(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                                    old_mesh.CenterCoor[i, 1]))[0])
 
-            self.sourceElem = list(actv_cells[1::])
+            self.sourceElem = new_source_elem
         else:
             self.sourceElem = []
             for i in range(new_mesh.NumberOfElts):
@@ -537,8 +537,8 @@ class InjectionProperties:
         self.sourceCoordinates = [np.mean(new_mesh.CenterCoor[self.sourceElem, 0]),
                                   np.mean(new_mesh.CenterCoor[self.sourceElem, 1])]
 
-        if self.delayed_second_injpoint_loc_func is not None:
-            if self.sourceElem is None:
+        if self.delayed_second_injpoint_loc_func != None:
+            if self.sourceElem == None:
                 self.sourceElem = []
                 self.delayed_second_injpoint_elem = []
             for i in range(new_mesh.NumberOfElts):
@@ -548,7 +548,7 @@ class InjectionProperties:
         else:
             self.delayed_second_injpoint_elem = None
         
-        if self.sinkLocFunc is not None:
+        if self.sinkLocFunc != None:
             
             self.sinkElem = []
             for i in range(new_mesh.NumberOfElts):
