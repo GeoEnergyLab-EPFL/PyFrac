@@ -535,7 +535,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
         current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 * (
+        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 12.66 * (
                 Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
         #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
         # the search region outwards from the front position at last time step
@@ -652,6 +652,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
     if nan.any() or (l_k < 0).any() or (alpha_k < 0).any() or (alpha_k > np.pi / 2).any():
         exitstatus = 3
+        # from utility import plot_as_matrix
+        # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+        # K[EltsTipNew] = alpha_k
+        # plot_as_matrix(K, Fr_lstTmStp.mesh)
         return exitstatus, None
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
@@ -1651,7 +1655,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                                  Fr_lstTmStp.v)
     current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
     cell_diag = (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5
-    expected_range = max(current_prefactor * 6.66 * cell_diag, 1.5 * cell_diag) # expected range of possible propagation
+    expected_range = max(current_prefactor * 12.66 * cell_diag, 1.5 * cell_diag) # expected range of possible propagation
     front_region = np.where(abs(Fr_lstTmStp.sgndDist) < expected_range)[0]
     #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
     # the search region outwards from the front position at last time step
@@ -2159,7 +2163,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
         current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 6.66 * (
+        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 12.66 * (
                 Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
         #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
 
