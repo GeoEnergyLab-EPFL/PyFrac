@@ -522,7 +522,7 @@ class Controller:
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        if len(np.intersect1d(self.fracture.mesh.CenterElts, cent_point)) == 0:
+                        if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
 
                         self.remesh(new_limits, elems, rem_factor=compression_factor)
@@ -717,7 +717,7 @@ class Controller:
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        if len(np.intersect1d(self.fracture.mesh.CenterElts, cent_point)) == 0:
+                        if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
 
                         self.remesh(new_limits, elems, rem_factor=compression_factor)
