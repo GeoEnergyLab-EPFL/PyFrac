@@ -701,7 +701,7 @@ def find_corresponding_ribbon_cell(tip_cells, alpha, zero_vertex, mesh):
       zero vertex =                0   1    2   3
       ______________________________________________
       case alpha = 0         ->    B   F    F   B
-           alpha = pi/2      ->    H   D    D   H
+           alpha = pi/2      ->    H   H    D   D
            alpha = any other ->    A   G    E   C
     """
     #                         0     1      2      3
