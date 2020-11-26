@@ -34,20 +34,23 @@ def ReadFracture(filename):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def find_regime(w, Fr, Material_properties, sim_properties, timeStep, Kprime, asymptote_universal):
+def find_regime(w, Fr, Material_properties, fluid_properties, sim_properties, timeStep, Kprime, asymptote_universal):
 
     sim_parameters_tmp = copy.deepcopy(sim_properties)
     sim_parameters_tmp.set_tipAsymptote('K')
     asymptote_toughness = TipAsymInversion(w,
                                            Fr,
                                            Material_properties,
+                                           fluid_properties,
                                            sim_parameters_tmp,
                                            timeStep,
                                            Kprime_k=Kprime)
+
     sim_parameters_tmp.set_tipAsymptote('M')
     asymptote_viscosity = TipAsymInversion(w,
                                          Fr,
                                          Material_properties,
+                                         fluid_properties,
                                          sim_parameters_tmp,
                                          timeStep)
 
@@ -55,7 +58,10 @@ def find_regime(w, Fr, Material_properties, sim_properties, timeStep, Kprime, as
     regime[np.where(regime < 0.)[0]] = 0.
     regime[np.where(regime > 1.)[0]] = 1.
 
-    return regime
+    tmp = np.full(Fr.mesh.NumberOfElts, np.nan, dtype=float)
+    tmp[Fr.EltRibbon] = regime
+
+    return tmp
 
 #-----------------------------------------------------------------------------------------------------------------------
 

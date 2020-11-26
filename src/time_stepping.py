@@ -531,7 +531,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     #     return exitstatus, None
 
     if sim_properties.saveRegime:
-        regime = find_regime(w_k, Fr_lstTmStp, mat_properties, sim_properties, timeStep, Kprime_k,
+        regime = find_regime(w_k, Fr_lstTmStp, mat_properties, fluid_properties, sim_properties, timeStep, Kprime_k,
                              -sgndDist_k[Fr_lstTmStp.EltRibbon])
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
@@ -1290,7 +1290,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                            np.asarray(inj_in_ch, dtype=int), np.asarray(inj_in_act, dtype=int), currentRate, sink)
 
                     guess_il = np.zeros(len(inj_cells) + 1)
-                    guess_il[1:] = Qin[inj_cells]
+                    # guess_il[1:] = Qin[inj_cells]
                     guess = np.concatenate((guess, guess_il))
 
 
@@ -2096,10 +2096,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
 
     if sim_properties.saveRegime:
-        regime = np.full((Fr_lstTmStp.mesh.NumberOfElts,), np.nan, dtype=np.float32)
-        regime[Fr_lstTmStp.EltRibbon] = find_regime(Fr_kplus1.w,
+        regime = find_regime(Fr_kplus1.w,
                                                     Fr_lstTmStp,
                                                     mat_properties,
+                                                    fluid_properties,
                                                     sim_properties,
                                                     timeStep,
                                                     Kprime_k,
