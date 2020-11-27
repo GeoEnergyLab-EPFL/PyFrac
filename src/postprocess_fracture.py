@@ -31,7 +31,7 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -47,6 +47,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                                            will be loaded.
         step_size (int):                -- the number of time steps to skip before loading the next fracture. If not
                                            provided, all of the fractures will be loaded.
+        load_all (bool):                -- avoid jumping time steps too close to each other
 
     Returns:
         fracture_list(list):            -- a list of fractures.
@@ -108,21 +109,24 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
             break
 
         fileNo += step_size
-
-        if 1. - next_t / ff.time >= -1e-8:
-            # if the current fracture time has advanced the output time period
+        if load_all:
             log.info('Returning fracture at ' + repr(ff.time) + ' s')
-
             fracture_list.append(ff)
+        else:
+            if  1. - next_t / ff.time >= -1e-8:
+                # if the current fracture time has advanced the output time period
+                log.info('Returning fracture at ' + repr(ff.time) + ' s')
 
-            if t_srs_given:
-                if t_srs_indx < len(time_srs) - 1:
-                    t_srs_indx += 1
-                    next_t = time_srs[t_srs_indx]
-                if ff.time > max(time_srs):
-                    break
-            else:
-                next_t = ff.time + time_period
+                fracture_list.append(ff)
+
+                if t_srs_given:
+                    if t_srs_indx < len(time_srs) - 1:
+                        t_srs_indx += 1
+                        next_t = time_srs[t_srs_indx]
+                    if ff.time > max(time_srs):
+                        break
+                else:
+                    next_t = ff.time + time_period
 
     if fileNo >= 5000:
         raise SystemExit('too many files.')
