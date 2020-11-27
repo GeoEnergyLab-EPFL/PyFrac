@@ -253,7 +253,10 @@ def reconstruct_front(dist, bandElts, EltChannel, mesh):
                     alpha = np.append(alpha, 0)
                 else:
                     alpha = np.append(alpha, np.nan)
-
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh.NumberOfElts,), )
+    # K[ElmntTip] = alpha
+    # plot_as_matrix(K, mesh)
     nan = np.where(np.isnan(alpha))[0]
     if len(nan) > 0:
         alpha_mesh = np.full((mesh.NumberOfElts,), np.nan)

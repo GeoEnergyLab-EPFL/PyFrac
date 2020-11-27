@@ -278,7 +278,7 @@ class TestClass:
                                                                     gamma=None)
             for j in range(len(analytical_list)):
                 analytical_list[j] /= labels.unitConversion
-            sampling_cells = np.asarray(numerical_results_dict['sampling_cells_0'], dtype=int)
+            sampling_cells = np.asarray(numerical_results_dict['w_sampling_cells_0'], dtype=int)
             analytical_w = np.asarray(analytical_list[0])[sampling_cells]
             numerical_w = np.asarray(numerical_results_dict['w_0'])
             diff = 0.
@@ -345,7 +345,7 @@ class TestClass:
                                                                     gamma=None)
             for j in range(len(analytical_list)):
                 analytical_list[j] /= labels.unitConversion
-            sampling_cells = np.asarray(numerical_results_dict['sampling_cells_0'], dtype=int)
+            sampling_cells = np.asarray(numerical_results_dict['pn_sampling_cells_0'], dtype=int)
             analytical_p = np.asarray(analytical_list[0])[sampling_cells]
             numerical_p = np.asarray(numerical_results_dict['pn_0'])
             diff = 0.

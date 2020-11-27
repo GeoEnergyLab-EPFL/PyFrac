@@ -278,7 +278,7 @@ class Controller:
                 log.info("Time step successful!")
                 log.debug("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
                 log.debug("Nx: " + str(Fr_n_pls1.mesh.nx))
-                log.debug("Ny: " + str(Fr_n_pls1.mesh.nx))
+                log.debug("Ny: " + str(Fr_n_pls1.mesh.ny))
                 log.debug("hx: " + str(Fr_n_pls1.mesh.hx))
                 log.debug("hy: " + str(Fr_n_pls1.mesh.hy))
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
@@ -522,7 +522,7 @@ class Controller:
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        if len(np.intersect1d(self.fracture.mesh.CenterElts, cent_point)) == 0:
+                        if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
 
                         self.remesh(new_limits, elems, rem_factor=compression_factor)
@@ -717,7 +717,7 @@ class Controller:
 
                         elems = [self.fracture.mesh.nx, self.fracture.mesh.ny]
 
-                        if len(np.intersect1d(self.fracture.mesh.CenterElts, cent_point)) == 0:
+                        if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
 
                         self.remesh(new_limits, elems, rem_factor=compression_factor)
