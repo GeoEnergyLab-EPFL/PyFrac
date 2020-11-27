@@ -575,7 +575,7 @@ def get_fracture_variable_slice_cell_center(var_value, mesh, point=None, orienta
                          " 'increasing', 'decreasing'")
 
     zero_cell = mesh.locate_element(point[0], point[1])
-    if zero_cell == np.nan:
+    if zero_cell is np.nan:
         raise ValueError("The given point does not lie in the grid!")
 
     if orientation == 'vertical':
