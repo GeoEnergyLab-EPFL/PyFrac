@@ -1334,9 +1334,9 @@ def get_fracture_fp(fr_list):
 
     for jk in fr_list:
         if len(jk.source) != 0:
-            left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+            fp_list.append(get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[0])
         else:
-            left, right = get_Ffront_as_vector(jk, [0., 0.])[1:]
+            fp_list.append(get_Ffront_as_vector(jk, [0., 0])[0])
         iter = iter + 1
 
     return fp_list
