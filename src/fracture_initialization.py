@@ -78,18 +78,20 @@ def get_eliptical_survey_cells(mesh, a, b, center=None):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_radial_survey_cells(mesh, r, center=None):
+def get_radial_survey_cells(mesh, r, center=None, external_crack=False):
     """
-    This function would provide the ribbon of cells and their distances to the front on the inside of the perimeter of
-    a circle with the given radius. A list of all the cells inside the fracture is also provided.
+    This function would provide the ribbon of cells and their distances to the front on the inside (or outside) of the
+    perimeter of a circle with the given radius. A list of all the cells inside the fracture is also provided.
 
     Arguments:
         mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
         r (float):                          -- the radius of the circle.
         inj_point (list or ndarray):        -- the coordinates [x, y] of the injection point.
+        external_crack (bool):              -- True if you would like the fracture to be an external crack.
 
     Returns:
-        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given circle.
+        - surv_cells (ndarray)              -- the list of cells on the inside of the perimeter of the given circle.\
+                                               In case of external_crack=True the list of cells outside of the perimeter.
         - surv_dist (ndarray)               -- the list of corresponding distances of the surv_cells to the fracture\
                                                tip.
         - inner_cells (ndarray)             -- the list of cells inside the given circle.
@@ -120,6 +122,37 @@ def get_radial_survey_cells(mesh, r, center=None):
     surv_cells = inner_cells[ribbon]
     surv_dist = dist[ribbon]
 
+    if external_crack:
+        # vertices that are outside the ellipse
+        vertices_out = dist_vertx[mesh.Connectivity] >= 0
+
+        # cells with all four vertices outside
+        log_and_out = np.logical_and(np.logical_and(vertices_out[:, 0], vertices_out[:, 1]),
+                                     np.logical_and(vertices_out[:, 2], vertices_out[:, 3]))
+
+        outer_cells = np.where(log_and_out)[0]
+        dist_outer = -r + ((mesh.CenterCoor[outer_cells, 0] - center[0]) ** 2
+                    + (mesh.CenterCoor[outer_cells, 1] - center[1]) ** 2) ** 0.5
+
+        # mesh.domainLimits[ bottom top left right ]
+        if mesh.domainLimits[0] > center[1] -r : #bottom
+            raise SystemError("The given circle lies outside of the mesh")
+        if mesh.domainLimits[1] < center[1] +r : #top
+            raise SystemError("The given circle lies outside of the mesh")
+        if mesh.domainLimits[2] > center[0] -r : #left
+            raise SystemError("The given circle lies outside of the mesh")
+        if mesh.domainLimits[3] < center[0] +r : #right
+            raise SystemError("The given circle lies outside of the mesh")
+
+        cell_len = 2 * (mesh.hx * mesh.hx + mesh.hy * mesh.hy) ** 0.5  # one cell diagonal length
+        ribbon = np.where(dist_outer <= cell_len)[0]
+        surv_cells = outer_cells[ribbon]
+        surv_dist = dist_outer[ribbon]
+
+        # from utility import plot_as_matrix
+        # K = np.zeros((mesh.NumberOfElts,), )
+        # K[surv_cells] = surv_dist
+        # plot_as_matrix(K, mesh)
     return surv_cells, surv_dist, inner_cells
 
 # ----------------------------------------------------------------------------------------------------------------------
