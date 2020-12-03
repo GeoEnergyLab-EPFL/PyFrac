@@ -420,8 +420,8 @@ class Controller:
                                            reduction_factor]]
 
                             elems = new_elems
-
-                            self.remesh(new_limits, elems, 'reduce')
+                            direction = 'reduce'
+                            self.remesh(new_limits, elems, direction)
 
                             # set all other to zero
                             side_bools = [False, False, False, False]
