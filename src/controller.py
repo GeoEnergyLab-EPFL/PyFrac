@@ -819,6 +819,12 @@ class Controller:
                         current_PreFctr = self.sim_prop.tmStpPrefactor
 
                     self.chkPntReattmpts += 1
+
+                    # We need to re-update first the properties (in case meshing occurred in between!)
+                    self.solid_prop.remesh(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5].mesh)
+                    self.injection_prop.remesh(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5].mesh
+                                               ,self.fracture.mesh)
+
                     self.fracture = copy.deepcopy(self.fr_queue[(self.successfulTimeSteps + self.chkPntReattmpts) % 5])
                     log.warning("Time step have failed despite of reattempts with slightly smaller/bigger time steps...\n"
                                   "Going " + repr(5 - self.chkPntReattmpts) + " time steps back and re-attempting with the"
