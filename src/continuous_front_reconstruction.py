@@ -2349,11 +2349,20 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             - If the area > area cell => - find the names of the positive cells
                                          - set the level set of the positive cells artificially to be -mac precision       
             """
+            deleteTHEfront = False
             if len(xintersection)>0:
                 closed_front_area=copute_area_of_a_polygon(np.asarray(xintersection),np.asarray(yintersection))
             else: closed_front_area = 0
+            # if len(xintersection)==0:
+            #     print('here')
             if closed_front_area <= area_of_a_cell*1.01:
                 log.debug("A small front of area ="+str(100*closed_front_area/area_of_a_cell)[:4]+"% of the single cell has been deleted")
+                deleteTHEfront = True
+            elif (max(xintersection)-min(xintersection) < mesh.hx) or (max(yintersection)-min(yintersection) < mesh.hy):
+                log.debug("A front of area =" + str(100 * closed_front_area / area_of_a_cell)[:4] + "% of the single cell has been deleted because it was longh and thin within a column or raw of elements")
+                deleteTHEfront = True
+
+            if deleteTHEfront:
                 # set the level set of all the positive cells in fracture list to be positive
                 all_cells_of_all_FC_of_this_small_fracture = np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(np.asarray(Fracturelist), mesh.NeiElements)))
                 index_of_positives = np.where(sgndDist_k[all_cells_of_all_FC_of_this_small_fracture]>0)[0]
@@ -2369,9 +2378,9 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
         # plot reconstructed front
         #fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[0], list_of_yintersections_for_all_closed_paths[0], fig=None, oldfront=oldfront)
-        # for j in range(1,len(list_of_xintersections_for_all_closed_paths)):
-        #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[j], list_of_yintersections_for_all_closed_paths[j], fig1)
-        # del j, fig1
+        # for jhh in range(1,len(list_of_xintersections_for_all_closed_paths)):
+        #     fig1 = plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, list_of_xintersections_for_all_closed_paths[jhh], list_of_yintersections_for_all_closed_paths[jhh], fig1)
+        # del jhh, fig1
 
         global_list_of_TIPcells = []
         global_list_of_TIPcellsONLY = []
