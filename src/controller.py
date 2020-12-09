@@ -327,6 +327,10 @@ class Controller:
             elif status == 12 or status == 16:
                 # re-meshing required
                 if self.sim_prop.enableRemeshing:
+                    # the following update is required because Fr_n_pls1.EltTip contains the intersection between the cells at the boundary of the mesh and
+                    # the reconstructed front. For that reason in case of mesh extension
+                    if hasattr(Fr_n_pls1, 'EltTipBefore'):
+                        self.fracture.EltTipBefore = Fr_n_pls1.EltTipBefore
                     # we need to decide which remeshings are to be considered
                     compress = False
                     if status == 16:
