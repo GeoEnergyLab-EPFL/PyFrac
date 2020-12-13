@@ -178,6 +178,7 @@ class Fracture:
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
+        self.fully_traversed = np.asarray([])
         self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
         # will be overwritten by None if not required
         self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
@@ -581,8 +582,8 @@ class Fracture:
             new = np.zeros(size)
         else:
             new = np.zeros(size, mytype)
-
-        new = ind_old_elts[old]
+        if old.size != 0:
+            new = ind_old_elts[old]
         return new
 
     def update_front_dict(self, old, ind_old_elts):
