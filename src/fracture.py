@@ -178,6 +178,7 @@ class Fracture:
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
+        self.fully_traversed = np.asarray([])
         self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
         # will be overwritten by None if not required
         self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
@@ -559,6 +560,61 @@ class Fracture:
 
         return fig
 
+# -----------------------------------------------------------------------------------------------------------------------
+    def update_value(self, old, ind_new_elts, ind_old_elts, new_size, value_new_elem=0, mytype=None):
+        if value_new_elem == 0 or value_new_elem == None:
+            if mytype is None:
+                new = np.zeros(new_size)
+            else:
+                new = np.zeros(new_size, mytype)
+        else:
+            if mytype is None:
+                new = np.full(new_size, value_new_elem)
+            else:
+                new = np.full(new_size, value_new_elem,mytype)
+
+        new[ind_old_elts]=old
+        return new
+
+    def update_index(self, old, ind_old_elts, size, mytype=None):
+
+        if mytype is None:
+            new = np.zeros(size)
+        else:
+            new = np.zeros(size, mytype)
+        if old.size != 0:
+            new = ind_old_elts[old]
+        return new
+
+    def update_front_dict(self, old, ind_old_elts):
+        mylist = ['crackcells_0','TIPcellsONLY_0','crackcells_1','TIPcellsONLY_1']
+        for elem in mylist:
+            if elem in old:
+                temp = old[elem]
+                if temp is not None:
+                    del old[elem]
+                    old[elem] = ind_old_elts[temp]
+
+        if 'TIPcellsANDfullytrav_0' in old:
+            temp = old['TIPcellsANDfullytrav_0']
+            if temp is not None:
+                del old['TIPcellsANDfullytrav_0']
+                old['TIPcellsANDfullytrav_0'] = (ind_old_elts[temp]).tolist()
+
+        if 'TIPcellsANDfullytrav_1' in old:
+            temp = old['TIPcellsANDfullytrav_1']
+            if temp is not None:
+                del old['TIPcellsANDfullytrav_1']
+                old['TIPcellsANDfullytrav_1'] = (ind_old_elts[temp]).tolist()
+
+        return old
+
+    def update_regime_color(self, old, ind_new_elts, ind_old_elts, new_size):
+        value_new_elem = np.asarray([1., 1., 1.])
+        new = np.ndarray((new_size,3),dtype=np.float32)
+        new[ind_old_elts,:] = old[:,:]
+        new[ind_new_elts,:] = value_new_elem[:]
+        return new
 #-----------------------------------------------------------------------------------------------------------------------
 
     def remesh(self, factor, C, coarse_mesh, material_prop, fluid_prop, inj_prop, sim_prop, direction):
@@ -588,211 +644,246 @@ class Fracture:
         if self.sgndDist_last is None:
             self.sgndDist_last = self.sgndDist
 
-        if direction != None and direction != 'reduce':
+        # if direction != None and direction != 'reduce': #in the case direction is ['left', 'bottom', 'top', 'right']
+        #     ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
+        #                         np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction)))
+        #     ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
+        # else:
+        #     ind_new_elts = np.arange(coarse_mesh.NumberOfElts)
+        #     ind_old_elts = []
+
+        if direction == None or direction == 'reduce':
+            # interpolate the level set by first advancing and then interpolating
+            SolveFMM(self.sgndDist,
+                     self.EltRibbon,
+                     self.EltChannel,
+                     self.mesh,
+                     [],
+                     self.EltChannel)
+
+            sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                       self.sgndDist[self.EltChannel],
+                                       coarse_mesh.CenterCoor,
+                                       method='linear',
+                                       fill_value=1e10)
+
+            # avoid adding tip cells from the fine mesh to get into the channel cells of the coarse mesh
+            max_diag = (coarse_mesh.hx ** 2 + coarse_mesh.hy ** 2) ** 0.5
+            excluding_tip = np.where(sgndDist_coarse <= -max_diag)[0]
+            sgndDist_copy = np.copy(sgndDist_coarse)
+            sgndDist_coarse = np.full(sgndDist_coarse.shape, 1e10, dtype=np.float64)
+            sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
+
+            # enclosing cells for each cell in the grid
+            enclosing = np.zeros((self.mesh.NumberOfElts, 8), dtype=int)
+            enclosing[:, :4] = self.mesh.NeiElements[:, :]
+            enclosing[:, 4] = self.mesh.NeiElements[enclosing[:, 2], 0]
+            enclosing[:, 5] = self.mesh.NeiElements[enclosing[:, 2], 1]
+            enclosing[:, 6] = self.mesh.NeiElements[enclosing[:, 3], 0]
+            enclosing[:, 7] = self.mesh.NeiElements[enclosing[:, 3], 1]
+
+            if factor == 2.:
+                # finding the intersecting cells of the fine and course mesh
+                intersecting = np.array([], dtype=int)
+                #todo: a description is to be written, its not readable
+                for i in range(-int(((self.mesh.ny - 1) / 2 + 1) / 2) + 1, int(((self.mesh.ny - 1) / 2 + 1) / 2)):
+                    center = self.mesh.CenterElts[0] + i * self.mesh.nx
+                    row_to_add = np.arange(center - int(((self.mesh.nx - 1) / 2 + 1) / 2) + 1,
+                                           center + int(((self.mesh.nx - 1) / 2 + 1) / 2),
+                                           dtype=int)
+                    intersecting = np.append(intersecting, row_to_add)
+
+                # getting the corresponding cells of the coarse mesh in the fine mesh
+                corresponding = []
+                for i in intersecting:
+                    corresponding.append(list(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
+                                                                coarse_mesh.CenterCoor[i, 1]))[0])
+                corresponding = np.asarray(corresponding, dtype=int)
+
+                # weighted sum to conserve volume upto machine precision
+                w_coarse = np.zeros((coarse_mesh.NumberOfElts, ), dtype=np.float64)
+                w_coarse[intersecting] = (self.w[corresponding]
+                                            + np.sum(self.w[enclosing[corresponding, :4]] / 2, axis=1) +
+                                            np.sum(self.w[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
+
+                LkOff = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
+                LkOff[intersecting] = (self.LkOff[corresponding]
+                                            + np.sum(self.LkOff[enclosing[corresponding, :4]] / 2, axis=1) +
+                                            np.sum(self.LkOff[enclosing[corresponding, 4:8]] / 4, axis=1))
+
+                wHist_coarse = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
+                wHist_coarse[intersecting] = (self.wHist[corresponding]
+                                          + np.sum(self.wHist[enclosing[corresponding, :4]] / 2, axis=1) +
+                                          np.sum(self.wHist[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
+
+            else:
+                # In case the factor by which mesh is compressed is not 2
+                w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                    self.w[self.EltChannel],
+                                    coarse_mesh.CenterCoor,
+                                    method='linear',
+                                    fill_value=0.)
+
+                LkOff = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
+                                    self.LkOff[self.EltChannel],
+                                    coarse_mesh.CenterCoor,
+                                    method='linear',
+                                    fill_value=0.)
+
+                wHist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                    self.wHist[self.EltChannel],
+                                    coarse_mesh.CenterCoor,
+                                    method='linear',
+                                    fill_value=0.)
+
+            # interpolate last level set by first advancing to the end of the grid and then interpolating
+            SolveFMM(self.sgndDist_last,
+                     self.EltRibbon,
+                     self.EltChannel,
+                     self.mesh,
+                     [],
+                     self.EltChannel)
+
+            sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                       self.sgndDist_last[self.EltChannel],
+                                       coarse_mesh.CenterCoor,
+                                       method='linear',
+                                       fill_value=1e10)
+
+            Fr_Geometry = Geometry(shape='level set',
+                                   survey_cells=excluding_tip,
+                                   inner_cells=excluding_tip,
+                                   tip_distances=-sgndDist_coarse[excluding_tip])
+            init_data = InitializationParameters(geometry=Fr_Geometry,
+                                                 regime='static',
+                                                 width=w_coarse,
+                                                 elasticity_matrix=C,
+                                                 tip_velocity=np.nan)
+
+            Fr_coarse = Fracture(coarse_mesh,
+                                init_data,
+                                solid=material_prop, #unchanged within this routine, until now
+                                fluid=fluid_prop,    #unchanged within this routine, until now
+                                injection=inj_prop,  #unchanged within this routine, until now
+                                simulProp=sim_prop)  #unchanged within this routine, until now
+
+            # evaluate current level set on the coarse mesh
+            EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
+            EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
+
+            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
+            # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
+            # if len(ind_old_elts) != 0:
+            #     sgndDist_copy[ind_old_elts] = self.sgndDist
+
+            SolveFMM(sgndDist_copy,
+                     EltRibbon,
+                     EltChannel,
+                     coarse_mesh,
+                     cells_outside,
+                     [])
+
+            # evaluate last level set on the coarse mesh to evaluate velocity of the tip
+            EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
+            EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
+
+            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
+            # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
+            # if len(ind_old_elts) != 0:
+            #     sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
+
+            SolveFMM(sgndDist_last_coarse,
+                     EltRibbon,
+                     EltChannel,
+                     coarse_mesh,
+                     cells_outside,
+                     [])
+
+            if self.timeStep_last is None:
+                self.timeStep_last = 1
+            Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
+                            sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
+
+            Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                                                self.Tarrival[self.EltChannel],
+                                                                coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
+                                                                method='linear')
+            Tarrival_nan = np.where(np.isnan(Fr_coarse.Tarrival[Fr_coarse.EltChannel]))[0]
+            if Tarrival_nan.size > 0:
+                for elt in Tarrival_nan:
+                    Fr_coarse.Tarrival[Fr_coarse.EltChannel[elt]] = np.nanmean(
+                                                Fr_coarse.Tarrival[coarse_mesh.NeiElements[Fr_coarse.EltChannel[elt]]])
+
+            Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                                                self.TarrvlZrVrtx[self.EltChannel],
+                                                                coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
+                                                                method='linear')
+
+            # The zero vertex arrival time for the tip elements is taken equal to the corresponding element in the
+            # fine mesh. If not available, average is taken of the enclosing elements
+            to_correct = []
+            for indx, elt in enumerate(Fr_coarse.EltTip):
+                corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])[0]
+                if np.isnan(self.TarrvlZrVrtx[corr_tip]):
+                    TarrvlZrVrtx = 0
+                    cnt = 0
+                    for j in range(8):
+                        if not np.isnan(self.TarrvlZrVrtx[enclosing[corr_tip][j]]):
+                            TarrvlZrVrtx += self.TarrvlZrVrtx[enclosing[corr_tip][j]]
+                            cnt += 1
+                    if cnt > 0:
+                        Fr_coarse.TarrvlZrVrtx[elt] = TarrvlZrVrtx / cnt
+                    else:
+                        to_correct.append(indx)
+                        Fr_coarse.TarrvlZrVrtx[elt] = np.nan
+                else:
+                    Fr_coarse.TarrvlZrVrtx[elt] = self.TarrvlZrVrtx[corr_tip]
+            if len(to_correct) > 0:
+                for elt in to_correct:
+                    Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
+                                                    Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
+
+            Fr_coarse.LkOff = LkOff
+            Fr_coarse.LkOffTotal = self.LkOffTotal
+            Fr_coarse.injectedVol = self.injectedVol
+            Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
+            Fr_coarse.time = self.time
+            Fr_coarse.closed = np.asarray([])
+            Fr_coarse.wHist = wHist_coarse
+
+            self.source = inj_prop.sourceElem
+            return Fr_coarse
+        else: # in case of mesh extension just update
             ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
                                 np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction)))
             ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
-        else:
-            ind_new_elts = np.arange(coarse_mesh.NumberOfElts)
-            ind_old_elts = []
+            newNumberOfElts = coarse_mesh.NumberOfElts
+            self.CellStatus=        self.update_value(self.CellStatus,        ind_new_elts,ind_old_elts,newNumberOfElts,     value_new_elem=0,mytype=int)
+            self.EltChannel=        self.update_index(self.EltChannel,        ind_old_elts,self.EltChannel.size,mytype=int)
+            self.EltCrack=          self.update_index(self.EltCrack,          ind_old_elts,self.EltCrack.size,  mytype=int)
+            self.EltRibbon=         self.update_index(self.EltRibbon,         ind_old_elts,self.EltRibbon.size, mytype=int)
+            self.EltTip=            self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size,    mytype=int)
+            self.InCrack=           self.update_value(self.InCrack,           ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0,  mytype=int)
+            self.LkOff=             self.update_value(self.LkOff,             ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
+            self.Tarrival=          self.update_value(self.Tarrival,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.nan,mytype=np.float64)
+            self.TarrvlZrVrtx=      self.update_value(self.TarrvlZrVrtx,      ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.nan,mytype=np.float64)
+            self.closed=            self.update_index(self.closed,            ind_old_elts,self.closed.size,    mytype=int)
+            self.fully_traversed=   self.update_index(self.fully_traversed,   ind_old_elts,self.fully_traversed.size,    mytype=int)
+            self.muPrime=           self.update_value(self.muPrime,           ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=fluid_prop.muPrime, mytype=np.float64)
+            self.pFluid=            self.update_value(self.pFluid,            ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0., mytype=np.float64)
+            self.pNet=              self.update_value(self.pNet,              ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0., mytype=np.float64)
+            self.sgndDist=          self.update_value(self.sgndDist,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=1.e50,mytype=np.float64)
+            self.sgndDist_last=     self.update_value(self.sgndDist_last,     ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=1.e50,mytype=np.float64)
+            self.w=                 self.update_value(self.w,                 ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
+            self.wHist=             self.update_value(self.wHist,             ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
 
-        # interpolate the level set by first advancing and then interpolating
-        SolveFMM(self.sgndDist,
-                 self.EltRibbon,
-                 self.EltChannel,
-                 self.mesh,
-                 [],
-                 self.EltChannel)
+            self.fronts_dictionary= self.update_front_dict(self.fronts_dictionary, ind_old_elts)
+            self.regime_color=      self.update_regime_color(self.regime_color,    ind_new_elts,ind_old_elts,newNumberOfElts)
+            self.source=            inj_prop.sourceElem
+            self.mesh=              coarse_mesh
+            return self
 
-        sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                   self.sgndDist[self.EltChannel],
-                                   coarse_mesh.CenterCoor,
-                                   method='linear',
-                                   fill_value=1e10)
-
-        # avoid adding tip cells from the fine mesh to get into the channel cells of the coarse mesh
-        max_diag = (coarse_mesh.hx ** 2 + coarse_mesh.hy ** 2) ** 0.5
-        excluding_tip = np.where(sgndDist_coarse <= -max_diag)[0]
-        sgndDist_copy = np.copy(sgndDist_coarse)
-        sgndDist_coarse = np.full(sgndDist_coarse.shape, 1e10, dtype=np.float64)
-        sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
-
-        # enclosing cells for each cell in the grid
-        enclosing = np.zeros((self.mesh.NumberOfElts, 8), dtype=int)
-        enclosing[:, :4] = self.mesh.NeiElements[:, :]
-        enclosing[:, 4] = self.mesh.NeiElements[enclosing[:, 2], 0]
-        enclosing[:, 5] = self.mesh.NeiElements[enclosing[:, 2], 1]
-        enclosing[:, 6] = self.mesh.NeiElements[enclosing[:, 3], 0]
-        enclosing[:, 7] = self.mesh.NeiElements[enclosing[:, 3], 1]
-
-        if factor == 2.:
-            # finding the intersecting cells of the fine and course mesh
-            intersecting = np.array([], dtype=int)
-            #todo: a description is to be written, its not readable
-            for i in range(-int(((self.mesh.ny - 1) / 2 + 1) / 2) + 1, int(((self.mesh.ny - 1) / 2 + 1) / 2)):
-                center = self.mesh.CenterElts[0] + i * self.mesh.nx
-                row_to_add = np.arange(center - int(((self.mesh.nx - 1) / 2 + 1) / 2) + 1,
-                                       center + int(((self.mesh.nx - 1) / 2 + 1) / 2),
-                                       dtype=int)
-                intersecting = np.append(intersecting, row_to_add)
-
-            # getting the corresponding cells of the coarse mesh in the fine mesh
-            corresponding = []
-            for i in intersecting:
-                corresponding.append(list(self.mesh.locate_element(coarse_mesh.CenterCoor[i, 0],
-                                                            coarse_mesh.CenterCoor[i, 1]))[0])
-            corresponding = np.asarray(corresponding, dtype=int)
-
-            # weighted sum to conserve volume upto machine precision
-            w_coarse = np.zeros((coarse_mesh.NumberOfElts, ), dtype=np.float64)
-            w_coarse[intersecting] = (self.w[corresponding]
-                                        + np.sum(self.w[enclosing[corresponding, :4]] / 2, axis=1) +
-                                        np.sum(self.w[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
-
-            LkOff = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
-            LkOff[intersecting] = (self.LkOff[corresponding]
-                                        + np.sum(self.LkOff[enclosing[corresponding, :4]] / 2, axis=1) +
-                                        np.sum(self.LkOff[enclosing[corresponding, 4:8]] / 4, axis=1))
-
-            wHist_coarse = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
-            wHist_coarse[intersecting] = (self.wHist[corresponding]
-                                      + np.sum(self.wHist[enclosing[corresponding, :4]] / 2, axis=1) +
-                                      np.sum(self.wHist[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
-
-        else:
-            # In case the factor by which mesh is compressed is not 2
-            w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                self.w[self.EltChannel],
-                                coarse_mesh.CenterCoor,
-                                method='linear',
-                                fill_value=0.)
-
-            LkOff = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
-                                self.LkOff[self.EltChannel],
-                                coarse_mesh.CenterCoor,
-                                method='linear',
-                                fill_value=0.)
-
-            wHist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                self.wHist[self.EltChannel],
-                                coarse_mesh.CenterCoor,
-                                method='linear',
-                                fill_value=0.)
-
-        # interpolate last level set by first advancing to the end of the grid and then interpolating
-        SolveFMM(self.sgndDist_last,
-                 self.EltRibbon,
-                 self.EltChannel,
-                 self.mesh,
-                 [],
-                 self.EltChannel)
-
-        sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                   self.sgndDist_last[self.EltChannel],
-                                   coarse_mesh.CenterCoor,
-                                   method='linear',
-                                   fill_value=1e10)
-
-        Fr_Geometry = Geometry(shape='level set',
-                               survey_cells=excluding_tip,
-                               inner_cells=excluding_tip,
-                               tip_distances=-sgndDist_coarse[excluding_tip])
-        init_data = InitializationParameters(geometry=Fr_Geometry,
-                                             regime='static',
-                                             width=w_coarse,
-                                             elasticity_matrix=C,
-                                             tip_velocity=np.nan)
-
-        Fr_coarse = Fracture(coarse_mesh,
-                            init_data,
-                            solid=material_prop,
-                            fluid=fluid_prop,
-                            injection=inj_prop,
-                            simulProp=sim_prop)
-
-        # evaluate current level set on the coarse mesh
-        EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
-        EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
-        cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-        if len(ind_old_elts) != 0:
-            sgndDist_copy[ind_old_elts] = self.sgndDist
-        SolveFMM(sgndDist_copy,
-                 EltRibbon,
-                 EltChannel,
-                 coarse_mesh,
-                 cells_outside,
-                 [])
-
-        # evaluate last level set on the coarse mesh to evaluate velocity of the tip
-        EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
-        EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
-        cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-        if len(ind_old_elts) != 0:
-            sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
-        SolveFMM(sgndDist_last_coarse,
-                 EltRibbon,
-                 EltChannel,
-                 coarse_mesh,
-                 cells_outside,
-                 [])
-
-        if self.timeStep_last is None:
-            self.timeStep_last = 1
-        Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
-                        sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
-
-        Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                                            self.Tarrival[self.EltChannel],
-                                                            coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
-                                                            method='linear')
-        Tarrival_nan = np.where(np.isnan(Fr_coarse.Tarrival[Fr_coarse.EltChannel]))[0]
-        if Tarrival_nan.size > 0:
-            for elt in Tarrival_nan:
-                Fr_coarse.Tarrival[Fr_coarse.EltChannel[elt]] = np.nanmean(
-                                            Fr_coarse.Tarrival[coarse_mesh.NeiElements[Fr_coarse.EltChannel[elt]]])
-
-        Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                                            self.TarrvlZrVrtx[self.EltChannel],
-                                                            coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
-                                                            method='linear')
-
-        # The zero vertex arrival time for the tip elements is taken equal to the corresponding element in the
-        # fine mesh. If not available, average is taken of the enclosing elements
-        to_correct = []
-        for indx, elt in enumerate(Fr_coarse.EltTip):
-            corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])[0]
-            if np.isnan(self.TarrvlZrVrtx[corr_tip]):
-                TarrvlZrVrtx = 0
-                cnt = 0
-                for j in range(8):
-                    if not np.isnan(self.TarrvlZrVrtx[enclosing[corr_tip][j]]):
-                        TarrvlZrVrtx += self.TarrvlZrVrtx[enclosing[corr_tip][j]]
-                        cnt += 1
-                if cnt > 0:
-                    Fr_coarse.TarrvlZrVrtx[elt] = TarrvlZrVrtx / cnt
-                else:
-                    to_correct.append(indx)
-                    Fr_coarse.TarrvlZrVrtx[elt] = np.nan
-            else:
-                Fr_coarse.TarrvlZrVrtx[elt] = self.TarrvlZrVrtx[corr_tip]
-        if len(to_correct) > 0:
-            for elt in to_correct:
-                Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
-                                                Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
-
-        Fr_coarse.LkOff = LkOff
-        Fr_coarse.LkOffTotal = self.LkOffTotal
-        Fr_coarse.injectedVol = self.injectedVol
-        Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
-        Fr_coarse.time = self.time
-        Fr_coarse.closed = np.asarray([])
-        Fr_coarse.wHist = wHist_coarse
-
-        self.source = inj_prop.sourceElem
-
-        return Fr_coarse
-
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
     def update_tip_regime(self, mat_prop, fluid_prop, timeStep):
         log = logging.getLogger('PyFrac.update_tip_regime')
