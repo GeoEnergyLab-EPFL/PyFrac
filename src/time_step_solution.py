@@ -610,6 +610,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
             if correct_size_of_pstv_region[1]:
                 Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
+                Fr_kplus1.EltTipBefore = Fr_lstTmStp.EltTip
                 Fr_kplus1.EltTip = EltsTipNew  # !!! EltsTipNew are the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                 # (in case of anisotropic remeshing)
                 exitstatus = 12 # You are here because the level set has negative values until the end of the mesh
@@ -660,6 +661,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
+        Fr_lstTmStp.EltTipBefore = Fr_lstTmStp.EltTip
         Fr_lstTmStp.EltTip = EltsTipNew
         exitstatus = 12
         return exitstatus, Fr_lstTmStp
@@ -1712,6 +1714,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
             if correct_size_of_pstv_region[1]:
                 Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
+                Fr_kplus1.EltTipBefore = Fr_lstTmStp.EltTip
                 Fr_kplus1.EltTip = EltsTipNew  # !!! EltsTipNew are the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                 # (in case of anisotropic remeshing)
                 exitstatus = 12 # You are here because the level set has negative values until the end of the mesh
@@ -1765,6 +1768,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     # check if any of the tip cells has a neighbor outside the grid, i.e. fracture has reached the end of the grid.
     if len(np.intersect1d(Fr_lstTmStp.mesh.Frontlist, EltsTipNew)) > 0:
+        Fr_lstTmStp.EltTipBefore = Fr_lstTmStp.EltTip
         Fr_lstTmStp.EltTip = EltsTipNew
         exitstatus = 12
         return exitstatus, Fr_lstTmStp
