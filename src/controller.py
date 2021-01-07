@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on 11.05.17.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 import logging
@@ -122,8 +122,8 @@ class Controller:
                 self.timeToHit = np.delete(self.timeToHit, greater_finalTime)
 
         # Setting to volume control solver if viscosity is zero
-        if self.fluid_prop.viscosity < 1e-15:
-           log.info('Fluid viscosity is zero. Setting solver to volume control...')
+        if self.fluid_prop.rheology == 'Newtonian' and self.fluid_prop.viscosity < 1e-15:
+           print("Fluid viscosity is zero. Setting solver to volume control...")
            self.sim_prop.set_volumeControl(True)
 
         if not all(elem in self.fracture.EltChannel for elem in Injection_prop.sourceElem):
@@ -833,6 +833,7 @@ class Controller:
                     log.warning("Time step have failed despite of reattempts with slightly smaller/bigger time steps...\n"
                                   "Going " + repr(5 - self.chkPntReattmpts) + " time steps back and re-attempting with the"
                                     " time step pre-factor of " + repr(current_PreFctr))
+
                     self.failedTimeSteps += 1
 
             self.TmStpCount += 1
@@ -1023,9 +1024,7 @@ class Controller:
                                                                        projection='2D',
                                                                        fig=self.Figures[index],
                                                                        plot_prop=plot_prop)
-                        # plotting source elements
-                        self.Figures[index] = plot_injection_source(self.fracture,
-                                              fig=self.Figures[index])
+
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
@@ -1107,7 +1106,8 @@ class Controller:
                 # plot the figure
                 log.info("Done! ")
                 if self.sim_prop.blockFigure:
-                    input("Press any key to continue.")
+                    print("click on the window to continue...")
+                    plt.waitforbuttonpress()
 
                 self.lastPlotTime = Fr_advanced.time
 
