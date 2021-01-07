@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Thu Dec 22 16:22:33 2016.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
@@ -88,8 +88,19 @@ class Fracture:
         sgndDist_last (ndarray):    -- the signed distance of the last time step. Used for re-meshing.
         timeStep_last (float):      -- the last time step. Required for re-meshing.
         source (ndarray):           -- the list of injection cells i.e. the source elements.
-
-
+        FFront (ndarray)            -- the variable storing the fracture front. Each row stores the x and y coordinates
+                                       of the front lines in the tip cells. 
+        LkOff (ndarray):            -- the leak-off of the fluid in the last time step.
+        ZeroVertex (ndarray):       -- the list of zero vertices (the vertex from where the normal is drawn on the front) 
+                                       of the tip cells. 
+        effVisc (ndarray):          -- the Newtonian equivalent viscosity of the non-Newtonian fluid.
+        efficiency (float):         -- the fracturing efficiency uptil the last time step
+        injectedVol (float):        -- the total volume injected into the fracture uptil now.     
+        mesh (CartesianMesh):       -- the mesh object describing the mesh.
+        sgndDist_last (ndarray):    -- the signed dist from the previous time step. 
+        timeStep_last (float):      -- the last time step taken
+        wHist (ndarray):            -- the maximum widht until now in each of the cell.
+        G (ndarray):                -- the coefficient G (see Zia et al. 2021) for non-Newtonian fluid
     """
 
     def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
@@ -180,9 +191,10 @@ class Fracture:
         self.wHist = np.copy(self.w)
         self.fully_traversed = np.asarray([])
         self.source = np.intersect1d(injection.sourceElem, self.EltCrack)
+        self.sink = np.asarray([], dtype=int)
         # will be overwritten by None if not required
         self.effVisc = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
-        self.yieldRatio = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32) 
+        self.G = np.zeros((4, self.mesh.NumberOfElts), dtype=np.float32)
         
         if simulProp.projMethod != 'LS_continousfront':
             self.process_fracture_front()
@@ -232,6 +244,10 @@ class Fracture:
         self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
         if self.v is not None:
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
+
+        if injection.modelInjLine:
+            self.pInjLine = np.float64(injection.initPressure)
+            self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -772,9 +788,6 @@ class Fracture:
             EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
 
             cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
-            # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-            # if len(ind_old_elts) != 0:
-            #     sgndDist_copy[ind_old_elts] = self.sgndDist
 
             SolveFMM(sgndDist_copy,
                      EltRibbon,
@@ -788,9 +801,6 @@ class Fracture:
             EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
 
             cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
-            # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-            # if len(ind_old_elts) != 0:
-            #     sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
 
             SolveFMM(sgndDist_last_coarse,
                      EltRibbon,
@@ -843,12 +853,17 @@ class Fracture:
                     Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
                                                     Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
 
+        coarse_closed = []       
+        for e in self.closed:
+            coarse_closed.append(self.mesh.locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
+        Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))    
+            
             Fr_coarse.LkOff = LkOff
             Fr_coarse.LkOffTotal = self.LkOffTotal
             Fr_coarse.injectedVol = self.injectedVol
             Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
             Fr_coarse.time = self.time
-            Fr_coarse.closed = np.asarray([])
+
             Fr_coarse.wHist = wHist_coarse
 
             self.source = inj_prop.sourceElem
