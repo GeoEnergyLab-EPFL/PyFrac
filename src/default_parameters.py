@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on 11.05.17.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
@@ -12,6 +12,8 @@ toleranceFractureFront = 1.0e-3         # tolerance for the fracture front posit
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
 toleranceVStagnant = 1e-6               # tolerance on the velocity to decide if a cell is stagnant.
+Hersh_Bulk_epsilon = 1e-3               # for Herschel Bulkley fluid; the value where the coefficient G is regularized.
+Hersh_Bulk_Gmin = 1e-5                  # for Herschel Bulkley fluid; the min value of the coefficient G.
 
 # max iterations
 max_front_itrs = 25                     # maximum iterations for the fracture front.
@@ -59,6 +61,8 @@ save_fluid_vel_as_vector = False        # if True, the fluid vel at each edge wi
 save_effective_viscosity = False        # if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will be saved.
 save_yield_ratio = False                # if True, the ratio of the height of fluid column yielded to total width will be saved.
 save_statistics_post_coalescence=False  # if True, the statistics post coalescence of two fractures are saved to json file
+save_effective_viscosity = False        # if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will be saved.
+save_G = False                          # if True, the prefactor G, giving the effect of yield stress will be saved. 
 collect_perf_data = False               # if True, performance data will be collected in the form of a tree.
 log_to_file = True                      # set it True or False depending if you would like to log the messages to a log file
 
