@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Friday, July 06, 2018.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020. All rights
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2021. All rights
 reserved. See the LICENSE.TXT file for more details.
 """
 import logging
@@ -1081,7 +1081,6 @@ def plot_fracture_slice_interpolated(var_value, mesh, point1=None, point2=None, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-
 def plot_fracture_slice_cell_center(var_value, mesh, point=None, orientation='horizontal', fig=None, plot_prop=None,
                                 vmin=None, vmax=None, plot_colorbar=True, labels=None, plt_2D_image=True,
                                 extreme_points=None,export2Json=False):
@@ -2033,6 +2032,11 @@ def plot_injection_source(frac, fig=None, plot_prop=None):
             '.',
             color=plot_prop.lineColor)
 
+    ax.plot(frac.mesh.CenterCoor[frac.sink, 0],
+            frac.mesh.CenterCoor[frac.sink, 1],
+            '.',
+            color='lime')
+
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2040,7 +2044,8 @@ def plot_injection_source(frac, fig=None, plot_prop=None):
 
 def animate_simulation_results(fracture_list, variable='footprint', projection=None, elements=None,
                                  plot_prop=None, edge=4, contours_at=None, labels=None, mat_properties=None,
-                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.2):
+                                 backGround_param=None, block_figure=False, plot_non_zero=True, pause_time=0.2,
+                                 save_images=False, images_address='.'):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -2075,7 +2080,7 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
     figures = [None for i in range(len(variable))]
 
     setFigPos = True
-    for fracture in fracture_list:
+    for Fr_i, fracture in enumerate(fracture_list):
         for indx, plt_var in enumerate(variable):
             log.info("Plotting solution at " + repr(fracture.time) + "...")
             if plot_prop is None:
@@ -2147,6 +2152,11 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
             # plot the figure
             plt.ion()
             plt.pause(pause_time)
+
+            if save_images:
+                image_name = plt_var + repr(Fr_i)
+                plt.savefig(images_address + image_name + '.png')
+                
         # set figure position
         if setFigPos:
             for i in range(len(variable)):
@@ -2165,7 +2175,11 @@ def animate_simulation_results(fracture_list, variable='footprint', projection=N
 
         
         if block_figure:
-            input("Press any key to continue.")
+            plt.pause(0.5)
+            plt.ion()
+            plt.show()
+            plt.waitforbuttonpress()
+            # input("Press any key to continue.")
     plt.show(block=True)
 
 #-----------------------------------------------------------------------------------------------------------------------
