@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on 03.04.17.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
@@ -228,9 +228,13 @@ class FluidProperties:
         rheology (string):       -- string specifying rheology of the fluid. Possible options:
 
                                      - "Newtonian"
-                                     - "non-Newtonian"
+                                     - "Herschel-Bulkley" or "HBF"
+                                     - "power-law" or "PLF"
         turbulence (bool):       -- turbulence flag. If true, turbulence will be taken into account
         compressibility (float): -- the compressibility of the fluid.
+        n (float):               -- flow index of the Herschel-Bulkey fluid.
+        k (float):               -- consistency index of the Herschel-Bulkey fluid.
+        T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
 
     Attributes:
         viscosity (ndarray):     -- Viscosity of the fluid (note its different from local viscosity, see
@@ -248,6 +252,7 @@ class FluidProperties:
         k (float):               -- consistency index of the Herschel-Bulkey fluid.
         T0 (float):              -- yield stress of the Herschel-Bulkey fluid.
         Mprime                   -- 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+        var 1 to 5               -- some variables depending upon n. Saved to avoid recomputation
 
     """
 
@@ -290,6 +295,7 @@ class FluidProperties:
                 self.n = n
                 self.k = k
                 self.Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * k
+                self.T0 = 0.
         else:# error
             raise ValueError('Invalid input for fluid rheology. Possible options: ' + repr(rheologyOptions))
 
@@ -358,15 +364,11 @@ class InjectionProperties:
                                          
     """
 
-    def __init__(self, rate, mesh, source_coordinates=None,
-                 source_loc_func=None,
-                 sink_loc_func=None,
-                 sink_vel_func=None,
-                 rate_delayed_second_injpoint=None,
-                 delayed_second_injpoint_loc=None,
-                 initial_rate_delayed_second_injpoint=None,
-                 rate_delayed_inj_pt_func=None,
-                 delayed_second_injpoint_loc_func=None):
+    def __init__(self, rate, mesh, source_coordinates=None, source_loc_func=None, sink_loc_func=None,
+                 sink_vel_func=None, model_inj_line=False, il_compressibility=None, il_volume=None,
+                 perforation_friction=None, initial_pressure=None, rate_delayed_second_injpoint=None,
+                 delayed_second_injpoint_loc=None, initial_rate_delayed_second_injpoint=None,
+                 rate_delayed_inj_pt_func=None, delayed_second_injpoint_loc_func=None):
         """
         The constructor of the InjectionProperties class.
         """
@@ -454,10 +456,10 @@ class InjectionProperties:
             self.sourceLocFunc = None
         else:
             self.sourceLocFunc = source_loc_func
-            if self.sourceElem is None:
-                self.sourceElem = []
+
+            self.sourceElem = []
             for i in range(mesh.NumberOfElts):
-                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx, mesh.hy):
+                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
                  self.sourceElem.append(i)
         if self.delayed_second_injpoint_elem is not None and not all(elem in self.sourceElem for elem in self.delayed_second_injpoint_elem) :
             raise ValueError("The delayed injection points elements are not contained in the list of all the injection elements")
@@ -469,11 +471,12 @@ class InjectionProperties:
         
         self.sinkLocFunc = sink_loc_func
         self.sinkVelFunc = sink_vel_func
+        self.sinkElem = []
+        self.sinkVel = []
         if sink_loc_func is not None:
             if sink_vel_func is None:
                 raise ValueError("Sink velocity function is required for sink elements!")
             
-            self.sinkElem = []
             for i in range(mesh.NumberOfElts):
                 if self.sinkLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1]):
                  self.sinkElem.append(i)
@@ -483,6 +486,25 @@ class InjectionProperties:
                 self.sinkVel[i] = sink_vel_func(mesh.CenterCoor[self.sinkElem[i], 0],
                                                 mesh.CenterCoor[self.sinkElem[i], 1])
                 
+        self.modelInjLine = model_inj_line
+        if model_inj_line:
+            if il_compressibility is not None:
+                self.ILCompressibility = il_compressibility
+            else:
+                raise ValueError("Injection line compressibility is required!")
+            if il_volume is not None:
+                self.ILVolume = il_volume
+            else:
+                raise ValueError("Injection line volume is required!")
+            if perforation_friction is not None:
+                self.perforationFriction = perforation_friction
+            else:
+                raise ValueError("Perforation friction is required!")
+            if initial_pressure is not None:
+                self.initPressure = initial_pressure
+            else:
+                raise ValueError("initial pressure of the injection line is required!")
+
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -501,7 +523,7 @@ class InjectionProperties:
         Qin = np.zeros(frac.mesh.NumberOfElts, float)
         indxCurTime = max(np.where(tm >= self.injectionRate[0, :])[0])
         currentRate = self.injectionRate[1, indxCurTime]  # current injection rate
-        currentSource = np.intersect1d(self.sourceElem, frac.EltCrack)
+        currentSource = np.intersect1d(self.sourceElem, frac.EltChannel)
         Qin[currentSource] = currentRate / len(currentSource)
 
         return Qin
@@ -510,7 +532,7 @@ class InjectionProperties:
 
 
     def remesh(self, new_mesh, old_mesh):
-        """ This function is called every time the domian is remeshed.
+        """ This function is called every time the domain is remeshed.
 
         Arguments:
             new_mesh (CartesianMesh):   -- the CartesianMesh object describing the new coarse mesh.
@@ -518,17 +540,16 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        if self.sourceLocFunc == None:
-            new_source_elem = []
+        if self.sourceLocFunc is None:
+            actv_cells = set()
             for i in self.sourceElem:
-                new_source_elem.append(list(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                                    old_mesh.CenterCoor[i, 1]))[0])
-
-            self.sourceElem = new_source_elem
+                actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                        old_mesh.CenterCoor[i, 1]))
+            self.sourceElem = list(actv_cells)
         else:
             self.sourceElem = []
             for i in range(new_mesh.NumberOfElts):
-                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
+                if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
                  self.sourceElem.append(i)
 
         self.sourceCoordinates = []
@@ -547,9 +568,8 @@ class InjectionProperties:
                     self.delayed_second_injpoint_elem.append(i)
         else:
             self.delayed_second_injpoint_elem = None
-        
-        if self.sinkLocFunc != None:
-            
+
+        if self.sinkLocFunc is not None:
             self.sinkElem = []
             for i in range(new_mesh.NumberOfElts):
                 if self.sinkLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1]):
@@ -700,8 +720,9 @@ class SimulationProperties:
                                         will be saved.
         saveFluidVel (boolean):      -- if True, the fluid velocity at each edge of the cells inside the fracture
                                         will be saved.
-        saveEffVisc (boolean)L       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
+        saveEffVisc (boolean):       -- if True, the Newtonian equivalent viscosity of the non-Newtonian fluid will
                                         be saved.
+        saveG (boolean):             -- if True, the coefficient G (see Zia et al. 2020) would be saved for the non-Newtonian fluid
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
         explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
@@ -773,6 +794,8 @@ class SimulationProperties:
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
         self.toleranceVStagnant = simul_param.toleranceVStagnant
+        self.HershBulkEpsilon = simul_param.Hersh_Bulk_epsilon
+        self.HershBulkGmin = simul_param.Hersh_Bulk_Gmin
 
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
@@ -859,6 +882,7 @@ class SimulationProperties:
         self.saveEffVisc = simul_param.save_effective_viscosity
         self.saveStatisticsPostCoalescence=simul_param.save_statistics_post_coalescence
         self.saveYieldRatio = simul_param.save_yield_ratio
+        self.saveG = simul_param.save_G
         self.explicitProjection = simul_param.explicit_projection
         self.symmetric = simul_param.symmetric
         self.doublefracture = simul_param.double_fracture_vol_contr
@@ -878,6 +902,7 @@ class SimulationProperties:
 
         # parameter deciding to save the leak-off tip parameter
         self.saveChi = simul_param.save_chi
+
 
 # ----------------------------------------------------------------------------------------------------------------------
     def set_logging_to_file(self, address, verbosity_level=None):
@@ -909,7 +934,7 @@ class SimulationProperties:
                                      'debug'    - Detailed information, typically of interest only when diagnosing problems.
                                      'info'     - Confirmation that things are working as expected.
                                      'warning'  - An indication that something unexpected happened, or indicative of some
-                                                  problem in the near future (e.g. ‘disk space low’). The software is still
+                                                  problem in the near future (e.g. disk space low). The software is still
                                                   working as expected.
                                      'error'    - Due to a more serious problem, the software has not been able to perform
                                                   some function.
@@ -1287,8 +1312,8 @@ class PlotProperties:
         else:
             self.colorMaps = [color_map]
 
-#-----------------------------------------------------------------------------------------------------------------------
 
+#-----------------------------------------------------------------------------------------------------------------------
 
 class LabelProperties:
     """
