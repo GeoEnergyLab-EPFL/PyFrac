@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Tue Nov 01 15:22:00 2016.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
@@ -442,12 +442,10 @@ def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, 
     Find the valid bracket for the root evaluation function.
     """
 
-    a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
+    a = -DistLstTS * (1 + np.finfo(float).eps)
     if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
         b = np.full((len(w),), 6 * (mesh.hx**2 + mesh.hy**2)**0.5, dtype=np.float64)
-    elif simProp.get_tipAsymptote() in ["PLF", "PLF_aprox", "PLF_num_quad"]:
-        b = (w * Eprime / Kprime)**2 - np.finfo(float).eps
-    elif simProp.get_tipAsymptote() in ["HBF", "HBF_aprox", "HBF_num_quad"]:
+    elif simProp.get_tipAsymptote()  in ["HBF", "HBF_aprox", "HBF_num_quad", "PLF", "PLF_aprox", "PLF_num_quad"]:
         b = np.zeros(len(w), dtype=np.float64)
         for i in range(0, len(w)):
             TipAsmptargs = (w[i], Kprime[i], Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt)
