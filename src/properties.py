@@ -543,8 +543,8 @@ class InjectionProperties:
         if self.sourceLocFunc is None:
             actv_cells = set()
             for i in self.sourceElem:
-                actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                        old_mesh.CenterCoor[i, 1]))
+                actv_cells.add(int(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                        old_mesh.CenterCoor[i, 1])))
             self.sourceElem = list(actv_cells)
         else:
             self.sourceElem = []
