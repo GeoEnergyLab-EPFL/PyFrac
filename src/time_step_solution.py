@@ -334,7 +334,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.LkOff = LkOff
-    Fr_kplus1.LkOffTotal += np.sum(LkOff)
+    Fr_kplus1.LkOffTotal += LkOff
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
@@ -349,7 +349,6 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + return_data[3]
         Fr_kplus1.injectionRate[return_data[4][1]] = return_data[4][0]
         Fr_kplus1.injectionRate[return_data[5][1]] = return_data[5][0]
-        Q_indx = np.where(abs(Qin) > 0)[0]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1009,7 +1008,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
         Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
         Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
-        Q_indx = np.where(abs(Qin)>0)[0]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1329,7 +1327,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         to_solve = np.append(to_solve, EltTip[stagnant_tip])
 
         fully_closed = False
-        corr_ribb_flag = False
         to_open_cumm = np.asarray([], dtype=int)
         
         # Making and solving the system of equations. The width constraint is checked. If active, system is remade with
@@ -1576,8 +1573,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 wc_to_impose = np.delete(wc_to_impose, to_open)
                 active_contraint = True
                 
-                if sim_properties.verbosity > 1:
-                        print('removing cells from the active width constraint...')
+                log.debug('removing cells from the active width constraint...')
 
 
         if perfNode_nonLinSys is not None:
@@ -2137,8 +2133,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
         Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
         Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
-        Q_indx = np.where(abs(Qin) > 0)[0]
-        print('dPIL ' + repr(data[3]))
 
     log.debug("Solved...")
     log.debug("Finding velocity of front...")
