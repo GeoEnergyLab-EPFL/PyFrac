@@ -242,7 +242,7 @@ class Fracture:
 
         self.TarrvlZrVrtx = np.full((mesh.NumberOfElts,), np.nan, dtype=np.float64)
         self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
-        if self.v is not None:
+        if self.v is not None and not np.isnan(self.v).any():
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
 
         if injection.modelInjLine:
@@ -853,10 +853,10 @@ class Fracture:
                     Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
                                                     Fr_coarse.mesh.NeiElements[Fr_coarse.EltTip[elt]]])
 
-        coarse_closed = []       
-        for e in self.closed:
-            coarse_closed.append(self.mesh.locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
-        Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))    
+            coarse_closed = []
+            for e in self.closed:
+                coarse_closed.append(self.mesh.locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
+            Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))
             
             Fr_coarse.LkOff = LkOff
             Fr_coarse.LkOffTotal = self.LkOffTotal
@@ -867,6 +867,10 @@ class Fracture:
             Fr_coarse.wHist = wHist_coarse
 
             self.source = inj_prop.sourceElem
+
+            if inj_prop.modelInjLine:
+                Fr_coarse.pInjLine = self.pInjLine
+
             return Fr_coarse
         else: # in case of mesh extension just update
             ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
@@ -896,6 +900,10 @@ class Fracture:
             self.regime_color=      self.update_regime_color(self.regime_color,    ind_new_elts,ind_old_elts,newNumberOfElts)
             self.source=            inj_prop.sourceElem
             self.mesh=              coarse_mesh
+
+            if inj_prop.modelInjLine:
+                Fr_coarse.pInjLine = self.pInjLine
+
             return self
 
 # -----------------------------------------------------------------------------------------------------------------------
