@@ -1861,7 +1861,7 @@ def check_covergance(solk, solkm1, indices, tol):
          - norm (float)     -- the evaluated norm which is checked against tolerance
     """
 
-
+    cnt = 0
     w_normalization = np.linalg.norm(solkm1[indices[0]])
     if w_normalization > 0.:
         norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
@@ -2151,7 +2151,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             b_Anderson = -Fks[mk+1, ::]
 
             # Solving the least square problem for the coefficients
-            omega_s = np.linalg.lstsq(A_Anderson, b_Anderson, rcond=None)[0]
+            # omega_s = np.linalg.lstsq(A_Anderson, b_Anderson, rcond=None)[0]
+            omega_s = lsq_linear(A_Anderson, b_Anderson, bounds=(0, 1/(mk+2)), lsmr_tol='auto').x
             omega_s = np.append(omega_s, 1.0 - sum(omega_s))
 
 
