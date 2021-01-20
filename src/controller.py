@@ -126,10 +126,11 @@ class Controller:
            print("Fluid viscosity is zero. Setting solver to volume control...")
            self.sim_prop.set_volumeControl(True)
 
-        if not all(elem in self.fracture.EltChannel for elem in Injection_prop.sourceElem):
-            message = 'INJECTION LOCATION ERROR: \n' \
-                      'injection points are located outisde of the fracture footprints'
-            raise SystemExit(message)
+        if self.injection_prop.sourceLocFunc is None:
+            if not all(elem in self.fracture.EltChannel for elem in Injection_prop.sourceElem):
+                message = 'INJECTION LOCATION ERROR: \n' \
+                          'injection points are located outisde of the fracture footprints'
+                raise SystemExit(message)
 
         # Setting whether sparse matrix is used to make fluid conductivity matrix
         if Sim_prop.solveSparse is None:
@@ -167,6 +168,9 @@ class Controller:
             if self.sim_prop.get_tipAsymptote() not in ["K", "M", "Mt", "U", "U1", "MK", "MDR", "M_MDR"]:
                 warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'U\'")
                 self.sim_prop.set_tipAsymptote('U1')
+
+        if self.fluid_prop.rheology != 'Newtonian':
+            self.sim_prop.saveRegime = False
 
         # if you set the code to advance max 1 cell then remove the SimulProp.timeStepLimit
         if self.sim_prop.timeStepLimit is not None and self.sim_prop.limitAdancementTo2cells is True:
