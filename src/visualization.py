@@ -2035,7 +2035,7 @@ def plot_injection_source(frac, fig=None, plot_prop=None):
     ax.plot(frac.mesh.CenterCoor[frac.sink, 0],
             frac.mesh.CenterCoor[frac.sink, 1],
             '.',
-            color='lime')
+            color='b')
 
     return fig
 
