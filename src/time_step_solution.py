@@ -338,8 +338,6 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
                            / Fr_kplus1.injectedVol
-    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
-    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
     Fr_kplus1.effVisc = return_data[0][1]
     Fr_kplus1.G = return_data[0][2]
     fluidVel = return_data[0][0]
@@ -347,8 +345,12 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if len(return_data) > 3:
         Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
         Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + return_data[3]
-        Fr_kplus1.injectionRate[return_data[4][1]] = return_data[4][0]
-        Fr_kplus1.injectionRate[return_data[5][1]] = return_data[5][0]
+        Fr_kplus1.injectionRate = return_data[4]
+        Fr_kplus1.source = np.where(Fr_kplus1.injectionRate > 0)[0]
+        Fr_kplus1.sink = np.where(Fr_kplus1.injectionRate < 0)[0]
+    else:
+        Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
+        Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -999,15 +1001,18 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     if sim_properties.saveRegime:
         Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
 
-    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
     Fr_kplus1.effVisc = data[0][1]
     Fr_kplus1.G = data[0][2]
 
     if len(data) > 3:
         Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
         Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
-        Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
-        Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
+        Fr_kplus1.injectionRate = data[4]
+        Fr_kplus1.source = np.where(Fr_kplus1.injectionRate > 0)[0]
+        Fr_kplus1.sink = np.where(Fr_kplus1.injectionRate < 0)[0]
+    else:
+        Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
+        Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
 
     if fluid_properties.turbulence:
         if sim_properties.saveReynNumb or sim_properties.saveFluidFlux:
@@ -1425,7 +1430,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
                 if inj_properties.modelInjLine:
                     inj_cells = np.intersect1d(inj_properties.sourceElem, Fr_lstTmStp.EltChannel)
-                    sink_cells = np.intersect1d(inj_properties.sourceElem, Fr_lstTmStp.EltCrack)
+                    sink_cells = np.intersect1d(np.asarray(inj_properties.sinkElem, dtype=int), Fr_lstTmStp.EltCrack)
 
                     sink = np.zeros(Fr_lstTmStp.mesh.NumberOfElts)
                     if inj_properties.sinkElem:
@@ -1586,15 +1591,16 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
         if inj_properties.modelInjLine:
             pil_indx = len(to_solve_k) + len(neg_km1) + len(to_impose_k)
             dp_il = sol[pil_indx]
-            Q_ch = sol[pil_indx + 1: pil_indx + 1 + len(inj_ch)]
-            Q_act = sol[pil_indx + 1 + len(inj_ch): pil_indx + 1 + len(inj_ch) + len(inj_act)]
+            Q = np.zeros(Fr_lstTmStp.mesh.NumberOfElts)
+            Q[inj_ch] = sol[pil_indx + 1: pil_indx + 1 + len(inj_ch)]
+            Q[inj_act] = sol[pil_indx + 1 + len(inj_ch): pil_indx + 1 + len(inj_ch) + len(inj_act)]
+            Q[sink_cells] = Q[sink_cells] - sink[sink_cells]
         else:
             p_il = None
-            Q_ch = None
-            Q_act = None
+            Q = None
 
         if inj_properties.modelInjLine:
-            return_data = [data_nonLinSolve, neg_km1, fully_closed, dp_il, (Q_ch, inj_ch), (Q_act, inj_act)]
+            return_data = [data_nonLinSolve, neg_km1, fully_closed, dp_il, Q]
         else:
             return_data = [data_nonLinSolve, neg_km1, fully_closed]
 
@@ -2131,8 +2137,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     if len(data) > 3:
         Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
         Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
-        Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
-        Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
+        Fr_kplus1.injectionRate = data[4]
+        Fr_kplus1.source = np.where(Fr_kplus1.injectionRate > 0)[0]
+        Fr_kplus1.sink = np.where(Fr_kplus1.injectionRate < 0)[0]
+    else:
+        Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
+        Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
 
     log.debug("Solved...")
     log.debug("Finding velocity of front...")
@@ -2274,8 +2284,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
-    Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] > 0)[0]]
-    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
 
     if sim_properties.saveRegime:
         Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
