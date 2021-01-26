@@ -134,10 +134,10 @@ class Controller:
 
         # Setting whether sparse matrix is used to make fluid conductivity matrix
         if Sim_prop.solveSparse is None:
-           if Fracture.mesh.NumberOfElts < 2500:
-               Sim_prop.solveSparse = False
-           else:
+           if Fracture.mesh.NumberOfElts > 2500 or self.injection_prop.modelInjLine:
                Sim_prop.solveSparse = True
+           else:
+               Sim_prop.solveSparse = False
 
         # basic performance data
         self.remeshings = 0
@@ -1077,7 +1077,7 @@ class Controller:
                                                                        fig=self.Figures[index],
                                                                        elements=get_elements(suitable_elements[plt_var], Fr_advanced))
                         # plotting source elements
-                        self.Figures[index] = plot_injection_source(self.fracture,
+                        self.Figures[index] = plot_injection_source(Fr_advanced,
                                               fig=self.Figures[index])
 
                     # plotting closed cells
@@ -1150,7 +1150,7 @@ class Controller:
                     indxCurTime = max(times_past)
                     if self.sim_prop.fixedTmStp[1, indxCurTime] is not None:
                         # time step is not given as None.
-                        time_step = self.sim_prop.fixedTmStp[1, indxCurTime]  # current injection rate
+                        time_step = self.sim_prop.fixedTmStp[1, indxCurTime]  # current time step
                         time_step_given = True
                     else:
                         time_step_given = False
