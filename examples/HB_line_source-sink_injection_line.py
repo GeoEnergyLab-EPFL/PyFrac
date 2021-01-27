@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # imports
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -123,18 +124,20 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures(address="./Data/HB",
-                                     sim_name='Herschel-Bulkley_sink_injection')
+    from visualization import *
 
-# see evolution of the injection rate
-animate_simulation_results(Fr_list, variable=['ir'], block_figure=True)
+    # loading simulation results
+    Fr_list, properties = load_fractures(address="./Data/HB",
+                                         sim_name='Herschel-Bulkley_sink_injection')
 
-# plotting injection line pressure and fracture radius versus time
-plt_prop = PlotProperties(line_style='.-')
-Fig_p = plot_fracture_list(Fr_list, variable='injection line pressure', plot_prop=plt_prop)
-Fig_r = plot_fracture_list(Fr_list, variable='d_mean', plot_prop=plt_prop)
+    # see evolution of the injection rate
+    animate_simulation_results(Fr_list, variable=['ir'], block_figure=True)
 
-plt.show(block=True)
+    # plotting injection line pressure and fracture radius versus time
+    plt_prop = PlotProperties(line_style='.-')
+    Fig_p = plot_fracture_list(Fr_list, variable='injection line pressure', plot_prop=plt_prop)
+    Fig_r = plot_fracture_list(Fr_list, variable='d_mean', plot_prop=plt_prop)
+
+    plt.show(block=True)

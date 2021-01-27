@@ -10,6 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # imports
 import numpy as np
 from scipy import interpolate
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -104,46 +105,47 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
-
 ####################
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures("./Data/radial_PL",
-                                     sim_name='PLF_n0.6',
-                                      # step_size=5
-                                     )
-time_srs_06 = get_fracture_variable(Fr_list, 'time')
-R_num_06 = get_fracture_variable(Fr_list, 'd_mean')
+    from visualization import *
 
-# plotting fracture radius
-plot_prop = PlotProperties(graph_scaling='loglog',
-                            line_style='.',
-                            line_color='green')
-label = LabelProperties('d_mean')
-label.legend = 'radius numerical'
-Fig_r = plot_fracture_list(Fr_list,
-                            variable='d_mean',
-                            plot_prop=plot_prop,
-                            labels=label)
+    # loading simulation results
+    Fr_list, properties = load_fractures("./Data/radial_PL",
+                                         sim_name='PLF_n0.6',
+                                          # step_size=5
+                                         )
+    time_srs_06 = get_fracture_variable(Fr_list, 'time')
+    R_num_06 = get_fracture_variable(Fr_list, 'd_mean')
 
-ax_r = Fig_r.get_axes()[0]
+    # plotting fracture radius
+    plot_prop = PlotProperties(graph_scaling='loglog',
+                                line_style='.',
+                                line_color='green')
+    label = LabelProperties('d_mean')
+    label.legend = 'radius numerical'
+    Fig_r = plot_fracture_list(Fr_list,
+                                variable='d_mean',
+                                plot_prop=plot_prop,
+                                labels=label)
 
-# plotting analytical solution
-n = 0.6
-time_srs_np = np.geomspace(5e-5, 1e4, 50)
-Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * Fluid.k
-R_06 = (Eprime * Q0**(n + 2) * time_srs_np**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
-ax_r.plot(time_srs_np, R_06, 'g', label='analytical Power law n=0.6')
-ax_r.legend()
+    ax_r = Fig_r.get_axes()[0]
 
-# plotting relative error
-R_06 = (Eprime * Q0**(n + 2) * np.asarray(time_srs_06)**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
-plot_prop_err = PlotProperties(line_style='.-', graph_scaling='semilogx')
-plot_variable_vs_time(time_srs_06, 1 - np.asarray(R_num_06) / R_06, plot_prop=plot_prop_err)
+    # plotting analytical solution
+    n = 0.6
+    time_srs_np = np.geomspace(5e-5, 1e4, 50)
+    Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * Fluid.k
+    R_06 = (Eprime * Q0**(n + 2) * time_srs_np**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
+    ax_r.plot(time_srs_np, R_06, 'g', label='analytical Power law n=0.6')
+    ax_r.legend()
 
-plt.show(block=True)
+    # plotting relative error
+    R_06 = (Eprime * Q0**(n + 2) * np.asarray(time_srs_06)**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
+    plot_prop_err = PlotProperties(line_style='.-', graph_scaling='semilogx')
+    plot_variable_vs_time(time_srs_06, 1 - np.asarray(R_num_06) / R_06, plot_prop=plot_prop_err)
+
+    plt.show(block=True)
 

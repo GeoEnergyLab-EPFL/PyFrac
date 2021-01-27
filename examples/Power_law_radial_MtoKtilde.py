@@ -10,6 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # imports
 import numpy as np
 from scipy import interpolate
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -109,37 +110,39 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures("./Data/MtoK_leakoff",
-                                     sim_name='PLF_MtoKtilde_n0.6',
-                                     step_size=5)
-# plotting fracture radius
-plot_prop = PlotProperties(graph_scaling='loglog',
-                            line_style='.',
-                            line_color='green')
-label = LabelProperties('d_mean')
-label.legend = 'radius numerical'
-Fig_r = plot_fracture_list(Fr_list,
-                            variable='d_mean',
-                            plot_prop=plot_prop,
-                            labels=label)
+    from visualization import *
 
-ax_r = Fig_r.get_axes()[0]
+    # loading simulation results
+    Fr_list, properties = load_fractures("./Data/MtoK_leakoff",
+                                         sim_name='PLF_MtoKtilde_n0.6',
+                                         step_size=5)
+    # plotting fracture radius
+    plot_prop = PlotProperties(graph_scaling='loglog',
+                                line_style='.',
+                                line_color='green')
+    label = LabelProperties('d_mean')
+    label.legend = 'radius numerical'
+    Fig_r = plot_fracture_list(Fr_list,
+                                variable='d_mean',
+                                plot_prop=plot_prop,
+                                labels=label)
 
-# plotting toughness leak-off solution
-time_srs_np = np.geomspace(1e3, 1e7, 50)
-R = 2**(1/2) / np.pi * Q0**(1/2) * time_srs_np**(1/4) / Solid.Cprime[0]**(1/2)
-ax_r.plot(time_srs_np, R, 'k', label='K~ solution')
+    ax_r = Fig_r.get_axes()[0]
 
-# plotting power-law solution
-n = 0.6
-time_srs_np = np.geomspace(5e-5, 1e4, 50)
-Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * Fluid.k
-R_06 = (Eprime * Q0**(n + 2) * time_srs_np**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
-ax_r.plot(time_srs_np, R_06, 'g', label='analytical Power law n=0.6')
-ax_r.legend()
+    # plotting toughness leak-off solution
+    time_srs_np = np.geomspace(1e3, 1e7, 50)
+    R = 2**(1/2) / np.pi * Q0**(1/2) * time_srs_np**(1/4) / Solid.Cprime[0]**(1/2)
+    ax_r.plot(time_srs_np, R, 'k', label='K~ solution')
 
-plt.show(block=True)
+    # plotting power-law solution
+    n = 0.6
+    time_srs_np = np.geomspace(5e-5, 1e4, 50)
+    Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n  * Fluid.k
+    R_06 = (Eprime * Q0**(n + 2) * time_srs_np**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
+    ax_r.plot(time_srs_np, R_06, 'g', label='analytical Power law n=0.6')
+    ax_r.legend()
+
+    plt.show(block=True)
 

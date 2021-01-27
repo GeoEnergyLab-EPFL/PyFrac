@@ -45,12 +45,13 @@ Solid = MaterialProperties(Mesh,
                            K_Ic,
                            confining_stress_func=sigmaO_func)
 
-def source_location(x, y, hx, hy):
+def source_location(x, y):
     """ This function is used to evaluate if a point is included in source, i.e. the fluid is injected at the given
         point.
     """
+    tolerance = 2.
     # the condition
-    return abs(x) < 75 and (y >= - 75. -  hy / 2. and y <= -75. + hy / 2.)
+    return abs(x) < 75 and (y >= - 75. - tolerance and y <= -75. + tolerance)
 
 # injection parameters
 Q0 = 0.001  # injection rate
