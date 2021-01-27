@@ -68,7 +68,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack, neiInCrack,
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
+def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp, cond):
     """
     This function returns the gravity term (G in Zia and Lecampion 2019).
 
@@ -94,8 +94,10 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
             wTopEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 3]]
 
             G[EltCrack] = fluidProp.density * 9.81 * (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy / fluidProp.muPrime
+        elif fluidProp.rheology in ["Herschel-Bulkley", "HBF", 'power law', 'PLF']:
+            G[EltCrack] = fluidProp.density * 9.81 * (cond[3, :] - cond[2, :]) / mesh.hy
         else:
-            raise SystemExit("Effect of gravity is only supported for Newtonian fluid in laminar flow regime yet!")
+            raise SystemExit("Effect of gravity is not supported with this fluid model!")
 
     return G
 
@@ -287,7 +289,10 @@ def FiniteDiff_operator_turbulent_implicit(w, pf, EltCrack, fluidProp, matProp, 
     FD_compressed[np.ix_(indx_elts, act_indxs)] = FinDiffOprtr[np.ix_(EltCrack, active)]
     FD_compressed[np.ix_(indx_elts, tip_indxs)] = FinDiffOprtr[np.ix_(EltCrack, to_impose)]
 
-    return FD_compressed, vk
+    if not simProp.gravity:
+        cond = None
+
+    return FD_compressed, vk, cond
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -445,8 +450,10 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
         eff_mu[2, EltCrack] =  wBtmEdge ** 3 / (12 * cond[2, :])
         eff_mu[3, EltCrack] =  wTopEdge ** 3 / (12 * cond[3, :])
 
+    if not simProp.gravity:
+        cond = None
 
-    return FinDiffOprtr, eff_mu
+    return FinDiffOprtr, eff_mu, cond
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -563,10 +570,10 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     if simProp.saveEffVisc:
         with np.errstate(divide='ignore'):
             eff_mu = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
-            eff_mu[0, EltCrack[edgeInCrk_lst[0]]] =  wLftEdge[edgeInCrk_lst[0]] ** 3 / (12 * cond[0, edgeInCrk_lst[0]])
-            eff_mu[1, EltCrack[edgeInCrk_lst[1]]] =  wRgtEdge[edgeInCrk_lst[1]] ** 3 / (12 * cond[1, edgeInCrk_lst[1]])
-            eff_mu[2, EltCrack[edgeInCrk_lst[2]]] =  wBtmEdge[edgeInCrk_lst[2]] ** 3 / (12 * cond[2, edgeInCrk_lst[2]])
-            eff_mu[3, EltCrack[edgeInCrk_lst[3]]] =  wTopEdge[edgeInCrk_lst[3]] ** 3 / (12 * cond[3, edgeInCrk_lst[3]])
+            eff_mu[0, EltCrack[edgeInCrk_lst[0]]] = wLftEdge[edgeInCrk_lst[0]] ** 3 / (12 * cond[0, edgeInCrk_lst[0]])
+            eff_mu[1, EltCrack[edgeInCrk_lst[1]]] = wRgtEdge[edgeInCrk_lst[1]] ** 3 / (12 * cond[1, edgeInCrk_lst[1]])
+            eff_mu[2, EltCrack[edgeInCrk_lst[2]]] = wBtmEdge[edgeInCrk_lst[2]] ** 3 / (12 * cond[2, edgeInCrk_lst[2]])
+            eff_mu[3, EltCrack[edgeInCrk_lst[3]]] = wTopEdge[edgeInCrk_lst[3]] ** 3 / (12 * cond[3, edgeInCrk_lst[3]])
 
     G = None
     if simProp.saveG:
@@ -576,8 +583,10 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
         G[2, EltCrack] = G2
         G[3, EltCrack] = G3
 
-    
-    return FinDiffOprtr, eff_mu, G
+    if not simProp.gravity:
+        cond = None
+
+    return FinDiffOprtr, eff_mu, G, cond
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------
@@ -595,6 +604,7 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                     InCrack,
                                                     neiInCrack,
                                                     sim_prop)
+        conductivity = None
 
     else:
         pf = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
@@ -611,7 +621,7 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
 
 
         if fluid_prop.turbulence:
-            FinDiffOprtr, interItr_kp1[0] = FiniteDiff_operator_turbulent_implicit(wNplusOne,
+            FinDiffOprtr, interItr_kp1[0], conductivity = FiniteDiff_operator_turbulent_implicit(wNplusOne,
                                                         pf,
                                                         EltCrack,
                                                         fluid_prop,
@@ -624,7 +634,7 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                         active,
                                                         to_impose)
         elif fluid_prop.rheology in ["Herschel-Bulkley", "HBF"]:
-            FinDiffOprtr, interItr_kp1[2], interItr_kp1[3] = finiteDiff_operator_Herschel_Bulkley(wNplusOne,
+            FinDiffOprtr, interItr_kp1[2], interItr_kp1[3], conductivity = finiteDiff_operator_Herschel_Bulkley(wNplusOne,
                                                         pf,
                                                         EltCrack,
                                                         fluid_prop,
@@ -635,7 +645,7 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                         sim_prop)
 
         elif fluid_prop.rheology in ['power law', 'PLF']:
-            FinDiffOprtr, interItr_kp1[2] = finiteDiff_operator_power_law(wNplusOne,
+            FinDiffOprtr, interItr_kp1[2], conductivity = finiteDiff_operator_power_law(wNplusOne,
                                                         pf,
                                                         EltCrack,
                                                         fluid_prop,
@@ -645,7 +655,7 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                         list_edgeInCrack,
                                                         sim_prop)
 
-    return FinDiffOprtr
+    return FinDiffOprtr, conductivity
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -716,7 +726,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
-    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
+    FinDiffOprtr, conductivity = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
@@ -725,7 +735,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    sim_prop,
+                    conductivity)
 
 
     n_ch = len(to_solve)
@@ -861,7 +872,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
-    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
+    FinDiffOprtr, conductivity = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
@@ -870,7 +881,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    sim_prop,
+                    conductivity)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1010,7 +1022,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
-    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
+    FinDiffOprtr, conductivity = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
@@ -1020,7 +1032,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    sim_prop,
+                    conductivity)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1154,7 +1167,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
-    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
+    FinDiffOprtr, conductivity = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
@@ -1163,7 +1176,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    sim_prop,
+                    conductivity)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1301,7 +1315,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
-    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk, frac,
+    FinDiffOprtr, conductivity = get_finite_difference_matrix(wNplusOne, solk, frac,
                                                 EltCrack, neiInCrack, fluid_prop,
                                                 mat_prop, sim_prop, frac.mesh,
                                                 InCrack, C, interItr, to_solve,
@@ -1309,7 +1323,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
                                                 lst_edgeInCrk)
 
     G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
-                     frac.mesh, InCrack, sim_prop)
+                     frac.mesh, InCrack, sim_prop,
+                     conductivity)
 
     n_ch = len(to_solve)
     n_act = len(active)
