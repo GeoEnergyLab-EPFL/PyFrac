@@ -1406,8 +1406,8 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
     ax_slice.set_ylabel(labels.colorbarLabel)
     ax_slice.set_xlabel('(x,y) ' + labels.xLabel)
 
-    if plot_prop.plotLegend:
-        ax_slice.legend()
+    # if plot_prop.plotLegend:
+    #     ax_slice.legend()
 
     return fig
 
