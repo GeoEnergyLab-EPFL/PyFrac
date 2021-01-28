@@ -21,7 +21,7 @@ from utility import setup_logging_to_console
 
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='debug')
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(.75, .75, 41, 41)
@@ -130,7 +130,7 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
 
     # loading simulation results
     Fr_list, properties = load_fractures(address="./Data/HB",
-                                         sim_name='Herschel-Bulkley_sink_injection')
+                                         sim_name='HB_injection_line_sink')
 
     # see evolution of the injection rate
     animate_simulation_results(Fr_list, variable=['ir'], block_figure=True)

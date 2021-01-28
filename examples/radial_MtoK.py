@@ -43,14 +43,14 @@ Q0 = 0.01  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
-viscosity = 0.001                         # mu' =0.001
+viscosity = 0.001
 Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e9                          # the time at which the simulation stops
+simulProp.finalTime = 1e9                           # the time at which the simulation stops
 simulProp.saveTSJump, simulProp.plotTSJump = 5, 5   # save and plot after every 5 time steps
-simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
+simulProp.set_outputFolder("./Data/MtoK")           # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
 
 # initializing fracture
