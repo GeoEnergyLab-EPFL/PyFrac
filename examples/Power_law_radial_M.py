@@ -22,7 +22,7 @@ from utility import setup_logging_to_console
 
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console()
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(0.2, 0.2, 41, 41)

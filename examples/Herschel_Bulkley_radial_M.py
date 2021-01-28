@@ -2,8 +2,8 @@
 """
 This file is part of PyFrac.
 
-Created by Haseeb Zia on Fri June 16 17:49:21 2017.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+Created by Haseeb Zia on Fri June 17 2020.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
@@ -21,7 +21,7 @@ from scipy import interpolate
 
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='debug')
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(0.6, 0.6, 41, 41)
@@ -48,22 +48,23 @@ Fluid = FluidProperties(viscosity=0.75,
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 17000                             # the time at which the simulation stops
+simulProp.finalTime = 38000                             # the time at which the simulation stops
 simulProp.set_outputFolder("./Data/HB")                 # the disk address where the files are saved
 simulProp.set_simulation_name('HB_Gauss_Chebyshev_comparison')  # setting simulation name
 simulProp.saveG = True                                  # enable saving the coefficient G
 simulProp.plotVar = ['w', 'G']                          # plot width of fracture
 simulProp.saveEffVisc = True                            # enable saving of the effective viscosity
-simulProp.relaxation_factor = 0.4                       # relax Anderson iteration
-simulProp.maxSolverItrs = 150                           # set maximum number of Anderson iterations to 200
+simulProp.relaxation_factor = 0.3                       # relax Anderson iteration
+simulProp.maxSolverItrs = 200                           # set maximum number of Anderson iterations to 200
 simulProp.collectPerfData = True                        # enable collect performance data
 simulProp.tolFractFront = 3e-3                          # increasing fracture front iteration tolerance
 simulProp.plotTSJump = 5                                # plotting after every five time steps
-simulProp.tmStpPrefactor = 0.5                          # reducing time steps for better convergence
+simulProp.tmStpPrefactor = 0.6                          # reducing time steps for better convergence
+simulProp.Anderson_parameter = 10                       # saving last 10 solutions for better performance
 
 # initializing the fracture width with the solution provided by  Madyarova & Detournay 2004 for power-law fluids.
 w = np.zeros(Mesh.NumberOfElts)
-xw = np.genfromtxt('width_n_05.csv', delimiter=',')         # loading dimensionless width profile for n = 0.5
+xw = np.genfromtxt('width_n_05.csv', delimiter=',')     # loading dimensionless width profile for n = 0.5
 t = 2e-2
 n = Fluid.n
 gamma = 0.699
@@ -120,30 +121,26 @@ Fr_list, properties = load_fractures(address="./Data/HB",
 time_srs_PyFrac = get_fracture_variable(Fr_list, 'time')
 
 
-Fig_r = Fig_p = Fig_w =None
 # plot fracture radius
 plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
 Fig_r = plot_fracture_list(Fr_list,
                             variable='d_mean',
-                            plot_prop=plot_prop,
-                            fig=Fig_r)
+                            plot_prop=plot_prop)
 
 
 plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
 Fig_p = plot_fracture_list_at_point(Fr_list,
                             variable='pn',
-                            plot_prop=plot_prop,
-                            fig=Fig_p)
+                            plot_prop=plot_prop)
 
 plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
 Fig_w = plot_fracture_list_at_point(Fr_list,
                             variable='w',
-                            plot_prop=plot_prop,
-                            fig=Fig_w)
+                            plot_prop=plot_prop)
 
 
 # import json
-f = open('data_HB_GC_n06.json',)
+f = open('data_HB_n06.json',)
 data_gc = json.load(f)
 time = np.asarray(data_gc['time'])
 time_srs_PyFrac = np.asarray(time_srs_PyFrac)
@@ -175,7 +172,7 @@ ax_r.plot(time_srs_PyFrac, R, label='analytical Power law n=0.6')
 from postprocess_performance import *
 plt_prop_Pic = PlotProperties(graph_scaling='semilogx', line_style='.')
 plot_performance(address="./Data/HB",
-                 sim_name='HB_GC_comparison',
+                 sim_name='HB_Gauss_Chebyshev_comparison',
                  variable='Picard iterations',
                  plot_prop=plt_prop_Pic)
 plt.show()

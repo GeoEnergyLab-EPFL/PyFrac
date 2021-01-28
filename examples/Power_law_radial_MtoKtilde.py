@@ -54,7 +54,7 @@ simulProp.set_outputFolder("./Data/MtoK_leakoff")       # the disk address where
 simulProp.set_simulation_name('PLF_MtoKtilde_n0.6')
 simulProp.tolFractFront = 0.003                         # increase the tolerance for faster run
 simulProp.projMethod = 'LS_continousfront'              # using the continuous front algorithm
-simulProp.plotFigure = False
+simulProp.set_tipAsymptote('PLF')                       # setting the tip asymptote to power-law fluid
 
 # initializing the fracture width with the solution provided by  Madyarova & Detournay 2004 for power-law fluids. 
 w = np.zeros(Mesh.NumberOfElts)
