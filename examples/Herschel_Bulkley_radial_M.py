@@ -18,6 +18,7 @@ from utility import setup_logging_to_console
 # imports
 import numpy as np
 from scipy import interpolate
+import os
 
 
 # setting up the verbosity level of the log at console
@@ -86,7 +87,11 @@ w[w < 0] = 0.
 Fr_geometry = Geometry('radial', radius=gamma * L)
 from elasticity import load_isotropic_elasticity_matrix
 C = load_isotropic_elasticity_matrix(Mesh, Eprime)
-init_param = InitializationParameters(Fr_geometry, regime='static', width=w, elasticity_matrix=C, tip_velocity=Vel)
+init_param = InitializationParameters(Fr_geometry,
+                                      regime='static',
+                                      width=w,
+                                      elasticity_matrix=C,
+                                      tip_velocity=Vel)
 
 
 # creating fracture object
@@ -112,68 +117,70 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
-from postprocess_performance import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-Fr_list, properties = load_fractures(address="./Data/HB",
-                                      sim_name='HB_Gauss_Chebyshev_comparison')
-time_srs_PyFrac = get_fracture_variable(Fr_list, 'time')
+    from visualization import *
+    from postprocess_performance import *
 
-
-# plot fracture radius
-plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
-Fig_r = plot_fracture_list(Fr_list,
-                            variable='d_mean',
-                            plot_prop=plot_prop)
+    # loading simulation results
+    Fr_list, properties = load_fractures(address="./Data/HB",
+                                          sim_name='HB_Gauss_Chebyshev_comparison')
+    time_srs_PyFrac = get_fracture_variable(Fr_list, 'time')
 
 
-plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
-Fig_p = plot_fracture_list_at_point(Fr_list,
-                            variable='pn',
-                            plot_prop=plot_prop)
-
-plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
-Fig_w = plot_fracture_list_at_point(Fr_list,
-                            variable='w',
-                            plot_prop=plot_prop)
+    # plot fracture radius
+    plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
+    Fig_r = plot_fracture_list(Fr_list,
+                                variable='d_mean',
+                                plot_prop=plot_prop)
 
 
-# import json
-f = open('data_HB_n06.json',)
-data_gc = json.load(f)
-time = np.asarray(data_gc['time'])
-time_srs_PyFrac = np.asarray(time_srs_PyFrac)
+    plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
+    Fig_p = plot_fracture_list_at_point(Fr_list,
+                                variable='pn',
+                                plot_prop=plot_prop)
 
-k = Fluid.k
-n = Fluid.n
-T0 = Fluid.T0
-Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n * k
-L = (Eprime * Q0**(n + 2) * time_srs_PyFrac**(2*n + 2) / Mprime)**(1 / (3*n + 6))
-eps = (Mprime / Eprime / time_srs_PyFrac**n) ** (1 / (n + 2))
-ty = np.sqrt(Eprime) * Mprime ** (1 / n) * T0 ** -((2 + n) / 2 / n)
+    plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
+    Fig_w = plot_fracture_list_at_point(Fr_list,
+                                variable='w',
+                                plot_prop=plot_prop)
 
-ax_r = Fig_r.get_axes()[0]
-ax_p = Fig_p.get_axes()[0]
-ax_w = Fig_w.get_axes()[0]
 
-ax_p.loglog(time, np.asarray(data_gc['pres'])/1e6)
-p = Eprime * eps * 1.0
-ax_p.loglog(time_srs_PyFrac, p/1e6)
+    # import json
+    f = open('data_HB_n06.json',)
+    data_gc = json.load(f)
+    time = np.asarray(data_gc['time'])
+    time_srs_PyFrac = np.asarray(time_srs_PyFrac)
 
-ax_w.loglog(time, np.asarray(data_gc['opening'])*1e3)
-w = L * eps * 1.19
-ax_w.loglog(time_srs_PyFrac, w*1e3)
+    k = Fluid.k
+    n = Fluid.n
+    T0 = Fluid.T0
+    Mprime = 2**(n + 1) * (2 * n + 1)**n / n**n * k
+    L = (Eprime * Q0**(n + 2) * time_srs_PyFrac**(2*n + 2) / Mprime)**(1 / (3*n + 6))
+    eps = (Mprime / Eprime / time_srs_PyFrac**n) ** (1 / (n + 2))
+    ty = np.sqrt(Eprime) * Mprime ** (1 / n) * T0 ** -((2 + n) / 2 / n)
 
-ax_r.loglog(time, np.asarray(data_gc['length']))
-R = L * 0.7155
-ax_r.plot(time_srs_PyFrac, R, label='analytical Power law n=0.6')
+    ax_r = Fig_r.get_axes()[0]
+    ax_p = Fig_p.get_axes()[0]
+    ax_w = Fig_w.get_axes()[0]
 
-from postprocess_performance import *
-plt_prop_Pic = PlotProperties(graph_scaling='semilogx', line_style='.')
-plot_performance(address="./Data/HB",
-                 sim_name='HB_Gauss_Chebyshev_comparison',
-                 variable='Picard iterations',
-                 plot_prop=plt_prop_Pic)
-plt.show()
+    ax_p.loglog(time, np.asarray(data_gc['pres'])/1e6)
+    p = Eprime * eps * 1.0
+    ax_p.loglog(time_srs_PyFrac, p/1e6)
+
+    ax_w.loglog(time, np.asarray(data_gc['opening'])*1e3)
+    w = L * eps * 1.19
+    ax_w.loglog(time_srs_PyFrac, w*1e3)
+
+    ax_r.loglog(time, np.asarray(data_gc['length']))
+    R = L * 0.7155
+    ax_r.plot(time_srs_PyFrac, R, label='analytical Power law n=0.6')
+
+    from postprocess_performance import *
+    plt_prop_Pic = PlotProperties(graph_scaling='semilogx', line_style='.')
+    plot_performance(address="./Data/HB",
+                     sim_name='HB_Gauss_Chebyshev_comparison',
+                     variable='Picard iterations',
+                     plot_prop=plt_prop_Pic)
+    plt.show()
 

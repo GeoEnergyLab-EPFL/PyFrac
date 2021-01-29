@@ -24,7 +24,7 @@ from utility import setup_logging_to_console
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(425, [-425, 455], 13, 15)
+Mesh = CartesianMesh(425, [-425, 455], 14, 15)
 
 # solid properties
 nu = 0.25                           # Poisson's ratio
@@ -77,7 +77,6 @@ simulProp.set_mesh_extension_direction(['top', 'horizontal'])   # allow the frac
 simulProp.set_mesh_extension_factor(1.2)                        # set the extension factor to 1.4
 simulProp.useBlockToeplizCompression = True                     # use the Toepliz elasticity matrix to save memory
 
-
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix_toepliz(Mesh, Solid.Eprime)
 Fr_geometry = Geometry('radial', radius=300)
@@ -120,11 +119,10 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
                                      variable='time')
 
     # plot footprint
-    Fig_FP = None
     Fig_FP = plot_fracture_list(Fr_list,
                                 variable='mesh',
                                 projection='2D',
-                                mat_properties=Solid,
+                                mat_properties=properties[0],
                                 backGround_param='confining stress')
     plt_prop = PlotProperties(plot_FP_time=False)
     Fig_FP = plot_fracture_list(Fr_list,
