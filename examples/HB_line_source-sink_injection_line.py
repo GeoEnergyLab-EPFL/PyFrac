@@ -133,7 +133,7 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
                                          sim_name='HB_injection_line_sink')
 
     # see evolution of the injection rate
-    animate_simulation_results(Fr_list, variable=['ir'], block_figure=True)
+    animate_simulation_results(Fr_list, variable=['ir'])
 
     # plotting injection line pressure and fracture radius versus time
     plt_prop = PlotProperties(line_style='.-')

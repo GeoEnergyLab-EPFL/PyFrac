@@ -144,8 +144,12 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
 
     # plotting relative error
     R_06 = (Eprime * Q0**(n + 2) * np.asarray(time_srs_06)**(2*n + 2) / Mprime)**(1 / (3*n + 6)) * 0.7155
-    plot_prop_err = PlotProperties(line_style='.-', graph_scaling='semilogx')
-    plot_variable_vs_time(time_srs_06, 1 - np.asarray(R_num_06) / R_06, plot_prop=plot_prop_err)
+    plot_prop_err = PlotProperties(line_style='.-',
+                                   graph_scaling='semilogx',
+                                   plot_legend=True)
+    plot_variable_vs_time(time_srs_06, 1 - np.asarray(R_num_06) / R_06,
+                          plot_prop=plot_prop_err,
+                          label='relative error')
 
     plt.show(block=True)
 

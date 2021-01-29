@@ -644,6 +644,9 @@ def plot_variable_vs_time(time_list, value_list, fig=None, plot_prop=None, label
     else:
         raise ValueError("Graph scaling type not supported")
 
+    if plot_prop.plotLegend:
+        ax.legend()
+
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------
