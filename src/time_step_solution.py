@@ -160,6 +160,10 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         log.debug('Iteration ' + repr(k))
         fill_frac_last = np.copy(Fr_k.FillF)
 
+        # update the confining stress
+        if mat_properties.boundaryEffect.active():
+            mat_properties.updateConfiningStress(Fr_k.w)
+
         perfNode_extFront = instrument_start('extended front', perfNode)
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
         (exitstatus, Fr_k) = injection_extended_footprint(Fr_k.w,
