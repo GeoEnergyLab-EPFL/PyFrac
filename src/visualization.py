@@ -142,12 +142,12 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                             edge=edge,
                                                             return_time=True)
 
-        var_val_copy = np.copy(var_val_list)
+        var_val_copy = copy.deepcopy(var_val_list)
         for i in range(len(var_val_copy)):
             var_val_copy[i] /= labels.unitConversion
 
         if projection != '2D_vectorfield':
-            var_value_tmp = np.copy(var_val_copy)
+            var_value_tmp = copy.deepcopy(var_val_copy)
             if elements is not None:
                 var_value_tmp = var_value_tmp[:, elements]
             if plot_non_zero:
@@ -334,12 +334,12 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                        edge=edge,
                                                     return_time=True)
 
-    var_val_copy = np.copy(var_val_list)
+    var_val_copy = copy.deepcopy(var_val_list)
     for i in range(len(var_val_copy)):
         var_val_copy[i] /= labels.unitConversion
 
     # find maximum and minimum to set the viewing limits on axis
-    var_value_tmp = np.copy(var_val_copy)
+    var_value_tmp = copy.deepcopy(var_val_copy)
     vmin, vmax = np.inf, -np.inf
     for i in var_value_tmp:
         i = np.delete(i, np.where(np.isinf(i))[0])
