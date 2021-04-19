@@ -3,10 +3,11 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Wed Dec 28 14:43:38 2016.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+import logging
 from scipy import sparse
 from scipy.optimize import brentq
 import numpy as np
@@ -86,13 +87,13 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
     """
 
     G = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
-    
+
     if simProp.gravity:
         if fluidProp.rheology == "Newtonian" and not fluidProp.turbulence:
             # width at the cell edges evaluated by averaging. Zero if the edge is outside fracture
             wBtmEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 2]]
             wTopEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 3]]
-        
+
             G[EltCrack] = fluidProp.density * 9.81 * (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy / fluidProp.muPrime
         else:
             raise SystemExit("Effect of gravity is only supported for Newtonian fluid in laminar flow regime yet!")
@@ -368,7 +369,7 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
                                    1 or 0 respectively.
         neiInCrack (ndarray):   -- an ndarray giving indices of the neighbours of all the cells in the crack, in the
                                    EltCrack list.
-        edgeInCrk_lst (ndarray):-- this list provides the indices of those cells in the EltCrack list whose neighbors are not 
+        edgeInCrk_lst (ndarray):-- this list provides the indices of those cells in the EltCrack list whose neighbors are not
                                    outside the crack. It is used to evaluate the conductivity on edges of only these cells who
                                    are inside. It consists of four lists, one for each edge.
         simProp (object):       -- An object of the SimulationProperties class.
@@ -391,7 +392,7 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
     wRgtEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2
     wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2
     wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2
-    
+
 
     # pressure gradient data structure. The rows store pressure gradient in the following order.
     # 0 - left edge in x-direction    # 1 - right edge in x-direction
@@ -436,7 +437,7 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
     FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 1]] = cond[1, :] / dx ** 2
     FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 2]] = cond[2, :] / dy ** 2
     FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 3]] = cond[3, :] / dy ** 2
-    
+
     eff_mu = None
     if simProp.saveEffVisc:
         eff_mu = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
@@ -444,8 +445,8 @@ def finiteDiff_operator_power_law(w, pf, EltCrack, fluidProp, Mesh, InCrack, nei
         eff_mu[1, EltCrack] =  wRgtEdge ** 3 / (12 * cond[1, :])
         eff_mu[2, EltCrack] =  wBtmEdge ** 3 / (12 * cond[2, :])
         eff_mu[3, EltCrack] =  wTopEdge ** 3 / (12 * cond[3, :])
-    
-    
+
+
     return FinDiffOprtr, eff_mu
 
 
@@ -466,7 +467,7 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
                                    1 or 0 respectively.
         neiInCrack (ndarray):   -- an ndarray giving indices of the neighbours of all the cells in the crack, in the
                                    EltCrack list.
-        edgeInCrk_lst (ndarray):-- this list provides the indices of those cells in the EltCrack list whose neighbors are not 
+        edgeInCrk_lst (ndarray):-- this list provides the indices of those cells in the EltCrack list whose neighbors are not
                                    outside the crack. It is used to evaluate the conductivity on edges of only these cells who
                                    are inside. It consists of four lists, one for each edge.
         simProp (object):       -- An object of the SimulationProperties class.
@@ -489,7 +490,7 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     wRgtEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2
     wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2
     wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2
-    
+
 
     # pressure gradient data structure. The rows store pressure gradient in the following order.
     # 0 - left edge in x-direction    # 1 - right edge in x-direction
@@ -519,7 +520,7 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     dpTop = (dp[3, EltCrack] ** 2 + dp[7, EltCrack] ** 2) ** 0.5
 
     cond = np.zeros((4, EltCrack.size), dtype=np.float64)
-    
+
 
     x0 = np.maximum(1 - 2 * fluidProp.T0 / wLftEdge / dpLft, np.zeros(len(wLftEdge), dtype=np.float64))
     cond[0, edgeInCrk_lst[0]] = fluidProp.var1 * dpLft[edgeInCrk_lst[0]] ** fluidProp.var2 * wLftEdge[edgeInCrk_lst[0]] ** \
@@ -537,8 +538,8 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
     cond[3, edgeInCrk_lst[3]] = fluidProp.var1 * dpTop[edgeInCrk_lst[3]] ** fluidProp.var2 * wTopEdge[edgeInCrk_lst[3]] ** \
                                 fluidProp.var3 * x3[edgeInCrk_lst[3]]**fluidProp.var4 * \
                                 (1 + 2*fluidProp.T0 / wTopEdge[edgeInCrk_lst[3]] / dpTop[edgeInCrk_lst[3]] * fluidProp.var5)
-    
-        
+
+
     indx_elts = np.arange(len(EltCrack))
     FinDiffOprtr[indx_elts, indx_elts] = -(cond[0, :] + cond[1, :]) / dx ** 2 - (cond[2, :] + cond[3, :]) / dy ** 2
     FinDiffOprtr[indx_elts, neiInCrack[indx_elts, 0]] = cond[0, :] / dx ** 2
@@ -554,14 +555,14 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
             eff_mu[1, EltCrack[edgeInCrk_lst[1]]] =  wRgtEdge[edgeInCrk_lst[1]] ** 3 / (12 * cond[1, edgeInCrk_lst[1]])
             eff_mu[2, EltCrack[edgeInCrk_lst[2]]] =  wBtmEdge[edgeInCrk_lst[2]] ** 3 / (12 * cond[2, edgeInCrk_lst[2]])
             eff_mu[3, EltCrack[edgeInCrk_lst[3]]] =  wTopEdge[edgeInCrk_lst[3]] ** 3 / (12 * cond[3, edgeInCrk_lst[3]])
-    
+
     if simProp.saveYieldRatio:
         yielded = np.zeros((4, Mesh.NumberOfElts), dtype=np.float64)
         yielded[0, EltCrack] = x0
         yielded[1, EltCrack] = x1
         yielded[2, EltCrack] = x2
         yielded[3, EltCrack] = x3
-        
+
     return FinDiffOprtr, eff_mu, yielded
 
 
@@ -569,8 +570,8 @@ def finiteDiff_operator_Herschel_Bulkley(w, pf, EltCrack, fluidProp, Mesh, InCra
 
 def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, fluid_prop, mat_prop, sim_prop, mesh,
                                  InCrack, C, interItr, to_solve, to_impose, active, interItr_kp1, list_edgeInCrack):
-    
-   
+
+
 
     if fluid_prop.rheology == 'Newtonian' and not fluid_prop.turbulence:
         FinDiffOprtr =  finiteDiff_operator_laminar(wNplusOne,
@@ -580,8 +581,8 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                     InCrack,
                                                     neiInCrack,
                                                     sim_prop)
-       
-    else:       
+
+    else:
         pf = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
         # pressure evaluated by dot product of width and elasticity matrix
         pf[to_solve] = np.dot(C[np.ix_(to_solve, EltCrack)], wNplusOne[EltCrack]) +  mat_prop.SigmaO[to_solve]
@@ -591,12 +592,12 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
         else:
             pf[active] = sol[len(to_solve):len(to_solve) + len(active)]
             pf[to_impose] = sol[len(to_solve) + len(active):]
-            
-        
+
+
         if fluid_prop.turbulence:
             FinDiffOprtr, interItr_kp1[0] = FiniteDiff_operator_turbulent_implicit(wNplusOne,
                                                         pf,
-                                                        EltCrack, 
+                                                        EltCrack,
                                                         fluid_prop,
                                                         mat_prop,
                                                         sim_prop,
@@ -616,10 +617,10 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                         neiInCrack,
                                                         list_edgeInCrack,
                                                         sim_prop)
-            
+
         elif fluid_prop.rheology in ['power law', 'PLF']:
             FinDiffOprtr, interItr_kp1[2] = finiteDiff_operator_power_law(wNplusOne,
-                                                        pf,          
+                                                        pf,
                                                         EltCrack,
                                                         fluid_prop,
                                                         mesh,
@@ -627,10 +628,10 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
                                                         neiInCrack,
                                                         list_edgeInCrack,
                                                         sim_prop)
-        
+
     return FinDiffOprtr
-            
-            
+
+
 #--------------------------------------------------------------------------------------------------------------------------------
 
 def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, *args):
@@ -653,7 +654,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
             - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
             - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
                                                These can be different then the minimum width if the overall fracture width is \
-                                               small and it has not reached the minimum width yet.    
+                                               small and it has not reached the minimum width yet.
             - frac (Fracture)               -- fracture from last time step to get the width and pressure.
             - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
             - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
@@ -669,7 +670,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
             - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
                                                outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
                                                are inside. It consists of four lists, one for each edge.
-                                               
+
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
@@ -697,7 +698,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
     wNplusOne[to_solve[below_wc]] = mat_prop.wc
 
     wcNplusHalf = (frac.w + wNplusOne) / 2
-    
+
     interItr_kp1 = [None] * 4
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
@@ -705,7 +706,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
                                  InCrack,   C,  interItr,   to_solve,
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
-    
+
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
                     frac.mesh,  InCrack,    sim_prop)
@@ -766,15 +767,15 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
+    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
     to_del = []
     if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
         for i in range(n_tip + n_act):
                 if not A[n_ch + i, :].any():
                     to_del.append(i)
-    
-        if len(to_del) > 0:            
+
+        if len(to_del) > 0:
             deleted = n_ch + np.asarray(to_del)
             A = np.delete(A, deleted, 0)
             A = np.delete(A, deleted, 1)
@@ -782,7 +783,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs, to_del]
-    
+
     interItr_kp1[1] = below_wc
 
     return A, S, interItr_kp1, indices
@@ -811,7 +812,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
             - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
             - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
                                                These can be different then the minimum width if the overall fracture width is \
-                                               small and it has not reached the minimum width yet.    
+                                               small and it has not reached the minimum width yet.
             - frac (Fracture)               -- fracture from last time step to get the width and pressure.
             - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
             - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
@@ -827,7 +828,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
             - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
                                                outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
                                                are inside. It consists of four lists, one for each edge.
-                                               
+
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
@@ -862,7 +863,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                                  InCrack,   C,  interItr,   to_solve,
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
-    
+
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
                     frac.mesh,  InCrack,    sim_prop)
@@ -928,15 +929,15 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
+    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
     to_del = []
     if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
         for i in range(n_tip + n_act):
                 if not A[n_ch + i, :].any():
                     to_del.append(i)
-    
-        if len(to_del) > 0:            
+
+        if len(to_del) > 0:
             deleted = n_ch + np.asarray(to_del)
             A = np.delete(A, deleted, 0)
             A = np.delete(A, deleted, 1)
@@ -944,7 +945,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs, to_del]
-    
+
     interItr_kp1[1] = below_wc
 
     return A, S, interItr_kp1, indices
@@ -972,7 +973,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
             - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
             - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
                                                These can be different then the minimum width if the overall fracture width is \
-                                               small and it has not reached the minimum width yet.    
+                                               small and it has not reached the minimum width yet.
             - frac (Fracture)               -- fracture from last time step to get the width and pressure.
             - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
             - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
@@ -988,7 +989,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
             - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
                                                outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
                                                are inside. It consists of four lists, one for each edge.
-                                               
+
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
@@ -1023,7 +1024,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                                  InCrack,   C,  interItr,   to_solve,
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
-    
+
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
@@ -1084,15 +1085,15 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
+    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
     to_del = []
     if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
         for i in range(n_tip + n_act):
                 if not A[n_ch + i, :].any():
                     to_del.append(i)
-    
-        if len(to_del) > 0:            
+
+        if len(to_del) > 0:
             deleted = n_ch + np.asarray(to_del)
             A = np.delete(A, deleted, 0)
             A = np.delete(A, deleted, 1)
@@ -1100,7 +1101,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs, to_del]
-    
+
     interItr_kp1[1] = below_wc
 
     return A, S, interItr_kp1, indices
@@ -1128,7 +1129,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
             - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
             - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
                                                These can be different then the minimum width if the overall fracture width is \
-                                               small and it has not reached the minimum width yet.    
+                                               small and it has not reached the minimum width yet.
             - frac (Fracture)               -- fracture from last time step to get the width and pressure.
             - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
             - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
@@ -1144,7 +1145,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
             - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
                                                outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
                                                are inside. It consists of four lists, one for each edge.
-                                               
+
     Returns:
         - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
         - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
@@ -1179,7 +1180,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                                  InCrack,   C,  interItr,   to_solve,
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
-    
+
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
                     frac.mesh,  InCrack,    sim_prop)
@@ -1244,7 +1245,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
 
-    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making 
+    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
     to_del = []
     if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
@@ -1259,7 +1260,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs, to_del]
-    
+
     interItr_kp1[1] = below_wc
     return A, S, interItr_kp1, indices
 
@@ -1428,6 +1429,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
         - solk (ndarray)       -- solution at the end of iteration.
         - data (tuple)         -- any data to be returned
     """
+    log = logging.getLogger('PyFrac.Picard_Newton')
     relax = sim_prop.relaxation_factor
     solk = guess
     k = 0
@@ -1436,7 +1438,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
     newton = 0
     converged = False
 
-    while not converged:
+    while not converged: #todo:check system change (AM)
 
         solkm1 = solk
         if (k + 1) % PicardPerNewton == 0:
@@ -1454,9 +1456,9 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
                 if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
                     solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
                 else:
-                    solk = relax * solkm1 + (1 - relax) * sol 
+                    solk = relax * solkm1 + (1 - relax) * sol
             except np.linalg.linalg.LinAlgError:
-                print('singular matrix!')
+                log.error('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 if perf_node is not None:
                     instrument_close(perf_node, perfNode_linSolve, None,
@@ -1473,7 +1475,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
             perf_node.linearSolve_data.append(perfNode_linSolve)
 
         if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
-            print('Picard iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
+            log.warning('Picard iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
                   ' iterations, norm:' + repr(norm))
             solk = np.full((len(solk),), np.nan, dtype=np.float64)
             if perf_node is not None:
@@ -1481,8 +1483,8 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
                 perfNode_linSolve.status = 'failed'
             return solk, None
 
-    if sim_prop.verbosity > 1:
-        print("Converged after " + repr(k) + " iterations")
+
+    log.debug("Converged after " + repr(k) + " iterations")
     data = [interItr[0], interItr[2], interItr[3]]
     return solk, data
 
@@ -1535,32 +1537,17 @@ def check_covergance(solk, solkm1, indices, tol):
          - norm (float)     -- the evaluated norm which is checked against tolerance
     """
 
-    # if delta w is zero in some cells
-    # solkm1_is_0 = np.where(solkm1 == 0)[0]
-    # if len(solkm1_is_0) > 0:
-    #     delw = solk[indices[0]]
-    #     delw_km1 = solkm1[indices[0]]
-    #     delw = np.delete(delw, solkm1_is_0)
-    #     delw_km1 = np.delete(delw_km1, solkm1_is_0)
-    #     norm_w = np.linalg.norm(abs(delw - delw_km1) / abs(delw_km1))
-    # else:
-    #   norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / abs(solkm1[indices[0]]))
-    # norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / abs(solkm1[indices[1]]))
-    # if len(indices[2]) > 0: #these are the cells with the active width constraints
-    #     norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / abs(solkm1[indices[2]]))
-    # else :
-    #     norm_tr = 0.
-
     w_normalization = np.linalg.norm(solkm1[indices[0]])
-    if w_normalization >0.:
+    if w_normalization > 0.:
         norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]) / w_normalization)
-    else : norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
+    else:
+        norm_w = np.linalg.norm(abs(solk[indices[0]] - solkm1[indices[0]]))
 
     p_normalization = np.linalg.norm(solkm1[indices[1]])
-    if p_normalization >0.:
+    if p_normalization > 0.:
         norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
-    else : norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
-    norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) / p_normalization)
+    else:
+        norm_p = np.linalg.norm(abs(solk[indices[1]] - solkm1[indices[1]]) )
 
     if len(indices[2]) > 0: #these are the cells with the active width constraints
         tr_normalization = np.linalg.norm(solkm1[indices[2]])
@@ -1568,13 +1555,13 @@ def check_covergance(solk, solkm1, indices, tol):
             norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]) / tr_normalization)
         else:
             norm_tr = np.linalg.norm(abs(solk[indices[2]] - solkm1[indices[2]]))
-    else :
+        cnt = 3.
+    else:
         norm_tr = 0.
+        cnt = 2.
 
-
-    norm = (norm_w + norm_p + norm_tr) / 3
-    # print("w " + repr(norm_w) + " p " + repr(norm_p) + " act " + repr(norm_tr))
-
+    norm = (norm_w + norm_p + norm_tr) / cnt
+    # todo is not better to show the max of the 3 norms rather than the mean value
     converged = (norm_w <= tol and norm_p <= tol and norm_tr <= tol)
 
     return converged, norm
@@ -1751,13 +1738,14 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         - Xks[mk+1] (ndarray)  -- final solution at the end of the iterations.
         - data (tuple)         -- any data to be returned
     """
+    log=logging.getLogger('PyFrac.Anderson')
     m_Anderson = sim_prop.Anderson_parameter
     relax = sim_prop.relaxation_factor
 
     ## Initialization of solution vectors
-    xks = np.full((m_Anderson+2,guess.size),0.)
-    Fks = np.full((m_Anderson+1,guess.size),0.)
-    Gks = np.full((m_Anderson+1,guess.size),0.)
+    xks = np.full((m_Anderson+2, guess.size), 0.)
+    Fks = np.full((m_Anderson+1, guess.size), 0.)
+    Gks = np.full((m_Anderson+1, guess.size), 0.)
 
     ## Initialization of iteration parameters
     k = 0
@@ -1767,18 +1755,18 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     try:
         perfNode_linSolve = instrument_start("linear system solve", perf_node)
         # First iteration
-        xks[0,::] = np.array([guess])                                       # xo
-        (A, b, interItr, indices) = sys_fun(xks[0,::], interItr, *args)     # assembling A and b
-        solk = np.linalg.solve(A, b)                                        # solve the linear system
-        if len(indices[3]) > 0:                                             # if the size of system is varying between \
-            Gks[0, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
-        else:
-            Gks[0, ::] = solk
-        # Gks[0, ::] = np.linalg.solve(A, b)
-        Fks[0,::] = Gks[0,::] - xks[0,::]
-        xks[1,::] = Gks[0,::]                                               # x1
+        xks[0, ::] = np.array([guess])                                       # xo
+        (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
+        # solk = np.linalg.solve(A, b)                                        # solve the linear system
+        # if len(indices[3]) > 0:                                             # if the size of system is varying between \
+        #     Gks[0, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
+        # else:
+        #     Gks[0, ::] = solk
+        Gks[0, ::] = np.linalg.solve(A, b)
+        Fks[0, ::] = Gks[0, ::] - xks[0, ::]
+        xks[1, ::] = Gks[0, ::]                                               # x1
     except np.linalg.linalg.LinAlgError:
-        print('singular matrix!')
+        log.error('singular matrix!')
         solk = np.full((len(xks[0]),), np.nan, dtype=np.float64)
         if perf_node is not None:
             instrument_close(perf_node, perfNode_linSolve, None,
@@ -1791,27 +1779,27 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         try:
             mk = np.min([k, m_Anderson-1])  # Asses the amount of solutions available for the least square problem
             if k >= m_Anderson:# + 1:
-                (A, b, interItr, indices) = sys_fun(xks[mk + 2,::], interItr, *args)
+                (A, b, interItr, indices) = sys_fun(xks[mk + 2, ::], interItr, *args)
                 Gks = np.roll(Gks, -1, axis=0)
                 Fks = np.roll(Fks, -1, axis=0)
             else:
                 (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
-            
-            solk = np.linalg.solve(A, b)
-            if len(indices[3]) > 0:                                             # if the size of system is varying between \
-                Gks[mk + 1, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
-            else:
-                Gks[mk + 1, ::] = solk
-            # Gks[mk + 1, ::] = np.linalg.solve(A, b)
+
+            # solk = np.linalg.solve(A, b)
+            # if len(indices[3]) > 0:                                             # if the size of system is varying between \
+            #     Gks[mk + 1, ::] = get_complete_solution(solk, indices, *args)        # iterations (in case of HB fluid)
+            # else:
+            #     Gks[mk + 1, ::] = solk
+            Gks[mk + 1, ::] = np.linalg.solve(A, b)
             Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 
             ## Setting up the Least square problem of Anderson
             A_Anderson = np.transpose(Fks[:mk+1, ::] - Fks[mk+1, ::])
-            b_Anderson = -Fks[mk+1,::]
+            b_Anderson = -Fks[mk+1, ::]
 
             # Solving the least square problem for the coefficients
-            omega_s = np.linalg.lstsq(A_Anderson,b_Anderson, rcond=None)[0]
+            omega_s = np.linalg.lstsq(A_Anderson, b_Anderson, rcond=None)[0]
             omega_s = np.append(omega_s, 1.0 - sum(omega_s))
 
             ## Updating xk in a relaxed version
@@ -1822,7 +1810,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                  + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
 
         except np.linalg.linalg.LinAlgError:
-            print('singular matrix!')
+            log.error('singular matrix!')
             solk = np.full((len(xks[mk]),), np.nan, dtype=np.float64)
             if perf_node is not None:
                 instrument_close(perf_node, perfNode_linSolve, None,
@@ -1840,7 +1828,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             perf_node.linearSolve_data.append(perfNode_linSolve)
 
         if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
-            print('Anderson iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
+            log.warning('Anderson iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
                   ' iterations, norm:' + repr(norm))
             solk = np.full((np.size(xks[0,::]),), np.nan, dtype=np.float64)
             if perf_node is not None:
@@ -1848,8 +1836,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                 perfNode_linSolve.status = 'failed'
             return solk, None
 
-    if sim_prop.verbosity > 1:
-        print("Converged after " + repr(k) + " iterations")
+    log.debug("Converged after " + repr(k) + " iterations")
 
     data = [interItr[0], interItr[2], interItr[3]]
     return xks[mk + 2, ::], data
@@ -1870,7 +1857,7 @@ def get_complete_solution(sol, indices, *args):
     w[active] = wc_to_impose
 
     [ch_indxs, tip_indxs, act_indxs, deleted] = indices
-    
+
     if sim_prop.solveDeltaP:
         values = np.dot(C[np.ix_(tip_act[deleted], EltCrack)], w[EltCrack]) + \
                     mat_prop.SigmaO[tip_act[deleted]]- frac.pFluid[tip_act[deleted]]

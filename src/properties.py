@@ -3,12 +3,13 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on 03.04.17.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import math
 import numpy as np
+import logging
 import time
 import datetime
 from matplotlib.colors import to_rgb
@@ -195,11 +196,15 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.K1c[i] = self.K1cFunc(np.pi/2)
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
+        else:
+            self.Kprime = np.full((mesh.NumberOfElts,), self.Kprime[0])
 
         if self.SigmaOFunc is not None:
             self.SigmaO = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
                 self.SigmaO[i] = self.SigmaOFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+        else:
+            self.SigmaO = np.full((mesh.NumberOfElts,), self.SigmaO[0])
 
         if self.ClFunc is not None:
             self.Cl = np.empty((mesh.NumberOfElts,), dtype=np.float64)
@@ -207,6 +212,8 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.Cl[i] = self.ClFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
             self.Cprime = 2 * self.Cl
+        else:
+            self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -364,6 +371,7 @@ class InjectionProperties:
         The constructor of the InjectionProperties class.
         """
         # check if the rate is provided otherwise throw an error
+        log = logging.getLogger('PyFrac.InjectionProperties')
         if isinstance(rate, np.ndarray):
             if rate.shape[0] != 2:
                 raise ValueError('Invalid injection rate. The list should have 2 rows (to specify time and'
@@ -426,7 +434,7 @@ class InjectionProperties:
         if source_loc_func is None:
             if source_coordinates is not None:
                 if len(source_coordinates) == 2:
-                    print("Setting the source coordinates to the closest cell center...")
+                    log.info("Setting the source coordinates to the closest cell center...")
                     self.sourceCoordinates = source_coordinates
                 else:
                     # error
@@ -437,18 +445,19 @@ class InjectionProperties:
             else:
                 self.sourceCoordinates = [0., 0.]
 
-            self.sourceElem = [mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])]
-            if np.isnan(self.sourceElem):
+            self.sourceElem = mesh.locate_element(self.sourceCoordinates[0], self.sourceCoordinates[1])
+            if np.isnan(self.sourceElem).any():
                 raise ValueError("The given source location is out of the mesh!")
             self.sourceCoordinates = mesh.CenterCoor[self.sourceElem]
-            print("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
+            log.info("Injection point: " + '(x, y) = (' + repr(mesh.CenterCoor[self.sourceElem, 0][0]) +
                                         ',' + repr(mesh.CenterCoor[self.sourceElem, 1][0]) + ')')
             self.sourceLocFunc = None
         else:
             self.sourceLocFunc = source_loc_func
-            if self.sourceElem is None: self.sourceElem = []
+            if self.sourceElem is None:
+                self.sourceElem = []
             for i in range(mesh.NumberOfElts):
-                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx,mesh.hy):
+                if self.sourceLocFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1], mesh.hx, mesh.hy):
                  self.sourceElem.append(i)
         if self.delayed_second_injpoint_elem is not None and not all(elem in self.sourceElem for elem in self.delayed_second_injpoint_elem) :
             raise ValueError("The delayed injection points elements are not contained in the list of all the injection elements")
@@ -509,20 +518,27 @@ class InjectionProperties:
         """
 
         # update source elements according to the new mesh.
-        if self.sourceLocFunc is None:
-            actv_cells = set()
+        if self.sourceLocFunc == None:
+            new_source_elem = []
             for i in self.sourceElem:
-                actv_cells.add(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
-                                                        old_mesh.CenterCoor[i, 1]))
-            self.sourceElem = list(actv_cells)
+                new_source_elem.append(list(new_mesh.locate_element(old_mesh.CenterCoor[i, 0],
+                                                                    old_mesh.CenterCoor[i, 1]))[0])
+
+            self.sourceElem = new_source_elem
         else:
             self.sourceElem = []
             for i in range(new_mesh.NumberOfElts):
                 if self.sourceLocFunc(new_mesh.CenterCoor[i, 0], new_mesh.CenterCoor[i, 1], new_mesh.hx, new_mesh.hy):
                  self.sourceElem.append(i)
 
-        if  self.delayed_second_injpoint_loc_func is not None:
-            if self.sourceElem is None:
+        self.sourceCoordinates = []
+        for elem in self.sourceElem:
+            self.sourceCoordinates.append(new_mesh.CenterCoor[elem])
+        self.sourceCoordinates = [np.mean(new_mesh.CenterCoor[self.sourceElem, 0]),
+                                  np.mean(new_mesh.CenterCoor[self.sourceElem, 1])]
+
+        if self.delayed_second_injpoint_loc_func != None:
+            if self.sourceElem == None:
                 self.sourceElem = []
                 self.delayed_second_injpoint_elem = []
             for i in range(new_mesh.NumberOfElts):
@@ -532,7 +548,7 @@ class InjectionProperties:
         else:
             self.delayed_second_injpoint_elem = None
         
-        if self.sinkLocFunc is not None:
+        if self.sinkLocFunc != None:
             
             self.sinkElem = []
             for i in range(new_mesh.NumberOfElts):
@@ -543,7 +559,7 @@ class InjectionProperties:
             for i in range(len(self.sinkElem)):
                     self.sinkVel[i] = self.sinkVelFunc(new_mesh.CenterCoor[self.sinkElem[i], 0],
                                                        new_mesh.CenterCoor[self.sinkElem[i], 1])
-        
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -653,12 +669,20 @@ class SimulationProperties:
         solveSparse (bool):          -- if True, the fluid conductivity matrix will be made with sparse matrix.
         saveRegime (boolean):        -- if True, the regime of the propagation as observed in the ribbon cell (see Zia
                                         and Lecampion 2018, IJF) will be saved.
-        verbosity (int):             -- the level of details about the ongoing simulation to be plotted (currently
-                                        two levels 1 and 2 are supported).
+        verbosity (string):          -- the level of details about the ongoing simulation to be written on the log file
+                                        (currently the levels 'debug', 'info', 'warning' and 'error' are supported).
+        log2file (bool):             -- True if you want to log to a file, otherwise set it to false
         enableRemeshing (bool):      -- if True, the computational domain will be compressed by the factor given by
                                         by the variable remeshFactor after the fracture front reaches the end of the
                                         domain.
         remeshFactor (float):        -- the factor by which the domain is compressed on re-meshing.
+
+        meshExtension (bool array):  -- an array of booleans defining if the mesh should be extended in the given
+                                        direction or if it should get compressed. The distribution is bottom, top,
+                                        left, right
+        meshExtensionFactor (float): -- factor by which the current mesh is extended in the extension direction
+        meshExtendAllDir (bool):     -- allow the mesh to extend in all directions
+
         frontAdvancing (string):     -- The type of front advancing to be done. Possible options are:
 
                                             - 'explicit'
@@ -703,6 +727,9 @@ class SimulationProperties:
         aspectRatio (float):        -- this parameters is only used in the case of elliptical hydraulic fracture
                                        plots, e.g. to plot analytical solutions of anisotropic toughness or TI
                                        elasticity.
+        maxReattemptsFracAdvMore2Cells -- number of time reduction that are made if the fracture is advancing more than two cells (e.g. because of an heterogeneity)
+        force_time_step_limit_and_max_adv_to_2_cells -- this will force the contemporaneity of timeStepLimit and limitAdancementTo2cells
+
         Attention:
             These attributes below are private:
 
@@ -767,6 +794,7 @@ class SimulationProperties:
         # time step re-attempt
         self.maxReattempts = simul_param.max_reattemps
         self.reAttemptFactor = simul_param.reattempt_factor
+        self.maxReattemptsFracAdvMore2Cells = simul_param.max_reattemps_FracAdvMore2Cells
 
         # output parameters
         self.plotFigure = simul_param.plot_figure
@@ -798,11 +826,23 @@ class SimulationProperties:
         self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
-        self.verbosity = simul_param.verbosity
+        self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
+        self.verbositylevel = simul_param.verbosity_level
+        self.log2file = simul_param.log_to_file
         self.set_tipAsymptote(simul_param.tip_asymptote)
         self.saveRegime = simul_param.save_regime
         self.enableRemeshing = simul_param.enable_remeshing
         self.remeshFactor = simul_param.remesh_factor
+
+        self.meshExtension = simul_param.mesh_extension_direction
+        self.meshExtensionFactor = simul_param.mesh_extension_factor
+        self.meshExtensionAllDir = simul_param.mesh_extension_all_sides
+        self.maxElementIn = np.inf
+        self.maxCellSize = np.inf
+        self.meshReductionFactor = simul_param.mesh_reduction_factor
+        self.meshReductionPossible = True
+        self.limitAdancementTo2cells = simul_param.limit_Adancement_To_2_cells
+        self.forceTmStpLmtANDLmtAdvTo2cells = simul_param.force_time_step_limit_and_max_adv_to_2_cells
         self.frontAdvancing = simul_param.front_advancing
         self.collectPerfData = simul_param.collect_perf_data
         self.paramFromTip = simul_param.param_from_tip
@@ -827,7 +867,7 @@ class SimulationProperties:
         self.nThreads = simul_param.n_threads
         if self.projMethod not in ['ILSA_orig', 'LS_grad', 'LS_continousfront']:
             raise ValueError("Projection method is not recognised!")
-        if self.projMethod is not 'LS_continousfront' and self.doublefracture:
+        if self.projMethod != 'LS_continousfront' and self.doublefracture:
             raise SystemExit('You set the option doublefracture=True but\n '
                              'The volume control solver has been implemented \n'
                              'only with the option projMethod==LS_continousfront activated')
@@ -836,12 +876,87 @@ class SimulationProperties:
         self.height = simul_param.height
         self.aspectRatio = simul_param.aspect_ratio
 
-        # AM adapted to define Chi in tip cells and tip regime in adjacent cells
+        # parameter deciding to save the leak-off tip parameter
         self.saveChi = simul_param.save_chi
-        self.saveTipRegime = simul_param.save_tip_regime
 
 # ----------------------------------------------------------------------------------------------------------------------
+    def set_logging_to_file(self, address, verbosity_level=None):
+        """This function sets up the log, both to the file and to the file
+            Note: from any module in the code you can use the logging capabilities. You just have to:
 
+            1) import the module
+
+            import logging
+
+            2) create a child of the logger named 'PyFrac' defined in this function. Use a pertinent name as 'Pyfrac.frontrec'
+
+            logger1 = logging.getLogger('PyFrac.frontrec')
+
+            3) use the object to send messages in the module, such as
+
+            logger1.debug('debug message')
+            logger1.info('info message')
+            logger1.warning('warn message')
+            logger1.error('error message')
+            logger1.critical('critical message')
+
+            4) IMPORTANT TO KNOW:
+               1-If you want to log only to the file in the abobe example you have to use: logger1 = logging.getLogger('PyFrac_LF.frontrec')
+               2-SystemExit and KeyboardInterrupt exceptions are never swallowed by the logging package .
+
+        :param         address: string that defines the location where to save the log file
+        :param verbosity_level: string that defines the level of logging concerning the file:
+                                     'debug'    - Detailed information, typically of interest only when diagnosing problems.
+                                     'info'     - Confirmation that things are working as expected.
+                                     'warning'  - An indication that something unexpected happened, or indicative of some
+                                                  problem in the near future (e.g. ‘disk space low’). The software is still
+                                                  working as expected.
+                                     'error'    - Due to a more serious problem, the software has not been able to perform
+                                                  some function.
+                                     'critical' - A serious error, indicating that the program itself may be unable to
+                                                  continue running.
+
+        :return: -
+        """
+        # check if you did setup the folder
+
+        from utility import logging_level
+        if verbosity_level is None:
+            fileLvl = logging_level(self.verbositylevel)
+        else:
+            fileLvl = logging_level(verbosity_level)
+
+        logger = logging.getLogger('PyFrac')
+        logger.setLevel(logging.DEBUG)
+
+        # create file handler which logs debug messages to the file
+        fh = logging.FileHandler(address+'PyFrac_log.txt', mode='w')
+        fh.setLevel(fileLvl)
+
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter(fmt='%(asctime)-15s %(name)-40s %(levelname)-8s  %(message)s',
+                                      datefmt='%m-%d-%y %H:%M')
+        fh.setFormatter(formatter)
+
+        # add the handlers to logger
+        logger.addHandler(fh)
+
+
+        log = logging.getLogger('PyFrac.general')
+        log.info('Log file set up')
+
+        # create a logger that logs only to the file and not on the console:
+        logger_to_file = logging.getLogger('PyFrac_LF')
+        logger_to_file.setLevel(logging.DEBUG)
+
+        # add the handlers to logger
+        logger_to_file.addHandler(fh)
+
+        # usage example
+        # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
+        # logger_to_files.info('this comment will go only to the log file')
+
+    # ----------------------------------------------------------------------------------------------------------------------
     # setter and getter functions
 
     def set_tipAsymptote(self, tip_asymptote):
@@ -977,6 +1092,69 @@ class SimulationProperties:
                                  "pre-factor in the second row.")
         else:
             return self.tmStpPrefactor
+
+    def set_mesh_extension_direction(self, direction):
+        """
+        The function to set up in which directions the mesh should be extended
+
+        Arguments:
+            direction (string):       -- direction where the mesh should be extended:
+
+                                            - top  (mesh extension towards positive y)
+                                            - bottom  (mesh extension towards negative y)
+                                            - Left (mesh extension towards negative x)
+                                            - Right (mesh extension towards positive x)
+                                            - vertical  (mesh extension up and down)
+                                            - horizontal (mesh extension left and right)
+                                            - all (extend the mesh in all directions)
+        """
+        for i in direction:
+            if i == 'vertical':
+                self.meshExtension[:2:] = [True, True]
+            elif i == 'horizontal':
+                self.meshExtension[2:] = [True, True]
+            elif i == 'top':
+                self.meshExtension[1] = True
+            elif i == 'bottom':
+                self.meshExtension[0] = True
+            elif i == 'left':
+                self.meshExtension[2] = True
+            elif i == 'right':
+                self.meshExtension[3] = True
+            elif i == 'all':
+                self.meshExtension = [True, True, True, True]
+            else: # error
+                raise ValueError('Invalid mesh extension definition Possible options: top, bottom, left, right, vertical'
+                                 'horizontal or all')
+
+    def get_mesh_extension_direction(self):
+        return self.meshExtension
+
+    def set_mesh_extension_factor(self, ext_factor):
+        """
+        The function to set up the factor deciding on the number of elements to add in the corresponding direction
+
+        Arguments:
+            ext_factor (list or float):     -- the factor either given:
+                                                - a float: all directions extend by the same amount
+                                                - a list with two entries: the first gives the factor in x the second in
+                                                  y direction
+                                                - a list with four entries: the entries respectively correspond to
+                                                 'left', 'right', 'bottom', 'top'.
+        """
+        if not isinstance(ext_factor, list):
+            self.meshExtensionFactor = [ext_factor, ext_factor, ext_factor, ext_factor]
+        elif len(ext_factor) == 2:
+            self.meshExtensionFactor = [ext_factor[1], ext_factor[1], ext_factor[0], ext_factor[0]]
+        elif len(ext_factor) == 4:
+            self.meshExtensionFactor = [ext_factor[2], ext_factor[3], ext_factor[0], ext_factor[1]]
+        else:
+            raise ValueError("The given form of the factor is not supporte. Either give a common factor (float) a " 
+                             "list of two entires (x and y direction) or a list of four entries " 
+                             "['left', 'right', 'bottom', 'top']")
+
+    def get_mesh_extension_factor(self):
+        return self.meshExtensionFactor
 
 
 #-----------------------------------------------------------------------------------------------------------------------

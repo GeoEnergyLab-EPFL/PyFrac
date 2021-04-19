@@ -186,3 +186,107 @@ In the above code, we first load the state of the fracture at five equidistant t
                                             point2=ext_pnts[1])
 
 Finally, in addition to the slice, solution at a single point can also be plotted using the :py:func:`visualization.plot_fracture_list_at_point` function. See the documention of the functions for details.
+
+
+Exporting selected data to JSON
+----------------------------------
+You can export the data to one or more JSON files (JavaScript Object Notation) and then post-process them via other programs e.g. Wolfram Mathematica. The function :py:func:`append_to_json_file` is used for both creating and adding data to the file. The function behaves differently in the case the JSON file exists or not. In the latter case, it creates a Python dictionary while in the former case it will be imported from the file. Currently, the imported dictionary is obscure to the user i.e. the function provides to the user only a way to write to JSON and not to read what is saved in it. Think to the function as a tool to create a Python dictionary that will be "the box" where to store and organize data using the labels you decide (keys). The function requires a minimum number of 3 to 4 arguments depending on what you decide to do:
+    - In the case you have a python dictionary that you would like to dump to a new file, the function :py:func:`append_to_json_file` requires at least 3 arguments: the filename, the data to be written (a python dictionary) and the operation to be done, that is 'dump_this_dictionary'.	
+    - the same 3 arguments must be provided in the case you want to extend an exixting JSON file with a python dictionary: the filename, the data to be written (a python dictionary) and the operation to be done, that is 'extend_dictionary'.
+    - Regardless whether the JSON file exists or not, you can dump a key of a dictionary and the associated list of data. If the file does not yet exist the function creates the file and makes the related dictionary containing the key and the data. You should provide to the function at least these 4 arguments: the filename, the data to be written and the operation to be done - i.e. 'append2keyASnewlist' - along with the key. This case apply also if you want to substitute the content of an existing key by creating a new list containing both, the current list associated with the key and a new list. 
+    - the same 4 arguments must be provided in case you want to append the content of a list to an existing one (associated with an existing key). In that case, you should provide the filename, the data to be written and the operation to be done - i.e. 'append2keyAND2list' - along with the key.  
+In the following example, we export to a JSON file the list of times at which the solution has been computed and saved ('time_srs'). We decided to call the associated key as 'append2keyASnewlist'.
+
+.. code-block:: python
+
+    from postprocess_fracture import append_to_json_file
+    myJsonName='./path/and/name/of/my/jsonfile.json'
+	 
+    Fr_list, properties = load_fractures(address='path/to/the/directory/with/the/results')
+    Solid, Fluid, Injection, simulProp = properties
+    time_srs = get_fracture_variable(Fr_list,variable='time')
+
+    append_to_json_file(myJsonName, time_srs,
+                        'append2keyASnewlist',
+                        key='time_srs_of_Fr_list',
+                        delete_existing_filename=True)
+
+The following piece of code can follow the previous one. Here we are interested in saving the fracture opening 'w' as a function of time at a specific point (coordinates x=-0.02 m and y=0.0 m). 
+
+.. code-block:: python
+
+	from postprocess_fracture import get_fracture_variable_at_point
+    wATpointA, time = get_fracture_variable_at_point(Fr_list, variable='w', point=[-0.02, 0])
+    append_to_json_file(myJsonName, wATpointA, 'append2keyASnewlist', key='wATpointA')
+    append_to_json_file(myJsonName, time, 'append2keyASnewlist', key='t')
+  
+
+The function :py:func:`append_to_json_file` by default does not remove the existing JSON file. A new file is created if it does not exist, otherwise, it is extended with the provided data. In the case of the example above, the option 'delete_existing_filename=True' make sure that the data is dumped to a new file by deleting the existing one. Thus in this case the function creates a new python dictionary with one key and the associated list before dumping the dictionary to the file.
+Note that at each call to the function :py:func:`append_to_json_file`, the existing JSON file is loaded, extended and finally the file is rewritten. Thus if you are dealing with large files, we suggest preparing a python dictionary and dump it to the file at the end with a single call the function. Another option is to split the data between more files.
+The following example is more advanced. By adding the argument 'export2Json=True' when calling it, the function :py:func:`plot_fracture_list_slice` returns a dictionary that contains the numerical data used to create the corresponding plot. We then create a dictionary under the name 'towrite' and we merge it to the existing JSON file.
+
+
+.. code-block:: python
+
+    from postprocess_fracture import append_to_json_file
+    from visualization import plot_fracture_list_slice
+    ########## TAKE A VERTICAL SECTION (along y axis) TO GET w AT THE MIDDLE ########
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    print("\n 8) getting the slice along the y axis to get w(y)... ")
+    fracture_list_slice = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_cell_center=True,
+                                      extreme_points=ext_pnts,
+                                      orientation='vertical',
+                                      point1=[-0.0007,-0.008],
+                                      point2=[-0.0007,0.008], export2Json=True)
+
+    towrite =  {'intersectionVslice':fracture_list_slice}
+    append_to_json_file(myJsonName, towrite, 'extend_dictionary') 
+
+In the script above, "fracture_list_slice" contains a list of coordinates ad a series of lists containing the fracture opening "w" at the same locations but  at different times (provided by "Fr_list"). If you are using any kind of remeshing, the mesh will change. This means that, before and after the remeshing,  the locations where you get the fracture opening "w" along your slice are different. Thus you must provide the option "export2Json_assuming_no_remeshing=False" as in the script below. This option will make sure that for each time you will export a list of coordinates with the location of the points in the mesh where you get the values of "w".
+
+
+.. code-block:: python
+
+    from postprocess_fracture import append_to_json_file
+    from visualization import plot_fracture_list_slice
+    ########## TAKE A VERTICAL SECTION (along y axis) TO GET w AT THE MIDDLE ########
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    print("\n 8) getting the slice along the y axis to get w(y)... ")
+    fracture_list_slice = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_cell_center=True,
+                                      extreme_points=ext_pnts,
+                                      orientation='vertical',
+                                      point1=[-0.0007,-0.008],
+                                      point2=[-0.0007,0.008], 
+                                      export2Json=True,
+                                      export2Json_assuming_no_remeshing=False)
+
+    towrite =  {'intersectionVslice':fracture_list_slice}
+    append_to_json_file(myJsonName, towrite, 'extend_dictionary') 
+	
+In the following example we create a dictionary and then we save it to a JSON file under the key 'complete_footrints'. Note that in this case we are building a structure made of nested dictionaries. This example allows you to export the coordinates of the points defining the fracture front in each cell of the mesh ('fracture.Ffront') and for each time of the simulation.
+	
+.. code-block:: python	
+
+        from postprocess_fracture import append_to_json_file
+        fracture_fronts = []
+        numberof_fronts = []
+        for fracture in Fr_list:
+            fracture_fronts.append(np.ndarray.tolist(fracture.Ffront))
+            numberof_fronts.append(fracture.number_of_fronts)
+
+        complete_footprints = {'time_srs_of_Fr_list': time_srs_COMPLETE,
+                               'Fr_list': fracture_fronts,
+                               'Number_of_fronts': numberof_fronts
+                               }
+
+        append_to_json_file(myJsonName, 
+                            complete_footprints, 
+                            'append2keyASnewlist', 
+                            key='complete_footrints', 
+                            delete_existing_filename=True)

@@ -8,7 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
-
+import logging
 
 def get_symetric_elements(mesh, elements):
     """ This function gives the four symmetric elements in each of the quadrant for the given element list."""
