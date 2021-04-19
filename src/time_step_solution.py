@@ -22,7 +22,7 @@ from labels import TS_errorMessages
 from explicit_RKL import solve_width_pressure_RKL2
 from postprocess_fracture import append_to_json_file
 
-def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
+def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
     """
     This function attempts to propagate fracture with the given time step. The function injects fluid and propagates
@@ -112,6 +112,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         # width by injecting the fracture with the same footprint (balloon like inflation)
         exitstatus, Fr_k = injection_same_footprint(Frac,
                                                     C,
+                                                    Boundary,
                                                     timeStep,
                                                     Qin,
                                                     mat_properties,
@@ -161,14 +162,15 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
         fill_frac_last = np.copy(Fr_k.FillF)
 
         # update the confining stress
-        if mat_properties.boundaryEffect.active():
-            mat_properties.updateConfiningStress(Fr_k.w)
+        # if mat_properties.boundaryEffect.active:
+        #     mat_properties.updateConfiningStress(Fr_k.w, Fr_k.EltCrack)
 
         perfNode_extFront = instrument_start('extended front', perfNode)
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
         (exitstatus, Fr_k) = injection_extended_footprint(Fr_k.w,
                                                           Frac,
                                                           C,
+                                                          Boundary,
                                                           timeStep,
                                                           Qin,
                                                           mat_properties,
@@ -222,7 +224,7 @@ def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties,
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
+def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
                              perfNode=None):
     """
     This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
@@ -302,6 +304,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                          empty, #EltTip
                                          empty, #partlyFilledTip
                                          C,
+                                         Boundary,
                                          Fr_lstTmStp.FillF[empty],
                                          Fr_lstTmStp.EltCrack,
                                          Fr_lstTmStp.InCrack,
@@ -313,6 +316,9 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                          empty, #Vel
                                          empty, #corr_ribbon
                                          doublefracturedictionary= doublefracturedictionary)
+    # from utility import plot_as_matrix
+    # K = w_k
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
 
     # check if the solution is valid
     if np.isnan(w_k).any() or np.isnan(p_k).any():
@@ -327,7 +333,11 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.w = w_k
     Fr_kplus1.pFluid = p_k
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
-    Fr_kplus1.pNet[Fr_lstTmStp.EltCrack] = p_k[Fr_lstTmStp.EltCrack] - mat_properties.SigmaO[Fr_lstTmStp.EltCrack]
+    if Boundary is not None:
+        Fr_kplus1.boundEffTraction = Boundary.last_traction
+        Fr_kplus1.pNet[Fr_lstTmStp.EltCrack] = p_k[Fr_lstTmStp.EltCrack] - mat_properties.SigmaO[Fr_lstTmStp.EltCrack] - Fr_kplus1.boundEffTraction[Fr_lstTmStp.EltCrack]
+    else:
+        Fr_kplus1.pNet[Fr_lstTmStp.EltCrack] = p_k[Fr_lstTmStp.EltCrack] - mat_properties.SigmaO[Fr_lstTmStp.EltCrack]
     Fr_kplus1.closed = return_data[1]
     Fr_kplus1.v = np.zeros((len(Fr_kplus1.EltTip), ), dtype=np.float64)
     Fr_kplus1.timeStep_last = timeStep
@@ -340,6 +350,8 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol -Fr_kplus1.LkOffTotal) \
                            / Fr_kplus1.injectedVol
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
+
+
     if return_data[0]!=None:
         Fr_kplus1.effVisc = return_data[0][1]
         fluidVel = return_data[0][0]
@@ -405,7 +417,7 @@ def injection_same_footprint(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties,
+def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties,
                                  sim_properties, perfNode=None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
@@ -906,6 +918,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                        EltsTipNew,
                                                        partlyFilledTip,
                                                        C,
+                                                       Boundary,
                                                        FillFrac_k,
                                                        EltCrack_k,
                                                        InCrack_k,
@@ -917,7 +930,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                                                        Vel_k,
                                                        corr_ribbon,
                                                        doublefracturedictionary=doublefracturedictionary)
-
+    # from utility import plot_as_matrix
+    # K = pf_n_plus1
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
     # check if the new width is valid
     if np.isnan(w_n_plus1).any():
         exitstatus = 5
@@ -944,7 +959,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
     Fr_kplus1.w = w_n_plus1
     Fr_kplus1.pFluid = pf_n_plus1
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
-    Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
+    if Boundary is not None:
+        Fr_kplus1.boundEffTraction = Boundary.last_traction
+        Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k] - Boundary.last_traction[EltCrack_k]
+    else:
+        Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
     Fr_kplus1.EltChannel = EltChannel_k
     Fr_kplus1.EltTip = EltTip_k
@@ -974,7 +993,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
             append_to_json_file(myJsonName, Fr_kplus1.EltCrack.size, 'append2keyAND2list', key='elements_in_crack')
             append_to_json_file(myJsonName, Fr_kplus1.EltTip.size, 'append2keyAND2list', key='elements_in_tip')
             append_to_json_file(myJsonName, Fr_kplus1.time, 'append2keyAND2list', key='coalescence_time')
-
     Fr_kplus1.FractureVolume = np.sum(Fr_kplus1.w) * Fr_kplus1.mesh.EltArea
     Fr_kplus1.Tarrival = Tarrival_k
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]
@@ -1061,7 +1079,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,
+def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
                          FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
                          doublefracturedictionary = None):
     """
@@ -1393,6 +1411,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 timeStep,
                 Qin,
                 C,
+                Boundary,
                 InCrack,
                 LkOff,
                 neg,
@@ -1404,8 +1423,13 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     imposed_val_k - Fr_lstTmStp.w[to_impose_k])) / len(to_solve_k)
             w_guess[to_solve_k] = Fr_lstTmStp.w[to_solve_k] #+ avg_dw
             w_guess[to_impose_k] = imposed_val_k
-            pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]
-            pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k]
+            if Boundary is not None:
+                traction_guess =  Boundary.getTraction(w_guess, EltCrack)
+                pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]  + traction_guess[neg]
+                pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k] + traction_guess[to_impose_k]
+            else:
+                pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]
+                pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k]
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if sim_properties.solveDeltaP:
                     if sim_properties.solveSparse:
@@ -1531,7 +1555,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
         pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
         # pressure evaluated by dot product of width and elasticity matrix
-        pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
+        if Boundary is not None:
+            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k] + Boundary.last_traction[to_solve_k]
+        else:
+            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
         if sim_properties.solveDeltaP:
             pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
             pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
@@ -1611,7 +1638,7 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
+def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
                              perfNode=None):
     """
     This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
@@ -2004,6 +2031,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                        EltsTipNew,
                                                        partlyFilledTip,
                                                        C,
+                                                       Boundary,
                                                        FillFrac_k,
                                                        EltCrack_k,
                                                        InCrack_k,
@@ -2044,7 +2072,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     Fr_kplus1.w = w_n_plus1
     Fr_kplus1.pFluid = pf_n_plus1
     Fr_kplus1.pNet = np.zeros((Fr_kplus1.mesh.NumberOfElts,))
-    Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
+    if Boundary is not None:
+        Fr_kplus1.boundEffTraction = Boundary.last_traction
+        Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k] - Fr_kplus1.boundEffTraction[EltCrack_k]
+    else:
+        Fr_kplus1.pNet[EltCrack_k] = pf_n_plus1[EltCrack_k] - mat_properties.SigmaO[EltCrack_k]
     Fr_kplus1.time += timeStep
     Fr_kplus1.closed = data[1]
     Fr_kplus1.FillF = FillFrac_k[partlyFilledTip]
