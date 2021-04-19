@@ -7,16 +7,23 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
+# imports
+import os
+
 # local imports
 from mesh import CartesianMesh
 from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
 from fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
+from fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
+from elasticity import load_isotropic_elasticity_matrix
+from utility import setup_logging_to_console
 
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(100, 150, 41, 61)
+Mesh = CartesianMesh(115, 115, 51, 51)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -38,12 +45,12 @@ Solid = MaterialProperties(Mesh,
                            K_Ic,
                            confining_stress_func=sigmaO_func)
 
-def source_location(x, y):
+def source_location(x, y, hx, hy):
     """ This function is used to evaluate if a point is included in source, i.e. the fluid is injected at the given
         point.
     """
     # the condition
-    return abs(x) < 75. and (y > -80. and y < -74)
+    return abs(x) < 75 and (y >= - 75. -  hy / 2. and y <= -75. + hy / 2.)
 
 # injection parameters
 Q0 = 0.001  # injection rate
@@ -54,15 +61,26 @@ Fluid = FluidProperties(viscosity=1.1e-3, density=1000)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 6000              # the time at which the simulation stops
-simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
-simulProp.gravity = True                # take the effect of gravity into account
+simulProp.finalTime = 1.1e4                                   # the time at which the simulation stops
+simulProp.set_outputFolder("./Data/buoyant_line_source")    # the disk address where the files are saved
+simulProp.gravity = True                                    # take the effect of gravity into account
+simulProp.set_mesh_extension_direction(['top'])
+simulProp.plotVar = ['w', 'regime']
+simulProp.toleranceEHL = 1e-3
 
-# initialization parameters
-Fr_geometry = Geometry(shape='height contained',
-                       fracture_length=80,
-                       fracture_height=35)
-init_param = InitializationParameters(Fr_geometry, regime='PKN')
+# initializing fracture
+surv_cells, _, inner_cells = get_eliptical_survey_cells(Mesh, 80, 20, center=[0.0, -75.0])
+surv_cells_dist= surv_cells * 0 + (Mesh.hx ** 2 + Mesh.hy ** 2) ** (1/2)
+Fr_geometry = Geometry(shape='level set',
+                       survey_cells=surv_cells,
+                       tip_distances=surv_cells_dist,
+                       inner_cells=inner_cells)
+
+C = load_isotropic_elasticity_matrix(Mesh, Eprime)
+init_param = InitializationParameters(Fr_geometry,
+                                      regime='static',
+                                      net_pressure=5e4,
+                                      elasticity_matrix=C)
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -87,44 +105,48 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = np.linspace(1, 6000, 5)
-Fr_list, properties = load_fractures(address="./Data/M_radial_explicit",
-                                     time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-# plot footprint
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D')
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP)
+    # loading simulation results
+    time_srs = np.linspace(1, 1e4, 7)
+    Fr_list, properties = load_fractures(address="./Data/buoyant_line_source",
+                                         time_srs=time_srs)
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-# plot slice
-plot_prop = PlotProperties(line_style='.-')
-Fig_WS = plot_fracture_list_slice(Fr_list,
-                                  variable='w',
-                                  projection='2D',
-                                  plot_prop=plot_prop,
-                                  plot_cell_center=True,
-                                  orientation='vertical')
+    # plot footprint
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D',
+                                mat_properties=properties[0],
+                                backGround_param='confining stress')
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP)
 
-#plotting in 3D
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='3D')
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='width',
-                            projection='3D',
-                            fig=Fig_Fr)
-Fig_Fr = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
+    # plot slice
+    plot_prop = PlotProperties(line_style='.-')
+    Fig_WS = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_prop=plot_prop,
+                                      plot_cell_center=True,
+                                      orientation='vertical')
 
-plt.show(block=True)
+    #plotting in 3D
+    Fig_Fr = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='3D')
+    Fig_Fr = plot_fracture_list(Fr_list,
+                                variable='width',
+                                projection='3D',
+                                fig=Fig_Fr)
+    Fig_Fr = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='3D',
+                                fig=Fig_Fr)
+
+    plt.show(block=True)

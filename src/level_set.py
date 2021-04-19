@@ -3,12 +3,13 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Tue Dec 27 19:01:22 2016.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # local imports
 import numpy as np
+import logging
 import warnings
 from scipy.optimize import fsolve
 
@@ -31,7 +32,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
         Note:
             Does not return anything. The levelSet is updated in place.
     """
-
+    log = logging.getLogger('PyFrac.SolveFMM')
     # todo: This method is inefficient. It can be implemented with heap for better efficiency
 
     # for Elements radialy outward from ribbon cells
@@ -64,8 +65,8 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
 
                 NeigxMin = min(levelSet[mesh.NeiElements[neighbor, 0]], levelSet[mesh.NeiElements[neighbor, 1]])
                 NeigyMin = min(levelSet[mesh.NeiElements[neighbor, 2]], levelSet[mesh.NeiElements[neighbor, 3]])
-                if  NeigxMin >= 1e50 and NeigyMin>= 1e50 :
-                    print("LEVEL SET FUNCTION WARNING: You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
+                if NeigxMin >= 1e50 and NeigyMin >= 1e50 :
+                    log.warning("You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
                     # A possible fix of this situation could be leave apart the cell and come back later
                     # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method
                 delT = NeigyMin - NeigxMin
@@ -130,8 +131,8 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                     NeigyMin = min(positive_levelSet[mesh.NeiElements[neighbor, 2]],
                                    positive_levelSet[mesh.NeiElements[neighbor, 3]])
                     if NeigxMin >= 1e50 and NeigyMin >= 1e50:
-                        print(
-                            "LEVEL SET FUNCTION WARNING: You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
+                        log.warning(
+                            "You are trying to compute the level set in a cell where all the neighbours have infinite distance to the front")
                         # A possible fix of this situation could be leave apart the cell and come back later
                         # remember that as soon as one neighbour has non infinite level set we can solve the LS via fast macing method
                     beta = mesh.hx / mesh.hy
@@ -252,7 +253,10 @@ def reconstruct_front(dist, bandElts, EltChannel, mesh):
                     alpha = np.append(alpha, 0)
                 else:
                     alpha = np.append(alpha, np.nan)
-
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh.NumberOfElts,), )
+    # K[ElmntTip] = alpha
+    # plot_as_matrix(K, mesh)
     nan = np.where(np.isnan(alpha))[0]
     if len(nan) > 0:
         alpha_mesh = np.full((mesh.NumberOfElts,), np.nan)
@@ -384,7 +388,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
                                        right and 3 signifying top left vertex).
         - CellStatusNew (ndarray):  -- specifies which region each element currently belongs to.
     """
-
+    log = logging.getLogger('PyFrac.UpdateLists')
     # new tip elements contain only the partially filled elements
     eltsTip = EltsTipNew[np.where(FillFrac <= 0.9999)]
 
@@ -442,7 +446,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
 
     eltsRibbon = np.setdiff1d(eltsRibbon, eltsTip)
     if np.any(levelSet[eltsRibbon]>0):
-        print("WARNING: There is a bug here you should find a solution")
+        log.debug("Probably there is a bug here....")
     # plot for checking
     # from continuous_front_reconstruction import plot_cell_lists
     # fig = plot_cell_lists(mesh, eltsTip, mymarker='.', mycolor='red')
@@ -454,7 +458,7 @@ def UpdateLists(EltsChannel, EltsTipNew, FillFrac, levelSet, mesh):
     CellStatusNew[eltsTip] = 2
     CellStatusNew[eltsRibbon] = 3
 
-    return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew
+    return eltsChannel, eltsTip, eltsCrack, eltsRibbon, zeroVrtx, CellStatusNew, newEltChannel
 
     # -----------------------------------------------------------------------------------------------------------------------
 

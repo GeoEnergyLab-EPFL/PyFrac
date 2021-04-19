@@ -7,7 +7,9 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
+# import
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -16,6 +18,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from elasticity import load_isotropic_elasticity_matrix
+from utility import setup_logging_to_console
+
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(3200, 2800, 83, 83)
@@ -63,9 +69,9 @@ simulProp.tolFractFront = 3e-3              # increase the tolerance for fractur
 simulProp.plotTSJump = 4                    # plot every fourth time step
 simulProp.saveTSJump = 2                    # save every second time step
 simulProp.maxSolverItrs = 200               # increase the Picard iteration limit for the elastohydrodynamic solver
-simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.3, 0.1]]) # set up the time step prefactor
+simulProp.tmStpPrefactor = np.asarray([[0, 80000], [0.5, 0.1]]) # set up the time step prefactor
 simulProp.timeStepLimit = 5000              # time step limit
-simulProp.plotVar = ['w', 'v']              # plot fracture width and fracture front velocity
+simulProp.plotVar = ['w', 'v', 'regime']              # plot fracture width and fracture front velocity
 
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
@@ -96,39 +102,41 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = np.asarray([50, 350,  700, 1100, 2500, 12000, 50000, 560000])
-Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
-                                     time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-# plot footprint
-Fig_FP = None
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D',
-                            mat_properties=Solid,
-                            backGround_param='confining stress')
-plt_prop = PlotProperties(plot_FP_time=False)
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP,
-                            plot_prop=plt_prop)
+    # loading simulation results
+    time_srs = np.asarray([50, 350,  700, 1100, 2500, 12000, 50000, 560000])
+    Fr_list, properties = load_fractures(address="./Data/neutral_buoyancy",
+                                         time_srs=time_srs)
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-# plot width in 3D
-plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
-Fig_Fr = plot_fracture_list(Fr_list[2:],
-                            variable='width',
-                            projection='3D',
-                            plot_prop=plot_prop_magma
-                            )
-Fig_Fr = plot_fracture_list(Fr_list[1:],
-                            variable='footprint',
-                            projection='3D',
-                            fig=Fig_Fr)
+    # plot footprint
+    Fig_FP = None
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D',
+                                mat_properties=Solid,
+                                backGround_param='confining stress')
+    plt_prop = PlotProperties(plot_FP_time=False)
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP,
+                                plot_prop=plt_prop)
 
-plt.show(block=True)
+    # plot width in 3D
+    plot_prop_magma=PlotProperties(color_map='jet', alpha=0.2)
+    Fig_Fr = plot_fracture_list(Fr_list[2:],
+                                variable='width',
+                                projection='3D',
+                                plot_prop=plot_prop_magma
+                                )
+    Fig_Fr = plot_fracture_list(Fr_list[1:],
+                                variable='footprint',
+                                projection='3D',
+                                fig=Fig_Fr)
+
+    plt.show(block=True)

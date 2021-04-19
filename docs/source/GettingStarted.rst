@@ -24,7 +24,7 @@ If you already have python 3 installed through anaconda, update installed packag
 
 Transverse Isotropic Kernel
 ----------------------------
-PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code has to be compiled before  fracture simulation can be done for transverse isotropic materials. Use the following steps to generate the executable:
+PyFrac uses a routine written in C++ to evaluate elasticity kernel for transversely isotropic materials. This C++ code has to be compiled before fracture simulation can be performed for transverse isotropic materials. Use the following steps to generate the executable:
 
 .. note::
 
@@ -40,9 +40,9 @@ windows
 
          pacman -S base-devel gcc vim cmake
    4. In case you have downloaded binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
-   5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   5. Change directory to the TI_Kernel\ folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
-         cmake ..
+         cmake .
          make
 
    6. Add MSYS2 libraries path (typically C:\\msys64\\usr\\bin) to the windows `PATH` environment variable.
@@ -58,9 +58,9 @@ Linux
 
          sudo apt-get -y install cmake
 
-   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   3. Change directory to the TI_Kernel folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
-         cmake ..
+         cmake .
          make
 
 Mac
@@ -73,13 +73,13 @@ Mac
 
          brew install cmake
 
-   3. Change directory to the TI_Kernel/build folder in PyFrac. Create the executable using cmake by running the following commands one by one::
+   3. Change directory to the TI_Kernel folder in PyFrac. Create the executable using cmake by running the following commands one by one::
 
-         cmake ..
+         cmake .
          make
 
-Documentation
-=============
+Generating the documentation
+============================
 You can generate documentation locally using sphinx. First install shpinx using pip::
 
     pip install sphinx
@@ -105,4 +105,4 @@ There are scripts available for a set of examples in the examples folders provid
 
 .. note::
 
-   Some of the examples may take upto 3 hours to run (see the file timing.txt in the examples for run time (in secs) on a mid-2015 MacBook Pro). See also the Readme.md in the examples folder for details.
+   Some of the examples may take up to 3 hours to run (see the file timing.txt in the examples for run time (in secs) on a mid-2018 MacBook Pro). See also the Readme_examples.md in the examples folder for details.

@@ -3,7 +3,7 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Thu Dec 22 11:51:00 2016.
-Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2019. All rights reserved.
+Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020. All rights reserved.
 See the LICENSE.TXT file for more details.
 """
 
@@ -18,6 +18,8 @@ from properties import PlotProperties
 
 from visualization import zoom_factory, to_precision, text3d
 from symmetry import *
+import numpy as np
+import logging
 
 class CartesianMesh:
     """Class defining a Cartesian Mesh.
@@ -55,6 +57,8 @@ class CartesianMesh:
         distCenter (ndarray):             -- the distance of the cells from the center.
         CenterElts (ndarray):             -- the element in the center (the cell with the injection point).
 
+        domainLimits (ndarray):           -- the limits of the domain
+
     Note:
         The attributes below are only evaluated if symmetric solver is used.
 
@@ -84,30 +88,44 @@ class CartesianMesh:
                                     symmetric fracture solver.
 
         """
+        log = logging.getLogger('PyFrac.mesh')
+        if not isinstance(Lx, list):
+            self.Lx = Lx
+            xlims = np.asarray([-Lx, Lx])
+        else:
+            self.Lx = abs(Lx[0]-Lx[1]) / 2
+            xlims = np.asarray([Lx[0], Lx[1]])
 
-        self.Lx = Lx
-        self.Ly = Ly
+        if not isinstance(Ly, list):
+            self.Ly = Ly
+            ylims = np.asarray([-Ly, Ly])
+        else:
+            self.Ly = abs(Ly[0]-Ly[1]) / 2
+            ylims = np.asarray([Ly[0], Ly[1]])
+
+        self.domainLimits = np.hstack((ylims, xlims))
+
 
         # Check if the number of cells is odd to see if the origin would be at the mid point of a single cell
         if nx % 2 == 0:
-            print("Number of elements in x-direction are even. Using " + repr(nx+1) + " elements to have origin at a "
+            log.warning("Number of elements in x-direction are even. Using " + repr(nx+1) + " elements to have origin at a "
                                                                                       "cell center...")
             self.nx = nx+1
         else:
             self.nx = nx
 
         if ny % 2 == 0:
-            print("Number of elements in y-direction are even. Using " + repr(ny+1) + " elements to have origin at a "
+            log.warning("Number of elements in y-direction are even. Using " + repr(ny+1) + " elements to have origin at a "
                                                                                       "cell center...")
             self.ny = ny+1
         else:
             self.ny = ny
 
-        self.hx = 2. * Lx / (self.nx - 1)
-        self.hy = 2. * Ly / (self.ny - 1)
+        self.hx = 2. * self.Lx / (self.nx - 1)
+        self.hy = 2. * self.Ly / (self.ny - 1)
 
-        x = np.linspace(-Lx - self.hx / 2., Lx + self.hx / 2., self.nx + 1)
-        y = np.linspace(-Ly - self.hy / 2., Ly + self.hy / 2., self.ny + 1)
+        x = np.linspace(self.domainLimits[2] - self.hx / 2., self.domainLimits[3] + self.hx / 2., self.nx + 1)
+        y = np.linspace(self.domainLimits[0] - self.hy / 2., self.domainLimits[1] + self.hy / 2., self.ny + 1)
 
         xv, yv = np.meshgrid(x, y)  # coordinates of the vertex of each elements
 
@@ -497,6 +515,10 @@ class CartesianMesh:
         self.Connectivitynodesedges = connNodesEdges  # Peruzzo 2019
         self.Connectivitynodeselem = connNodesElem  # Peruzzo 2019
 
+        # coordinates of the center of the mesh
+        centerMesh = np.asarray([(self.domainLimits[2] + self.domainLimits[3])/2,
+                                 (self.domainLimits[1] + self.domainLimits[0])/2])
+
         # coordinates of the center of the elements
         CoorMid = np.empty([self.NumberOfElts, 2], dtype=float)
         for e in range(0, self.NumberOfElts):
@@ -504,16 +526,19 @@ class CartesianMesh:
             CoorMid[e] = np.mean(t, axis=0)
         self.CenterCoor = CoorMid
 
-        self.distCenter = (CoorMid[:, 0] ** 2 + CoorMid[:, 1] ** 2) ** 0.5
+        self.distCenter = ((CoorMid[:, 0] - centerMesh[0]) ** 2 + (CoorMid[:, 1] - centerMesh[1]) ** 2) ** 0.5
 
 
 
         # the element in the center (used for fluid injection)
-        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0]) < self.hx/2),
-                                         np.where(abs(self.CenterCoor[:, 1]) < self.hy/2))
+        # todo: No it is not necessarily where we inject!
+        self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - centerMesh[0]) < self.hx/2),
+                                         np.where(abs(self.CenterCoor[:, 1] - centerMesh[1]) < self.hy/2))
         if len(self.CenterElts) != 1:
+            self.CenterElts = self.NumberOfElts / 2
+            log.debug("Mesh with no center element. To be looked into")
             #todo
-            raise ValueError("Mesh with no center element. To be looked into")
+            #raise ValueError("Mesh with no center element. To be looked into")
 
         if symmetric:
             self.corresponding = corresponding_elements_in_symmetric(self)
@@ -540,14 +565,16 @@ class CartesianMesh:
             elt (int):  -- the element containing the given coordinates.
 
         """
-
-        if abs(x) >= self.Lx + self.hx / 2 or abs(y) >= self.Ly + self.hy / 2:
+        log = logging.getLogger('PyFrac.locate_element')
+        if x >= self.domainLimits[3] + self.hx / 2 or y >= self.domainLimits[1] + self.hy / 2\
+                or x <= self.domainLimits[2] - self.hx / 2 or y <= self.domainLimits[0] - self.hy / 2:
+            log.warning("Point is outside domain.")
             return np.nan
 
-        i = (y + self.Ly + self.hy / 2) // self.hy
-        j = (x + self.Lx + self.hx / 2) // self.hx
-        return int(i * self.nx + j)
+        precision = 0.1*np.sqrt(np.finfo(float).eps)
 
+        return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2 + precision),
+                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2 + precision))
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -626,8 +653,8 @@ class CartesianMesh:
             ax = fig.get_axes()[0]
 
         # set the four corners of the rectangular mesh
-        ax.set_xlim([-self.Lx - self.hx / 2, self.Lx + self.hx / 2])
-        ax.set_ylim([-self.Ly - self.hy / 2, self.Ly + self.hy / 2])
+        ax.set_xlim([self.domainLimits[2] - self.hx / 2, self.domainLimits[3] + self.hx / 2])
+        ax.set_ylim([self.domainLimits[0] - self.hy / 2, self.domainLimits[1] + self.hy / 2])
 
         # add rectangle for each cell
         patches = []
@@ -689,18 +716,18 @@ class CartesianMesh:
             (Figure):                            -- A Figure object to superimpose.
 
         """
-
+        log = logging.getLogger('PyFrac.plot3D')
         if backGround_param is not None and material_prop is None:
             raise ValueError("Material properties are required to plot the background parameter.")
         if material_prop is not None and backGround_param is None:
-            print("back ground parameter not provided. Plotting confining stress...")
+            log.warning("back ground parameter not provided. Plotting confining stress...")
             backGround_param = 'sigma0'
 
         if fig is None:
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1, projection='3d')
-            ax.set_xlim(-self.Lx * 1.2, self.Lx * 1.2)
-            ax.set_ylim(-self.Ly * 1.2, self.Ly * 1.2)
+            ax.set_xlim([self.domainLimits[2] * 1.2, self.domainLimits[3] * 1.2])
+            ax.set_ylim([self.domainLimits[0] * 1.2, self.domainLimits[1] * 1.2])
             scale = 1.1
             zoom_factory(ax, base_scale=scale)
         else:
@@ -711,7 +738,7 @@ class CartesianMesh:
         if plot_prop.textSize is None:
             plot_prop.textSize = max(self.Lx / 15, self.Ly / 15)
 
-        print("Plotting mesh in 3D...")
+        log.info("Plotting mesh in 3D...")
         if material_prop is not None and backGround_param is not None:
             min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
                                                                                         backGround_param)
@@ -754,8 +781,8 @@ class CartesianMesh:
         This function plots the scale of the fracture by adding lines giving the length dimensions of the fracture.
 
         """
-
-        print("\tPlotting scale...")
+        log = logging.getLogger('PyFrac.plot_scale_3d')
+        log.info("\tPlotting scale...")
 
         Path = mpath.Path
 
@@ -764,19 +791,19 @@ class CartesianMesh:
 
         codes = []
         verts = []
-        verts_x = np.linspace(-self.Lx, self.Lx, 7)
-        verts_y = np.linspace(-self.Ly, self.Ly, 7)
+        verts_x = np.linspace(self.domainLimits[2], self.domainLimits[3], 7)
+        verts_y = np.linspace(self.domainLimits[0], self.domainLimits[1], 7)
         tick_len = max(self.hx / 2, self.hy / 2)
         for i in range(7):
             codes.append(Path.MOVETO)
-            elem = self.locate_element(verts_x[i], -self.Ly)
-            verts.append((self.CenterCoor[elem, 0], -self.Ly - self.hy / 2))
+            elem = self.locate_element(verts_x[i], self.domainLimits[0])
+            verts.append((self.CenterCoor[elem, 0], self.domainLimits[0] - self.hy / 2))
             codes.append(Path.LINETO)
-            verts.append((self.CenterCoor[elem, 0], -self.Ly + tick_len))
+            verts.append((self.CenterCoor[elem, 0], self.domainLimits[0] + tick_len))
             x_val = to_precision(np.round(self.CenterCoor[elem, 0], 5), plot_prop.dispPrecision)
             text3d(ax,
                    (self.CenterCoor[elem, 0] - plot_prop.dispPrecision * plot_prop.textSize / 3,
-                    -self.Ly - self.hy / 2 - plot_prop.textSize,
+                    self.domainLimits[0] - self.hy / 2 - plot_prop.textSize,
                     0),
                    x_val,
                    zdir="z",
@@ -786,13 +813,13 @@ class CartesianMesh:
                    fc=edge_color)
 
             codes.append(Path.MOVETO)
-            elem = self.locate_element(-self.Lx, verts_y[i])
-            verts.append((-self.Lx - self.hx / 2, self.CenterCoor[elem, 1]))
+            elem = self.locate_element(self.domainLimits[2], verts_y[i])
+            verts.append((self.domainLimits[2] - self.hx / 2, self.CenterCoor[elem, 1][0]))
             codes.append(Path.LINETO)
-            verts.append((-self.Lx + tick_len, self.CenterCoor[elem, 1]))
+            verts.append((self.domainLimits[2] + tick_len, self.CenterCoor[elem, 1][0]))
             y_val = to_precision(np.round(self.CenterCoor[elem, 1], 5), plot_prop.dispPrecision)
             text3d(ax,
-                   (-self.Lx - self.hx / 2 - plot_prop.dispPrecision * plot_prop.textSize,
+                   (self.domainLimits[2] - self.hx / 2 - plot_prop.dispPrecision * plot_prop.textSize,
                     self.CenterCoor[elem, 1] - plot_prop.textSize / 2,
                     0),
                    y_val,
@@ -802,10 +829,10 @@ class CartesianMesh:
                    ec="none",
                    fc=edge_color)
 
-        print("\tAdding labels...")
+        log.info("\tAdding labels...")
         text3d(ax,
                (0.,
-                -self.Ly - plot_prop.textSize * 3,
+                -self.domainLimits[2] - plot_prop.textSize * 3,
                 0),
                'meters',
                zdir="z",
@@ -856,8 +883,8 @@ class CartesianMesh:
             ax = fig.get_axes()[0]
 
         # set the four corners of the rectangular mesh
-        ax.set_xlim([-self.Lx - self.hx / 2, self.Lx + self.hx / 2])
-        ax.set_ylim([-self.Ly - self.hy / 2, self.Ly + self.hy / 2])
+        ax.set_xlim([self.domainLimits[2] - self.hx / 2, self.domainLimits[3] + self.hx / 2])
+        ax.set_ylim([self.domainLimits[0] - self.hy / 2, self.domainLimits[1] + self.hy / 2])
 
         # add rectangle for each cell
         patch_list = []
@@ -890,8 +917,8 @@ def make_3D_colorbar(mesh, material_prop, backGround_param, ax, plot_prop):
     material properties.
 
     """
-
-    print("\tMaking colorbar...")
+    log = logging.getLogger('PyFrac.make_3D_colorbar')
+    log.info("\tMaking colorbar...")
 
     min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
                                                                                 backGround_param)

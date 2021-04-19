@@ -9,6 +9,7 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 
 # imports
 import numpy as np
+import os
 
 # local imports
 from mesh import CartesianMesh
@@ -17,6 +18,10 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from anisotropy import TI_plain_strain_modulus
+from utility import setup_logging_to_console
+
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
 Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)
@@ -80,11 +85,13 @@ simulProp.set_volumeControl(True)       # to set up the solver in volume control
 simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic case
 simulProp.frontAdvancing = "implicit"   # set the front advancing scheme to implicit
 simulProp.set_tipAsymptote('K')         # set the tip asymptote to toughness dominated
-simulProp.set_outputFolder("./data/TI_elasticity_ellipse")  # setting the output folder
+simulProp.set_outputFolder("./Data/TI_elasticity_ellipse")  # setting the output folder
 simulProp.set_simulation_name('TI_ellasticy_benchmark')     # setting the simulation name
 simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the executable that calculates TI kernel
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 simulProp.remeshFactor = 1.5            # the factor by which the domain is expanded
+simulProp.projMethod = 'ILSA_orig'
+simulProp.set_tipAsymptote('U')
 
 # initialization parameters
 Fr_geometry = Geometry('elliptical',
@@ -114,87 +121,89 @@ controller.run()
 # plotting results #
 ####################
 
-from visualization import *
+if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-# loading simulation results
-time_srs = np.geomspace(0.7, 1000, 8)
-Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
-                                            sim_name='TI_ellasticy_benchmark',
-                                            time_srs=time_srs)
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
+    from visualization import *
 
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='mesh',
-                            projection='2D')
-Fig_FP = plot_fracture_list(Fr_list,
-                            variable='footprint',
-                            projection='2D',
-                            fig=Fig_FP)
-Fig_FP = plot_analytical_solution('E_E',
-                                  'footprint',
-                                  Solid,
-                                  Injection,
-                                  fluid_prop=Fluid,
-                                  fig=Fig_FP,
-                                  projection='2D',
-                                  time_srs=time_srs,
-                                  gamma=gamma)
+    # loading simulation results
+    time_srs = np.geomspace(0.7, 1000, 8)
+    Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
+                                                sim_name='TI_ellasticy_benchmark',
+                                                time_srs=time_srs)
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
 
-ext_pnts = np.empty((2, 2), dtype=np.float64)
-Fig_w_slice = plot_fracture_list_slice(Fr_list,
-                                       variable='width',
-                                       plot_cell_center=True,
-                                       orientation='horizontal',
-                                       extreme_points=ext_pnts)
-Fig_w_slice = plot_analytical_solution_slice('E_E',
-                                             variable='width',
-                                             mat_prop=Solid,
-                                             inj_prop=Injection,
-                                             fluid_prop=Fluid,
-                                             fig=Fig_w_slice,
-                                             point1=ext_pnts[0],
-                                             point2=ext_pnts[1],
-                                             time_srs=time_srs,
-                                             gamma=gamma)
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='mesh',
+                                projection='2D')
+    Fig_FP = plot_fracture_list(Fr_list,
+                                variable='footprint',
+                                projection='2D',
+                                fig=Fig_FP)
+    Fig_FP = plot_analytical_solution('E_E',
+                                      'footprint',
+                                      Solid,
+                                      Injection,
+                                      fluid_prop=Fluid,
+                                      fig=Fig_FP,
+                                      projection='2D',
+                                      time_srs=time_srs,
+                                      gamma=gamma)
 
-# plotting slice
-Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
-                                            sim_name='TI_ellasticy_benchmark')
-time_srs = get_fracture_variable(Fr_list,
-                                 variable='time')
-plot_prop = PlotProperties(line_style='.',
-                           graph_scaling='loglog')
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    Fig_w_slice = plot_fracture_list_slice(Fr_list,
+                                           variable='width',
+                                           plot_cell_center=True,
+                                           orientation='horizontal',
+                                           extreme_points=ext_pnts)
+    Fig_w_slice = plot_analytical_solution_slice('E_E',
+                                                 variable='width',
+                                                 mat_prop=Solid,
+                                                 inj_prop=Injection,
+                                                 fluid_prop=Fluid,
+                                                 fig=Fig_w_slice,
+                                                 point1=ext_pnts[0],
+                                                 point2=ext_pnts[1],
+                                                 time_srs=time_srs,
+                                                 gamma=gamma)
 
-labels = LabelProperties('d_min', 'wm', '1D')
-labels.figLabel = 'Minor axis length'
-Fig_len_a = plot_fracture_list(Fr_list,
-                             variable='d_min',
-                             plot_prop=plot_prop,
-                             labels=labels)
-Fig_len_a = plot_analytical_solution('E_E',
-                                   'd_min',
-                                   Solid,
-                                   Injection,
-                                   fluid_prop=Fluid,
-                                   fig=Fig_len_a,
-                                   time_srs=time_srs,
-                                   gamma=gamma,
-                                   labels=labels)
+    # plotting slice
+    Fr_list, properties = load_fractures(address='./data/TI_elasticity_ellipse',
+                                                sim_name='TI_ellasticy_benchmark')
+    time_srs = get_fracture_variable(Fr_list,
+                                     variable='time')
+    plot_prop = PlotProperties(line_style='.',
+                               graph_scaling='loglog')
 
-labels.figLabel = 'Major axis length'
-Fig_len_b = plot_fracture_list(Fr_list,
-                             variable='d_max',
-                             plot_prop=plot_prop,
-                             labels=labels)
-Fig_len_b = plot_analytical_solution('E_E',
-                                   'd_max',
-                                   Solid,
-                                   Injection,
-                                   fluid_prop=Fluid,
-                                   fig=Fig_len_b,
-                                   time_srs=time_srs,
-                                   gamma=gamma,
-                                   labels=labels)
+    labels = LabelProperties('d_min', 'wm', '1D')
+    labels.figLabel = 'Minor axis length'
+    Fig_len_a = plot_fracture_list(Fr_list,
+                                 variable='d_min',
+                                 plot_prop=plot_prop,
+                                 labels=labels)
+    Fig_len_a = plot_analytical_solution('E_E',
+                                       'd_min',
+                                       Solid,
+                                       Injection,
+                                       fluid_prop=Fluid,
+                                       fig=Fig_len_a,
+                                       time_srs=time_srs,
+                                       gamma=gamma,
+                                       labels=labels)
 
-plt.show(block=True)
+    labels.figLabel = 'Major axis length'
+    Fig_len_b = plot_fracture_list(Fr_list,
+                                 variable='d_max',
+                                 plot_prop=plot_prop,
+                                 labels=labels)
+    Fig_len_b = plot_analytical_solution('E_E',
+                                       'd_max',
+                                       Solid,
+                                       Injection,
+                                       fluid_prop=Fluid,
+                                       fig=Fig_len_b,
+                                       time_srs=time_srs,
+                                       gamma=gamma,
+                                       labels=labels)
+
+    plt.show(block=True)

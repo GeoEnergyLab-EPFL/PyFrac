@@ -13,7 +13,7 @@ project(TI_elasticity_kernel)
 
 set(CMAKE_CXX_STANDARD 11)
 
-
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
 # provide the correct path of folders containg OpenBLAS include files and libraries in the following. Note that if you
 # are using msys2 on windows, you have to set it for UNIX.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIL_OPENBLAS -DIL_BLAS")

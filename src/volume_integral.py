@@ -3,11 +3,12 @@
 This file is part of PyFrac.
 
 Created by Haseeb Zia on Fri Oct 14 18:27:39 2016.
-Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # imports
+import logging
 import numpy as np
 from scipy.optimize import brentq
 from tip_inversion import f, C1, C2
@@ -141,7 +142,7 @@ def TipAsym_viscStor_Res(w, *args):
 
 def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, KIPrime, regime):
     """Moments of the General tip asymptote to calculate the volume integral (see Donstov and Pierce, 2017)"""
-
+    log = logging.getLogger('PyFrac.MomentsTipAssympGeneral')
     TipAsmptargs = (dist, Kprime, Eprime, muPrime, Cbar, Vel)
 
     if dist == 0:
@@ -163,7 +164,7 @@ def MomentsTipAssympGeneral(dist, Kprime, Eprime, muPrime, Cbar, Vel, stagnant, 
             return M0, M1
 
         if w < -1e-15:
-            print('Warning: Negative width encountered in volume integral')
+            log.warning('Negative width encountered in volume integral')
             w = abs(w)
 
     if Vel < 1e-6 or w == 0:
@@ -478,7 +479,7 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
         integral (ndarray)              -- the integral of the specified function over the given tip cells.
 
     """
-
+    log = logging.getLogger('PyFrac.Integral_over_cell')
     # Pass None as dummy if parameter is not required
     dummy = np.full((alpha.size,),None)
 
@@ -574,8 +575,9 @@ def Integral_over_cell(EltTip, alpha, l, mesh, function, frac=None, mat_prop=Non
                 IntrsctTri = 0
 
             integral[i] = TriVol - UpTriVol - RtTriVol + IntrsctTri
+
         if projMethod == 'LS_continousfront' and function == 'A' and integral[i]/ mesh.EltArea > 1.+1e-4:
-            print("COMPUTATION OF THE FILLING FRACTION: Recomputing Integral over cell --> if something else goes wrong the tip volume might be the problem")
+            log.debug("Recomputing Integral over cell (filling fraction) --> if something else goes wrong the tip volume might be the problem")
             if abs(alpha[i]) < np.pi / 2 : alpha[i]=0
             else : alpha[i] = np.pi / 2
         else:
@@ -590,13 +592,14 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel, regime):
     """
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
+    log = logging.getLogger('PyFrac.FindBracket_w')
     if regime == 'U':
         res_func = TipAsym_UniversalW_zero_Res
     else:
         res_func = TipAsym_UniversalW_delt_Res
 
     if dist == 0:
-        print("Zero distance!")
+        log.warning("Zero distance!")
 
     wk = dist ** 0.5 * Kprime / Eprime
     wmtld = 4 / (15 ** (1 / 4) * (2 ** 0.5 - 1) ** (1 / 4)) * \
@@ -645,6 +648,8 @@ def FindBracket_w_HB(a, b, *args):
     """
     This function finds the bracket to be used by the Universal tip asymptote root finder.
     """
+    log = logging.getLogger('PyFrac.FindBracket_w_HB')
+
     ((l, Kprime, Eprime, muPrime, Cbar, Vel, n, k, T0), dist) = args
 
     Mprime = 2 ** (n + 1) * (2 * n + 1) ** n / n ** n * k
@@ -665,10 +670,10 @@ def FindBracket_w_HB(a, b, *args):
         if cnt >= 12:
             a = np.nan
             b = np.nan
-            print("can't find bracket " + repr(Res_a) + ' ' + repr(Res_b))
+            log.debug("can't find bracket " + repr(Res_a) + ' ' + repr(Res_b))
 
     if np.isnan(Res_a) or np.isnan(Res_b):
-        print("res is nan!")
+        log.debug("res is nan!")
         a = np.nan
         b = np.nan
         
@@ -696,7 +701,7 @@ def find_corresponding_ribbon_cell(tip_cells, alpha, zero_vertex, mesh):
       zero vertex =                0   1    2   3
       ______________________________________________
       case alpha = 0         ->    B   F    F   B
-           alpha = pi/2      ->    H   D    D   H
+           alpha = pi/2      ->    H   H    D   D
            alpha = any other ->    A   G    E   C
     """
     #                         0     1      2      3
