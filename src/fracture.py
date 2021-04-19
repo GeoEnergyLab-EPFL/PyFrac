@@ -92,7 +92,7 @@ class Fracture:
 
     """
 
-    def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None):
+    def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None, boundaryEffect = None):
         """
         Initialize the fracture according to the given initialization parameters.
 
@@ -138,7 +138,7 @@ class Fracture:
                                                                                        simulProp.projMethod)
         # for static fracture initialization
         if init_param.regime == 'static':
-            self.w, self.pNet = get_width_pressure(self.mesh,
+            self.w, self.pNet, self.boundEffTraction = get_width_pressure(self.mesh,
                                                    self.EltCrack,
                                                    self.EltTip,
                                                    self.FillF,
@@ -148,7 +148,8 @@ class Fracture:
                                                    init_param.fractureVolume,
                                                    simulProp.symmetric,
                                                    simulProp.useBlockToeplizCompression,
-                                                   solid.Eprime)
+                                                   solid.Eprime,
+                                                   boundaryEffect = boundaryEffect)
 
             if init_param.fractureVolume is None and init_param.time is None:
                 volume = np.sum(self.w) * mesh.EltArea
@@ -157,6 +158,7 @@ class Fracture:
                 self.time = init_param.time
 
             self.v = init_param.tipVelocity
+        else: self.boundEffTraction = None
 
         if self.v is not None:
             if isinstance(self.v, float):
