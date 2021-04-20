@@ -3,8 +3,6 @@ import numpy as np
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
 
-import pypart
-from pypart import Bigwhamio
 from boundary_effect_mesh import boundarymesh
 
 ##############################
@@ -23,6 +21,8 @@ class Hdot(LinearOperator):
 
   """
   def __init__(self, data):
+    import pypart
+    from pypart import Bigwhamio
     # instantiating the objects and variables
     self.HMATdispl = Bigwhamio()
     self.HMATtract = Bigwhamio()
