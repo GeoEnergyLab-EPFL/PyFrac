@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
+import copy
 import math
 import sys
 from level_set import SolveFMM, reconstruct_front, UpdateLists
@@ -339,7 +340,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
 
 
 def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False, useBlockToeplizCompression=False,
-                       Eprime=None):
+                       Eprime=None, boundaryEffect = None ):
     """
     This function calculates the width and pressure depending on the provided data. If only volume is provided, the
     width is calculated as a static fracture with the given footprint. Else, the pressure or width are calculated
@@ -451,7 +452,34 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         C_Crack[EltTip_positions,EltTip_positions]=C_Crack[EltTip_positions,EltTip_positions] * (1. + ac * np.pi / 4.)
 
         if w is None and not p is None:
-            w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack])
+            if boundaryEffect is not None:
+                # we must compute the effect of the boundary
+                toll = 10.**(-9)
+                error = 1
+
+                # compute the trial opening - no boundary effect
+                w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack] )
+                iter = 0
+                while error > toll and iter < 20:
+                    #correct the get the rhs correction
+                    tracFromBoundary = boundaryEffect.getTraction(w_calculated,EltCrack)
+                    # from utility import plot_as_matrix
+                    # K = tracFromBoundary
+                    # plot_as_matrix(K, mesh)
+
+                    # compute the error of the compl
+
+                    # compute the trial opening - no boundary effect
+                    w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack] - tracFromBoundary[EltCrack])
+
+                    #compute the error of the compl
+                    error = boundaryEffect.getSystemError(w_calculated, p_calculated, EltCrack)
+                    iter = iter + 1
+                    print(error)
+
+            else:
+                w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack])
+
 
         if not w is None and p is None:
             p_calculated[EltCrack] = np.dot(C_Crack, w[EltCrack])
@@ -510,8 +538,10 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
         # recover original C (without filling fraction correction)
         C[np.ix_(EltTip, EltTip)] = C_EltTip
-
-    return w_calculated, p_calculated
+    if boundaryEffect is None:
+        return w_calculated, p_calculated, None
+    else:
+        return w_calculated, p_calculated, tracFromBoundary
 
 
 #-----------------------------------------------------------------------------------------------------------------------

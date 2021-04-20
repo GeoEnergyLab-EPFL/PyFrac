@@ -109,7 +109,7 @@ class load_isotropic_elasticity_matrix_toepliz():
         Matematically speaking:
         for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
         """
-        C_toeplotz_coe = np.empty(ny*nx, dtype=np.float32)
+        C_toeplotz_coe = np.empty(ny*nx, dtype=np.float64)
         xindrange = np.asarray(range(nx))
         xrange = xindrange * hx
         for i in range(ny):

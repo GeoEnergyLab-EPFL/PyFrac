@@ -683,7 +683,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
-    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
+    sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
 
 
     wNplusOne = np.copy(frac.w)
@@ -841,7 +841,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
-    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
+    sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
 
     wNplusOne = np.copy(frac.w)
     wNplusOne[to_solve] += solk[:len(to_solve)]
@@ -1002,7 +1002,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
-    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
+    sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
 
     wNplusOne = np.copy(frac.w)
     wNplusOne[to_solve] += solk[:len(to_solve)]
@@ -1158,7 +1158,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     """
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
-    sim_prop, dt, Q, C, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
+    sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
 
     wNplusOne = np.copy(frac.w)
     wNplusOne[to_solve] += solk[:len(to_solve)]
@@ -1174,6 +1174,21 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
+
+    # update background stress to account for the presence of boundaries
+    if Boundary is not None:
+        tb_np1 = Boundary.getTraction(wNplusOne, EltCrack)
+        # from utility import plot_as_matrix
+        # K = tb_np1
+        # plot_as_matrix(K, frac.mesh)
+        tb_n = frac.boundEffTraction
+        delta_tb = tb_np1 - tb_n
+
+    else:
+        tb_n = np.zeros((len(wNplusOne),), dtype=np.float64)
+        delta_tb = np.zeros((len(wNplusOne),), dtype=np.float64)
+
+
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
@@ -1221,28 +1236,31 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
     pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
-                  mat_prop.SigmaO[to_solve]
+                  mat_prop.SigmaO[to_solve] + tb_n[to_solve]
 
     S[ch_indxs] = np.dot(ch_AplusCf, pf_ch_prime) + \
                   dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
                   dt * np.dot(FinDiffOprtr[np.ix_(ch_indxs, act_indxs)], frac.pFluid[active]) + \
                   dt * G[to_solve] + \
                   dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
-                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]+ \
+                  + np.dot(ch_AplusCf[ch_indxs, ch_indxs], delta_tb[to_solve])
 
     S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)], pf_ch_prime) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, act_indxs)], frac.pFluid[active]) + \
                    dt * G[to_impose] + \
-                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea + \
+                   - dt * np.dot(FinDiffOprtr[np.ix_(tip_indxs, ch_indxs)], delta_tb[to_solve])
 
     S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], pf_ch_prime) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, act_indxs)], frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea + \
+                   - dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], delta_tb[to_solve])
 
 
     # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
@@ -1453,10 +1471,10 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
                 A, b, interItr, indices = sys_fun(solk, interItr, *args)
                 perfNode_linSolve = instrument_start("linear system solve", perf_node)
                 sol = np.linalg.solve(A, b)
-                if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
-                    solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
-                else:
-                    solk = relax * solkm1 + (1 - relax) * sol
+                # if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
+                #     solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
+                # else:
+                solk = relax * solkm1 + (1 - relax) * sol
             except np.linalg.linalg.LinAlgError:
                 log.error('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
