@@ -151,7 +151,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
             if elements is not None:
                 var_value_tmp = var_value_tmp[:, elements]
             if plot_non_zero:
-                var_value_tmp = var_value_tmp[var_value_tmp != 0]
+                var_value_tmp = [x for x in var_value_tmp if x != 0]
             vmin, vmax = np.inf, -np.inf
             if len(np.shape(var_value_tmp)) > 1:
                 var_value_tmp = list(var_value_tmp[0])
