@@ -6,7 +6,7 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
+import copy
 import math
 import numpy as np
 import logging
@@ -15,7 +15,7 @@ import datetime
 from matplotlib.colors import to_rgb
 from labels import var_labels, supported_variables, units, err_msg_variable, \
                     unit_conversion, Fig_labels, unidimensional_variables
-from boundary_effect import BoundaryEffect
+
 
 class MaterialProperties:
     """
@@ -81,7 +81,7 @@ class MaterialProperties:
 
     def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., confining_stress=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, confining_stress_func = None, Carters_coef_func = None, TI_elasticity=False,
-                 Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6, boundary_eff=False, PoissonRatio=None,
+                 Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6,
                  pore_pressure=-1.e100):
         """
         The constructor function
@@ -173,27 +173,8 @@ class MaterialProperties:
 
         self.wc = minimum_width
         self.porePressure = pore_pressure
-        if boundary_eff:
-            if PoissonRatio is None:
-                raise SystemExit('You have cohsen to account for the presence of finite boundaries... \n ...but you did not provide the Poisson ratio. Call properties with: \n\n PoissonRatio = <your value>')
-            else:
-                self.boundaryEffect = BoundaryEffect(True, Mesh, Eprime, PoissonRatio)
-                self.SigmaOorig = self.SigmaO.copy()
-        else:
-            self.boundaryEffect = BoundaryEffect(False, 0, 0, 0)
 
     # ------------------------------------------------------------------------------------------------------------------
-
-    def updateConfiningStress(self, wk):
-        """
-        This function updates the confining stress based on the elastic effect of the boundaries due to the current value of
-        the fracture opening wk
-
-        Arguments:
-            wk (array):        -- the current value of fracture opening.
-
-        """
-        self.SigmaO = self.SigmaOorig + self.boundaryEffect.getTraction(wk)
 
     def remesh(self, mesh):
         """

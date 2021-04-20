@@ -37,7 +37,7 @@ class Controller:
 
     errorMessages = TS_errorMessages
 
-    def __init__(self, Fracture, Solid_prop, Fluid_prop, Injection_prop, Sim_prop, Load_prop=None, C=None):
+    def __init__(self, Fracture, Solid_prop, Fluid_prop, Injection_prop, Sim_prop, boundaryEffect = None, Load_prop=None, C=None):
         """ The constructor of the Controller class.
 
         Args:
@@ -54,6 +54,9 @@ class Controller:
 
         """
         log = logging.getLogger('PyFrac.controller')
+        if not boundaryEffect == None:
+            self.Boundary = boundaryEffect
+        else: self.Boundary = None
         self.fracture = Fracture
         self.solid_prop = Solid_prop
         self.fluid_prop = Fluid_prop
@@ -895,6 +898,7 @@ class Controller:
             self.attmptedTimeStep = tmStp_to_attempt
             status, Fr = attempt_time_step(Frac,
                                             C,
+                                            self.Boundary,
                                             self.solid_prop,
                                             self.fluid_prop,
                                             self.sim_prop,
@@ -1160,7 +1164,7 @@ class Controller:
         if not time_step_given:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             if np.any(self.fracture.v == np.nan):
-                log.warning("you should not get nan velocities")
+                log.warning("WARNING: you should not get nan velocities")
             non_zero_v = np.where(self.fracture.v > 0)[0]
             # time step is calculated with the current propagation velocity
             if len(non_zero_v) > 0:
