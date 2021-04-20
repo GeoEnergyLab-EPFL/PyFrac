@@ -148,10 +148,12 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
         if projection != '2D_vectorfield':
             var_value_tmp = copy.deepcopy(var_val_copy)
+            var_value_tmp = np.copy(var_value_tmp)
             if elements is not None:
                 var_value_tmp = var_value_tmp[:, elements]
             if plot_non_zero:
-                var_value_tmp = [x for x in var_value_tmp if x != 0]
+                var_value_tmp = var_value_tmp[var_value_tmp!= 0]
+                #var_value_tmp = [x for x in var_value_tmp if x != 0]
             vmin, vmax = np.inf, -np.inf
             if len(np.shape(var_value_tmp)) > 1:
                 var_value_tmp = list(var_value_tmp[0])
