@@ -2,12 +2,101 @@
 #external
 import numpy as np
 import copy
+from scipy.sparse import csc_matrix
+from scipy.sparse.linalg import spilu
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
 import logging
 
 
 from boundary_effect_mesh import boundarymesh
+
+import pypart
+from pypart import Bigwhamio
+from pypart import pyGetFullBlocks
+
+def getMemUse():
+    # some memory statistics
+    import os, psutil
+
+    process = psutil.Process(os.getpid())
+    byte_use = process.memory_info().rss  # byte
+    GiByte_use = byte_use / 1024 / 1024 / 1024  # GiB
+    print("Current memory use: " + str(GiByte_use) + " GiB")
+    return GiByte_use
+
+def getPermutation(HMATobj):
+    permut = HMATobj.getPermutation()
+    pdof = []
+    for i in range(len(permut)):
+        pdof.extend([3 * permut[i], 3 * permut[i] + 1, 3 * permut[i] + 2])
+    return pdof
+
+def applyPermutation(HMATobj, row_ind, col_ind):
+    pdof = np.asarray(getPermutation(HMATobj))
+    col_ind = np.asarray(pdof)[col_ind]
+    row_ind = np.asarray(pdof)[row_ind]
+    del pdof
+    return row_ind, col_ind
+
+def deleteNonUsedRows(row_ind, col_ind, values, toBeDeletedROWs): #todo: this method looks too fill up the memory (~HMAT)
+    toBeSavedRows = np.in1d(row_ind, toBeDeletedROWs, assume_unique=False)
+    row_ind=row_ind[toBeSavedRows]
+    col_ind=col_ind[toBeSavedRows]
+    values=values[toBeSavedRows]
+    del toBeSavedRows
+    return row_ind, col_ind, values
+
+def checkOvelappingEntries(row_ind_tract, row_ind_displ):
+    row_ind_tract = np.unique(row_ind_tract)
+    row_ind_displ = np.unique(row_ind_displ)
+    commonRows = np.intersect1d(row_ind_tract,row_ind_displ,assume_unique=True)
+    if len(commonRows) > 0:
+        print("ERROR: common Rows have been detected")
+        import time
+        time.sleep(1.)
+        exit()
+
+##############################
+# Mdot operator for GMRES    #
+##############################
+class Mdot(LinearOperator):
+  def __init__(self, blockHmat_iLU):
+    self.dtype_ = float
+    self.shape_ = blockHmat_iLU.shape
+    self.blockHmat_iLU = blockHmat_iLU
+    super().__init__(self.dtype_, self.shape_)
+
+  def _matvec(self, v):
+    """
+    This function implements the dot product.
+    :param v: vector expected to be of size unknowns_number_
+    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    """
+    all_v = np.zeros(self.HMAT_size_)
+    all_v[self.rhsOUTindx] = v
+    Rhs = self.blockHmat_iLU.solve(v)
+    return Rhs[self.rhsOUTindx]
+
+  def _setRhsOUTindx(self, RhsOUTindx):
+    """
+    This function sets the index to be in output from the multiplication in _matvet
+    :param RhsOUTindx: indexes to output
+    :return: -
+    """
+    self.rhsOUTindx = RhsOUTindx
+    self._changeShape(RhsOUTindx.size)
+
+  def _changeShape(self, shape_):
+    self.shape_ = (shape_,shape_)
+    super().__init__(self.dtype_, self.shape_)
+
+  @property
+  def _init_shape(self):
+    return self.shape_
+
+  def _init_dtype(self):
+    return self.dtype_
 
 ##############################
 # Hdot operator for GMRES    #
@@ -24,13 +113,19 @@ class Hdot(LinearOperator):
         2-The final set of equation selected must be equal to the number of rows equal to the one of each kernel
 
   """
-  def __init__(self, data):
+  def __init__(self):
+      self.unknowns_number_ = None
+      self.matvec_size_ = None
+      self.HMAT_size_ = None
+      self.shape_ = None
+      self.dtype_ = float
+      self.HMATtract = Bigwhamio()
+      self.HMATdispl = Bigwhamio()
+
+  def set(self, data):
     import pypart
     from pypart import Bigwhamio
     # instantiating the objects and variables
-    self.HMATdispl = Bigwhamio()
-    self.HMATtract = Bigwhamio()
-    self.unknowns_number_ = None
 
     # unpaking the data
     coor, conn, properties, \
@@ -38,38 +133,6 @@ class Hdot(LinearOperator):
     max_leaf_size_disp, eta_disp, \
     eps_aca, \
     tractionIDX, displacemIDX, use_preconditioner = data
-
-    # set the objects
-    self.HMATtract.set(coor,
-                       conn,
-                       "3DR0",
-                       properties,
-                       max_leaf_size_tr,
-                       eta_tr,
-                       eps_aca)
-    print("The compression ratio for 3DR0 kernel is: "+ str(self.HMATtract.getCompressionRatio()))
-
-    #todo: add preconditioner
-    # pdof = []
-    # if use_preconditioner:
-    #     permut = self.HMATtract.getPermutation()
-    #     for i in range(len(permut)):
-    #         v = permut[i] + 1
-    #         pdof.extend([3*(v-1)+1,3*(v-1)+1+1,3*(v-1)+2+1])
-    #
-    #     a,b = self.HMATtract.getFullBlocks2()
-
-    self.HMATdispl.set(coor,
-                       conn,
-                       "3DR0_displ", #kernel
-                       properties,
-                       max_leaf_size_disp,
-                       eta_disp,
-                       eps_aca)
-    print("The compression ratio for 3DR0_displ kernel is: "+ str(self.HMATdispl.getCompressionRatio()))
-
-
-
 
     # checks
     nodes_per_element_ = 4
@@ -81,16 +144,97 @@ class Hdot(LinearOperator):
     # define the HMAT size
     # define the total number of unknowns to be output by the matvet method
     unknowns_per_element_ = 3
-    self.matvec_size_ = int(n_of_elts_ * unknowns_per_element_)
-    self.HMAT_size_ = self.matvec_size_
+    self.HMAT_size_ = int(n_of_elts_ * unknowns_per_element_)
+    self.matvec_size_ = self.HMAT_size_
 
-    # it is mandatory to define shape and dtype
+    # it is mandatory to define shape and dtype of the dot product
     self.shape_ = (self.matvec_size_, self.matvec_size_)
-    self.dtype_ = float
     super().__init__(self.dtype_, self.shape_)
 
     # set the equation indexes to make the mixed traction-displacement system
     self._setEquationIDX(tractionIDX, displacemIDX)
+
+    # set the objects
+
+    self.HMATtract.set(coor.tolist(),
+                       conn.tolist(),
+                       "3DR0",
+                       properties,
+                       max_leaf_size_tr,
+                       eta_tr,
+                       eps_aca)
+    print("The compression ratio for 3DR0 kernel is: "+ str(self.HMATtract.getCompressionRatio()))
+
+    if use_preconditioner:
+        # ---> the memory here consist mainly of the Hmat
+        myget = pyGetFullBlocks()
+        myget.set(self.HMATtract)
+        # ---> the memory here consist at most of 3 * Hmat
+        col_ind_tract = myget.getColumnN()
+        row_ind_tract = myget.getRowN()
+        # here we need to permute the rows and columns
+        # ---> the memory here consist at most of 3 * Hmat
+        [row_ind_tract, col_ind_tract] = applyPermutation(self.HMATtract, row_ind_tract, col_ind_tract )
+        # ---> the memory here consist at most of 5 * Hmat for a while and it goes back to 4 Hmat
+        values_tract = myget.getValList()
+        del myget
+        # the following methow quickly fills up the memory leaving it unchanged before and after its application
+        [row_ind_tract, col_ind_tract, values_tract] = deleteNonUsedRows(row_ind_tract, col_ind_tract, values_tract,
+                                                                         displacemIDX)
+
+    self.HMATdispl.set(coor,
+                       conn,
+                       "3DR0_displ", #kernel
+                       properties,
+                       max_leaf_size_disp,
+                       eta_disp,
+                       eps_aca)
+    print("The compression ratio for 3DR0_displ kernel is: "+ str(self.HMATdispl.getCompressionRatio()))
+
+    if use_preconditioner:
+        # ---> the memory here consist mainly of 2 Hmat
+        myget = pyGetFullBlocks()
+        myget.set(self.HMATdispl)
+        # ---> the memory here consist at most of 4 Hmat
+        col_ind_displ = myget.getColumnN()
+        row_ind_displ = myget.getRowN()
+        # here we need to permute the rows and columns
+        # ---> the memory here consist at most of 4 Hmat
+        [row_ind_displ, col_ind_displ] = applyPermutation(self.HMATdispl, row_ind_displ, col_ind_displ )
+        # ---> the memory here consist at most of 5 Hmat
+        values_displ = myget.getValList()
+        del myget
+        # ---> the memory here consist at most of 5 times the Hmat
+        # the following methow quickly fills up the memory
+        [row_ind_displ, col_ind_displ, values_displ] = deleteNonUsedRows(row_ind_displ, col_ind_displ, values_displ,
+                                                                         tractionIDX)
+        # ---> the memory here consist at most of 5 times the Hmat
+        # the following method uses 1 times the Hmat of memory to apply
+        checkOvelappingEntries(row_ind_tract, row_ind_displ)
+        # ---> the memory here consist at most of 5 times the Hmat
+        # the following concatenations are slow and fills the memory up
+        row_ind_tract = np.concatenate((row_ind_tract,row_ind_displ))
+        del row_ind_displ
+        col_ind_tract = np.concatenate((col_ind_tract,col_ind_displ))
+        del col_ind_displ
+        values_tract = np.concatenate((values_tract,values_displ))
+        del values_displ
+        # ---> the memory here consist at most of 3 times the Hmat -> can not be less
+        #blockHmat = csr_matrix((values_tract, (row_ind_tract, col_ind_tract)), shape=self.shape_)
+        blockHmat = csc_matrix((values_tract, (row_ind_tract, col_ind_tract)), shape=self.shape_)
+        del values_tract, row_ind_tract, col_ind_tract
+
+
+        ### Compute an incomplete LU decomposition for a sparse, square matrix. ###
+        # The resulting object is an approximation to the inverse of blockHmat.
+        # Drop tolerance (0 <= tol <= 1) for an incomplete LU decomposition. (default: 1e-4)
+        # Specifies the fill ratio upper bound (>= 1.0) for ILU. (default: 10)
+        # To improve the better approximation to the inverse, you may need to increase fill_factor AND decrease drop_tol.
+        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-5, fill_factor=9)
+        del blockHmat
+        return blockHmat_iLU
+    else :
+        return None
 
   def _matvec(self, v):
     """
@@ -332,9 +476,22 @@ class BoundaryEffect:
         # ax.scatter(x, y, z, c=z, cmap='viridis', linewidth=0.5);
         #------------------------
 
+        # some memory statistics
+        getMemUse()
 
-        #create the Hdot
-        self.Hdot = Hdot(data)
+        cost_hmat = self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024 #GiB
+        print("traction kernel cost: " + str(cost_hmat) + " GiB")
+
+        cost_hmat = self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024 #GiB
+        print("total boundary cost: " + str(2*cost_hmat) + " GiB")
+        print("total boundary cost with preconditioner: " + str(3 * cost_hmat) + " GiB")
+
+        #create the Hdot and Mdot (preconditioner)
+        self.Hdot = Hdot()
+        blockHmat_iLU = self.Hdot.set(data)
+
+        if self.use_preconditioner :
+            self.Mdot = Mdot(blockHmat_iLU)
 
         # set boundary condition values (BCs)
         # - note that we assume 0 as BC on the fracture plane, notably we want to impose 0 traction on the fracture plane
@@ -379,6 +536,7 @@ class BoundaryEffect:
 
         RhsOUTindx = bndry_and_shear_crackINDX
         self.Hdot._setRhsOUTindx(RhsOUTindx)
+        self.Mdot._setRhsOUTindx(RhsOUTindx)
 
         # - multiply HMAT * [0,0,0,0,..,wi,...,0,0,0]
         rhs = self.Hdot._matvec_full(all_w)
@@ -389,7 +547,12 @@ class BoundaryEffect:
 
         # - solve for the boundary displacement discontinuities
         rhs = - rhs + self.Pu[RhsOUTindx]
-        u = gmres(self.Hdot, rhs, x0=self.all_DD[RhsOUTindx], tol=1e-11, maxiter=5000)
+        maxiter = 5000
+        tol = 1e-11
+        if self.use_preconditioner:
+            u = gmres(self.Hdot, rhs, x0=self.all_DD[RhsOUTindx], tol=tol, maxiter=maxiter, M=self.Mdot)
+        else:
+            u = gmres(self.Hdot, rhs, x0=self.all_DD[RhsOUTindx], tol=tol, maxiter=maxiter)
 
         # check convergence
         if u[1]>0:
