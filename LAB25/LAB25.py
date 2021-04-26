@@ -25,7 +25,7 @@ from boundary_effect import BoundaryEffect
 setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
-Mesh = CartesianMesh(0.08/2., 0.08/2., 41, 41)
+Mesh = CartesianMesh(0.08/2., 0.08/2., 71, 71)
 #Mesh = CartesianMesh(0.08/2., 0.08/2., 41, 41) #temp
 
 # solid properties
