@@ -25,7 +25,7 @@ from boundary_effect import BoundaryEffect
 setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
-Mesh = CartesianMesh(0.08/2., 0.08/2., 71, 71)
+Mesh = CartesianMesh(0.08/2., 0.08/2., 41, 41)
 #Mesh = CartesianMesh(0.08/2., 0.08/2., 41, 41) #temp
 
 # solid properties
@@ -80,7 +80,7 @@ Solid = MaterialProperties(Mesh,
                            confining_stress=0.,
                            minimum_width=0.)
 
-Boundary = BoundaryEffect(Mesh, Eprime, nu)
+Boundary = BoundaryEffect(Mesh, Eprime, nu, preconditioner = True)
 #Boundary = None
 
 # injection parameters
@@ -140,7 +140,7 @@ controller = Controller(Fr,
                         boundaryEffect = Boundary)
 
 # run the simulation
-#controller.run()
+controller.run()
 
 ####################
 # plotting results #
