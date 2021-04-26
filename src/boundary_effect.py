@@ -6,6 +6,8 @@ from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
+
+#from scipy.sparse.linalg import splu #used for testing purposes
 import logging
 
 
@@ -51,6 +53,12 @@ def applyPermutation(HMATobj, row_ind, col_ind):
     return row_ind, col_ind
 
 def deleteNonUsedRows(row_ind, col_ind, values, toBeSavedROWs): #todo: this method looks too fill up the memory (~HMAT)
+    ### explicit TEST of the function ###
+    row_indexes = np.asarray([1,4,56,6,7,8,1,1,3,4,90])
+    save_those = np.asarray([1,6,7,2,3,10,12,34,56])
+    save_those_bin = np.in1d(row_indexes, save_those, assume_unique=False)
+    final = row_indexes[save_those_bin]
+    #####################################
     toBeSavedRows_bin = np.in1d(row_ind, toBeSavedROWs, assume_unique=False)
     row_ind=row_ind[toBeSavedRows_bin]
     col_ind=col_ind[toBeSavedRows_bin]
@@ -192,6 +200,18 @@ class Hdot(LinearOperator):
         # ---> the memory here consist at most of 5 * Hmat for a while and it goes back to 4 Hmat
         values_tract = myget.getValList()
         del myget
+
+        ##### Test #####
+        # test the blockHmat VS HMATtraction
+        # blockHmat = csc_matrix((values_tract, (row_ind_tract, col_ind_tract)), shape=self.shape_)
+        # v= np.ones(self.shape_[0])
+        # array1 = blockHmat.dot(v)
+        # array2 = self.HMATtract.hdotProduct(v.tolist())
+        # relerr = np.linalg.norm(array1-array2)
+        # print(relerr)
+        # del v, array1, array2, relerr
+        ################
+
         # the following methow quickly fills up the memory leaving it unchanged before and after its application
         [row_ind_tract, col_ind_tract, values_tract] = deleteNonUsedRows(row_ind_tract, col_ind_tract, values_tract,
                                                                          tractionIDX)
@@ -218,6 +238,18 @@ class Hdot(LinearOperator):
         # ---> the memory here consist at most of 5 Hmat
         values_displ = myget.getValList()
         del myget
+
+        ##### Test #####
+        # test the blockHmat VS HMATtraction
+        # blockHmat = csc_matrix((values_displ, (row_ind_displ, col_ind_displ)), shape=self.shape_)
+        # v= np.ones(self.shape_[0])
+        # array1 = blockHmat.dot(v)
+        # array2 = self.HMATdispl.hdotProduct(v.tolist())
+        # relerr = np.linalg.norm(array1-array2)
+        # print(relerr)
+        # del v, array1, array2, relerr
+        ################
+
         # ---> the memory here consist at most of 5 times the Hmat
         # the following methow quickly fills up the memory
         [row_ind_displ, col_ind_displ, values_displ] = deleteNonUsedRows(row_ind_displ, col_ind_displ, values_displ,
@@ -238,13 +270,52 @@ class Hdot(LinearOperator):
         blockHmat = csc_matrix((values_tract, (row_ind_tract, col_ind_tract)), shape=self.shape_)
         del values_tract, row_ind_tract, col_ind_tract
 
+        ### TEST ###
+        # we want to check if the blockHmat has been properly computed
+        # v = np.ones(self.HMAT_size_)
+        # arrayD = np.asarray(self.HMATdispl.hdotProduct(v))
+        # arrayT = np.asarray(self.HMATtract.hdotProduct(v))
+        # arrayTD = np.asarray(blockHmat.dot(v))
+        #
+        # arrayD_d = arrayD[displacemIDX]
+        # arrayT_t = arrayT[tractionIDX]
+        # arrayTD_t = arrayTD[tractionIDX]
+        # arrayTD_d = arrayTD[displacemIDX]
+        #
+        # err = np.linalg.norm(arrayD_d - arrayTD_d) + np.linalg.norm(arrayT_t - arrayTD_t)
+        # del v, arrayD, arrayT, arrayTD, arrayD_d, arrayT_t, arrayTD_t, arrayTD_d, err
+        ############
 
         ### Compute an incomplete LU decomposition for a sparse, square matrix. ###
         # The resulting object is an approximation to the inverse of blockHmat.
         # Drop tolerance (0 <= tol <= 1) for an incomplete LU decomposition. (default: 1e-4)
         # Specifies the fill ratio upper bound (>= 1.0) for ILU. (default: 10)
         # To improve the better approximation to the inverse, you may need to increase fill_factor AND decrease drop_tol.
-        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-5, fill_factor=9)
+        # A test using a small matrix (~550x550) requires to use drop_tol=1e-15, fill_factor=1000 to achieve a preconditioner equivalent to the inverse
+        #
+        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-5, fill_factor=5)
+
+
+        # defining the accuracy of the matrix inverse
+        v = np.ones(self.HMAT_size_)
+        self._setRhsOUTindx(np.arange(self.HMAT_size_))
+        test1 = self._matvec(v)
+        test1 = blockHmat_iLU.solve(test1)
+        approx_err = np.linalg.norm(test1-v)/self.HMAT_size_
+        print("The max difference between the approx. val. and the matrix inverse is: "+ str(approx_err))
+
+        ### TEST ###
+        # this test helps checking that all the slices are correct and that the preconditioner works correctly
+        # LU = splu(blockHmat) # <---- this will compute the true HMAT
+        #
+        # v = np.ones(self.HMAT_size_)
+        # self._setRhsOUTindx(np.arange(self.HMAT_size_))
+        # test1 = self._matvec(v)
+        #
+        # test1 = LU.solve(test1)
+        # test2 = blockHmat_iLU.solve(test1)
+        ###
+
         del blockHmat
         return blockHmat_iLU
     else :
@@ -424,11 +495,12 @@ class BoundaryEffect:
         self.eta_disp = 0.
         self.eps_aca = 0.001
         self.use_preconditioner = preconditioner
+
         ### equation type indexes ###
         # The equation type is:
         #   0 for a traction boundary condition
         #   1 for a displacement boundary condition
-
+        # assuming no displacement BC on the fracture plane
         equationtype = np.asarray(boundarymesh["equation_Type_Face"]).flatten()
         displacemIDX = np.where(equationtype == 1)[0]
 
@@ -515,6 +587,16 @@ class BoundaryEffect:
         self.all_DD = np.zeros(self.n_of_unknowns_tot)
         self.last_traction = None
 
+        # testing that the preconditioner works
+        # initial_vec = np.ones(self.n_of_unknowns_tot)
+        # self.Hdot._setRhsOUTindx(np.arange(self.n_of_unknowns_tot))
+        # self.Mdot._setRhsOUTindx(np.arange(self.n_of_unknowns_tot))
+        # final_vec = self.Mdot._matvec(self.Hdot._matvec(initial_vec))
+        # reldiff = np.linalg.norm(initial_vec-final_vec)/self.n_of_unknowns_tot
+        # print("------CHECK-------")
+        # print("The relative difference between the initial and the final vec is:"+str(reldiff))
+        # print("------------------")
+
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -566,7 +648,7 @@ class BoundaryEffect:
         rhs = - rhs + self.Pu[RhsOUTindx]
         maxiter = 500
         restart = 50
-        tol = 1e-11
+        tol = 2.e-7
         if self.use_preconditioner:
             u = gmres(self.Hdot, rhs,
                       x0=self.all_DD[RhsOUTindx],
