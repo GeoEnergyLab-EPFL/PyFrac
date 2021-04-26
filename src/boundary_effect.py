@@ -11,9 +11,20 @@ import logging
 
 from boundary_effect_mesh import boundarymesh
 
-import pypart
-from pypart import Bigwhamio
-from pypart import pyGetFullBlocks
+
+
+class gmres_counter(object):
+    def __init__(self, disp=True):
+        self._disp = disp
+        self.niter = 0
+        self.threshold = 10
+    def __call__(self, rk=None):
+        self.niter += 1
+        if self._disp:
+            if self.niter == self.threshold:
+                print('WARNING: GMRES has not converged in '+str(self.niter)+' iter, monitoring the residual')
+            if self.niter > self.threshold:
+                print('iter %3i\trk = %s' % (self.niter, str(rk)))
 
 def getMemUse():
     # some memory statistics
@@ -39,12 +50,12 @@ def applyPermutation(HMATobj, row_ind, col_ind):
     del pdof
     return row_ind, col_ind
 
-def deleteNonUsedRows(row_ind, col_ind, values, toBeDeletedROWs): #todo: this method looks too fill up the memory (~HMAT)
-    toBeSavedRows = np.in1d(row_ind, toBeDeletedROWs, assume_unique=False)
-    row_ind=row_ind[toBeSavedRows]
-    col_ind=col_ind[toBeSavedRows]
-    values=values[toBeSavedRows]
-    del toBeSavedRows
+def deleteNonUsedRows(row_ind, col_ind, values, toBeSavedROWs): #todo: this method looks too fill up the memory (~HMAT)
+    toBeSavedRows_bin = np.in1d(row_ind, toBeSavedROWs, assume_unique=False)
+    row_ind=row_ind[toBeSavedRows_bin]
+    col_ind=col_ind[toBeSavedRows_bin]
+    values=values[toBeSavedRows_bin]
+    del toBeSavedRows_bin
     return row_ind, col_ind, values
 
 def checkOvelappingEntries(row_ind_tract, row_ind_displ):
@@ -65,6 +76,7 @@ class Mdot(LinearOperator):
     self.dtype_ = float
     self.shape_ = blockHmat_iLU.shape
     self.blockHmat_iLU = blockHmat_iLU
+    self.HMAT_size_ = self.shape_[0]
     super().__init__(self.dtype_, self.shape_)
 
   def _matvec(self, v):
@@ -75,7 +87,7 @@ class Mdot(LinearOperator):
     """
     all_v = np.zeros(self.HMAT_size_)
     all_v[self.rhsOUTindx] = v
-    Rhs = self.blockHmat_iLU.solve(v)
+    Rhs = self.blockHmat_iLU.solve(all_v)
     return Rhs[self.rhsOUTindx]
 
   def _setRhsOUTindx(self, RhsOUTindx):
@@ -114,6 +126,8 @@ class Hdot(LinearOperator):
 
   """
   def __init__(self):
+      import pypart
+      from pypart import Bigwhamio
       self.unknowns_number_ = None
       self.matvec_size_ = None
       self.HMAT_size_ = None
@@ -123,8 +137,8 @@ class Hdot(LinearOperator):
       self.HMATdispl = Bigwhamio()
 
   def set(self, data):
-    import pypart
-    from pypart import Bigwhamio
+    from pypart import pyGetFullBlocks
+
     # instantiating the objects and variables
 
     # unpaking the data
@@ -180,7 +194,7 @@ class Hdot(LinearOperator):
         del myget
         # the following methow quickly fills up the memory leaving it unchanged before and after its application
         [row_ind_tract, col_ind_tract, values_tract] = deleteNonUsedRows(row_ind_tract, col_ind_tract, values_tract,
-                                                                         displacemIDX)
+                                                                         tractionIDX)
 
     self.HMATdispl.set(coor,
                        conn,
@@ -207,7 +221,7 @@ class Hdot(LinearOperator):
         # ---> the memory here consist at most of 5 times the Hmat
         # the following methow quickly fills up the memory
         [row_ind_displ, col_ind_displ, values_displ] = deleteNonUsedRows(row_ind_displ, col_ind_displ, values_displ,
-                                                                         tractionIDX)
+                                                                         displacemIDX)
         # ---> the memory here consist at most of 5 times the Hmat
         # the following method uses 1 times the Hmat of memory to apply
         checkOvelappingEntries(row_ind_tract, row_ind_displ)
@@ -312,7 +326,7 @@ class BoundaryEffect:
 
     """
 
-    def __init__(self, Mesh, Eprime, Poissonratio):
+    def __init__(self, Mesh, Eprime, Poissonratio, preconditioner = True):
         """
         The constructor function:
         - check the integrity of the mesh with the one created in pyfrac
@@ -404,12 +418,12 @@ class BoundaryEffect:
         self.bndry_and_shear_fpINDX = np.setdiff1d(np.arange(self.n_of_unknowns_tot), self.fpINDX, assume_unique=True)
 
         # HMAT parameters
-        self.max_leaf_size_tr = 5000
+        self.max_leaf_size_tr = 500000
         self.eta_tr = 0.
-        self.max_leaf_size_disp = 5000
+        self.max_leaf_size_disp = 500000
         self.eta_disp = 0.
         self.eps_aca = 0.001
-        self.use_preconditioner = True
+        self.use_preconditioner = preconditioner
         ### equation type indexes ###
         # The equation type is:
         #   0 for a traction boundary condition
@@ -536,7 +550,8 @@ class BoundaryEffect:
 
         RhsOUTindx = bndry_and_shear_crackINDX
         self.Hdot._setRhsOUTindx(RhsOUTindx)
-        self.Mdot._setRhsOUTindx(RhsOUTindx)
+        if self.use_preconditioner:
+            self.Mdot._setRhsOUTindx(RhsOUTindx)
 
         # - multiply HMAT * [0,0,0,0,..,wi,...,0,0,0]
         rhs = self.Hdot._matvec_full(all_w)
@@ -546,20 +561,35 @@ class BoundaryEffect:
         # The output indexes are already set to be self.boundaryINDX
 
         # - solve for the boundary displacement discontinuities
+        counter = gmres_counter()
+
         rhs = - rhs + self.Pu[RhsOUTindx]
-        maxiter = 5000
+        maxiter = 500
+        restart = 50
         tol = 1e-11
         if self.use_preconditioner:
-            u = gmres(self.Hdot, rhs, x0=self.all_DD[RhsOUTindx], tol=tol, maxiter=maxiter, M=self.Mdot)
+            u = gmres(self.Hdot, rhs,
+                      x0=self.all_DD[RhsOUTindx],
+                      tol=tol,
+                      maxiter=maxiter,
+                      callback=counter,
+                      restart=restart,
+                      M=self.Mdot)
         else:
-            u = gmres(self.Hdot, rhs, x0=self.all_DD[RhsOUTindx], tol=tol, maxiter=maxiter)
+            u = gmres(self.Hdot, rhs,
+                      x0=self.all_DD[RhsOUTindx],
+                      tol=tol,
+                      maxiter=maxiter,
+                      callback=counter,
+                      restart=restart)
 
         # check convergence
         if u[1]>0:
             log.warning("WARNING: gmres did not converge after "+ str(u[1]) + " iterations!")
             rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs))/np.linalg.norm(rhs)
             log.warning("         error of the solution: " + str(rel_err))
-#        elif u[1]==0:
+        elif u[1]==0:
+            log.debug("GMRES converged after " + str(gmres_counter.niter) + " iterations")
 #            rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs)) / np.linalg.norm(rhs)
 #            log.info(" Boundary eff. GMRES:" + str(rel_err))
 
