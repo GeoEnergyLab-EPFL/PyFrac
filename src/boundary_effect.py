@@ -2,6 +2,7 @@
 #external
 import numpy as np
 import copy
+import timeit
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 from scipy.sparse.linalg import gmres
@@ -35,7 +36,7 @@ def getMemUse():
     process = psutil.Process(os.getpid())
     byte_use = process.memory_info().rss  # byte
     GiByte_use = byte_use / 1024 / 1024 / 1024  # GiB
-    print("Current memory use: " + str(GiByte_use) + " GiB")
+    print("  -> Current memory use: " + str(GiByte_use) + " GiB")
     return GiByte_use
 
 def getPermutation(HMATobj):
@@ -177,7 +178,8 @@ class Hdot(LinearOperator):
     self._setEquationIDX(tractionIDX, displacemIDX)
 
     # set the objects
-
+    print("  ")
+    print(" --------------------------------------- ")
     self.HMATtract.set(coor.tolist(),
                        conn.tolist(),
                        "3DR0",
@@ -185,7 +187,9 @@ class Hdot(LinearOperator):
                        max_leaf_size_tr,
                        eta_tr,
                        eps_aca)
-    print("The compression ratio for 3DR0 kernel is: "+ str(self.HMATtract.getCompressionRatio()))
+    print(" --------------------------------------- ")
+    print("  ")
+    print("   -> KERNEL: 3DR0 compr. ratio = "+ str(self.HMATtract.getCompressionRatio()))
 
     if use_preconditioner:
         # ---> the memory here consist mainly of the Hmat
@@ -215,7 +219,8 @@ class Hdot(LinearOperator):
         # the following methow quickly fills up the memory leaving it unchanged before and after its application
         [row_ind_tract, col_ind_tract, values_tract] = deleteNonUsedRows(row_ind_tract, col_ind_tract, values_tract,
                                                                          tractionIDX)
-
+    print("  ")
+    print(" --------------------------------------- ")
     self.HMATdispl.set(coor,
                        conn,
                        "3DR0_displ", #kernel
@@ -223,7 +228,9 @@ class Hdot(LinearOperator):
                        max_leaf_size_disp,
                        eta_disp,
                        eps_aca)
-    print("The compression ratio for 3DR0_displ kernel is: "+ str(self.HMATdispl.getCompressionRatio()))
+    print(" --------------------------------------- ")
+    print("  ")
+    print("   -> KERNEL: 3DR0_displ compr. ratio = "+ str(self.HMATdispl.getCompressionRatio()))
 
     if use_preconditioner:
         # ---> the memory here consist mainly of 2 Hmat
@@ -293,8 +300,15 @@ class Hdot(LinearOperator):
         # To improve the better approximation to the inverse, you may need to increase fill_factor AND decrease drop_tol.
         # A test using a small matrix (~550x550) requires to use drop_tol=1e-15, fill_factor=1000 to achieve a preconditioner equivalent to the inverse
         #
-        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-5, fill_factor=5)
-
+        print("START: creation of the ILU approx ")
+        print("   -> Size of the problem: "+str(self.shape_))
+        memuse = (self.shape_[0]**2)*8/(1024**3)
+        print("   -> Memory [GiB]: " + str(round(memuse,3)))
+        tic = timeit.default_timer()
+        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-12, fill_factor=9)
+        toc = timeit.default_timer()
+        tictoc=(toc - tic)/60.
+        print("END: creation of the ILU approx, time: "+ str(round(tictoc,2))+" minutes")
 
         # defining the accuracy of the matrix inverse
         v = np.ones(self.HMAT_size_)
@@ -302,7 +316,8 @@ class Hdot(LinearOperator):
         test1 = self._matvec(v)
         test1 = blockHmat_iLU.solve(test1)
         approx_err = np.linalg.norm(test1-v)/self.HMAT_size_
-        print("The max difference between the approx. val. and the matrix inverse is: "+ str(approx_err))
+        print("   -> The max difference between the approx. val. ")
+        print("   -> and the matrix inverse is: " + str(round(approx_err,3)))
 
         ### TEST ###
         # this test helps checking that all the slices are correct and that the preconditioner works correctly
@@ -565,12 +580,13 @@ class BoundaryEffect:
         # some memory statistics
         getMemUse()
 
+        cost_hmat = round(self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024, 2) #GiB
+        print("   -> KERNEL: 3DR0 cost: " + str(cost_hmat) + " GiB")
+        print("   -> KERNEL: 3DR0_displ cost: " + str(cost_hmat) + " GiB")
+        print("                               -----------------------")
+        print("   -> Total KERNEL cost: " + str(2*cost_hmat) + " GiB")
         cost_hmat = self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024 #GiB
-        print("traction kernel cost: " + str(cost_hmat) + " GiB")
-
-        cost_hmat = self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024 #GiB
-        print("total boundary cost: " + str(2*cost_hmat) + " GiB")
-        print("total boundary cost with preconditioner: " + str(3 * cost_hmat) + " GiB")
+        print("   -> Total KERNEL + PREC. cost: " + str(3 * cost_hmat) + " GiB")
 
         #create the Hdot and Mdot (preconditioner)
         self.Hdot = Hdot()
@@ -671,7 +687,7 @@ class BoundaryEffect:
             rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs))/np.linalg.norm(rhs)
             log.warning("         error of the solution: " + str(rel_err))
         elif u[1]==0:
-            log.debug("GMRES converged after " + str(gmres_counter.niter) + " iterations")
+            log.debug("GMRES converged after " + str(counter.niter) + " iterations")
 #            rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs)) / np.linalg.norm(rhs)
 #            log.info(" Boundary eff. GMRES:" + str(rel_err))
 
