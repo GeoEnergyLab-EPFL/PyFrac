@@ -857,6 +857,20 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     wcNplusHalf = (frac.w + wNplusOne) / 2
 
     interItr_kp1 = [None] * 4
+
+    # Account for the presence of boundaries
+    if Boundary is not None:
+        tb_np1 = Boundary.getTraction(wNplusOne, EltCrack)
+        # from utility import plot_as_matrix
+        # K = tb_np1
+        # plot_as_matrix(K, frac.mesh)
+        tb_n = frac.boundEffTraction
+        delta_tb = tb_np1 - tb_n
+
+    else:
+        tb_n = np.zeros((len(wNplusOne),), dtype=np.float64)
+        delta_tb = np.zeros((len(wNplusOne),), dtype=np.float64)
+
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
@@ -913,21 +927,24 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                   dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                   dt * G[to_solve] + \
                   dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
-                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]+ \
+                  + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[to_impose] + \
-                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea + \
+                   - dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea+ \
+                   - dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
@@ -1175,7 +1192,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
 
     interItr_kp1 = [None] * 4
 
-    # update background stress to account for the presence of boundaries
+    # Account for the presence of boundaries
     if Boundary is not None:
         tb_np1 = Boundary.getTraction(wNplusOne, EltCrack)
         # from utility import plot_as_matrix
