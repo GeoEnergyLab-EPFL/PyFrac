@@ -6,15 +6,11 @@ import timeit
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import lgmres
 from scipy.sparse.linalg import LinearOperator
 
 #from scipy.sparse.linalg import splu #used for testing purposes
 import logging
-
-
-from boundary_effect_mesh import boundarymesh
-
-
 
 class gmres_counter(object):
     def __init__(self, disp=True):
@@ -87,6 +83,16 @@ class Mdot(LinearOperator):
     self.blockHmat_iLU = blockHmat_iLU
     self.HMAT_size_ = self.shape_[0]
     super().__init__(self.dtype_, self.shape_)
+    self.Hdot = None
+
+  def setHdot(self, Hdot):
+      self.Hdot=Hdot
+
+  def _precvec(self,v):
+      all_v = np.zeros(self.HMAT_size_)
+      all_v[self.rhsOUTindx] = v
+      Rhs = self.blockHmat_iLU.solve(all_v)
+      return Rhs[self.rhsOUTindx]
 
   def _matvec(self, v):
     """
@@ -97,7 +103,10 @@ class Mdot(LinearOperator):
     all_v = np.zeros(self.HMAT_size_)
     all_v[self.rhsOUTindx] = v
     Rhs = self.blockHmat_iLU.solve(all_v)
-    return Rhs[self.rhsOUTindx]
+    if self.Hdot == None:
+        return Rhs[self.rhsOUTindx]
+    else:
+        return self.Hdot._matvec(Rhs[self.rhsOUTindx])
 
   def _setRhsOUTindx(self, RhsOUTindx):
     """
@@ -305,7 +314,7 @@ class Hdot(LinearOperator):
         memuse = (self.shape_[0]**2)*8/(1024**3)
         print("   -> Memory [GiB]: " + str(round(memuse,3)))
         tic = timeit.default_timer()
-        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-12, fill_factor=9)
+        blockHmat_iLU = spilu(blockHmat, drop_tol=1e-13, fill_factor=5)
         toc = timeit.default_timer()
         tictoc=(toc - tic)/60.
         print("END: creation of the ILU approx, time: "+ str(round(tictoc,2))+" minutes")
@@ -412,7 +421,7 @@ class BoundaryEffect:
 
     """
 
-    def __init__(self, Mesh, Eprime, Poissonratio, preconditioner = True):
+    def __init__(self, Mesh, Eprime, Poissonratio, path2boundaryMesh,  preconditioner = True, lgmres = False):
         """
         The constructor function:
         - check the integrity of the mesh with the one created in pyfrac
@@ -429,6 +438,11 @@ class BoundaryEffect:
         """
 
         # Load the mesh from the file
+        import json
+        with open(path2boundaryMesh) as json_file:
+            boundarymesh = json.load(json_file)
+            print("json file loaded")
+
         self.bndryMesh = boundarymesh
 
         coor_bndry = np.asarray(boundarymesh["pts_total"])
@@ -510,6 +524,7 @@ class BoundaryEffect:
         self.eta_disp = 0.
         self.eps_aca = 0.001
         self.use_preconditioner = preconditioner
+        self.use_lgmres = lgmres
 
         ### equation type indexes ###
         # The equation type is:
@@ -583,9 +598,8 @@ class BoundaryEffect:
         cost_hmat = round(self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024, 2) #GiB
         print("   -> KERNEL: 3DR0 cost: " + str(cost_hmat) + " GiB")
         print("   -> KERNEL: 3DR0_displ cost: " + str(cost_hmat) + " GiB")
-        print("                               -----------------------")
+        print("                               ------------")
         print("   -> Total KERNEL cost: " + str(2*cost_hmat) + " GiB")
-        cost_hmat = self.n_of_unknowns_tot * self.n_of_unknowns_tot * 8 / 1024 / 1024 / 1024 #GiB
         print("   -> Total KERNEL + PREC. cost: " + str(3 * cost_hmat) + " GiB")
 
         #create the Hdot and Mdot (preconditioner)
@@ -666,30 +680,58 @@ class BoundaryEffect:
         restart = 50
         tol = 2.e-7
         if self.use_preconditioner:
-            u = gmres(self.Hdot, rhs,
-                      x0=self.all_DD[RhsOUTindx],
-                      tol=tol,
-                      maxiter=maxiter,
-                      callback=counter,
-                      restart=restart,
-                      M=self.Mdot)
+            self.Mdot.setHdot(self.Hdot)
+            if self.use_lgmres:
+                u = lgmres(self.Hdot, rhs,
+                          x0=self.all_DD[RhsOUTindx],
+                          tol=tol,
+                          maxiter=maxiter,
+                          callback=counter)
+                # u = lgmres(self.Hdot, rhs,
+                #           x0=self.all_DD[RhsOUTindx],
+                #           tol=tol,
+                #           maxiter=maxiter,
+                #           M=self.Mdot,
+                #           callback=counter)
+            else:
+                u = gmres(self.Mdot, rhs,
+                          x0=self.all_DD[RhsOUTindx],
+                          tol=tol,
+                          maxiter=maxiter,
+                          callback=counter,
+                          restart=restart)
+                # u = gmres(self.Hdot, rhs,
+                #           x0=self.all_DD[RhsOUTindx],
+                #           tol=tol,
+                #           maxiter=maxiter,
+                #           callback=counter,
+                #           restart=restart,
+                #           M=self.Mdot)
+
+                u[1] = self.Mdot._precvec(u[1])
         else:
-            u = gmres(self.Hdot, rhs,
-                      x0=self.all_DD[RhsOUTindx],
-                      tol=tol,
-                      maxiter=maxiter,
-                      callback=counter,
-                      restart=restart)
+            if self.use_lgmres:
+                u = lgmres(self.Hdot, rhs,
+                          x0=self.all_DD[RhsOUTindx],
+                          tol=tol,
+                          maxiter=maxiter,
+                          callback=counter)
+            else:
+                u = gmres(self.Hdot, rhs,
+                          x0=self.all_DD[RhsOUTindx],
+                          tol=tol,
+                          maxiter=maxiter,
+                          callback=counter,
+                          restart=restart)
 
         # check convergence
         if u[1]>0:
-            log.warning("WARNING: gmres did not converge after "+ str(u[1]) + " iterations!")
+            log.warning("WARNING: BOUNDARY EFF. did NOT converge after "+ str(u[1]) + " iterations!")
             rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs))/np.linalg.norm(rhs)
             log.warning("         error of the solution: " + str(rel_err))
         elif u[1]==0:
-            log.debug("GMRES converged after " + str(counter.niter) + " iterations")
-#            rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs)) / np.linalg.norm(rhs)
-#            log.info(" Boundary eff. GMRES:" + str(rel_err))
+            rel_err = np.linalg.norm(self.Hdot._matvec(u[0]) - (rhs)) / np.linalg.norm(rhs)
+            log.debug(" --> GMRES BOUNDARY EFF. converged after " + str(counter.niter) + " iter. & rel err is " + str(rel_err))
 
         # *** get the influence of the boundary onto the crack plane ***
         # - make the vector u to fit the whole number of DDs
