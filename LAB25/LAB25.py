@@ -81,7 +81,15 @@ if run:
                                confining_stress=0.,
                                minimum_width=0.)
     path =  '/home/carlo/BigWhamLink/BigWhamLink/Examples/StaticCrackBenchmarks/boundary_effect_mesh.json'
-    Boundary = BoundaryEffect(Mesh, Eprime, nu, path, preconditioner=False, lgmres=False)
+    Boundary = BoundaryEffect(Mesh, Eprime, nu, path,
+                              preconditioner=False,
+                              lgmres=False,
+                              maxLeafSizeTrK=10000,
+                              etaTrK=0,
+                              maxLeafSizeDispK=100000,
+                              etaDispL=0,
+                              epsACA=0.001
+                              )
     #Boundary = None
 
     # injection parameters
