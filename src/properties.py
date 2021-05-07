@@ -773,6 +773,8 @@ class SimulationProperties:
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
         self.toleranceVStagnant = simul_param.toleranceVStagnant
+        self.gmres_tol = simul_param.gmres_tol
+        self.gmres_maxiter = simul_param.gmres_maxiter
 
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
@@ -819,6 +821,7 @@ class SimulationProperties:
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
+        self.volumeControlHMAT = simul_param.volumeControlHMAT
         self.substitutePressure = simul_param.substitute_pressure
         self.solveDeltaP = simul_param.solve_deltaP
         self.solveStagnantTip = simul_param.solve_stagnant_tip

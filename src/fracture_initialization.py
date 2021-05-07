@@ -6,7 +6,8 @@ Created by Haseeb Zia on Wed Aug 09 16:22:33 2016.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
+import logging
+from scipy.sparse.linalg import gmres
 import numpy as np
 import copy
 import math
@@ -15,7 +16,7 @@ from level_set import SolveFMM, reconstruct_front, UpdateLists
 from volume_integral import Integral_over_cell
 from symmetry import self_influence
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
-
+from Hdot import gmres_counter
 
 
 def get_eliptical_survey_cells(mesh, a, b, center=None):
@@ -340,7 +341,11 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
 
 
 def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False, useBlockToeplizCompression=False,
-                       Eprime=None, boundaryEffect = None ):
+                       volumeControlHMAT=False,
+                       Eprime=None,
+                       boundaryEffect = None,
+                       gmres_tol = 1e-12,
+                       gmres_maxiter = 1000 ):
     """
     This function calculates the width and pressure depending on the provided data. If only volume is provided, the
     width is calculated as a static fracture with the given footprint. Else, the pressure or width are calculated
@@ -363,9 +368,10 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         - w_calculated (ndarray)    -- the calculated width.
         - p_calculated (ndarray)    -- the calculated pressure.
     """
+    log = logging.getLogger('PyFrac.initialization')
 
     if w is None and p is None and volume is None:
-        raise ValueError("Atleast one of the three variables w, p and volume has to be provided.")
+        raise ValueError("At least one of the three variables w, p and volume has to be provided.")
 
     if p is None:
         p_calculated = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
@@ -385,7 +391,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
     if not w is None and not p is None:
         return w_calculated, p_calculated
 
-    if symmetric and not useBlockToeplizCompression:
+    if symmetric and not useBlockToeplizCompression and not volumeControlHMAT:
 
         CrackElts_sym = mesh.corresponding[EltCrack]
         CrackElts_sym = np.unique(CrackElts_sym)
@@ -409,19 +415,22 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
             ac = (1 - r) / r
             C[EltTip_sym[e], EltTip_sym[e]] += ac * np.pi / 4. * self_infl
 
+        # known p
         if w is None and not p is None:
             w_sym_EltCrack = np.linalg.solve(C[np.ix_(CrackElts_sym, CrackElts_sym)],
                                              p_calculated[mesh.activeSymtrc[CrackElts_sym]])
             for i in range(len(w_sym_EltCrack)):
                 w_calculated[mesh.symmetricElts[mesh.activeSymtrc[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
 
+        # known w
         if w is not None and p is None:
             p_sym_EltCrack = np.dot(C[np.ix_(CrackElts_sym, CrackElts_sym)], w[mesh.activeSymtrc[CrackElts_sym]])
             for i in range(len(p_sym_EltCrack)):
                 p_calculated[mesh.symmetricElts[mesh.activeSymtrc[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
 
-        # calculate the width and pressure by considering fracture as a static fracture.
+        # w and p both unknown
         if w is None and p is None:
+            # calculate the width and pressure by considering fracture as a static fracture.
             C_Crack = C[np.ix_(CrackElts_sym, CrackElts_sym)]
 
             A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
@@ -451,6 +460,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         ac = (1 - r) / r
         C_Crack[EltTip_positions,EltTip_positions]=C_Crack[EltTip_positions,EltTip_positions] * (1. + ac * np.pi / 4.)
 
+        # known p
         if w is None and not p is None:
             if boundaryEffect is not None:
                 # we must compute the effect of the boundary
@@ -480,13 +490,13 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
             else:
                 w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack])
 
-
+        # known w
         if not w is None and p is None:
             p_calculated[EltCrack] = np.dot(C_Crack, w[EltCrack])
 
-        # calculate the width and pressure by considering fracture as a static fracture.
+        # w and p both unknown
         if w is None and p is None:
-
+            # calculate the width and pressure by considering fracture as a static fracture.
             A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
             A = np.vstack((A, np.ones((1, EltCrack.size + 1), dtype=np.float64)))
             A[-1, -1] = 0
@@ -499,6 +509,48 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
             w_calculated[EltCrack] = sol[np.arange(EltCrack.size)]
             p_calculated[EltCrack] = sol[EltCrack.size]
 
+    elif volumeControlHMAT:
+        C._set_domain_IDX(EltCrack)
+        C._set_codomain_IDX(EltCrack)
+
+
+        # filling fraction correction for element in the tip region
+        r = FillFrac - .25
+        indx = np.where(np.less(r,0.1))[0]
+        r[indx] = 0.1
+        ac = (1 - r) / r
+        correction_val = ac * np.pi / 4.
+        C._set_tipcorr(correction_val, EltTip)
+
+        # known p
+        if w is None and not p is None:
+            # solving the system using no preconditioner
+            rhs = p_calculated[EltCrack]
+            counter = gmres_counter()  # to obtain the number of iteration and residual
+            sol_GMRES = gmres(C, rhs, tol=gmres_tol, maxiter=gmres_maxiter, callback=counter)
+
+            # check convergence
+            #todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
+            if sol_GMRES[1] > 0:
+                log.warning("WARNING: Volume control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
+                rel_err = np.linalg.norm(C._matvec(sol_GMRES[0]) - (rhs)) / np.linalg.norm(rhs)
+                log.warning("         error of the solution: " + str(rel_err))
+            elif sol_GMRES[1] == 0:
+                rel_err = np.linalg.norm(C._matvec(sol_GMRES[0]) - (rhs)) / np.linalg.norm(rhs)
+                log.debug(
+                    " --> GMRES BOUNDARY EFF. converged after " + str(counter.niter) + " iter. & rel err is " + str(
+                        rel_err))
+
+            w_calculated[EltCrack] = sol_GMRES[0]
+            C.enable_tip_corr = False
+
+        # known w
+        if not w is None and p is None:
+            raise ValueError("ERROR: case not yet implemented")
+
+        # w and p both unknown
+        if w is None and p is None:
+            raise ValueError("ERROR: case not yet implemented")
     else:
         C_EltTip = np.copy(C[np.ix_(EltTip, EltTip)])  # keeping the tip element entries to restore current tip correction. This is
                                               # done to avoid copying the full elasticity matrix.

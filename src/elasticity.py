@@ -65,6 +65,24 @@ def load_isotropic_elasticity_matrix(Mesh, Ep):
     return C
 # -----------------------------------------------------------------------------------------------------------------------
 
+def get_isotropic_el_self_eff(hx, hy, Ep):
+    """
+    Evaluate the self effect term (diagonal value) for isotropic elasticity.
+    Arguments:
+        hx (float):                     -- x size of a mesh cell
+        hy (float):                     -- y size of a mesh cell
+        Ep (float):                     -- plain strain modulus.
+    Returns:
+        ndarray-float:                  -- the diagonal term.
+    """
+
+    a = hx / 2.                           #Lx/nx-1
+    b = hy / 2.                           #Ly/ny-1
+    bb = b * b
+    aa = a * a
+    sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
+    return sqrt_aa_p_bb * Ep / (2. * np.pi)
+
 class load_isotropic_elasticity_matrix_toepliz():
     def __init__(self, Mesh, Ep):
         self.Ep = Ep
