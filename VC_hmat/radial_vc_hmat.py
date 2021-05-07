@@ -24,11 +24,11 @@ from Hdot import gmres_counter
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
-run = True
+run = False
 if run:
     # creating mesh
     #Mesh = CartesianMesh(0.018, 0.018, 81, 81)
-    Mesh = CartesianMesh(    34, 34, 101, 101)
+    Mesh = CartesianMesh(    34, 34, 81, 81)
 
     # solid properties
     # nu = 0.48                               # Poisson's ratio
@@ -44,12 +44,12 @@ if run:
 
     properties = [youngs_mod, nu]
 
-    def K1c_func(x, y):
-        """ The function providing the toughness"""
-        if (np.floor(abs(y)) % 5) > 2 and abs(y) > 2.1:
-            return 0.9e6
-        else:
-            return 0.6e6
+    # def K1c_func(x, y):
+    #     """ The function providing the toughness"""
+    #     if (np.floor(abs(y)) % 5) > 2 and abs(y) > 2.1:
+    #         return 0.9e6
+    #     else:
+    #         return 0.6e6
 
     # material properties
     # def sigmaO_func(x, y):
@@ -85,9 +85,14 @@ if run:
         #    return 5.0e6
 
 
+    # Solid = MaterialProperties(Mesh,
+    #                            Eprime,
+    #                            K1c_func=K1c_func,
+    #                            confining_stress=0.,
+    #                            minimum_width=0.)
     Solid = MaterialProperties(Mesh,
                                Eprime,
-                               K1c_func=K1c_func,
+                               toughness= K_Ic ,
                                confining_stress=0.,
                                minimum_width=0.)
 
