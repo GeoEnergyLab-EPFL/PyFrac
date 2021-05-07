@@ -12,6 +12,8 @@ toleranceFractureFront = 1.0e-3         # tolerance for the fracture front posit
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
 toleranceVStagnant = 1e-6               # tolerance on the velocity to decide if a cell is stagnant.
+gmres_tol = 1e-12
+gmres_maxiter = 1000
 
 # max iterations
 max_front_itrs = 25                     # maximum iterations for the fracture front.
@@ -69,6 +71,7 @@ relaxation_param = 1.0                  # parameter defining the under-relaxatio
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
 double_fracture_vol_contr = False       # enable the volume control solver for two fractures
+volumeControlHMAT = False               # enable the volume control solver using HMAT for elasticity
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
 substitute_pressure = True              # if True, the pressure will be substituted with width to make the EHL system.
 solve_deltaP = True                     # if True, the change in pressure, instead of pressure will be solved.

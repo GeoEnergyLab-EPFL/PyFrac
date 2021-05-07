@@ -148,8 +148,11 @@ class Fracture:
                                                    init_param.fractureVolume,
                                                    simulProp.symmetric,
                                                    simulProp.useBlockToeplizCompression,
+                                                   simulProp.volumeControlHMAT,
                                                    solid.Eprime,
-                                                   boundaryEffect = boundaryEffect)
+                                                   boundaryEffect = boundaryEffect,
+                                                   gmres_tol = simulProp.gmres_tol,
+                                                   gmres_maxiter = simulProp.gmres_maxiter)
 
             if init_param.fractureVolume is None and init_param.time is None:
                 volume = np.sum(self.w) * mesh.EltArea
