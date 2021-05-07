@@ -1091,11 +1091,6 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
         if sim_properties.volumeControlHMAT:
-            # from continuous_front_reconstruction import plot_cell_lists
-            # plot = plot_cell_lists(Fr_lstTmStp.mesh, EltTip, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
-            #                        shifty=0.01, annotate_cellName=False, grid=True)
-            # plot = plot_cell_lists(Fr_lstTmStp.mesh,Fr_lstTmStp.EltChannel, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
-            #                        annotate_cellName=False, grid=True)
 
             # C is is the Hmat object
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
@@ -1103,38 +1098,41 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             counter = Hdot.gmres_counter()  # to obtain the number of iteration and residual
 
-            vol_incr = (sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea ) # - something
+            total_vol = (sum(Fr_lstTmStp.w)+ sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea)  # - something
 
             # building the right hand side of the system premultiplied by a left preconditioner
             C._set_domain_IDX(EltTip)
             C._set_codomain_IDX(Fr_lstTmStp.EltChannel)
-            dwTip = wTip - Fr_lstTmStp.w[EltTip]
-            g1 = D_i * (- C._matvec(dwTip)) + D_i * S_i * (vol_incr  - np.sum(dwTip))* np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
-            g2 = S_i * (vol_incr - np.sum(dwTip)) # S^-1 * vol_incr --> change
+
+            g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel] - C._matvec(wTip)) + D_i * S_i * (total_vol - np.sum(wTip)) * np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
+            g2 = S_i * (total_vol - np.sum(wTip))  # S^-1 * vol_incr --> change
             rhs_prec = np.concatenate((g1, np.asarray([g2])))  # preconditionned b (Ax=b)
 
             # solving the system using a left preconditioner
             data = C, Fr_lstTmStp.EltChannel, D_i, S_i
             system_dot_prod = Hdot.Volume_Control(data)
-            sol_GMRES = gmres(system_dot_prod, rhs_prec, tol = sim_properties.gmres_tol, maxiter = sim_properties.gmres_maxiter, callback=counter)
+            sol_GMRES = gmres(system_dot_prod, rhs_prec, tol=sim_properties.gmres_tol,
+                              maxiter=sim_properties.gmres_maxiter, callback=counter)
 
             # check convergence
-            #todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
+            # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
             if sol_GMRES[1] > 0:
-                log.warning("WARNING: Volume control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
-                rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(rhs_prec)
+                log.warning(
+                    "WARNING: Volume control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
+                rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
+                    rhs_prec)
                 log.warning("         error of the solution: " + str(rel_err))
             elif sol_GMRES[1] == 0:
-                rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(rhs_prec)
+                rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
+                    rhs_prec)
                 log.debug(
                     " --> GMRES BOUNDARY EFF. converged after " + str(counter.niter) + " iter. & rel err is " + str(
                         rel_err))
 
-
             # update the solution vectors w and p
             sol = sol_GMRES[0]
             w = np.copy(Fr_lstTmStp.w)
-            w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+            w[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
             w[EltTip] = wTip
 
             # from utility import plot_as_matrix
@@ -1143,8 +1141,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # plot_as_matrix(K, Fr_lstTmStp.mesh)
 
             p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-            p_old = Fr_lstTmStp.pFluid.max()
-            p[EltCrack] = p_old + sol[-1]
+            p[EltCrack] = sol[-1]
 
             return_data_solve = [None, None, None]
             return_data = [return_data_solve, np.asarray([]), False]

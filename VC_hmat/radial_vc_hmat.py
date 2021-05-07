@@ -27,20 +27,29 @@ setup_logging_to_console(verbosity_level='debug')
 run = True
 if run:
     # creating mesh
-    Mesh = CartesianMesh(0.018, 0.018, 81, 81)
+    #Mesh = CartesianMesh(0.018, 0.018, 81, 81)
+    Mesh = CartesianMesh(    34, 34, 101, 101)
 
     # solid properties
-    nu = 0.48                               # Poisson's ratio
-    youngs_mod = 125000                     # Young's modulus
-    Eprime = youngs_mod / (1 - nu ** 2)     # plain strain modulus
-    K_Ic = np.sqrt(2*4.4*Eprime)            # fracture toughness
+    # nu = 0.48                               # Poisson's ratio
+    # youngs_mod = 125000                     # Young's modulus
+    # Eprime = youngs_mod / (1 - nu ** 2)     # plain strain modulus
+    # K_Ic = np.sqrt(2*4.4*Eprime)            # fracture toughness
+
+    nu = 0.4                            # Poisson's ratio
+    youngs_mod = 3.3e10                 # Young's modulus
+    Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
+    K_Ic = 0.5e6                          # fracture toughness
+
+
     properties = [youngs_mod, nu]
 
-
-    # def My_KIc_func(x, y):
-    #     """ The function providing the fracture toughness"""
-    #     return K_Ic1
-
+    def K1c_func(x, y):
+        """ The function providing the toughness"""
+        if (np.floor(abs(y)) % 5) > 2 and abs(y) > 2.1:
+            return 0.9e6
+        else:
+            return 0.6e6
 
     # material properties
     # def sigmaO_func(x, y):
@@ -78,7 +87,7 @@ if run:
 
     Solid = MaterialProperties(Mesh,
                                Eprime,
-                               toughness=K_Ic,
+                               K1c_func=K1c_func,
                                confining_stress=0.,
                                minimum_width=0.)
 
@@ -93,7 +102,8 @@ if run:
 
 
     # injection parameters
-    Q0 =  20/1000/60/1000  # injection rate
+    #Q0 =  20/1000/60/1000  # injection rate
+    Q0 = 0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
@@ -104,11 +114,13 @@ if run:
     simulProp.set_volumeControl(True)
     simulProp.volumeControlHMAT = True
 
-    simulProp.bckColor = 'sigma0'
-    simulProp.finalTime =2.0002                          # the time at which the simulation stops
+    simulProp.bckColor = 'K1c'
+    simulProp.finalTime =1e5                          # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8                       # decrease the pre-factor due to explicit front tracking
     simulProp.set_outputFolder("./Data/radial_VC_hmat") # the disk address where the files are saved
-    simulProp.plotVar = ['pf','w']
+    simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
+    #simulProp.plotVar = ['pf','w']
+    simulProp.plotVar = ['footprint','pf']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
     simulProp.saveToDisk = True
@@ -117,17 +129,19 @@ if run:
     #simulProp.set_mesh_extension_direction(['all'])
 
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=0.002)
+    #Fr_geometry = Geometry('radial', radius=0.002)
+    Fr_geometry = Geometry('radial', radius=5.)
 
     if not simulProp.volumeControlHMAT:
         from elasticity import load_isotropic_elasticity_matrix
         C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
-    init_param = InitializationParameters(Fr_geometry, time=1.021,
-                                          regime='static',
-                                          net_pressure=18000,
-                                         elasticity_matrix=C,
-                                          )
+    init_param = InitializationParameters(Fr_geometry, regime='K')
+    # init_param = InitializationParameters(Fr_geometry, time=1.021,
+    #                                       regime='static',
+    #                                       net_pressure=18000,
+    #                                      elasticity_matrix=C,
+    #                                       )
 
 
     # creating fracture object
