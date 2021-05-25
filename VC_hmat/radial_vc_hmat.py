@@ -10,6 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # imports
 import os
 import numpy as np
+from datetime import datetime
 
 # local imports
 from mesh import CartesianMesh
@@ -24,11 +25,11 @@ from Hdot import gmres_counter
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
-run = False
+run = True
 if run:
     # creating mesh
     #Mesh = CartesianMesh(0.018, 0.018, 81, 81)
-    Mesh = CartesianMesh(    34, 34, 81, 81)
+    Mesh = CartesianMesh(10, 10, 251, 251)
 
     # solid properties
     # nu = 0.48                               # Poisson's ratio
@@ -43,6 +44,12 @@ if run:
 
 
     properties = [youngs_mod, nu]
+
+    #def K1c_func(x,y):
+    #    if x>7:
+    #        return K_Ic*2
+    #    else:
+    #        return K_Ic
 
     # def K1c_func(x, y):
     #     """ The function providing the toughness"""
@@ -85,11 +92,11 @@ if run:
         #    return 5.0e6
 
 
-    # Solid = MaterialProperties(Mesh,
-    #                            Eprime,
-    #                            K1c_func=K1c_func,
-    #                            confining_stress=0.,
-    #                            minimum_width=0.)
+    #Solid = MaterialProperties(Mesh,
+    #                           Eprime,
+    #                           K1c_func=K1c_func,
+    #                           confining_stress=0.,
+    #                           minimum_width=0.)
     Solid = MaterialProperties(Mesh,
                                Eprime,
                                toughness= K_Ic ,
@@ -117,10 +124,10 @@ if run:
     # simulation properties
     simulProp = SimulationProperties()
     simulProp.set_volumeControl(True)
-    simulProp.volumeControlHMAT = True
+    simulProp.volumeControlHMAT = False
 
     simulProp.bckColor = 'K1c'
-    simulProp.finalTime =1e5                          # the time at which the simulation stops
+    simulProp.finalTime =5                         # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8                       # decrease the pre-factor due to explicit front tracking
     simulProp.set_outputFolder("./Data/radial_VC_hmat") # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
@@ -135,7 +142,7 @@ if run:
 
     # initialization parameters
     #Fr_geometry = Geometry('radial', radius=0.002)
-    Fr_geometry = Geometry('radial', radius=5.)
+    Fr_geometry = Geometry('radial', radius=1)
 
     if not simulProp.volumeControlHMAT:
         from elasticity import load_isotropic_elasticity_matrix
@@ -167,7 +174,6 @@ if run:
 
     # run the simulation
     controller.run()
-
 ####################
 # plotting results #
 ####################
