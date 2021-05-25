@@ -6,7 +6,7 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
+import time
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import lgmres
 # local imports
@@ -24,6 +24,7 @@ from explicit_RKL import solve_width_pressure_RKL2
 from postprocess_fracture import append_to_json_file
 import Hdot
 from utility import append_new_line
+
 
 def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -1112,9 +1113,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # solving the system using a left preconditioner
             data = C, Fr_lstTmStp.EltChannel, D_i, S_i
             system_dot_prod = Hdot.Volume_Control(data)
+            begtime_gmres=time.time()
             sol_GMRES = gmres(system_dot_prod, rhs_prec, tol=sim_properties.gmres_tol,
                               maxiter=sim_properties.gmres_maxiter, callback=counter)
-
+            endtime_gmres=time.time()
             # check convergence
             # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
             if sol_GMRES[1] > 0:
@@ -1146,8 +1148,12 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             return_data_solve = [None, None, None]
             return_data = [return_data_solve, np.asarray([]), False]
+
             compute_time = time.time()-time_beg
             append_new_line('./Data/radial_VC_hmat/timing_HMAT.txt', str(compute_time)+"  "+str(Fr_lstTmStp.EltChannel.size))
+            compute_time_gmres=endtime_gmres-begtime_gmres
+            append_new_line('./Data/radial_VC_hmat/timing_HMAT_gmres.txt',
+                            str(compute_time_gmres) + "  " + str(Fr_lstTmStp.EltChannel.size))
             return w, p, return_data
 
         else:
@@ -1314,15 +1320,20 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             perfNode_linSys = instrument_start('linear system solve', perfNode_widthConstrItr)
             status = True
             fail_cause = None
+            begtime_sol=time.time()
             try:
                 sol = np.linalg.solve(A, b)
 
             except np.linalg.linalg.LinAlgError:
                 status = False
                 fail_cause = 'sigular matrix'
-            compute_time = time.time() - time_beg
+            fintime_sol=time.time()
+            compute_time_sol=fintime_sol-begtime_sol
+            compute_time = fintime_sol - time_beg
             append_new_line('./Data/radial_VC_hmat/timing_noHMAT.txt',
                             str(compute_time) + "  " + str(Fr_lstTmStp.EltChannel.size))
+            append_new_line('./Data/radial_VC_hmat/timing_noHMAT_sol.txt',
+                            str(compute_time_sol) + "  " + str(Fr_lstTmStp.EltChannel.size))
             if perfNode is not None:
                 instrument_close(perfNode_widthConstrItr, perfNode_linSys, None,
                                  len(b), status, fail_cause, Fr_lstTmStp.time)

@@ -29,7 +29,7 @@ run = True
 if run:
     # creating mesh
     #Mesh = CartesianMesh(0.018, 0.018, 81, 81)
-    Mesh = CartesianMesh(10, 10, 251, 251)
+    Mesh = CartesianMesh(10, 10, 201, 201)
 
     # solid properties
     # nu = 0.48                               # Poisson's ratio
@@ -115,7 +115,7 @@ if run:
 
     # injection parameters
     #Q0 =  20/1000/60/1000  # injection rate
-    Q0 = 0.001
+    Q0 = 0.01
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
@@ -127,7 +127,7 @@ if run:
     simulProp.volumeControlHMAT = False
 
     simulProp.bckColor = 'K1c'
-    simulProp.finalTime =5                         # the time at which the simulation stops
+    simulProp.finalTime =10                         # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8                       # decrease the pre-factor due to explicit front tracking
     simulProp.set_outputFolder("./Data/radial_VC_hmat") # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
