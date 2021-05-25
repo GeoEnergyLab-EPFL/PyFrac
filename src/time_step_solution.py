@@ -23,6 +23,7 @@ from labels import TS_errorMessages
 from explicit_RKL import solve_width_pressure_RKL2
 from postprocess_fracture import append_to_json_file
 import Hdot
+from utility import append_new_line
 
 def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -1091,7 +1092,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
         if sim_properties.volumeControlHMAT:
-
+            time_beg = time.time()
             # C is is the Hmat object
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
             S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
@@ -1145,7 +1146,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             return_data_solve = [None, None, None]
             return_data = [return_data_solve, np.asarray([]), False]
-
+            compute_time = time.time()-time_beg
+            append_new_line('./Data/radial_VC_hmat/timing_HMAT.txt', str(compute_time)+"  "+str(Fr_lstTmStp.EltChannel.size))
             return w, p, return_data
 
         else:
@@ -1292,6 +1294,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     # CARLO: I check if can be possible to have a Channel to be tip
                     if np.any(np.isin(Fr_lstTmStp.EltChannel,EltTip,assume_unique=True)):
                         SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
+                    time_beg=time.time()
                     A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
                                                         wTip,
                                                         Fr_lstTmStp.EltChannel,
@@ -1313,10 +1316,13 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             fail_cause = None
             try:
                 sol = np.linalg.solve(A, b)
+
             except np.linalg.linalg.LinAlgError:
                 status = False
                 fail_cause = 'sigular matrix'
-
+            compute_time = time.time() - time_beg
+            append_new_line('./Data/radial_VC_hmat/timing_noHMAT.txt',
+                            str(compute_time) + "  " + str(Fr_lstTmStp.EltChannel.size))
             if perfNode is not None:
                 instrument_close(perfNode_widthConstrItr, perfNode_linSys, None,
                                  len(b), status, fail_cause, Fr_lstTmStp.time)
