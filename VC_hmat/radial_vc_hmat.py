@@ -115,7 +115,7 @@ if run:
 
     # injection parameters
     #Q0 =  20/1000/60/1000  # injection rate
-    Q0 = 0.01
+    Q0 = 0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
