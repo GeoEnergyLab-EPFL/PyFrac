@@ -37,7 +37,7 @@ use_direct_TOEPLITZ = False
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(10, 10, 201, 201)
+    Mesh = CartesianMesh(10, 10, 101, 101)
 
     # solid properties
     nu = 0.4                            # Poisson's ratio

@@ -6,8 +6,8 @@ Created by Haseeb Zia on Tue Dec 27 17:41:56 2016.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-#from numba import njit
-#from numba import config, threading_layer
+from numba import njit
+from numba import config, threading_layer
 from scipy.sparse.linalg import LinearOperator
 import numpy as np
 import logging
@@ -85,10 +85,13 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
+# set the threading layer before any parallel target compilation
+# 'workqueue' is builtin
+config.THREADING_LAYER = 'workqueue' #, 'threadsafe' ,'tbb', 'omp'
 
-#@njit( parallel = True)
-#@njit() <--- thi is just in time compilation
-def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplotz_coe):
+@njit( parallel = True) #  <------parallel compilation
+#@njit() # <------serial compilation
+def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplitz_coe):
     #elemX = self.domain_INDX
     #elemY = self.codomain_INDX
     #nx  # number of element in x direction in the global mesh
@@ -106,10 +109,28 @@ def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplotz_coe):
         # assembly matrix row
         i1 = iY[iter1]
         j1 = jY[iter1]
-        row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
-        row_temp[0:dimX] = C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
-        res[iter1] = np.dot(C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)],uk)
+        #row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
+        row_temp= C_toeplitz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+        res[iter1] = np.dot(row_temp,uk)
     return res
+
+@njit()
+def get_toeplitzCoe(nx,ny,hx,hy,a,b,const):
+    C_toeplitz_coe = np.empty(ny * nx, dtype=np.float64)
+    #xindrange = np.asarray(range(nx))
+    xindrange = np.arange(nx)
+    xrange = xindrange * hx
+    for i in range(ny):
+        y = i * hy
+        amx = a - xrange
+        apx = a + xrange
+        bmy = b - y
+        bpy = b + y
+        C_toeplitz_coe[i * nx:(i + 1) * nx] = const * (np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
+                                                       + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
+                                                       + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
+                                                       + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
+    return C_toeplitz_coe
 
 
 class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
@@ -171,25 +192,13 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         set of unique coefficients := given a set of unique distances then consider the interaction coefficients
                                       obtained from them
                                       
-        C_toeplotz_coe             := An array of size (nx*ny), populated with the unique coefficients. 
+        C_toeplitz_coe             := An array of size (nx*ny), populated with the unique coefficients. 
         
         Matematically speaking:
         for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
         """
-        C_toeplotz_coe = np.empty(ny*nx, dtype=np.float64)
-        xindrange = np.asarray(range(nx))
-        xrange = xindrange * hx
-        for i in range(ny):
-            y = i*hy
-            amx = a - xrange
-            apx = a + xrange
-            bmy = b - y
-            bpy = b + y
-            C_toeplotz_coe[i*nx:(i+1)*nx] = const * (np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
-                                                            + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
-                                                            + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
-                                                            + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
-        self.C_toeplotz_coe = C_toeplotz_coe
+
+        self.C_toeplitz_coe = get_toeplitzCoe(nx,ny,hx,hy,a,b,const)
 
     def __getitem__(self, elementsXY,different_strategy=True):
         """
@@ -209,7 +218,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         else:
             nx = self.nx  # number of element in x direction in the global mesh
             C_sub = np.empty((dimY, dimX), dtype=np.float32)  # submatrix of C
-            localC_toeplotz_coe = np.copy(self.C_toeplotz_coe)  # local access is faster
+            localC_toeplotz_coe = np.copy(self.C_toeplitz_coe)  # local access is faster
             if dimX != dimY:
                 iY = np.floor_divide(elemY, nx)
                 jY = elemY - nx * iY
@@ -282,55 +291,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
                 return C_sub
 
     def _matvec(self,uk):
-        return matvec_fast(uk, self.domain_INDX,self.domain_INDX.size, self.codomain_INDX, self.codomain_INDX.size , self.nx, self.C_toeplotz_coe)
-        # elemX = self.domain_INDX
-        # elemY = self.codomain_INDX
-        # dimX = elemX.size  # number of elements to consider on x axis
-        # dimY = elemY.size  # number of elements to consider on y axis
-        # nx = self.nx  # number of element in x direction in the global mesh
-        # row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
-        # res = np.empty(dimY, dtype=np.float64)  # subvector result
-        #
-        # localC_toeplotz_coe = self.C_toeplotz_coe
-        #
-        # iY = np.floor_divide(elemY, nx)
-        # jY = elemY - nx * iY
-        # iX = np.floor_divide(elemX, nx)
-        # jX = elemX - nx * iX
-        #
-        # for iter1 in range(dimY):
-        #     # assembly matrix row
-        #     i1 = iY[iter1]
-        #     j1 = jY[iter1]
-        #     row_temp[0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
-        #     res[iter1] = np.dot(row_temp,uk)
-        #
-        # return res
-
-    # def _matvec(self, uk):
-    #     """
-    #     E.uk
-    #     (E + DiagTipCorrection).uk
-    #     """
-    #     traction = self._matvec_par(uk)
-    #
-    #     # TIP CORRECTION TO BE LOOKED AGAIN
-    #     # if self.enable_tip_corr:
-    #     #     # make tip correction
-    #     #     effective_corrINDX = np.intersect1d(self.tipcorrINDX, self.domain_INDX) #take the correction only in the column where needed
-    #     #     #corr_array = np.zeros(self.C_size_) #zero correction array
-    #     #     #corr_array[effective_corrINDX] = self.tipcorr[effective_corrINDX] #fill it with the corrected val
-    #     #     corr_array = copy.deepcopy(self.tipcorr[effective_corrINDX])  # zero correction array
-    #     #     corr_array = np.multiply(corr_array,uk) #multiply
-    #     #     traction = traction + corr_array #<---- to be changed
-    #
-    #     return traction
-
-    # def _set_tipcorr(self, correction_val, correction_INDX):
-    #     self.tipcorr = np.zeros(self.C_size_) #initialize to zero
-    #     self.tipcorr[correction_INDX] = correction_val #set the correction where needed
-    #     self.tipcorrINDX = correction_INDX #save the indexes of the nonzero val
-    #     self.enable_tip_corr = True
+        return matvec_fast(uk, self.domain_INDX,self.domain_INDX.size, self.codomain_INDX, self.codomain_INDX.size , self.nx, self.C_toeplitz_coe)
 
     def _set_domain_IDX(self, domainIDX):
         """
