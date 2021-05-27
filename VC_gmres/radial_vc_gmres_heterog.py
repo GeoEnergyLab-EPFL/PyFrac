@@ -115,7 +115,7 @@ if run:
             C.set(data)
             endtime_HMAT = time.time()
             compute_HMAT = endtime_HMAT - begtime_HMAT
-            append_new_line('./Data/radial_VC_hmat/building_HMAT.txt', str(compute_HMAT))
+            append_new_line('./Data/radial_VC_gmres/building_HMAT.txt', str(compute_HMAT))
             print("Compression Ratio of the HMAT : ", C.compressionratio)
 
         else:
@@ -137,7 +137,7 @@ if run:
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
-    simulProp.set_outputFolder("./Data/radial_VC_hmat")  # the disk address where the files are saved
+    simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     simulProp.plotVar = ['footprint']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
@@ -186,7 +186,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     from visualization import *
 
     # loading simulation results
-    Fr_list, properties = load_fractures(address="./Data/radial_VC_hmat",step_size=1)                  # load all fractures
+    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres",step_size=1)                  # load all fractures
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
     Solid, Fluid, Injection, simulProp = properties
 

@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # imports
 import os
+import time
 import numpy as np
 from datetime import datetime
 
@@ -18,6 +19,8 @@ from properties import MaterialProperties, FluidProperties, InjectionProperties,
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
+from utility import append_new_line
+from pypart import Bigwhamio
 import math
 from utility import setup_logging_to_console
 from Hdot import Hdot_3DR0opening
@@ -27,14 +30,14 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-use_iterative = True
+use_iterative = True #GMRES use or not
 use_HMAT = False
 use_direct_TOEPLITZ = False
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(10, 10, 101, 101)
+    Mesh = CartesianMesh(10, 10, 201, 201)
 
     # solid properties
     nu = 0.4                            # Poisson's ratio
@@ -52,14 +55,21 @@ if run:
     if use_iterative:
         if use_HMAT:
             # set the Hmatrix for elasticity
+            begtime_HMAT = time.time()
             C = Hdot_3DR0opening()
             max_leaf_size = 100
             eta = 10
             eps_aca = 0.001
             data = [max_leaf_size, eta, eps_aca, properties, Mesh.VertexCoor, Mesh.Connectivity, Mesh.hx, Mesh.hy]
             C.set(data)
+            endtime_HMAT = time.time()
+            compute_HMAT = endtime_HMAT - begtime_HMAT
+            append_new_line('./Data/radial_VC_gmres/building_HMAT.txt', str(compute_HMAT))
+            print("Compression Ratio of the HMAT : ", C.compressionratio)
+
         else:
             from elasticity import load_isotropic_elasticity_matrix_toepliz
+
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     # injection parameters
@@ -71,23 +81,24 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 5                             # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 1.                       # decrease the pre-factor due to explicit front tracking
+    simulProp.finalTime = 7  # the time at which the simulation stops
+    simulProp.tmStpPrefactor = 1.  # decrease the pre-factor due to explicit front tracking
     simulProp.saveToDisk = True
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
-    simulProp.set_outputFolder("./Data/radial_VC_hmat") # the disk address where the files are saved
+    simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     simulProp.plotVar = ['footprint']
-    simulProp.frontAdvancing = 'implicit'      # <--- mandatory use
-    simulProp.projMethod = 'LS_continousfront' # <--- mandatory use
+    simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
+    simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
 
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=1)
+    Fr_geometry = Geometry('radial', radius=2)
 
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:
+            simulProp.useBlockToeplizCompression = True
             from elasticity import load_isotropic_elasticity_matrix_toepliz
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
         else:
@@ -123,7 +134,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     from visualization import *
 
     # loading simulation results
-    Fr_list, properties = load_fractures(address="./Data/radial_VC_hmat",step_size=1)                  # load all fractures
+    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres",step_size=1)                  # load all fractures
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
     Solid, Fluid, Injection, simulProp = properties
 
