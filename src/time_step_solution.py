@@ -1092,7 +1092,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     """
     log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
-        if sim_properties.volumeControlHMAT:
+        if sim_properties.volumeControlGMRES:
             time_beg = time.time()
             # C is is the Hmat object
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
