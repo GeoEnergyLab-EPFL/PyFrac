@@ -7,6 +7,7 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+from scipy.sparse.linalg import LinearOperator
 import numpy as np
 import logging
 import json
@@ -83,7 +84,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
-class load_isotropic_elasticity_matrix_toepliz():
+class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
     def __init__(self, Mesh, Ep):
         self.Ep = Ep
         const = (Ep / (8. * np.pi))
@@ -102,6 +103,26 @@ class load_isotropic_elasticity_matrix_toepliz():
         self.nx = nx
         const = self.const
 
+        ################
+        # Cdot section #
+        ################
+        # diagonal value of the matrix
+        self.diag_val = get_isotropic_el_self_eff(hx, hy, self.Ep)
+
+        # define the size = number of elements in the mesh
+        self.C_size_ = int(Mesh.nx * Mesh.ny)
+
+        # define the total number of unknowns to be output by the matvet method
+        self.matvec_size_ = self.C_size_
+
+        # it is mandatory to define shape and dtype of the dot product
+        self.dtype_ = float
+        self.shape_ = (self.matvec_size_, self.matvec_size_)
+        super().__init__(self.dtype_, self.shape_)
+
+        self._set_domain_IDX(np.arange(self.C_size_))
+        self._set_codomain_IDX(np.arange(self.C_size_))
+        ################ END Cdot SECTION ###################
         """
         Let us make some definitions:
         cartesian mesh             := a structured rectangular mesh of (nx,ny) cells of rectaungular shape
@@ -231,6 +252,88 @@ class load_isotropic_elasticity_matrix_toepliz():
                     # C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(jY[x] - jX) + nx * np.abs(iY[x] - iX)],range(dimY))))
 
                 return C_sub
+
+    def _matvec(self,uk):
+        elemX = self.domain_INDX
+        elemY = self.codomain_INDX
+        dimX = elemX.size  # number of elements to consider on x axis
+        dimY = elemY.size  # number of elements to consider on y axis
+        nx = self.nx  # number of element in x direction in the global mesh
+        row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
+        res = np.empty(dimY, dtype=np.float64)  # subvector result
+
+        localC_toeplotz_coe = self.C_toeplotz_coe
+
+        iY = np.floor_divide(elemY, nx)
+        jY = elemY - nx * iY
+        iX = np.floor_divide(elemX, nx)
+        jX = elemX - nx * iX
+
+        for iter1 in range(dimY):
+            # assembly matrix row
+            i1 = iY[iter1]
+            j1 = jY[iter1]
+            row_temp[0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+            res[iter1] = np.dot(row_temp,uk)
+
+        return res
+
+    # def _matvec(self, uk):
+    #     """
+    #     E.uk
+    #     (E + DiagTipCorrection).uk
+    #     """
+    #     traction = self._matvec_par(uk)
+    #
+    #     # TIP CORRECTION TO BE LOOKED AGAIN
+    #     # if self.enable_tip_corr:
+    #     #     # make tip correction
+    #     #     effective_corrINDX = np.intersect1d(self.tipcorrINDX, self.domain_INDX) #take the correction only in the column where needed
+    #     #     #corr_array = np.zeros(self.C_size_) #zero correction array
+    #     #     #corr_array[effective_corrINDX] = self.tipcorr[effective_corrINDX] #fill it with the corrected val
+    #     #     corr_array = copy.deepcopy(self.tipcorr[effective_corrINDX])  # zero correction array
+    #     #     corr_array = np.multiply(corr_array,uk) #multiply
+    #     #     traction = traction + corr_array #<---- to be changed
+    #
+    #     return traction
+
+    # def _set_tipcorr(self, correction_val, correction_INDX):
+    #     self.tipcorr = np.zeros(self.C_size_) #initialize to zero
+    #     self.tipcorr[correction_INDX] = correction_val #set the correction where needed
+    #     self.tipcorrINDX = correction_INDX #save the indexes of the nonzero val
+    #     self.enable_tip_corr = True
+
+    def _set_domain_IDX(self, domainIDX):
+        """
+        General example:
+        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
+        codomain indexes are [0, 2] of elements returned after the dot product
+        o o o o    0 <-0    x <-0
+        o o o o    x <-1  = o <-1
+        o o o o    x <-2    x <-2
+        o o o o    0 <-3    o <-3
+        """
+        self.domain_INDX = domainIDX
+
+    def _set_codomain_IDX(self, codomainIDX):
+        """
+        General example:
+        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
+        codomain indexes are [0, 2] of elements returned after the dot product
+        o o o o    0 <-0    x <-0
+        o o o o    x <-1  = o <-1
+        o o o o    x <-2    x <-2
+        o o o o    0 <-3    o <-3
+        """
+        self.codomain_INDX = codomainIDX
+        self._changeShape(codomainIDX.size)
+
+    def _changeShape(self, shape_):
+        self.matvec_size_ = shape_
+        self.shape_ = (shape_, shape_)
+        super().__init__(self.dtype_, self.shape_)
+
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 def get_Cij_Matrix(youngs_mod, nu):
