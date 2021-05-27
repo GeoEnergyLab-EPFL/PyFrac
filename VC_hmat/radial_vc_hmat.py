@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # imports
 import os
+import time
 import numpy as np
 from datetime import datetime
 
@@ -18,6 +19,8 @@ from properties import MaterialProperties, FluidProperties, InjectionProperties,
 from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
+from utility import append_new_line
+from pypart import Bigwhamio
 import math
 from utility import setup_logging_to_console
 from Hdot import Hdot_3DR0opening
@@ -29,7 +32,7 @@ run = True
 if run:
     # creating mesh
     #Mesh = CartesianMesh(0.018, 0.018, 81, 81)
-    Mesh = CartesianMesh(10, 10, 201, 201)
+    Mesh = CartesianMesh(10, 10, 301, 301)
 
     # solid properties
     # nu = 0.48                               # Poisson's ratio
@@ -105,13 +108,20 @@ if run:
 
 
     # set the Hmatrix for elasticity
+    begtime_HMAT=time.time()
     C = Hdot_3DR0opening()
     max_leaf_size = 100
     eta = 10
     eps_aca = 0.001
     data = [max_leaf_size, eta, eps_aca, properties, Mesh.VertexCoor, Mesh.Connectivity, Mesh.hx, Mesh.hy]
     C.set(data)
+    endtime_HMAT=time.time()
+    compute_HMAT=endtime_HMAT-begtime_HMAT
+    append_new_line('./Data/radial_VC_hmat/building_HMAT.txt',str(compute_HMAT))
 
+    print("Compression Ratio of the HMAT : ",C.compressionratio)
+
+    # compression = C.Bigwhamio.getCompressionRatio()
 
     # injection parameters
     #Q0 =  20/1000/60/1000  # injection rate
@@ -124,11 +134,11 @@ if run:
     # simulation properties
     simulProp = SimulationProperties()
     simulProp.set_volumeControl(True)
-    simulProp.volumeControlHMAT = False
+    simulProp.volumeControlHMAT = True
 
     simulProp.bckColor = 'K1c'
-    simulProp.finalTime =10                         # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 0.8                       # decrease the pre-factor due to explicit front tracking
+    simulProp.finalTime =7                         # the time at which the simulation stops
+    simulProp.tmStpPrefactor = 1.5                       # decrease the pre-factor due to explicit front tracking
     simulProp.set_outputFolder("./Data/radial_VC_hmat") # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     #simulProp.plotVar = ['pf','w']
@@ -142,11 +152,20 @@ if run:
 
     # initialization parameters
     #Fr_geometry = Geometry('radial', radius=0.002)
-    Fr_geometry = Geometry('radial', radius=1)
+    Fr_geometry = Geometry('radial', radius=2)
 
-    if not simulProp.volumeControlHMAT:
+    simulProp.useBlockToeplizCompression = True
+
+    if not simulProp.volumeControlHMAT and not simulProp.useBlockToeplizCompression:
+        # using normal C
         from elasticity import load_isotropic_elasticity_matrix
+
         C = load_isotropic_elasticity_matrix(Mesh, Eprime)
+    elif not simulProp.volumeControlHMAT and simulProp.useBlockToeplizCompression:
+        # using Block Toepliz Compression ---> it saves a lot of memory...is it as good as Hmat?
+        from elasticity import load_isotropic_elasticity_matrix_toepliz
+
+        C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     init_param = InitializationParameters(Fr_geometry, regime='K')
     # init_param = InitializationParameters(Fr_geometry, time=1.021,
