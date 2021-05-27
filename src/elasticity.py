@@ -6,8 +6,8 @@ Created by Haseeb Zia on Tue Dec 27 17:41:56 2016.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-from numba import njit
-from numba import config, threading_layer
+#from numba import njit
+#from numba import config, threading_layer
 from scipy.sparse.linalg import LinearOperator
 import numpy as np
 import logging
@@ -85,12 +85,9 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
-# set the threading layer before any parallel target compilation
-#config.THREADING_LAYER = 'threadsafe'
-
 
 #@njit( parallel = True)
-@njit()
+#@njit() <--- thi is just in time compilation
 def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplotz_coe):
     #elemX = self.domain_INDX
     #elemY = self.codomain_INDX
@@ -104,15 +101,14 @@ def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplotz_coe):
     jY = elemY - nx * iY
     iX = np.floor_divide(elemX, nx)
     jX = elemX - nx * iX
-    #row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
+    #
     for iter1 in range(dimY):
         # assembly matrix row
         i1 = iY[iter1]
         j1 = jY[iter1]
-
-        #row_temp[0:dimX] = C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+        row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
+        row_temp[0:dimX] = C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
         res[iter1] = np.dot(C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)],uk)
-
     return res
 
 

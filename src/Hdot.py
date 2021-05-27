@@ -494,21 +494,21 @@ class Hdot_3DR0opening(LinearOperator):
         traction = np.asarray(self.HMATtract.hdotProduct(uk_full))
 
         # TIP CORRECTION TO BE LOOKED AGAIN
-        # if self.enable_tip_corr:
-        #     # make tip correction
-        #     effective_corrINDX = np.intersect1d(self.tipcorrINDX, self.domain_INDX)
-        #     corr_array = np.zeros(self.HMAT_size_)
-        #     corr_array[effective_corrINDX] = self.tipcorr[effective_corrINDX]
-        #     corr_array = np.multiply(corr_array,uk_full)
-        #     traction = traction + corr_array
+        if self.enable_tip_corr:
+            # make tip correction
+            effective_corrINDX = np.intersect1d(self.tipcorrINDX, self.domain_INDX)
+            corr_array = np.zeros(self.HMAT_size_)
+            corr_array[effective_corrINDX] = self.tipcorr[effective_corrINDX]
+            corr_array = np.multiply(corr_array,uk_full)
+            traction = traction + corr_array
 
         return traction[self.codomain_INDX]
 
-    # def _set_tipcorr(self, correction_val, correction_INDX):
-    #     self.tipcorr = np.zeros(self.HMAT_size_)
-    #     self.tipcorr[correction_INDX] = correction_val
-    #     self.tipcorrINDX = correction_INDX
-    #     self.enable_tip_corr = True
+    def _set_tipcorr(self, correction_val, correction_INDX):
+        self.tipcorr = np.zeros(self.HMAT_size_)
+        self.tipcorr[correction_INDX] = correction_val
+        self.tipcorrINDX = correction_INDX
+        self.enable_tip_corr = True
 
     def _set_domain_IDX(self, domainIDX):
         """
