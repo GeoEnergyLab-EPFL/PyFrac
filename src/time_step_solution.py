@@ -1150,10 +1150,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             return_data = [return_data_solve, np.asarray([]), False]
 
             compute_time = time.time()-time_beg
-            append_new_line('./Data/radial_VC_hmat/timing_HMAT.txt', str(compute_time)+"  "+str(Fr_lstTmStp.EltChannel.size))
+            append_new_line('./Data/radial_VC_hmat/timing_HMAT.txt', str(Fr_lstTmStp.EltChannel.size)+"  "+str(compute_time))
             compute_time_gmres=endtime_gmres-begtime_gmres
             append_new_line('./Data/radial_VC_hmat/timing_HMAT_gmres.txt',
-                            str(compute_time_gmres) + "  " + str(Fr_lstTmStp.EltChannel.size))
+                            str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_gmres) )
             return w, p, return_data
 
         else:
@@ -1331,9 +1331,9 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             compute_time_sol=fintime_sol-begtime_sol
             compute_time = fintime_sol - time_beg
             append_new_line('./Data/radial_VC_hmat/timing_noHMAT.txt',
-                            str(compute_time) + "  " + str(Fr_lstTmStp.EltChannel.size))
+                             str(Fr_lstTmStp.EltChannel.size)+ "  " + str(compute_time))
             append_new_line('./Data/radial_VC_hmat/timing_noHMAT_sol.txt',
-                            str(compute_time_sol) + "  " + str(Fr_lstTmStp.EltChannel.size))
+                            str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_sol))
             if perfNode is not None:
                 instrument_close(perfNode_widthConstrItr, perfNode_linSys, None,
                                  len(b), status, fail_cause, Fr_lstTmStp.time)
