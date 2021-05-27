@@ -1105,9 +1105,12 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # building the right hand side of the system premultiplied by a left preconditioner
             C._set_domain_IDX(EltTip)
             C._set_codomain_IDX(Fr_lstTmStp.EltChannel)
-
-            g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel] - C._matvec(wTip)) + D_i * S_i * (total_vol - np.sum(wTip)) * np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
-            g2 = S_i * (total_vol - np.sum(wTip))  # S^-1 * vol_incr --> change
+            if wTip.size == 0:
+                g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel]) + D_i * S_i * (total_vol) * np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
+                g2 = S_i * (total_vol)  # S^-1 * vol_incr --> change
+            else:
+                g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel] - C._matvec(wTip)) + D_i * S_i * (total_vol - np.sum(wTip)) * np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
+                g2 = S_i * (total_vol - np.sum(wTip))  # S^-1 * vol_incr --> change
             rhs_prec = np.concatenate((g1, np.asarray([g2])))  # preconditionned b (Ax=b)
 
             # solving the system using a left preconditioner
