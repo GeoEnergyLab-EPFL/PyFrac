@@ -149,7 +149,12 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     stagnant = np.bitwise_or(stagnant_closed, stagnant_crt)
 
     if np.all(stagnant):
-        return 1, Fr_k
+        delta_w = np.abs(Fr_k.w[Fr_k.EltRibbon]-Frac.w[Fr_k.EltRibbon])
+        if np.sum(Qin) != 0 and np.max(delta_w) < sim_properties.tolerancewIncr:
+            log.warning('The time step is too small to induce a significant change in opening')
+            return 18, Fr_k
+        else:
+            return 1, Fr_k
 
     log.debug('Starting Fracture Front loop...')
 
@@ -185,7 +190,11 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
         if exitstatus == 1:
             # norm is evaluated by dividing the difference in the area of the tip cells between two successive
             # iterations with the number of tip cells.
-            norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+            if not k == 1:
+                norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+                norm_first_it = None
+            else:
+                norm_first_it = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
         else:
             norm = np.nan
 
@@ -197,8 +206,14 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
         if exitstatus != 1:
             return exitstatus, Fr_k
+        if not k == 1:
+            log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
+        else:
+            if norm_first_it is None:
+                log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
+            else:
+                log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm_first_it) + ' forcing 2 iter min.')
 
-        log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
         # sometimes the code is going to fail because of the max number of iterations due to the lack of
         # improvement of the norm
@@ -460,6 +475,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         | 15      -- iterations on front will not converge (continuous front)
         | 16      -- max number of cells achieved. Reducing the number of cells
         | 17      -- you advanced more than two cells in a row. Repeating with a smaller time step
+        | 18      -- the max abs increment in fracture opening is smaller than a given threshold despite a positive injection rate. Try larger time step
         - Fracture:            fracture after advancing time step.
 
     """
@@ -1124,7 +1140,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
             if sol_GMRES[1] > 0:
                 log.warning(
-                    "WARNING: Volume control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
+                    "WARNING: Volume Control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
                 rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
                     rhs_prec)
                 log.warning("         error of the solution: " + str(rel_err))
@@ -1132,7 +1148,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
                     rhs_prec)
                 log.debug(
-                    " --> GMRES BOUNDARY EFF. converged after " + str(counter.niter) + " iter. & rel err is " + str(
+                    " --> GMRES Volume Control converged after " + str(counter.niter) + " iter. & rel err is " + str(
                         rel_err))
 
             # update the solution vectors w and p
@@ -1755,7 +1771,7 @@ def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_propert
             | 15      -- iterations on front will not converge (continuous front)
             | 16      -- max number of cells achieved. Reducing the number of cells
             | 17      -- you advanced more than two cells in a row. Repeating with a smaller time step
-
+            | 18      -- the max abs increment in fracture opening is smaller than a given threshold despite a positive injection rate. Try larger time step
         - Fracture:            fracture after advancing time step.
 
     """
