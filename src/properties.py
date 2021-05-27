@@ -773,6 +773,7 @@ class SimulationProperties:
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
         self.toleranceVStagnant = simul_param.toleranceVStagnant
+        self.tolerancewIncr = simul_param.tolerancewIncr
         self.gmres_tol = simul_param.gmres_tol
         self.gmres_maxiter = simul_param.gmres_maxiter
 

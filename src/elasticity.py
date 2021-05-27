@@ -17,7 +17,7 @@ import pickle
 from array import array
 import os, sys
 
-def load_isotropic_elasticity_matrix(Mesh, Ep):
+def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32):
     """
     Evaluate the elasticity matrix for the whole mesh.
     Arguments:
@@ -52,7 +52,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep):
     b = Mesh.hy / 2.
     Ne = Mesh.NumberOfElts
 
-    C = np.empty([Ne, Ne], dtype=np.float32)
+    C = np.empty([Ne, Ne], dtype=C_precision)
 
     for i in range(0, Ne):
         x = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
@@ -91,20 +91,22 @@ config.THREADING_LAYER = 'workqueue' #, 'threadsafe' ,'tbb', 'omp'
 
 @njit( parallel = True) #  <------parallel compilation
 #@njit() # <------serial compilation
-def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplitz_coe):
+#def matvec_fast(uk, elemX,  elemY, dimY, nx, C_toeplitz_coe, randomRangeDimy, C_precision):
+def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe,  C_precision):
     #elemX = self.domain_INDX
     #elemY = self.codomain_INDX
     #nx  # number of element in x direction in the global mesh
     # dimX = elemX.size  # number of elements to consider on x axis
     # dimY = elemY.size  # number of elements to consider on y axis
 
-    res = np.empty(dimY, dtype=np.float64)  # subvector result
+    res = np.empty(dimY, dtype=C_precision)  # subvector result
 
     iY = np.floor_divide(elemY, nx)
     jY = elemY - nx * iY
     iX = np.floor_divide(elemX, nx)
     jX = elemX - nx * iX
-    #
+    # it can be range(dimY) but I use np.random.shuffle(range(dimY)) to reduce the probablility of accessing the same memory locations from more threads
+    #for iter1 in randomRangeDimy:
     for iter1 in range(dimY):
         # assembly matrix row
         i1 = iY[iter1]
@@ -115,8 +117,8 @@ def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplitz_coe):
     return res
 
 @njit()
-def get_toeplitzCoe(nx,ny,hx,hy,a,b,const):
-    C_toeplitz_coe = np.empty(ny * nx, dtype=np.float64)
+def get_toeplitzCoe(nx,ny,hx,hy,a,b,const,C_precision):
+    C_toeplitz_coe = np.empty(ny * nx, dtype=C_precision)
     #xindrange = np.asarray(range(nx))
     xindrange = np.arange(nx)
     xrange = xindrange * hx
@@ -132,9 +134,54 @@ def get_toeplitzCoe(nx,ny,hx,hy,a,b,const):
                                                        + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
     return C_toeplitz_coe
 
+@njit()
+def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
+    elemX = elementsXY[1].flatten()
+    elemY = elementsXY[0].flatten()
+    dimX = elemX.size  # number of elements to consider on x axis
+    dimY = elemY.size  # number of elements to consider on y axis
+
+    if dimX == 0 or dimY == 0:
+        return np.empty((dimY, dimX), dtype=C_precision)
+    else:
+        C_sub = np.empty((dimY, dimX), dtype=C_precision)  # submatrix of C
+        localC_toeplotz_coe = np.copy(C_toeplitz_coe)  # local access is faster
+        if dimX != dimY:
+            iY = np.floor_divide(elemY, nx)
+            jY = elemY - nx * iY
+            iX = np.floor_divide(elemX, nx)
+            jX = elemX - nx * iX
+            for iter1 in range(dimY):
+                i1 = iY[iter1]
+                j1 = jY[iter1]
+                C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+            return C_sub
+
+        elif dimX == dimY and np.all((elemY == elemX)):
+            i = np.floor_divide(elemX, nx)
+            j = elemX - nx * i
+
+            for iter1 in range(dimX):
+                i1 = i[iter1]
+                j1 = j[iter1]
+                C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+            return C_sub
+
+        else:
+            iY = np.floor_divide(elemY, nx)
+            jY = elemY - nx * iY
+            iX = np.floor_divide(elemX, nx)
+            jX = elemX - nx * iX
+
+            for iter1 in range(dimY):
+                i1 = iY[iter1]
+                j1 = jY[iter1]
+                C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+            return C_sub
 
 class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
-    def __init__(self, Mesh, Ep):
+    def __init__(self, Mesh, Ep, C_precision = np.float64):
+        self.C_precision = C_precision
         self.Ep = Ep
         const = (Ep / (8. * np.pi))
         self.const = const
@@ -198,100 +245,23 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
         """
 
-        self.C_toeplitz_coe = get_toeplitzCoe(nx,ny,hx,hy,a,b,const)
+        self.C_toeplitz_coe = get_toeplitzCoe(nx,ny,hx,hy,a,b,const, self.C_precision)
 
-    def __getitem__(self, elementsXY,different_strategy=True):
+    def __getitem__(self, elementsXY):
         """
         critical call: it should be as fast as possible
         :param elemX: (numpy array) columns to take
         :param elemY: (numpy array) rows to take
         :return: submatrix of C
         """
-
-        elemX = elementsXY[1].flatten()
-        elemY = elementsXY[0].flatten()
-        dimX = elemX.size  # number of elements to consider on x axis
-        dimY = elemY.size  # number of elements to consider on y axis
-
-        if dimX == 0 or dimY == 0:
-            return np.empty((dimY, dimX),dtype=np.float32)
-        else:
-            nx = self.nx  # number of element in x direction in the global mesh
-            C_sub = np.empty((dimY, dimX), dtype=np.float32)  # submatrix of C
-            localC_toeplotz_coe = np.copy(self.C_toeplitz_coe)  # local access is faster
-            if dimX != dimY:
-                iY = np.floor_divide(elemY, nx)
-                jY = elemY - nx * iY
-                iX = np.floor_divide(elemX, nx)
-                jX = elemX - nx * iX
-                #if not different_strategy:
-                # strategy 1
-                for iter1 in range(dimY):
-                    i1 = iY[iter1]
-                    j1 = jY[iter1]
-                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
-                # else:
-                    # strategy 2 - more memory expensive than 1
-                    #C_sub=np.take(localC_toeplotz_coe, np.abs(np.array([jY]).T- jX)+ nx * np.abs(np.array([iY]).T- iX))
-
-                    # strategy 3 - more memory expensive than 1
-                    # J1, J2 = np.meshgrid(jX, jY)
-                    # I1, I2 = np.meshgrid(iX, iY)
-                    # C_sub = np.take(localC_toeplotz_coe, np.abs(J1 - J2) + nx * np.abs(I1 - I2))
-
-                    # strategy 4 - slower
-                    #C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(jY[x] - jX) + nx * np.abs(iY[x] - iX)],range(dimY))))
-                return C_sub
-
-            elif dimX == dimY and np.all((elemY == elemX)):
-                i = np.floor_divide(elemX, nx)
-                j = elemX - nx * i
-                # if not different_strategy:
-                    # strategy 1
-                for iter1 in range(dimX):
-                    i1 = i[iter1]
-                    j1 = j[iter1]
-                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
-                # else:
-                        # strategy 2 - more memory expensive than 1
-                        #C_sub = np.take(localC_toeplotz_coe, np.abs(np.array([j]).T - j) + nx * np.abs(np.array([i]).T - i))
-
-                        # strategy 3 - more memory expensive than 1
-                        # J1, J2 = np.meshgrid(j, j)
-                        # I1, I2 = np.meshgrid(i, i)
-                        # C_sub = np.take(localC_toeplotz_coe, np.abs(J1-J2) + nx * np.abs(I1-I2))
-
-                        # strategy 4 - slower
-                        # C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(j[x] - j) + nx * np.abs(i[x] - i)],range(dimY))))
-                return C_sub
-
-            else:
-                iY = np.floor_divide(elemY, nx)
-                jY = elemY - nx * iY
-                iX = np.floor_divide(elemX, nx)
-                jX = elemX - nx * iX
-                # if not different_strategy:
-                    # strategy 1
-                for iter1 in range(dimY):
-                    i1 = iY[iter1]
-                    j1 = jY[iter1]
-                    C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
-                # else:
-                    # strategy 2 - more memory expensive than 1
-                    #C_sub=np.take(localC_toeplotz_coe, np.abs(np.array([jY]).T- jX)+ nx * np.abs(np.array([iY]).T- iX))
-
-                    # strategy 3 - more memory expensive than 1
-                    # J1, J2 = np.meshgrid(jX, jY)
-                    # I1, I2 = np.meshgrid(iX, iY)
-                    # C_sub = np.take(localC_toeplotz_coe, np.abs(J2 - J1) + nx * np.abs(I2 - I1))
-
-                    # strategy 4 - slower
-                    # C_sub = np.asarray(list(map(lambda x: localC_toeplotz_coe[np.abs(jY[x] - jX) + nx * np.abs(iY[x] - iX)],range(dimY))))
-
-                return C_sub
+        return getFast(elementsXY, self.nx, self.C_toeplitz_coe, self.C_precision)
 
     def _matvec(self,uk):
-        return matvec_fast(uk, self.domain_INDX,self.domain_INDX.size, self.codomain_INDX, self.codomain_INDX.size , self.nx, self.C_toeplitz_coe)
+        # if self.C_precision == np.float32:
+        #     uk = uk.astype('float32')
+        #return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size , self.nx, self.C_toeplitz_coe, self.randomRangeDimy, self.C_precision)
+        return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx, self.C_toeplitz_coe, self.C_precision)
+
 
     def _set_domain_IDX(self, domainIDX):
         """
@@ -317,6 +287,9 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         """
         self.codomain_INDX = codomainIDX
         self._changeShape(codomainIDX.size)
+        #self.randomRangeDimy = np.arange(self.codomain_INDX.size)
+        #np.random.shuffle(self.randomRangeDimy)
+
 
     def _changeShape(self, shape_):
         self.matvec_size_ = shape_

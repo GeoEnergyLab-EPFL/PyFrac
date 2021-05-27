@@ -32,7 +32,7 @@ setup_logging_to_console(verbosity_level='debug')
 run = True
 use_iterative = True #GMRES use or not
 use_HMAT = False
-use_direct_TOEPLITZ = False
+use_direct_TOEPLITZ = True
 ############################
 
 if run:

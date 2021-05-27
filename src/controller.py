@@ -876,14 +876,19 @@ class Controller:
             - Fr (Fracture)           -- fracture after advancing time step.
         """
         log = logging.getLogger('PyFrac.controller.advance_time_step')
+        status = 9999 #meaningless status
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
-            # smaller time step to reattempt time stepping; equal to the given time step on first iteration
-            tmStp_to_attempt = timeStep * self.sim_prop.reAttemptFactor ** i
+            if status not in [18]:
+                # smaller time step to reattempt time stepping; equal to the given time step on first iteration
+                tmStp_to_attempt = timeStep * self.sim_prop.reAttemptFactor ** i
 
-            # try larger prefactor
-            if i > self.sim_prop.maxReattempts/2-1:
-                tmStp_to_attempt = timeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
+                # try larger prefactor
+                if i > self.sim_prop.maxReattempts/2-1:
+                    tmStp_to_attempt = timeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
+            else:
+                #try immediatly a larger prefactor
+                tmStp_to_attempt = timeStep * (1 / self.sim_prop.reAttemptFactor) ** (i)
 
             # check for final time
             if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.finalTime:
