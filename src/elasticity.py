@@ -6,7 +6,8 @@ Created by Haseeb Zia on Tue Dec 27 17:41:56 2016.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
+from numba import njit
+from numba import config, threading_layer
 from scipy.sparse.linalg import LinearOperator
 import numpy as np
 import logging
@@ -83,6 +84,37 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     aa = a * a
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
+
+# set the threading layer before any parallel target compilation
+#config.THREADING_LAYER = 'threadsafe'
+
+
+#@njit( parallel = True)
+@njit()
+def matvec_fast(uk, elemX, dimX,  elemY, dimY, nx, C_toeplotz_coe):
+    #elemX = self.domain_INDX
+    #elemY = self.codomain_INDX
+    #nx  # number of element in x direction in the global mesh
+    # dimX = elemX.size  # number of elements to consider on x axis
+    # dimY = elemY.size  # number of elements to consider on y axis
+
+    res = np.empty(dimY, dtype=np.float64)  # subvector result
+
+    iY = np.floor_divide(elemY, nx)
+    jY = elemY - nx * iY
+    iX = np.floor_divide(elemX, nx)
+    jX = elemX - nx * iX
+    #row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
+    for iter1 in range(dimY):
+        # assembly matrix row
+        i1 = iY[iter1]
+        j1 = jY[iter1]
+
+        #row_temp[0:dimX] = C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+        res[iter1] = np.dot(C_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)],uk)
+
+    return res
+
 
 class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
     def __init__(self, Mesh, Ep):
@@ -254,29 +286,30 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
                 return C_sub
 
     def _matvec(self,uk):
-        elemX = self.domain_INDX
-        elemY = self.codomain_INDX
-        dimX = elemX.size  # number of elements to consider on x axis
-        dimY = elemY.size  # number of elements to consider on y axis
-        nx = self.nx  # number of element in x direction in the global mesh
-        row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
-        res = np.empty(dimY, dtype=np.float64)  # subvector result
-
-        localC_toeplotz_coe = self.C_toeplotz_coe
-
-        iY = np.floor_divide(elemY, nx)
-        jY = elemY - nx * iY
-        iX = np.floor_divide(elemX, nx)
-        jX = elemX - nx * iX
-
-        for iter1 in range(dimY):
-            # assembly matrix row
-            i1 = iY[iter1]
-            j1 = jY[iter1]
-            row_temp[0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
-            res[iter1] = np.dot(row_temp,uk)
-
-        return res
+        return matvec_fast(uk, self.domain_INDX,self.domain_INDX.size, self.codomain_INDX, self.codomain_INDX.size , self.nx, self.C_toeplotz_coe)
+        # elemX = self.domain_INDX
+        # elemY = self.codomain_INDX
+        # dimX = elemX.size  # number of elements to consider on x axis
+        # dimY = elemY.size  # number of elements to consider on y axis
+        # nx = self.nx  # number of element in x direction in the global mesh
+        # row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
+        # res = np.empty(dimY, dtype=np.float64)  # subvector result
+        #
+        # localC_toeplotz_coe = self.C_toeplotz_coe
+        #
+        # iY = np.floor_divide(elemY, nx)
+        # jY = elemY - nx * iY
+        # iX = np.floor_divide(elemX, nx)
+        # jX = elemX - nx * iX
+        #
+        # for iter1 in range(dimY):
+        #     # assembly matrix row
+        #     i1 = iY[iter1]
+        #     j1 = jY[iter1]
+        #     row_temp[0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+        #     res[iter1] = np.dot(row_temp,uk)
+        #
+        # return res
 
     # def _matvec(self, uk):
     #     """

@@ -82,7 +82,7 @@ if run:
     # simulation properties
     simulProp = SimulationProperties()
     simulProp.finalTime = 7  # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 1.  # decrease the pre-factor due to explicit front tracking
+    simulProp.tmStpPrefactor = 1.5  # decrease the pre-factor due to explicit front tracking
     simulProp.saveToDisk = True
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
