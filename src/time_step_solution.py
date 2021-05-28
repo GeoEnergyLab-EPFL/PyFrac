@@ -67,6 +67,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
         perfNode_explFront = instrument_start('extended front', perfNode)
         exitstatus, Fr_k = time_step_explicit_front(Frac,
                                                     C,
+                                                    Boundary,
                                                     timeStep,
                                                     Qin,
                                                     mat_properties,
@@ -95,6 +96,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
         perfNode_explFront = instrument_start('extended front', perfNode)
         exitstatus, Fr_k = time_step_explicit_front(Frac,
                                                     C,
+                                                    Boundary,
                                                     timeStep,
                                                     Qin,
                                                     mat_properties,
@@ -1109,6 +1111,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
         if sim_properties.volumeControlGMRES:
+
             time_beg = time.time()
             # C is is the Hmat object
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
@@ -1734,7 +1737,7 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
+def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
                              perfNode=None):
     """
     This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
