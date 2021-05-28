@@ -92,6 +92,7 @@ if run:
     simulProp.plotVar = ['footprint']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
+    simulProp.force_time_schedule = True
     simulProp.set_solTimeSeries( np.asarray([0.34029377788929954, 0.3910039421949774 , 0.44932063114650705 ,
                                             0.5163848234407662 , 0.5935086445791642 , 0.6822010388883218 ,
                                             0.7841972923438532 , 0.9014929838177141 , 1.0363830290126543 ,

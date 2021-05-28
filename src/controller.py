@@ -1143,7 +1143,8 @@ class Controller:
         """
         log = logging.getLogger('PyFrac.get_time_step')
         time_step_given = False
-        if self.sim_prop.fixedTmStp is not None:
+        time_step = 0
+        if self.sim_prop.fixedTmStp is not None and not self.sim_prop.force_time_schedule:
             # fixed time step
             if isinstance(self.sim_prop.fixedTmStp, float) or isinstance(self.sim_prop.fixedTmStp, int):
                 time_step = self.sim_prop.fixedTmStp
@@ -1166,7 +1167,7 @@ class Controller:
                 raise ValueError("Fixed time step can be a float or an ndarray with two rows giving the time and"
                                  " corresponding time steps.")
 
-        if not time_step_given:
+        if not time_step_given and not self.sim_prop.force_time_schedule:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             if np.any(self.fracture.v == np.nan):
                 log.warning("WARNING: you should not get nan velocities")
@@ -1234,7 +1235,7 @@ class Controller:
                 time_step = 0.15 * self.fracture.time
 
         # in case of fracture not propagating
-        if time_step <= 0 or np.isinf(time_step):
+        if (time_step <= 0 or np.isinf(time_step)) and not self.sim_prop.force_time_schedule:
             if self.stagnant_TS is not None:
                 time_step = self.stagnant_TS
                 self.stagnant_TS = time_step * 1.2
@@ -1263,7 +1264,7 @@ class Controller:
                              ' is less than initial time.')
 
         # check if time step would step over the next time in required time series
-        if self.fracture.time + time_step > next_in_TS:
+        if (self.fracture.time + time_step > next_in_TS) or self.sim_prop.force_time_schedule:
             time_step = next_in_TS - self.fracture.time
         # check if the current time is very close the next time to hit. If yes, set it to the next time to avoid
         # very small time step in the next time step advance.
