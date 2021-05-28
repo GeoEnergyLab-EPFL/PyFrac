@@ -31,9 +31,9 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-use_iterative = True
+use_iterative = False
 use_HMAT = False
-use_direct_TOEPLITZ = False
+use_direct_TOEPLITZ = True
 ############################
 
 if run:
@@ -47,8 +47,12 @@ if run:
     properties = [youngs_mod, nu]
 
     def K1c_func(x,y):
+        """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
-        return K_Ic
+        if (np.floor(abs(y)) % 2.5) > 1 and abs(y) >0.:
+            return K_Ic
+        else:
+            return 2.*K_Ic
 
     #def K1c_func(x,y):
     #    if x>7:
@@ -66,6 +70,11 @@ if run:
 
     def sigmaO_func(x, y):
         return 0
+        # """ The function providing the stress"""
+        # if (np.floor(abs(y)) % 3) > 1 and abs(y) >0.:
+        #     return 48e6
+        # else:
+        #     return 36e6
         # # comment the following section if you would like to consider field of stress
         # # caracterized by the presence of less heterogeneities.
         # lx = 0.20
@@ -137,6 +146,7 @@ if run:
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
+    #simulProp.bckColor = 'sigma0'
     simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     simulProp.plotVar = ['footprint']

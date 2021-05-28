@@ -6,7 +6,7 @@ Created by Haseeb Zia on Tue Dec 27 17:41:56 2016.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-from numba import njit
+from numba import njit, prange
 from numba import config, threading_layer
 from scipy.sparse.linalg import LinearOperator
 import numpy as np
@@ -87,11 +87,11 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
 
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
-config.THREADING_LAYER = 'workqueue' #, 'threadsafe' ,'tbb', 'omp'
+#config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'tbb' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
 
 @njit( parallel = True) #  <------parallel compilation
 #@njit() # <------serial compilation
-#def matvec_fast(uk, elemX,  elemY, dimY, nx, C_toeplitz_coe, randomRangeDimy, C_precision):
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe,  C_precision):
     #elemX = self.domain_INDX
     #elemY = self.codomain_INDX
@@ -105,21 +105,16 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe,  C_precision):
     jY = elemY - nx * iY
     iX = np.floor_divide(elemX, nx)
     jX = elemX - nx * iX
-    # it can be range(dimY) but I use np.random.shuffle(range(dimY)) to reduce the probablility of accessing the same memory locations from more threads
-    #for iter1 in randomRangeDimy:
-    for iter1 in range(dimY):
+    for iter1 in prange(dimY):
         # assembly matrix row
         i1 = iY[iter1]
         j1 = jY[iter1]
-        #row_temp = np.empty(dimX, dtype=np.float64)  # subvector result
-        row_temp= C_toeplitz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
-        res[iter1] = np.dot(row_temp,uk)
+        res[iter1] = np.dot(C_toeplitz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)],uk)
     return res
 
 @njit()
 def get_toeplitzCoe(nx,ny,hx,hy,a,b,const,C_precision):
     C_toeplitz_coe = np.empty(ny * nx, dtype=C_precision)
-    #xindrange = np.asarray(range(nx))
     xindrange = np.arange(nx)
     xrange = xindrange * hx
     for i in range(ny):
@@ -259,7 +254,6 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
     def _matvec(self,uk):
         # if self.C_precision == np.float32:
         #     uk = uk.astype('float32')
-        #return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size , self.nx, self.C_toeplitz_coe, self.randomRangeDimy, self.C_precision)
         return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx, self.C_toeplitz_coe, self.C_precision)
 
 
@@ -287,8 +281,6 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         """
         self.codomain_INDX = codomainIDX
         self._changeShape(codomainIDX.size)
-        #self.randomRangeDimy = np.arange(self.codomain_INDX.size)
-        #np.random.shuffle(self.randomRangeDimy)
 
 
     def _changeShape(self, shape_):

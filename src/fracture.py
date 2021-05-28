@@ -148,7 +148,7 @@ class Fracture:
                                                    init_param.fractureVolume,
                                                    simulProp.symmetric,
                                                    simulProp.useBlockToeplizCompression,
-                                                   simulProp.volumeControlHMAT,
+                                                   simulProp.volumeControlGMRES,
                                                    solid.Eprime,
                                                    boundaryEffect = boundaryEffect,
                                                    gmres_tol = simulProp.gmres_tol,
