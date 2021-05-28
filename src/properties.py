@@ -787,6 +787,7 @@ class SimulationProperties:
         self.tmStpPrefactor = simul_param.tmStp_prefactor
         self.finalTime = simul_param.final_time
         self.set_solTimeSeries(simul_param.req_sol_at)
+        self.force_time_schedule = simul_param.force_time_schedule
         self.timeStepLimit = simul_param.timeStep_limit
         self.fixedTmStp = simul_param.fixed_time_step
         if isinstance(self.fixedTmStp, np.ndarray):

@@ -29,6 +29,7 @@ final_time = None                       # time to stop the propagation.
 maximum_steps = 2000                    # maximum time steps.
 timeStep_limit = None                   # limit for the time step.
 fixed_time_step = None                  # constant time step.
+force_time_schedule = False             # to force the solution only at given times (to be set by simulProp.set_solTimeSeries)
 
 # time step re-attempt
 max_reattemps = 8                       # maximum reattempts in case of time step failure.
