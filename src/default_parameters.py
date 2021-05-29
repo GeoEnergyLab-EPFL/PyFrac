@@ -12,7 +12,7 @@ toleranceFractureFront = 1.0e-3         # tolerance for the fracture front posit
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
 tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
 toleranceVStagnant = 1.e-6               # tolerance on the velocity to decide if a cell is stagnant.
-tolerancewIncr = 5.e-6                   # tolerance on the fracture opening increment (dw). If |dw| is less than the tolerance then it is difficault to know
+tolerancewIncr = 1.e-5                   # tolerance on the fracture opening increment (dw). If |dw| is less than the tolerance then it is difficault to know
                                         # if the fracture front is really stagnant
 gmres_tol = 1e-18
 gmres_maxiter = 1000

@@ -244,17 +244,38 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
     sgndDist[surv_cells] = -dist_surv_cells
 
     # rest of the cells outside the survey cell ring
-    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region)
+    #EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region)
+    #band = np.arange(mesh.NumberOfElts)
+
+    # Reducing the cells where to compute the levelset
+    # computing a distance based on the level set value
+    distMax = np.max([dist_surv_cells.max(), mesh.cellDiag])
+    if distMax <= mesh.cellDiag:
+        iter = 3
+    else:
+        iter = int(3 + distMax/mesh.cellDiag)
+
+    #adding the neighbours
+    externalRibbon = surv_cells
+    currentBand = surv_cells
+    for i in range(iter):
+        nei = np.unique(mesh.NeiElements[externalRibbon].flatten())
+        externalRibbon = np.setdiff1d(nei, currentBand)
+        currentBand = np.concatenate((currentBand, externalRibbon))
+
+    band = np.unique(currentBand)
+    bandINcrack = np.setdiff1d(inner_region, band)
+    bandOUTcrack = np.setdiff1d(band, bandINcrack)
 
     # fast marching to get level set
     SolveFMM(sgndDist,
              surv_cells,
              inner_region,
              mesh,
-             EltRest,
-             inner_region)
+             bandOUTcrack, #EltRest,
+             bandINcrack) #inner_region)
 
-    band = np.arange(mesh.NumberOfElts)
+
     # costruct the front
     if projMethod == 'LS_continousfront':
         correct_size_of_pstv_region = [False, False, False]
