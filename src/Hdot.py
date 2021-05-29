@@ -13,7 +13,7 @@ class gmres_counter(object):
     def __init__(self, disp=True):
         self._disp = disp
         self.niter = 0
-        self.threshold = 10
+        self.threshold = 100
     def __call__(self, rk=None):
         self.niter += 1
         if self._disp:

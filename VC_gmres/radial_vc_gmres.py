@@ -37,7 +37,7 @@ use_direct_TOEPLITZ = True
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(10, 10, 101, 101)
+    Mesh = CartesianMesh(300, 300, 301, 301)
 
     # solid properties
     nu = 0.4                            # Poisson's ratio
@@ -81,8 +81,9 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 7  # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 1.5  # decrease the pre-factor due to explicit front tracking
+    simulProp.finalTime = 36029  # the time at which the simulation stops
+    simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
+    simulProp.plotTSJump = 10
     simulProp.saveToDisk = True
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
@@ -92,18 +93,18 @@ if run:
     simulProp.plotVar = ['footprint']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
-    simulProp.force_time_schedule = True
-    simulProp.set_solTimeSeries( np.asarray([0.34029377788929954, 0.3910039421949774 , 0.44932063114650705 ,
-                                            0.5163848234407662 , 0.5935086445791642 , 0.6822010388883218 ,
-                                            0.7841972923438532 , 0.9014929838177141 , 1.0363830290126543 ,
-                                            1.1915065809868355 , 1.3698986657571441 , 1.5750495632429984 ,
-                                            1.81097309535173 , 2.0822851572767718 , 2.39429402849057 ,
-                                            2.753104230386438 , 3.1657359625666865 , 3.6172490221886555 ,
-                                            4.111016322286733 , 4.645272813065946 , 5.23091874141734 ,
-                                            5.852718611327669 , 6.519015764803001 , 6.810536234012597 ,
-                                            7.0]))
+    #simulProp.force_time_schedule = True
+    # simulProp.set_solTimeSeries( np.asarray([0.34029377788929954, 0.3910039421949774 , 0.44932063114650705 ,
+    #                                         0.5163848234407662 , 0.5935086445791642 , 0.6822010388883218 ,
+    #                                         0.7841972923438532 , 0.9014929838177141 , 1.0363830290126543 ,
+    #                                         1.1915065809868355 , 1.3698986657571441 , 1.5750495632429984 ,
+    #                                         1.81097309535173 , 2.0822851572767718 , 2.39429402849057 ,
+    #                                         2.753104230386438 , 3.1657359625666865 , 3.6172490221886555 ,
+    #                                         4.111016322286733 , 4.645272813065946 , 5.23091874141734 ,
+    #                                         5.852718611327669 , 6.519015764803001 , 6.810536234012597 ,
+    #                                         7.0]))
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=2)
+    Fr_geometry = Geometry('radial', radius=200)
 
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:

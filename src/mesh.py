@@ -123,6 +123,7 @@ class CartesianMesh:
 
         self.hx = 2. * self.Lx / (self.nx - 1)
         self.hy = 2. * self.Ly / (self.ny - 1)
+        self.cellDiag = np.sqrt(self.hx**2 + self.hy**2)
 
         x = np.linspace(self.domainLimits[2] - self.hx / 2., self.domainLimits[3] + self.hx / 2., self.nx + 1)
         y = np.linspace(self.domainLimits[0] - self.hy / 2., self.domainLimits[1] + self.hy / 2., self.ny + 1)
