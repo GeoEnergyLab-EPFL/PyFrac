@@ -37,7 +37,7 @@ use_direct_TOEPLITZ = True
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(300, 300, 301, 301)
+    Mesh = CartesianMesh(300, 300, 201, 201)
 
     # solid properties
     nu = 0.4                            # Poisson's ratio
@@ -84,6 +84,7 @@ if run:
     simulProp.finalTime = 36029  # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
     simulProp.plotTSJump = 10
+    simulProp.gmres_tol = 1e-13
     simulProp.saveToDisk = True
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
