@@ -38,6 +38,15 @@ def C2(delta):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
+def TipAsym_k_exp_heterogK1c(dist, *args):
+    """Residual function for the near-field k expansion"""
+
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt, i) = args
+
+    return -wEltRibbon +  Kprime.of(dist, i) / Eprime  * dist ** (1/2)
+
+# ----------------------------------------------------------------------------------------------------------------------
 def TipAsym_k_exp(dist, *args):
     """Residual function for the near-field k expansion (Garagash & Detournay, 2011)"""
 
@@ -484,6 +493,36 @@ def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, 
     return a, b
 
 
+# -----------------------------------------------------------------------------------------------------------------------
+
+def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, ResFunc, simProp):
+    """
+    Find the valid bracket for the root evaluation function.
+    """
+    log = logging.getLogger('PyFrac.FindBracket_dist_K_heterog')
+    maxprop = 6 * mesh.cellDiag
+
+    if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
+        a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
+        b = np.zeros(a.size)
+        for i in range(0, len(w)):
+            ai = a[i]
+            grid1D = np.arange(ai, ai + maxprop, mesh.cellDiag/10, dtype=np.float64)
+
+            TipAsmptargs = (w[i], Kprime, Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt, i)
+            Res_grid1D = ResFunc(grid1D, *TipAsmptargs)
+            # check if it is possible to find a solution in the interval
+            test_Res_grid1D = Res_grid1D > 0.
+            if np.sum(test_Res_grid1D) == 0:
+                log.debug("Failing the time step because the front is advancing more than 6 cells ")
+                return a, b, 1
+
+            # find minimum
+            b_index = np.where(test_Res_grid1D)[0]
+            b[i] = grid1D[b_index.min()]
+        return a, b, 0
+    else:
+        raise SystemExit("FindBracket not supported for the selected rheology!")
 # ----------------------------------------------------------------------------------------------------------------------
 
 def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=None, Eprime_k=None, perfNode=None):
@@ -520,7 +559,10 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
     elif simParmtrs.get_tipAsymptote() == 'U1':
         ResFunc = TipAsym_Universal_1stOrder_Res
     elif simParmtrs.get_tipAsymptote() == 'K':
-        return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
+        if matProp.inv_with_heter_K1c:
+            ResFunc = TipAsym_k_exp_heterogK1c
+        else:
+            return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
     elif simParmtrs.get_tipAsymptote() == 'Kt':
         return w[frac.EltRibbon] ** 2 * (Eprime / Kprime) ** 2
     elif simParmtrs.get_tipAsymptote() == 'M':
@@ -543,20 +585,38 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
         raise SystemExit("Tip asymptote type not supported!")
 
     # checking propagation condition
-    stagnant = np.where(Kprime * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
-                                        Eprime * w[frac.EltRibbon]) > 1)[0]
+    if matProp.inv_with_heter_K1c:
+        stagnant = np.where(Kprime.of(abs(frac.sgndDist[frac.EltRibbon])) * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
+                                            Eprime * w[frac.EltRibbon]) > 1)[0]
+    else:
+        stagnant = np.where(Kprime * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
+                                            Eprime * w[frac.EltRibbon]) > 1)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 
-    a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
-                            Kprime[moving],
-                            Eprime[moving],
-                            fluidProp,
-                            matProp.Cprime[frac.EltRibbon[moving]],
-                            frac.sgndDist[frac.EltRibbon[moving]],
-                            dt,
-                            frac.mesh,
-                            ResFunc,
-                            simParmtrs)
+    if matProp.inv_with_heter_K1c:
+        Kprime.keepRibbonThatAre(moving)
+        a, b, status = FindBracket_dist_K_heterog(w[frac.EltRibbon[moving]],
+                                            Kprime,
+                                            Eprime[moving],
+                                            fluidProp,
+                                            matProp.Cprime[frac.EltRibbon[moving]],
+                                            frac.sgndDist[frac.EltRibbon[moving]],
+                                            dt,
+                                            frac.mesh,
+                                            ResFunc,
+                                            simParmtrs)
+        if status : return np.full(frac.EltRibbon.size, np.nan)
+    else:
+        a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
+                                Kprime[moving],
+                                Eprime[moving],
+                                fluidProp,
+                                matProp.Cprime[frac.EltRibbon[moving]],
+                                frac.sgndDist[frac.EltRibbon[moving]],
+                                dt,
+                                frac.mesh,
+                                ResFunc,
+                                simParmtrs)
     ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
     if any(np.isnan(a)):
         stagnant_from_bracketing = np.argwhere(np.isnan(a))[::,0]
@@ -571,7 +631,18 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
 
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
-        TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
+        if matProp.inv_with_heter_K1c:
+            Kprime.keepRibbonThatAre(moving)
+            TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
+                            Kprime,
+                            Eprime[moving[i]],
+                            fluidProp,
+                            matProp.Cprime[frac.EltRibbon[moving[i]]],
+                            -frac.sgndDist[frac.EltRibbon[moving[i]]],
+                            dt,
+                            i)
+        else:
+            TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
                         Kprime[moving[i]],
                         Eprime[moving[i]],
                         fluidProp,

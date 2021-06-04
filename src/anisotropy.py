@@ -14,7 +14,7 @@ from level_set import reconstruct_front_LS_gradient
 from volume_integral import Integral_over_cell
 
 
-def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist):
+def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist, global_alpha = False):
     """
     This function finds the projection of the ribbon cell centers on to the fracture front. It is returned as the angle
     inscribed by the perpendiculars drawn on the front from the ribbon cell centers
@@ -459,7 +459,7 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def projection_from_ribbon_LS_gradient(ribbon_elts, tip_elts, mesh, sgnd_dist):
+def projection_from_ribbon_LS_gradient_at_tip(ribbon_elts, tip_elts, mesh, sgnd_dist, global_alpha = False):
     """
     This function finds the projection of the ribbon cell centers on to the fracture front from the gradient of the
     level set. It is returned as the angle inscribed by the perpendiculars drawn on the front from the ribbon cell
@@ -470,12 +470,12 @@ def projection_from_ribbon_LS_gradient(ribbon_elts, tip_elts, mesh, sgnd_dist):
         mesh (CartesianMesh object)             -- The cartesian mesh object
         mat_prop (MaterialProperties object)    -- Material properties:
         sgnd_dist (ndarray-float)               -- level set data
+        global_alpha (bool)                     -- bool that decides if we return alpha in the global ref system or from the
 
     Returns:
         alpha (ndarray-float)                   -- the angle inscribed by the perpendiculars drawn on the front from
                                                    the ribbon cell centers.
     """
-
     n_vertex = np.zeros((len(tip_elts), 2), float)
     n_centre = np.zeros((len(ribbon_elts), 2), float)
     Coor_vertex = np.zeros((len(tip_elts), 2), float)
@@ -527,8 +527,13 @@ def projection_from_ribbon_LS_gradient(ribbon_elts, tip_elts, mesh, sgnd_dist):
                     sgnd_dist[neighbors_tip[6]] + sgnd_dist[neighbors_tip[3]]) / 2) / mesh.hy
                Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] - mesh.hx / 2
                Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] + mesh.hy / 2
-         n_vertex[i, 0] = gradx / (gradx ** 2 + grady ** 2) ** 0.5
-         n_vertex[i, 1] = grady / (gradx ** 2 + grady ** 2) ** 0.5
+         norm_grad = (gradx ** 2 + grady ** 2) ** 0.5
+         if norm_grad != 0.:
+             n_vertex[i, 0] = gradx / norm_grad
+             n_vertex[i, 1] = grady / norm_grad
+         else:
+             n_vertex[i, 0] = np.nan
+             n_vertex[i, 1] = np.nan
 
     for i in range(len(ribbon_elts)):
 
@@ -537,7 +542,27 @@ def projection_from_ribbon_LS_gradient(ribbon_elts, tip_elts, mesh, sgnd_dist):
 
          n_centre[i, 0] = np.mean(n_vertex[actvElts, 0])
          n_centre[i, 1] = np.mean(n_vertex[actvElts, 1])
-         alpha[i] = np.abs(np.arcsin(n_centre[i, 1]))
+
+         # normalize n_centre
+         norm_n_centre = (n_centre[i, 0]**2 + n_centre[i, 1]**2)**0.5
+         n_centre[i, 0] = n_centre[i, 0] / norm_n_centre
+         n_centre[i, 1] = n_centre[i, 1] / norm_n_centre
+
+         if global_alpha:
+             if n_centre[i, 1] >= 0. and n_centre[i, 0] > 0.:
+                alpha[i] = np.arctan(n_centre[i, 1]/n_centre[i, 0])
+             elif n_centre[i, 1] < 0. and n_centre[i, 0] > 0. :
+                alpha[i] = 2. * np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             elif n_centre[i, 1] < 0. and n_centre[i, 0] < 0. :
+                alpha[i] = np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             elif n_centre[i, 1] >= 0. and n_centre[i, 0] < 0. :
+                alpha[i] = np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             else:
+                 SystemExit(
+                     "The direction of propagation can not be defined."
+                     "x component of the sum of the directions is 0!")
+         else:
+            alpha[i] = np.abs(np.arcsin(n_centre[i, 1]))
 
     return alpha
 
@@ -561,7 +586,17 @@ def find_zero_vertex(Elts, level_set, mesh):
     zero_vertex = np.zeros((len(Elts),), dtype=int)
     for i in range(0, len(Elts)):
         neighbors = mesh.NeiElements[Elts]
-
+        """
+         Giving four neighbouring elements in the following order: [left,right,bottom,up]
+         The number in the picture below indicates the zero_vertex
+         ______ ______ _____ 
+        |      | top  |     |
+        |______3______2_____|
+        |left  |  i   |right|
+        |______0______1_____|
+        |      |bottom|     |
+        |______|______|_____|
+        """
         if level_set[neighbors[i, 0]] <= level_set[neighbors[i, 1]] and level_set[neighbors[i, 2]] <= level_set[
                                                                                             neighbors[i, 3]]:
             zero_vertex[i] = 0
@@ -651,13 +686,52 @@ def get_toughness_from_cellCenter(alpha, sgnd_dist=None, elts=None, mat_prop=Non
                            "the toughness is to be provided.")
         return K1c
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+class get_toughness_from_cellCenter_iter():
+    """
+    This class returns the toughness given: a set of coordinates xy, a direction represented by the angle alpha, a distance,
+    a function K(x,y)
+    """
+    def __init__(self, alpha, center_ribbon_coor, matProp):
+        self.NoR = len(alpha) #number of ribbon
+        self.cos_alpha = np.cos(alpha)
+        self.sin_alpha = np.sin(alpha)
+        self.CenterCoorR = center_ribbon_coor
+        self.factor = (32 / np.pi) ** 0.5
+        self.matProp = matProp
+        self.index2keep = np.arange(self.NoR)
+
+    def of(self, dist, index='all'):
+        if index == 'all':
+            # to be vectorized!
+            x = self.CenterCoorR[self.index2keep, 0] + np.multiply(dist, self.cos_alpha[self.index2keep])
+            y = self.CenterCoorR[self.index2keep, 1] + np.multiply(dist, self.sin_alpha[self.index2keep])
+            K1c = np.zeros(self.NoR)
+            for i in range(self.NoR):
+                K1c[i] = self.matProp.K1c_func(x[i], y[i])
+        else:
+            x = self.CenterCoorR[self.index2keep[index], 0] + np.multiply(dist, self.cos_alpha[self.index2keep[index]])
+            y = self.CenterCoorR[self.index2keep[index], 1] + np.multiply(dist, self.sin_alpha[self.index2keep[index]])
+            if x.size > 1:
+                K1c = np.zeros(x.size)
+                for i in range(x.size):
+                    K1c[i] = self.matProp.K1c_func(x[i], y[i])
+            else: K1c = self.matProp.K1c_func(x, y)
+        return K1c * self.factor
+
+
+    def keepRibbonThatAre(self, index2keep):
+        self.index2keep = index2keep
+        self.NoR = len(index2keep) #number of ribbon
+
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
     """
     This function returns the toughness given the angle inscribed from the zero-vertex on the front. both the cases
-    of heterogenous or anisotropic toughness are taken care off.
+    of heterogeneous or anisotropic toughness are taken care off.
     """
 
     if mat_prop.K1cFunc is None:

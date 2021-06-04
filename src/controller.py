@@ -171,6 +171,9 @@ class Controller:
                 warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'U\'")
                 self.sim_prop.set_tipAsymptote('U1')
 
+        if Solid_prop.inv_with_heter_K1c and (Sim_prop.frontAdvancing == 'explicit' or Sim_prop.frontAdvancing == 'predictor-corrector'):
+            raise SystemExit("Heterogeneous_K1c not implemented for ")
+
         # if you set the code to advance max 1 cell then remove the SimulProp.timeStepLimit
         if self.sim_prop.timeStepLimit is not None and self.sim_prop.limitAdancementTo2cells is True:
             if self.sim_prop.forceTmStpLmtANDLmtAdvTo2cells == False:

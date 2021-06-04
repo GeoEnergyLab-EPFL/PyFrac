@@ -30,12 +30,11 @@ from Hdot import gmres_counter
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = True
-use_iterative = False
+run = False
+use_iterative = True
 use_HMAT = False
-use_direct_TOEPLITZ = True
+use_direct_TOEPLITZ = False
 ############################
-
 if run:
     # creating mesh
     Mesh = CartesianMesh(10, 10, 101, 101)
@@ -46,13 +45,30 @@ if run:
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
+
+    def smoothing(K1, K2, r, delta, x, Lx):
+        # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
+        a = (K2 - K1) / ((r + delta) - (r - delta))
+        b = K2 - a * (r + delta)
+        if -Lx <= x < r - delta:
+            return K1
+        elif r - delta <= x <= r + delta:
+            return a * x + b
+        elif r + delta < x <= Lx:
+            return K2
+
     def K1c_func(x,y):
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
-        if (np.floor(abs(y)) % 2.5) > 1 and abs(y) >0.:
-            return K_Ic
-        else:
-            return 2.*K_Ic
+        r = 2
+        delta = 0.01
+        Lx = 10
+        return smoothing(K_Ic, 2.*K_Ic, r, delta, x, Lx)
+
+        # if (np.floor(abs(y)) % 2.5) > 1 and abs(y) >0.:
+        #     return K_Ic
+        # else:
+        #     return 2.*K_Ic
 
     #def K1c_func(x,y):
     #    if x>7:
@@ -140,8 +156,9 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 7  # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 1.  # decrease the pre-factor due to explicit front tracking
+    simulProp.finalTime = 5.12  # the time at which the simulation stops
+    simulProp.tmStpPrefactor = 0.9  # decrease the pre-factor due to explicit front tracking
+    simulProp.gmres_tol = 1e-13
     simulProp.saveToDisk = True
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
@@ -153,8 +170,9 @@ if run:
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
 
+
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=2)
+    Fr_geometry = Geometry('radial', radius=1.5)
 
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:
@@ -210,7 +228,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
                                fig=Fig_R,
                                variable='mesh',
                                mat_properties=properties[0],
-                               backGround_param='sigma0',
+                               backGround_param='K1c',
                                plot_prop=plot_prop)
 
 

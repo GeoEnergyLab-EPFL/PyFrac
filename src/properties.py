@@ -136,11 +136,14 @@ class MaterialProperties:
 
         if K1c_func is not None and not self.anisotropic_K1c:
             # the function should return toughness by taking x and y coordinates
+            self.inv_with_heter_K1c = True
             try:
                 K1c_func(0.,0.)
             except TypeError:
                 raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
+        else:
+            self.inv_with_heter_K1c = False
 
         self.TI_elasticity = TI_elasticity
         self.Cij = Cij
@@ -214,6 +217,9 @@ class MaterialProperties:
             self.Cprime = 2 * self.Cl
         else:
             self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
+
+    def K1c_func(self, x, y):
+        return self.K1cFunc(x, y)
 
 #-----------------------------------------------------------------------------------------------------------------------
 
