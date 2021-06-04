@@ -238,7 +238,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
             else:
                 previous_norm = norm
 
-        if k >= sim_properties.maxFrontItrs and norm > 0.026:
+        if (k >= sim_properties.maxFrontItrs and norm > 0.026) or k > 100:
             exitstatus = 6
             return exitstatus, None
 
@@ -2237,7 +2237,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
             elif sim_properties.projMethod == 'LS_grad':
                 projection_method = projection_from_ribbon_LS_gradient_at_tip
             elif sim_properties.projMethod == 'LS_continousfront':
-                projection_method = projection_from_ribbon_LS_gradient_at_tip 
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
 
             if itr == 0 :
                 # first iteration
