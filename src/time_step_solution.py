@@ -142,8 +142,19 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     # final without front iteration.
     stagnant_crt = np.full((len(Fr_k.EltRibbon),), False, dtype=bool)
     # stagnant cells where propagation criteria is not met
-    stagnant_crt[np.where(mat_properties.Kprime[Fr_k.EltRibbon] * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
-            mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
+    if mat_properties.inv_with_heter_K1c:
+        alpha_ribbon = projection_from_ribbon_LS_gradient_at_tip(Fr_k.EltRibbon,
+                                           Fr_k.EltChannel,
+                                           Fr_k.mesh,
+                                           Fr_k.sgndDist,
+                                           global_alpha=mat_properties.inv_with_heter_K1c)
+        Kprime_k = get_toughness_from_cellCenter_iter(alpha_ribbon, Fr_k.mesh.CenterCoor[Fr_k.EltRibbon],
+                                                      mat_properties)
+        stagnant_crt[np.where(Kprime_k.of(-Fr_k.sgndDist[Fr_k.EltRibbon]) * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
+                mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
+    else:
+        stagnant_crt[np.where(mat_properties.Kprime[Fr_k.EltRibbon] * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
+                mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
     # stagnant cells where fracture is closed
     stagnant_closed = np.full((len(Fr_k.EltRibbon),), False, dtype=bool)
     for i in range(len(Fr_k.EltRibbon)):
@@ -227,7 +238,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
             else:
                 previous_norm = norm
 
-        if k == sim_properties.maxFrontItrs:
+        if k >= sim_properties.maxFrontItrs and norm > 0.026:
             exitstatus = 6
             return exitstatus, None
 
@@ -487,31 +498,32 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
     # toughness iteration loop
     while itr < sim_properties.maxProjItrs:
-
-        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
+        # get the current direction of propagation
+        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity or mat_properties.inv_with_heter_K1c:
             if sim_properties.projMethod == 'ILSA_orig':
                 projection_method = projection_from_ribbon
             elif sim_properties.projMethod == 'LS_grad':
-                projection_method = projection_from_ribbon_LS_gradient
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
             elif sim_properties.projMethod == 'LS_continousfront': #todo: test this case!!!
-                projection_method = projection_from_ribbon_LS_gradient
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
             if itr == 0 :
                 # first iteration
                 alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
                                                    Fr_lstTmStp.EltChannel,
                                                    Fr_lstTmStp.mesh,
-                                                   sgndDist_k)
+                                                   sgndDist_k,
+                                                   global_alpha=mat_properties.inv_with_heter_K1c)
                 alpha_ribbon_km1 = np.zeros(Fr_lstTmStp.EltRibbon.size, )
             else:
                 alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_method(Fr_lstTmStp.EltRibbon,
                                                                                 Fr_lstTmStp.EltChannel,
                                                                                 Fr_lstTmStp.mesh,
-                                                                                sgndDist_k)
+                                                                                sgndDist_k, global_alpha=mat_properties.inv_with_heter_K1c)
             if np.isnan(alpha_ribbon_k).any():
                 exitstatus = 11
                 return exitstatus, None
 
-        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
+        if (sim_properties.paramFromTip or mat_properties.anisotropic_K1c) and not mat_properties.inv_with_heter_K1c:
 
             Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
                                                      sgndDist_k,
@@ -522,10 +534,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
                 return exitstatus, None
+        elif mat_properties.inv_with_heter_K1c:
+            Kprime_k =  get_toughness_from_cellCenter_iter(alpha_ribbon_k, Fr_lstTmStp.mesh.CenterCoor[Fr_lstTmStp.EltRibbon], mat_properties)
         else:
             Kprime_k = None
 
-        if mat_properties.TI_elasticity:
+        if mat_properties.TI_elasticity and not mat_properties.inv_with_heter_K1c:
             Eprime_k = TI_plain_strain_modulus(alpha_ribbon_k,
                                                mat_properties.Cij)
             if np.isnan(Eprime_k).any():
@@ -592,7 +606,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
-                or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
+                or mat_properties.TI_elasticity or mat_properties.inv_with_heter_K1c) or sim_properties.explicitProjection:
             break
 
         norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
@@ -784,7 +798,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Cprime_tip = mat_properties.Cprime[corr_ribbon]
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
+    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c:
         if sim_properties.projMethod != 'LS_continousfront':
             # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
             zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
@@ -797,7 +811,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                          alpha_k,
                                                                          l_k,
                                                                          zrVrtx_newTip)
-    else:
+    elif not mat_properties.inv_with_heter_K1c:
         Kprime_tip = mat_properties.Kprime[corr_ribbon]
 
     if mat_properties.TI_elasticity:
@@ -2217,14 +2231,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     itr = 0
     # toughness iteration loop
     while itr < sim_properties.maxProjItrs:
-
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
             if sim_properties.projMethod == 'ILSA_orig':
                 projection_method = projection_from_ribbon
             elif sim_properties.projMethod == 'LS_grad':
-                projection_method = projection_from_ribbon_LS_gradient
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
             elif sim_properties.projMethod == 'LS_continousfront':
-                projection_method = projection_from_ribbon_LS_gradient #todo: test this case!!!
+                projection_method = projection_from_ribbon_LS_gradient_at_tip 
 
             if itr == 0 :
                 # first iteration

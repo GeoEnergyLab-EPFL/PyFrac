@@ -29,7 +29,7 @@ from Hdot import gmres_counter
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = True
+run = False
 use_iterative = True #GMRES use or not
 use_HMAT = False
 use_direct_TOEPLITZ = True
@@ -140,36 +140,115 @@ if run:
 # plotting results #
 ####################
 
+# if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
+#
+#     from visualization import *
+    #
+    # # loading simulation results
+    # Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres",step_size=1)                       # load all fractures
+    # time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
+    # Solid, Fluid, Injection, simulProp = properties
+    #
+    #
+    # # plot fracture radius
+    # plot_prop = PlotProperties()
+    # Fig_R = plot_fracture_list(Fr_list,
+    #                            variable='footprint',
+    #                            plot_prop=plot_prop)
+    # Fig_R = plot_fracture_list(Fr_list,
+    #                            fig=Fig_R,
+    #                            variable='mesh',
+    #                            mat_properties=properties[0],
+    #                            backGround_param='sigma0',
+    #                            plot_prop=plot_prop)
+    #
+    #
+    # # plot fracture radius
+    # plot_prop = PlotProperties()
+    # plot_prop.lineStyle = '.'               # setting the linestyle to point
+    # plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    # Fig_R = plot_fracture_list(Fr_list,
+    #                            variable='d_mean',
+    #                            plot_prop=plot_prop)
+    #
+    # # plot analytical radius
+    # Fig_R = plot_analytical_solution(regime='K',
+    #                                  variable='d_mean',
+    #                                  mat_prop=Solid,
+    #                                  inj_prop=Injection,
+    #                                  fluid_prop=Fluid,
+    #                                  time_srs=time_srs,
+    #                                  fig=Fig_R)
+
+
+    #plt.show(block=True)
+####################
+# plotting results #
+####################
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
     from visualization import *
-
-    # loading simulation results
-    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres",step_size=1)                  # load all fractures
+    Fr_list, properties = load_fractures(address="./Data/sim_red", step_size=1)
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
     Solid, Fluid, Injection, simulProp = properties
-
-
-    # plot fracture radius
-    plot_prop = PlotProperties()
-    Fig_R = plot_fracture_list(Fr_list,
-                               variable='footprint',
-                               plot_prop=plot_prop)
-    Fig_R = plot_fracture_list(Fr_list,
-                               fig=Fig_R,
-                               variable='mesh',
-                               mat_properties=properties[0],
-                               backGround_param='sigma0',
-                               plot_prop=plot_prop)
-
-
-    # plot fracture radius
     plot_prop = PlotProperties()
     plot_prop.lineStyle = '.'               # setting the linestyle to point
     plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    plot_prop.lineColor= (1.0,0.,0.)
+    labels = LabelProperties('d_mean', 'whole mesh', '1D')
+    labels.legend='Judit, look you can specify the text here'
     Fig_R = plot_fracture_list(Fr_list,
                                variable='d_mean',
-                               plot_prop=plot_prop)
+                               plot_prop=plot_prop,
+                               labels=labels)
+
+    # Here I am getting the numerical radius
+    var_val_list, time_list = get_fracture_variable(Fr_list,
+                                                    'd_mean',
+                                                    edge=4,
+                                                    return_time=True)
+    var_val_copy = copy.deepcopy(var_val_list)
+    for i in range(len(var_val_copy)):
+        var_val_copy[i] /= labels.unitConversion
+
+    # Here I am getting the relative error
+    # R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * t / Kprime) ** 0.4
+    Kprime = Solid.Kprime.max()
+    Eprime = Solid.Eprime
+    Q0 = Injection.injectionRate.max()
+    rel_err = []
+    for i in range(len(var_val_copy)):
+        current_t = time_list[i]
+        analytical_R = (3 / 2 ** 0.5 / np.pi * Q0 * Eprime * current_t / Kprime) ** 0.4
+        rel_err_i = 100 * np.abs(var_val_copy[i] - analytical_R) / analytical_R
+        rel_err.append(rel_err_i)
+
+    # plot the relative error
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    ser = pd.Series(index=time_list, data=rel_err)
+    df = ser.to_frame()
+    df.reset_index(inplace=True)
+    xlabel = 'time [s]'
+    ylabel = 'relative error [%]'
+    df.columns = [xlabel, ylabel]
+    df.plot(kind='scatter', x=xlabel, y=ylabel, title = 'relative error VS time',legend=True, logx=True)
+    plt.show()
+
+
+    Fr_list, properties = load_fractures(address="./Data/sim_blue", step_size=1)
+
+    plot_prop.lineColor =  (0.0,0.,1.)
+    plot_prop.lineStyle = '+'               # setting the linestyle to point
+    labels = LabelProperties('d_mean', 'whole mesh', '1D')
+    labels.legend='Also the text here'
+    Fig_R = plot_fracture_list(Fr_list,
+                               variable='d_mean',
+                               plot_prop=plot_prop,
+                               fig=Fig_R,
+                               labels=labels)
+
 
     # plot analytical radius
     Fig_R = plot_analytical_solution(regime='K',
