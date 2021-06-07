@@ -698,7 +698,6 @@ class get_toughness_from_cellCenter_iter():
         self.cos_alpha = np.cos(alpha)
         self.sin_alpha = np.sin(alpha)
         self.CenterCoorR = center_ribbon_coor
-        self.factor = (32 / np.pi) ** 0.5
         self.matProp = matProp
         self.index2keep = np.arange(self.NoR)
 
@@ -709,16 +708,16 @@ class get_toughness_from_cellCenter_iter():
             y = self.CenterCoorR[self.index2keep, 1] + np.multiply(dist, self.sin_alpha[self.index2keep])
             K1c = np.zeros(self.NoR)
             for i in range(self.NoR):
-                K1c[i] = self.matProp.K1c_func(x[i], y[i])
+                K1c[i] = self.matProp.Kprime_func(x[i], y[i])
         else:
             x = self.CenterCoorR[self.index2keep[index], 0] + np.multiply(dist, self.cos_alpha[self.index2keep[index]])
             y = self.CenterCoorR[self.index2keep[index], 1] + np.multiply(dist, self.sin_alpha[self.index2keep[index]])
             if x.size > 1:
                 K1c = np.zeros(x.size)
                 for i in range(x.size):
-                    K1c[i] = self.matProp.K1c_func(x[i], y[i])
-            else: K1c = self.matProp.K1c_func(x, y)
-        return K1c * self.factor
+                    K1c[i] = self.matProp.Kprime_func(x[i], y[i])
+            else: K1c = self.matProp.Kprime_func(x, y)
+        return K1c
 
 
     def keepRibbonThatAre(self, index2keep):

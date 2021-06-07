@@ -30,7 +30,7 @@ from Hdot import gmres_counter
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = False
+run =True
 use_iterative = True
 use_HMAT = False
 use_direct_TOEPLITZ = False
@@ -46,42 +46,55 @@ if run:
     properties = [youngs_mod, nu]
 
 
-    def smoothing(K1, K2, r, delta, x, Lx):
-        # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
-        a = (K2 - K1) / ((r + delta) - (r - delta))
-        b = K2 - a * (r + delta)
-        if -Lx <= x < r - delta:
-            return K1
-        elif r - delta <= x <= r + delta:
-            return a * x + b
-        elif r + delta < x <= Lx:
-            return K2
-
-    def K1c_func(x,y):
-        """ The function providing the toughness"""
-        K_Ic = 0.5e6  # fracture toughness
-        r = 2
-        delta = 0.01
-        Lx = 10
-        return smoothing(K_Ic, 2.*K_Ic, r, delta, x, Lx)
-
-        # if (np.floor(abs(y)) % 2.5) > 1 and abs(y) >0.:
-        #     return K_Ic
-        # else:
-        #     return 2.*K_Ic
-
-    #def K1c_func(x,y):
-    #    if x>7:
-    #        return K_Ic*2
-    #    else:
-    #        return K_Ic
-
-    # def K1c_func(x, y):
+    # def smoothing(K1, K2, r, delta, x, Lx):
+    #     # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
+    #     a = (K2 - K1) / ((r + delta) - (r - delta))
+    #     b = K2 - a * (r + delta)
+    #     if -Lx <= x < r - delta:
+    #         return K1
+    #     elif r - delta <= x <= r + delta:
+    #         return a * x + b
+    #     elif r + delta < x <= Lx:
+    #         return K2
+    #
+    # def K1c_func(x,y):
     #     """ The function providing the toughness"""
-    #     if (np.floor(abs(y)) % 5) > 2 and abs(y) > 2.1:
-    #         return 0.9e6
-    #     else:
-    #         return 0.6e6
+    #     K_Ic = 0.5e6  # fracture toughness
+    #     r = 1.5
+    #     delta = 0.15
+    #     Lx = 10
+    #     # if np.abs(x) > r:
+    #     #     return 2.*K_Ic
+    #     # else:
+    #     #     return K_Ic
+    #     return smoothing(K_Ic, 3.2*K_Ic, r, delta, np.abs(x), Lx)
+
+    def K1c_func(x, y):
+        """ The function providing the toughness
+
+        It consist of a periodic layer of constant height H characterized either by a toughness of Kmax or Kmin.
+        A smoothing between the two values is made over a distance epsilon.
+
+        """
+        K_Ic_min = 0.5e6  # fracture toughness
+        K_Ic_max = 3.2 * K_Ic_min  # fracture toughness
+        H = 1.5 # Height of the layer
+        epsilon = 0.1 * H  # linear smoothing distance
+        delta = K_Ic_max - K_Ic_min
+        Kmed = (K_Ic_max + K_Ic_min)/2.
+        localvar = np.sin(np.pi * x / H)
+
+        if np.abs(localvar) > np.sin(np.pi * (epsilon + H/2.) / H) :
+            y_jump = Kmed
+            if ((x+H/2.) % H) > 0.5:
+                x_jump = ((x+H/2.) // H + 1) * H - H/2.
+            else:
+                x_jump = ((x + H / 2.) // H) * H - H / 2.
+            m = np.sign(localvar) * delta / 2. / epsilon
+            q = y_jump - m * x_jump
+            return m * x + q
+        else:
+            return Kmed + delta/2. * np.sign(np.sin(np.pi * x / H - np.pi/2.))
 
 
     def sigmaO_func(x, y):
