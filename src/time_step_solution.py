@@ -835,6 +835,19 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         perfNode_tipWidth = instrument_start('tip width', perfNode)
         #todo close tip width instrumentation
 
+    ##### NEVER USED BUT IT IS AN IDEA ######
+    # In case of heterogeneous toughness defined by a function K(x,y), such value must be computed at the exact
+    # location of the front. Since K(x,y) takes 1 point, we consider the average toughenss at the front by computing
+    # it at the extremes of the cell and averaging its value.
+    # if mat_properties.inv_with_heter_K1c:
+    #     Kprime = np.zeros(EltsTipNew.size)
+    #     for i in range(EltsTipNew.siz):
+    #         [x1, y1, x2, y2] = Ffront[EltsTipNew[i]]
+    #         Kprime[i] = (mat_properties.Kprime_func(x1,y1) + mat_properties.Kprime_func(x2,y2))/2
+    #     del x1, y1, x2, y2
+    # else: Kprime =  np.full((EltsTipNew.size,),None)
+    ##### ----------------------------- ######
+
     if stagnant.any():
         # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
         KIPrime = StressIntensityFactor(w_k,
@@ -865,6 +878,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                   Vel=Vel_k,
                                   stagnant=stagnant,
                                   KIPrime=KIPrime,
+                                  Kprime = Kprime_tip,
                                   Eprime=Eprime_tip,
                                   Cprime=Cprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:

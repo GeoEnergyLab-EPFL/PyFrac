@@ -218,8 +218,8 @@ class MaterialProperties:
         else:
             self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
-    def K1c_func(self, x, y):
-        return self.K1cFunc(x, y)
+    def Kprime_func(self, x, y):
+        return self.K1cFunc(x, y) * (32 / np.pi) ** 0.5
 
 #-----------------------------------------------------------------------------------------------------------------------
 
