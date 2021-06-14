@@ -706,18 +706,18 @@ class get_toughness_from_cellCenter_iter():
             # to be vectorized!
             x = self.CenterCoorR[self.index2keep, 0] + np.multiply(dist, self.cos_alpha[self.index2keep])
             y = self.CenterCoorR[self.index2keep, 1] + np.multiply(dist, self.sin_alpha[self.index2keep])
-            K1c = np.zeros(self.NoR)
+            Kprime = np.zeros(self.NoR)
             for i in range(self.NoR):
-                K1c[i] = self.matProp.Kprime_func(x[i], y[i])
+                Kprime[i] = self.matProp.Kprime_func(x[i], y[i])
         else:
             x = self.CenterCoorR[self.index2keep[index], 0] + np.multiply(dist, self.cos_alpha[self.index2keep[index]])
             y = self.CenterCoorR[self.index2keep[index], 1] + np.multiply(dist, self.sin_alpha[self.index2keep[index]])
             if x.size > 1:
-                K1c = np.zeros(x.size)
+                Kprime = np.zeros(x.size)
                 for i in range(x.size):
-                    K1c[i] = self.matProp.Kprime_func(x[i], y[i])
-            else: K1c = self.matProp.Kprime_func(x, y)
-        return K1c
+                    Kprime[i] = self.matProp.Kprime_func(x[i], y[i])
+            else: Kprime = self.matProp.Kprime_func(x, y)
+        return Kprime
 
 
     def keepRibbonThatAre(self, index2keep):
