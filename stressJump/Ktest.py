@@ -77,7 +77,7 @@ myfolder = './Data/'+simulation_name
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(510, 120, 201, 201)
+    Mesh = CartesianMesh(102, 102, 101, 101)
 
     # solid properties
     Eprime = 2.6042e10
@@ -119,8 +119,8 @@ if run:
     #simulProp.fixedTmStp=fixeddeltat
     simulProp.finalTime = 200000  # the time at which the simulation stops
     simulProp.projMethod = 'LS_continousfront'
-    simulProp.plotTSJump = 30
-    #simulProp.plotVar = ['footprint']
+    simulProp.plotTSJump = 1
+    simulProp.plotVar = ['footprint', 'custom']
     #simulProp.plotVar = ['w', 'regime']
     simulProp.enableGPU = True
     simulProp.meshExtension = False
