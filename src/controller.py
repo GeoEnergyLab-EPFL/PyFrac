@@ -27,7 +27,7 @@ from visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 from labels import TS_errorMessages, supported_projections, suitable_elements
-
+from custom_functions import *
 
 class Controller:
     """
@@ -290,6 +290,11 @@ class Controller:
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
                     if Fr_n_pls1.time > self.lastSavedTime:
                         self.output(Fr_n_pls1)
+
+                # custom plotting on the fly
+                if self.sim_prop.customPlotsOnTheFly:
+                    apply_custom_prop(self.sim_prop, Fr_n_pls1)
+                    custom_plot(self.sim_prop)
 
                 # add the advanced fracture to the last five fractures list
                 self.fracture = copy.deepcopy(Fr_n_pls1)

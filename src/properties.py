@@ -826,6 +826,7 @@ class SimulationProperties:
         self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
+        self.customPlotsOnTheFly = simul_param.custom_plots_on_the_fly
         self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
         self.verbositylevel = simul_param.verbosity_level
         self.log2file = simul_param.log_to_file
