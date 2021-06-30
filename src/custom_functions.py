@@ -21,15 +21,18 @@ def apply_custom_prop(sim_prop, fr):
     sim_prop.LHyst__.append(getL__(fr.Ffront))
     sim_prop.tHyst__.append(fr.time)
 
-def custom_plot(sim_prop):
-
+def custom_plot(sim_prop, fig = None):
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.gca()
+    else:
+        ax = fig.get_axes()[0]
     # plot L vs time
     xlabel = 'time [s]'
     ylabel = 'L [m]'
-    fig, ax = plt.subplots()
-    ax.scatter(sim_prop.tHyst__, sim_prop.hHyst__, color='k')
+    ax.scatter(sim_prop.tHyst__, sim_prop.LHyst__, color='k')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale('log')
     ax.set_xscale('log')
-    plt.show()
+    return fig
