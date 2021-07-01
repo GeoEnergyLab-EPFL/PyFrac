@@ -37,7 +37,7 @@ use_direct_TOEPLITZ = True
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(300, 300, 201, 201)
+    Mesh = CartesianMesh(10, 10, 101, 101)
 
     # solid properties
     nu = 0.4                            # Poisson's ratio
@@ -81,7 +81,7 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 36029  # the time at which the simulation stops
+    simulProp.finalTime = 50  # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
     simulProp.plotTSJump = 10
     simulProp.gmres_tol = 1e-13
@@ -105,7 +105,7 @@ if run:
     #                                         5.852718611327669 , 6.519015764803001 , 6.810536234012597 ,
     #                                         7.0]))
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=200)
+    Fr_geometry = Geometry('radial', radius=1)
 
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:
@@ -188,7 +188,8 @@ if run:
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
     from visualization import *
-    Fr_list, properties = load_fractures(address="./Data/sim_red", step_size=1)
+    #Fr_list, properties = load_fractures(address="./Data/sim_red", step_size=1)
+    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres", step_size=1)
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
     Solid, Fluid, Injection, simulProp = properties
     plot_prop = PlotProperties()
@@ -231,23 +232,23 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     df = ser.to_frame()
     df.reset_index(inplace=True)
     xlabel = 'time [s]'
-    ylabel = 'relative error [%]'
+    ylabel = 'relative error mean radius [%]'
     df.columns = [xlabel, ylabel]
     df.plot(kind='scatter', x=xlabel, y=ylabel, title = 'relative error VS time',legend=True, logx=True)
     plt.show()
 
 
-    Fr_list, properties = load_fractures(address="./Data/sim_blue", step_size=1)
-
-    plot_prop.lineColor =  (0.0,0.,1.)
-    plot_prop.lineStyle = '+'               # setting the linestyle to point
-    labels = LabelProperties('d_mean', 'whole mesh', '1D')
-    labels.legend='Also the text here'
-    Fig_R = plot_fracture_list(Fr_list,
-                               variable='d_mean',
-                               plot_prop=plot_prop,
-                               fig=Fig_R,
-                               labels=labels)
+    # Fr_list, properties = load_fractures(address="./Data/sim_blue", step_size=1)
+    #
+    # plot_prop.lineColor =  (0.0,0.,1.)
+    # plot_prop.lineStyle = '+'               # setting the linestyle to point
+    # labels = LabelProperties('d_mean', 'whole mesh', '1D')
+    # labels.legend='Also the text here'
+    # Fig_R = plot_fracture_list(Fr_list,
+    #                            variable='d_mean',
+    #                            plot_prop=plot_prop,
+    #                            fig=Fig_R,
+    #                            labels=labels)
 
 
     # plot analytical radius
@@ -259,4 +260,38 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
                                      time_srs=time_srs,
                                      fig=Fig_R)
 
+
+    # Here I am getting the numerical radius
+    var_val_list, time_list = get_fracture_variable(Fr_list,
+                                                    'pn',
+                                                    edge=4,
+                                                    return_time=True)
+    p_list = []
+    for pres in var_val_list:
+        p_list.append(pres.max())
+
+    # Here I am getting the relative error
+    # P = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * t)) ** (1 / 5)
+    Kprime = Solid.Kprime.max()
+    Eprime = Solid.Eprime
+    Q0 = Injection.injectionRate.max()
+    rel_err_p = []
+    for i in range(len(var_val_list)):
+        current_t = time_list[i]
+        analytical_P = np.pi / 8 * (np.pi / 12) ** (1 / 5) * (Kprime ** 6 / (Eprime * Q0 * current_t)) ** (1 / 5)
+        rel_err_i = 100 * np.abs(p_list[i] - analytical_P) / analytical_P
+        rel_err_p.append(rel_err_i)
+
+    # plot the relative error
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    ser = pd.Series(index=time_list, data=rel_err_p)
+    df = ser.to_frame()
+    df.reset_index(inplace=True)
+    xlabel = 'time [s]'
+    ylabel = 'relative error Pressure [%]'
+    df.columns = [xlabel, ylabel]
+    df.plot(kind='scatter', x=xlabel, y=ylabel, title = 'relative error VS time',legend=True, logx=True)
+    plt.show()
     plt.show(block=True)
