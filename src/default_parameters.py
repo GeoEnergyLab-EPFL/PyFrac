@@ -48,6 +48,7 @@ plot_time_period = None                 # the time period after which the variab
 plot_TS_jump = 1                        # the number of time steps after which the given variables are plotted.
 plot_at_sol_time_series = True          # plot when the time is in the requested time series
 verbosity_level = 'debug'               # the level of details about the ongoing simulation to be written to the log file ('debug','info','warning','error','critical').
+custom_plots_on_the_fly = False
 
 # Saving options
 output_folder = None                    # the address to save the output data.

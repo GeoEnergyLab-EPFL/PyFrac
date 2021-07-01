@@ -27,7 +27,7 @@ from visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 from labels import TS_errorMessages, supported_projections, suitable_elements
-
+from custom_functions import *
 
 class Controller:
     """
@@ -289,10 +289,17 @@ class Controller:
                 log.debug("hy: " + str(Fr_n_pls1.mesh.hy))
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
                 self.lstTmStp = Fr_n_pls1.time - self.fracture.time
+
+                # custom plotting on the fly
+                if self.sim_prop.customPlotsOnTheFly:
+                    apply_custom_prop(self.sim_prop, Fr_n_pls1)
+
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
                     if Fr_n_pls1.time > self.lastSavedTime:
                         self.output(Fr_n_pls1)
+
+
 
                 # add the advanced fracture to the last five fractures list
                 self.fracture = copy.deepcopy(Fr_n_pls1)
@@ -1038,6 +1045,9 @@ class Controller:
                         # plotting source elements
                         self.Figures[index] = plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
+                    elif plt_var == 'custom':
+                        self.Figures[index] = custom_plot(self.sim_prop, fig=self.Figures[index])
+
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
