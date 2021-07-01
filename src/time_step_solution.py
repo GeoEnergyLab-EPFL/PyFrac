@@ -6,7 +6,7 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-import time
+#import time
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import lgmres
 # local imports
@@ -1139,7 +1139,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     if sim_properties.get_volumeControl():
         if sim_properties.volumeControlGMRES:
 
-            time_beg = time.time()
+            #time_beg = time.time()
             # C is is the Hmat object
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
             S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
@@ -1162,10 +1162,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # solving the system using a left preconditioner
             data = C, Fr_lstTmStp.EltChannel, D_i, S_i
             system_dot_prod = Hdot.Volume_Control(data)
-            begtime_gmres=time.time()
+            #begtime_gmres=time.time()
             sol_GMRES = gmres(system_dot_prod, rhs_prec, tol=sim_properties.gmres_tol,
                               maxiter=sim_properties.gmres_maxiter, callback=counter)
-            endtime_gmres=time.time()
+            #endtime_gmres=time.time()
             # check convergence
             # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
             if sol_GMRES[1] > 0:
@@ -1198,11 +1198,11 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             return_data_solve = [None, None, None]
             return_data = [return_data_solve, np.asarray([]), False]
 
-            compute_time = time.time()-time_beg
-            append_new_line('./Data/radial_VC_gmres/timing.txt', str(Fr_lstTmStp.EltChannel.size)+"  "+str(compute_time))
-            compute_time_gmres=endtime_gmres-begtime_gmres
-            append_new_line('./Data/radial_VC_gmres/timing_gmres.txt',
-                            str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_gmres) )
+            #compute_time = time.time()-time_beg
+            #append_new_line('./Data/radial_VC_gmres/timing.txt', str(Fr_lstTmStp.EltChannel.size)+"  "+str(compute_time))
+            #compute_time_gmres=endtime_gmres-begtime_gmres
+            #append_new_line('./Data/radial_VC_gmres/timing_gmres.txt',
+            #                str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_gmres) )
             return w, p, return_data
 
         else:
@@ -1349,7 +1349,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     # CARLO: I check if can be possible to have a Channel to be tip
                     if np.any(np.isin(Fr_lstTmStp.EltChannel,EltTip,assume_unique=True)):
                         SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
-                    time_beg=time.time()
+                    #time_beg=time.time()
                     A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
                                                         wTip,
                                                         Fr_lstTmStp.EltChannel,
@@ -1369,20 +1369,20 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             perfNode_linSys = instrument_start('linear system solve', perfNode_widthConstrItr)
             status = True
             fail_cause = None
-            begtime_sol=time.time()
+            #begtime_sol=time.time()
             try:
                 sol = np.linalg.solve(A, b)
 
             except np.linalg.linalg.LinAlgError:
                 status = False
                 fail_cause = 'sigular matrix'
-            fintime_sol=time.time()
-            compute_time_sol=fintime_sol-begtime_sol
-            compute_time = fintime_sol - time_beg
-            append_new_line('./Data/radial_VC_gmres/timing_direct.txt',
-                             str(Fr_lstTmStp.EltChannel.size)+ "  " + str(compute_time))
-            append_new_line('./Data/radial_VC_gmres/timing_direct_sol.txt',
-                            str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_sol))
+            #fintime_sol=time.time()
+            #compute_time_sol=fintime_sol-begtime_sol
+            #compute_time = fintime_sol - time_beg
+            # append_new_line('./Data/radial_VC_gmres/timing_direct.txt',
+            #                  str(Fr_lstTmStp.EltChannel.size)+ "  " + str(compute_time))
+            # append_new_line('./Data/radial_VC_gmres/timing_direct_sol.txt',
+            #                 str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_sol))
             if perfNode is not None:
                 instrument_close(perfNode_widthConstrItr, perfNode_linSys, None,
                                  len(b), status, fail_cause, Fr_lstTmStp.time)
