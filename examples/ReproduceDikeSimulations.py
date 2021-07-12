@@ -64,7 +64,7 @@ Fluid = FluidProperties(viscosity=float(sim[4]), density=density_fluid)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e50                      # set very high. simulation will stop either naturally or user needs to
+simulProp.finalTime = float(sim[11])            # set very high. simulation will stop either naturally or user needs to
                                                 # break it
 simulProp.set_outputFolder("./Data/Dikes")      # the disk address where the files are saved
 simulProp.gravity = True                        # set up the gravity flag
@@ -78,9 +78,14 @@ simulProp.set_simulation_name(simulation_Name)  # save it with the name of the s
 simulProp.plotVar = ['w']                       # plotting the opening of the fracture
 simulProp.useBlockToeplizCompression = True     # use a accelerated calculation of the elasticity matrix
 
-simulProp.remeshFactor = 1.3                    # remeshing factor when compressing the domain
-simulProp.set_mesh_extension_factor(1.2)        # factor for the mesh extension
+simulProp.remeshFactor = float(sim[12])         # remeshing factor when compressing the domain
+simulProp.set_mesh_extension_factor([float(sim[13]), float(sim[14]), float(sim[15]), float(sim[16])])
+                                                # factor for the mesh extension
 simulProp.set_mesh_extension_direction(['top']) # extend only towards the top of the domain
+simulProp.meshReductionPossible = True          # allow for mesh reduction
+simulProp.meshReductionFactor = float(sim[17])  # factor reducing the number of elements for mesh reduction
+simulProp.maxElementIn = float(sim[18])
+simulProp.maxCellSize = float(Sim[19])
 
 simulProp.maxTimeSteps = 10000                  # the simulation will stop after 10'000 time steps
 
