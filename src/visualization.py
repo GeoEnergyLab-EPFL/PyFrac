@@ -142,12 +142,12 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                                             edge=edge,
                                                             return_time=True)
 
-        var_val_copy = np.copy(var_val_list)
+        var_val_copy = copy.deepcopy(var_val_list)
         for i in range(len(var_val_copy)):
             var_val_copy[i] /= labels.unitConversion
 
         if projection != '2D_vectorfield':
-            var_value_tmp = np.copy(var_val_copy)
+            var_value_tmp = np.asarray(copy.deepcopy(var_val_copy))
             if elements is not None:
                 var_value_tmp = var_value_tmp[:, elements]
             if plot_non_zero:
@@ -334,12 +334,12 @@ def plot_fracture_list_slice(fracture_list, variable='width', point1=None, point
                                                        edge=edge,
                                                     return_time=True)
 
-    var_val_copy = np.copy(var_val_list)
+    var_val_copy = copy.deepcopy(var_val_list)
     for i in range(len(var_val_copy)):
         var_val_copy[i] /= labels.unitConversion
 
     # find maximum and minimum to set the viewing limits on axis
-    var_value_tmp = np.copy(var_val_copy)
+    var_value_tmp = copy.deepcopy(var_val_copy)
     vmin, vmax = np.inf, -np.inf
     for i in var_value_tmp:
         i = np.delete(i, np.where(np.isinf(i))[0])
@@ -1334,7 +1334,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
 
     if plot_prop is None:
         plot_prop = PlotProperties()
-    plot_prop_cp = copy.copy(plot_prop)
+    plot_prop_cp = copy.deepcopy(plot_prop)
 
     if labels is None:
         labels = LabelProperties(variable, 'slice', '2D')
@@ -1356,7 +1356,7 @@ def plot_analytical_solution_slice(regime, variable, mat_prop, inj_prop, mesh=No
             analytical_list[i][(analytical_list[i] < 0)] = 0.
 
     # finding maximum and minimum values in complete list
-    analytical_value = np.copy(analytical_list)
+    analytical_value = copy.deepcopy(analytical_list)
     vmin, vmax = np.inf, -np.inf
     for i in analytical_value:
         i = np.delete(i, np.where(np.isinf(i))[0])
@@ -1473,7 +1473,7 @@ def plot_analytical_solution_at_point(regime, variable, mat_prop, inj_prop, flui
 
     if plot_prop is None:
         plot_prop = PlotProperties()
-    plot_prop_cp = copy.copy(plot_prop)
+    plot_prop_cp = copy.deepcopy(plot_prop)
 
     if labels is None:
         labels_given = False
@@ -1828,7 +1828,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
 
         if plot_prop is None:
             plot_prop = PlotProperties()
-        plot_prop_cp = copy.copy(plot_prop)
+        plot_prop_cp = copy.deepcopy(plot_prop)
 
         analytical_list, mesh_list = get_HF_analytical_solution(regime,
                                           variable,
@@ -1845,7 +1845,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
         for i in range(len(analytical_list)):
             analytical_list[i] /= labels.unitConversion
 
-        analytical_value = np.copy(analytical_list)
+        analytical_value = copy.deepcopy(analytical_list)
         vmin, vmax = np.inf, -np.inf
         for i in analytical_value:
             i = np.delete(i, np.where(np.isinf(i))[0])

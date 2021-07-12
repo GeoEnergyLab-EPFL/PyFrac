@@ -1256,11 +1256,19 @@ def write_properties_csv_file(file_name, properties):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_geometric_parameters(fr_list):
+def get_fracture_geometric_parameters(fr_list, properties):
     max_breadth = np.full((len(fr_list), 1), np.nan)
     avg_breadth = np.full((len(fr_list), 1), np.nan)
     var_breadth = np.full((len(fr_list), 1), np.nan)
+    behind_head_breadth = np.full((len(fr_list), 1), np.nan)
     height = np.full((len(fr_list), 1), np.nan)
+
+    # Head following GeGa14 is \approx .48 Lb so we take it at 0.6 Lb to see
+    delta_gamma = (2700 - properties[1].density) * 9.81
+    K_Ic = properties[0].Kprime[0] * np.sqrt(np.pi / 32)
+
+    dist = 0.75 * (K_Ic / delta_gamma) ** (2 / 3)
+
     iter = 0
 
     for jk in fr_list:
@@ -1285,10 +1293,16 @@ def get_fracture_geometric_parameters(fr_list):
         height[iter] = np.abs(np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
                               np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
 
+        loc = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - dist
+        if loc <= np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))):
+            behind_head_breadth[iter] = 0
+        else:
+            behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] - loc).argmin()]
+
         iter = iter + 1
 
     return height.flatten().flatten(), max_breadth.flatten().flatten(), avg_breadth.flatten().flatten(),\
-           var_breadth.flatten()
+           var_breadth.flatten(), behind_head_breadth.flatten()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
