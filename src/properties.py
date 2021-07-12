@@ -729,6 +729,8 @@ class SimulationProperties:
                                        elasticity.
         maxReattemptsFracAdvMore2Cells -- number of time reduction that are made if the fracture is advancing more than two cells (e.g. because of an heterogeneity)
         force_time_step_limit_and_max_adv_to_2_cells -- this will force the contemporaneity of timeStepLimit and limitAdancementTo2cells
+        prefactorLevelSetBand       -- this prefactor decides on the size of the zone around the fracture front where
+                                       level-set gets evaluated
 
         Attention:
             These attributes below are private:
@@ -871,6 +873,7 @@ class SimulationProperties:
             raise SystemExit('You set the option doublefracture=True but\n '
                              'The volume control solver has been implemented \n'
                              'only with the option projMethod==LS_continousfront activated')
+        self.prefactorLevelSetBand = simul_param.levelSetBandPrefactor
 
         # fracture geometry to calculate analytical solution for plotting
         self.height = simul_param.height

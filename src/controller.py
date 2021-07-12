@@ -1293,23 +1293,15 @@ class Controller:
                         self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
                     else:
                         self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
-                #rem_factor = self.sim_prop.remeshFactor
-                #self.C *= 1 / rem_factor
             elif direction == 'reduce':
-                #rem_factor = 10
                 if not self.sim_prop.symmetric:
                     self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
                 else:
                     self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
             else:
-                #rem_factor = 10
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         else:
-            # if direction is None:
-            #     rem_factor = self.sim_prop.remeshFactor
-            # else:
-            #     rem_factor = 10
             self.C.reload(coarse_mesh)
 
         self.fracture = self.fracture.remesh(rem_factor,
