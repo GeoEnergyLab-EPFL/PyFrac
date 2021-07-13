@@ -56,7 +56,7 @@ t_change = [0.0, 600, 1000, 1600]
 
 Qo = [0.01, 0.0, 0.015, 0.0]
 # Injection rates in the time windows defined in t_change [m^3/s]
-# Note: For a continuous injection use "Qo = your_injection_rate". For injection histries the number of entries in Qo
+# Note: For a continuous injection use "Qo = your_injection_rate". For injection histories the number of entries in Qo
 # must match with the number of entries in t_change. First entry of Qo is injection for t between the first and second
 # entry of t_change.
 
@@ -70,7 +70,7 @@ r_init = 5e-4
 
 # -- Space discretization -- #
 
-domain_limits = [-5, 5, -5, 5]
+domain_limits = [-1e-3, 1e-3, -1e-3, 1e-3]
 # Limits of the simulated domain [m]. Defined as [min(x), max(x), min(y), max(y)] for the fracture in a x|y plane.
 
 number_of_elements = [61, 61]
@@ -102,17 +102,21 @@ save_folder = "./Data/Sample_Simulations"
 final_time = 1e5
 # The time when your simulation should stop [s]
 
+gravity = True
+# Boolean to decide if gravity is used. True for yes, False for no.
 
-# -------------- Simulation run (do not modify this part) -------------- #
+
+# <editor-fold desc="# -------------- Simulation run (do not modify this part) -------------- #">
 Ep = E/(1 - nu * nu)
 mup = 12 * mu
 Kp = np.sqrt(32/np.pi)*KIc
 if type(Qo) == list:
     Lmk = Ep ** 3 * Qo[0] * mup / Kp ** 4
-    Injection = InjectionProperties(Q0, Mesh)
+    inj = np.asarray([t_change,
+                      Qo])
 else:
     Lmk = Ep ** 3 * Qo * mup / Kp ** 4
-    Injection = InjectionProperties(Q0, Mesh)
+    inj = Qo
 
 if r_init <= 2.7e-3 * Lmk:
     regime = 'M'
@@ -130,29 +134,43 @@ else:
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(domain_limits[:2], domain_limits[3:], number_of_elements[0], number_of_elements[1])
+Mesh = CartesianMesh(domain_limits[:2], domain_limits[2:], number_of_elements[0], number_of_elements[1])
 
-# material properties
-Solid = MaterialProperties(Mesh,
-                           Ep,
-                           KIc,
-                           Carters_coef=cl)
+# Injection
+Injection = InjectionProperties(inj, Mesh)
 
 # fluid properties
-viscosity = 0.001 / 12  # mu' =0.001
-Fluid = FluidProperties(viscosity=viscosity)
+Fluid = FluidProperties(viscosity=mu, density=rho_f)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e7  # the time at which the simulation stops
-simulProp.saveTSJump, simulProp.plotTSJump = 5, 5  # save and plot after every 5 time steps
-simulProp.set_outputFolder("./Data/MtoK_leakoff")  # the disk address where the files are saved
-simulProp.frontAdvancing = 'explicit'  # setting up explicit front advancing
-simulProp.plotVar = ['regime', 'w']
+simulProp.finalTime = final_time
+simulProp.set_outputFolder(save_folder)  # the disk address where the files are saved
+simulProp.set_simulation_name(sim_name)
+if len(fixed_times) != 0:
+    simulProp.set_solTimeSeries(np.asarray(fixed_times))
+simulProp.timeStepLimit = max_timestep
+
+# material properties
+if gravity:
+    def sigmaO_func(x, y):
+        return sigma_o - y * rho_s * 9.8
+    Solid = MaterialProperties(Mesh,
+                               Ep,
+                               KIc,
+                               Carters_coef=cl,
+                               confining_stress_func=sigmaO_func)
+    simulProp.gravity = True
+else:
+    Solid = MaterialProperties(Mesh,
+                               Ep,
+                               KIc,
+                               Carters_coef=cl,
+                               confining_stress=sigma_o)
 
 # initializing fracture
-Fr_geometry = Geometry('radial')
-init_param = InitializationParameters(Fr_geometry, regime='M', time=0.5)
+Fr_geometry = Geometry('radial', radius=r_init)
+init_param = InitializationParameters(Fr_geometry, regime=regime)
 
 # creating fracture object
 Fr = Fracture(Mesh,
@@ -171,6 +189,7 @@ controller = Controller(Fr,
 
 # run the simulation
 controller.run()
+# </editor-fold>
 
 # -------------- Post Processing -------------- #
 
