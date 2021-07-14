@@ -217,14 +217,16 @@ if post_process_the_results:
 
 
     # -- FIGURE 1) plot fracture footprint VS time -- #
-    my_list = []
-    for i in np.arange(0, len(Fr_list), 10):
-        my_list.append(Fr_list[i])
+    # plot the solution every "tsJump" time steps
+    tsJump = 10
+    sol_at_selected_times = []
+    for i in np.arange(0, len(Fr_list), tsJump):
+        sol_at_selected_times.append(Fr_list[i])
     plot_prop = PlotProperties()
-    Fig_R = plot_fracture_list(my_list,
+    Fig_R = plot_fracture_list(sol_at_selected_times,
                                variable='footprint',
                                plot_prop=plot_prop)
-    Fig_R = plot_fracture_list(my_list,
+    Fig_R = plot_fracture_list(sol_at_selected_times,
                                fig=Fig_R,
                                variable='mesh',
                                mat_properties=properties[0],
@@ -232,38 +234,63 @@ if post_process_the_results:
 
 
     # -- FIGURE 2) plot fracture radius VS time -- #
+    # plot the solution every "tsJump" time steps
+    tsJump = 10
+    sol_at_selected_times = []
+    for i in np.arange(0, len(Fr_list), tsJump):
+        sol_at_selected_times.append(Fr_list[i])
     plot_prop = PlotProperties()
     plot_prop.lineStyle = '.'               # setting the linestyle to point
     plot_prop.graphScaling = 'loglog'       # setting to log log plot
-    Fig_R = plot_fracture_list(Fr_list,
+    Fig_R = plot_fracture_list(sol_at_selected_times,
                                variable='d_mean',
                                plot_prop=plot_prop)
 
 
-    # -- FIGURES 3) and 4) plot fracture opening VS time at a given point -- #
+    # -- FIGURES 3) and 4) plot fracture opening VS time at a given point (my_X, my_Y)-- #
+    # plot the solution every "tsJump" time steps
+    tsJump = 10
     my_X = 0.0
     my_Y = 0.0
-    Fig_w = plot_fracture_list_at_point(Fr_list,
+    sol_at_selected_times = []
+    for i in np.arange(0, len(Fr_list), tsJump):
+        sol_at_selected_times.append(Fr_list[i])
+
+    Fig_w = plot_fracture_list_at_point(sol_at_selected_times,
                                         variable='w',
                                         point=[my_X, my_Y],
                                         plot_prop=plot_prop)
 
 
-    # -- FIGURES 5) and 6) plot net fluid pressure VS time at a given point -- #
+    # -- FIGURES 5) and 6) plot net fluid pressure VS time at a given point (my_X, my_Y)-- #
+    # plot the solution every "tsJump" time steps
+    tsJump = 10
     my_X = 0.0
     my_Y = 0.0
-    Fig_pf = plot_fracture_list_at_point(Fr_list,
+
+    sol_at_selected_times = []
+    for i in np.arange(0, len(Fr_list), tsJump):
+        sol_at_selected_times.append(Fr_list[i])
+
+    Fig_pf = plot_fracture_list_at_point(sol_at_selected_times,
                                         variable='pn',
                                         point=[my_X, my_Y],
                                         plot_prop=plot_prop)
 
 
     # --  FIGURE 7) plot fracture opening along a segment cutting the fracture at given times -- #
-    # --  the segment is horizontal -- #
+    # --  the segment is horizontal and passing at (my_X, my_Y) -- #
+    # plot the solution every "tsJump" time steps
+    tsJump = 10
     my_X = 0.
     my_Y = 0.
+
+    sol_at_selected_times = []
+    for i in np.arange(0, len(Fr_list), tsJump):
+        sol_at_selected_times.append(Fr_list[i])
+
     ext_pnts = np.empty((2, 2), dtype=np.float64)
-    Fig_WS = plot_fracture_list_slice(Fr_list,
+    Fig_WS = plot_fracture_list_slice(sol_at_selected_times,
                                       variable='w',
                                       projection='2D',
                                       plot_cell_center=True,
@@ -274,19 +301,22 @@ if post_process_the_results:
 
 
     # --  FIGURE 8) plot fracture fluid pressure along a segment cutting the fracture at given times -- #
-    # --  the segment is vertical -- #
-    my_X1 = 0.1
-    my_Y1 = 0.
-    my_X2 = -0.1
-    my_Y2 = 0.
+    # --  the segment is vertical and passing at (my_X, my_Y) -- #
+    # plot the solution every "tsJump" time steps
+    tsJump = 10
+    sol_at_selected_times = []
+    for i in np.arange(0, len(Fr_list), tsJump):
+        sol_at_selected_times.append(Fr_list[i])
+    my_X = 0.
+    my_Y = 0.
     ext_pnts = np.empty((2, 2), dtype=np.float64)
-    Fig_PN = plot_fracture_list_slice(Fr_list,
-                                      variable='w',
+    Fig_PN = plot_fracture_list_slice(sol_at_selected_times,
+                                      variable='pf',
                                       projection='2D',
                                       plot_cell_center=True,
                                       extreme_points=ext_pnts,
-                                      point1=[my_X1, my_Y1],
-                                      point2=[my_X2, my_Y2]
+                                      orientation='vertical',
+                                      point1=[my_X, my_Y]
                                       )
     plt.show(block=True)
 
