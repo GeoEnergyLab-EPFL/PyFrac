@@ -161,9 +161,11 @@ if gravity:
                                Carters_coef=cl,
                                confining_stress_func=sigmaO_func)
     simulProp.gravity = True
+    simulProp.set_mesh_extension_factor(1.2)
     if rho_s > rho_f:
         simulProp.set_mesh_extension_direction(['top'])
-        simulProp.set_mesh_extension_factor(1.2)
+    else:
+        simulProp.set_mesh_extension_direction(['bottom'])
 else:
     Solid = MaterialProperties(Mesh,
                                Ep,
