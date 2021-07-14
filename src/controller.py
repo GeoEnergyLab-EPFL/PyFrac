@@ -27,6 +27,7 @@ from visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 from labels import TS_errorMessages, supported_projections, suitable_elements
+from custom_functions import apply_custom_prop
 
 
 class Controller:
@@ -283,6 +284,10 @@ class Controller:
                 log.debug("hy: " + str(Fr_n_pls1.mesh.hy))
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
                 self.lstTmStp = Fr_n_pls1.time - self.fracture.time
+                # custom plotting on the fly
+                if self.sim_prop.customPlotsOnTheFly:
+                    apply_custom_prop(self.sim_prop, Fr_n_pls1)
+
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
                     if Fr_n_pls1.time > self.lastSavedTime:
@@ -425,7 +430,19 @@ class Controller:
 
                             elems = new_elems
                             direction = 'reduce'
-                            self.remesh(new_limits, elems, direction)
+                            if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
+                                           + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
+                                np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                                               (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
+                                self.sim_prop.meshExtensionAllDir = True
+                                self.sim_prop.set_mesh_extension_direction(['all'])
+                                self.sim_prop.set_mesh_extension_factor(self.sim_prop.remeshFactor)
+                                self.sim_prop.meshReductionPossible = False
+                                self.fracture.EltTip = self.fracture.EltTipBefore
+                                log.debug(
+                                    "\n Injection would become a Ribbon cell switching to only mesh extension....")
+                            else:
+                                self.remesh(new_limits, elems, direction)
 
                             # set all other to zero
                             side_bools = [False, False, False, False]
@@ -529,7 +546,18 @@ class Controller:
                         if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
 
-                        self.remesh(new_limits, elems, rem_factor=compression_factor)
+                        if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
+                                       + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
+                            2.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                                           (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
+                            self.sim_prop.meshExtensionAllDir = True
+                            self.sim_prop.set_mesh_extension_direction(['all'])
+                            self.sim_prop.set_mesh_extension_factor(self.sim_prop.remeshFactor)
+                            self.sim_prop.meshReductionPossible = False
+                            self.fracture.EltTip = self.fracture.EltTipBefore
+                            log.debug("\n Injection would become a Ribbon cell switching to only mesh extension....")
+                        else:
+                            self.remesh(new_limits, elems, rem_factor=compression_factor)
 
                         side_bools = [False, False, False, False]
 
@@ -724,9 +752,19 @@ class Controller:
                         if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
 
-                        self.remesh(new_limits, elems, rem_factor=compression_factor)
-
-                    log_only_to_logfile.info("\nRemeshed at " + repr(self.fracture.time))
+                        if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
+                                           + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
+                                np.min(np.abs([(new_limits[0][0] - new_limits[0][1]) / elems[0],
+                                               (new_limits[1][0] - new_limits[1][1]) / elems[1]]))):
+                            self.sim_prop.meshExtensionAllDir = True
+                            self.sim_prop.set_mesh_extension_direction(['all'])
+                            self.sim_prop.set_mesh_extension_factor(self.sim_prop.remeshFactor)
+                            self.sim_prop.meshReductionPossible = False
+                            self.fracture.EltTip = self.fracture.EltTipBefore
+                            log.debug("\n Injection would become a Ribbon cell switching to only mesh extension....")
+                        else:
+                            self.remesh(new_limits, elems, rem_factor=compression_factor)
+                            log_only_to_logfile.info("\nRemeshed at " + repr(self.fracture.time))
 
                 else:
                     log.info("Reached end of the domain. Exiting...")
