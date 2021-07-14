@@ -20,16 +20,16 @@ from utility import setup_logging_to_console
 
 # -- Solid -- #
 
-sigma_o = 1e9
+sigma_o = 1e10
 # confining stress [Pa]
 
-E = 1e10
+E = 1e11
 # Young's modulus [Pa]
 
 nu = 0.25
 # Poisson's ratio [-]
 
-KIc = 1.5e6
+KIc = .5e6
 # Fracture toughness of the solid [Pa m^(1/2)]
 
 rho_s = 2700
@@ -49,7 +49,7 @@ rho_f = 1e3
 
 # -- Injection -- #
 
-t_change = [0.0, 600, 1000, 1600]
+t_change = [0.0, 60, 100, 160]
 # times when the injection rate changes [s]
 # Note: For a continuous injection use "t_change = []". For other injection histories the first entry always needs
 # to be 0.0!
@@ -62,7 +62,7 @@ Qo = [0.01, 0.0, 0.015, 0.0]
 
 # -- Geometry -- #
 
-r_init = 5e-4
+r_init = 8
 # initial radius of the fracture [m]
 
 
@@ -70,7 +70,7 @@ r_init = 5e-4
 
 # -- Space discretization -- #
 
-domain_limits = [-1e-3, 1e-3, -1e-3, 1e-3]
+domain_limits = [-10, 10, -10, 10]
 # Limits of the simulated domain [m]. Defined as [min(x), max(x), min(y), max(y)] for the fracture in a x|y plane.
 
 number_of_elements = [61, 61]
@@ -82,7 +82,7 @@ number_of_elements = [61, 61]
 # Note: Time discretisation is optional as an automatic time-stepping is implemented. You can however specify some
 # features that are important for your simulation.
 
-fixed_times = [300, 750, 1500]
+fixed_times = [30, 75, 150]
 # The fracture will automatically be saved at the times fixed within fixed_times [s]. If you leave it empty "fixed_times
 # = []" the default scheme is applied.
 
