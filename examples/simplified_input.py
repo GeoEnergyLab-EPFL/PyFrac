@@ -99,10 +99,10 @@ sim_name = 'Sample_Simulation'
 save_folder = "./Data/Sample_Simulations"
 # The folder where the results of your simulation get saved within.
 
-final_time = 1e5
+final_time = 2e4
 # The time when your simulation should stop [s]
 
-gravity = True
+gravity = False
 # Boolean to decide if gravity is used. True for yes, False for no.
 
 
@@ -161,6 +161,9 @@ if gravity:
                                Carters_coef=cl,
                                confining_stress_func=sigmaO_func)
     simulProp.gravity = True
+    if rho_s > rho_f:
+        simulProp.set_mesh_extension_direction(['top'])
+        simulProp.set_mesh_extension_factor(1.2)
 else:
     Solid = MaterialProperties(Mesh,
                                Ep,
