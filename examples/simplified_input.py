@@ -105,102 +105,191 @@ final_time = 2e4
 gravity = False
 # Boolean to decide if gravity is used. True for yes, False for no.
 
+run_the_simualtion = False
+# Boolean to decide if the simulation will be run.
+
+post_process_the_results = True
+# Boolean to decide you want to post-process the results.
+# If run_the_simualtion = True and post_process_the_results = False, then the last simulation inside "save_folder"
+# will be post processed.
+
 
 # <editor-fold desc="# -------------- Simulation run (do not modify this part) -------------- #">
-Ep = E/(1 - nu * nu)
-mup = 12 * mu
-Kp = np.sqrt(32/np.pi)*KIc
-if type(Qo) == list:
-    Lmk = Ep ** 3 * Qo[0] * mup / Kp ** 4
-    inj = np.asarray([t_change,
-                      Qo])
-else:
-    Lmk = Ep ** 3 * Qo * mup / Kp ** 4
-    inj = Qo
+if run_the_simualtion:
+    Ep = E/(1 - nu * nu)
+    mup = 12 * mu
+    Kp = np.sqrt(32/np.pi)*KIc
+    if type(Qo) == list:
+        Lmk = Ep ** 3 * Qo[0] * mup / Kp ** 4
+        inj = np.asarray([t_change,
+                          Qo])
+    else:
+        Lmk = Ep ** 3 * Qo * mup / Kp ** 4
+        inj = Qo
 
-if r_init <= 2.7e-3 * Lmk:
-    regime = 'M'
-elif r_init >= 85.5 * Lmk:
-    regime = 'K'
-else:
-    string_warning = "The intial radius is not represented by the K or M limit.\nChoose either r_init < " + \
-                     str(2.7e-3 * Lmk) + " [m] to initiate in the M-regime,\nor r_init > " + str(85.5 * Lmk) + \
-                     " [m] to initiate in the K-regime."
+    if r_init <= 2.7e-3 * Lmk:
+        regime = 'M'
+    elif r_init >= 85.5 * Lmk:
+        regime = 'K'
+    else:
+        string_warning = "The intial radius is not represented by the K or M limit.\nChoose either r_init < " + \
+                         str(2.7e-3 * Lmk) + " [m] to initiate in the M-regime,\nor r_init > " + str(85.5 * Lmk) + \
+                         " [m] to initiate in the K-regime."
 
-    print(string_warning)
-    exit(0)
+        print(string_warning)
+        exit(0)
 
-# setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='info')
+    # setting up the verbosity level of the log at console
+    setup_logging_to_console(verbosity_level='info')
 
-# creating mesh
-Mesh = CartesianMesh(domain_limits[:2], domain_limits[2:], number_of_elements[0], number_of_elements[1])
+    # creating mesh
+    Mesh = CartesianMesh(domain_limits[:2], domain_limits[2:], number_of_elements[0], number_of_elements[1])
 
-# Injection
-Injection = InjectionProperties(inj, Mesh)
+    # Injection
+    Injection = InjectionProperties(inj, Mesh)
 
-# fluid properties
-Fluid = FluidProperties(viscosity=mu, density=rho_f)
+    # fluid properties
+    Fluid = FluidProperties(viscosity=mu, density=rho_f)
 
-# simulation properties
-simulProp = SimulationProperties()
-simulProp.finalTime = final_time
-simulProp.set_outputFolder(save_folder)  # the disk address where the files are saved
-simulProp.set_simulation_name(sim_name)
-if len(fixed_times) != 0:
-    simulProp.set_solTimeSeries(np.asarray(fixed_times))
-simulProp.timeStepLimit = max_timestep
+    # simulation properties
+    simulProp = SimulationProperties()
+    simulProp.finalTime = final_time
+    simulProp.set_outputFolder(save_folder)  # the disk address where the files are saved
+    simulProp.set_simulation_name(sim_name)
+    if len(fixed_times) != 0:
+        simulProp.set_solTimeSeries(np.asarray(fixed_times))
+    simulProp.timeStepLimit = max_timestep
 
-# material properties
-if gravity:
-    def sigmaO_func(x, y):
-        return sigma_o - y * rho_s * 9.8
-    Solid = MaterialProperties(Mesh,
-                               Ep,
-                               KIc,
-                               Carters_coef=cl,
-                               confining_stress_func=sigmaO_func)
-    simulProp.gravity = True
-    if rho_s > rho_f:
-        simulProp.set_mesh_extension_direction(['top'])
-        simulProp.set_mesh_extension_factor(1.2)
-else:
-    Solid = MaterialProperties(Mesh,
-                               Ep,
-                               KIc,
-                               Carters_coef=cl,
-                               confining_stress=sigma_o)
+    # material properties
+    if gravity:
+        def sigmaO_func(x, y):
+            return sigma_o - y * rho_s * 9.8
+        Solid = MaterialProperties(Mesh,
+                                   Ep,
+                                   KIc,
+                                   Carters_coef=cl,
+                                   confining_stress_func=sigmaO_func)
+        simulProp.gravity = True
+        if rho_s > rho_f:
+            simulProp.set_mesh_extension_direction(['top'])
+            simulProp.set_mesh_extension_factor(1.2)
+    else:
+        Solid = MaterialProperties(Mesh,
+                                   Ep,
+                                   KIc,
+                                   Carters_coef=cl,
+                                   confining_stress=sigma_o)
 
-# initializing fracture
-Fr_geometry = Geometry('radial', radius=r_init)
-init_param = InitializationParameters(Fr_geometry, regime=regime)
+    # initializing fracture
+    Fr_geometry = Geometry('radial', radius=r_init)
+    init_param = InitializationParameters(Fr_geometry, regime=regime)
 
-# creating fracture object
-Fr = Fracture(Mesh,
-              init_param,
-              Solid,
-              Fluid,
-              Injection,
-              simulProp)
+    # creating fracture object
+    Fr = Fracture(Mesh,
+                  init_param,
+                  Solid,
+                  Fluid,
+                  Injection,
+                  simulProp)
 
-# create a Controller
-controller = Controller(Fr,
-                        Solid,
-                        Fluid,
-                        Injection,
-                        simulProp)
+    # create a Controller
+    controller = Controller(Fr,
+                            Solid,
+                            Fluid,
+                            Injection,
+                            simulProp)
 
-# run the simulation
-controller.run()
+    # run the simulation
+    controller.run()
 # </editor-fold>
 
 # -------------- Post Processing -------------- #
 
+if post_process_the_results:
+
+    # -- loading simulation results -- #
+    from visualization import *
+    Fr_list, properties = load_fractures(address=save_folder, sim_name=sim_name,  step_size=1)  # load all fractures
+    time_srs = get_fracture_variable(Fr_list, variable='time')  # list of times
+    Solid, Fluid, Injection, simulProp = properties
 
 
+    # -- FIGURE 1) plot fracture footprint VS time -- #
+    my_list = []
+    for i in np.arange(0, len(Fr_list), 10):
+        my_list.append(Fr_list[i])
+    plot_prop = PlotProperties()
+    Fig_R = plot_fracture_list(my_list,
+                               variable='footprint',
+                               plot_prop=plot_prop)
+    Fig_R = plot_fracture_list(my_list,
+                               fig=Fig_R,
+                               variable='mesh',
+                               mat_properties=properties[0],
+                               plot_prop=plot_prop)
 
 
+    # -- FIGURE 2) plot fracture radius VS time -- #
+    plot_prop = PlotProperties()
+    plot_prop.lineStyle = '.'               # setting the linestyle to point
+    plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    Fig_R = plot_fracture_list(Fr_list,
+                               variable='d_mean',
+                               plot_prop=plot_prop)
 
+
+    # -- FIGURES 3) and 4) plot fracture opening VS time at a given point -- #
+    my_X = 0.0
+    my_Y = 0.0
+    Fig_w = plot_fracture_list_at_point(Fr_list,
+                                        variable='w',
+                                        point=[my_X, my_Y],
+                                        plot_prop=plot_prop)
+
+
+    # -- FIGURES 5) and 6) plot net fluid pressure VS time at a given point -- #
+    my_X = 0.0
+    my_Y = 0.0
+    Fig_pf = plot_fracture_list_at_point(Fr_list,
+                                        variable='pn',
+                                        point=[my_X, my_Y],
+                                        plot_prop=plot_prop)
+
+
+    # --  FIGURE 7) plot fracture opening along a segment cutting the fracture at given times -- #
+    # --  the segment is horizontal -- #
+    my_X = 0.
+    my_Y = 0.
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    Fig_WS = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_cell_center=True,
+                                      extreme_points=ext_pnts,
+                                      orientation='horizontal',
+                                      point1=[my_X, my_Y]
+                                      )
+
+
+    # --  FIGURE 8) plot fracture fluid pressure along a segment cutting the fracture at given times -- #
+    # --  the segment is vertical -- #
+    my_X1 = 0.1
+    my_Y1 = 0.
+    my_X2 = -0.1
+    my_Y2 = 0.
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    Fig_PN = plot_fracture_list_slice(Fr_list,
+                                      variable='w',
+                                      projection='2D',
+                                      plot_cell_center=True,
+                                      extreme_points=ext_pnts,
+                                      point1=[my_X1, my_Y1],
+                                      point2=[my_X2, my_Y2]
+                                      )
+    plt.show(block=True)
+
+
+# -------------- END OF FILE -------------- #
 
 
 
