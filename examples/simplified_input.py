@@ -12,23 +12,23 @@ import numpy as np
 
 # -- Solid -- #
 
-sigma_o = 1e10
+sigma_o = 1e6
 # confining stress [Pa]
 
-E = 1e11
+E = 1e10
 # Young's modulus [Pa]
 
 nu = 0.25
 # Poisson's ratio [-]
 
-KIc = .5e6
+KIc = 1.5e6
 # Fracture toughness of the solid [Pa m^(1/2)]
 
 rho_s = 2700
 # density of the solid [kg m^(-3)]
 
 cl = 1e-10
-# Carters leak of coefficient [m s^^-1/2)]
+# Carters leak of coefficient [m s^(-1/2)]
 
 # -- Fluid -- #
 
@@ -43,14 +43,13 @@ rho_f = 1e3
 
 t_change = [0.0, 60, 100, 160]
 # times when the injection rate changes [s]
-# Note: For a continuous injection use "t_change = []". For other injection histories the first entry always needs
-# to be 0.0!
+# Note: For injection histories the first entry always needs to be 0.0!
 
 Qo = [0.01, 0.0, 0.015, 0.0]
 # Injection rates in the time windows defined in t_change [m^3/s]
 # Note: For a continuous injection use "Qo = your_injection_rate". For injection histories the number of entries in Qo
 # must match with the number of entries in t_change. First entry of Qo is injection for t between the first and second
-# entry of t_change.
+# entry of t_change and so on.
 
 # -- Geometry -- #
 
@@ -91,19 +90,19 @@ sim_name = 'Sample_Simulation'
 save_folder = "./Data/Sample_Simulations"
 # The folder where the results of your simulation get saved within.
 
-final_time = 2e4
+final_time = 2e3
 # The time when your simulation should stop [s]
 
 gravity = False
 # Boolean to decide if gravity is used. True for yes, False for no.
 
 run_the_simualtion = True
-# Boolean to decide if the simulation will be run.
+# Boolean to decide if the simulation will be run. Else we load the simulation with the name specified by "sim_name"
 
 post_process_the_results = True
-# Boolean to decide you want to post-process the results.
-# If run_the_simualtion = True and post_process_the_results = False, then the last simulation inside "save_folder"
-# will be post processed.
+# Boolean to decide if you want to post-process the results.
+# Note: If run_the_simualtion = True and post_process_the_results = False, then the last simulation inside "save_folder"
+# with the name "sim_name" will be loaded.
 
 
 # <editor-fold desc="# -------------- Simulation run (do not modify this part) -------------- #">
