@@ -17,8 +17,12 @@ def getL__(Ffront):
         Lhalf = (np.abs(xmax)+np.abs(xmin))/2.
     return Lhalf
 
+def getwmax__(w):
+    return w.max()
+
 def apply_custom_prop(sim_prop, fr):
-    sim_prop.LHyst__.append(getL__(fr.Ffront))
+    #sim_prop.LHyst__.append(getL__(fr.Ffront))
+    sim_prop.LHyst__.append(getwmax__(fr.w))
     sim_prop.tHyst__.append(fr.time)
 
 def custom_plot(sim_prop, fig = None):
@@ -29,7 +33,7 @@ def custom_plot(sim_prop, fig = None):
         ax = fig.get_axes()[0]
     # plot L vs time
     xlabel = 'time [s]'
-    ylabel = 'L [m]'
+    ylabel = 'w [m]'
     ax.scatter(sim_prop.tHyst__, sim_prop.LHyst__, color='k')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)

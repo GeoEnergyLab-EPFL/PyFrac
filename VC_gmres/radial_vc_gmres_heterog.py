@@ -74,14 +74,14 @@ from Hdot import gmres_counter
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = False
-use_iterative = False
-use_HMAT = False
-use_direct_TOEPLITZ = True
+run = True
+use_iterative = True
+use_HMAT = True
+use_direct_TOEPLITZ = False
 ############################
 if run:
     # creating mesh
-    Mesh = CartesianMesh(3, 10, 151, 401)
+    Mesh = CartesianMesh(3, 18, 151, 901)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -122,7 +122,7 @@ if run:
         #     return 2.*K_Ic
         # else:
         #     return K_Ic
-        return smoothing(K_Ic, 1.5*K_Ic, r, delta, x, Lx)
+        return smoothing(K_Ic, 1.9*K_Ic, r, delta, x, Lx)
 
     # def K1c_func(x, y):
     #     """ The function providing the toughness
@@ -224,7 +224,7 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 5.12  # the time at which the simulation stops
+    simulProp.finalTime = 105.12  # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.9  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
@@ -234,11 +234,16 @@ if run:
     #simulProp.bckColor = 'sigma0'
     simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
-    simulProp.plotVar = ['footprint']#,'regime']
+    simulProp.plotVar = ['footprint', 'custom']#,'regime']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
-    simulProp.set_solTimeSeries( np.concatenate((np.arange(0.,0.3,0.01),np.arange(0.3,5.12,0.05))))
+    simulProp.set_solTimeSeries( np.concatenate((np.arange(0.,0.3,0.01),np.arange(0.3,105.12,0.05))))
     simulProp.force_time_schedule = True
+
+    simulProp.customPlotsOnTheFly = True
+    simulProp.LHyst__ = []
+    simulProp.tHyst__ = []
+
     # initialization parameters
     Fr_geometry = Geometry('radial', radius=0.8)
 
@@ -470,7 +475,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     w_scaling = []
     w_radial = []
     for i in range(len(time_simul_A)):
-        w_scaling.append(0.000065*time_simul_A[i]**(1/3))
+        w_scaling.append(0.0000625*time_simul_A[i]**(1/3))
     ax.plot(time_simul_A, w_scaling, color='g')
 
     for i in range(len(time_simul_A)):
