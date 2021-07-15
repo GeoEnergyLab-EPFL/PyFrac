@@ -8,14 +8,6 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 import numpy as np
 
-# local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from utility import setup_logging_to_console
-
 # -------------- Physical parameter -------------- #
 
 # -- Solid -- #
@@ -62,7 +54,7 @@ Qo = [0.01, 0.0, 0.015, 0.0]
 
 # -- Geometry -- #
 
-r_init = 8
+r_init = 0.05
 # initial radius of the fracture [m]
 
 
@@ -70,7 +62,7 @@ r_init = 8
 
 # -- Space discretization -- #
 
-domain_limits = [-10, 10, -10, 10]
+domain_limits = [-0.1, 0.1, -0.1, 0.1]
 # Limits of the simulated domain [m]. Defined as [min(x), max(x), min(y), max(y)] for the fracture in a x|y plane.
 
 number_of_elements = [61, 61]
@@ -105,7 +97,7 @@ final_time = 2e4
 gravity = False
 # Boolean to decide if gravity is used. True for yes, False for no.
 
-run_the_simualtion = False
+run_the_simualtion = True
 # Boolean to decide if the simulation will be run.
 
 post_process_the_results = True
@@ -115,29 +107,28 @@ post_process_the_results = True
 
 
 # <editor-fold desc="# -------------- Simulation run (do not modify this part) -------------- #">
+
+# local imports
+from mesh import CartesianMesh
+from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from fracture import Fracture
+from controller import Controller
+from fracture_initialization import Geometry, InitializationParameters
+from utility import setup_logging_to_console
+from elasticity import load_isotropic_elasticity_matrix_toepliz
+from fracture_initialization import get_radial_survey_cells
+import warnings
+warnings.filterwarnings("ignore")
+
 if run_the_simualtion:
     Ep = E/(1 - nu * nu)
     mup = 12 * mu
     Kp = np.sqrt(32/np.pi)*KIc
     if type(Qo) == list:
-        Lmk = Ep ** 3 * Qo[0] * mup / Kp ** 4
         inj = np.asarray([t_change,
                           Qo])
     else:
-        Lmk = Ep ** 3 * Qo * mup / Kp ** 4
         inj = Qo
-
-    if r_init <= 2.7e-3 * Lmk:
-        regime = 'M'
-    elif r_init >= 85.5 * Lmk:
-        regime = 'K'
-    else:
-        string_warning = "The intial radius is not represented by the K or M limit.\nChoose either r_init < " + \
-                         str(2.7e-3 * Lmk) + " [m] to initiate in the M-regime,\nor r_init > " + str(85.5 * Lmk) + \
-                         " [m] to initiate in the K-regime."
-
-        print(string_warning)
-        exit(0)
 
     # setting up the verbosity level of the log at console
     setup_logging_to_console(verbosity_level='info')
@@ -156,6 +147,7 @@ if run_the_simualtion:
     simulProp.finalTime = final_time
     simulProp.set_outputFolder(save_folder)  # the disk address where the files are saved
     simulProp.set_simulation_name(sim_name)
+    simulProp.useBlockToeplizCompression = True
     if len(fixed_times) != 0:
         simulProp.set_solTimeSeries(np.asarray(fixed_times))
     simulProp.timeStepLimit = max_timestep
@@ -183,8 +175,18 @@ if run_the_simualtion:
                                    confining_stress=sigma_o)
 
     # initializing fracture
-    Fr_geometry = Geometry('radial', radius=r_init)
-    init_param = InitializationParameters(Fr_geometry, regime=regime)
+    surv_cells, surv_cells_dist, inner_cells = get_radial_survey_cells(Mesh, r_init)
+    Fr_geometry = Geometry(shape='level set',
+                           survey_cells=surv_cells,
+                           tip_distances=surv_cells_dist,
+                           inner_cells=inner_cells)
+
+    C = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep)
+    init_param = InitializationParameters(Fr_geometry,
+                                          regime='static',
+                                          net_pressure=1e-5,
+                                          width=1e-8,
+                                          elasticity_matrix=C)
 
     # creating fracture object
     Fr = Fracture(Mesh,
