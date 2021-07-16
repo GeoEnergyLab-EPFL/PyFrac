@@ -101,9 +101,13 @@ run_the_simualtion = True
 
 post_process_the_results = True
 # Boolean to decide if you want to post-process the results.
-# Note: If run_the_simualtion = True and post_process_the_results = False, then the last simulation inside "save_folder"
+# Note: If run_the_simualtion = False and post_process_the_results = True, then the last simulation inside "save_folder"
 # with the name "sim_name" will be loaded.
 
+export_results_to_json = True
+# Boolean to decide if you want to export the results to a "json" file.
+# Note: If run_the_simualtion = False and post_process_the_results = True, then the last simulation inside "save_folder"
+# with the name "sim_name" will be loaded.
 
 # <editor-fold desc="# -------------- Simulation run (do not modify this part) -------------- #">
 
@@ -302,25 +306,22 @@ if post_process_the_results:
     plt.show(block=True)
 
 
+# -------------- exporting to json file -------------- #
 
-##########################
-# exporting to json file #
-##########################
 from visualization import *
 from postprocess_fracture import append_to_json_file
 
-# 1) write general information to json
-# 2) write to json the coordinates of the points defining the fracture front at each time:
-# 3) get the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
-# 4) get the fluid pressure p(t) versus time (t) at a point of coordinates myX and myY
-# 5) get w(y) along a vertical line passing through mypoint for different times
-# 6) get pf(x) along a horizontal line passing through mypoint for different times
-# 7) get w(x,y,t) and pf(x,y,t)
+# 1) export general information to json
+# 2) export to json the coordinates of the points defining the fracture front at each time:
+# 3) export the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
+# 4) export the fluid pressure p(t) versus time (t) at a point of coordinates myX and myY
+# 5) export w(y) along a vertical line passing through mypoint for different times
+# 6) export pf(x) along a horizontal line passing through mypoint for different times
+# 7) export w(x,y,t) and pf(x,y,t)
 
-export_results = True
 to_export = [1,2,3,4,5,6,7]
 
-if export_results:
+if export_results_to_json:
 
     # decide the names of the Json files:
     myJsonName_1 = "./Data/Pyfrac_"+sim_name+"_export.json"
@@ -332,7 +333,7 @@ if export_results:
     Solid, Fluid, Injection, simulProp = properties
     print(" <-- DONE\n")
 
-    # 1) write general information to json
+    # 1) export general information to json
     if 1 in to_export:
         print("\n 2) writing general info")
         time_srs = get_fracture_variable(Fr_list, variable='time')
@@ -351,7 +352,7 @@ if export_results:
         append_to_json_file(myJsonName_1, simul_info, 'append2keyASnewlist', key='simul_info',
                             delete_existing_filename=True)  # be careful: delete_existing_filename=True only the first time you call "append_to_json_file"
 
-    # 2) write to json the coordinates of the points defining the fracture front at each time:
+    # 2) export the coordinates of the points defining the fracture front at each time:
     if 2 in to_export:
         print("\n 2) writing fronts")
         time_srs = get_fracture_variable(Fr_list,variable='time') # get the list of times corresponding to each fracture object
@@ -370,7 +371,7 @@ if export_results:
         append_to_json_file(myJsonName_1,mesh_info,'append2keyASnewlist', key='mesh_info')
         print(" <-- DONE\n")
 
-    # 3) get the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
+    # 3) export the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
     if 3 in to_export:
         print("\n 3) get w(t) at a point... ")
         my_X = 0.02 ; my_Y = 0.
@@ -381,7 +382,7 @@ if export_results:
 
 
 
-    # 4) get the fluid pressure p(t) versus time (t) at a point of coordinates myX and myY
+    # 4) export the fluid pressure p(t) versus time (t) at a point of coordinates myX and myY
     if 4 in to_export:
         print("\n 4) get pf(t) at a point... ")
         my_X = 0.02 ; my_Y = 0.
@@ -391,7 +392,7 @@ if export_results:
         print(" <-- DONE\n")
 
 
-    # 5) get w(y) along a vertical line passing through mypoint for different times
+    # 5) export w(y) along a vertical line passing through mypoint for different times
     if 5 in to_export:
         print("\n 5) get w(y) with y passing through a specific point for different times... ")
         my_X = 0.; my_Y = 0.
@@ -411,7 +412,7 @@ if export_results:
 
 
 
-    # 6) get pf(x) along a horizontal line passing through mypoint for different times
+    # 6) export pf(x) along a horizontal line passing through mypoint for different times
     if 6 in to_export:
         print("\n 6) get pf(x) with x passing through a specific point for different times... ")
         my_X = 0.; my_Y = 0.
@@ -431,7 +432,7 @@ if export_results:
 
 
 
-    # 7) get w(x,y,t) and pf(x,y,t)
+    # 7) export w(x,y,t) and pf(x,y,t)
     if 7 in to_export:
         print("\n 7) get w(x,y,t) and  pf(x,y,t)... ")
         wofxyandt = []
@@ -452,9 +453,6 @@ if export_results:
         print(" <-- DONE\n")
 
     print("DONE! in " + myJsonName_1)
-    plt.show(block=True)
-
-
 
 # -------------- END OF FILE -------------- #
 
