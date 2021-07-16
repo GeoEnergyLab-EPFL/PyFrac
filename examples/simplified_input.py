@@ -104,7 +104,7 @@ post_process_the_results = True
 # Note: If run_the_simualtion = False and post_process_the_results = True, then the last simulation inside "save_folder"
 # with the name "sim_name" will be loaded.
 
-export_results_to_json = True
+export_results_to_json = False
 # Boolean to decide if you want to export the results to a "json" file.
 # Note: If run_the_simualtion = False and post_process_the_results = True, then the last simulation inside "save_folder"
 # with the name "sim_name" will be loaded.
@@ -312,7 +312,7 @@ from visualization import *
 from postprocess_fracture import append_to_json_file
 
 # 1) export general information to json
-# 2) export to json the coordinates of the points defining the fracture front at each time:
+# 2) export to json the coordinates of the points defining the fracture front at each time
 # 3) export the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
 # 4) export the fluid pressure p(t) versus time (t) at a point of coordinates myX and myY
 # 5) export w(y) along a vertical line passing through mypoint for different times
