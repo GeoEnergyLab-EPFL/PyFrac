@@ -6,6 +6,7 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+import random
 import copy
 import math
 import numpy as np
@@ -837,6 +838,8 @@ class SimulationProperties:
         self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
+        self.send_phone_msg = simul_param.send_phone_msg
+        self.simID = str(random.randint(0,10000))
         self.customPlotsOnTheFly = simul_param.custom_plots_on_the_fly
         self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
         self.verbositylevel = simul_param.verbosity_level

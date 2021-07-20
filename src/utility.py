@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dill
 import copy
+
+import requests
 from tip_inversion import TipAsymInversion
 
 
@@ -164,3 +166,26 @@ def append_new_line(file_name, text_to_append):
             file_object.write("\n")
         # Append text at the end of file
         file_object.write(text_to_append)
+
+
+# SENDING A MESSAGE TO MONITOR THE SIMULATION
+"""
+see:
+https://medium.com/@ManHay_Hong/how-to-create-a-telegram-bot-and-send-messages-with-python-4cf314d9fa3e
+
+"""
+
+def send_phone_message(bot_message):
+    try:
+        bot_token = 'the one that you have when you create a bot'
+        bot_chatID = 'it is the field ID at https://api.telegram.org/bot<yourtoken>/getUpdates -> replace <yourtoken> with bot_token'
+
+
+
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
+        response = requests.get(send_text)
+        return response.json()
+
+    except Exception as e:
+        # there may be many error coming...
+        print(e);
