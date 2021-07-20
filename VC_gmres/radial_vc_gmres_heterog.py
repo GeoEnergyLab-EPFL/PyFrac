@@ -9,7 +9,6 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 
 # post processing function
-
 def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
     double_L_A = [];
     x_max_A = [];
@@ -81,7 +80,8 @@ use_direct_TOEPLITZ = False
 ############################
 if run:
     # creating mesh
-    Mesh = CartesianMesh(3, 18, 151, 901)
+    #Mesh = CartesianMesh(3, 18, 151, 901)
+    Mesh = CartesianMesh(3, 13, 101, 401)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -116,7 +116,7 @@ if run:
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
         r = 1.5
-        delta = 0.005
+        delta = 0.008
         Lx = 10
         # if np.abs(x) > r:
         #     return 2.*K_Ic
@@ -228,16 +228,26 @@ if run:
     simulProp.tmStpPrefactor = 0.9  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
+    simulProp.tolFractFront = 0.00005
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
     #simulProp.bckColor = 'sigma0'
+    simulProp.set_simulation_name("radial_vc_gmres_1p9")
     simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     simulProp.plotVar = ['footprint', 'custom']#,'regime']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
-    simulProp.set_solTimeSeries( np.concatenate((np.arange(0.,0.3,0.01),np.arange(0.3,105.12,0.05))))
+    simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.24, 0.01),
+                                                np.arange(0.24, 0.29, 0.015),
+                                                np.arange(0.29, 0.45, 0.02),
+                                                np.arange(0.45, 0.50, 0.025),
+                                                np.arange(0.50,1.10,0.03),
+                                                np.arange(1.10,1.20,0.05),
+                                                np.arange(1.20,1.30,0.08),
+                                                np.arange(1.30,2.00,0.1),
+                                                np.arange(2.1,3.70,0.15))))
     simulProp.force_time_schedule = True
 
     simulProp.customPlotsOnTheFly = True
@@ -268,6 +278,43 @@ if run:
                   Injection,
                   simulProp)
 
+    # ################################################################################
+    # # the following lines are needed if you want to restart an existing simulation #
+    # ################################################################################
+    from visualization import *
+    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres", step_size=10)       # load all fractures                                                # list of times
+    Solid, Fluid, Injection, simulProp = properties
+    simulProp.plotTSJump = 100
+    Fr = Fr_list[-1]
+    simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.24, 0.01),
+                                                np.arange(0.24, 0.29, 0.015),
+                                                np.arange(0.29, 0.45, 0.02),
+                                                np.arange(0.45, 0.50, 0.025),
+                                                np.arange(0.50,1.10,0.03),
+                                                np.arange(1.10,1.20,0.05),
+                                                np.arange(1.20,1.30,0.08),
+                                                np.arange(1.30,2.00,0.1),
+                                                np.arange(2.1,3.70,0.15))))
+    simulProp.force_time_schedule = True
+    simulProp.saveToDisk = True
+    simulProp.send_phone_msg = True
+
+    # setting up mesh extension options
+    simulProp.meshExtensionAllDir = False
+    simulProp.set_mesh_extension_factor(1.5)
+    simulProp.set_mesh_extension_direction(['top','bottom'])
+    simulProp.meshReductionPossible = False
+    simulProp.simID = 'K1/K2=1.9' # do not use _
+
+    Solid = MaterialProperties(Mesh,
+                              Eprime,
+                              K1c_func=K1c_func,
+                              confining_stress_func = sigmaO_func,
+                              confining_stress=0.,
+                              minimum_width=0.)
+    ##############################################################################
+
+
     # create a Controller
     controller = Controller(Fr,
                             Solid,
@@ -287,7 +334,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     from visualization import *
 
     # # loading simulation results
-    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres",step_size=1)                  # load all fractures
+    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres_res",step_size=1)                  # load all fractures
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
     Solid, Fluid, Injection, simulProp = properties
 
@@ -369,7 +416,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     #################################
 
     # loading simulation results A
-    Fr_list_A, properties_A = load_fractures(address="./Data/radial_VC_gmres",step_size=1)                  # load all fractures
+    Fr_list_A, properties_A = load_fractures(address="./Data/radial_VC_gmres_res",step_size=1)                  # load all fractures
     time_srs_A = get_fracture_variable(Fr_list_A, variable='time')                                                 # list of times
     Solid_A, Fluid_A, Injection_A, simulProp_A = properties_A
     double_L_A, x_max_A, p_A, w_A,  time_simul_A = get_info(Fr_list_A)
@@ -435,13 +482,20 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ax.scatter(time_simul_A, double_L_A, color='k')
     doubleL_scaling = []
     for i in range(len(time_simul_A)):
-        doubleL_scaling.append(10*time_simul_A[i]**(2/3))
+        doubleL_scaling.append(9.5*time_simul_A[i]**(2/3))
     ax.plot(time_simul_A, doubleL_scaling, color='g')
 
     doubleL_radial = []
     for i in range(len(time_simul_A)):
-        doubleL_radial.append(10*time_simul_A[i]**(2/5))
+        doubleL_radial.append(6*time_simul_A[i]**(2/5))
     ax.plot(time_simul_A, doubleL_radial, color='b')
+
+    doubleL_pkn = []
+    for i in range(len(time_simul_A)):
+        doubleL_pkn.append(10*time_simul_A[i])
+    ax.plot(time_simul_A, doubleL_pkn, color='r')
+
+
     # ax.scatter(time_simul_B, p_B, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -475,8 +529,9 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     w_scaling = []
     w_radial = []
     for i in range(len(time_simul_A)):
-        w_scaling.append(0.0000625*time_simul_A[i]**(1/3))
+        w_scaling.append(0.0000660*time_simul_A[i]**(1/3))
     ax.plot(time_simul_A, w_scaling, color='g')
+
 
     for i in range(len(time_simul_A)):
         w_radial.append(0.0000525*time_simul_A[i]**(1/5))

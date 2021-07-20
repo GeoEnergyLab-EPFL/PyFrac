@@ -255,6 +255,11 @@ class Controller:
         #         self.sim_prop.frontAdvancing = "implicit"
 
         log.info("Starting time = " + repr(self.fracture.time))
+        if self.sim_prop.send_phone_msg:
+            from utility import send_phone_message
+            send_phone_message("---Simulation " + self.sim_prop.simID + " started---")
+            send_phone_message("Starting time = " + repr(self.fracture.time))
+
         # starting time stepping loop
         while self.fracture.time < 0.999 * self.sim_prop.finalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
 
@@ -794,7 +799,9 @@ class Controller:
                             dill.dump(self.perfData, perf_output, -1)
 
                     log.info("\n\n---Simulation failed---")
-
+                    if self.sim_prop.send_phone_msg:
+                        from utility import send_phone_message
+                        send_phone_message("---Simulation "+ self.sim_prop.simID +" failed---")
                     raise SystemExit("Simulation failed.")
                 else:
                     log.info("- limiting the time step - ")
@@ -822,7 +829,9 @@ class Controller:
                             dill.dump(self.perfData, perf_output, -1)
 
                     log.info("\n\n---Simulation failed---")
-
+                    if self.sim_prop.send_phone_msg:
+                        from utility import send_phone_message
+                        send_phone_message("---Simulation " + self.sim_prop.simID +" failed---")
                     raise SystemExit("Simulation failed.")
                 else:
                     # decrease time step pre-factor before taking the next fracture in the queue having last
@@ -856,7 +865,11 @@ class Controller:
         log.info("number of time steps = " + repr(self.successfulTimeSteps))
         log.info("failed time steps = " + repr(self.failedTimeSteps))
         log.info("number of remeshings = " + repr(self.remeshings))
-
+        if self.sim_prop.send_phone_msg:
+            from utility import send_phone_message
+            send_phone_message("---Simulation "+ self.sim_prop.simID +" finished---")
+            send_phone_message("Final time = " + repr(self.fracture.time))
+            send_phone_message("-------------------------")
         plt.show(block=False)
         plt.close('all')
 
