@@ -26,9 +26,11 @@ export_results = True
 
 "_______________________________________________________"
 # creating mesh
-mesh_discretiz_x=265
-mesh_discretiz_y=171
-Mesh = CartesianMesh(0.035, 0.015, mesh_discretiz_x, mesh_discretiz_y)
+#mesh_discretiz_x=265
+#mesh_discretiz_y=171
+mesh_discretiz_x=161
+mesh_discretiz_y=101
+Mesh = CartesianMesh(0.025, 0.015, mesh_discretiz_x, mesh_discretiz_y)
 
 # solid properties
 nu = 0.48                            # Poisson's ratio
@@ -44,24 +46,24 @@ Solid = MaterialProperties(Mesh,
                            Carters_coef=Cl,
                            minimum_width=1e-9)
 
-path =  '/home/peruzzo/BigWhamLink/BigWhamLink/Examples/StaticCrackBenchmarks/boundary_effect_mesh.json'
+path =  '/home/carlo/BigWhamLink/BigWhamLink/Examples/StaticCrackBenchmarks/boundary_effect_mesh.json'
 Boundary = BoundaryEffect(Mesh, Eprime, nu, path,
                           preconditioner=False,
                           lgmres=True,
                           maxLeafSizeTrK=300,
                           etaTrK=10,
-                          maxLeafSizeDispK=1000,
-                          etaDispL=100,
+                          maxLeafSizeDispK=6000,
+                          etaDispL=50,
                           epsACA=0.001)
 # Boundary = None
 
 
-def source_location(x, y):
+def source_location(x, y, hx, hy):
     """ This function is used to evaluate if a point is included in source, i.e. the fluid is injected at the given
         point.
     """
     # the condition
-    if (abs(x + .02) < Mesh.hx*0.5 and abs(y - 0) < Mesh.hy*.5 ) or (abs(x - .02) < Mesh.hx*0.5 and abs(y + 0) < Mesh.hy*.5):
+    if (abs(x + .02) < hx*0.5 and abs(y - 0) < hy*.5 ) or (abs(x - .02) < hx*0.5 and abs(y + 0) < hy*.5):
 
         return True
 
@@ -104,12 +106,13 @@ simulProp.maxSolverItrs=240
 if run:
     # initializing fracture
     from fracture_initialization import get_radial_survey_cells
-    initRad1 = 0.000802
+    #initRad1 = 0.000802
+    initRad1 = 0.0016
     initRad2 = initRad1
-    surv_cells_1, surv_cells_dist_1, inner_cells_1 = get_radial_survey_cells(Mesh, initRad1, inj_point=[-0.02, 0])
+    surv_cells_1, surv_cells_dist_1, inner_cells_1 = get_radial_survey_cells(Mesh, initRad1, center=[-0.02, 0])
     # surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells, 1])
 
-    surv_cells_2, surv_cells_dist_2, inner_cells_2 = get_radial_survey_cells(Mesh, initRad2, inj_point=[0.02, 0])
+    surv_cells_2, surv_cells_dist_2, inner_cells_2 = get_radial_survey_cells(Mesh, initRad2, center=[0.02, 0])
     surv_cells = np.concatenate((surv_cells_1, surv_cells_2))
     surv_cells_dist = np.concatenate((surv_cells_dist_1, surv_cells_dist_2))
     inner_cells = np.concatenate((inner_cells_1, inner_cells_2))
