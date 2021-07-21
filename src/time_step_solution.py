@@ -15,7 +15,7 @@ from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cel
 from symmetry import get_symetric_elements, self_influence
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
-from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
+from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists, get_front_region
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, you_advance_more_than_2_cells
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
@@ -524,13 +524,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 return exitstatus, None
 
         if (sim_properties.paramFromTip or mat_properties.anisotropic_K1c) and not mat_properties.inv_with_heter_K1c:
-
             Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
                                                      sgndDist_k,
                                                      Fr_lstTmStp.EltRibbon,
                                                      mat_properties,
                                                      Fr_lstTmStp.mesh) * (32 / np.pi) ** 0.5
-
+            # check if any nan is present
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
                 return exitstatus, None
@@ -549,8 +548,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             Eprime_k = None
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
         # large float value. (algorithm requires inf)
+        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
 
         perfNode_tipInv = instrument_start('tip inversion', perfNode)
 
@@ -586,8 +585,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 22.66 * Fr_lstTmStp.mesh.cellDiag)[0]
+        # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+        # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 22.66 * Fr_lstTmStp.mesh.cellDiag)[0]
+
+        front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon],
+                                        Fr_lstTmStp.EltChannel)
+
         #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +

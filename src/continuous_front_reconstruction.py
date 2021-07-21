@@ -2166,7 +2166,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 correct_size_of_pstv_region = [False, False, True]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
-                log.debug('I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
+                log.debug('I am increasing the thickness of the band (directive from find fictitius cells routine)')
                 # from utility import plot_as_matrix
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[anularegion] = sgndDist_k[anularegion]

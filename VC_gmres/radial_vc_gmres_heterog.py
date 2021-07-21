@@ -75,7 +75,7 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = True
 use_iterative = True
-use_HMAT = True
+use_HMAT = False
 use_direct_TOEPLITZ = False
 ############################
 if run:
@@ -294,7 +294,7 @@ if run:
                                                 np.arange(1.10,1.20,0.05),
                                                 np.arange(1.20,1.30,0.08),
                                                 np.arange(1.30,2.00,0.1),
-                                                np.arange(2.1,3.70,0.15))))
+                                                np.arange(2.1,3.70,0.1))))
     simulProp.force_time_schedule = True
     simulProp.saveToDisk = True
     simulProp.send_phone_msg = True
