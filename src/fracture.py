@@ -22,7 +22,7 @@ from elasticity import mapping_old_indexes
 # local import
 # import fracture_initialization
 # import visualization
-from level_set import SolveFMM
+from level_set import SolveFMM, get_front_region
 from volume_integral import Pdistance
 from fracture_initialization import get_survey_points, get_width_pressure, generate_footprint
 from fracture_initialization import Geometry, InitializationParameters
@@ -136,6 +136,9 @@ class Fracture:
                                                                                        inner_cells,
                                                                                        surv_dist,
                                                                                        simulProp.projMethod)
+
+        self.front_region = get_front_region(self.mesh, self.EltRibbon, self.sgndDist[self.EltRibbon])
+
         # for static fracture initialization
         if init_param.regime == 'static':
             self.w, self.pNet, self.boundEffTraction = get_width_pressure(self.mesh,

@@ -74,8 +74,11 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
+#run = False
+restart = False
 use_iterative = True
 use_HMAT = False
+#use_HMAT = True
 use_direct_TOEPLITZ = False
 ############################
 if run:
@@ -92,31 +95,55 @@ if run:
 
     def smoothing(K1, K2, r, delta, x, Lx):
         # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
-        #### LINEAR ####
+        #### DIRAC DELTA ####
         x = np.abs(x)
-        a = (K2 - K1) / ((r + delta) - (r - delta))
-        b = K2 - a * (r + delta)
-        if -1.1* Lx <= x < r - delta:
+        if  x < r :
             return K1
-        elif r - delta <= x <= r + delta:
-            return a * x + b
-        elif r + delta < x <= 1.1 *Lx:
-            return K2
+        elif x >= r :
+            return K1
         else:
             print("ERROR")
+        #### LINEAR ####
+        # x = np.abs(x)
+        # if -1.1 * Lx <= x < r - delta:
+        #     return K1
+        # elif r - delta <= x <= r + delta:
+        #     a = (K2 - K1) / ((r + delta) - (r - delta))
+        #     b = K2 - a * (r + delta)
+        #     return a * x + b
+        # elif r + delta < x <= 1.1 *Lx:
+        #     return K2
+        # else:
+        #     print("ERROR")
         #### EXPONENTIAL ####
         # x_b = 400*(np.abs(x)-r)
         # if x >= 0.:
         #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
         # else:
         #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
-
+        #### QUADRATIC ####
+        # x = np.abs(x)
+        # if x <= r:
+        #     return K1
+        # elif x > r and x < r + delta:
+        #     return K1 + (x-delta)*(x-delta)*(K2-K1)/delta/delta
+        # else:
+        #     return K2
+        #### SQRT ####
+        # x = np.abs(x)
+        # if x <= r:
+        #     return K1
+        # elif x > r and x < r + delta:
+        #     return K1 + (x-delta)**(0.5)*(K2-K1)/(delta**(0.5))
+        # else:
+        #     return K2
 
     def K1c_func(x,y):
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
         r = 1.5
-        delta = 0.008
+        #delta = 0.008
+        delta = 0.
         Lx = 10
         # if np.abs(x) > r:
         #     return 2.*K_Ic
@@ -229,26 +256,26 @@ if run:
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
     simulProp.tolFractFront = 0.00005
+    simulProp.plotTSJump = 1
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
-    #simulProp.bckColor = 'sigma0'
-    simulProp.set_simulation_name("radial_vc_gmres_1p9")
     simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     simulProp.plotVar = ['footprint', 'custom']#,'regime']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
-    simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.24, 0.01),
-                                                np.arange(0.24, 0.29, 0.015),
-                                                np.arange(0.29, 0.45, 0.02),
-                                                np.arange(0.45, 0.50, 0.025),
-                                                np.arange(0.50,1.10,0.03),
-                                                np.arange(1.10,1.20,0.05),
-                                                np.arange(1.20,1.30,0.08),
-                                                np.arange(1.30,2.00,0.1),
-                                                np.arange(2.1,3.70,0.15))))
-    simulProp.force_time_schedule = True
+    #simulProp.set_solTimeSeries(np.arange(0., 3.7, 0.0025))
+    simulProp.force_time_schedule = False
+    #simulProp.send_phone_msg = True
+
+    # setting up mesh extension options
+    simulProp.meshExtensionAllDir = False
+    simulProp.set_mesh_extension_factor(1.5)
+    simulProp.set_mesh_extension_direction(['vertical'])
+    simulProp.meshReductionPossible = False
+    simulProp.simID = 'K1/K2=1.9' # do not use _
+
 
     simulProp.customPlotsOnTheFly = True
     simulProp.LHyst__ = []
@@ -261,11 +288,9 @@ if run:
         if use_direct_TOEPLITZ:
             simulProp.useBlockToeplizCompression = True
             from elasticity import load_isotropic_elasticity_matrix_toepliz
-
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
         else:
             from elasticity import load_isotropic_elasticity_matrix
-
             C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
     init_param = InitializationParameters(Fr_geometry, regime='K')
@@ -281,38 +306,45 @@ if run:
     # ################################################################################
     # # the following lines are needed if you want to restart an existing simulation #
     # ################################################################################
-    from visualization import *
-    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres", step_size=10)       # load all fractures                                                # list of times
-    Solid, Fluid, Injection, simulProp = properties
-    simulProp.plotTSJump = 100
-    Fr = Fr_list[-1]
-    simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.24, 0.01),
-                                                np.arange(0.24, 0.29, 0.015),
-                                                np.arange(0.29, 0.45, 0.02),
-                                                np.arange(0.45, 0.50, 0.025),
-                                                np.arange(0.50,1.10,0.03),
-                                                np.arange(1.10,1.20,0.05),
-                                                np.arange(1.20,1.30,0.08),
-                                                np.arange(1.30,2.00,0.1),
-                                                np.arange(2.1,3.70,0.1))))
-    simulProp.force_time_schedule = True
-    simulProp.saveToDisk = True
-    simulProp.send_phone_msg = True
+    if restart:
+        from visualization import *
+        Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres", step_size=10)       # load all fractures                                                # list of times
+        Solid, Fluid, Injection, simulProp = properties
+        simulProp.set_tipAsymptote('K')
+        #simulProp.plotTSJump = 100
+        Fr = Fr_list[-1]
+        simulProp.set_solTimeSeries(np.arange(0.309, 3.7, 0.06))
+        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.24, 0.01),
+        #                                             np.arange(0.24, 0.29, 0.015),
+        #                                             np.arange(0.29, 0.45, 0.02),
+        #                                             np.arange(0.45, 0.50, 0.025),
+        #                                             np.arange(0.50,1.10,0.03),
+        #                                             np.arange(1.10,1.20,0.05),
+        #                                             np.arange(1.20,1.30,0.08),
+        #                                             np.arange(1.30,2.00,0.1),
+        #                                             np.arange(2.19,3.70,0.1))))
+        simulProp.force_time_schedule = True
+        #simulProp.tolFractFront = 0.0002
+        #simulProp.plotTSJump = 100
+        Solid = MaterialProperties(Mesh,
+                                  Eprime,
+                                  K1c_func=K1c_func,
+                                  confining_stress_func = sigmaO_func,
+                                  confining_stress=0.,
+                                  minimum_width=0.)
+        simulProp.send_phone_msg = True
 
-    # setting up mesh extension options
-    simulProp.meshExtensionAllDir = False
-    simulProp.set_mesh_extension_factor(1.5)
-    simulProp.set_mesh_extension_direction(['top','bottom'])
-    simulProp.meshReductionPossible = False
-    simulProp.simID = 'K1/K2=1.9' # do not use _
+        # setting up mesh extension options
+        simulProp.meshExtensionAllDir = False
+        simulProp.set_mesh_extension_factor(1.5)
+        simulProp.set_mesh_extension_direction(['vertical'])
+        simulProp.meshReductionPossible = False
+        simulProp.simID = 'K1/K2=1.9' # do not use _
 
-    Solid = MaterialProperties(Mesh,
-                              Eprime,
-                              K1c_func=K1c_func,
-                              confining_stress_func = sigmaO_func,
-                              confining_stress=0.,
-                              minimum_width=0.)
-    ##############################################################################
+
+        #from level_set import get_front_region
+        #Fr.front_region = get_front_region(Fr.mesh, Fr.EltRibbon, Fr.sgndDist[Fr.EltRibbon])`
+    #############################################################################
 
 
     # create a Controller
@@ -328,20 +360,22 @@ if run:
 ####################
 # plotting results #
 ####################
+#output_fol = "./Data/radial_VC_gmres"
+output_fol = "./Data/radial_VC_gmres_res"
 
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
     from visualization import *
 
     # # loading simulation results
-    Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres_res",step_size=1)                  # load all fractures
+    Fr_list, properties = load_fractures(address=output_fol,step_size=1)                  # load all fractures
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
     Solid, Fluid, Injection, simulProp = properties
 
 
     # plot fracture radius
     my_list = []
-    for i in np.arange(0,len(Fr_list),10):
+    for i in np.arange(0,len(Fr_list),1):
         my_list.append(Fr_list[i])
     plot_prop = PlotProperties()
     Fig_R = plot_fracture_list(my_list,
@@ -416,7 +450,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     #################################
 
     # loading simulation results A
-    Fr_list_A, properties_A = load_fractures(address="./Data/radial_VC_gmres_res",step_size=1)                  # load all fractures
+    Fr_list_A, properties_A = load_fractures(address=output_fol,step_size=1)                  # load all fractures
     time_srs_A = get_fracture_variable(Fr_list_A, variable='time')                                                 # list of times
     Solid_A, Fluid_A, Injection_A, simulProp_A = properties_A
     double_L_A, x_max_A, p_A, w_A,  time_simul_A = get_info(Fr_list_A)
@@ -468,6 +502,12 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     for i in range(len(time_simul_A)):
         p_ana.append(0.35)
     ax.plot(time_simul_A, p_ana, color='g')
+
+    # p_scaling = []
+    # for i in range(len(time_simul_A)):
+    #     p_scaling.append(0.05/time_simul_A[i])
+    # ax.plot(time_simul_A, p_scaling, color='b')
+
     # ax.scatter(time_simul_B, p_B, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -492,7 +532,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     doubleL_pkn = []
     for i in range(len(time_simul_A)):
-        doubleL_pkn.append(10*time_simul_A[i])
+        doubleL_pkn.append(9*time_simul_A[i])
     ax.plot(time_simul_A, doubleL_pkn, color='r')
 
 
@@ -558,5 +598,17 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ax.set_xscale('log')
     plt.show()
 
-
+    # plot slice
+    print("\n get w(x) with x passing through a specific point for different times... ")
+    my_X = 0.
+    my_Y = 0.
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    fracture_list_slice_B = plot_fracture_list_slice(Fr_list,
+                                                   variable='w',
+                                                   projection='2D',
+                                                   plot_cell_center=True,
+                                                   extreme_points=ext_pnts,
+                                                   orientation='vertical',
+                                                   point1=[my_X, my_Y],
+                                                   export2Json=False)
     plt.show(block=True)

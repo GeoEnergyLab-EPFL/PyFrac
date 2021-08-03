@@ -435,7 +435,7 @@ def plot_final_reconstruction(mesh,
     plt.plot(mesh.CenterCoor[oldRibbon,0]*1.05, mesh.CenterCoor[oldRibbon,1], '.',color='green')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
 
-def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=None):
+def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=None, joinPoints = True, disregard_plus=False):
         #fig = None
         if fig is None:
             fig = plt.figure()
@@ -450,13 +450,17 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
         nonRibbon = np.setdiff1d(anularegion, Ribbon)
         Positive_nonRibbon = nonRibbon[np.where(sgndDist_k[nonRibbon] > 0)[0]]
         plt.plot(mesh.CenterCoor[Ribbon, 0], mesh.CenterCoor[Ribbon, 1], ".", marker="_", color='g')
-        plt.plot(mesh.CenterCoor[Positive_nonRibbon, 0], mesh.CenterCoor[Positive_nonRibbon, 1], ".", marker="+",
-                 color='r')
+        if not disregard_plus:
+            plt.plot(mesh.CenterCoor[Positive_nonRibbon, 0], mesh.CenterCoor[Positive_nonRibbon, 1], ".", marker="+",
+                     color='r')
         Negative_nonRibbon = np.setdiff1d(nonRibbon, Positive_nonRibbon)
         if Negative_nonRibbon.size > 0:  # plot them
             plt.plot(mesh.CenterCoor[Negative_nonRibbon, 0], mesh.CenterCoor[Negative_nonRibbon, 1], ".",
                      marker="_", color='b')
-        plt.plot(np.asarray(x), np.asarray(y), '.-', color='red')
+        if joinPoints:
+            plt.plot(np.asarray(x), np.asarray(y), '.-', color='red')
+        else:
+            plt.plot(np.asarray(x), np.asarray(y), '.', color='red')
 
         if annotate_cellName:
             x_center = mesh.CenterCoor[anularegion,0]
@@ -3178,7 +3182,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     if dLSdy == 0. and dLSdx != 0.:
                         fullyfractured_angle.append(0.)
                     elif dLSdy != 0. and dLSdx == 0:
-                        fullyfractured_angle.append(np.pi)
+                        fullyfractured_angle.append(np.pi/2.)
                     elif dLSdy != 0. and dLSdx != 0:
                         fullyfractured_angle.append(np.arctan(np.abs(dLSdy) / np.abs(dLSdx)))
                     else:
@@ -3469,3 +3473,11 @@ def you_advance_more_than_2_cells(fully_traversed_k,EltTip_last_tmstp,NeiElement
     else: #==0
         return False
 
+def get_xy_from_Ffront(Ffront):
+    x = []
+    y = []
+    for segment in Ffront:
+        [xa,ya,xb,yb] = segment
+        x.append(xa)
+        y.append(ya)
+    return x, y

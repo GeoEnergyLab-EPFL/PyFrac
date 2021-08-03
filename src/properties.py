@@ -220,7 +220,7 @@ class MaterialProperties:
             self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
     def Kprime_func(self, x, y):
-        return self.K1cFunc(x, y) * (32 / np.pi) ** 0.5
+        return self.K1cFunc(x, y) * (32. / np.pi) ** 0.5
 
 #-----------------------------------------------------------------------------------------------------------------------
 
