@@ -497,7 +497,18 @@ def get_cells_inside_circle(mesh, r, center):
 
 
 
-def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon, EltChannel_lstTmStp):
+def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
+    """
+    This function returns a list of elements that form a band where the location of the tip is expected to be.
+    Args:
+        mesh:
+        EltRibbon:
+        sgndDist_k_EltRibbon:
+        EltChannel_lstTmStp:
+
+    Returns:
+
+    """
     front_region = []
     advancing_fast = []
     # take the cells in a circle drown from each ribbon cell with radius equal to the distance to the front from the tip inversion
@@ -507,29 +518,11 @@ def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon, EltChannel_lstTmStp
             radius_i = np.abs(sgndDist_k_EltRibbon[i]) + 2.5 * mesh.cellDiag
             advancing_fast.append(cell_i)
         else:
-            radius_i = np.abs(sgndDist_k_EltRibbon[i]) + mesh.cellDiag
+            radius_i = np.abs(sgndDist_k_EltRibbon[i]) + 1.5 * mesh.cellDiag
         center_i = mesh.CenterCoor[cell_i]
         new_cells = get_cells_inside_circle(mesh, radius_i, center_i)
         for j in new_cells:
             front_region.append(j)
-    front_region = np.unique(front_region)
-
-    # remove the cells inside the crack at the previous time step
-    front_region = np.setdiff1d(front_region, EltChannel_lstTmStp)
-
-    # add 1 row of cells behind the ribbon
-    reducedEltRibbon = np.setdiff1d(EltRibbon,advancing_fast)
-    new_elem = np.unique(mesh.NeiElements[reducedEltRibbon].flatten())
-    front_region = np.concatenate((front_region, new_elem))
-
-    # add another row of cells behind the ribbon
-    new_elem = np.unique(mesh.NeiElements[new_elem].flatten())
-    front_region = np.concatenate((front_region, new_elem))
-
-    # # add another row of cells behind the ribbon
-    # new_elem = np.unique(mesh.NeiElements[new_elem].flatten())
-    # front_region = np.concatenate((front_region, new_elem))
-
     front_region = np.unique(front_region)
 
     # take out the ribbon
