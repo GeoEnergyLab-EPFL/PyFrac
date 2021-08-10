@@ -42,9 +42,8 @@ def C2(delta):
 def TipAsym_k_exp_heterogK1c(dist, *args):
     """Residual function for the near-field k expansion"""
 
-    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt, i) = args
-
-    return -wEltRibbon +  Kprime.of(dist, i) / Eprime  * dist ** (1/2)
+    (wEltRibbon, Kprime, Eprime, muPrime, Cbar, DistLstTSEltRibbon, dt, i, mesh) = args
+    return -wEltRibbon +  Kprime.of(dist, index = i, mesh=mesh) / Eprime  * dist ** (1/2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 def TipAsym_k_exp(dist, *args):
@@ -494,32 +493,124 @@ def FindBracket_dist(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, 
 
 
 # -----------------------------------------------------------------------------------------------------------------------
+def bisection_Kjump_finder(a, b, Kprime, i, mesh):
+    # Note: to be tested for negative jumps
+    # remember b > a
+    K_a = Kprime.of(a, index=i, mesh=mesh)
+    K_b = Kprime.of(b, index=i, mesh=mesh)
+    delta_K_delta_s = (K_a - K_b) / np.abs(b-a)
+    if delta_K_delta_s != 0.:
+        a_new = a
+        b_new = b
+        dist_th = 1.e-6  # hard threshold
+        dist = b - a
 
-def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, ResFunc, simProp):
+        while dist > dist_th:
+            midpoint = (a_new + b_new) * .5
+            K_mp = Kprime.of(midpoint, index=i, mesh=mesh)
+            if K_mp > K_a:
+                b_new = midpoint
+                delta_K_delta_s_new = (K_mp - K_a) / (b_new - a)
+            else: # K_mp <= K_a:
+                a_new = midpoint
+                delta_K_delta_s_new = (K_b - K_mp) / (b_new - a)
+            dist = b_new - a_new
+        if delta_K_delta_s_new < 1.e6:
+            return False, None, None
+        else:
+            return True, a_new, b_new
+    else:
+        return False, None, None
+
+def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, dt, mesh, ResFunc, simProp, EltRibbon_mov):
     """
     Find the valid bracket for the root evaluation function.
     """
     log = logging.getLogger('PyFrac.FindBracket_dist_K_heterog')
-    maxprop = 6 * mesh.cellDiag
+    initial_prefactor = 8
+    maxprop = initial_prefactor  * mesh.cellDiag
 
     if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
-        a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps)
+        a = -DistLstTS
         b = np.zeros(a.size)
         for i in range(0, len(w)):
             ai = a[i]
-            grid1D = np.arange(ai, ai + maxprop, mesh.cellDiag/10, dtype=np.float64)
+            grid1D = np.arange(ai, ai + maxprop, mesh.cellDiag/20., dtype=np.float64)
 
-            TipAsmptargs = (w[i], Kprime, Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt, i)
+            TipAsmptargs = (w[i], Kprime, Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt, i, mesh)
             Res_grid1D = ResFunc(grid1D, *TipAsmptargs)
             # check if it is possible to find a solution in the interval
+            # Normally it should be:
+            # Res(a) < 0  && Res(b) > 0
             test_Res_grid1D = Res_grid1D > 0.
             if np.sum(test_Res_grid1D) == 0:
-                log.debug("Failing the time step because the front is advancing more than 6 cells ")
-                return a, b, 1
+                log.debug("The front is advancing more than 8 cell diagonals --> trying to allow that")
+                # from utility import plot_as_matrix
+                # K = np.zeros((mesh.NumberOfElts,), )
+                # K[EltRibbon_mov] = 1
+                # K[EltRibbon_mov[i]] = 2
+                # plot_as_matrix(K, mesh)
+                prefactor = 1.1
+                while np.sum(test_Res_grid1D) == 0:
+                    # take a larger range
+                    end_range = initial_prefactor * initial_prefactor  * mesh.cellDiag
+                    grid1D = np.arange(ai, ai + end_range, mesh.cellDiag / 20., dtype=np.float64)
+                    # compute the residuals
+                    Res_grid1D = ResFunc(grid1D, *TipAsmptargs)
+                    # check if it is possible to find a solution in the interval
+                    test_Res_grid1D = Res_grid1D > 0.
+                    if not np.sum(test_Res_grid1D) == 0:
+                        b_index = np.where(test_Res_grid1D)[0]
+                        b[i] = grid1D[b_index.min()]
+                        adv = int(b[i]/mesh.cellDiag)
+                        log.debug("         The front is advancing "+str(adv)+" cell diagonals ")
+                        if adv > 15:
+                            log.info("Failing the time step because the front is advancing more than 15 cell diagonals ")
+                            return a, b, 1
+                    else:
+                        prefactor = prefactor + 0.1
+            elif np.sum(test_Res_grid1D) == 1:
+                # the residual is positive everywhere. This means that
+                # the fracture should not advance there
+                a[i] = np.nan
+                b[i] = np.nan
+                log.debug("The fracture should not advance at this location ")
+            else:
+                # find minimum
+                b_index = np.where(test_Res_grid1D)[0]
+                b[i] = grid1D[b_index.min()]
+                # move a[i] closer to the solution will make the convergence faster
+                a[i] = grid1D[b_index.min()-1]
 
-            # find minimum
-            b_index = np.where(test_Res_grid1D)[0]
-            b[i] = grid1D[b_index.min()]
+                #test if there is a jump
+                # - we use the bisection and we test if a limit exist for DK/Ds
+                # - if the limit does not exist, find the jump using the bisection method up to a distance
+                Kjump_bool, a_new, b_new = bisection_Kjump_finder(a[i],b[i],Kprime, i, mesh)
+                if Kjump_bool:
+                    # check the residuals before and after the jump
+                    # if they are of the same sign then you can find the root before or after the jump
+                    # they are of different signs then you must set the crack as not propagating.
+                    TipAsmptargs = (w[i], Kprime, Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt, i, mesh)
+                    f_a = ResFunc(a[i], *TipAsmptargs)
+                    f_a_new = ResFunc(a_new, *TipAsmptargs)
+                    f_b = ResFunc(b[i], *TipAsmptargs)
+                    f_b_new = ResFunc(b_new, *TipAsmptargs)
+                    if f_a * f_a_new < 0. :
+                        b[i] = a_new
+                    elif f_b * f_b_new < 0.:
+                        a[i] = b_new
+                    elif f_a_new * f_b_new < 0.:
+                        a[i] = np.nan
+                    else:
+                        log.info("Unexpected case")
+
+                # ---- the following is only a check ----
+                # TipAsmptargs = (w[i], Kprime, Eprime[i], fluidProp, Cprime[i], -DistLstTS[i], dt, i, mesh)
+                # f_b = ResFunc(b[i], *TipAsmptargs)
+                # f_a = ResFunc(-DistLstTS[i], *TipAsmptargs)
+                # if f_b * f_a > 0. :
+                #     log.info("Problem with the bracketing ")
+                # ---------------------------------------
         return a, b, 0
     else:
         raise SystemExit("FindBracket not supported for the selected rheology!")
@@ -586,11 +677,15 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
 
     # checking propagation condition
     if matProp.inv_with_heter_K1c:
-        stagnant = np.where(Kprime.of(abs(frac.sgndDist[frac.EltRibbon])) * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
-                                            Eprime * w[frac.EltRibbon]) > 1)[0]
+        stagnant = np.where(Kprime.of(frac.sgndDist[frac.EltRibbon]) * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
+                                            Eprime * w[frac.EltRibbon]) > 1.)[0]
+        # from utility import plot_as_matrix
+        # K = np.zeros((frac.mesh.NumberOfElts,), )
+        # K[frac.EltRibbon[stagnant]] = 1
+        # plot_as_matrix(K, frac.mesh)
     else:
         stagnant = np.where(Kprime * (abs(frac.sgndDist[frac.EltRibbon]))**0.5 / (
-                                            Eprime * w[frac.EltRibbon]) > 1)[0]
+                                            Eprime * w[frac.EltRibbon]) > 1.)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 
     if matProp.inv_with_heter_K1c:
@@ -604,7 +699,8 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                                             dt,
                                             frac.mesh,
                                             ResFunc,
-                                            simParmtrs)
+                                            simParmtrs,
+                                            frac.EltRibbon[moving])
         if status : return np.full(frac.EltRibbon.size, np.nan)
     else:
         a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
@@ -628,11 +724,12 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
             stagnant = stagnant_from_bracketing
         moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
     ## End of adaption
+    if matProp.inv_with_heter_K1c:
+        Kprime.keepRibbonThatAre(moving)
 
     dist = -frac.sgndDist[frac.EltRibbon]
     for i in range(0, len(moving)):
         if matProp.inv_with_heter_K1c:
-            Kprime.keepRibbonThatAre(moving)
             TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
                             Kprime,
                             Eprime[moving[i]],
@@ -640,7 +737,8 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                             matProp.Cprime[frac.EltRibbon[moving[i]]],
                             -frac.sgndDist[frac.EltRibbon[moving[i]]],
                             dt,
-                            i)
+                            i,
+                            frac.mesh)
         else:
             TipAsmptargs = (w[frac.EltRibbon[moving[i]]],
                         Kprime[moving[i]],

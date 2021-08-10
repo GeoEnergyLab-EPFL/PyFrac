@@ -43,8 +43,8 @@ def getwmax__(w):
 
 def apply_custom_prop(sim_prop, fr):
     #sim_prop.LHyst__.append(getL__(fr.Ffront))
-    #sim_prop.LHyst__.append(getwmax__(fr.w))
-    sim_prop.LHyst__.append(getwAtMovingCenter__(fr))
+    sim_prop.LHyst__.append(getwmax__(fr.w))
+    #sim_prop.LHyst__.append(getwAtMovingCenter__(fr))
     sim_prop.tHyst__.append(fr.time)
 
 def custom_plot(sim_prop, fig = None):

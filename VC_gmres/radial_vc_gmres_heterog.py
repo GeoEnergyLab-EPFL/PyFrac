@@ -19,9 +19,10 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
     for frac_sol in Fr_list_A:
         # we are at a give time step now,
         # I am getting double_L_A, x_max_A
-        x_max_temp = 0
-        y_min_temp = 0
-        y_max_temp = 0
+        x_min_temp = 0.
+        x_max_temp = 0.
+        y_min_temp = 0.
+        y_max_temp = 0.
         for i in range(frac_sol.Ffront.shape[0]):
             segment = frac_sol.Ffront[i]
             # to find the x_max at this time:
@@ -29,6 +30,11 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
                 x_max_temp = segment[0]
             if segment[2] > x_max_temp:
                 x_max_temp = segment[2]
+            # to find the n_min at this time:
+            if segment[0] < x_min_temp:
+                x_min_temp = segment[0]
+            if segment[2] < x_min_temp:
+                x_min_temp = segment[2]
             # to find the y_max at this time:
             if segment[1] > y_max_temp:
                 y_max_temp = segment[1]
@@ -41,7 +47,7 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
                 y_min_temp = segment[3]
 
         double_L_A.append(y_max_temp - y_min_temp)
-        x_max_A.append(x_max_temp)
+        x_max_A.append(x_max_temp - x_min_temp)
 
         p_A.append(frac_sol.pFluid.max() / 1.e6)
         w_A.append(frac_sol.w[center_indx])
@@ -75,16 +81,27 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = True
 #run = False
+
 restart = False
+#restart = True
+
 use_iterative = True
-use_HMAT = False
-#use_HMAT = True
+
+use_HMAT = True
+#use_HMAT = False
 use_direct_TOEPLITZ = False
+
+output_fol = "./Data/radial_VC_gmres"
+output_fol_B = "./Data/radial_VC_gmres"
+#output_fol = "./Data/radial_VC_gmres_res"
+ftPntJUMP = 1
 ############################
+#print("NO SMOOTHING")
+
 if run:
     # creating mesh
     #Mesh = CartesianMesh(3, 18, 151, 901)
-    Mesh = CartesianMesh(3, 13, 101, 401)
+    Mesh = CartesianMesh(2.7, 17.55, 91, 585)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -93,30 +110,41 @@ if run:
     properties = [youngs_mod, nu]
 
 
-    def smoothing(K1, K2, r, delta, x, Lx):
+    def smoothing(K1, K2, r, delta, x):
         # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
-        #### DIRAC DELTA ####
+        #### LINEAR - DIRAC DELTA ####
         x = np.abs(x)
-        if  x < r :
+        if  x < r-delta :
             return K1
-        elif x >= r :
-            return K1
+        elif x >= r-delta and x<r :
+            # 0.0 restart long
+            # 0.3 test
+            K12 = K1 + (K2-K1)*0.1
+            a = (K12 - K1) / (delta)
+            b = K1 - a * (r - delta)
+            return a * x + b
+        elif x >= r:
+            return K2
         else:
             print("ERROR")
+
+
         #### LINEAR ####
         # x = np.abs(x)
-        # if -1.1 * Lx <= x < r - delta:
+        # if x < r - delta:
         #     return K1
         # elif r - delta <= x <= r + delta:
-        #     a = (K2 - K1) / ((r + delta) - (r - delta))
+        #     a = (K2 - K1) / (2.*delta)
         #     b = K2 - a * (r + delta)
         #     return a * x + b
-        # elif r + delta < x <= 1.1 *Lx:
+        # elif r + delta < x:
         #     return K2
         # else:
         #     print("ERROR")
+
+
         #### EXPONENTIAL ####
-        # x_b = 400*(np.abs(x)-r)
+        # x_b = 4000*(np.abs(x)-r)
         # if x >= 0.:
         #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
         # else:
@@ -129,27 +157,35 @@ if run:
         #     return K1 + (x-delta)*(x-delta)*(K2-K1)/delta/delta
         # else:
         #     return K2
-        #### SQRT ####
-        # x = np.abs(x)
-        # if x <= r:
-        #     return K1
-        # elif x > r and x < r + delta:
-        #     return K1 + (x-delta)**(0.5)*(K2-K1)/(delta**(0.5))
-        # else:
-        #     return K2
 
     def K1c_func(x,y):
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
-        r = 1.5
+        r = 1.48
         #delta = 0.008
-        delta = 0.
-        Lx = 10
+        delta = 0.001
         # if np.abs(x) > r:
         #     return 2.*K_Ic
         # else:
         #     return K_Ic
-        return smoothing(K_Ic, 1.9*K_Ic, r, delta, x, Lx)
+        return smoothing(K_Ic, 1.9*K_Ic, r, delta, x)
+
+    # plot x_max vs time
+    # import matplotlib.pyplot as plt
+    # xlabel = 'x [m]'
+    # ylabel = 'KIc [kPa.m^(1/2)]'
+    # fig, ax = plt.subplots()
+    # x = []
+    # y = []
+    # aa = 0.00001
+    # for i in range(int((1.484-1.46)/aa)):
+    #     x.append(1.46+i*aa)
+    #     y.append(K1c_func(x[i],0.))
+    # ax.scatter(x, y, color='k')
+    # ax.set_xlabel(xlabel)
+    # ax.set_ylabel(ylabel)
+    # plt.show()
+
 
     # def K1c_func(x, y):
     #     """ The function providing the toughness
@@ -266,7 +302,9 @@ if run:
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
     #simulProp.set_solTimeSeries(np.arange(0., 3.7, 0.0025))
-    simulProp.force_time_schedule = False
+    simulProp.force_time_schedule = True
+    simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
+                                                np.arange(1.30,4.00,0.01),)))
     #simulProp.send_phone_msg = True
 
     # setting up mesh extension options
@@ -313,17 +351,12 @@ if run:
         simulProp.set_tipAsymptote('K')
         #simulProp.plotTSJump = 100
         Fr = Fr_list[-1]
-        simulProp.set_solTimeSeries(np.arange(0.309, 3.7, 0.06))
-        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.24, 0.01),
-        #                                             np.arange(0.24, 0.29, 0.015),
-        #                                             np.arange(0.29, 0.45, 0.02),
-        #                                             np.arange(0.45, 0.50, 0.025),
-        #                                             np.arange(0.50,1.10,0.03),
-        #                                             np.arange(1.10,1.20,0.05),
-        #                                             np.arange(1.20,1.30,0.08),
-        #                                             np.arange(1.30,2.00,0.1),
-        #                                             np.arange(2.19,3.70,0.1))))
-        simulProp.force_time_schedule = True
+        simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.44, 0.009),
+                                                    np.arange(0.44, 0.504, 0.008),
+                                                    np.arange(0.504, 0.599, 0.006),
+                                                    np.arange(0.599, 0.6546, 0.006),
+                                                    np.arange(0.6546,6, 0.006))))
+        simulProp.force_time_schedule =True
         #simulProp.tolFractFront = 0.0002
         #simulProp.plotTSJump = 100
         Solid = MaterialProperties(Mesh,
@@ -360,23 +393,30 @@ if run:
 ####################
 # plotting results #
 ####################
-#output_fol = "./Data/radial_VC_gmres"
-output_fol = "./Data/radial_VC_gmres_res"
+
 
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
     from visualization import *
 
-    # # loading simulation results
-    Fr_list, properties = load_fractures(address=output_fol,step_size=1)                  # load all fractures
-    time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times
-    Solid, Fluid, Injection, simulProp = properties
+    # loading simulation results A
+    Fr_list_A, properties_A = load_fractures(address=output_fol, load_all=True)  # load all fractures
+    time_srs_A = get_fracture_variable(Fr_list_A, variable='time')  # list of times
+    Solid_A, Fluid_A, Injection_A, simulProp_A = properties_A
+    double_L_A, x_max_A, p_A, w_A, time_simul_A = get_info(Fr_list_A)
 
+    # loading simulation results B
+    Fr_list_B, properties_B = load_fractures(address=output_fol_B, load_all=True)  # load all fractures
+    time_srs_B = get_fracture_variable(Fr_list_B, variable='time')  # list of times
+    Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
+    double_L_B, x_max_B, p_B, w_B, time_simul_B = get_info(Fr_list_B)
 
     # plot fracture radius
     my_list = []
-    for i in np.arange(0,len(Fr_list),1):
-        my_list.append(Fr_list[i])
+    for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
+        my_list.append(Fr_list_A[i])
+    for i in np.arange(0, len(Fr_list_B), ftPntJUMP):
+        my_list.append(Fr_list_B[i])
     plot_prop = PlotProperties()
     Fig_R = plot_fracture_list(my_list,
                                variable='footprint',
@@ -384,10 +424,10 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     Fig_R = plot_fracture_list(my_list,
                                fig=Fig_R,
                                variable='mesh',
-                               mat_properties=properties[0],
+                               mat_properties=properties_A[0],
                                backGround_param='K1c',
                                plot_prop=plot_prop)
-
+    plt.show()
     #
     # # plot fracture radius
     # plot_prop = PlotProperties()
@@ -449,13 +489,11 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     #################################
 
-    # loading simulation results A
-    Fr_list_A, properties_A = load_fractures(address=output_fol,step_size=1)                  # load all fractures
-    time_srs_A = get_fracture_variable(Fr_list_A, variable='time')                                                 # list of times
-    Solid_A, Fluid_A, Injection_A, simulProp_A = properties_A
-    double_L_A, x_max_A, p_A, w_A,  time_simul_A = get_info(Fr_list_A)
 
-    print("\n get w(x) with x passing through a specific point for different times... ")
+
+
+
+    #print("\n get w(x) with x passing through a specific point for different times... ")
     # my_X = 0.
     # my_Y = 0.
     # ext_pnts = np.empty((2, 2), dtype=np.float64)
@@ -492,97 +530,117 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     import pandas as pd
     import numpy as np
     import matplotlib.pyplot as plt
-
+    ######################################################
     # plot the pressure vs time
+    ######################################################
     xlabel = 'time [s]'
     ylabel = 'Pressure [MPa]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, p_A, color='k')
     p_ana = []
     for i in range(len(time_simul_A)):
-        p_ana.append(0.35)
+        p_ana.append(0.3279)
     ax.plot(time_simul_A, p_ana, color='g')
-
+    ax.scatter(time_simul_B, p_B, color='r')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
     #     p_scaling.append(0.05/time_simul_A[i])
     # ax.plot(time_simul_A, p_scaling, color='b')
 
-    # ax.scatter(time_simul_B, p_B, color='g')
+    ax.scatter(time_simul_B, p_B, color='g')
+    p_scaling = []
+    for i in range(len(time_simul_A)):
+        p_scaling.append(0.2660 * time_simul_A[i] ** (-1 / 7))
+    ax.plot(time_simul_A, p_scaling, color='g')
+
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale('log')
     ax.set_xscale('log')
-    plt.show()
 
+    ######################################################
     # plot 2L vs time
+    ######################################################
     xlabel = 'time [s]'
     ylabel = '2L [m]'
     fig, ax = plt.subplots()
-    ax.scatter(time_simul_A, double_L_A, color='k')
+    H=1.48*2
     doubleL_scaling = []
     for i in range(len(time_simul_A)):
-        doubleL_scaling.append(9.5*time_simul_A[i]**(2/3))
+        doubleL_scaling.append(9.5/H*time_simul_A[i]**(2/3))
+        double_L_A[i] = double_L_A[i]/H
+    ax.scatter(time_simul_A, double_L_A, color='k')
+
     ax.plot(time_simul_A, doubleL_scaling, color='g')
 
+    for i in range(len(time_simul_B)):
+        double_L_B[i] = double_L_B[i]/H
+    ax.scatter(time_simul_B, double_L_B, color='r')
     doubleL_radial = []
     for i in range(len(time_simul_A)):
-        doubleL_radial.append(6*time_simul_A[i]**(2/5))
+        doubleL_radial.append(6/H*time_simul_A[i]**(2/5))
     ax.plot(time_simul_A, doubleL_radial, color='b')
-
+    doubleL_scaling2 = []
+    for i in range(len(time_simul_A)):
+        doubleL_scaling2.append(10.5/H*time_simul_A[i]**(4/5))
+    ax.plot(time_simul_A, doubleL_scaling2, color='b')
     doubleL_pkn = []
     for i in range(len(time_simul_A)):
-        doubleL_pkn.append(9*time_simul_A[i])
+        doubleL_pkn.append(9/H*time_simul_A[i])
     ax.plot(time_simul_A, doubleL_pkn, color='r')
-
-
     # ax.scatter(time_simul_B, p_B, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale('log')
     ax.set_xscale('log')
-    plt.show()
 
-
+    ######################################################
     # plot x_max vs time
+    ######################################################
     xlabel = 'time [s]'
     ylabel = 'x max [m]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, x_max_A, color='k')
+    ax.scatter(time_simul_B, x_max_B, color='r')
     p_const = []
     for i in range(len(time_simul_A)):
         p_const.append(1.6)
     ax.plot(time_simul_A, p_const, color='g')
     # ax.scatter(time_simul_B, p_B, color='g')
+    p_scaling = []
+    for i in range(len(time_simul_A)):
+        p_scaling.append(3.5*time_simul_A[i]**(2/15))
+    ax.plot(time_simul_A, p_scaling, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale('log')
     ax.set_xscale('log')
-    plt.show()
 
-
+    ######################################################
     # plot w_cemter vs time
+    ######################################################
     xlabel = 'time [s]'
     ylabel = 'w center [m]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, w_A, color='k')
+    ax.scatter(time_simul_B, w_B, color='r')
     w_scaling = []
     w_radial = []
     for i in range(len(time_simul_A)):
         w_scaling.append(0.0000660*time_simul_A[i]**(1/3))
     ax.plot(time_simul_A, w_scaling, color='g')
-
-
     for i in range(len(time_simul_A)):
-        w_radial.append(0.0000525*time_simul_A[i]**(1/5))
-    ax.plot(time_simul_A, w_radial, color='r')
+        w_radial.append(0.0000510*time_simul_A[i]**(1/5))
+    ax.plot(time_simul_A, w_radial, color='b')
     # ax.scatter(time_simul_B, p_B, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale('log')
     ax.set_xscale('log')
 
-
+    ######################################################
+    # --> relative error of the volume VS injected volume
+    ######################################################
     V = []
     for fr in Fr_list_A:
         V.append((np.sum(fr.w)*fr.mesh.hx*fr.mesh.hy-fr.time*Injection_A.injectionRate.max())/fr.time*Injection_A.injectionRate.max())
@@ -598,17 +656,31 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ax.set_xscale('log')
     plt.show()
 
-    # plot slice
+    # --> plot slice
     print("\n get w(x) with x passing through a specific point for different times... ")
     my_X = 0.
     my_Y = 0.
     ext_pnts = np.empty((2, 2), dtype=np.float64)
-    fracture_list_slice_B = plot_fracture_list_slice(Fr_list,
+    fracture_list_slice_B = plot_fracture_list_slice(Fr_list_A,
                                                    variable='w',
                                                    projection='2D',
                                                    plot_cell_center=True,
                                                    extreme_points=ext_pnts,
                                                    orientation='vertical',
+                                                   point1=[my_X, my_Y],
+                                                   export2Json=False)
+
+    # --> plot slice
+    print("\n get w(x) with x passing through a specific point for different times... ")
+    my_X = 0.
+    my_Y = 0.
+    ext_pnts = np.empty((2, 2), dtype=np.float64)
+    fracture_list_slice_B = plot_fracture_list_slice(Fr_list_A,
+                                                   variable='w',
+                                                   projection='2D',
+                                                   plot_cell_center=True,
+                                                   extreme_points=ext_pnts,
+                                                   orientation='horizontal',
                                                    point1=[my_X, my_Y],
                                                    export2Json=False)
     plt.show(block=True)

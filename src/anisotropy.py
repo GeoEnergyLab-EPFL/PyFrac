@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 import numpy as np
+import logging
 
 # local imports
 from level_set import reconstruct_front_LS_gradient
@@ -458,8 +459,134 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def get_gradient_from_biq_interp_at_center(mesh, ribbon_elts, i, sgnd_dist):
+    # neighbors
+    #           3
+    #     0    elt   1
+    #           2
+    ribbon_elt = ribbon_elts[i]
+    [left, right, bottom, top] = mesh.NeiElements[ribbon_elt]
+    [LS_left, LS_right, LS_bottom, LS_top] = sgnd_dist[[left, right, bottom, top]]
 
-def projection_from_ribbon_LS_gradient_at_tip(ribbon_elts, tip_elts, mesh, sgnd_dist, global_alpha = False):
+    # define a bi-quadratic interpolation of the level set around the ribbon element
+    # then take the level set gradient at the center (0,0)
+    #     8     7       6
+    #     9    (1)elt   5
+    #     2     3       4
+    # the gradient is given by the following equations
+    gradx = ((LS_right - LS_left) / 2.) / mesh.hx
+    grady = ((LS_top - LS_bottom) / 2.) / mesh.hy
+    return gradx, grady
+
+
+def get_biquadr_interp_coef(mesh, central_el, sgnd_dist):
+    # neighbors
+    #     7     6       5
+    #     8    (0)elt   4
+    #     1     2       3
+    # mesh.NeiElements is [left right bottom top]
+    neighbors_band = np.zeros(9, dtype=int)
+    neighbors_band[0] = central_el
+    neighbors_band[8] = mesh.NeiElements[neighbors_band[0]][0]
+    neighbors_band[4] = mesh.NeiElements[neighbors_band[0]][1]
+    neighbors_band[2] = mesh.NeiElements[neighbors_band[0]][2]
+    neighbors_band[6] = mesh.NeiElements[neighbors_band[0]][3]
+
+    neighbors_band[1] = mesh.NeiElements[neighbors_band[8]][2]
+    neighbors_band[7] = mesh.NeiElements[neighbors_band[8]][3]
+
+    neighbors_band[3] = mesh.NeiElements[neighbors_band[4]][2]
+    neighbors_band[5] = mesh.NeiElements[neighbors_band[4]][3]
+
+
+    # define a bi-quadratic interpolation of the level set (LS) around the ribbon element
+    # LS(x,y) = C1 + C2*x + C3*y + C4*X^2 + C5*x*y + C6*y^2 + C7*x^2*y + C8*x*y^2 + C9*x^2*y^2
+    #     7     6       5
+    #     8    (0)elt   4
+    #     1     2       3
+    nx = mesh.hx
+    ny = mesh.hy
+    A = np.asarray([
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1 / (2 * nx), 0, 0, 0, -(1 / (2 * nx))],
+        [0, 0, -(1 / (2 * ny)), 0, 0, 0, 1 / (2 * ny), 0, 0],
+        [-(1 / nx ** 2), 0, 0, 0, 1 / (2 * nx ** 2), 0, 0, 0, 1 / (2 * nx ** 2)],
+        [0, 1 / (4 * nx * ny), 0, -(1 / (4 * nx * ny)), 0, 1 / (4 * nx * ny), 0, -(1 / (4 * nx * ny)), 0],
+        [-(1 / ny ** 2), 0, 1 / (2 * ny ** 2), 0, 0, 0, 1 / (2 * ny ** 2), 0, 0],
+        [0, -(1 / (4 * nx ** 2 * ny)), 1 / (2 * (nx ** 2) * ny), -(1 / (4 * (nx ** 2) * ny)), 0, 1 / (
+                4 * (nx ** 2) * ny), -(1 / (2 * (nx ** 2) * ny)), 1 / (4 * (nx ** 2) * ny), 0],
+        [0, -(1 / (4 * nx * ny ** 2)), 0, 1 / (4 * nx * ny ** 2), -(1 / (2 * nx * ny ** 2)), 1 / (4 * nx * ny ** 2),
+         0, -(1 / (4 * nx * ny ** 2)), 1 / (2 * nx * ny ** 2)],
+        [1 / ((nx ** 2) * (ny ** 2)), 1 / (4 * (nx ** 2) * (ny ** 2)), -(1 / (2 * (nx ** 2) * (ny ** 2))), 1 / (
+                4 * (nx ** 2) * (ny ** 2)), -(1 / (2 * (nx ** 2) * (ny ** 2))), 1 / (4 * (nx ** 2) * (ny ** 2)),
+         -(1 / (2 * (nx ** 2) * (ny ** 2))), 1 / (
+                 4 * (nx ** 2) * (ny ** 2)), -(1 / (2 * (nx ** 2) * (ny ** 2)))]
+    ])
+
+    # LS(x,y) = C1 + C2*x + C3*y + C4*X^2 + C5*x*y + C6*y^2 + C7*x^2*y + C8*x*y^2 + C9*x^2*y^2
+    coef = np.dot(A, sgnd_dist[neighbors_band])
+    #coef = [C1, C2, C3, C4, C5, C6, C7, C8, C9]
+    return coef
+
+def gradient_at_point(coef, x, y, dir):
+    # define a bi-quadratic interpolation of the level set (LS) around the ribbon element
+    # LS(x,y) = C1 + C2*x + C3*y + C4*X^2 + C5*x*y + C6*y^2 + C7*x^2*y + C8*x*y^2 + C9*x^2*y^2
+    #     7     6       5
+    #     8    (0)elt   4
+    #     1     2       3
+    # the gradient will be:
+    # dLS(x,y)/dx = C2 + 2*C4*x + C5*y +  2*C7*x*y + C8*y^2 + 2*C9*x*y^2
+    # dLS(x,y)/dy = C3 + C5*y + 2*C6*y +  C7*x^2 + 2*C8*x*y + 2*C9*x^2*y
+    [C1, C2, C3, C4, C5, C6, C7, C8, C9] = coef
+    if dir == 'x':
+        return C2 + 2*C4*x + C5*y +  2*C7*x*y + C8*(y**2) + 2*C9*x*(y**2)
+    elif dir == 'y':
+        return C3 + C5*x + 2*C6*y +  C7*(x**2) + 2*C8*x*y + 2*C9*(x**2)*y
+
+def get_gradient_from_biq_interp_at_vertex(mesh, ribbon_elts, i, sgnd_dist):
+    # define a bi-quadratic interpolation of the level set (LS) around the ribbon element
+    # LS(x,y) = C1 + C2*x + C3*y + C4*X^2 + C5*x*y + C6*y^2 + C7*x^2*y + C8*x*y^2 + C9*x^2*y^2
+    #     7     6       5
+    #     8    (0)elt   4
+    #     1     2       3
+    # the gradient will be:
+    # dLS(x,y)/dx = C2 + 2*C4*x + C5*y +  2*C7*x*y + C8*y^2 + 2*C9*x*y^2
+    # dLS(x,y)/dy = C3 + C5*y + 2*C6*y +  C7*x^2 + 2*C8*x*y + 2*C9*x^2*y
+    # it will be computed at points:
+    #  A (hx,hy)/2    C(-hx,-hy)/2
+    #  B (hx,-hy)/2   D(-hx,hy)/2
+    # then the average will be taken
+    #
+    # --------|-------------|----------
+    #         |             |
+    #     7   |     6       |     5
+    #         |             |
+    # --------D-------------A----------
+    #         |             |
+    #     8   |    (0)elt   |     4
+    #         |             |
+    # --------C-------------B----------
+    #         |             |
+    #     1   |     2       |     3
+    #         |             |
+    # --------|-------------|----------
+
+    nx = mesh.hx
+    ny = mesh.hy
+    coefi=get_biquadr_interp_coef(mesh, ribbon_elts[i], sgnd_dist)
+    Adx = gradient_at_point(coefi, nx / 2., ny / 2., 'x')
+    Ady = gradient_at_point(coefi, nx / 2., ny / 2., 'y')
+    Bdx = gradient_at_point(coefi, nx / 2., -ny / 2., 'x')
+    Bdy = gradient_at_point(coefi, nx / 2., -ny / 2., 'y')
+    Cdx = gradient_at_point(coefi, -nx / 2., -ny / 2., 'x')
+    Cdy = gradient_at_point(coefi, -nx / 2., -ny / 2., 'y')
+    Ddx = gradient_at_point(coefi, -nx / 2., ny / 2., 'x')
+    Ddy = gradient_at_point(coefi, -nx / 2., ny / 2., 'y')
+    gradx = (Adx + Bdx + Cdx + Ddx) / 4.
+    grady = (Ady + Bdy + Cdy + Ddy) / 4.
+    return gradx,grady
+
+def projection_from_ribbon_LS_gradient_at_tip(ribbon_elts, band_elts, mesh, sgnd_dist, global_alpha = False):
     """
     This function finds the projection of the ribbon cell centers on to the fracture front from the gradient of the
     level set. It is returned as the angle inscribed by the perpendiculars drawn on the front from the ribbon cell
@@ -476,94 +603,152 @@ def projection_from_ribbon_LS_gradient_at_tip(ribbon_elts, tip_elts, mesh, sgnd_
         alpha (ndarray-float)                   -- the angle inscribed by the perpendiculars drawn on the front from
                                                    the ribbon cell centers.
     """
-    n_vertex = np.zeros((len(tip_elts), 2), float)
-    n_centre = np.zeros((len(ribbon_elts), 2), float)
-    Coor_vertex = np.zeros((len(tip_elts), 2), float)
+
+    log = logging.getLogger('PyFrac.projection_from_ribbon_LS_gradient_at_tip')
     alpha = np.zeros((len(ribbon_elts),), dtype=np.float64)
 
-    zero_vertex = find_zero_vertex(tip_elts,
-                                      sgnd_dist,
-                                      mesh)
-    for i in range(len(tip_elts)):
-        # neighbors
-        #     6     3    7
-        #     0    elt   1
-        #     4    2     5
-         neighbors_tip = np.zeros(8, dtype=int)
-         neighbors_tip[:4] = mesh.NeiElements[tip_elts[i]]
-         neighbors_tip[4] = mesh.NeiElements[neighbors_tip[2]][0]
-         neighbors_tip[5] = mesh.NeiElements[neighbors_tip[2]][1]
-         neighbors_tip[6] = mesh.NeiElements[neighbors_tip[3]][0]
-         neighbors_tip[7] = mesh.NeiElements[neighbors_tip[3]][1]
+    if not global_alpha:
+        n_vertex = np.zeros((len(band_elts), 2), float)
+        n_centre = np.zeros((len(ribbon_elts), 2), float)
+        Coor_vertex = np.zeros((len(band_elts), 2), float)
 
-        # Vertex
-        #     3         2
-        #     0         1
-         if zero_vertex[i]==0:
-              gradx = -((sgnd_dist[neighbors_tip[0]]+sgnd_dist[neighbors_tip[4]])/2 - (
-                      sgnd_dist[tip_elts[i]]+sgnd_dist[neighbors_tip[2]])/2) / mesh.hx
-              grady = ((sgnd_dist[neighbors_tip[0]]+sgnd_dist[tip_elts[i]])/2 - (
-                      sgnd_dist[neighbors_tip[4]]+sgnd_dist[neighbors_tip[2]])/2) / mesh.hy
-              Coor_vertex[i,0] = mesh.CenterCoor[tip_elts[i], 0]-mesh.hx/2
-              Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] - mesh.hy / 2
-         elif zero_vertex[i] == 1:
-              gradx = ((sgnd_dist[neighbors_tip[1]] + sgnd_dist[neighbors_tip[5]]) / 2 - (
-                        sgnd_dist[tip_elts[i]] + sgnd_dist[neighbors_tip[2]]) / 2) / mesh.hx
-              grady = ((sgnd_dist[neighbors_tip[1]] + sgnd_dist[tip_elts[i]]) / 2 - (
-                          sgnd_dist[neighbors_tip[5]] + sgnd_dist[neighbors_tip[2]]) / 2) / mesh.hy
-              Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] + mesh.hx / 2
-              Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] - mesh.hy / 2
-         elif zero_vertex[i] == 2:
-              gradx = ((sgnd_dist[neighbors_tip[1]] + sgnd_dist[neighbors_tip[7]]) / 2 - (
-                    sgnd_dist[tip_elts[i]] + sgnd_dist[neighbors_tip[3]]) / 2) / mesh.hx
-              grady = -((sgnd_dist[neighbors_tip[1]] + sgnd_dist[tip_elts[i]]) / 2 - (
-                  sgnd_dist[neighbors_tip[3]] + sgnd_dist[neighbors_tip[7]]) / 2) / mesh.hy
-              Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] + mesh.hx / 2
-              Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] + mesh.hy / 2
-         elif zero_vertex[i] == 3:
-               gradx =-((sgnd_dist[neighbors_tip[6]] + sgnd_dist[neighbors_tip[0]]) / 2 - (
-                    sgnd_dist[tip_elts[i]] + sgnd_dist[neighbors_tip[3]]) / 2) /mesh.hx
-               grady = ((sgnd_dist[neighbors_tip[0]] + sgnd_dist[tip_elts[i]]) / 2 - (
-                    sgnd_dist[neighbors_tip[6]] + sgnd_dist[neighbors_tip[3]]) / 2) / mesh.hy
-               Coor_vertex[i, 0] = mesh.CenterCoor[tip_elts[i], 0] - mesh.hx / 2
-               Coor_vertex[i, 1] = mesh.CenterCoor[tip_elts[i], 1] + mesh.hy / 2
-         norm_grad = (gradx ** 2 + grady ** 2) ** 0.5
-         if norm_grad != 0.:
-             n_vertex[i, 0] = gradx / norm_grad
-             n_vertex[i, 1] = grady / norm_grad
-         else:
-             n_vertex[i, 0] = np.nan
-             n_vertex[i, 1] = np.nan
 
-    for i in range(len(ribbon_elts)):
+        zero_vertex = find_zero_vertex(band_elts,
+                                          sgnd_dist,
+                                          mesh)
+        for i in range(len(band_elts)):
+            # neighbors
+            #     6     3    7
+            #     0    elt   1
+            #     4    2     5
+             neighbors_band = np.zeros(8, dtype=int)
+             neighbors_band[:4] = mesh.NeiElements[band_elts[i]]
+             neighbors_band[4] = mesh.NeiElements[neighbors_band[2]][0]
+             neighbors_band[5] = mesh.NeiElements[neighbors_band[2]][1]
+             neighbors_band[6] = mesh.NeiElements[neighbors_band[3]][0]
+             neighbors_band[7] = mesh.NeiElements[neighbors_band[3]][1]
 
-         actvElts = np.where((2 * abs(mesh.CenterCoor[ribbon_elts[i], 0] - Coor_vertex[:, 0]) - mesh.hx < mesh.hx/10) &
-                            (2 * abs(mesh.CenterCoor[ribbon_elts[i], 1] - Coor_vertex[:, 1]) - mesh.hy < mesh.hy/10))[0]
+            # Vertex
+            #     3         2
+            #     0         1
+             if zero_vertex[i]==0:
+                  gradx = -((sgnd_dist[neighbors_band[0]]+sgnd_dist[neighbors_band[4]])/2 - (
+                          sgnd_dist[band_elts[i]]+sgnd_dist[neighbors_band[2]])/2) / mesh.hx
+                  grady = ((sgnd_dist[neighbors_band[0]]+sgnd_dist[band_elts[i]])/2 - (
+                          sgnd_dist[neighbors_band[4]]+sgnd_dist[neighbors_band[2]])/2) / mesh.hy
+                  Coor_vertex[i,0] = mesh.CenterCoor[band_elts[i], 0]-mesh.hx/2
+                  Coor_vertex[i, 1] = mesh.CenterCoor[band_elts[i], 1] - mesh.hy / 2
 
-         n_centre[i, 0] = np.mean(n_vertex[actvElts, 0])
-         n_centre[i, 1] = np.mean(n_vertex[actvElts, 1])
+             elif zero_vertex[i] == 1:
+                  gradx = ((sgnd_dist[neighbors_band[1]] + sgnd_dist[neighbors_band[5]]) / 2 - (
+                            sgnd_dist[band_elts[i]] + sgnd_dist[neighbors_band[2]]) / 2) / mesh.hx
+                  grady = ((sgnd_dist[neighbors_band[1]] + sgnd_dist[band_elts[i]]) / 2 - (
+                              sgnd_dist[neighbors_band[5]] + sgnd_dist[neighbors_band[2]]) / 2) / mesh.hy
+                  Coor_vertex[i, 0] = mesh.CenterCoor[band_elts[i], 0] + mesh.hx / 2
+                  Coor_vertex[i, 1] = mesh.CenterCoor[band_elts[i], 1] - mesh.hy / 2
 
-         # normalize n_centre
-         norm_n_centre = (n_centre[i, 0]**2 + n_centre[i, 1]**2)**0.5
-         n_centre[i, 0] = n_centre[i, 0] / norm_n_centre
-         n_centre[i, 1] = n_centre[i, 1] / norm_n_centre
+             elif zero_vertex[i] == 2:
+                  gradx = ((sgnd_dist[neighbors_band[1]] + sgnd_dist[neighbors_band[7]]) / 2 - (
+                        sgnd_dist[band_elts[i]] + sgnd_dist[neighbors_band[3]]) / 2) / mesh.hx
+                  grady = -((sgnd_dist[neighbors_band[1]] + sgnd_dist[band_elts[i]]) / 2 - (
+                      sgnd_dist[neighbors_band[3]] + sgnd_dist[neighbors_band[7]]) / 2) / mesh.hy
+                  Coor_vertex[i, 0] = mesh.CenterCoor[band_elts[i], 0] + mesh.hx / 2
+                  Coor_vertex[i, 1] = mesh.CenterCoor[band_elts[i], 1] + mesh.hy / 2
 
-         if global_alpha:
-             if n_centre[i, 1] >= 0. and n_centre[i, 0] > 0.:
-                alpha[i] = np.arctan(n_centre[i, 1]/n_centre[i, 0])
-             elif n_centre[i, 1] < 0. and n_centre[i, 0] > 0. :
-                alpha[i] = 2. * np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
-             elif n_centre[i, 1] < 0. and n_centre[i, 0] < 0. :
-                alpha[i] = np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
-             elif n_centre[i, 1] >= 0. and n_centre[i, 0] < 0. :
-                alpha[i] = np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             elif zero_vertex[i] == 3:
+                   gradx =-((sgnd_dist[neighbors_band[6]] + sgnd_dist[neighbors_band[0]]) / 2 - (
+                        sgnd_dist[band_elts[i]] + sgnd_dist[neighbors_band[3]]) / 2) /mesh.hx
+                   grady = ((sgnd_dist[neighbors_band[0]] + sgnd_dist[band_elts[i]]) / 2 - (
+                        sgnd_dist[neighbors_band[6]] + sgnd_dist[neighbors_band[3]]) / 2) / mesh.hy
+                   Coor_vertex[i, 0] = mesh.CenterCoor[band_elts[i], 0] - mesh.hx / 2
+                   Coor_vertex[i, 1] = mesh.CenterCoor[band_elts[i], 1] + mesh.hy / 2
+
+             norm_grad = (gradx ** 2 + grady ** 2) ** 0.5
+             if norm_grad != 0.:
+                 n_vertex[i, 0] = gradx / norm_grad
+                 n_vertex[i, 1] = grady / norm_grad
              else:
-                 SystemExit(
-                     "The direction of propagation can not be defined."
-                     "x component of the sum of the directions is 0!")
-         else:
-            alpha[i] = np.abs(np.arcsin(n_centre[i, 1]))
+                 n_vertex[i, 0] = np.nan
+                 n_vertex[i, 1] = np.nan
 
+        for i in range(len(ribbon_elts)):
+             actvElts = np.where((2 * abs(mesh.CenterCoor[ribbon_elts[i], 0] - Coor_vertex[:, 0]) - mesh.hx < mesh.hx/10) &
+                                (2 * abs(mesh.CenterCoor[ribbon_elts[i], 1] - Coor_vertex[:, 1]) - mesh.hy < mesh.hy/10))[0]
+             if (np.any(n_vertex[actvElts, 0]==np.nan) or np.any(n_vertex[actvElts, 1]==np.nan)):
+                 log.warning("      the level set has not been computed at a sufficient amount of locations!!! ")
+             n_centre[i, 0] = np.mean(n_vertex[actvElts, 0])
+             n_centre[i, 1] = np.mean(n_vertex[actvElts, 1])
+
+             # normalize n_centre
+             norm_n_centre = (n_centre[i, 0]**2 + n_centre[i, 1]**2)**0.5
+             n_centre[i, 0] = n_centre[i, 0] / norm_n_centre
+             n_centre[i, 1] = n_centre[i, 1] / norm_n_centre
+
+             # if global_alpha:
+             #     if n_centre[i, 1] >= 0. and n_centre[i, 0] > 0.:
+             #        alpha[i] = np.arctan(n_centre[i, 1]/n_centre[i, 0])
+             #     elif n_centre[i, 1] < 0. and n_centre[i, 0] > 0. :
+             #        alpha[i] = 2. * np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             #     elif n_centre[i, 1] < 0. and n_centre[i, 0] < 0. :
+             #        alpha[i] = np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             #     elif n_centre[i, 1] >= 0. and n_centre[i, 0] < 0. :
+             #        alpha[i] = np.pi + np.arctan(n_centre[i, 1] / n_centre[i, 0])
+             #     else:
+             #         SystemExit(
+             #             "The direction of propagation can not be defined."
+             #             "x component of the sum of the directions is 0!")
+             # else:
+             alpha[i] = np.abs(np.arcsin(n_centre[i, 1]))
+
+    elif global_alpha:
+        for i in range(len(ribbon_elts)):
+            [gradx, grady] = get_gradient_from_biq_interp_at_center(mesh, ribbon_elts, i, sgnd_dist)
+            #[gradx, grady] = get_gradient_from_biq_interp_at_vertex(mesh, ribbon_elts, i, sgnd_dist)
+            norm_grad = (gradx ** 2 + grady ** 2) ** 0.5
+
+            if norm_grad != 0.:
+                gradx = gradx / norm_grad
+                grady = grady / norm_grad
+            else:
+                gradx = np.nan
+                grady = np.nan
+
+            if grady >= 0. and gradx > 0.:
+                val = np.arctan(grady / gradx)
+                alpha[i] = val
+            elif grady > 0. and gradx == 0.:
+                alpha[i] = np.pi/2.
+            elif grady < 0. and gradx == 0.:
+                alpha[i] = 3. * np.pi / 2.
+            elif grady < 0. and gradx > 0.:
+                val = np.arctan(grady / gradx)
+                alpha[i] = 2. * np.pi + val
+            elif grady < 0. and gradx < 0.:
+                val = np.arctan(grady / gradx)
+                alpha[i] = np.pi + val
+            elif grady >= 0. and gradx < 0.:
+                val = np.arctan(grady / gradx)
+                alpha[i] = np.pi + val
+            else:
+                SystemExit(
+                    "The direction of propagation can not be defined."
+                    "both, x ad y components of the sum of the directions are 0!")
+
+    # from continuous_front_reconstruction import plot_xy_points
+    # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, sgnd_dist, ribbon_elts, Coor_vertex[:, 0], Coor_vertex[:, 1],
+    #                fig=None,
+    #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
+    #                oldfront=None, joinPoints=False, disregard_plus=True)
+
+
+    # from continuous_front_reconstruction import plot_cells
+    # known = np.where(np.abs(sgnd_dist) < 1e5)[0]
+    # plot_cells(known, mesh, sgnd_dist, ribbon_elts, band_elts)
+
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh.NumberOfElts,), )
+    # K[ribbon_elts] = alpha
+    # plot_as_matrix(K, mesh)
     return alpha
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -694,35 +879,59 @@ class get_toughness_from_cellCenter_iter():
     a function K(x,y)
     """
     def __init__(self, alpha, center_ribbon_coor, matProp):
-        self.NoR = len(alpha) #number of ribbon
+        self.NoR = len(alpha)  # number of ribbon
         self.cos_alpha = np.cos(alpha)
         self.sin_alpha = np.sin(alpha)
         self.CenterCoorR = center_ribbon_coor
         self.matProp = matProp
         self.index2keep = np.arange(self.NoR)
 
-    def of(self, dist, index='all'):
+
+    def of(self, dist, index='all',mesh = None, ribbon=None):
+        #
+        # single index (single ribbon) and multiple distances or 'all' ribbon and 'all' distances i.e. one per ribbon
         if index == 'all':
-            # to be vectorized!
-            x = self.CenterCoorR[self.index2keep, 0] + np.multiply(dist, self.cos_alpha[self.index2keep])
-            y = self.CenterCoorR[self.index2keep, 1] + np.multiply(dist, self.sin_alpha[self.index2keep])
-            Kprime = np.zeros(self.NoR)
-            for i in range(self.NoR):
+            local_indxs = self.index2keep
+        else:
+            local_indxs = self.index2keep[index] #in this case you are selecting a specific index that defines x and y
+
+        minus = False
+        if isinstance(dist, float):
+            if dist<0.:
+                minus = True
+        elif dist.max() < 0.:
+                minus = True
+        else: SystemExit("Type not recognized.")
+
+        # to be vectorized!
+        if minus:
+            # (the minus is because the dist is negative)
+            x = self.CenterCoorR[local_indxs, 0] - np.multiply(dist, self.cos_alpha[local_indxs])
+            y = self.CenterCoorR[local_indxs, 1] - np.multiply(dist, self.sin_alpha[local_indxs])
+        else:
+            x = self.CenterCoorR[local_indxs, 0] + np.multiply(dist, self.cos_alpha[local_indxs])
+            y = self.CenterCoorR[local_indxs, 1] + np.multiply(dist, self.sin_alpha[local_indxs])
+        if x.size > 1:
+            Kprime = np.zeros(x.size)
+            for i in range(x.size):
                 Kprime[i] = self.matProp.Kprime_func(x[i], y[i])
         else:
-            x = self.CenterCoorR[self.index2keep[index], 0] + np.multiply(dist, self.cos_alpha[self.index2keep[index]])
-            y = self.CenterCoorR[self.index2keep[index], 1] + np.multiply(dist, self.sin_alpha[self.index2keep[index]])
-            if x.size > 1:
-                Kprime = np.zeros(x.size)
-                for i in range(x.size):
-                    Kprime[i] = self.matProp.Kprime_func(x[i], y[i])
-            else: Kprime = self.matProp.Kprime_func(x, y)
+            if isinstance(x, float):
+                Kprime = self.matProp.Kprime_func(x, y)
+
+        # ------- plot point's location --------
+        # from continuous_front_reconstruction import plot_xy_points
+        # background_Color = np.zeros(mesh.NumberOfElts)
+        # for ii in range(mesh.NumberOfElts):
+        #     background_Color[ii] = self.matProp.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
+        # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, ribbon, x, y, fig=None,
+        #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
+        #                oldfront=None, joinPoints=False, disregard_plus=True)
+
         return Kprime
 
-
     def keepRibbonThatAre(self, index2keep):
-        self.index2keep = index2keep
-        self.NoR = len(index2keep) #number of ribbon
+        self.index2keep = np.arange(self.NoR)[index2keep]
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -761,7 +970,258 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
             K1c[i] = mat_prop.K1cFunc(x[i], y[i])
 
         return K1c
+#-----------------------------------------------------------------------------------------------------------------------
 
+
+def get_neighbors(NeiElements, elt):
+    # neighbors
+    #     6     5       4
+    #     7    elt      3
+    #     0     1       2
+    # mesh.NeiElements is [left right bottom top]
+    neighbors_band = np.zeros(8, dtype=int)
+    neighbors_band[7] = NeiElements[elt][0]
+    neighbors_band[3] = NeiElements[elt][1]
+    neighbors_band[1] = NeiElements[elt][2]
+    neighbors_band[5] = NeiElements[elt][3]
+
+    neighbors_band[0] = NeiElements[neighbors_band[7]][2]
+    neighbors_band[6] = NeiElements[neighbors_band[7]][3]
+
+    neighbors_band[2] = NeiElements[neighbors_band[3]][2]
+    neighbors_band[4] = NeiElements[neighbors_band[3]][3]
+    return neighbors_band
+#-----------------------------------------------------------------------------------------------------------------------
+import copy
+def process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k):
+    still_to_be_done_new = []
+    done_new = copy.deepcopy(done)
+    for i in still_to_be_done:
+        i_indx = np.where(elts == i)[0]
+
+        # find the neighbors of the cell still to be done
+        nei = get_neighbors(mesh.NeiElements,i)
+
+        #if some of the neighbors have been done, find them
+        nei_done = np.intersect1d(done, nei)
+        if len(nei_done)>0:
+            indexes = np.flatnonzero(np.in1d(elts, nei_done))
+            if k < 1:
+                K1c[i_indx] = np.mean(K1c[indexes])
+                #K1c[i_indx] = np.dot(K1c[indexes],frontLen[indexes])/np.sum(frontLen[indexes])
+            else:
+                K1c[i_indx] = np.mean(K1c[indexes])
+
+            #add i to done
+            done_new.append(i)
+        else:
+            still_to_be_done_new.append(i)
+    return still_to_be_done_new, done_new, K1c
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_toughness_from_Front(Ffront, elts, fully_traversed, mesh, mat_prop, alpha):
+    """
+    This function returns the toughness based on its values at the extremes of the segment defining the front (except for the fully traversed cells
+    """
+
+    if mat_prop.K1cFunc is None:
+        return mat_prop.K1c[elts]
+
+    if mat_prop.anisotropic_K1c:
+        return mat_prop.K1cFunc(alpha)
+    else:
+        table = np.full(mesh.NumberOfElts, np.inf)
+        frontLen =  np.full(len(elts), np.inf)
+        #Ffront_centers = []
+        for i in range(len(Ffront)):
+            x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
+            y = (Ffront[i, 1] + Ffront[i, 3]) / 2.
+            #Ffront_centers.append([x,y])
+            el_id = mesh.locate_element(x, y)[0]
+            table[el_id] = i
+            elts_id = np.where(elts == el_id)[0]
+            if len(elts_id) > 0:
+                frontLen[elts_id] = ((Ffront[i, 0] - Ffront[i, 2]) ** 2 + (Ffront[i, 1] - Ffront[i, 3]) ** 2) ** .5
+        # to close the fracture front
+        x = (Ffront[-1, 2] + Ffront[0, 0]) / 2.
+        y = (Ffront[-1, 3] + Ffront[0, 1]) / 2.
+        #Ffront_centers.append([x, y])
+        el_id = mesh.locate_element(x, y)[0]
+        table[el_id] = len(Ffront)
+        elts_id = np.where(elts==el_id)[0]
+        if len(elts_id) > 0:
+            frontLen[elts_id] = ((Ffront[-1, 2] - Ffront[0, 0]) ** 2 +(Ffront[-1, 3] - Ffront[0, 1]) ** 2) ** .5
+
+        # returning the Kprime according to the given function
+        K1c = np.empty((len(elts),), dtype=np.float64)
+        for i in range(0, len(elts)):
+            if elts[i] not in fully_traversed:
+                ind = int(table[elts[i]])
+                if ind == len(Ffront):
+                    x1 = Ffront[-1, 2] ; x2 = Ffront[0, 0]
+                    y1 = Ffront[-1, 3] ; y2 = Ffront[0, 1]
+                else:
+                    x1 = Ffront[ind, 2] ; x2 = Ffront[ind, 0]
+                    y1 = Ffront[ind, 3] ; y2 = Ffront[ind, 1]
+                K1c[i] = (mat_prop.K1cFunc(x1, y1) + mat_prop.K1cFunc(x2, y2))/2.
+        # now defining K in the fully traversed
+        done = (np.setdiff1d(elts,fully_traversed)).tolist()
+        still_to_be_done = fully_traversed
+        end = False
+        k = 0
+        while not end:
+            if len(still_to_be_done) <1:
+                end = True
+            else:
+                still_to_be_done, done, K1c = process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k)
+                k = k + 1
+
+
+        # from utility import plot_as_matrix
+        # K = np.zeros((mesh.NumberOfElts,), )
+        # K[elts] = K1c
+        # plot_as_matrix(K, mesh)
+
+        # from continuous_front_reconstruction import plot_xy_points
+        # background_Color = np.zeros(mesh.NumberOfElts)
+        # for ii in range(mesh.NumberOfElts):
+        #     background_Color[ii] = mat_prop.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
+        # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, elts, xstore, ystore, fig=None,
+        #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
+        #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
+        return K1c
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_toughness_from_midFront(Ffront, elts, fully_traversed, mesh, mat_prop, alpha):
+    """
+    This function returns the toughness at the center of the segment defining the front (except for the fully traversed cells
+    """
+
+    if mat_prop.K1cFunc is None:
+        return mat_prop.K1c[elts]
+
+    if mat_prop.anisotropic_K1c:
+        return mat_prop.K1cFunc(alpha)
+    else:
+        table = np.full(mesh.NumberOfElts, np.inf)
+        frontLen =  np.full(len(elts), np.inf)
+        Ffront_centers = []
+        for i in range(len(Ffront)):
+            x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
+            y = (Ffront[i, 1] + Ffront[i, 3]) / 2.
+            Ffront_centers.append([x,y])
+            el_id = mesh.locate_element(x, y)[0]
+            table[el_id] = i
+            elts_id = np.where(elts == el_id)[0]
+            if len(elts_id) > 0:
+                frontLen[elts_id] = ((Ffront[i, 0] - Ffront[i, 2]) ** 2 + (Ffront[i, 1] - Ffront[i, 3]) ** 2) ** .5
+        # to close the fracture front
+        x = (Ffront[-1, 2] + Ffront[0, 0]) / 2.
+        y = (Ffront[-1, 3] + Ffront[0, 1]) / 2.
+        Ffront_centers.append([x, y])
+        el_id = mesh.locate_element(x, y)[0]
+        table[el_id] = len(Ffront)
+        elts_id = np.where(elts==el_id)[0]
+        if len(elts_id) > 0:
+            frontLen[elts_id] = ((Ffront[-1, 2] - Ffront[0, 0]) ** 2 +(Ffront[-1, 3] - Ffront[0, 1]) ** 2) ** .5
+
+        # returning the Kprime according to the given function
+        K1c = np.empty((len(elts),), dtype=np.float64)
+        for i in range(0, len(elts)):
+            if elts[i] not in fully_traversed:
+                ind = int(table[elts[i]])
+                [x,y] = Ffront_centers[ind]
+                K1c[i] = mat_prop.K1cFunc(x, y)
+        # now defining K in the fully traversed
+        done = (np.setdiff1d(elts,fully_traversed)).tolist()
+        still_to_be_done = fully_traversed
+        end = False
+        k = 0
+        while not end:
+            if len(still_to_be_done) <1:
+                end = True
+            else:
+                still_to_be_done, done, K1c = process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k)
+                k = k + 1
+
+
+        # from utility import plot_as_matrix
+        # K = np.zeros((mesh.NumberOfElts,), )
+        # K[elts] = K1c
+        # plot_as_matrix(K, mesh)
+
+        # from continuous_front_reconstruction import plot_xy_points
+        # background_Color = np.zeros(mesh.NumberOfElts)
+        # for ii in range(mesh.NumberOfElts):
+        #     background_Color[ii] = mat_prop.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
+        # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, elts, xstore, ystore, fig=None,
+        #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
+        #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
+        return K1c
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_toughness_from_midFront_zv(Ffront, elts, fully_traversed, mesh, mat_prop, alpha, l, zero_vrtx):
+    """
+    This function returns the toughness at the center of the segment defining the front (except for the fully traversed cells
+    """
+
+    if mat_prop.K1cFunc is None:
+        return mat_prop.K1c[elts]
+
+    if mat_prop.anisotropic_K1c:
+        return mat_prop.K1cFunc(alpha)
+    else:
+        table = np.full(mesh.NumberOfElts, np.inf)
+        for i in range(len(Ffront)):
+            x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
+            y = (Ffront[i, 1] + Ffront[i, 3]) / 2.
+            table[mesh.locate_element(x, y)[0]] = i
+
+
+        # returning the Kprime according to the given function
+        K1c = np.empty((len(elts),), dtype=np.float64)
+        x = np.zeros((len(elts),), )
+        y = np.zeros((len(elts),), )
+
+        for i in range(0, len(elts)):
+            if elts[i] not in fully_traversed:
+                ind = int(table[elts[i]])
+                x[i] = (Ffront[ind,0] + Ffront[ind,2]) / 2.
+                y[i] = (Ffront[ind,1] + Ffront[ind,3]) / 2.
+                K1c[i] = mat_prop.K1cFunc(x[i], y[i])
+            else:
+                if zero_vrtx[i] == 0:
+                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
+                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
+                elif zero_vrtx[i] == 1:
+                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
+                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
+                elif zero_vrtx[i] == 2:
+                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
+                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
+                elif zero_vrtx[i] == 3:
+                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
+                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
+                K1c[i] = mat_prop.K1cFunc(x[i], y[i])
+
+        # from utility import plot_as_matrix
+        # K = np.zeros((mesh.NumberOfElts,), )
+        # K[elts] = K1c
+        # plot_as_matrix(K, mesh)
+
+        # from continuous_front_reconstruction import plot_xy_points
+        # background_Color = np.zeros(mesh.NumberOfElts)
+        # for ii in range(mesh.NumberOfElts):
+        #     background_Color[ii] = mat_prop.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
+        # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, elts, xstore, ystore, fig=None,
+        #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
+        #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
+        return K1c
 #-----------------------------------------------------------------------------------------------------------------------
 
 
