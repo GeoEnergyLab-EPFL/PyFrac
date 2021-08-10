@@ -1284,18 +1284,35 @@ class Controller:
             larger_in_TS = np.where(self.timeToHit > self.fracture.time)[0]
             if len(larger_in_TS) > 0:
                 next_in_TS = np.min(self.timeToHit[larger_in_TS])
+                if larger_in_TS[0] > 0 and self.sim_prop.force_time_schedule:
+                    last_scheduled_in_TS = self.timeToHit[larger_in_TS[0]-1]
+                    last_step_scheduled = next_in_TS - last_scheduled_in_TS
+
+
 
         if next_in_TS < self.fracture.time:
             raise SystemExit('The minimum time required in the given time series or the end time'
                              ' is less than initial time.')
 
         # check if time step would step over the next time in required time series
-        if (self.fracture.time + time_step > next_in_TS) or self.sim_prop.force_time_schedule:
+        if (self.fracture.time + time_step > next_in_TS) and not self.sim_prop.force_time_schedule:
             time_step = next_in_TS - self.fracture.time
         # check if the current time is very close the next time to hit. If yes, set it to the next time to avoid
         # very small time step in the next time step advance.
-        elif next_in_TS - self.fracture.time < 1.05 * time_step:
+        elif next_in_TS - self.fracture.time < 1.05 * time_step and not self.sim_prop.force_time_schedule :
             time_step = next_in_TS - self.fracture.time
+
+        elif self.sim_prop.force_time_schedule:
+            if np.abs(last_scheduled_in_TS - self.fracture.time) < np.maximum(last_step_scheduled/1000., 1.e-4):
+                time_step = next_in_TS - self.fracture.time
+
+            elif (last_scheduled_in_TS < self.fracture.time and self.fracture.time < next_in_TS):
+                time_step = last_step_scheduled
+                done_in_TS = self.timeToHit[np.setdiff1d(np.arange(len(self.timeToHit)),larger_in_TS)]
+                shifted_TS = self.timeToHit[larger_in_TS] + (self.fracture.time + last_step_scheduled - next_in_TS)
+                self.timeToHit = np.concatenate((done_in_TS,shifted_TS))
+
+
 
         # checking if the time step is above the limit
         if self.sim_prop.timeStepLimit is not None and time_step > self.sim_prop.timeStepLimit:
