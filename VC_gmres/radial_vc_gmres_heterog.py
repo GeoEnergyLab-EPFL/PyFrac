@@ -92,9 +92,10 @@ use_HMAT = True
 use_direct_TOEPLITZ = False
 
 output_fol = "./Data/radial_VC_gmres"
-output_fol_B = "./Data/radial_VC_gmres"
+#output_fol_B = "./Data/radial_VC_gmres"
 #output_fol = "./Data/radial_VC_gmres_res"
-ftPntJUMP = 1
+output_fol_B = "./Data/radial_VC_gmres_res"
+ftPntJUMP = 10
 ############################
 #print("NO SMOOTHING")
 
@@ -118,7 +119,8 @@ if run:
             return K1
         elif x >= r-delta and x<r :
             # 0.0 restart long
-            # 0.3 test
+            # 0.3 test 1
+            # 0.1 test 2
             K12 = K1 + (K2-K1)*0.1
             a = (K12 - K1) / (delta)
             b = K1 - a * (r - delta)
@@ -351,11 +353,13 @@ if run:
         simulProp.set_tipAsymptote('K')
         #simulProp.plotTSJump = 100
         Fr = Fr_list[-1]
-        simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.44, 0.009),
-                                                    np.arange(0.44, 0.504, 0.008),
-                                                    np.arange(0.504, 0.599, 0.006),
-                                                    np.arange(0.599, 0.6546, 0.006),
-                                                    np.arange(0.6546,6, 0.006))))
+        simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
+                                                    np.arange(1.30, 4.00, 0.01),)))
+        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.44, 0.009),
+        #                                             np.arange(0.44, 0.504, 0.008),
+        #                                             np.arange(0.504, 0.599, 0.006),
+        #                                             np.arange(0.599, 0.6546, 0.006),
+        #                                             np.arange(0.6546,6, 0.006))))
         simulProp.force_time_schedule =True
         #simulProp.tolFractFront = 0.0002
         #simulProp.plotTSJump = 100

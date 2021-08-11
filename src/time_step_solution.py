@@ -179,10 +179,10 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     norm = 10.
     k = 0
     previous_norm = 100 # initially set with a big value
-    double_confirmation = True
-
+    loop_already_forced = False
+    force_1loop = False
     # Fracture front loop to find the correct front location
-    while norm > sim_properties.tolFractFront and double_confirmation:
+    while norm > sim_properties.tolFractFront or force_1loop:
         k = k + 1
         log.debug(' ')
         log.debug('Iteration ' + repr(k))
@@ -249,14 +249,18 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
             exitstatus = 6
             return exitstatus, None
 
-        if norm < sim_properties.tolFractFront and double_confirmation==False:
-            double_confirmation = False
-        # norm < sim_properties.tolFractFront and double_confirmation==True
-        # do nothing
-        elif norm >= sim_properties.tolFractFront and double_confirmation==True:
-            double_confirmation = True
-        # norm >= sim_properties.tolFractFront and double_confirmation==False
-        # do nothing
+        if norm < sim_properties.tolFractFront and loop_already_forced:
+            loop_already_forced = False
+            force_1loop = False
+        elif norm < sim_properties.tolFractFront and not loop_already_forced:
+            loop_already_forced = True
+            force_1loop = True
+        elif norm >= sim_properties.tolFractFront and loop_already_forced:
+            loop_already_forced = False
+            force_1loop = False
+        elif norm >= sim_properties.tolFractFront and not loop_already_forced:
+            loop_already_forced = False
+            force_1loop = False
 
     # check if we advanced more than two cells
     if exitstatus == 1:
@@ -875,19 +879,21 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                                  l_k,
                                                                                  zrVrtx_newTip)
             else:
-                # Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(Ffront,
-                #                                                                EltsTipNew,
-                #                                                                fully_traversed_k,
-                #                                                                Fr_lstTmStp.mesh,
-                #                                                                mat_properties,
-                #                                                                alpha_k)
-
-                Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_midFront(Ffront,
+                Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(Ffront,
                                                                                EltsTipNew,
                                                                                fully_traversed_k,
                                                                                Fr_lstTmStp.mesh,
                                                                                mat_properties,
                                                                                alpha_k)
+
+                # Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_midFront(Ffront,
+                #                                                                EltsTipNew,
+                #                                                                EltTip_k,
+                #                                                                fully_traversed_k,
+                #                                                                Fr_lstTmStp.mesh,
+                #                                                                mat_properties,
+                #                                                                alpha_k)
+
                 # # Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_midFront_zv(Ffront,
                 #                                                                EltsTipNew,
                 #                                                                fully_traversed_k,
@@ -896,6 +902,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 #                                                                alpha_k,
                 #                                                                l_k,
                 #                                                                zrVrtx_newTip)
+
+    # from utility import plot_as_matrix
+    # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+    # K[EltsTipNew] = Kprime_tip
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
     elif not mat_properties.inv_with_heter_K1c:
         Kprime_tip = mat_properties.Kprime[corr_ribbon]
 

@@ -1064,7 +1064,8 @@ def get_toughness_from_Front(Ffront, elts, fully_traversed, mesh, mat_prop, alph
                 else:
                     x1 = Ffront[ind, 2] ; x2 = Ffront[ind, 0]
                     y1 = Ffront[ind, 3] ; y2 = Ffront[ind, 1]
-                K1c[i] = (mat_prop.K1cFunc(x1, y1) + mat_prop.K1cFunc(x2, y2))/2.
+                #K1c[i] = (mat_prop.K1cFunc(x1, y1) + mat_prop.K1cFunc(x2, y2))/2.
+                K1c[i] = np.minimum(mat_prop.K1cFunc(x1, y1), mat_prop.K1cFunc(x2, y2))
         # now defining K in the fully traversed
         done = (np.setdiff1d(elts,fully_traversed)).tolist()
         still_to_be_done = fully_traversed
@@ -1095,19 +1096,22 @@ def get_toughness_from_Front(Ffront, elts, fully_traversed, mesh, mat_prop, alph
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_toughness_from_midFront(Ffront, elts, fully_traversed, mesh, mat_prop, alpha):
+def get_toughness_from_midFront(Ffront, tip_and_fully_trav, tip, fully_traversed, mesh, mat_prop, alpha):
     """
     This function returns the toughness at the center of the segment defining the front (except for the fully traversed cells
+    tip_and_fully_trav --> contains fully_traversed and partially filled tips
+    tip --> contains partially filled tips
+    fully_traversed --> contains only fully_traversed
     """
 
     if mat_prop.K1cFunc is None:
-        return mat_prop.K1c[elts]
+        return mat_prop.K1c[tip_and_fully_trav]
 
     if mat_prop.anisotropic_K1c:
         return mat_prop.K1cFunc(alpha)
     else:
         table = np.full(mesh.NumberOfElts, np.inf)
-        frontLen =  np.full(len(elts), np.inf)
+        frontLen =  np.full(len(tip_and_fully_trav), np.inf)
         Ffront_centers = []
         for i in range(len(Ffront)):
             x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
@@ -1115,7 +1119,7 @@ def get_toughness_from_midFront(Ffront, elts, fully_traversed, mesh, mat_prop, a
             Ffront_centers.append([x,y])
             el_id = mesh.locate_element(x, y)[0]
             table[el_id] = i
-            elts_id = np.where(elts == el_id)[0]
+            elts_id = np.where(tip == el_id)[0]
             if len(elts_id) > 0:
                 frontLen[elts_id] = ((Ffront[i, 0] - Ffront[i, 2]) ** 2 + (Ffront[i, 1] - Ffront[i, 3]) ** 2) ** .5
         # to close the fracture front
@@ -1124,19 +1128,19 @@ def get_toughness_from_midFront(Ffront, elts, fully_traversed, mesh, mat_prop, a
         Ffront_centers.append([x, y])
         el_id = mesh.locate_element(x, y)[0]
         table[el_id] = len(Ffront)
-        elts_id = np.where(elts==el_id)[0]
+        elts_id = np.where(tip==el_id)[0]
         if len(elts_id) > 0:
             frontLen[elts_id] = ((Ffront[-1, 2] - Ffront[0, 0]) ** 2 +(Ffront[-1, 3] - Ffront[0, 1]) ** 2) ** .5
 
         # returning the Kprime according to the given function
-        K1c = np.empty((len(elts),), dtype=np.float64)
-        for i in range(0, len(elts)):
-            if elts[i] not in fully_traversed:
-                ind = int(table[elts[i]])
+        K1c = np.empty((len(tip_and_fully_trav),), dtype=np.float64)
+        for i in range(0, len(tip_and_fully_trav)):
+            if tip_and_fully_trav[i] not in fully_traversed:
+                ind = int(table[tip_and_fully_trav[i]])
                 [x,y] = Ffront_centers[ind]
                 K1c[i] = mat_prop.K1cFunc(x, y)
         # now defining K in the fully traversed
-        done = (np.setdiff1d(elts,fully_traversed)).tolist()
+        done = tip.tolist()
         still_to_be_done = fully_traversed
         end = False
         k = 0
