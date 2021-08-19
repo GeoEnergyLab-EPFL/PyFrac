@@ -429,9 +429,13 @@ class Hdot_3DR0opening(LinearOperator):
         self.tipcorr = None
         self.tipcorrINDX = None
         self.enable_tip_corr = False
+        #------
+        self.max_leaf_size = None
+        self.eta = None
+        self.eps_aca = None
 
     def set(self, data):
-
+        # properties = [youngs_mod, nu]
         max_leaf_size, eta, eps_aca,  properties, coor2D, conn, hx, hy = data
 
         self.diag_val = get_isotropic_el_self_eff(hx, hy, properties[0])
@@ -467,7 +471,10 @@ class Hdot_3DR0opening(LinearOperator):
         coor3D = coor3D.flatten()               # coor : is an array with the coordinates of all the vertexes of the elements of the mesh
         conn3D = conn.flatten()               # conn : is an array with all the connectivity of the mesh
 
-
+        # save the parameters in case of mesh extension
+        self.max_leaf_size = max_leaf_size
+        self.eta = eta
+        self.eps_aca = eps_aca
 
         # set the object
         self.HMATtract.set(coor3D,

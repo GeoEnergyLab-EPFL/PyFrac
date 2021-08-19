@@ -21,6 +21,7 @@ from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
 from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, mapping_old_indexes
 from elasticity import load_isotropic_elasticity_matrix_toepliz
+from Hdot import Hdot_3DR0opening
 from mesh import CartesianMesh
 from time_step_solution import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution,\
@@ -1337,7 +1338,7 @@ class Controller:
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
         # We adapt the elasticity matrix
-        if not self.sim_prop.useBlockToeplizCompression:
+        if not self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
             if direction is None:
                 if rem_factor == self.sim_prop.remeshFactor:
                     self.C *= 1 / self.sim_prop.remeshFactor
@@ -1358,12 +1359,47 @@ class Controller:
                 #rem_factor = 10
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
-        else:
+        elif self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
             # if direction is None:
             #     rem_factor = self.sim_prop.remeshFactor
             # else:
             #     rem_factor = 10
             self.C.reload(coarse_mesh)
+        elif not self.sim_prop.useBlockToeplizCompression and self.sim_prop.useHmat:
+            max_leaf_size = self.C.max_leaf_size
+            eta = self.C.eta
+            eps_aca = self.C.eps_aca
+            self.C = Hdot_3DR0opening()
+            try:
+                properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
+            except:
+                log.info("Variable youngs_mod is not defined")
+                log.info("Enter your value for the Young mod (use [Pa] if you do not know): ")
+                self.solid_prop.youngs_mod = input("youngs_mod value? : ")
+                self.solid_prop.youngs_mod = float(self.solid_prop.youngs_mod)
+                log.info("Enter your value for the Poisson's ratio: ")
+                self.solid_prop.nu = input("Poisson's ratio value? : ")
+                self.solid_prop.nu = float(self.solid_prop.nu)
+                #check
+                Eprime = self.solid_prop.youngs_mod / (1 - self.solid_prop.nu ** 2)
+                if np.abs(Eprime - self.solid_prop.Eprime)/ self.solid_prop.Eprime > 0.02:
+                    message = "Either youngs_mod or nu are wrong and E'=E/(1-nu^2) is >2% different from the one known"
+                    log.error(message)
+                    raise SystemExit(message)
+                properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
+            data = [max_leaf_size, eta, eps_aca, properties, coarse_mesh.VertexCoor, coarse_mesh.Connectivity, coarse_mesh.hx, coarse_mesh.hy]
+            log.info("Building C form Hmat...\n")
+            log.info("this might take some time...\n")
+            begtime_HMAT = time.time()
+            self.C.set(data)
+            endtime_HMAT = time.time()
+            compute_HMAT = endtime_HMAT - begtime_HMAT
+            log.info("Hmat time : "+ str(compute_HMAT))
+        else:
+            #use toeplitz
+            log.info("Using isotropic elasticity matrix with Block Toepliz Compression")
+            self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh, self.solid_prop.Eprime)
+            self.sim_prop.useBlockToeplizCompression = True
 
         self.fracture = self.fracture.remesh(rem_factor,
                                              self.C,

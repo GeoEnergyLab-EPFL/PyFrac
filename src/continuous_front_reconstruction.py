@@ -705,11 +705,11 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
     """
     This function has vectorized operations.
     This function returns a list of "valid" "fictitius cells".
-    A fictitius cell is made of 4 cells of the mesh e.g. cells i,a,b,c in the mesh below.
-    A fictitius cell is represented by the name of the element in position i in the mesh below
-    A valid fictitius cell is a cell where at least one vertex has Level Set<0 and at least one has LS>0
-    A valid fictitius cell is important because we know the front is passing through it.
-    The front will always enter and exit the fictitius cell from two different edges.
+    A fictitious cell is made of 4 cells of the mesh e.g. cells i,a,b,c in the mesh below.
+    A fictitious cell is represented by the name of the element in position i in the mesh below
+    A valid fictitious cell is a cell where at least one vertex has Level Set<0 and at least one has LS>0
+    A valid fictitious cell is important because we know the front is passing through it.
+    The front will always enter and exit the fictitious cell from two different edges.
     The front can't exit the fictitious cell from a vertex because we set LS -(machine precision) where it was 0.
 
      _ _ _ _ _ _
@@ -2131,8 +2131,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         """
         if np.any(sgndDist_k[mesh.Frontlist] < 0):
             log.warning('Some cells at the boundary of the mesh have negative level set')
-            negativefront = np.where(sgndDist_k < 0)[0]
-            intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
+            #cp: to be faster --
+            negLS_FrontlistIDs = np.where(sgndDist_k[mesh.Frontlist] < 0)[0]
+            intwithFrontlist = mesh.Frontlist[negLS_FrontlistIDs]
+            #negativefront = np.where(sgndDist_k < 0)[0]
+            #intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
+            #cp --
             correct_size_of_pstv_region = [False, True, False]
             return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
 
@@ -2148,7 +2152,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
         """
         1) - define a dictionary for the Ribbon cells
-           - find a list of valid fictitius cells (inamesOfFC) that can belongs to more than one fracture
+           - find a list of valid fictitius cells (inamesOfFC) that can belong to more than one fracture
            - compute the LS at the valid fictitius cells (LSofFC)
            - compute the "i names" of the FC of different types 
                Whe define the fictitius cell types:
