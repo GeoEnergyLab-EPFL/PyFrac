@@ -60,7 +60,6 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
 import os
 import time
 import numpy as np
-from datetime import datetime
 
 # local imports
 from mesh import CartesianMesh
@@ -81,27 +80,34 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = True
 #run = False
-
+#----
+run_dir ="./Data/1p9_Hmat"
+#run_dir =  "./Data/noHmat"
+#run_dir =  "./Data/noHmat_coarse_tol"
+#run_dir =  "./Data/noHmat_DisTime"
+#run_dir =  "./Data/noHmat_DisTime_fastQ" #5 times Q and not time table prescribed
+#----
 restart = False
 #restart = True
-
+#----
+#use_HMAT = True
+use_HMAT = False
+#----
+use_direct_TOEPLITZ = True
+output_fol_B  = run_dir
+output_fol = run_dir
+#output_fol_B  = "./Data/temp"
+#output_fol = "./Data/temp"
+#output_fol ="./Data/noHmat_coarse_tol"
+output_fol = "./Data/noHmat_coarse_tol"
+output_fol_B  = "./Data/noHmat_coarse_tol"
+#----
 use_iterative = True
-
-use_HMAT = True
-#use_HMAT = False
-use_direct_TOEPLITZ = False
-
-output_fol = "./Data/radial_VC_gmres"
-#output_fol_B = "./Data/radial_VC_gmres"
-#output_fol = "./Data/radial_VC_gmres_res"
-output_fol_B = "./Data/radial_VC_gmres_res"
-ftPntJUMP = 10
+ftPntJUMP = 1
 ############################
-#print("NO SMOOTHING")
 
 if run:
     # creating mesh
-    #Mesh = CartesianMesh(3, 18, 151, 901)
     Mesh = CartesianMesh(2.7, 17.55, 91, 585)
 
     # solid properties
@@ -110,7 +116,6 @@ if run:
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
-
     def smoothing(K1, K2, r, delta, x):
         # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
         #### LINEAR - DIRAC DELTA ####
@@ -118,9 +123,6 @@ if run:
         if  x < r-delta :
             return K1
         elif x >= r-delta and x<r :
-            # 0.0 restart long
-            # 0.3 test 1
-            # 0.1 test 2
             K12 = K1 + (K2-K1)*0.1
             a = (K12 - K1) / (delta)
             b = K1 - a * (r - delta)
@@ -129,7 +131,6 @@ if run:
             return K2
         else:
             print("ERROR")
-
 
         #### LINEAR ####
         # x = np.abs(x)
@@ -144,13 +145,13 @@ if run:
         # else:
         #     print("ERROR")
 
-
         #### EXPONENTIAL ####
         # x_b = 4000*(np.abs(x)-r)
         # if x >= 0.:
         #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
         # else:
         #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
+
         #### QUADRATIC ####
         # x = np.abs(x)
         # if x <= r:
@@ -164,12 +165,7 @@ if run:
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
-        #delta = 0.008
         delta = 0.001
-        # if np.abs(x) > r:
-        #     return 2.*K_Ic
-        # else:
-        #     return K_Ic
         return smoothing(K_Ic, 1.9*K_Ic, r, delta, x)
 
     # plot x_max vs time
@@ -219,40 +215,6 @@ if run:
 
     def sigmaO_func(x, y):
         return 0
-        # """ The function providing the stress"""
-        # if (np.floor(abs(y)) % 3) > 1 and abs(y) >0.:
-        #     return 48e6
-        # else:
-        #     return 36e6
-        # # comment the following section if you would like to consider field of stress
-        # # caracterized by the presence of less heterogeneities.
-        # lx = 0.20
-        # ly = 0.20
-        # if math.trunc(abs(x) / lx) >0:
-        #     if math.trunc(abs(x) / lx) %2 == 0:
-        #         x = abs(x) - (math.trunc(abs(x) / lx)) * lx
-        #     else :
-        #         x = abs(x) - (math.trunc(abs(x) / lx) + 1) * lx
-        #
-        # if math.trunc(abs(y) / ly) > 0:
-        #     if math.trunc(abs(y) / ly) %2 == 0:
-        #         y = abs(y) - (math.trunc(abs(y) / ly)) * ly
-        #     else :
-        #         y = abs(y) - (math.trunc(abs(y) / ly)+1) * ly
-        # # comment up to here
-        #
-        #
-        # """ The function providing the confining stress"""
-        # R=0.05
-        # x1=0.
-        # y1=0.2
-        #
-        # if (abs(x)-x1)**2+(abs(y)-y1)**2 < R**2:
-        #    return 60.0e6
-        # if (abs(x)-y1)**2+(abs(y)-x1)**2 < R**2:
-        #    return 60.0e6
-        # else:
-        #    return 5.0e6
 
     Solid = MaterialProperties(Mesh,
                               Eprime,
@@ -273,15 +235,15 @@ if run:
             C.set(data)
             endtime_HMAT = time.time()
             compute_HMAT = endtime_HMAT - begtime_HMAT
-            append_new_line('./Data/radial_VC_gmres/building_HMAT.txt', str(compute_HMAT))
-            print("Compression Ratio of the HMAT : ", C.compressionratio)
-
+            #append_new_line('./Data/radial_VC_gmres/building_HMAT.txt', str(compute_HMAT))
+            #print("Compression Ratio of the HMAT : ", C.compressionratio)
         else:
             from elasticity import load_isotropic_elasticity_matrix_toepliz
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     # injection parameters
     Q0 = 0.001
+    Q0 = 5*0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
@@ -293,20 +255,29 @@ if run:
     simulProp.tmStpPrefactor = 0.9  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
-    simulProp.tolFractFront = 0.00005
+    #simulProp.tolFractFront = 0.0005
+    simulProp.tolFractFront = 0.0001
     simulProp.plotTSJump = 1
     simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
-    simulProp.set_outputFolder("./Data/radial_VC_gmres")  # the disk address where the files are saved
+    simulProp.set_outputFolder(run_dir)   # the disk address where the files are saved
     simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
     simulProp.plotVar = ['footprint', 'custom']#,'regime']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
     #simulProp.set_solTimeSeries(np.arange(0., 3.7, 0.0025))
-    simulProp.force_time_schedule = True
-    simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
-                                                np.arange(1.30,4.00,0.01),)))
+    #simulProp.force_time_schedule = True
+    # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
+    #                                             np.arange(1.30,4.00,0.01),)))
+    myrange = np.arange(0., 4., 0.0085)
+    t = 0.
+    allT =[0.]
+    while t < 4.:
+        t = t + 0.0075 * (1 + 0.6 * t)
+        allT.append(t)
+    #simulProp.set_solTimeSeries(np.asarray(allT))
+
     #simulProp.send_phone_msg = True
 
     # setting up mesh extension options
@@ -348,39 +319,30 @@ if run:
     # ################################################################################
     if restart:
         from visualization import *
-        Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres", step_size=10)       # load all fractures                                                # list of times
+        Fr_list, properties = load_fractures(address=run_dir, step_size=10)       # load all fractures                                                # list of times
         Solid, Fluid, Injection, simulProp = properties
-        simulProp.set_tipAsymptote('K')
-        #simulProp.plotTSJump = 100
         Fr = Fr_list[-1]
-        simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
-                                                    np.arange(1.30, 4.00, 0.01),)))
-        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 0.44, 0.009),
-        #                                             np.arange(0.44, 0.504, 0.008),
-        #                                             np.arange(0.504, 0.599, 0.006),
-        #                                             np.arange(0.599, 0.6546, 0.006),
-        #                                             np.arange(0.6546,6, 0.006))))
-        simulProp.force_time_schedule =True
-        #simulProp.tolFractFront = 0.0002
-        #simulProp.plotTSJump = 100
+        simulProp.set_outputFolder(run_dir)
+        simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
+                                                    np.arange(1.0965, 7.9965, 0.025),)))
+        # simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
         Solid = MaterialProperties(Mesh,
                                   Eprime,
                                   K1c_func=K1c_func,
                                   confining_stress_func = sigmaO_func,
                                   confining_stress=0.,
                                   minimum_width=0.)
-        simulProp.send_phone_msg = True
-
+        #simulProp.send_phone_msg = True
+        simulProp.useHmat=True
+        Solid.youngs_mod=3.3e10
+        Solid.nu=0.4
+        #simulProp.tolFractFront = 0.0001
         # setting up mesh extension options
         simulProp.meshExtensionAllDir = False
         simulProp.set_mesh_extension_factor(1.5)
         simulProp.set_mesh_extension_direction(['vertical'])
         simulProp.meshReductionPossible = False
         simulProp.simID = 'K1/K2=1.9' # do not use _
-
-
-        #from level_set import get_front_region
-        #Fr.front_region = get_front_region(Fr.mesh, Fr.EltRibbon, Fr.sgndDist[Fr.EltRibbon])`
     #############################################################################
 
 
@@ -417,10 +379,13 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     # plot fracture radius
     my_list = []
+    mytime = 10.4
     for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
-        my_list.append(Fr_list_A[i])
+        if Fr_list_A[i].time < mytime:
+            my_list.append(Fr_list_A[i])
     for i in np.arange(0, len(Fr_list_B), ftPntJUMP):
-        my_list.append(Fr_list_B[i])
+        if Fr_list_B[i].time < mytime:
+            my_list.append(Fr_list_B[i])
     plot_prop = PlotProperties()
     Fig_R = plot_fracture_list(my_list,
                                variable='footprint',
@@ -552,10 +517,10 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     # ax.plot(time_simul_A, p_scaling, color='b')
 
     ax.scatter(time_simul_B, p_B, color='g')
-    p_scaling = []
-    for i in range(len(time_simul_A)):
-        p_scaling.append(0.2660 * time_simul_A[i] ** (-1 / 7))
-    ax.plot(time_simul_A, p_scaling, color='g')
+    # p_scaling = []
+    # for i in range(len(time_simul_A)):
+    #     p_scaling.append(0.2660 * time_simul_A[i] ** (-1 / 7))
+    # ax.plot(time_simul_A, p_scaling, color='g')
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -665,7 +630,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     my_X = 0.
     my_Y = 0.
     ext_pnts = np.empty((2, 2), dtype=np.float64)
-    fracture_list_slice_B = plot_fracture_list_slice(Fr_list_A,
+    fracture_list_slice_B = plot_fracture_list_slice(my_list,
                                                    variable='w',
                                                    projection='2D',
                                                    plot_cell_center=True,
@@ -679,7 +644,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     my_X = 0.
     my_Y = 0.
     ext_pnts = np.empty((2, 2), dtype=np.float64)
-    fracture_list_slice_B = plot_fracture_list_slice(Fr_list_A,
+    fracture_list_slice_B = plot_fracture_list_slice(my_list,
                                                    variable='w',
                                                    projection='2D',
                                                    plot_cell_center=True,

@@ -714,7 +714,15 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                                 ResFunc,
                                 simParmtrs)
     ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
+    ## CP this part is very much needed for heterogeneous K
     if any(np.isnan(a)):
+        # from utility import plot_as_matrix
+        # K = np.zeros((frac.mesh.NumberOfElts,), )
+        # K[frac.EltRibbon[moving]] = 3
+        # K[frac.EltRibbon[moving][stagnant_from_bracketing]] = 1
+        # K[frac.EltRibbon[stagnant]] = 2
+        # plot_as_matrix(K, frac.mesh)
+
         stagnant_from_bracketing = np.argwhere(np.isnan(a))[::,0]
         a = np.delete(a, stagnant_from_bracketing)
         b = np.delete(b, stagnant_from_bracketing)

@@ -241,26 +241,36 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 log.debug( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.0001')
                 exitstatus = 15
                 return exitstatus, None
-            else:
-                previous_norm = norm
 
         # preventing infinite or not effective loops
         if (k >= sim_properties.maxFrontItrs and norm > 0.026) or k > 100:
-            exitstatus = 6
-            return exitstatus, None
+            if norm > 10*sim_properties.tolFractFront or  k>200:
+                exitstatus = 6
+                return exitstatus, None
 
         if norm < sim_properties.tolFractFront and loop_already_forced:
-            loop_already_forced = False
-            force_1loop = False
+            if norm < previous_norm:
+                # the convergence has been achieved
+                loop_already_forced = False
+                force_1loop = False
+            else:
+                # forcing another loop
+                loop_already_forced = True
+                force_1loop = True
         elif norm < sim_properties.tolFractFront and not loop_already_forced:
+            log.debug(' --> Forcing one more loop to see if the convergence has been really achieved')
             loop_already_forced = True
             force_1loop = True
         elif norm >= sim_properties.tolFractFront and loop_already_forced:
+            log.debug(' --> convergence not achieved, iterate more if other conditions allows for that')
             loop_already_forced = False
             force_1loop = False
         elif norm >= sim_properties.tolFractFront and not loop_already_forced:
+            # normal case
             loop_already_forced = False
             force_1loop = False
+
+        previous_norm = norm
 
     # check if we advanced more than two cells
     if exitstatus == 1:
@@ -753,7 +763,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     # x,y = get_xy_from_Ffront(Ffront)
     # plot_xy_points(front_region, Fr_lstTmStp.mesh, sgndDist_k, Fr_lstTmStp.EltRibbon, x, y, fig=None, annotate_cellName=False,
     #                annotate_edgeName=False, annotatePoints=False, grid=True, oldfront=front_previous_iter, joinPoints=True,
-    #                disregard_plus=False)
+    #                disregard_plus=False) # or oldfront=Fr_lstTmStp.Ffront
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
@@ -881,27 +891,13 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             else:
                 Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(Ffront,
                                                                                EltsTipNew,
+                                                                               EltTip_k,
                                                                                fully_traversed_k,
                                                                                Fr_lstTmStp.mesh,
                                                                                mat_properties,
-                                                                               alpha_k)
+                                                                               alpha_k,
+                                                                               get_from_mid_front = False)
 
-                # Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_midFront(Ffront,
-                #                                                                EltsTipNew,
-                #                                                                EltTip_k,
-                #                                                                fully_traversed_k,
-                #                                                                Fr_lstTmStp.mesh,
-                #                                                                mat_properties,
-                #                                                                alpha_k)
-
-                # # Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_midFront_zv(Ffront,
-                #                                                                EltsTipNew,
-                #                                                                fully_traversed_k,
-                #                                                                Fr_lstTmStp.mesh,
-                #                                                                mat_properties,
-                #                                                                alpha_k,
-                #                                                                l_k,
-                #                                                                zrVrtx_newTip)
 
     # from utility import plot_as_matrix
     # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
@@ -927,6 +923,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     #     log.warning("Stagnant front is only supported with universal tip asymptote. continuing...")
     #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
+    # from utility import plot_as_matrix
+    # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+    # K[EltsTipNew[np.where(stagnant)[0]]] = 2
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
+    # EltsTipNew[np.where(stagnant)[0]]
     if perfNode is not None:
         perfNode_tipWidth = instrument_start('tip width', perfNode)
         #todo close tip width instrumentation

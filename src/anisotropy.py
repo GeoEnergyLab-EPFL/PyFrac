@@ -973,7 +973,7 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_neighbors(NeiElements, elt):
+def get_8neighbors(NeiElements, elt):
     # neighbors
     #     6     5       4
     #     7    elt      3
@@ -993,14 +993,15 @@ def get_neighbors(NeiElements, elt):
     return neighbors_band
 #-----------------------------------------------------------------------------------------------------------------------
 import copy
-def process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k):
+def process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, k):
+    # this function computes the fracture toughness
     still_to_be_done_new = []
     done_new = copy.deepcopy(done)
     for i in still_to_be_done:
         i_indx = np.where(elts == i)[0]
 
-        # find the neighbors of the cell still to be done
-        nei = get_neighbors(mesh.NeiElements,i)
+        # find the 8 neighbors of the cell still to be done
+        nei = get_8neighbors(mesh.NeiElements,i)
 
         #if some of the neighbors have been done, find them
         nei_done = np.intersect1d(done, nei)
@@ -1008,7 +1009,6 @@ def process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k)
             indexes = np.flatnonzero(np.in1d(elts, nei_done))
             if k < 1:
                 K1c[i_indx] = np.mean(K1c[indexes])
-                #K1c[i_indx] = np.dot(K1c[indexes],frontLen[indexes])/np.sum(frontLen[indexes])
             else:
                 K1c[i_indx] = np.mean(K1c[indexes])
 
@@ -1020,89 +1020,11 @@ def process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k)
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_toughness_from_Front(Ffront, elts, fully_traversed, mesh, mat_prop, alpha):
+def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, mesh, mat_prop, alpha, get_from_mid_front = False):
     """
     This function returns the toughness based on its values at the extremes of the segment defining the front (except for the fully traversed cells
     """
-
-    if mat_prop.K1cFunc is None:
-        return mat_prop.K1c[elts]
-
-    if mat_prop.anisotropic_K1c:
-        return mat_prop.K1cFunc(alpha)
-    else:
-        table = np.full(mesh.NumberOfElts, np.inf)
-        frontLen =  np.full(len(elts), np.inf)
-        #Ffront_centers = []
-        for i in range(len(Ffront)):
-            x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
-            y = (Ffront[i, 1] + Ffront[i, 3]) / 2.
-            #Ffront_centers.append([x,y])
-            el_id = mesh.locate_element(x, y)[0]
-            table[el_id] = i
-            elts_id = np.where(elts == el_id)[0]
-            if len(elts_id) > 0:
-                frontLen[elts_id] = ((Ffront[i, 0] - Ffront[i, 2]) ** 2 + (Ffront[i, 1] - Ffront[i, 3]) ** 2) ** .5
-        # to close the fracture front
-        x = (Ffront[-1, 2] + Ffront[0, 0]) / 2.
-        y = (Ffront[-1, 3] + Ffront[0, 1]) / 2.
-        #Ffront_centers.append([x, y])
-        el_id = mesh.locate_element(x, y)[0]
-        table[el_id] = len(Ffront)
-        elts_id = np.where(elts==el_id)[0]
-        if len(elts_id) > 0:
-            frontLen[elts_id] = ((Ffront[-1, 2] - Ffront[0, 0]) ** 2 +(Ffront[-1, 3] - Ffront[0, 1]) ** 2) ** .5
-
-        # returning the Kprime according to the given function
-        K1c = np.empty((len(elts),), dtype=np.float64)
-        for i in range(0, len(elts)):
-            if elts[i] not in fully_traversed:
-                ind = int(table[elts[i]])
-                if ind == len(Ffront):
-                    x1 = Ffront[-1, 2] ; x2 = Ffront[0, 0]
-                    y1 = Ffront[-1, 3] ; y2 = Ffront[0, 1]
-                else:
-                    x1 = Ffront[ind, 2] ; x2 = Ffront[ind, 0]
-                    y1 = Ffront[ind, 3] ; y2 = Ffront[ind, 1]
-                #K1c[i] = (mat_prop.K1cFunc(x1, y1) + mat_prop.K1cFunc(x2, y2))/2.
-                K1c[i] = np.minimum(mat_prop.K1cFunc(x1, y1), mat_prop.K1cFunc(x2, y2))
-        # now defining K in the fully traversed
-        done = (np.setdiff1d(elts,fully_traversed)).tolist()
-        still_to_be_done = fully_traversed
-        end = False
-        k = 0
-        while not end:
-            if len(still_to_be_done) <1:
-                end = True
-            else:
-                still_to_be_done, done, K1c = process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k)
-                k = k + 1
-
-
-        # from utility import plot_as_matrix
-        # K = np.zeros((mesh.NumberOfElts,), )
-        # K[elts] = K1c
-        # plot_as_matrix(K, mesh)
-
-        # from continuous_front_reconstruction import plot_xy_points
-        # background_Color = np.zeros(mesh.NumberOfElts)
-        # for ii in range(mesh.NumberOfElts):
-        #     background_Color[ii] = mat_prop.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
-        # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, elts, xstore, ystore, fig=None,
-        #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
-        #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
-        return K1c
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def get_toughness_from_midFront(Ffront, tip_and_fully_trav, tip, fully_traversed, mesh, mat_prop, alpha):
-    """
-    This function returns the toughness at the center of the segment defining the front (except for the fully traversed cells
-    tip_and_fully_trav --> contains fully_traversed and partially filled tips
-    tip --> contains partially filled tips
-    fully_traversed --> contains only fully_traversed
-    """
+    log = logging.getLogger('PyFrac.anisotropy.get_toughness_from_Front')
 
     if mat_prop.K1cFunc is None:
         return mat_prop.K1c[tip_and_fully_trav]
@@ -1110,37 +1032,32 @@ def get_toughness_from_midFront(Ffront, tip_and_fully_trav, tip, fully_traversed
     if mat_prop.anisotropic_K1c:
         return mat_prop.K1cFunc(alpha)
     else:
-        table = np.full(mesh.NumberOfElts, np.inf)
-        frontLen =  np.full(len(tip_and_fully_trav), np.inf)
-        Ffront_centers = []
-        for i in range(len(Ffront)):
-            x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
-            y = (Ffront[i, 1] + Ffront[i, 3]) / 2.
-            Ffront_centers.append([x,y])
-            el_id = mesh.locate_element(x, y)[0]
-            table[el_id] = i
-            elts_id = np.where(tip == el_id)[0]
-            if len(elts_id) > 0:
-                frontLen[elts_id] = ((Ffront[i, 0] - Ffront[i, 2]) ** 2 + (Ffront[i, 1] - Ffront[i, 3]) ** 2) ** .5
-        # to close the fracture front
-        x = (Ffront[-1, 2] + Ffront[0, 0]) / 2.
-        y = (Ffront[-1, 3] + Ffront[0, 1]) / 2.
-        Ffront_centers.append([x, y])
-        el_id = mesh.locate_element(x, y)[0]
-        table[el_id] = len(Ffront)
-        elts_id = np.where(tip==el_id)[0]
-        if len(elts_id) > 0:
-            frontLen[elts_id] = ((Ffront[-1, 2] - Ffront[0, 0]) ** 2 +(Ffront[-1, 3] - Ffront[0, 1]) ** 2) ** .5
-
         # returning the Kprime according to the given function
         K1c = np.empty((len(tip_and_fully_trav),), dtype=np.float64)
         for i in range(0, len(tip_and_fully_trav)):
             if tip_and_fully_trav[i] not in fully_traversed:
-                ind = int(table[tip_and_fully_trav[i]])
-                [x,y] = Ffront_centers[ind]
-                K1c[i] = mat_prop.K1cFunc(x, y)
-        # now defining K in the fully traversed
-        done = tip.tolist()
+                ind = np.where(tip==tip_and_fully_trav[i])[0]
+                # assuming that Ffront is ordered as tip
+                # Ffront[-1] == tip[0]
+                # assuming that size Ffront == size tip
+                x1 = Ffront[ind-1, 2] ; x2 = Ffront[ind-1, 0]
+                y1 = Ffront[ind-1, 3] ; y2 = Ffront[ind-1, 1]
+                # checking the assumptions ----
+                xc=mesh.CenterCoor[tip[ind],0]; yc=mesh.CenterCoor[tip[ind],1]
+                xm = 0.5 * (x1 + x2) ; ym = 0.5 * (y1 + y2)
+
+                if not (xm <= xc+mesh.hx/2. and xm >= xc-mesh.hx/2. and ym <= yc + mesh.hy / 2. and ym >= yc - mesh.hy / 2.):
+                    log.warning("Violating the assumption that Ffront is ordered as tip list.")
+                    SystemExit("Violating the assumption that Ffront is ordered as tip list.")
+                # ----------------------------
+
+                #K1c[i] = (mat_prop.K1cFunc(x1, y1) + mat_prop.K1cFunc(x2, y2))/2.
+                if get_from_mid_front:
+                    K1c[i] = mat_prop.K1cFunc(xm, ym)
+                else:
+                    K1c[i] = np.minimum(mat_prop.K1cFunc(x1, y1), mat_prop.K1cFunc(x2, y2))
+        # now defining K in the fully traversed cells as the average of K in the cells where K has been computed
+        done = (copy.deepcopy(tip)).tolist()
         still_to_be_done = fully_traversed
         end = False
         k = 0
@@ -1148,7 +1065,7 @@ def get_toughness_from_midFront(Ffront, tip_and_fully_trav, tip, fully_traversed
             if len(still_to_be_done) <1:
                 end = True
             else:
-                still_to_be_done, done, K1c = process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, frontLen, k)
+                still_to_be_done, done, K1c = process_closer_to_done(still_to_be_done, done, mesh, K1c, tip_and_fully_trav, k)
                 k = k + 1
 
 
@@ -1166,66 +1083,6 @@ def get_toughness_from_midFront(Ffront, tip_and_fully_trav, tip, fully_traversed
         #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
         return K1c
 
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def get_toughness_from_midFront_zv(Ffront, elts, fully_traversed, mesh, mat_prop, alpha, l, zero_vrtx):
-    """
-    This function returns the toughness at the center of the segment defining the front (except for the fully traversed cells
-    """
-
-    if mat_prop.K1cFunc is None:
-        return mat_prop.K1c[elts]
-
-    if mat_prop.anisotropic_K1c:
-        return mat_prop.K1cFunc(alpha)
-    else:
-        table = np.full(mesh.NumberOfElts, np.inf)
-        for i in range(len(Ffront)):
-            x = (Ffront[i, 0] + Ffront[i, 2]) / 2.
-            y = (Ffront[i, 1] + Ffront[i, 3]) / 2.
-            table[mesh.locate_element(x, y)[0]] = i
-
-
-        # returning the Kprime according to the given function
-        K1c = np.empty((len(elts),), dtype=np.float64)
-        x = np.zeros((len(elts),), )
-        y = np.zeros((len(elts),), )
-
-        for i in range(0, len(elts)):
-            if elts[i] not in fully_traversed:
-                ind = int(table[elts[i]])
-                x[i] = (Ffront[ind,0] + Ffront[ind,2]) / 2.
-                y[i] = (Ffront[ind,1] + Ffront[ind,3]) / 2.
-                K1c[i] = mat_prop.K1cFunc(x[i], y[i])
-            else:
-                if zero_vrtx[i] == 0:
-                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
-                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
-                elif zero_vrtx[i] == 1:
-                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
-                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
-                elif zero_vrtx[i] == 2:
-                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
-                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
-                elif zero_vrtx[i] == 3:
-                    x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
-                    y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
-                K1c[i] = mat_prop.K1cFunc(x[i], y[i])
-
-        # from utility import plot_as_matrix
-        # K = np.zeros((mesh.NumberOfElts,), )
-        # K[elts] = K1c
-        # plot_as_matrix(K, mesh)
-
-        # from continuous_front_reconstruction import plot_xy_points
-        # background_Color = np.zeros(mesh.NumberOfElts)
-        # for ii in range(mesh.NumberOfElts):
-        #     background_Color[ii] = mat_prop.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
-        # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, elts, xstore, ystore, fig=None,
-        #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
-        #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
-        return K1c
 #-----------------------------------------------------------------------------------------------------------------------
 
 
