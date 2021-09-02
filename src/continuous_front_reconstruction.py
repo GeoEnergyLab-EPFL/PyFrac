@@ -2133,7 +2133,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             log.warning('Some cells at the boundary of the mesh have negative level set')
             #cp: to be faster --
             negLS_FrontlistIDs = np.where(sgndDist_k[mesh.Frontlist] < 0)[0]
-            intwithFrontlist = mesh.Frontlist[negLS_FrontlistIDs]
+            intwithFrontlist = np.asarray(mesh.Frontlist)[negLS_FrontlistIDs]
             #negativefront = np.where(sgndDist_k < 0)[0]
             #intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
             #cp --

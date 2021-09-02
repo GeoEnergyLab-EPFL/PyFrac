@@ -831,6 +831,7 @@ class SimulationProperties:
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
         self.volumeControlGMRES = simul_param.volumeControlGMRES
+        self.useHmat = simul_param.useHMAT
         self.substitutePressure = simul_param.substitute_pressure
         self.solveDeltaP = simul_param.solve_deltaP
         self.solveStagnantTip = simul_param.solve_stagnant_tip

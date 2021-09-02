@@ -76,6 +76,7 @@ mech_loading = False                    # if True, the mechanical loading solver
 volume_control = False                  # if True, the volume control solver will be used.
 double_fracture_vol_contr = False       # enable the volume control solver for two fractures
 volumeControlGMRES = False              # enable the volume control solver using GMRES with either HMAT or Toeplitz for elasticity
+useHMAT = False
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
 substitute_pressure = True              # if True, the pressure will be substituted with width to make the EHL system.
 solve_deltaP = True                     # if True, the change in pressure, instead of pressure will be solved.

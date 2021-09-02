@@ -79,50 +79,27 @@ setup_logging_to_console(verbosity_level='debug')
 run = True
 run = False
 #----
-#run_dir ="./Data/1p9_Hmat"
-#run_dir =  "./Data/1p45_noHmat_0p05regul"
-#run_dir =  "./Data/1p42_noHmat_0p05regul"
-#run_dir =  "./Data/1p37_noHmat_0p005regul_morecells"
-#run_dir =  "./Data/1p42_noHmat_0p001regul_morecells2"
-#run_dir =  "./Data/1p42_noHmat_0p001regul"
-run_dir =  "./Data/02"
-#run_dir =  "./Data/noHmat_coarse_tol"
-#run_dir =  "./Data/noHmat_DisTime"
-#run_dir =  "./Data/noHmat_DisTime_fastQ" #5 times Q and not time table prescribed
-#run_dir =  "./Data/1p42_noHmat_0p001regul"
+run_dir =  "./Data/1p47_noHmat_0p0005regul"
 #----
 restart = False
+#----
 use_HMAT = False
 #----
 use_direct_TOEPLITZ = True
-#output_fol  = "./Data/1p37_noHmat_0p005regul"
-#output_fol_B = "./Data/1p37_noHmat_0p005regul_morecells"
-output_fol  = "./Data/1p42_noHmat_0p05regul"
-output_fol_B = "./Data/1p37_noHmat_0p005regul"
-output_fol  = "./Data_final/01"
-output_fol_B = "./Data_final/01"
-#output_fol  = "./Data/1p37_noHmat_0p005regul_morecells"
-#output_fol_B = "./Data/1p42_noHmat_0p001regul_morecells2"
-#output_fol_B  = "./Data/noHmat_coarse_tol"
-#output_fol = "./Data/noHmat_coarse_tol"
-#output_fol ="./Data/noHmat_coarse_tol"
-#output_fol = "./Data/noHmat_coarse_tol"
-#output_fol = "./Data/noHmat_DisTime_fastQ"
-#output_fol_B  = "./Data/noHmat_DisTime_fastQ"
+output_fol  = run_dir
+output_fol_B = run_dir
 #----
 use_iterative = True
-ftPntJUMP = 10
+ftPntJUMP = 1
 ############################
 
 if run:
     # creating mesh
     Mesh = CartesianMesh(2.7, 17.55, 91, 585)
-    #Mesh = CartesianMesh(2.7, 10.55, 151, 585)
-    #Mesh = CartesianMesh(2.7, 6.55, 201, 485)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
-    youngs_mod = 3.3e9  # Young's modulus
+    youngs_mod = 3.3e10  # Young's modulus
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
@@ -141,35 +118,6 @@ if run:
             return K2
         else:
             print("ERROR")
-
-        #### LINEAR ####
-        # x = np.abs(x)
-        # if x < r - delta:
-        #     return K1
-        # elif r - delta <= x <= r + delta:
-        #     a = (K2 - K1) / (2.*delta)
-        #     b = K2 - a * (r + delta)
-        #     return a * x + b
-        # elif r + delta < x:
-        #     return K2
-        # else:
-        #     print("ERROR")
-
-        #### EXPONENTIAL ####
-        # x_b = 4000*(np.abs(x)-r)
-        # if x >= 0.:
-        #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
-        # else:
-        #     return K1 + np.exp(x_b)/(np.exp(x_b)+1)*(K2-K1)
-
-        #### QUADRATIC ####
-        # x = np.abs(x)
-        # if x <= r:
-        #     return K1
-        # elif x > r and x < r + delta:
-        #     return K1 + (x-delta)*(x-delta)*(K2-K1)/delta/delta
-        # else:
-        #     return K2
 
     def K1c_func(x,y):
         """ The function providing the toughness"""
@@ -194,35 +142,6 @@ if run:
     # ax.set_ylabel(ylabel)
     # plt.show()
 
-
-    # def K1c_func(x, y):
-    #     """ The function providing the toughness
-    #
-    #     It consist of a periodic layer of constant height H characterized either by a toughness of Kmax or Kmin.
-    #     A smoothing between the two values is made over a distance epsilon.
-    #
-    #     """
-    #     K_Ic_min = 0.5e6  # fracture toughness
-    #     K_Ic_max = 1.2 * K_Ic_min  # fracture toughness
-    #     H = 1.5 # Height of the layer
-    #     epsilon = 0.1 * H  # linear smoothing distance
-    #     delta = K_Ic_max - K_Ic_min
-    #     Kmed = (K_Ic_max + K_Ic_min)/2.
-    #     localvar = np.sin(np.pi * x / H)
-    #
-    #     if np.abs(localvar) > np.sin(np.pi * (epsilon + H/2.) / H) :
-    #         y_jump = Kmed
-    #         if ((x+H/2.) % H) > 0.5:
-    #             x_jump = ((x+H/2.) // H + 1) * H - H/2.
-    #         else:
-    #             x_jump = ((x + H / 2.) // H) * H - H / 2.
-    #         m = np.sign(localvar) * delta / 2. / epsilon
-    #         q = y_jump - m * x_jump
-    #         return m * x + q
-    #     else:
-    #         return Kmed + delta/2. * np.sign(np.sin(np.pi * x / H - np.pi/2.))
-
-
     def sigmaO_func(x, y):
         return 0
 
@@ -245,15 +164,12 @@ if run:
             C.set(data)
             endtime_HMAT = time.time()
             compute_HMAT = endtime_HMAT - begtime_HMAT
-            #append_new_line('./Data/radial_VC_gmres/building_HMAT.txt', str(compute_HMAT))
-            #print("Compression Ratio of the HMAT : ", C.compressionratio)
         else:
             from elasticity import load_isotropic_elasticity_matrix_toepliz
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     # injection parameters
     Q0 = 0.001
-    #Q0 = 5*0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
@@ -265,7 +181,6 @@ if run:
     simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
-    #simulProp.tolFractFront = 0.0005
     simulProp.tolFractFront = 0.0001
     simulProp.plotTSJump = 1
     simulProp.set_volumeControl(True)
@@ -276,21 +191,6 @@ if run:
     simulProp.plotVar = ['footprint', 'custom']#,'regime']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
-    #simulProp.set_solTimeSeries(np.arange(0., 3.7, 0.0025))
-    #simulProp.force_time_schedule = True
-    # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
-    #                                             np.arange(1.30,4.00,0.01),)))
-    # myrange = np.arange(0., 4., 0.0085)
-    #myrange = np.arange(0., 0.5, 0.0070)
-    #simulProp.set_solTimeSeries(myrange )
-    # t = 0.
-    # allT =[0.]
-    # while t < 4.:
-    #     t = t + 0.0075 * (1 + 0.6 * t)
-    #     allT.append(t)
-    #simulProp.set_solTimeSeries(np.asarray(allT))
-
-    #simulProp.send_phone_msg = True
 
     # setting up mesh extension options
     simulProp.meshExtensionAllDir = False
@@ -298,7 +198,6 @@ if run:
     simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
     simulProp.simID = 'K1/K2=1.47' # do not use _
-
 
     simulProp.customPlotsOnTheFly = True
     simulProp.LHyst__ = []
@@ -330,32 +229,32 @@ if run:
     # ################################################################################
     # # the following lines are needed if you want to restart an existing simulation #
     # ################################################################################
-    if restart:
-        from visualization import *
-        Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
-        Solid, Fluid, Injection, simulProp = properties
-        Fr = Fr_list[-1]
-        simulProp.set_outputFolder(run_dir)
-        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
-        #                                             np.arange(1.0965, 7.9965, 0.025),)))
-        simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
-        Solid = MaterialProperties(Mesh,
-                                  Eprime,
-                                  K1c_func=K1c_func,
-                                  confining_stress_func = sigmaO_func,
-                                  confining_stress=0.,
-                                  minimum_width=0.)
-        #simulProp.send_phone_msg = True
-        #simulProp.useHmat=True
-        Solid.youngs_mod=3.3e10
-        Solid.nu=0.4
-        #simulProp.tolFractFront = 0.0001
-        # setting up mesh extension options
-        simulProp.meshExtensionAllDir = False
-        simulProp.set_mesh_extension_factor(1.5)
-        simulProp.set_mesh_extension_direction(['vertical'])
-        simulProp.meshReductionPossible = False
-        simulProp.simID = 'K1/K2=1.9' # do not use _
+    # if restart:
+    #     from visualization import *
+    #     Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
+    #     Solid, Fluid, Injection, simulProp = properties
+    #     Fr = Fr_list[-1]
+    #     simulProp.set_outputFolder(run_dir)
+    #     # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
+    #     #                                             np.arange(1.0965, 7.9965, 0.025),)))
+    #     simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
+    #     Solid = MaterialProperties(Mesh,
+    #                               Eprime,
+    #                               K1c_func=K1c_func,
+    #                               confining_stress_func = sigmaO_func,
+    #                               confining_stress=0.,
+    #                               minimum_width=0.)
+    #     #simulProp.send_phone_msg = True
+    #     #simulProp.useHmat=True
+    #     Solid.youngs_mod=3.3e10
+    #     Solid.nu=0.4
+    #     #simulProp.tolFractFront = 0.0001
+    #
+    #     # setting up mesh extension options
+    #     simulProp.meshExtensionAllDir = False
+    #     simulProp.set_mesh_extension_factor(1.5)
+    #     simulProp.set_mesh_extension_direction(['vertical'])
+    #     simulProp.meshReductionPossible = False
     #############################################################################
 
 
@@ -410,103 +309,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
                                backGround_param='K1c',
                                plot_prop=plot_prop)
     plt.show()
-    #
-    # # plot fracture radius
-    # plot_prop = PlotProperties()
-    # plot_prop.lineStyle = '.'               # setting the linestyle to point
-    # plot_prop.graphScaling = 'loglog'       # setting to log log plot
-    # Fig_R = plot_fracture_list(Fr_list,
-    #                            variable='d_mean',
-    #                            plot_prop=plot_prop)
-    #
-    # # plot analytical radius
-    # Fig_R = plot_analytical_solution(regime='K',
-    #                                  variable='d_mean',
-    #                                  mat_prop=Solid,
-    #                                  inj_prop=Injection,
-    #                                  fluid_prop=Fluid,
-    #                                  time_srs=time_srs,
-    #                                  fig=Fig_R)
-    #
-    # # # plot width at center
-    # Fig_w = plot_fracture_list_at_point(Fr_list,
-    #                                     variable='w',
-    #                                     plot_prop=plot_prop)
-    # # # plot analytical width at center
-    # Fig_w = plot_analytical_solution_at_point('K',
-    #                                           'w',
-    #                                           Solid,
-    #                                           Injection,
-    #                                           fluid_prop=Fluid,
-    #                                           time_srs=time_srs,
-    #                                           fig=Fig_w)
-    #
-    #
-    # Fig_pf = plot_fracture_list_at_point(Fr_list,
-    #                                     variable='pn',
-    #                                     plot_prop=plot_prop)
-    #
-    # Fig_pf = plot_analytical_solution_at_point('K',
-    #                                           'pn',
-    #                                           Solid,
-    #                                           Injection,
-    #                                           fluid_prop=Fluid,
-    #                                           time_srs=time_srs,
-    #                                           fig=Fig_pf)
-    #
-    #
-    # # plot slice
-    # #ext_pnts = np.empty((2, 2), dtype=np.float64)
-    # my_X = 0.
-    # my_Y = 0.
-    # ext_pnts = np.empty((2, 2), dtype=np.float64)
-    # Fig_WS = plot_fracture_list_slice(Fr_list,
-    #                                   variable='w',
-    #                                   projection='2D',
-    #                                   plot_cell_center=True,
-    #                                   extreme_points=ext_pnts,
-    #                                   orientation='horizontal',
-    #                                   point1=[my_X, my_Y]
-    #                                   )
 
-    #################################
-
-
-
-
-
-    #print("\n get w(x) with x passing through a specific point for different times... ")
-    # my_X = 0.
-    # my_Y = 0.
-    # ext_pnts = np.empty((2, 2), dtype=np.float64)
-    # fracture_list_slice_A = plot_fracture_list_slice(Fr_list_A,
-    #                                                variable='w',
-    #                                                projection='2D',
-    #                                                plot_cell_center=True,
-    #                                                extreme_points=ext_pnts,
-    #                                                orientation='horizontal',
-    #                                                point1=[my_X, my_Y],
-    #                                                export2Json=True,
-    #                                                export2Json_assuming_no_remeshing=True)
-    # loading simulation results B
-    # Fr_list_B, properties_B = load_fractures(address="./Data/sim_B",step_size=1)                  # load all fractures
-    # time_srs_B = get_fracture_variable(Fr_list_A, variable='time')                                                 # list of times
-    # Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
-    # double_L_B, x_max_B, p_B, time_simul_B = get_info(Fr_list_B)
-    # # plot slice
-    # print("\n get w(x) with x passing through a specific point for different times... ")
-    # my_X = 0.
-    # my_Y = 0.
-    # ext_pnts = np.empty((2, 2), dtype=np.float64)
-    # fracture_list_slice_B = plot_fracture_list_slice(Fr_list_B,
-    #                                                variable='w',
-    #                                                projection='2D',
-    #                                                plot_cell_center=True,
-    #                                                extreme_points=ext_pnts,
-    #                                                orientation='horizontal',
-    #                                                point1=[my_X, my_Y],
-    #                                                export2Json=True,
-    #                                                export2Json_assuming_no_remeshing=True)
 
     #### BUILDING OUR PLOTS ###
     import pandas as pd
