@@ -43,7 +43,8 @@ def getwmax__(w):
 
 def apply_custom_prop(sim_prop, fr):
     #sim_prop.LHyst__.append(getL__(fr.Ffront))
-    sim_prop.LHyst__.append(getwmax__(fr.w))
+    #sim_prop.LHyst__.append(getwmax__(fr.w))
+    sim_prop.LHyst__.append(getwmax__(fr.pFluid))
     #sim_prop.LHyst__.append(getwAtMovingCenter__(fr))
     sim_prop.tHyst__.append(fr.time)
 
@@ -55,8 +56,20 @@ def custom_plot(sim_prop, fig = None):
         ax = fig.get_axes()[0]
     # plot L vs time
     xlabel = 'time [s]'
-    ylabel = 'w [m]'
+    ylabel = 'p [m]'
     ax.scatter(sim_prop.tHyst__, sim_prop.LHyst__, color='k')
+    # straight line
+    sl= []
+    sl_ana = []
+    K_Ic = 0.5e6
+    H=2*1.48
+    p_limit = 1.47*K_Ic/np.sqrt(np.pi*H/2)
+    p_ana = 2.*K_Ic/np.sqrt(np.pi*H)
+    for i in range(len(sim_prop.tHyst__)):
+        sl.append(p_limit)
+        sl_ana.append(p_ana)
+    ax.plot(sim_prop.tHyst__, sl, color='r')
+    ax.plot(sim_prop.tHyst__, sl_ana, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_yscale('log')

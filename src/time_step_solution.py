@@ -360,24 +360,24 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     #                                                                                        #
     ##########################################################################################
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
-                                         sim_properties,
-                                         fluid_properties,
-                                         mat_properties,
-                                         empty, #EltTip
-                                         empty, #partlyFilledTip
-                                         C,
-                                         Boundary,
-                                         Fr_lstTmStp.FillF[empty],
-                                         Fr_lstTmStp.EltCrack,
-                                         Fr_lstTmStp.InCrack,
-                                         LkOff,
-                                         empty, #wTip
-                                         timeStep,
-                                         Qin,
-                                         perfNode,
-                                         empty, #Vel
-                                         empty, #corr_ribbon
-                                         doublefracturedictionary= doublefracturedictionary)
+                                                 sim_properties,
+                                                 fluid_properties,
+                                                 mat_properties,
+                                                 Fr_lstTmStp.EltTip, #empty, #EltTip
+                                                 empty, #partlyFilledTip
+                                                 C,
+                                                 Boundary,
+                                                 Fr_lstTmStp.FillF[empty],
+                                                 Fr_lstTmStp.EltCrack,
+                                                 Fr_lstTmStp.InCrack,
+                                                 LkOff,
+                                                 Fr_lstTmStp.w[Fr_lstTmStp.EltTip],#empty, #wTip
+                                                 timeStep,
+                                                 Qin,
+                                                 perfNode,
+                                                 empty, #Vel
+                                                 empty, #corr_ribbon
+                                                 doublefracturedictionary= doublefracturedictionary)
     # from utility import plot_as_matrix
     # K = w_k
     # plot_as_matrix(K, Fr_lstTmStp.mesh)
@@ -587,8 +587,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             Kprime_k = None
 
         # ----- plot to check -----
-        K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-        K[Fr_lstTmStp.EltRibbon] = Kprime_k.of(sgndDist_k[Fr_lstTmStp.EltRibbon],mesh=Fr_lstTmStp.mesh, ribbon=Fr_lstTmStp.EltRibbon)
+        #K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+        #K[Fr_lstTmStp.EltRibbon] = Kprime_k.of(sgndDist_k[Fr_lstTmStp.EltRibbon],mesh=Fr_lstTmStp.mesh, ribbon=Fr_lstTmStp.EltRibbon)
         # from utility import plot_as_matrix
         # plot_as_matrix(K, Fr_lstTmStp.mesh)
 

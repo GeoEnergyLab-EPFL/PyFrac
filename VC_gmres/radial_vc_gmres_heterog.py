@@ -54,8 +54,6 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
         time_simul_A.append(frac_sol.time)
     return double_L_A, x_max_A, p_A,w_A,  time_simul_A
 
-
-
 # imports
 import os
 import time
@@ -79,40 +77,52 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-#run = False
+run = False
 #----
-run_dir ="./Data/1p9_Hmat"
-#run_dir =  "./Data/noHmat"
+#run_dir ="./Data/1p9_Hmat"
+#run_dir =  "./Data/1p45_noHmat_0p05regul"
+#run_dir =  "./Data/1p42_noHmat_0p05regul"
+#run_dir =  "./Data/1p37_noHmat_0p005regul_morecells"
+#run_dir =  "./Data/1p42_noHmat_0p001regul_morecells2"
+#run_dir =  "./Data/1p42_noHmat_0p001regul"
+run_dir =  "./Data/02"
 #run_dir =  "./Data/noHmat_coarse_tol"
 #run_dir =  "./Data/noHmat_DisTime"
 #run_dir =  "./Data/noHmat_DisTime_fastQ" #5 times Q and not time table prescribed
+#run_dir =  "./Data/1p42_noHmat_0p001regul"
 #----
 restart = False
-#restart = True
-#----
-#use_HMAT = True
 use_HMAT = False
 #----
 use_direct_TOEPLITZ = True
-output_fol_B  = run_dir
-output_fol = run_dir
-#output_fol_B  = "./Data/temp"
-#output_fol = "./Data/temp"
+#output_fol  = "./Data/1p37_noHmat_0p005regul"
+#output_fol_B = "./Data/1p37_noHmat_0p005regul_morecells"
+output_fol  = "./Data/1p42_noHmat_0p05regul"
+output_fol_B = "./Data/1p37_noHmat_0p005regul"
+output_fol  = "./Data_final/01"
+output_fol_B = "./Data_final/01"
+#output_fol  = "./Data/1p37_noHmat_0p005regul_morecells"
+#output_fol_B = "./Data/1p42_noHmat_0p001regul_morecells2"
+#output_fol_B  = "./Data/noHmat_coarse_tol"
+#output_fol = "./Data/noHmat_coarse_tol"
 #output_fol ="./Data/noHmat_coarse_tol"
-output_fol = "./Data/noHmat_coarse_tol"
-output_fol_B  = "./Data/noHmat_coarse_tol"
+#output_fol = "./Data/noHmat_coarse_tol"
+#output_fol = "./Data/noHmat_DisTime_fastQ"
+#output_fol_B  = "./Data/noHmat_DisTime_fastQ"
 #----
 use_iterative = True
-ftPntJUMP = 1
+ftPntJUMP = 10
 ############################
 
 if run:
     # creating mesh
     Mesh = CartesianMesh(2.7, 17.55, 91, 585)
+    #Mesh = CartesianMesh(2.7, 10.55, 151, 585)
+    #Mesh = CartesianMesh(2.7, 6.55, 201, 485)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
-    youngs_mod = 3.3e10  # Young's modulus
+    youngs_mod = 3.3e9  # Young's modulus
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
@@ -123,7 +133,7 @@ if run:
         if  x < r-delta :
             return K1
         elif x >= r-delta and x<r :
-            K12 = K1 + (K2-K1)*0.1
+            K12 = K1 + (K2-K1)*0.001
             a = (K12 - K1) / (delta)
             b = K1 - a * (r - delta)
             return a * x + b
@@ -165,8 +175,8 @@ if run:
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
-        delta = 0.001
-        return smoothing(K_Ic, 1.9*K_Ic, r, delta, x)
+        delta = 0.0005
+        return smoothing(K_Ic, 1.47*K_Ic, r, delta, x)
 
     # plot x_max vs time
     # import matplotlib.pyplot as plt
@@ -243,16 +253,16 @@ if run:
 
     # injection parameters
     Q0 = 0.001
-    Q0 = 5*0.001
+    #Q0 = 5*0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=1.1e-6)
+    Fluid = FluidProperties(viscosity=0.)
 
     # simulation properties
     simulProp = SimulationProperties()
     simulProp.finalTime = 105.12  # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 0.9  # decrease the pre-factor due to explicit front tracking
+    simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
     #simulProp.tolFractFront = 0.0005
@@ -270,12 +280,14 @@ if run:
     #simulProp.force_time_schedule = True
     # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.30, 0.0085),
     #                                             np.arange(1.30,4.00,0.01),)))
-    myrange = np.arange(0., 4., 0.0085)
-    t = 0.
-    allT =[0.]
-    while t < 4.:
-        t = t + 0.0075 * (1 + 0.6 * t)
-        allT.append(t)
+    # myrange = np.arange(0., 4., 0.0085)
+    #myrange = np.arange(0., 0.5, 0.0070)
+    #simulProp.set_solTimeSeries(myrange )
+    # t = 0.
+    # allT =[0.]
+    # while t < 4.:
+    #     t = t + 0.0075 * (1 + 0.6 * t)
+    #     allT.append(t)
     #simulProp.set_solTimeSeries(np.asarray(allT))
 
     #simulProp.send_phone_msg = True
@@ -285,7 +297,7 @@ if run:
     simulProp.set_mesh_extension_factor(1.5)
     simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
-    simulProp.simID = 'K1/K2=1.9' # do not use _
+    simulProp.simID = 'K1/K2=1.47' # do not use _
 
 
     simulProp.customPlotsOnTheFly = True
@@ -293,7 +305,7 @@ if run:
     simulProp.tHyst__ = []
 
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=0.8)
+    Fr_geometry = Geometry('radial', radius=0.3)
 
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:
@@ -304,7 +316,8 @@ if run:
             from elasticity import load_isotropic_elasticity_matrix
             C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
-    init_param = InitializationParameters(Fr_geometry, regime='K')
+    #init_param = InitializationParameters(Fr_geometry, regime='K')
+    init_param = InitializationParameters(Fr_geometry, regime='static-radial-K', elasticity_matrix=C)
 
     # creating fracture object
     Fr = Fracture(Mesh,
@@ -319,13 +332,13 @@ if run:
     # ################################################################################
     if restart:
         from visualization import *
-        Fr_list, properties = load_fractures(address=run_dir, step_size=10)       # load all fractures                                                # list of times
+        Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
         Solid, Fluid, Injection, simulProp = properties
         Fr = Fr_list[-1]
         simulProp.set_outputFolder(run_dir)
-        simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
-                                                    np.arange(1.0965, 7.9965, 0.025),)))
-        # simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
+        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
+        #                                             np.arange(1.0965, 7.9965, 0.025),)))
+        simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
         Solid = MaterialProperties(Mesh,
                                   Eprime,
                                   K1c_func=K1c_func,
@@ -333,7 +346,7 @@ if run:
                                   confining_stress=0.,
                                   minimum_width=0.)
         #simulProp.send_phone_msg = True
-        simulProp.useHmat=True
+        #simulProp.useHmat=True
         Solid.youngs_mod=3.3e10
         Solid.nu=0.4
         #simulProp.tolFractFront = 0.0001
@@ -508,8 +521,14 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ax.scatter(time_simul_A, p_A, color='k')
     p_ana = []
     for i in range(len(time_simul_A)):
-        p_ana.append(0.3279)
+        #p_ana.append(0.3279)
+        p_ana.append(2*0.5/np.sqrt(np.pi*2*1.48))
+
+    p_rad = []
+    for i in range(len(time_simul_A)):
+        p_rad.append(((np.pi ** 3. * (0.5e6)**6 /(12*Solid_A.Eprime*Injection_A.injectionRate.max()*time_simul_A[i]))**(1/5))/1.e6)
     ax.plot(time_simul_A, p_ana, color='g')
+    ax.plot(time_simul_A, p_rad, color='g')
     ax.scatter(time_simul_B, p_B, color='r')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
@@ -521,6 +540,16 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     # for i in range(len(time_simul_A)):
     #     p_scaling.append(0.2660 * time_simul_A[i] ** (-1 / 7))
     # ax.plot(time_simul_A, p_scaling, color='g')
+
+    sl= []
+
+    K_Ic = 0.5e6
+    H=2*1.48
+    p_limit = 1.46*K_Ic/np.sqrt(np.pi*H/2)/1.e6
+    for i in range(len(time_simul_A)):
+        sl.append(p_limit)
+    ax.plot(time_simul_A, sl, color='r')
+
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)

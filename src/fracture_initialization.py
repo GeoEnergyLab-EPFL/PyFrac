@@ -744,7 +744,7 @@ class InitializationParameters:
         """
 
         compatible_regimes = {
-            'radial': ['M', 'Mt', 'K', 'Kt', 'MDR', 'static'],
+            'radial': ['M', 'Mt', 'K', 'Kt', 'MDR', 'static', 'static-radial-K'],
             'height contained': ['PKN', 'KGD_K', 'static'],
             'elliptical': ['E_E', 'E_K', 'static'],
             'level set': ['static']
