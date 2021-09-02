@@ -27,7 +27,7 @@ from visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 from labels import TS_errorMessages, supported_projections, suitable_elements
-from custom_functions import apply_custom_prop
+from custom_functions import apply_custom_prop, custom_plot
 
 
 class Controller:
@@ -432,11 +432,11 @@ class Controller:
                             direction = 'reduce'
                             if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
                                            + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
-                                np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                                2.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
                                                (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
                                 self.sim_prop.meshExtensionAllDir = True
                                 self.sim_prop.set_mesh_extension_direction(['all'])
-                                self.sim_prop.set_mesh_extension_factor(self.sim_prop.remeshFactor)
+                                self.sim_prop.set_mesh_extension_factor(1.2)
                                 self.sim_prop.meshReductionPossible = False
                                 self.fracture.EltTip = self.fracture.EltTipBefore
                                 log.debug(
@@ -552,7 +552,7 @@ class Controller:
                                            (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
                             self.sim_prop.meshExtensionAllDir = True
                             self.sim_prop.set_mesh_extension_direction(['all'])
-                            self.sim_prop.set_mesh_extension_factor(self.sim_prop.remeshFactor)
+                            self.sim_prop.set_mesh_extension_factor(1.2)
                             self.sim_prop.meshReductionPossible = False
                             self.fracture.EltTip = self.fracture.EltTipBefore
                             log.debug("\n Injection would become a Ribbon cell switching to only mesh extension....")
@@ -754,11 +754,11 @@ class Controller:
 
                         if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
                                            + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
-                                np.min(np.abs([(new_limits[0][0] - new_limits[0][1]) / elems[0],
+                                2.0*np.min(np.abs([(new_limits[0][0] - new_limits[0][1]) / elems[0],
                                                (new_limits[1][0] - new_limits[1][1]) / elems[1]]))):
                             self.sim_prop.meshExtensionAllDir = True
                             self.sim_prop.set_mesh_extension_direction(['all'])
-                            self.sim_prop.set_mesh_extension_factor(self.sim_prop.remeshFactor)
+                            self.sim_prop.set_mesh_extension_factor(1.2)
                             self.sim_prop.meshReductionPossible = False
                             self.fracture.EltTip = self.fracture.EltTipBefore
                             log.debug("\n Injection would become a Ribbon cell switching to only mesh extension....")
@@ -1064,6 +1064,9 @@ class Controller:
                         # plotting source elements
                         self.Figures[index] = plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
+
+                    elif plt_var == 'custom':
+                        self.Figures[index] = custom_plot(self.sim_prop, fig=self.Figures[index])
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
