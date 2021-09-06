@@ -123,6 +123,7 @@ class CartesianMesh:
 
         self.hx = 2. * self.Lx / (self.nx - 1)
         self.hy = 2. * self.Ly / (self.ny - 1)
+        self.cellDiag = np.sqrt(self.hx**2 + self.hy**2)
 
         x = np.linspace(self.domainLimits[2] - self.hx / 2., self.domainLimits[3] + self.hx / 2., self.nx + 1)
         y = np.linspace(self.domainLimits[0] - self.hy / 2., self.domainLimits[1] + self.hy / 2., self.ny + 1)
@@ -140,7 +141,7 @@ class CartesianMesh:
 
 
         """
-        We create a list of cell names thaht are colose to the boundary of the mesh. See the example below.
+        We create a list of cell IDs that are close to the boundary of the mesh. See the example below.
         In that case the list will contain the elements identified with a x.
         The list of elements will be called Frontlist
         
@@ -168,7 +169,7 @@ class CartesianMesh:
 
 
         """
-         Giving four neighbouring elements in the following order: [left,right,bottom,up]
+         Giving the four neighbouring elements of cell i in the following order: [left,right,bottom,up]
          ______ ______ _____ 
         |      | top  |     |
         |______|______|_____|
@@ -566,16 +567,30 @@ class CartesianMesh:
 
         """
         log = logging.getLogger('PyFrac.locate_element')
-        if x >= self.domainLimits[3] + self.hx / 2 or y >= self.domainLimits[1] + self.hy / 2\
-                or x <= self.domainLimits[2] - self.hx / 2 or y <= self.domainLimits[0] - self.hy / 2:
+        if x >= self.domainLimits[3] + self.hx / 2. or y >= self.domainLimits[1] + self.hy / 2.\
+                or x <= self.domainLimits[2] - self.hx / 2. or y <= self.domainLimits[0] - self.hy / 2.:
             log.warning("Point is outside domain.")
             return np.nan
 
         precision = 0.1*np.sqrt(np.finfo(float).eps)
 
-        return np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2 + precision),
-                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2 + precision))
+        cellIDs = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2. + precision),
+                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2. + precision))
 
+        if len(cellIDs) > 1:
+            deltaXi = self.CenterCoor[cellIDs, 0] - x
+            deltaXi = deltaXi * deltaXi
+            deltaYi = self.CenterCoor[cellIDs, 1] - y
+            deltaYi = deltaYi * deltaYi
+            dist = deltaXi + deltaYi
+            closest = np.where(dist==dist.min())[0]
+            if len(closest)>1:
+                log.warning("Can't find the closest among "+str(len(closest))+" cells --> returning the first of them")
+                return np.asarray([cellIDs[0]])
+            else:
+                return np.asarray([cellIDs[closest]])
+        else:
+            return cellIDs
 #-----------------------------------------------------------------------------------------------------------------------
 
     def Neighbors(self, elem, nx, ny):

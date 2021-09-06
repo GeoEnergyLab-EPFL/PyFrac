@@ -6,6 +6,7 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+import random
 import copy
 import math
 import numpy as np
@@ -136,11 +137,14 @@ class MaterialProperties:
 
         if K1c_func is not None and not self.anisotropic_K1c:
             # the function should return toughness by taking x and y coordinates
+            self.inv_with_heter_K1c = True
             try:
                 K1c_func(0.,0.)
             except TypeError:
                 raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
                            'i.e. the x and y coordinates of a point and return the toughness at this point.')
+        else:
+            self.inv_with_heter_K1c = False
 
         self.TI_elasticity = TI_elasticity
         self.Cij = Cij
@@ -214,6 +218,9 @@ class MaterialProperties:
             self.Cprime = 2 * self.Cl
         else:
             self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
+
+    def Kprime_func(self, x, y):
+        return self.K1cFunc(x, y) * (32. / np.pi) ** 0.5
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -773,6 +780,9 @@ class SimulationProperties:
         self.toleranceEHL = simul_param.toleranceEHL
         self.toleranceProjection = simul_param.tol_projection
         self.toleranceVStagnant = simul_param.toleranceVStagnant
+        self.tolerancewIncr = simul_param.tolerancewIncr
+        self.gmres_tol = simul_param.gmres_tol
+        self.gmres_maxiter = simul_param.gmres_maxiter
 
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs
@@ -784,6 +794,7 @@ class SimulationProperties:
         self.tmStpPrefactor = simul_param.tmStp_prefactor
         self.finalTime = simul_param.final_time
         self.set_solTimeSeries(simul_param.req_sol_at)
+        self.force_time_schedule = simul_param.force_time_schedule
         self.timeStepLimit = simul_param.timeStep_limit
         self.fixedTmStp = simul_param.fixed_time_step
         if isinstance(self.fixedTmStp, np.ndarray):
@@ -819,6 +830,8 @@ class SimulationProperties:
         self.set_dryCrack_mechLoading(simul_param.mech_loading)
         self.set_viscousInjection(simul_param.viscous_injection)
         self.set_volumeControl(simul_param.volume_control)
+        self.volumeControlGMRES = simul_param.volumeControlGMRES
+        self.useHmat = simul_param.useHMAT
         self.substitutePressure = simul_param.substitute_pressure
         self.solveDeltaP = simul_param.solve_deltaP
         self.solveStagnantTip = simul_param.solve_stagnant_tip
@@ -826,6 +839,9 @@ class SimulationProperties:
         self.solveSparse = simul_param.solve_sparse
 
         # miscellaneous
+        self.send_phone_msg = simul_param.send_phone_msg
+        self.simID = str(random.randint(0,10000))
+        self.customPlotsOnTheFly = simul_param.custom_plots_on_the_fly
         self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
         self.verbositylevel = simul_param.verbosity_level
         self.log2file = simul_param.log_to_file

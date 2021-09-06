@@ -10,11 +10,15 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # tolerances
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver.
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
-tol_projection = 2.5e-3                 # tolerance for the toughness iteration.
-toleranceVStagnant = 1e-6               # tolerance on the velocity to decide if a cell is stagnant.
+tol_projection = 1.0e-4                 # tolerance for the toughness iteration.
+toleranceVStagnant = 1.e-6               # tolerance on the velocity to decide if a cell is stagnant.
+tolerancewIncr = 1.e-5                   # tolerance on the fracture opening increment (dw). If |dw| is less than the tolerance then it is difficault to know
+                                        # if the fracture front is really stagnant
+gmres_tol = 1e-14
+gmres_maxiter = 1000
 
 # max iterations
-max_front_itrs = 25                     # maximum iterations for the fracture front.
+max_front_itrs = 28                     # maximum iterations for the fracture front.
 max_solver_itrs = 140                   # maximum iterations for the elastohydrodynamic solver.
 max_proj_Itrs = 10                      # maximum projection iterations.
 
@@ -25,6 +29,7 @@ final_time = None                       # time to stop the propagation.
 maximum_steps = 2000                    # maximum time steps.
 timeStep_limit = None                   # limit for the time step.
 fixed_time_step = None                  # constant time step.
+force_time_schedule = False             # to force the solution only at given times (to be set by simulProp.set_solTimeSeries)
 
 # time step re-attempt
 max_reattemps = 8                       # maximum reattempts in case of time step failure.
@@ -43,6 +48,7 @@ plot_time_period = None                 # the time period after which the variab
 plot_TS_jump = 1                        # the number of time steps after which the given variables are plotted.
 plot_at_sol_time_series = True          # plot when the time is in the requested time series
 verbosity_level = 'debug'               # the level of details about the ongoing simulation to be written to the log file ('debug','info','warning','error','critical').
+custom_plots_on_the_fly = False
 
 # Saving options
 output_folder = None                    # the address to save the output data.
@@ -69,6 +75,8 @@ relaxation_param = 1.0                  # parameter defining the under-relaxatio
 mech_loading = False                    # if True, the mechanical loading solver will be used.
 volume_control = False                  # if True, the volume control solver will be used.
 double_fracture_vol_contr = False       # enable the volume control solver for two fractures
+volumeControlGMRES = False              # enable the volume control solver using GMRES with either HMAT or Toeplitz for elasticity
+useHMAT = False
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
 substitute_pressure = True              # if True, the pressure will be substituted with width to make the EHL system.
 solve_deltaP = True                     # if True, the change in pressure, instead of pressure will be solved.
@@ -80,6 +88,7 @@ solve_sparse = None                     # if True, the fluid conductivity matrix
 tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
+send_phone_msg = False                  # if True, you need to set up the function send_phone_message in the file utility
 
 # performances and memory savings
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.

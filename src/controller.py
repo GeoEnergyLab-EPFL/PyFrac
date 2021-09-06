@@ -21,13 +21,14 @@ from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
 from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, mapping_old_indexes
 from elasticity import load_isotropic_elasticity_matrix_toepliz
+from Hdot import Hdot_3DR0opening
 from mesh import CartesianMesh
 from time_step_solution import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 from labels import TS_errorMessages, supported_projections, suitable_elements
-
+from custom_functions import *
 
 class Controller:
     """
@@ -171,6 +172,9 @@ class Controller:
                 warnings.warn("Fluid rhelogy and tip asymptote does not match. Setting tip asymptote to \'U\'")
                 self.sim_prop.set_tipAsymptote('U1')
 
+        if Solid_prop.inv_with_heter_K1c and (Sim_prop.frontAdvancing == 'explicit' or Sim_prop.frontAdvancing == 'predictor-corrector'):
+            raise SystemExit("Heterogeneous_K1c not implemented for ")
+
         # if you set the code to advance max 1 cell then remove the SimulProp.timeStepLimit
         if self.sim_prop.timeStepLimit is not None and self.sim_prop.limitAdancementTo2cells is True:
             if self.sim_prop.forceTmStpLmtANDLmtAdvTo2cells == False:
@@ -252,6 +256,11 @@ class Controller:
         #         self.sim_prop.frontAdvancing = "implicit"
 
         log.info("Starting time = " + repr(self.fracture.time))
+        if self.sim_prop.send_phone_msg:
+            from utility import send_phone_message
+            send_phone_message("---Simulation " + self.sim_prop.simID + " started---")
+            send_phone_message("Starting time = " + repr(self.fracture.time))
+
         # starting time stepping loop
         while self.fracture.time < 0.999 * self.sim_prop.finalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
 
@@ -286,10 +295,17 @@ class Controller:
                 log.debug("hy: " + str(Fr_n_pls1.mesh.hy))
                 self.delta_w = Fr_n_pls1.w - self.fracture.w
                 self.lstTmStp = Fr_n_pls1.time - self.fracture.time
+
+                # custom plotting on the fly
+                if self.sim_prop.customPlotsOnTheFly:
+                    apply_custom_prop(self.sim_prop, Fr_n_pls1)
+
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
                     if Fr_n_pls1.time > self.lastSavedTime:
                         self.output(Fr_n_pls1)
+
+
 
                 # add the advanced fracture to the last five fractures list
                 self.fracture = copy.deepcopy(Fr_n_pls1)
@@ -784,7 +800,9 @@ class Controller:
                             dill.dump(self.perfData, perf_output, -1)
 
                     log.info("\n\n---Simulation failed---")
-
+                    if self.sim_prop.send_phone_msg:
+                        from utility import send_phone_message
+                        send_phone_message("---Simulation "+ self.sim_prop.simID +" failed---")
                     raise SystemExit("Simulation failed.")
                 else:
                     log.info("- limiting the time step - ")
@@ -812,7 +830,9 @@ class Controller:
                             dill.dump(self.perfData, perf_output, -1)
 
                     log.info("\n\n---Simulation failed---")
-
+                    if self.sim_prop.send_phone_msg:
+                        from utility import send_phone_message
+                        send_phone_message("---Simulation " + self.sim_prop.simID +" failed---")
                     raise SystemExit("Simulation failed.")
                 else:
                     # decrease time step pre-factor before taking the next fracture in the queue having last
@@ -846,7 +866,11 @@ class Controller:
         log.info("number of time steps = " + repr(self.successfulTimeSteps))
         log.info("failed time steps = " + repr(self.failedTimeSteps))
         log.info("number of remeshings = " + repr(self.remeshings))
-
+        if self.sim_prop.send_phone_msg:
+            from utility import send_phone_message
+            send_phone_message("---Simulation "+ self.sim_prop.simID +" finished---")
+            send_phone_message("Final time = " + repr(self.fracture.time))
+            send_phone_message("-------------------------")
         plt.show(block=False)
         plt.close('all')
 
@@ -876,14 +900,19 @@ class Controller:
             - Fr (Fracture)           -- fracture after advancing time step.
         """
         log = logging.getLogger('PyFrac.controller.advance_time_step')
+        status = 9999 #meaningless status
         # loop for reattempting time stepping in case of failure.
         for i in range(0, self.sim_prop.maxReattempts):
-            # smaller time step to reattempt time stepping; equal to the given time step on first iteration
-            tmStp_to_attempt = timeStep * self.sim_prop.reAttemptFactor ** i
+            if status not in [18]:
+                # smaller time step to reattempt time stepping; equal to the given time step on first iteration
+                tmStp_to_attempt = timeStep * self.sim_prop.reAttemptFactor ** i
 
-            # try larger prefactor
-            if i > self.sim_prop.maxReattempts/2-1:
-                tmStp_to_attempt = timeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
+                # try larger prefactor
+                if i > self.sim_prop.maxReattempts/2-1:
+                    tmStp_to_attempt = timeStep * (1/self.sim_prop.reAttemptFactor)**(i+1 - self.sim_prop.maxReattempts/2)
+            else:
+                #try immediatly a larger prefactor
+                tmStp_to_attempt = timeStep * (1 / self.sim_prop.reAttemptFactor) ** (i)
 
             # check for final time
             if Frac.time + tmStp_to_attempt > 1.01 * self.sim_prop.finalTime:
@@ -1030,6 +1059,9 @@ class Controller:
                         # plotting source elements
                         self.Figures[index] = plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
+                    elif plt_var == 'custom':
+                        self.Figures[index] = custom_plot(self.sim_prop, fig=self.Figures[index])
+
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
@@ -1138,7 +1170,8 @@ class Controller:
         """
         log = logging.getLogger('PyFrac.get_time_step')
         time_step_given = False
-        if self.sim_prop.fixedTmStp is not None:
+        time_step = 0
+        if self.sim_prop.fixedTmStp is not None and not self.sim_prop.force_time_schedule:
             # fixed time step
             if isinstance(self.sim_prop.fixedTmStp, float) or isinstance(self.sim_prop.fixedTmStp, int):
                 time_step = self.sim_prop.fixedTmStp
@@ -1161,7 +1194,7 @@ class Controller:
                 raise ValueError("Fixed time step can be a float or an ndarray with two rows giving the time and"
                                  " corresponding time steps.")
 
-        if not time_step_given:
+        if not time_step_given and not self.sim_prop.force_time_schedule:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             if np.any(self.fracture.v == np.nan):
                 log.warning("WARNING: you should not get nan velocities")
@@ -1229,7 +1262,7 @@ class Controller:
                 time_step = 0.15 * self.fracture.time
 
         # in case of fracture not propagating
-        if time_step <= 0 or np.isinf(time_step):
+        if (time_step <= 0 or np.isinf(time_step)) and not self.sim_prop.force_time_schedule:
             if self.stagnant_TS is not None:
                 time_step = self.stagnant_TS
                 self.stagnant_TS = time_step * 1.2
@@ -1252,18 +1285,35 @@ class Controller:
             larger_in_TS = np.where(self.timeToHit > self.fracture.time)[0]
             if len(larger_in_TS) > 0:
                 next_in_TS = np.min(self.timeToHit[larger_in_TS])
+                if larger_in_TS[0] > 0 and self.sim_prop.force_time_schedule:
+                    last_scheduled_in_TS = self.timeToHit[larger_in_TS[0]-1]
+                    last_step_scheduled = next_in_TS - last_scheduled_in_TS
+
+
 
         if next_in_TS < self.fracture.time:
             raise SystemExit('The minimum time required in the given time series or the end time'
                              ' is less than initial time.')
 
         # check if time step would step over the next time in required time series
-        if self.fracture.time + time_step > next_in_TS:
+        if (self.fracture.time + time_step > next_in_TS) and not self.sim_prop.force_time_schedule:
             time_step = next_in_TS - self.fracture.time
         # check if the current time is very close the next time to hit. If yes, set it to the next time to avoid
         # very small time step in the next time step advance.
-        elif next_in_TS - self.fracture.time < 1.05 * time_step:
+        elif next_in_TS - self.fracture.time < 1.05 * time_step and not self.sim_prop.force_time_schedule :
             time_step = next_in_TS - self.fracture.time
+
+        elif self.sim_prop.force_time_schedule:
+            if np.abs(last_scheduled_in_TS - self.fracture.time) < np.maximum(last_step_scheduled/1000., 1.e-4):
+                time_step = next_in_TS - self.fracture.time
+
+            elif (last_scheduled_in_TS < self.fracture.time and self.fracture.time < next_in_TS):
+                time_step = last_step_scheduled
+                done_in_TS = self.timeToHit[np.setdiff1d(np.arange(len(self.timeToHit)),larger_in_TS)]
+                shifted_TS = self.timeToHit[larger_in_TS] + (self.fracture.time + last_step_scheduled - next_in_TS)
+                self.timeToHit = np.concatenate((done_in_TS,shifted_TS))
+
+
 
         # checking if the time step is above the limit
         if self.sim_prop.timeStepLimit is not None and time_step > self.sim_prop.timeStepLimit:
@@ -1288,7 +1338,7 @@ class Controller:
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
         # We adapt the elasticity matrix
-        if not self.sim_prop.useBlockToeplizCompression:
+        if not self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
             if direction is None:
                 if rem_factor == self.sim_prop.remeshFactor:
                     self.C *= 1 / self.sim_prop.remeshFactor
@@ -1309,12 +1359,47 @@ class Controller:
                 #rem_factor = 10
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
-        else:
+        elif self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
             # if direction is None:
             #     rem_factor = self.sim_prop.remeshFactor
             # else:
             #     rem_factor = 10
             self.C.reload(coarse_mesh)
+        elif not self.sim_prop.useBlockToeplizCompression and self.sim_prop.useHmat:
+            max_leaf_size = self.C.max_leaf_size
+            eta = self.C.eta
+            eps_aca = self.C.eps_aca
+            self.C = Hdot_3DR0opening()
+            try:
+                properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
+            except:
+                log.info("Variable youngs_mod is not defined")
+                log.info("Enter your value for the Young mod (use [Pa] if you do not know): ")
+                self.solid_prop.youngs_mod = input("youngs_mod value? : ")
+                self.solid_prop.youngs_mod = float(self.solid_prop.youngs_mod)
+                log.info("Enter your value for the Poisson's ratio: ")
+                self.solid_prop.nu = input("Poisson's ratio value? : ")
+                self.solid_prop.nu = float(self.solid_prop.nu)
+                #check
+                Eprime = self.solid_prop.youngs_mod / (1 - self.solid_prop.nu ** 2)
+                if np.abs(Eprime - self.solid_prop.Eprime)/ self.solid_prop.Eprime > 0.02:
+                    message = "Either youngs_mod or nu are wrong and E'=E/(1-nu^2) is >2% different from the one known"
+                    log.error(message)
+                    raise SystemExit(message)
+                properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
+            data = [max_leaf_size, eta, eps_aca, properties, coarse_mesh.VertexCoor, coarse_mesh.Connectivity, coarse_mesh.hx, coarse_mesh.hy]
+            log.info("Building C form Hmat...\n")
+            log.info("this might take some time...\n")
+            begtime_HMAT = time.time()
+            self.C.set(data)
+            endtime_HMAT = time.time()
+            compute_HMAT = endtime_HMAT - begtime_HMAT
+            log.info("Hmat time : "+ str(compute_HMAT))
+        else:
+            #use toeplitz
+            log.info("Using isotropic elasticity matrix with Block Toepliz Compression")
+            self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh, self.solid_prop.Eprime)
+            self.sim_prop.useBlockToeplizCompression = True
 
         self.fracture = self.fracture.remesh(rem_factor,
                                              self.C,

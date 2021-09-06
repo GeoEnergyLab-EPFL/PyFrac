@@ -28,11 +28,9 @@ export_results = True
 # creating mesh
 #mesh_discretiz_x=265
 #mesh_discretiz_y=171
-#Mesh = CartesianMesh(0.035, 0.015, mesh_discretiz_x, mesh_discretiz_y)
-
-mesh_discretiz_x=205
-mesh_discretiz_y=131
-Mesh = CartesianMesh(0.030, 0.014, mesh_discretiz_x, mesh_discretiz_y)
+mesh_discretiz_x=161
+mesh_discretiz_y=101
+Mesh = CartesianMesh(0.025, 0.015, mesh_discretiz_x, mesh_discretiz_y)
 
 # solid properties
 nu = 0.48                            # Poisson's ratio
@@ -48,17 +46,16 @@ Solid = MaterialProperties(Mesh,
                            Carters_coef=Cl,
                            minimum_width=1e-9)
 
-path =  '/home/peruzzo/BigWhamLink/BigWhamLink/Examples/StaticCrackBenchmarks/boundary_effect_mesh.json'
-
-bound_eff = True
-if bound_eff:
-    Boundary = BoundaryEffect(Mesh, Eprime, nu, path,
-                              preconditioner=False,lgmres=True,
-                              maxLeafSizeTrK=300, etaTrK=10, # compr. ratio 0.071
-                              maxLeafSizeDispK=26909*3, etaDispL=10,
-                              epsACA=0.001)
-else:
-    Boundary = None
+path =  '/home/carlo/BigWhamLink/BigWhamLink/Examples/StaticCrackBenchmarks/boundary_effect_mesh.json'
+Boundary = BoundaryEffect(Mesh, Eprime, nu, path,
+                          preconditioner=False,
+                          lgmres=True,
+                          maxLeafSizeTrK=300,
+                          etaTrK=10,
+                          maxLeafSizeDispK=6000,
+                          etaDispL=50,
+                          epsACA=0.001)
+# Boundary = None
 
 
 def source_location(x, y, hx, hy):
@@ -72,7 +69,14 @@ def source_location(x, y, hx, hy):
 
 # injection parameters
 Q0 = 5/1000/60/1000 #20mL/min  # injection rate
-Injection = InjectionProperties(Q0, Mesh, source_loc_func=source_location)
+initialratesecondpoint=0
+#ratesecondpoint=np.asarray([[2.833], [Q0/2]])
+ratesecondpoint=np.asarray([[1.09865], [Q0/2]])
+delayed_second_injpoint_loc=np.asarray([-0.02,0])
+Injection = InjectionProperties(Q0, Mesh, source_loc_func=source_location,
+                                initial_rate_delayed_second_injpoint=initialratesecondpoint,
+                                rate_delayed_second_injpoint=ratesecondpoint,
+                                delayed_second_injpoint_loc=delayed_second_injpoint_loc)
 
 # fluid properties
 viscosity = 0.44 #Pa.s
@@ -89,7 +93,6 @@ simulProp.set_solTimeSeries(np.concatenate((np.linspace(0.69, 1.08,100),np.linsp
 simulProp.plotTSJump = 20
 simulProp.timeStepLimit=.2
 simulProp.saveToDisk=True
-simulProp.useBlockToeplizCompression = True
 simulProp.saveFluidFluxAsVector=True
 simulProp.saveFluidVelAsVector=True
 #simulProp.plotVar = ['pf', 'ffvf']
@@ -103,8 +106,9 @@ simulProp.maxSolverItrs=240
 if run:
     # initializing fracture
     from fracture_initialization import get_radial_survey_cells
-    initRad1 = 0.000802
-    initRad2 = 0.006802
+    #initRad1 = 0.000802
+    initRad1 = 0.0016
+    initRad2 = initRad1
     surv_cells_1, surv_cells_dist_1, inner_cells_1 = get_radial_survey_cells(Mesh, initRad1, center=[-0.02, 0])
     # surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells, 1])
 

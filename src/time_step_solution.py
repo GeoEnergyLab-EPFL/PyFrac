@@ -6,21 +6,25 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-
-
+#import time
+from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import lgmres
 # local imports
 import logging
 from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from symmetry import get_symetric_elements, self_influence
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
-from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
+from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists, get_front_region
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, you_advance_more_than_2_cells
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
 from labels import TS_errorMessages
 from explicit_RKL import solve_width_pressure_RKL2
 from postprocess_fracture import append_to_json_file
+import Hdot
+from utility import append_new_line
+
 
 def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -63,6 +67,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
         perfNode_explFront = instrument_start('extended front', perfNode)
         exitstatus, Fr_k = time_step_explicit_front(Frac,
                                                     C,
+                                                    Boundary,
                                                     timeStep,
                                                     Qin,
                                                     mat_properties,
@@ -91,6 +96,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
         perfNode_explFront = instrument_start('extended front', perfNode)
         exitstatus, Fr_k = time_step_explicit_front(Frac,
                                                     C,
+                                                    Boundary,
                                                     timeStep,
                                                     Qin,
                                                     mat_properties,
@@ -136,8 +142,24 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     # final without front iteration.
     stagnant_crt = np.full((len(Fr_k.EltRibbon),), False, dtype=bool)
     # stagnant cells where propagation criteria is not met
-    stagnant_crt[np.where(mat_properties.Kprime[Fr_k.EltRibbon] * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
-            mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
+    if mat_properties.inv_with_heter_K1c:
+        front_region = get_front_region(Fr_k.mesh, Fr_k.EltRibbon, Fr_k.sgndDist[Fr_k.EltRibbon])
+        alpha_ribbon = projection_from_ribbon_LS_gradient_at_tip(Fr_k.EltRibbon,
+                                           front_region,
+                                           Fr_k.mesh,
+                                           Fr_k.sgndDist,
+                                           global_alpha=mat_properties.inv_with_heter_K1c)
+        Kprime_k = get_toughness_from_cellCenter_iter(alpha_ribbon, Fr_k.mesh.CenterCoor[Fr_k.EltRibbon],
+                                                      mat_properties)
+        stagnant_crt[np.where(Kprime_k.of(Fr_k.sgndDist[Fr_k.EltRibbon], mesh = Fr_k.mesh, ribbon = Fr_k.EltRibbon) * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
+                mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
+        # from utility import plot_as_matrix
+        # K = np.zeros((Fr_k.mesh.NumberOfElts,), )
+        # K[Fr_k.EltRibbon] = Kprime_k.of(Fr_k.sgndDist[Fr_k.EltRibbon])
+        # plot_as_matrix(K, Fr_k.mesh)
+    else:
+        stagnant_crt[np.where(mat_properties.Kprime[Fr_k.EltRibbon] * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
+                mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
     # stagnant cells where fracture is closed
     stagnant_closed = np.full((len(Fr_k.EltRibbon),), False, dtype=bool)
     for i in range(len(Fr_k.EltRibbon)):
@@ -145,17 +167,22 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     stagnant = np.bitwise_or(stagnant_closed, stagnant_crt)
 
     if np.all(stagnant):
-        return 1, Fr_k
+        delta_w = np.abs(Fr_k.w[Fr_k.EltRibbon]-Frac.w[Fr_k.EltRibbon])
+        if np.sum(Qin) != 0 and np.max(delta_w) < sim_properties.tolerancewIncr:
+            log.warning('The time step is too small to induce a significant change in opening')
+            return 18, Fr_k
+        else:
+            return 1, Fr_k
 
     log.debug('Starting Fracture Front loop...')
 
     norm = 10.
     k = 0
-
     previous_norm = 100 # initially set with a big value
-
+    loop_already_forced = False
+    force_1loop = False
     # Fracture front loop to find the correct front location
-    while norm > sim_properties.tolFractFront:
+    while norm > sim_properties.tolFractFront or force_1loop:
         k = k + 1
         log.debug(' ')
         log.debug('Iteration ' + repr(k))
@@ -176,12 +203,17 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                           mat_properties,
                                                           fluid_properties,
                                                           sim_properties,
-                                                          perfNode_extFront)
+                                                          perfNode_extFront,
+                                                          front_previous_iter=Fr_k.Ffront)
 
         if exitstatus == 1:
             # norm is evaluated by dividing the difference in the area of the tip cells between two successive
             # iterations with the number of tip cells.
-            norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+            if not k == 1:
+                norm = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
+                norm_first_it = None
+            else:
+                norm_first_it = abs((sum(Fr_k.FillF) - sum(fill_frac_last)) / len(Fr_k.FillF))
         else:
             norm = np.nan
 
@@ -193,22 +225,52 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
         if exitstatus != 1:
             return exitstatus, Fr_k
+        if not k == 2:
+            log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
+        else:
+            if norm_first_it is None:
+                log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
+            else:
+                log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm_first_it) + ' forcing 2 iter min.')
 
-        log.debug('Norm of subsequent filling fraction estimates = ' + repr(norm))
 
         # sometimes the code is going to fail because of the max number of iterations due to the lack of
         # improvement of the norm
         if norm is not np.nan:
-            if abs((previous_norm-norm)/norm) < 0.001:
-                log.debug( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.001')
+            if abs((previous_norm-norm)/norm) < 0.0001 and k > 35:
+                log.debug( 'Norm of subsequent Norms of subsequent filling fraction estimates = ' + str(abs((previous_norm-norm)/norm)) + ' < 0.0001')
                 exitstatus = 15
                 return exitstatus, None
-            else:
-                previous_norm = norm
 
-        if k == sim_properties.maxFrontItrs:
-            exitstatus = 6
-            return exitstatus, None
+        # preventing infinite or not effective loops
+        if (k >= sim_properties.maxFrontItrs and norm > 0.026) or k > 100:
+            if norm > 10*sim_properties.tolFractFront or  k>200:
+                exitstatus = 6
+                return exitstatus, None
+
+        if norm < sim_properties.tolFractFront and loop_already_forced:
+            if norm < previous_norm:
+                # the convergence has been achieved
+                loop_already_forced = False
+                force_1loop = False
+            else:
+                # forcing another loop
+                loop_already_forced = True
+                force_1loop = True
+        elif norm < sim_properties.tolFractFront and not loop_already_forced:
+            log.debug(' --> Forcing one more loop to see if the convergence has been really achieved')
+            loop_already_forced = True
+            force_1loop = True
+        elif norm >= sim_properties.tolFractFront and loop_already_forced:
+            log.debug(' --> convergence not achieved, iterate more if other conditions allows for that')
+            loop_already_forced = False
+            force_1loop = False
+        elif norm >= sim_properties.tolFractFront and not loop_already_forced:
+            # normal case
+            loop_already_forced = False
+            force_1loop = False
+
+        previous_norm = norm
 
     # check if we advanced more than two cells
     if exitstatus == 1:
@@ -298,24 +360,24 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     #                                                                                        #
     ##########################################################################################
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
-                                         sim_properties,
-                                         fluid_properties,
-                                         mat_properties,
-                                         empty, #EltTip
-                                         empty, #partlyFilledTip
-                                         C,
-                                         Boundary,
-                                         Fr_lstTmStp.FillF[empty],
-                                         Fr_lstTmStp.EltCrack,
-                                         Fr_lstTmStp.InCrack,
-                                         LkOff,
-                                         empty, #wTip
-                                         timeStep,
-                                         Qin,
-                                         perfNode,
-                                         empty, #Vel
-                                         empty, #corr_ribbon
-                                         doublefracturedictionary= doublefracturedictionary)
+                                                 sim_properties,
+                                                 fluid_properties,
+                                                 mat_properties,
+                                                 Fr_lstTmStp.EltTip, #empty, #EltTip
+                                                 empty, #partlyFilledTip
+                                                 C,
+                                                 Boundary,
+                                                 Fr_lstTmStp.FillF[empty],
+                                                 Fr_lstTmStp.EltCrack,
+                                                 Fr_lstTmStp.InCrack,
+                                                 LkOff,
+                                                 Fr_lstTmStp.w[Fr_lstTmStp.EltTip],#empty, #wTip
+                                                 timeStep,
+                                                 Qin,
+                                                 perfNode,
+                                                 empty, #Vel
+                                                 empty, #corr_ribbon
+                                                 doublefracturedictionary= doublefracturedictionary)
     # from utility import plot_as_matrix
     # K = w_k
     # plot_as_matrix(K, Fr_lstTmStp.mesh)
@@ -327,6 +389,9 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
     if (w_k < 0).any():
         log.warning('Neg width encountered!')
+
+    # from utility import plot_as_matrix
+    # plot_as_matrix(w_k, Fr_lstTmStp.mesh)
 
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
     Fr_kplus1.time += timeStep
@@ -418,7 +483,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
 
 def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties,
-                                 sim_properties, perfNode=None):
+                                 sim_properties, perfNode=None, front_previous_iter = None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
     (fracture front position) by inverting the tip asymptote and then solves the ElastoHydrodynamic equations to obtain
@@ -456,6 +521,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         | 15      -- iterations on front will not converge (continuous front)
         | 16      -- max number of cells achieved. Reducing the number of cells
         | 17      -- you advanced more than two cells in a row. Repeating with a smaller time step
+        | 18      -- the max abs increment in fracture opening is smaller than a given threshold despite a positive injection rate. Try larger time step
         - Fracture:            fracture after advancing time step.
 
     """
@@ -463,47 +529,70 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     itr = 0
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
 
+    # from utility import plot_as_matrix
+    # plot_as_matrix(w_k, Fr_lstTmStp.mesh)
+
     # toughness iteration loop
     while itr < sim_properties.maxProjItrs:
-
-        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
+        # get the current direction of propagation
+        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity or mat_properties.inv_with_heter_K1c:
             if sim_properties.projMethod == 'ILSA_orig':
                 projection_method = projection_from_ribbon
+                second_arg = Fr_lstTmStp.EltChannel
             elif sim_properties.projMethod == 'LS_grad':
-                projection_method = projection_from_ribbon_LS_gradient
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
+                second_arg = Fr_lstTmStp.front_region
             elif sim_properties.projMethod == 'LS_continousfront': #todo: test this case!!!
-                projection_method = projection_from_ribbon_LS_gradient
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
+                second_arg = Fr_lstTmStp.front_region
             if itr == 0 :
                 # first iteration
                 alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
-                                                   Fr_lstTmStp.EltChannel,
+                                                   second_arg,
                                                    Fr_lstTmStp.mesh,
-                                                   sgndDist_k)
+                                                   sgndDist_k,
+                                                   global_alpha=mat_properties.inv_with_heter_K1c)
                 alpha_ribbon_km1 = np.zeros(Fr_lstTmStp.EltRibbon.size, )
-            else:
-                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_method(Fr_lstTmStp.EltRibbon,
-                                                                                Fr_lstTmStp.EltChannel,
+            elif not mat_properties.inv_with_heter_K1c:
+                alpha_ribbon_k = 0.25 * alpha_ribbon_k + 0.75 * projection_method(Fr_lstTmStp.EltRibbon,
+                                                                                second_arg,
                                                                                 Fr_lstTmStp.mesh,
-                                                                                sgndDist_k)
+                                                                                sgndDist_k, global_alpha=mat_properties.inv_with_heter_K1c)
+            else :
+                alpha_ribbon_k = 0.0 * alpha_ribbon_k + 1. * projection_method(Fr_lstTmStp.EltRibbon,
+                                                                                second_arg,
+                                                                                Fr_lstTmStp.mesh,
+                                                                                sgndDist_k, global_alpha=mat_properties.inv_with_heter_K1c)
+                #alpha_ribbon_k[np.where(alpha_ribbon_k>2.*np.pi)[0]] = alpha_ribbon_k[np.where(alpha_ribbon_k>2.*np.pi)[0]] - 2. * np.pi
+            # from utility import plot_as_matrix
+            # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+            # K[Fr_lstTmStp.EltRibbon] = alpha_ribbon_k
+            # plot_as_matrix(K, Fr_lstTmStp.mesh)
             if np.isnan(alpha_ribbon_k).any():
                 exitstatus = 11
                 return exitstatus, None
 
-        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
-
+        if (sim_properties.paramFromTip or mat_properties.anisotropic_K1c) and not mat_properties.inv_with_heter_K1c:
             Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
                                                      sgndDist_k,
                                                      Fr_lstTmStp.EltRibbon,
                                                      mat_properties,
                                                      Fr_lstTmStp.mesh) * (32 / np.pi) ** 0.5
-
             if np.isnan(Kprime_k).any():
                 exitstatus = 11
                 return exitstatus, None
+        elif mat_properties.inv_with_heter_K1c:
+            Kprime_k =  get_toughness_from_cellCenter_iter(alpha_ribbon_k, Fr_lstTmStp.mesh.CenterCoor[Fr_lstTmStp.EltRibbon], mat_properties)
         else:
             Kprime_k = None
 
-        if mat_properties.TI_elasticity:
+        # ----- plot to check -----
+        #K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+        #K[Fr_lstTmStp.EltRibbon] = Kprime_k.of(sgndDist_k[Fr_lstTmStp.EltRibbon],mesh=Fr_lstTmStp.mesh, ribbon=Fr_lstTmStp.EltRibbon)
+        # from utility import plot_as_matrix
+        # plot_as_matrix(K, Fr_lstTmStp.mesh)
+
+        if mat_properties.TI_elasticity and not mat_properties.inv_with_heter_K1c:
             Eprime_k = TI_plain_strain_modulus(alpha_ribbon_k,
                                                mat_properties.Cij)
             if np.isnan(Eprime_k).any():
@@ -513,8 +602,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             Eprime_k = None
 
         # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
         # large float value. (algorithm requires inf)
+        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
 
         perfNode_tipInv = instrument_start('tip inversion', perfNode)
 
@@ -535,6 +624,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             status = False
             fail_cause = 'tip inversion failed'
             exitstatus = 7
+            # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+            # K[Fr_lstTmStp.EltRibbon] = sgndDist_k[Fr_lstTmStp.EltRibbon]
+            # from utility import plot_as_matrix
+            # plot_as_matrix(K, Fr_lstTmStp.mesh)
+            # np.argwhere(np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon])).flatten()
 
         if perfNode_tipInv is not None:
             instrument_close(perfNode, perfNode_tipInv, None, len(Fr_lstTmStp.EltRibbon),
@@ -544,15 +638,20 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         if not status:
             return exitstatus, None
 
+        # # Check for positive
+        # if np.any(sgndDist_k[Fr_lstTmStp.EltRibbon]>0):
+        #     log.debug("found a positive signed distance: it must not happen ")
         # Check if the front is receding
         sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
                                                        Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 12.66 * (
-                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+        # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 22.66 * Fr_lstTmStp.mesh.cellDiag)[0]
+
+        front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
+
         #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
@@ -570,10 +669,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
-                or mat_properties.TI_elasticity) or sim_properties.explicitProjection:
+                or mat_properties.TI_elasticity or mat_properties.inv_with_heter_K1c) or sim_properties.explicitProjection:
             break
 
-        norm = np.linalg.norm(abs(alpha_ribbon_k - alpha_ribbon_km1) / np.pi * 2)
+        norm = np.linalg.norm(np.abs(np.sin(alpha_ribbon_k) - np.sin(alpha_ribbon_km1)) + np.abs(np.cos(alpha_ribbon_k) - np.cos(alpha_ribbon_km1)))
         if norm < sim_properties.toleranceProjection:
             log.debug("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
                       repr(norm))
@@ -660,6 +759,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     else:
         raise SystemExit("projection method not supported")
 
+    # from continuous_front_reconstruction import get_xy_from_Ffront, plot_xy_points
+    # x,y = get_xy_from_Ffront(Ffront)
+    # plot_xy_points(front_region, Fr_lstTmStp.mesh, sgndDist_k, Fr_lstTmStp.EltRibbon, x, y, fig=None, annotate_cellName=False,
+    #                annotate_edgeName=False, annotatePoints=False, grid=True, oldfront=front_previous_iter, joinPoints=True,
+    #                disregard_plus=False) # or oldfront=Fr_lstTmStp.Ffront
 
     if not np.in1d(EltsTipNew, front_region).any():
         raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
@@ -762,20 +866,44 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Cprime_tip = mat_properties.Cprime[corr_ribbon]
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c:
+    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c:
         if sim_properties.projMethod != 'LS_continousfront':
             # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
             zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-        else: zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
+            # get toughness from tip in case of anisotropic or
+            Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
+                                                                             Fr_lstTmStp.mesh,
+                                                                             mat_properties,
+                                                                             alpha_k,
+                                                                             l_k,
+                                                                             zrVrtx_newTip)
+        else:
+            toughness_from_zeroVertex = False
+            zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
+            if toughness_from_zeroVertex:
+                # get toughness from tip in case of anisotropic or
+                Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
+                                                                                 Fr_lstTmStp.mesh,
+                                                                                 mat_properties,
+                                                                                 alpha_k,
+                                                                                 l_k,
+                                                                                 zrVrtx_newTip)
+            else:
+                Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(Ffront,
+                                                                               EltsTipNew,
+                                                                               EltTip_k,
+                                                                               fully_traversed_k,
+                                                                               Fr_lstTmStp.mesh,
+                                                                               mat_properties,
+                                                                               alpha_k,
+                                                                               get_from_mid_front = False)
 
-        # get toughness from tip in case of anisotropic or
-        Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
-                                                                         Fr_lstTmStp.mesh,
-                                                                         mat_properties,
-                                                                         alpha_k,
-                                                                         l_k,
-                                                                         zrVrtx_newTip)
-    else:
+
+    # from utility import plot_as_matrix
+    # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+    # K[EltsTipNew] = Kprime_tip
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
+    elif not mat_properties.inv_with_heter_K1c:
         Kprime_tip = mat_properties.Kprime[corr_ribbon]
 
     if mat_properties.TI_elasticity:
@@ -795,9 +923,15 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     #     log.warning("Stagnant front is only supported with universal tip asymptote. continuing...")
     #     stagnant = np.full((EltsTipNew.size,), False, dtype=bool)
 
+    # from utility import plot_as_matrix
+    # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+    # K[EltsTipNew[np.where(stagnant)[0]]] = 2
+    # plot_as_matrix(K, Fr_lstTmStp.mesh)
+    # EltsTipNew[np.where(stagnant)[0]]
     if perfNode is not None:
         perfNode_tipWidth = instrument_start('tip width', perfNode)
         #todo close tip width instrumentation
+
 
     if stagnant.any():
         # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
@@ -829,6 +963,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                   Vel=Vel_k,
                                   stagnant=stagnant,
                                   KIPrime=KIPrime,
+                                  Kprime = Kprime_tip,
                                   Eprime=Eprime_tip,
                                   Cprime=Cprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
@@ -848,12 +983,12 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                   stagnant=stagnant) / Fr_lstTmStp.mesh.EltArea
 
     # check if the tip volume has gone into negative
-    smallNgtvWTip = np.where(np.logical_and(wTip < 0, wTip > -1e-4 * np.mean(wTip)))
+    smallNgtvWTip = np.where(np.logical_and(wTip < 0., wTip > -1.e-4 * np.mean(wTip)))
     if np.asarray(smallNgtvWTip).size > 0:
         #  warnings.warn("Small negative volume integral(s) received, ignoring "+repr(wTip[smallngtvwTip])+' ...')
         wTip[smallNgtvWTip] = abs(wTip[smallNgtvWTip])
 
-    if (wTip < 0).any() or sum(wTip) == 0.:
+    if (wTip < 0.).any() or sum(wTip) == 0.:
         exitstatus = 4
         return exitstatus, None
 
@@ -862,7 +997,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         # todo close tip width instrumentation
 
     LkOff = np.zeros((len(CellStatus),), dtype=np.float64)
-    if sum(mat_properties.Cprime[EltsTipNew]) > 0:
+    if sum(mat_properties.Cprime[EltsTipNew]) > 0.:
         # Calculate leak-off term for the tip cell
         LkOff[EltsTipNew] = 2 * mat_properties.Cprime[EltsTipNew] * Integral_over_cell(EltsTipNew,
                                                                                        alpha_k,
@@ -877,7 +1012,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                                        Fr_lstTmStp.TarrvlZrVrtx[
                                                                                            EltsTipNew])
 
-    if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
+    if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0.:
         # todo: no need to evaluate on each iteration. Need to decide. Evaluating here for now for better readability
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
         t_lst_min_t0[t_lst_min_t0 < 0.] = 0.
@@ -969,6 +1104,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Fr_kplus1.EltTip = EltTip_k
     Fr_kplus1.EltCrack = EltCrack_k
     Fr_kplus1.EltRibbon = EltRibbon_k
+    Fr_kplus1.front_region = front_region
     Fr_kplus1.ZeroVertex = zrVertx_k
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.fully_traversed = fully_traversed_k
@@ -1010,7 +1146,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
 
-    if sim_properties.saveRegime:
+    if sim_properties.saveRegime and not sim_properties.get_volumeControl():
         # regime = find_regime(w_k, Fr_lstTmStp, mat_properties, fluid_properties, sim_properties, timeStep, Kprime_k,
         #                      -sgndDist_k[Fr_lstTmStp.EltRibbon])
         Fr_kplus1.update_tip_regime(mat_properties, fluid_properties, timeStep)
@@ -1088,220 +1224,297 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     """
     log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
+        if sim_properties.volumeControlGMRES:
 
-        if sim_properties.symmetric and not sim_properties.useBlockToeplizCompression:
-            try:
-                Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
-            except AttributeError:
-                raise SystemExit("Symmetric fracture needs symmetric mesh. Set symmetric flag to True\n"
-                                 "while initializing the mesh")
+            #time_beg = time.time()
+            # C is is the Hmat object
+            D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
+            S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
 
-            EltChannel_sym = Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
-            EltChannel_sym = np.unique(EltChannel_sym)
+            counter = Hdot.gmres_counter()  # to obtain the number of iteration and residual
 
-            EltTip_sym = Fr_lstTmStp.mesh.corresponding[EltTip]
-            EltTip_sym = np.unique(EltTip_sym)
+            total_vol = (sum(Fr_lstTmStp.w)+ sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea)  # - something
 
-            # todo: make tip correction while injecting in the same footprint
-            ##########################################################################################
-            #                                                                                        #
-            #  when we inject on the same footprint we should make the tip correction at the tip     #
-            #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
-            #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
-            #  the position of the front.                                                            #
-            #                                                                                        #
-            ##########################################################################################
-
-            # CARLO: we can remove it because the diagonal terms of C are never accessed
-            # FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-            # FillF_mesh[EltTip] = FillFrac
-            # FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]]
-            # partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
-
-            # C_EltTip = np.copy(C[np.ix_(EltTip_sym[partlyFilledTip_sym],
-            #                             EltTip_sym[
-            #                                 partlyFilledTip_sym])])  # keeping the tip element entries to restore current
-            #
-            # # filling fraction correction for element in the tip region
-            # FillF = FillF_sym[partlyFilledTip_sym]
-            # for e in range(len(partlyFilledTip_sym)):
-            #     r = FillF[e] - .25
-            #     if r < 0.1:
-            #         r = 0.1
-            #     ac = (1 - r) / r
-            #     self_infl = self_influence(Fr_lstTmStp.mesh, mat_properties.Eprime)
-            #     C[EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += \
-            #         ac * np.pi / 4. * self_infl
-
-            wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
-            wTip_sym_elts = Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]
-            for i in range(len(EltTip_sym)):
-                if len(np.where(EltTip == wTip_sym_elts[i])[0]) != 1:
-                    other_corr = get_symetric_elements(Fr_lstTmStp.mesh, [wTip_sym_elts[i]])
-                    for j in range(4):
-                        in_tip = np.where(EltTip == other_corr[0][j])[0]
-                        if len(in_tip) > 0:
-                            wTip_sym[i] = wTip[in_tip]
-                            break
-                else:
-                    wTip_sym[i] = wTip[np.where(EltTip == wTip_sym_elts[i])[0]]
-
-            dwTip = wTip - Fr_lstTmStp.w[EltTip]
-            A, b = MakeEquationSystem_volumeControl_symmetric(Fr_lstTmStp.w,
-                                                              wTip_sym,
-                                                              EltChannel_sym,
-                                                              EltTip_sym,
-                                                              C,
-                                                              timeStep,
-                                                              Qin,
-                                                              mat_properties.SigmaO,
-                                                              Fr_lstTmStp.mesh.EltArea,
-                                                              LkOff,
-                                                              Fr_lstTmStp.mesh.volWeights,
-                                                              Fr_lstTmStp.mesh.activeSymtrc,
-                                                              dwTip)
-            # CARLO: we can remove it because the diagonal terms of C are never accessed
-            # C[np.ix_(EltTip_sym[partlyFilledTip_sym], EltTip_sym[partlyFilledTip_sym])] = C_EltTip
-        else:
-            # todo: make tip correction while injecting in the same footprint
-            ##########################################################################################
-            #                                                                                        #
-            #  when we inject on the same footprint we should make the tip correction at the tip     #
-            #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
-            #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
-            #  the position of the front.                                                            #
-            #                                                                                        #
-            ##########################################################################################
-            # CARLO: we can remove it because the diagonal terms of C are never accessed
-            # C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
-            #                             EltTip[partlyFilledTip])])  # keeping the tip element entries to restore current
-            # #  tip correction. This is done to avoid copying the full elasticity matrix.
-            #
-            # # filling fraction correction for element in the tip region
-            # FillF = FillFrac[partlyFilledTip]
-            # for e in range(0, len(partlyFilledTip)):
-            #     r = FillF[e] - .25
-            #     if r < 0.1:
-            #         r = 0.1
-            #     ac = (1 - r) / r
-            #     C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
-
-            if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts']==2:
-                #compute the channel from the last time step for the two fractures
-                EltChannelFracture0 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_0'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0'])
-                EltChannelFracture1 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_1'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_1'])
-                # from utility import plot_as_matrix
-                # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-                # K[EltChannelFracture1] = 1
-                # K[EltChannelFracture0] = 2
-                # K[Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_1']] = 3
-                # K[Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0']] = 4
-                # plot_as_matrix(K, Fr_lstTmStp.mesh)
-                if EltTip.size == 0 :
-                    EltTipFracture0 = EltTip
-                    EltTipFracture1 = EltTip
-                else:
-                    EltTipFracture0 = doublefracturedictionary['TIPcellsANDfullytrav_0']
-                    EltTipFracture1 = doublefracturedictionary['TIPcellsANDfullytrav_1']
-                wtipindexFR0 = np.where(np.in1d(EltTip, EltTipFracture0))[0]
-                wtipindexFR1 = np.where(np.in1d(EltTip, EltTipFracture1))[0]
-                wTipFR0 = wTip[wtipindexFR0]
-                wTipFR1 = wTip[wtipindexFR1]
-                QinFR0=Qin[EltChannelFracture0]
-                QinFR1=Qin[EltChannelFracture1]
-
-                # CARLO: I check if can be possible to have a Channel to be tip
-                if np.any(np.isin(np.concatenate((EltChannelFracture0, EltChannelFracture1)),np.concatenate((EltTipFracture0, EltTipFracture1)),assume_unique=True)):
-                    SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
-
-                A, b = MakeEquationSystem_volumeControl_double_fracture(Fr_lstTmStp.w,
-                                                                        wTipFR0,
-                                                                        wTipFR1,
-                                                                        EltChannelFracture0,
-                                                                        EltChannelFracture1,
-                                                                        EltTipFracture0,
-                                                                        EltTipFracture1,
-                                                                        mat_properties.SigmaO,
-                                                                        C,
-                                                                        timeStep,
-                                                                        QinFR0,
-                                                                        QinFR1,
-                                                                        Fr_lstTmStp.mesh.EltArea,
-                                                                        LkOff)
+            # building the right hand side of the system premultiplied by a left preconditioner
+            C._set_domain_IDX(EltTip)
+            C._set_codomain_IDX(Fr_lstTmStp.EltChannel)
+            if wTip.size == 0:
+                g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel]) + D_i * S_i * (total_vol) * np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
+                g2 = S_i * (total_vol)  # S^-1 * vol_incr --> change
             else:
-                # CARLO: I check if can be possible to have a Channel to be tip
-                if np.any(np.isin(Fr_lstTmStp.EltChannel,EltTip,assume_unique=True)):
-                    SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
-                A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
-                                                    wTip,
-                                                    Fr_lstTmStp.EltChannel,
-                                                    EltTip,
-                                                    mat_properties.SigmaO,
-                                                    C,
-                                                    timeStep,
-                                                    Qin,
-                                                    Fr_lstTmStp.mesh.EltArea,
-                                                    LkOff)
-            # CARLO: we can remove it because the diagonal terms of C are never accessed
-            # # regain original C (without filling fraction correction)
-            # C[np.ix_(EltTip[partlyFilledTip], EltTip[partlyFilledTip])] = C_EltTip
+                g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel] - C._matvec(wTip)) + D_i * S_i * (total_vol - np.sum(wTip)) * np.ones(Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
+                g2 = S_i * (total_vol - np.sum(wTip))  # S^-1 * vol_incr --> change
+            rhs_prec = np.concatenate((g1, np.asarray([g2])))  # preconditionned b (Ax=b)
 
-        perfNode_nonLinSys = instrument_start('nonlinear system solve', perfNode)
-        perfNode_widthConstrItr = instrument_start('width constraint iteration', perfNode_nonLinSys)
-        perfNode_linSys = instrument_start('linear system solve', perfNode_widthConstrItr)
-        status = True
-        fail_cause = None
-        try:
-            sol = np.linalg.solve(A, b)
-        except np.linalg.linalg.LinAlgError:
-            status = False
-            fail_cause = 'sigular matrix'
+            # solving the system using a left preconditioner
+            data = C, Fr_lstTmStp.EltChannel, D_i, S_i
+            system_dot_prod = Hdot.Volume_Control(data)
+            #begtime_gmres=time.time()
+            sol_GMRES = gmres(system_dot_prod, rhs_prec, tol=sim_properties.gmres_tol,
+                              maxiter=sim_properties.gmres_maxiter, callback=counter)
+            #endtime_gmres=time.time()
+            # check convergence
+            # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
+            if sol_GMRES[1] > 0:
+                log.warning(
+                    "WARNING: Volume Control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
+                rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
+                    rhs_prec)
+                log.warning("         error of the solution: " + str(rel_err))
+            elif sol_GMRES[1] == 0:
+                rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
+                    rhs_prec)
+                log.debug(
+                    " --> GMRES Volume Control converged after " + str(counter.niter) + " iter. & rel err is " + str(
+                        rel_err))
 
-        if perfNode is not None:
-            instrument_close(perfNode_widthConstrItr, perfNode_linSys, None,
-                             len(b), status, fail_cause, Fr_lstTmStp.time)
-            perfNode_widthConstrItr.linearSolve_data.append(perfNode_linSys)
-
-            instrument_close(perfNode_nonLinSys, perfNode_widthConstrItr, None,
-                             len(b), status, fail_cause, Fr_lstTmStp.time)
-            perfNode_nonLinSys.widthConstraintItr_data.append(perfNode_widthConstrItr)
-
-            instrument_close(perfNode, perfNode_nonLinSys, None, len(b), status, fail_cause, Fr_lstTmStp.time)
-            perfNode.nonLinSolve_data.append(perfNode_nonLinSys)
-
-        # equate other three quadrants to the evaluated quadrant
-        if sim_properties.symmetric:
-            del_w = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-            for i in range(len(sol) - 1):
-                del_w[Fr_lstTmStp.mesh.symmetricElts[Fr_lstTmStp.mesh.activeSymtrc[EltChannel_sym[i]]]] = sol[i]
+            # update the solution vectors w and p
+            sol = sol_GMRES[0]
             w = np.copy(Fr_lstTmStp.w)
-            w[Fr_lstTmStp.EltChannel] += del_w[Fr_lstTmStp.EltChannel]
-            for i in range(len(wTip_sym_elts)):
-                w[Fr_lstTmStp.mesh.symmetricElts[wTip_sym_elts[i]]] = wTip_sym[i]
-        else:
-            w = np.copy(Fr_lstTmStp.w)
-            if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts'] == 2:
-                w[EltChannelFracture0] += sol[np.arange(EltChannelFracture0.size)]
-                w[EltChannelFracture1] += sol[np.arange(EltChannelFracture0.size,EltChannelFracture0.size+EltChannelFracture1.size)]
-                w[EltTipFracture0] = wTipFR0
-                w[EltTipFracture1] = wTipFR1
-            else:
-                w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
-                w[EltTip] = wTip
+            w[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+            w[EltTip] = wTip
 
-        p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-        if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts'] == 2:
-            p[doublefracturedictionary['crackcells_0']] = sol[-2]
-            p[doublefracturedictionary['crackcells_1']] = sol[-1]
-        else:
+            # from utility import plot_as_matrix
+            # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+            # K[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+            # plot_as_matrix(K, Fr_lstTmStp.mesh)
+
+            p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             p[EltCrack] = sol[-1]
 
-        p[EltCrack] = sol[-1]
+            return_data_solve = [None, None, None]
+            return_data = [return_data_solve, np.asarray([]), False]
 
-        return_data_solve = [None, None, None]
-        return_data = [return_data_solve, np.asarray([]), False]
+            #compute_time = time.time()-time_beg
+            #append_new_line('./Data/radial_VC_gmres/timing.txt', str(Fr_lstTmStp.EltChannel.size)+"  "+str(compute_time))
+            #compute_time_gmres=endtime_gmres-begtime_gmres
+            #append_new_line('./Data/radial_VC_gmres/timing_gmres.txt',
+            #                str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_gmres) )
+            return w, p, return_data
 
-        return w, p, return_data
+        else:
+            if sim_properties.symmetric and not sim_properties.useBlockToeplizCompression:
+                try:
+                    Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
+                except AttributeError:
+                    raise SystemExit("Symmetric fracture needs symmetric mesh. Set symmetric flag to True\n"
+                                     "while initializing the mesh")
+
+                EltChannel_sym = Fr_lstTmStp.mesh.corresponding[Fr_lstTmStp.EltChannel]
+                EltChannel_sym = np.unique(EltChannel_sym)
+
+                EltTip_sym = Fr_lstTmStp.mesh.corresponding[EltTip]
+                EltTip_sym = np.unique(EltTip_sym)
+
+                # todo: make tip correction while injecting in the same footprint
+                ##########################################################################################
+                #                                                                                        #
+                #  when we inject on the same footprint we should make the tip correction at the tip     #
+                #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
+                #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
+                #  the position of the front.                                                            #
+                #                                                                                        #
+                ##########################################################################################
+
+                # CARLO: we can remove it because the diagonal terms of C are never accessed
+                # FillF_mesh = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+                # FillF_mesh[EltTip] = FillFrac
+                # FillF_sym = FillF_mesh[Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]]
+                # partlyFilledTip_sym = np.where(FillF_sym <= 1)[0]
+
+                # C_EltTip = np.copy(C[np.ix_(EltTip_sym[partlyFilledTip_sym],
+                #                             EltTip_sym[
+                #                                 partlyFilledTip_sym])])  # keeping the tip element entries to restore current
+                #
+                # # filling fraction correction for element in the tip region
+                # FillF = FillF_sym[partlyFilledTip_sym]
+                # for e in range(len(partlyFilledTip_sym)):
+                #     r = FillF[e] - .25
+                #     if r < 0.1:
+                #         r = 0.1
+                #     ac = (1 - r) / r
+                #     self_infl = self_influence(Fr_lstTmStp.mesh, mat_properties.Eprime)
+                #     C[EltTip_sym[partlyFilledTip_sym[e]], EltTip_sym[partlyFilledTip_sym[e]]] += \
+                #         ac * np.pi / 4. * self_infl
+
+                wTip_sym = np.zeros((len(EltTip_sym),), dtype=np.float64)
+                wTip_sym_elts = Fr_lstTmStp.mesh.activeSymtrc[EltTip_sym]
+                for i in range(len(EltTip_sym)):
+                    if len(np.where(EltTip == wTip_sym_elts[i])[0]) != 1:
+                        other_corr = get_symetric_elements(Fr_lstTmStp.mesh, [wTip_sym_elts[i]])
+                        for j in range(4):
+                            in_tip = np.where(EltTip == other_corr[0][j])[0]
+                            if len(in_tip) > 0:
+                                wTip_sym[i] = wTip[in_tip]
+                                break
+                    else:
+                        wTip_sym[i] = wTip[np.where(EltTip == wTip_sym_elts[i])[0]]
+
+                dwTip = wTip - Fr_lstTmStp.w[EltTip]
+                A, b = MakeEquationSystem_volumeControl_symmetric(Fr_lstTmStp.w,
+                                                                  wTip_sym,
+                                                                  EltChannel_sym,
+                                                                  EltTip_sym,
+                                                                  C,
+                                                                  timeStep,
+                                                                  Qin,
+                                                                  mat_properties.SigmaO,
+                                                                  Fr_lstTmStp.mesh.EltArea,
+                                                                  LkOff,
+                                                                  Fr_lstTmStp.mesh.volWeights,
+                                                                  Fr_lstTmStp.mesh.activeSymtrc,
+                                                                  dwTip)
+                # CARLO: we can remove it because the diagonal terms of C are never accessed
+                # C[np.ix_(EltTip_sym[partlyFilledTip_sym], EltTip_sym[partlyFilledTip_sym])] = C_EltTip
+            else:
+                # todo: make tip correction while injecting in the same footprint
+                ##########################################################################################
+                #                                                                                        #
+                #  when we inject on the same footprint we should make the tip correction at the tip     #
+                #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
+                #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
+                #  the position of the front.                                                            #
+                #                                                                                        #
+                ##########################################################################################
+                # CARLO: we can remove it because the diagonal terms of C are never accessed
+                # C_EltTip = np.copy(C[np.ix_(EltTip[partlyFilledTip],
+                #                             EltTip[partlyFilledTip])])  # keeping the tip element entries to restore current
+                # #  tip correction. This is done to avoid copying the full elasticity matrix.
+                #
+                # # filling fraction correction for element in the tip region
+                # FillF = FillFrac[partlyFilledTip]
+                # for e in range(0, len(partlyFilledTip)):
+                #     r = FillF[e] - .25
+                #     if r < 0.1:
+                #         r = 0.1
+                #     ac = (1 - r) / r
+                #     C[EltTip[partlyFilledTip[e]], EltTip[partlyFilledTip[e]]] *= (1. + ac * np.pi / 4.)
+
+                if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts']==2:
+                    #compute the channel from the last time step for the two fractures
+                    EltChannelFracture0 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_0'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0'])
+                    EltChannelFracture1 = np.setdiff1d(Fr_lstTmStp.fronts_dictionary['crackcells_1'],Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_1'])
+                    # from utility import plot_as_matrix
+                    # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
+                    # K[EltChannelFracture1] = 1
+                    # K[EltChannelFracture0] = 2
+                    # K[Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_1']] = 3
+                    # K[Fr_lstTmStp.fronts_dictionary['TIPcellsONLY_0']] = 4
+                    # plot_as_matrix(K, Fr_lstTmStp.mesh)
+                    if EltTip.size == 0 :
+                        EltTipFracture0 = EltTip
+                        EltTipFracture1 = EltTip
+                    else:
+                        EltTipFracture0 = doublefracturedictionary['TIPcellsANDfullytrav_0']
+                        EltTipFracture1 = doublefracturedictionary['TIPcellsANDfullytrav_1']
+                    wtipindexFR0 = np.where(np.in1d(EltTip, EltTipFracture0))[0]
+                    wtipindexFR1 = np.where(np.in1d(EltTip, EltTipFracture1))[0]
+                    wTipFR0 = wTip[wtipindexFR0]
+                    wTipFR1 = wTip[wtipindexFR1]
+                    QinFR0=Qin[EltChannelFracture0]
+                    QinFR1=Qin[EltChannelFracture1]
+
+                    # CARLO: I check if can be possible to have a Channel to be tip
+                    if np.any(np.isin(np.concatenate((EltChannelFracture0, EltChannelFracture1)),np.concatenate((EltTipFracture0, EltTipFracture1)),assume_unique=True)):
+                        SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
+
+                    A, b = MakeEquationSystem_volumeControl_double_fracture(Fr_lstTmStp.w,
+                                                                            wTipFR0,
+                                                                            wTipFR1,
+                                                                            EltChannelFracture0,
+                                                                            EltChannelFracture1,
+                                                                            EltTipFracture0,
+                                                                            EltTipFracture1,
+                                                                            mat_properties.SigmaO,
+                                                                            C,
+                                                                            timeStep,
+                                                                            QinFR0,
+                                                                            QinFR1,
+                                                                            Fr_lstTmStp.mesh.EltArea,
+                                                                            LkOff)
+                else:
+                    # CARLO: I check if can be possible to have a Channel to be tip
+                    if np.any(np.isin(Fr_lstTmStp.EltChannel,EltTip,assume_unique=True)):
+                        SystemExit("Some of the tip cells are also channel cells. This was not expected. If you allow that you should implement the tip filling fraction correction for element in the tip region")
+                    #time_beg=time.time()
+                    A, b = MakeEquationSystem_volumeControl(Fr_lstTmStp.w,
+                                                        wTip,
+                                                        Fr_lstTmStp.EltChannel,
+                                                        EltTip,
+                                                        mat_properties.SigmaO,
+                                                        C,
+                                                        timeStep,
+                                                        Qin,
+                                                        Fr_lstTmStp.mesh.EltArea,
+                                                        LkOff)
+                # CARLO: we can remove it because the diagonal terms of C are never accessed
+                # # regain original C (without filling fraction correction)
+                # C[np.ix_(EltTip[partlyFilledTip], EltTip[partlyFilledTip])] = C_EltTip
+
+            perfNode_nonLinSys = instrument_start('nonlinear system solve', perfNode)
+            perfNode_widthConstrItr = instrument_start('width constraint iteration', perfNode_nonLinSys)
+            perfNode_linSys = instrument_start('linear system solve', perfNode_widthConstrItr)
+            status = True
+            fail_cause = None
+            #begtime_sol=time.time()
+            try:
+                sol = np.linalg.solve(A, b)
+
+            except np.linalg.linalg.LinAlgError:
+                status = False
+                fail_cause = 'sigular matrix'
+            #fintime_sol=time.time()
+            #compute_time_sol=fintime_sol-begtime_sol
+            #compute_time = fintime_sol - time_beg
+            # append_new_line('./Data/radial_VC_gmres/timing_direct.txt',
+            #                  str(Fr_lstTmStp.EltChannel.size)+ "  " + str(compute_time))
+            # append_new_line('./Data/radial_VC_gmres/timing_direct_sol.txt',
+            #                 str(Fr_lstTmStp.EltChannel.size) + "  " + str(compute_time_sol))
+            if perfNode is not None:
+                instrument_close(perfNode_widthConstrItr, perfNode_linSys, None,
+                                 len(b), status, fail_cause, Fr_lstTmStp.time)
+                perfNode_widthConstrItr.linearSolve_data.append(perfNode_linSys)
+
+                instrument_close(perfNode_nonLinSys, perfNode_widthConstrItr, None,
+                                 len(b), status, fail_cause, Fr_lstTmStp.time)
+                perfNode_nonLinSys.widthConstraintItr_data.append(perfNode_widthConstrItr)
+
+                instrument_close(perfNode, perfNode_nonLinSys, None, len(b), status, fail_cause, Fr_lstTmStp.time)
+                perfNode.nonLinSolve_data.append(perfNode_nonLinSys)
+
+            # equate other three quadrants to the evaluated quadrant
+            if sim_properties.symmetric:
+                del_w = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+                for i in range(len(sol) - 1):
+                    del_w[Fr_lstTmStp.mesh.symmetricElts[Fr_lstTmStp.mesh.activeSymtrc[EltChannel_sym[i]]]] = sol[i]
+                w = np.copy(Fr_lstTmStp.w)
+                w[Fr_lstTmStp.EltChannel] += del_w[Fr_lstTmStp.EltChannel]
+                for i in range(len(wTip_sym_elts)):
+                    w[Fr_lstTmStp.mesh.symmetricElts[wTip_sym_elts[i]]] = wTip_sym[i]
+            else:
+                w = np.copy(Fr_lstTmStp.w)
+                if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts'] == 2:
+                    w[EltChannelFracture0] += sol[np.arange(EltChannelFracture0.size)]
+                    w[EltChannelFracture1] += sol[np.arange(EltChannelFracture0.size,EltChannelFracture0.size+EltChannelFracture1.size)]
+                    w[EltTipFracture0] = wTipFR0
+                    w[EltTipFracture1] = wTipFR1
+                else:
+                    w[Fr_lstTmStp.EltChannel] += sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+                    w[EltTip] = wTip
+
+            p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+            if sim_properties.doublefracture and doublefracturedictionary['number_of_fronts'] == 2:
+                p[doublefracturedictionary['crackcells_0']] = sol[-2]
+                p[doublefracturedictionary['crackcells_1']] = sol[-1]
+            else:
+                p[EltCrack] = sol[-1]
+
+            p[EltCrack] = sol[-1]
+
+            return_data_solve = [None, None, None]
+            return_data = [return_data_solve, np.asarray([]), False]
+
+            return w, p, return_data
 
     if sim_properties.get_viscousInjection():
 
@@ -1638,7 +1851,7 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
+def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
                              perfNode=None):
     """
     This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
@@ -1675,7 +1888,7 @@ def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_propert
             | 15      -- iterations on front will not converge (continuous front)
             | 16      -- max number of cells achieved. Reducing the number of cells
             | 17      -- you advanced more than two cells in a row. Repeating with a smaller time step
-
+            | 18      -- the max abs increment in fracture opening is smaller than a given threshold despite a positive injection rate. Try larger time step
         - Fracture:            fracture after advancing time step.
 
     """
@@ -1688,7 +1901,7 @@ def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_propert
                                                                                  Fr_lstTmStp.v)
     current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
     cell_diag = (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5
-    expected_range = max(current_prefactor * 12.66 * cell_diag, 1.5 * cell_diag) # expected range of possible propagation
+    expected_range = max(current_prefactor * 22.66 * cell_diag, 1.5 * cell_diag) # expected range of possible propagation
     front_region = np.where(abs(Fr_lstTmStp.sgndDist) < expected_range)[0]
     #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
     # the search region outwards from the front position at last time step
@@ -2118,25 +2331,27 @@ def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_propert
     itr = 0
     # toughness iteration loop
     while itr < sim_properties.maxProjItrs:
-
         if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity:
             if sim_properties.projMethod == 'ILSA_orig':
                 projection_method = projection_from_ribbon
+                second_arg = Fr_lstTmStp.EltChannel
             elif sim_properties.projMethod == 'LS_grad':
-                projection_method = projection_from_ribbon_LS_gradient
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
+                second_arg = Fr_lstTmStp.EltChannel #this is inefficient, the band region should be given instead (look at the implicit case)
             elif sim_properties.projMethod == 'LS_continousfront':
-                projection_method = projection_from_ribbon_LS_gradient #todo: test this case!!!
+                projection_method = projection_from_ribbon_LS_gradient_at_tip
+                second_arg = Fr_lstTmStp.EltChannel #this is inefficient, the band region should be given instead (look at the implicit case)
 
             if itr == 0 :
                 # first iteration
                 alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
-                                                   Fr_lstTmStp.EltChannel,
+                                                   second_arg,
                                                    Fr_lstTmStp.mesh,
                                                    sgndDist_k)
                 alpha_ribbon_km1 = np.zeros(Fr_lstTmStp.EltRibbon.size, )
             else:
-                alpha_ribbon_k = 0.3 * alpha_ribbon_k + 0.7 * projection_method(Fr_lstTmStp.EltRibbon,
-                                                                                Fr_lstTmStp.EltChannel,
+                alpha_ribbon_k = 0.25 * alpha_ribbon_k + 0.75 * projection_method(Fr_lstTmStp.EltRibbon,
+                                                                                second_arg,
                                                                                 Fr_lstTmStp.mesh,
                                                                                 sgndDist_k)
             if np.isnan(alpha_ribbon_k).any():
@@ -2203,8 +2418,7 @@ def time_step_explicit_front(Fr_lstTmStp, C,Boundary, timeStep, Qin, mat_propert
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
         current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 12.66 * (
-                Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 22.66 * Fr_lstTmStp.mesh.cellDiag)[0]
         #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
 
         if not np.in1d(Fr_kplus1.EltTip, front_region).any():
