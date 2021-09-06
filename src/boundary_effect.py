@@ -9,17 +9,6 @@ import logging
 #local
 from Hdot import *
 
-def getMemUse():
-    # some memory statistics
-    import os, psutil
-
-    process = psutil.Process(os.getpid())
-    byte_use = process.memory_info().rss  # byte
-    GiByte_use = byte_use / 1024 / 1024 / 1024  # GiB
-    print("  -> Current memory use: " + str(GiByte_use) + " GiB")
-    return GiByte_use
-
-
 class BoundaryEffect:
     """
     Class defining the Material properties of the solid.

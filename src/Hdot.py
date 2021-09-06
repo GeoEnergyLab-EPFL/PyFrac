@@ -196,6 +196,8 @@ class Hdot(LinearOperator):
     print(" --------------------------------------- ")
     print("  ")
     print("   -> KERNEL: 3DR0 compr. ratio = "+ str(self.HMATtract.getCompressionRatio()))
+    # some memory statistics
+    getMemUse()
 
     if use_preconditioner:
         # ---> the memory here consist mainly of the Hmat

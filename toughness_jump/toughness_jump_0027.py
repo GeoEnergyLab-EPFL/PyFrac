@@ -17,13 +17,13 @@ from utility import setup_logging_to_console
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
-run = False
+run = True
 simulation_name = '0027'
 # mac OS & Linux
-#myfolder = "./Data/toughness_jump_" + simulation_name
+myfolder = "/home/peruzzo/PycharmProjects/PyFrac/toughness_jump/Data/toughness_jump_" + simulation_name
 
 # Windows
-myfolder = ".\Data\\toughness_jump_" + simulation_name
+#myfolder = ".\Data\\toughness_jump_" + simulation_name
 
 # creating mesh
 Mesh = CartesianMesh(0.05, 0.05, 69, 69)
@@ -103,7 +103,8 @@ if run:
                                K1c_func=My_KIc_func,
                                minimum_width=1e-12)
     simulProp.meshReductionPossible = False
-
+    simulProp.saveToDisk = True
+    simulProp.set_outputFolder(myfolder)
 
     # create a Controller
     controller = Controller(Fr,
