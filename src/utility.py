@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dill
 import copy
+
+import requests
 from tip_inversion import TipAsymInversion
 
 
@@ -151,3 +153,39 @@ def setup_logging_to_console(verbosity_level='debug'):
     # usage example
     # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
     # logger_to_files.info('this comment will go only to the log file')
+
+def append_new_line(file_name, text_to_append):
+    """Append given text as a new line at the end of file"""
+    # Open the file in append & read mode ('a+')
+    with open(file_name, "a+") as file_object:
+        # Move read cursor to the start of file.
+        file_object.seek(0)
+        # If file is not empty then append '\n'
+        data = file_object.read(100)
+        if len(data) > 0:
+            file_object.write("\n")
+        # Append text at the end of file
+        file_object.write(text_to_append)
+
+
+# SENDING A MESSAGE TO MONITOR THE SIMULATION
+"""
+see:
+https://medium.com/@ManHay_Hong/how-to-create-a-telegram-bot-and-send-messages-with-python-4cf314d9fa3e
+
+"""
+
+def send_phone_message(bot_message):
+    try:
+        bot_token = 'the one that you have when you create a bot'
+        bot_chatID = 'it is the field ID at https://api.telegram.org/bot<yourtoken>/getUpdates -> replace <yourtoken> with bot_token'
+
+
+
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
+        response = requests.get(send_text)
+        return response.json()
+
+    except Exception as e:
+        # there may be many error coming...
+        print(e);

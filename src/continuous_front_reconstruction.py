@@ -435,7 +435,7 @@ def plot_final_reconstruction(mesh,
     plt.plot(mesh.CenterCoor[oldRibbon,0]*1.05, mesh.CenterCoor[oldRibbon,1], '.',color='green')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
 
-def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=None):
+def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=None, joinPoints = True, disregard_plus=False):
         #fig = None
         if fig is None:
             fig = plt.figure()
@@ -450,13 +450,17 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
         nonRibbon = np.setdiff1d(anularegion, Ribbon)
         Positive_nonRibbon = nonRibbon[np.where(sgndDist_k[nonRibbon] > 0)[0]]
         plt.plot(mesh.CenterCoor[Ribbon, 0], mesh.CenterCoor[Ribbon, 1], ".", marker="_", color='g')
-        plt.plot(mesh.CenterCoor[Positive_nonRibbon, 0], mesh.CenterCoor[Positive_nonRibbon, 1], ".", marker="+",
-                 color='r')
+        if not disregard_plus:
+            plt.plot(mesh.CenterCoor[Positive_nonRibbon, 0], mesh.CenterCoor[Positive_nonRibbon, 1], ".", marker="+",
+                     color='r')
         Negative_nonRibbon = np.setdiff1d(nonRibbon, Positive_nonRibbon)
         if Negative_nonRibbon.size > 0:  # plot them
             plt.plot(mesh.CenterCoor[Negative_nonRibbon, 0], mesh.CenterCoor[Negative_nonRibbon, 1], ".",
                      marker="_", color='b')
-        plt.plot(np.asarray(x), np.asarray(y), '.-', color='red')
+        if joinPoints:
+            plt.plot(np.asarray(x), np.asarray(y), '.-', color='red')
+        else:
+            plt.plot(np.asarray(x), np.asarray(y), '.', color='red')
 
         if annotate_cellName:
             x_center = mesh.CenterCoor[anularegion,0]
@@ -701,11 +705,11 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
     """
     This function has vectorized operations.
     This function returns a list of "valid" "fictitius cells".
-    A fictitius cell is made of 4 cells of the mesh e.g. cells i,a,b,c in the mesh below.
-    A fictitius cell is represented by the name of the element in position i in the mesh below
-    A valid fictitius cell is a cell where at least one vertex has Level Set<0 and at least one has LS>0
-    A valid fictitius cell is important because we know the front is passing through it.
-    The front will always enter and exit the fictitius cell from two different edges.
+    A fictitious cell is made of 4 cells of the mesh e.g. cells i,a,b,c in the mesh below.
+    A fictitious cell is represented by the name of the element in position i in the mesh below
+    A valid fictitious cell is a cell where at least one vertex has Level Set<0 and at least one has LS>0
+    A valid fictitious cell is important because we know the front is passing through it.
+    The front will always enter and exit the fictitious cell from two different edges.
     The front can't exit the fictitious cell from a vertex because we set LS -(machine precision) where it was 0.
 
      _ _ _ _ _ _
@@ -2127,8 +2131,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         """
         if np.any(sgndDist_k[mesh.Frontlist] < 0):
             log.warning('Some cells at the boundary of the mesh have negative level set')
-            negativefront = np.where(sgndDist_k < 0)[0]
-            intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
+            #cp: to be faster --
+            negLS_FrontlistIDs = np.where(sgndDist_k[mesh.Frontlist] < 0)[0]
+            intwithFrontlist = np.asarray(mesh.Frontlist)[negLS_FrontlistIDs]
+            #negativefront = np.where(sgndDist_k < 0)[0]
+            #intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
+            #cp --
             correct_size_of_pstv_region = [False, True, False]
             return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
 
@@ -2144,7 +2152,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
         """
         1) - define a dictionary for the Ribbon cells
-           - find a list of valid fictitius cells (inamesOfFC) that can belongs to more than one fracture
+           - find a list of valid fictitius cells (inamesOfFC) that can belong to more than one fracture
            - compute the LS at the valid fictitius cells (LSofFC)
            - compute the "i names" of the FC of different types 
                Whe define the fictitius cell types:
@@ -2166,7 +2174,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 correct_size_of_pstv_region = [False, False, True]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
-                log.debug('I am increasing the thickness of the band (dirctive from find fictitius cells routine)')
+                log.debug('I am increasing the thickness of the band (directive from find fictitius cells routine)')
                 # from utility import plot_as_matrix
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[anularegion] = sgndDist_k[anularegion]
@@ -3178,7 +3186,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     if dLSdy == 0. and dLSdx != 0.:
                         fullyfractured_angle.append(0.)
                     elif dLSdy != 0. and dLSdx == 0:
-                        fullyfractured_angle.append(np.pi)
+                        fullyfractured_angle.append(np.pi/2.)
                     elif dLSdy != 0. and dLSdx != 0:
                         fullyfractured_angle.append(np.arctan(np.abs(dLSdy) / np.abs(dLSdx)))
                     else:
@@ -3469,3 +3477,11 @@ def you_advance_more_than_2_cells(fully_traversed_k,EltTip_last_tmstp,NeiElement
     else: #==0
         return False
 
+def get_xy_from_Ffront(Ffront):
+    x = []
+    y = []
+    for segment in Ffront:
+        [xa,ya,xb,yb] = segment
+        x.append(xa)
+        y.append(ya)
+    return x, y

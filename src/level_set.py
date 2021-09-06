@@ -472,3 +472,65 @@ def Eikonal_Res(Tij, *args):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
+
+def get_cells_inside_circle(mesh, r, center):
+    """
+    This function would provide a list of all the cells inside of the
+    perimeter of a circle with the given radius. A list of all the cells inside the fracture is also provided.
+
+    Arguments:
+        mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
+        r (float):                          -- the radius of the circle.
+        center (list or ndarray):           -- the coordinates [x, y] of the center.
+
+    Returns:
+        - inner_cells (ndarray)             -- the list of cells inside the given circle.
+    """
+
+    # distances of the cell centers
+    dist_vertx = (((mesh.CenterCoor[:, 0] - center[0])) ** 2 + ((mesh.CenterCoor[:, 1] - center[1])) ** 2) \
+                 ** (1 / 2) / r - 1.
+
+    inner_cells = np.where(dist_vertx <= 0)[0]
+
+    return  inner_cells.tolist()
+
+
+
+def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
+    """
+    This function returns a list of elements that form a band where the location of the tip is expected to be.
+    Args:
+        mesh:
+        EltRibbon:
+        sgndDist_k_EltRibbon:
+        EltChannel_lstTmStp:
+
+    Returns:
+
+    """
+    front_region = []
+    advancing_fast = []
+    # take the cells in a circle drown from each ribbon cell with radius equal to the distance to the front from the tip inversion
+    for i in range(len(EltRibbon)):
+        cell_i = EltRibbon[i]
+        if np.abs(sgndDist_k_EltRibbon[i]) > mesh.hx and np.abs(sgndDist_k_EltRibbon[i]) > mesh.hy :
+            radius_i = np.abs(sgndDist_k_EltRibbon[i]) + 2.5 * mesh.cellDiag
+            advancing_fast.append(cell_i)
+        else:
+            radius_i = np.abs(sgndDist_k_EltRibbon[i]) + 1.5 * mesh.cellDiag
+        center_i = mesh.CenterCoor[cell_i]
+        new_cells = get_cells_inside_circle(mesh, radius_i, center_i)
+        for j in new_cells:
+            front_region.append(j)
+    front_region = np.unique(front_region)
+
+    # take out the ribbon
+    front_region =np.setdiff1d(front_region, EltRibbon)
+
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh.NumberOfElts,), )
+    # K[front_region] = 1
+    # K[EltRibbon] = 2
+    # plot_as_matrix(K, mesh)
+    return front_region

@@ -22,7 +22,7 @@ from elasticity import mapping_old_indexes
 # local import
 # import fracture_initialization
 # import visualization
-from level_set import SolveFMM
+from level_set import SolveFMM, get_front_region
 from volume_integral import Pdistance
 from fracture_initialization import get_survey_points, get_width_pressure, generate_footprint
 from fracture_initialization import Geometry, InitializationParameters
@@ -100,7 +100,7 @@ class Fracture:
 
         self.mesh = mesh
 
-        if init_param.regime != 'static':
+        if init_param.regime != 'static' and init_param.regime != 'static-radial-K':
 
             # get appropriate length dimension variable
             length = init_param.geometry.get_length_dimension()
@@ -136,8 +136,33 @@ class Fracture:
                                                                                        inner_cells,
                                                                                        surv_dist,
                                                                                        simulProp.projMethod)
+
+        self.front_region = get_front_region(self.mesh, self.EltRibbon, self.sgndDist[self.EltRibbon])
+
         # for static fracture initialization
-        if init_param.regime == 'static':
+        if init_param.regime == 'static' or init_param.regime == 'static-radial-K':
+            if init_param.regime == 'static-radial-K':
+                if init_param.geometry.center is not None:
+                    [x0, y0] = init_param.geometry.center
+                else: [x0, y0] = [0.,0.]
+                d = []
+                for i in self.Ffront:
+                    [x1, y1, waste, waste] = i
+                    dist = np.sqrt((x1-x0)**2 + (y1-y0)**2)
+                    d.append(dist)
+                length = np.mean(d)
+                # get analytical solution
+                waste, waste, self.pNet, \
+                waste, waste, waste = HF_analytical_sol('K',
+                                                         self.mesh,
+                                                         solid.Eprime,
+                                                         injection.injectionRate[1, 0],
+                                                         inj_point=injection.sourceCoordinates,
+                                                         Kprime=solid.Kprime[self.mesh.CenterElts][0],
+                                                         length=length,
+                                                         Kc_1=solid.Kc1)
+                init_param.netPressure = self.pNet
+
             self.w, self.pNet, self.boundEffTraction = get_width_pressure(self.mesh,
                                                    self.EltCrack,
                                                    self.EltTip,
@@ -148,8 +173,11 @@ class Fracture:
                                                    init_param.fractureVolume,
                                                    simulProp.symmetric,
                                                    simulProp.useBlockToeplizCompression,
+                                                   simulProp.volumeControlGMRES,
                                                    solid.Eprime,
-                                                   boundaryEffect = boundaryEffect)
+                                                   boundaryEffect = boundaryEffect,
+                                                   gmres_tol = simulProp.gmres_tol,
+                                                   gmres_maxiter = simulProp.gmres_maxiter)
 
             if init_param.fractureVolume is None and init_param.time is None:
                 volume = np.sum(self.w) * mesh.EltArea
