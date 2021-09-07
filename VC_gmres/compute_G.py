@@ -156,9 +156,11 @@ simulation_name = "G_1p47_noHmat_0p0005regul"
 #simulation_name = "G_1p40_noHmat_0p01regul"
 #output_fol = "./Data/noHmat_DisTime_fastQ"
 #simulation_name = "1p9_noHmat_DisTime_fastQ"
-compute_G = True
-save_res = True
-myJsonName_1 = "./Data/TJ_"+simulation_name+"_export.json"
+output_fol = "./Data_final/01"
+simulation_name = "G_01_3jump"
+compute_G = False
+save_res = False
+myJsonName_1 = "./Data_final/01/TJ_"+simulation_name+"_export.json"
 
 
 

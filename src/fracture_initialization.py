@@ -265,7 +265,9 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
 
     band = np.unique(currentBand)
     bandINcrack = np.setdiff1d(inner_region, band)
-    bandOUTcrack = np.setdiff1d(band, bandINcrack)
+    bandOUTcrack = np.setdiff1d(band, inner_region)
+    if len(bandINcrack) == 0:
+        bandINcrack = inner_region
 
     # fast marching to get level set
     SolveFMM(sgndDist,

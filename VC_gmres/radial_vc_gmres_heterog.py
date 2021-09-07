@@ -101,6 +101,9 @@ output_fol  = "./Data/1p42_noHmat_0p05regul"
 output_fol_B = "./Data/1p37_noHmat_0p005regul"
 output_fol  = "./Data_final/01"
 output_fol_B = "./Data_final/01"
+output_fol  = "./Data/02"
+output_fol_B = "./Data/02"
+
 #output_fol  = "./Data/1p37_noHmat_0p005regul_morecells"
 #output_fol_B = "./Data/1p42_noHmat_0p001regul_morecells2"
 #output_fol_B  = "./Data/noHmat_coarse_tol"
@@ -356,6 +359,9 @@ if run:
         simulProp.set_mesh_extension_direction(['vertical'])
         simulProp.meshReductionPossible = False
         simulProp.simID = 'K1/K2=1.9' # do not use _
+
+        Solid, Fr = Fr.project_solution_to_a_new_mesh( C, Mesh, Solid, Fluid, Injection, simulProp)
+
     #############################################################################
 
 
