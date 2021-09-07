@@ -914,7 +914,24 @@ class Fracture:
             return self
 
 # -----------------------------------------------------------------------------------------------------------------------
+    def project_solution_to_a_new_mesh(self, C, newMesh, Solid, Fluid, Injection, simulProp):
+        # Finalizing the transfer of information from the old to the new mesh
+        Solid.remesh(newMesh)# the new mesh
+        Injection.remesh(newMesh, self.mesh)# the new mesh
+        Fr = self.remesh(10., # in general not 2
+                       C,
+                       newMesh, # the new mesh
+                       Solid,
+                       Fluid,
+                       Injection,
+                       simulProp,
+                       None) #mandatory
 
+        # update the mesh
+        Fr.mesh = newMesh # the new mesh
+        return Solid, Fr
+
+# -----------------------------------------------------------------------------------------------------------------------
     def update_tip_regime(self, mat_prop, fluid_prop, timeStep):
         log = logging.getLogger('PyFrac.update_tip_regime')
         """

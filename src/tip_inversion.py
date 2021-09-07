@@ -688,7 +688,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                                             Eprime * w[frac.EltRibbon]) > 1.)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 
-    if matProp.inv_with_heter_K1c:
+    if matProp.inv_with_heter_K1c and simParmtrs.get_volumeControl():
         Kprime.keepRibbonThatAre(moving)
         a, b, status = FindBracket_dist_K_heterog(w[frac.EltRibbon[moving]],
                                             Kprime,
