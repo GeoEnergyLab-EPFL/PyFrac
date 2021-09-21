@@ -10,7 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 import math
 import sys
-from level_set import SolveFMM, reconstruct_front, UpdateLists
+from level_set import SolveFMM, reconstruct_front, UpdateLists, get_front_region
 from volume_integral import Integral_over_cell
 from symmetry import self_influence
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
@@ -241,16 +241,20 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
     sgndDist = np.full((mesh.NumberOfElts,), 1e50)
     sgndDist[surv_cells] = -dist_surv_cells
 
-    # rest of the cells outside the survey cell ring
-    EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region)
+    front_region = get_front_region(mesh, surv_cells, sgndDist[surv_cells])
+
+    # the search region outwards from the front position at last time step
+    pstv_region = np.where(sgndDist[front_region] >= -(mesh.hx ** 2 + mesh.hy ** 2) ** 0.5)[0]
+    # the search region inwards from the front position at last time step
+    ngtv_region = np.where(sgndDist[front_region] < 0)[0]
 
     # fast marching to get level set
     SolveFMM(sgndDist,
              surv_cells,
              inner_region,
              mesh,
-             EltRest,
-             inner_region)
+             front_region[pstv_region],
+             front_region[ngtv_region])
 
     band = np.arange(mesh.NumberOfElts)
     # costruct the front

@@ -14,7 +14,7 @@ from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cel
 from symmetry import get_symetric_elements, self_influence
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_solver import *
-from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists
+from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists, get_front_region
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, you_advance_more_than_2_cells
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
@@ -537,8 +537,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
         # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 12.66 * (
         #         Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
-            Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
+        #     Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+
+        front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
 
         # the search region outwards from the front position at last time step
         pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
@@ -625,8 +627,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 # - pstv_region by 1 cell tickness
                 # - ngtv_region by 1 cell tickness
 
-                front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
+                #front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
                 #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+                front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+                                                sgndDist_k[Fr_lstTmStp.EltRibbon])
                 # the search region outwards from the front position at last time step
                 pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -1661,9 +1665,13 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
     # cell_diag = (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5
     # expected_range = max(current_prefactor * 12.66 * cell_diag, 1.5 * cell_diag) # expected range of possible propagation
     # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < expected_range)[0]
-    front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
-            Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
+    #         Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
     #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+
+    front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+                                    sgndDist_k[Fr_lstTmStp.EltRibbon])
+
     # the search region outwards from the front position at last time step
     pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                    Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -1732,8 +1740,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 # - pstv_region by 1 cell tickness
                 # - ngtv_region by 1 cell tickness
 
-                front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
+                #front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
                 #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+
+                front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+                                                sgndDist_k[Fr_lstTmStp.EltRibbon])
+
                 # the search region outwards from the front position at last time step
                 pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
                                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
@@ -2170,12 +2182,15 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
         # region expected to have the front after propagation. The signed distance of the cells only in this region will
         # evaluated with the fast marching method to avoid unnecessary computation cost
-        current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+        # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
         # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * 12.66 * (
         #         Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-        front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
-            Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
+        #     Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
         #front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+
+        front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+                                        sgndDist_k[Fr_lstTmStp.EltRibbon])
 
         if not np.in1d(Fr_kplus1.EltTip, front_region).any():
             raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
