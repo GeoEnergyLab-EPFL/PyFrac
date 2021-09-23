@@ -672,7 +672,8 @@ class Fracture:
         """
 
         if self.sgndDist_last is None:
-            self.sgndDist_last = self.sgndDist
+            import copy
+            self.sgndDist_last = copy.deepcopy(self.sgndDist)
 
         # if direction != None and direction != 'reduce': #in the case direction is ['left', 'bottom', 'top', 'right']
         #     ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
@@ -767,15 +768,18 @@ class Fracture:
                                     fill_value=0.)
 
             # interpolate last level set by first advancing to the end of the grid and then interpolating
-            SolveFMM(self.sgndDist_last,
-                     self.EltRibbon,
-                     self.EltChannel,
-                     self.mesh,
-                     [],
-                     self.EltChannel)
-
-            sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                       self.sgndDist_last[self.EltChannel],
+            knownIN_LS = np.where(self.sgndDist_last[self.EltChannel]<1e10)[0]
+            uknownIN_LS = np.setdiff1d(self.EltChannel, self.sgndDist_last[knownIN_LS])
+            if len(uknownIN_LS) >0:
+                SolveFMM(self.sgndDist_last,
+                         self.EltRibbon,
+                         self.EltChannel,
+                         self.mesh,
+                         [],
+                         uknownIN_LS)
+                total_known_LS = np.concatenate((knownIN_LS,uknownIN_LS))
+            sgndDist_last_coarse = griddata(self.mesh.CenterCoor[total_known_LS],
+                                       self.sgndDist_last[total_known_LS],
                                        coarse_mesh.CenterCoor,
                                        method='linear',
                                        fill_value=1e10)
@@ -918,7 +922,7 @@ class Fracture:
         # Finalizing the transfer of information from the old to the new mesh
         Solid.remesh(newMesh)# the new mesh
         Injection.remesh(newMesh, self.mesh)# the new mesh
-        Fr = self.remesh(10., # in general not 2
+        Fr = self.remesh(2.1, # in general not 2
                        C,
                        newMesh, # the new mesh
                        Solid,

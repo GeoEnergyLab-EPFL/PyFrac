@@ -1,8 +1,11 @@
 from Hdot import gmres_counter
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import lgmres
+from utility import setup_logging_to_console
 from visualization import *
 from elasticity import load_isotropic_elasticity_matrix_toepliz
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='debug')
 
 ######################################################
 # post processing functions
@@ -156,13 +159,16 @@ simulation_name = "G_1p47_noHmat_0p0005regul"
 #simulation_name = "G_1p40_noHmat_0p01regul"
 #output_fol = "./Data/noHmat_DisTime_fastQ"
 #simulation_name = "1p9_noHmat_DisTime_fastQ"
-output_fol = "./Data_final/01"
-simulation_name = "G_01_3jump"
-compute_G = False
-save_res = False
-myJsonName_1 = "./Data_final/01/TJ_"+simulation_name+"_export.json"
 
+sim = "04"
+compute_G = True
+save_res = True
+h_layer_val = 1.48 * 2
+step_between_fronts = 3
 
+output_fol = "./Data_final/"+sim
+simulation_name = "G_"+sim+"_3jump"
+myJsonName_1 = "./Data_final/"+sim+"/TJ_"+simulation_name+"_export.json"
 
 if compute_G:
     # loading simulation results A
@@ -174,7 +180,7 @@ if compute_G:
     # taking a subset of the solution
     endpoint = len(Fr_list_A_total)
     #endpoint = 60
-    step = 4
+    step = step_between_fronts
 
     Fr_list_A = []
     selection = []
@@ -226,7 +232,7 @@ if compute_G:
         Glist.append(getG(data_i, data_im1))
 
     # making it non dimensional
-    H = 1.48 * 2
+    H = h_layer_val
     for i in range(len(double_L_A_sel)):
         double_L_A_sel[i] = double_L_A_sel[i] / H
 

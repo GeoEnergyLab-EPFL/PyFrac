@@ -1,8 +1,11 @@
 import numpy as np
 from continuous_front_reconstruction import pointtolinedistance
+from utility import setup_logging_to_console
 from visualization import *
 from postprocess_fracture import append_to_json_file
 
+# setting up the verbosity level of the log at console
+setup_logging_to_console(verbosity_level='debug')
 
 
 # post processing function
@@ -253,9 +256,10 @@ def check_exe(folders_list, simul_list, to_export, destination):
 to_export = [1,2,3,7,8]
 
 #-------> SPECIFY OUT ID AND FOLDER NAME:
-simul_list = ["01", "02"]
-folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
-                "/home/carlo/Desktop/PyFrac/VC_gmres/Data/02"]
+simul_list = ["04"]#["01", "02","03","04"]
+folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/04"]
+# ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
 destination = "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)
