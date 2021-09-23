@@ -18,7 +18,7 @@ from fracture import Fracture
 from controller import Controller
 from fracture_initialization import Geometry, InitializationParameters
 from utility import setup_logging_to_console
-
+from elasticity import load_isotropic_elasticity_matrix_toepliz
 
 
 def getStressVertSlice(mesh, solid):
@@ -70,12 +70,12 @@ def getFrBounds(Fr):
 
 run = True
 #run = False
-restart = False
+restart = True
 plot = True
 export_results = False
 
 
-simulation_name = 'Ktest'
+simulation_name = 'Sigma_test'
 run_dir = './Data/'+simulation_name
 
 if run:
@@ -94,9 +94,9 @@ if run:
 
     def sigmaO_func(x, y):
         """ The function providing the confining stress"""
-        if y > 33:
+        if y > 1:
             return 5.45e6
-        elif y < -33:
+        elif y < -1:
             return 5.45e6
         else:
             return 2.2e6
@@ -145,35 +145,23 @@ if run:
     # # the following lines are needed if you want to restart an existing simulation #
     # ################################################################################
     if restart:
+        newMesh = CartesianMesh(4, 4, 101, 101)
+
+
         from visualization import *
         Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
         Solid, Fluid, Injection, simulProp = properties
         Fr = Fr_list[-1]
-        simulProp.set_outputFolder(run_dir)
-        # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
-        #                                             np.arange(1.0965, 7.9965, 0.025),)))
-        simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
-        Solid = MaterialProperties(Mesh,
+
+        Solid = MaterialProperties(newMesh,
                                   Eprime,
-                                  K1c_func=K1c_func,
+                                  K_Ic,
                                   confining_stress_func = sigmaO_func,
                                   confining_stress=0.,
                                   minimum_width=0.)
-        #simulProp.send_phone_msg = True
-        #simulProp.useHmat=True
-        Solid.youngs_mod=3.3e10
-        Solid.nu=0.4
-        #simulProp.tolFractFront = 0.0001
-        # setting up mesh extension options
-        simulProp.meshExtensionAllDir = False
-        simulProp.set_mesh_extension_factor(1.5)
-        simulProp.set_mesh_extension_direction(['vertical'])
-        simulProp.meshReductionPossible = False
-        simulProp.simID = 'K1/K2=1.9' # do not use _
-        simulProp.useBlockToeplizCompression = True
-        from elasticity import load_isotropic_elasticity_matrix_toepliz
-        C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
-        Solid, Fr = Fr.project_solution_to_a_new_mesh( C, Mesh, Solid, Fluid, Injection, simulProp)
+
+        C = load_isotropic_elasticity_matrix_toepliz(newMesh, Eprime)
+        Solid, Fr = Fr.project_solution_to_a_new_mesh( C, newMesh, Solid, Fluid, Injection, simulProp)
 
     #############################################################################
 
