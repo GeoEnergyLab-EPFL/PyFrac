@@ -499,7 +499,7 @@ def get_cells_inside_circle(mesh, r, center):
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
+def get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
     """
     This function returns a list of elements that form a band where the location of the tip is expected to be.
     Args:
