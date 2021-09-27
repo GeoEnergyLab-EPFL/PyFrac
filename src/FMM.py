@@ -18,18 +18,17 @@ class fmm:
 
     def __init__(self, known, toEvaluate, mesh):
 
-        self.indices = toEvaluate
-
         # We set the status of all elements to far away
-        self.Status = np.full((len(self.indices),), -1, dtype=int)
+        self.Status = np.full((mesh.NumberOfElts,), -2, dtype=int)
         # We set the status of the known elements to known
+        self.Status[toEvaluate] = -1
         self.Status[known[1]] = 0
 
         # we store the neighbouring elements
-        self.neiElems = mesh.NeiElements[toEvaluate]
+        self.neiElems = mesh.NeiElements
 
         # We initialize the level set as infinity
-        self.LS = np.full((len(toEvaluate),), np.inf)
+        self.LS = np.full((mesh.NumberOfElts,), np.inf)
         self.LS[known[1]] = known[0]
 
         self.heapStruct = list(map(tuple, np.asarray((known[0], known[1])).T))
@@ -42,7 +41,8 @@ class fmm:
 
     def f2n(self, newKnown):
         neighbors = self.get_n(newKnown)
-        self.Status[neighbors[self.Status[neighbors] != 1]] = 0
+        mask = (self.Status[neighbors] != 1) * (self.Status[neighbors] != -2)
+        self.Status[neighbors[mask]] = 0
 
     def get_n(self, newKnown):
         return self.neiElems[newKnown]
