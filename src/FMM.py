@@ -16,9 +16,7 @@ class fmm:
 
     """
 
-    def __init__(self, args):
-
-        (known, toEvaluate, mesh) = args
+    def __init__(self, known, toEvaluate, mesh):
 
         self.indices = toEvaluate
 
@@ -52,65 +50,67 @@ class fmm:
     def addLs(self, newLs):
         self.LS[newLs[1]] = newLs[0]
 
-    def calcLs(self, args):
+    def calcLs(self, calcLS, mesh):
 
-        (calcLS, mesh) = args
-
-        if type(calcLS) == np.ndarray:
-            calcLS = calcLS.astype(int)
-        else:
-            calcLS = int(calcLS)
+        # if type(calcLS) == np.ndarray:
+        #     calcLS = calcLS.astype(int)
+        # else:
+        #     calcLS = int(calcLS)
 
         theta_1 = self.LS[self.neiElems[calcLS][:, [0, 1]]].min(axis=1)
         theta_2 = self.LS[self.neiElems[calcLS][:, [2, 3]]].min(axis=1)
 
-        newLS = np.full((len(calcLS),), -1, dtype=float)
+        newLS = np.full((len(calcLS),), -1.)
 
         beta = mesh.hx / mesh.hy
         theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * (theta_1 - theta_2) ** 2
 
-        newLS[theta_sq > 0] = np.asarray((theta_1 + beta ** 2 * theta_2 + theta_sq ** 0.5)
-                              / (1 + beta ** 2))[theta_sq > 0]
-        newLS[theta_sq <= 0] = np.asarray([theta_1 + mesh.hy, theta_2 + mesh.hx]).min(axis=0)[theta_sq <= 0]
+        mask = theta_sq > 0
+        nmask = np.invert(mask)
 
-        return np.asarray([newLS, calcLS])
+        newLS[mask] = np.asarray((theta_1 + beta ** 2 * theta_2 + theta_sq ** 0.5) / (1 + beta ** 2))[mask]
+        newLS[nmask] = np.asarray([theta_1 + mesh.hy, theta_2 + mesh.hx]).min(axis=0)[nmask]
+
+        #return np.asarray([newLS, calcLS])
+        return [newLS, calcLS]
 
     def solveFMM(self, Mesh):
 
-        log = logging.getLogger('PyFrac.fmm')
-
-        while min(self.Status) != 1:
+        while (self.Status == 0).any():
             # We do the heap
             evEl = heapq.heappop(self.heapStruct)
 
+            evN = int(evEl[1])
+
             # we calculate the LS of the neighbors to the smallest object
-            newNLS = self.calcLs((self.neiElems[int(evEl[1])], Mesh))
+            newNLS = self.calcLs(self.neiElems[evN], Mesh)
 
             # for these elements we already had a level set so we update the heap
-            updN = (self.Status[newNLS[1].astype(int)] == 0) * (newNLS[1].astype(int) != int(evEl[1]))
+            updN = (self.Status[newNLS[1]] == 0) * (newNLS[1] != evN)
             if updN.any():
-                self.addLs([np.asarray([self.LS[newNLS[1][updN].astype(int)], newNLS[0][updN]]).min(axis=0),
-                            newNLS[1][updN].astype(int)])
-                # here some indexing problem! updH is position of updN
-                updH = np.where(np.in1d(list(zip(*self.heapStruct))[1], newNLS[1][updN]))[0]
-                if len(updH) != len(np.where(updN == True)[0]):
-                    print('The heck')
-                iter = 0
-                for item in list(map(tuple, np.asarray((self.LS[newNLS[1][updN].astype(int)], newNLS[1][updN])).T)):
-                    self.heapStruct[updH[iter]] = item
-                    iter += 1
+                # only update the ones where we have a change!
+                toUpdate = self.LS[newNLS[1][updN]] > newNLS[0][updN]
+                if toUpdate.any():
+                    self.addLs([newNLS[0][updN][toUpdate], newNLS[1][updN][toUpdate]])
+                    updH = np.where(np.in1d(list(zip(*self.heapStruct))[1], newNLS[1][updN][toUpdate]))[0]
 
+                    iter = 0
+                    toUpdate = list(map(tuple, np.asarray((self.LS[newNLS[1][updN][toUpdate]],
+                                                            newNLS[1][updN][toUpdate])).T))
+                    for item in toUpdate:
+                        self.heapStruct[updH[iter]] = item
+                        iter += 1
 
             # enter all of these new Nodes
-            newN = self.Status[newNLS[1].astype(int)] == -1
+            newN = self.Status[newNLS[1]] == -1
             if newN.any():
-                self.addLs([np.asarray([self.LS[newNLS[1][newN].astype(int)], newNLS[0][newN]]).min(axis=0),
-                            newNLS[1][newN].astype(int)])
+                self.addLs([newNLS[0][newN], newNLS[1][newN]])
 
-            self.n2k(int(evEl[1]))
+            self.n2k(evN)
 
             # push all new and pop the smallest
-            for item in list(map(tuple, np.asarray((newNLS[0][newN], newNLS[1][newN])).T)):
+            toPush = list(map(tuple, np.asarray((newNLS[0][newN], newNLS[1][newN])).T))
+            for item in toPush:
                 heapq.heappush(self.heapStruct, item)
 
         return self.LS
