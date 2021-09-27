@@ -79,23 +79,26 @@ class fmm:
 
         log = logging.getLogger('PyFrac.fmm')
 
-        # We do the first heap
-        evEl = heapq.heappop(self.heapStruct)
-
         while min(self.Status) != 1:
+            # We do the heap
+            evEl = heapq.heappop(self.heapStruct)
 
             # we calculate the LS of the neighbors to the smallest object
             newNLS = self.calcLs((self.neiElems[int(evEl[1])], Mesh))
 
             # for these elements we already had a level set so we update the heap
-            updN = self.Status[newNLS[1].astype(int)] == 0
+            updN = (self.Status[newNLS[1].astype(int)] == 0) * (newNLS[1].astype(int) != int(evEl[1]))
             if updN.any():
                 self.addLs([np.asarray([self.LS[newNLS[1][updN].astype(int)], newNLS[0][updN]]).min(axis=0),
                             newNLS[1][updN].astype(int)])
-                # here some type problem....
-                updH = np.where(np.in1d(list(zip(*self.heapStruct))[1], newNLS[1][updN]))[0].astype()
-                self.heapStruct[np.asarray(updH).astype(int)] = \
-                    list(map(tuple, np.asarray((self.LS[newNLS[1][updN].astype(int)], newNLS[1][updN])).T))
+                # here some indexing problem! updH is position of updN
+                updH = np.where(np.in1d(list(zip(*self.heapStruct))[1], newNLS[1][updN]))[0]
+                if len(updH) != len(np.where(updN == True)[0]):
+                    print('The heck')
+                iter = 0
+                for item in list(map(tuple, np.asarray((self.LS[newNLS[1][updN].astype(int)], newNLS[1][updN])).T)):
+                    self.heapStruct[updH[iter]] = item
+                    iter += 1
 
 
             # enter all of these new Nodes
@@ -109,7 +112,5 @@ class fmm:
             # push all new and pop the smallest
             for item in list(map(tuple, np.asarray((newNLS[0][newN], newNLS[1][newN])).T)):
                 heapq.heappush(self.heapStruct, item)
-
-            evEl = heapq.heappop(self.heapStruct)
 
         return self.LS

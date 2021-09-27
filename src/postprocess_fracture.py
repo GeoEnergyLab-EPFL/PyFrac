@@ -1256,18 +1256,17 @@ def write_properties_csv_file(file_name, properties):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_geometric_parameters(fr_list, properties):
+def get_fracture_geometric_parameters(fr_list):
+    # --- Initializing all the solution vectors --- #
     max_breadth = np.full((len(fr_list), 1), np.nan)
     avg_breadth = np.full((len(fr_list), 1), np.nan)
     var_breadth = np.full((len(fr_list), 1), np.nan)
     behind_head_breadth = np.full((len(fr_list), 1), np.nan)
+    dbdz_tail = np.full((len(fr_list), 1), np.nan)
     height = np.full((len(fr_list), 1), np.nan)
-
-    # Head following GeGa14 is \approx .48 Lb so we take it at 0.6 Lb to see
-    delta_gamma = (2700 - properties[1].density) * 9.81
-    K_Ic = properties[0].Kprime[0] * np.sqrt(np.pi / 32)
-
-    dist = 0.75 * (K_Ic / delta_gamma) ** (2 / 3)
+    dist_lower_end = np.full((len(fr_list), 1), np.nan)
+    dist_max_breadth = np.full((len(fr_list), 1), np.nan)
+    l_head = np.full((len(fr_list), 1), np.nan)
 
     iter = 0
 
@@ -1287,22 +1286,83 @@ def get_fracture_geometric_parameters(fr_list, properties):
                                  [np.argmin((left.shape[0], right.shape[0])), :]))
 
         max_breadth[iter] = np.max(breadth[0, ::])
+        dist_max_breadth[iter] = np.abs(np.min(breadth[1, breadth[0, ::] == max_breadth[iter]]))
+
         avg_breadth[iter] = np.mean(breadth[0, ::])
         var_breadth[iter] = np.var(breadth[0, ::])
 
         height[iter] = np.abs(np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
                               np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
+        dist_lower_end[iter] = np.abs(np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
 
-        loc = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - dist
-        if loc <= np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))):
-            behind_head_breadth[iter] = 0
+        opening, line, cells = get_fracture_variable_slice_cell_center(jk.w, jk.mesh, orientation='vertical')
+        z_coord = jk.mesh.CenterCoor[cells][:, 1]
+        ind_zero = np.argmin(np.abs(z_coord))
+        ind_max_w = np.argmax(opening)
+        ind_tip = np.argwhere((np.diff(np.sign(np.diff(opening))) != 0) * 1)[-1][0] + 1
+        if ind_max_w not in set(np.arange(ind_zero, ind_zero + 4)):  # the max is not at the origin so it must be in the head
+            # then we can check if in between the injection point and the max opening (in the head) we have a sign
+            # sign change.
+            if ((np.diff(np.sign(np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1).any():
+                # If we have such a sign change we have a part where the opening reduces and then restarts to grow.
+                # So we search for the sign change closest to the head as the beginning of the head
+                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                               z_coord[ind_zero + 1:ind_max_w - 1][np.where(((np.diff(np.sign(
+                                   np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1) == 1)[0][-1] + 1]
+            else:
+                # If we don't have a sign change we need to search for the inflexion point second closest to the maximum
+                # opening. The closest one is where the opening starts to reduce again towards the max
+                secDer = np.gradient(np.gradient(opening[ind_zero + 1:ind_max_w - 1],
+                                                 z_coord[ind_zero + 1:ind_max_w - 1]),
+                                     z_coord[ind_zero + 1:ind_max_w - 1])
+                if len(np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)) < 2:
+                    l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+                else:
+                    l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                                   z_coord[ind_zero + 1:ind_max_w - 1][
+                                       np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)[-2][0] + 1]
+        elif not (np.sign(
+                np.diff(opening[ind_zero + 1:ind_tip - 2])) == 1.0).any():  # the max is at the origin: and there
+            # is no sign change so we should still be radial
+            # Note: sometimes we get a numerical non-linearity at the tip so that is what we want to exclude here.
+            # The -2 is thus used to exclude the elements closest to the tip.
+            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
         else:
-            behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] - loc).argmin()]
+            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+
+        behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] -
+                                                      (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                                                       l_head[iter])).argmin()]
+
+        # --- We also need to get the gradient of the breadth
+        # Note: we only want it between the max breadth and the head
+        ind_start = np.argwhere(breadth[1, ::] == np.min(breadth[1, breadth[0, ::] == max_breadth[iter]])).flatten()[0]
+        ind_end = np.max([np.abs(breadth[1, ::] - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+                                           - l_head[iter])).argmin(), ind_start + 1])
+        dbdz = np.gradient(breadth[0, ind_start:ind_end + 1], breadth[1, ind_start:ind_end + 1])
+        if ind_end == ind_start + 1:
+            dbdz_tail[iter] = 0.
+        else:
+            dbdz_tail[iter] = np.mean(dbdz)
+
+
+
 
         iter = iter + 1
 
-    return height.flatten().flatten(), max_breadth.flatten().flatten(), avg_breadth.flatten().flatten(),\
-           var_breadth.flatten(), behind_head_breadth.flatten()
+    out_dict = {
+      'l': height.flatten().flatten(),
+      'bmax': max_breadth.flatten().flatten(),
+      'bavg': avg_breadth.flatten().flatten(),
+      'bvar': var_breadth.flatten(),
+      'bhead': behind_head_breadth.flatten(),
+      'dle': dist_lower_end.flatten().flatten(),
+      'dbmax': dist_max_breadth.flatten().flatten(),
+      'lhead': l_head.flatten().flatten(),
+      'dbdz': dbdz_tail.flatten().flatten()
+    }
+
+    return out_dict
 
 
 #-----------------------------------------------------------------------------------------------------------------------
