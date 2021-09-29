@@ -14,6 +14,7 @@ import matplotlib.patches as mpatches
 from properties import PlotProperties
 from matplotlib.collections import PatchCollection
 from level_set import *
+from FMM import fmm
 
 def plotgrid(mesh,ax):
     """Plots the 2D mesh grid
@@ -3111,10 +3112,23 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                     #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, negative_cells, None, True)
 
-                    sgndDist_k =  1e50 * np.ones((mesh.NumberOfElts,), float)
-                    sgndDist_k[global_list_of_TIPcellsONLY] = original_sgndDist_k[global_list_of_TIPcellsONLY]
-                    SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, np.setdiff1d(anularegion,negative_cells), negative_cells)
+                    # sgndDist_k =  1e50 * np.ones((mesh.NumberOfElts,), float)
+                    # sgndDist_k[global_list_of_TIPcellsONLY] = original_sgndDist_k[global_list_of_TIPcellsONLY]
+                    # SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, np.setdiff1d(anularegion,negative_cells), negative_cells)
                     #delta_sgndDist_k = sgndDist_k - original_sgndDist_k
+
+                    toEval = np.setdiff1d(anularegion, negative_cells)
+                    fmmStruct = fmm(mesh)
+
+                    fmmStruct.solveFMM((original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
+                                       toEval, mesh)
+
+                    toEval = np.hstack((negative_cells, global_list_of_TIPcellsONLY))
+                    fmmStruct.solveFMM((-original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
+                                       toEval, mesh)
+
+                    sgndDist_k = fmmStruct.LS
+                    sgndDist_k[toEval] = -sgndDist_k[toEval]
 
                     # Usage of SolveFMM:
                     # 1st arg: vector with the LS value everywhere

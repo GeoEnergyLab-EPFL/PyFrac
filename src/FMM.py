@@ -16,24 +16,16 @@ class fmm:
 
     """
 
-    def __init__(self, known, toEvaluate, mesh):
+    def __init__(self, mesh):
 
         # We set the status of all elements to far away
         self.Status = np.full((mesh.NumberOfElts,), -2, dtype=int)
-        # We set the status of the known elements to known
-        self.Status[toEvaluate] = -1
-        self.Status[known[1]] = 0
 
         # we store the neighbouring elements
         self.neiElems = mesh.NeiElements
 
         # We initialize the level set as infinity
         self.LS = np.full((mesh.NumberOfElts,), np.inf)
-        self.LS[known[1]] = known[0]
-
-        self.heapStruct = list(map(tuple, np.asarray((known[0], known[1])).T))
-        heapq.heapify(self.heapStruct)
-
 
     def n2k(self, newKnown):
         self.Status[newKnown] = 1
@@ -63,20 +55,28 @@ class fmm:
         newLS = np.full((len(calcLS),), -1.)
 
         beta = mesh.hx / mesh.hy
-        theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * (theta_1 - theta_2) ** 2
+        theta_sq = mesh.hx ** 2 * (1 + beta ** 2) - beta ** 2 * (theta_2 - theta_1) ** 2
 
         mask = theta_sq > 0
         nmask = np.invert(mask)
 
         newLS[mask] = np.asarray((theta_1 + beta ** 2 * theta_2 + theta_sq ** 0.5) / (1 + beta ** 2))[mask]
-        newLS[nmask] = np.asarray([theta_1 + mesh.hy, theta_2 + mesh.hx]).min(axis=0)[nmask]
+        newLS[nmask] = np.asarray([theta_2 + mesh.hy, theta_1 + mesh.hx]).min(axis=0)[nmask]
 
         #return np.asarray([newLS, calcLS])
         return [newLS, calcLS]
 
-    def solveFMM(self, Mesh):
+    def solveFMM(self, known, toEvaluate, Mesh):
 
-        while (self.Status == 0).any():
+        # We set the status of the known elements to known
+        self.Status[toEvaluate] = -1
+        self.Status[known[1]] = 1
+        self.LS[known[1]] = known[0]
+
+        self.heapStruct = list(map(tuple, np.asarray((known[0], known[1])).T))
+        heapq.heapify(self.heapStruct)
+
+        while len(self.heapStruct) != 0:
             # We do the heap
             evEl = heapq.heappop(self.heapStruct)
 
@@ -106,11 +106,9 @@ class fmm:
             if newN.any():
                 self.addLs([newNLS[0][newN], newNLS[1][newN]])
 
+                # push all new and pop the smallest
+                toPush = list(map(tuple, np.asarray((newNLS[0][newN], newNLS[1][newN])).T))
+                for item in toPush:
+                    heapq.heappush(self.heapStruct, item)
+
             self.n2k(evN)
-
-            # push all new and pop the smallest
-            toPush = list(map(tuple, np.asarray((newNLS[0][newN], newNLS[1][newN])).T))
-            for item in toPush:
-                heapq.heappush(self.heapStruct, item)
-
-        return self.LS
