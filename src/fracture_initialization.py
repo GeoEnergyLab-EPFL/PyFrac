@@ -264,10 +264,11 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
     fmmStruct.solveFMM((-dist_surv_cells, surv_cells),
                        np.hstack((np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region), surv_cells)), mesh)
 
-    fmmStruct.solveFMM((dist_surv_cells, surv_cells), inner_region, mesh)
+    toEval = np.hstack((surv_cells, inner_region))
+    fmmStruct.solveFMM((dist_surv_cells, surv_cells), toEval, mesh)
 
     sgndDist = fmmStruct.LS
-    sgndDist[inner_region] = -sgndDist[inner_region]
+    sgndDist[toEval] = -sgndDist[toEval]
 
     band = np.arange(mesh.NumberOfElts)
     # costruct the front
