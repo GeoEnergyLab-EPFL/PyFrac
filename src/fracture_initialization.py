@@ -14,6 +14,7 @@ from level_set import SolveFMM, reconstruct_front, UpdateLists, get_front_region
 from volume_integral import Integral_over_cell
 from symmetry import self_influence
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
+from FMM import fmm
 
 
 
@@ -238,23 +239,35 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
         - sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.
     """
 
-    sgndDist = np.full((mesh.NumberOfElts,), 1e50)
-    sgndDist[surv_cells] = -dist_surv_cells
+    # sgndDist = np.full((mesh.NumberOfElts,), 1e50)
+    # sgndDist[surv_cells] = -dist_surv_cells
+    #
+    # front_region = get_front_region(mesh, surv_cells, sgndDist[surv_cells])
+    #
+    # front_region = np.arange(mesh.NumberOfElts)
+    #
+    # # the search region outwards from the front position at last time step
+    # pstv_region = np.where(sgndDist[front_region] >= -(mesh.hx ** 2 + mesh.hy ** 2) ** 0.5)[0]
+    # # the search region inwards from the front position at last time step
+    # ngtv_region = np.where(sgndDist[front_region] < 0)[0]
+    #
+    # # fast marching to get level set
+    # SolveFMM(sgndDist,
+    #          surv_cells,
+    #          inner_region,
+    #          mesh,
+    #          front_region[pstv_region],
+    #          front_region[ngtv_region])
 
-    front_region = get_front_region(mesh, surv_cells, sgndDist[surv_cells])
+    fmmStruct = fmm(mesh)
 
-    # the search region outwards from the front position at last time step
-    pstv_region = np.where(sgndDist[front_region] >= -(mesh.hx ** 2 + mesh.hy ** 2) ** 0.5)[0]
-    # the search region inwards from the front position at last time step
-    ngtv_region = np.where(sgndDist[front_region] < 0)[0]
+    fmmStruct.solveFMM((-dist_surv_cells, surv_cells),
+                       np.hstack((np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region), surv_cells)), mesh)
 
-    # fast marching to get level set
-    SolveFMM(sgndDist,
-             surv_cells,
-             inner_region,
-             mesh,
-             front_region[pstv_region],
-             front_region[ngtv_region])
+    fmmStruct.solveFMM((dist_surv_cells, surv_cells), inner_region, mesh)
+
+    sgndDist = fmmStruct.LS
+    sgndDist[inner_region] = -sgndDist[inner_region]
 
     band = np.arange(mesh.NumberOfElts)
     # costruct the front

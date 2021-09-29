@@ -30,6 +30,7 @@ from HF_reference_solutions import HF_analytical_sol
 from visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory
 from labels import unidimensional_variables
 from properties import PlotProperties
+from FMM import fmm
 
 
 class Fracture:
@@ -653,13 +654,19 @@ class Fracture:
         #     ind_old_elts = []
 
         if direction == None or direction == 'reduce':
-            # interpolate the level set by first advancing and then interpolating
-            SolveFMM(self.sgndDist,
-                     self.EltRibbon,
-                     self.EltChannel,
-                     self.mesh,
-                     [],
-                     self.EltChannel)
+            # # interpolate the level set by first advancing and then interpolating
+            # SolveFMM(self.sgndDist,
+            #          self.EltRibbon,
+            #          self.EltChannel,
+            #          self.mesh,
+            #          [],
+            #          self.EltChannel)
+
+            fmmStruct = fmm(self.mesh)
+
+            fmmStruct.solveFMM((-self.sgndDist[self.EltRibbon], self.EltRibbon), self.EltChannel, self.mesh)
+
+            self.sgndDist[self.EltChannel] = -fmmStruct.LS[self.EltChannel]
 
             sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
                                        self.sgndDist[self.EltChannel],
@@ -736,13 +743,19 @@ class Fracture:
                                     method='linear',
                                     fill_value=0.)
 
-            # interpolate last level set by first advancing to the end of the grid and then interpolating
-            SolveFMM(self.sgndDist_last,
-                     self.EltRibbon,
-                     self.EltChannel,
-                     self.mesh,
-                     [],
-                     self.EltChannel)
+            # # interpolate last level set by first advancing to the end of the grid and then interpolating
+            # SolveFMM(self.sgndDist_last,
+            #          self.EltRibbon,
+            #          self.EltChannel,
+            #          self.mesh,
+            #          [],
+            #          self.EltChannel)
+
+            fmmStruct = fmm(self.mesh)
+
+            fmmStruct.solveFMM((-self.sgndDist_last[self.EltRibbon], self.EltRibbon), self.EltChannel, self.mesh)
+
+            self.sgndDist_last[self.EltChannel] = -fmmStruct.LS[self.EltChannel]
 
             sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
                                        self.sgndDist_last[self.EltChannel],
@@ -776,12 +789,17 @@ class Fracture:
             # if len(ind_old_elts) != 0:
             #     sgndDist_copy[ind_old_elts] = self.sgndDist
 
-            SolveFMM(sgndDist_copy,
-                     EltRibbon,
-                     EltChannel,
-                     coarse_mesh,
-                     cells_outside,
-                     [])
+            # SolveFMM(sgndDist_copy,
+            #          EltRibbon,
+            #          EltChannel,
+            #          coarse_mesh,
+            #          cells_outside,
+            #          [])
+            fmmStruct = fmm(self.mesh)
+
+            fmmStruct.solveFMM((sgndDist_copy[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
+
+            sgndDist_copy[cells_outside] = fmmStruct.LS[cells_outside]
 
             # evaluate last level set on the coarse mesh to evaluate velocity of the tip
             EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
@@ -792,12 +810,18 @@ class Fracture:
             # if len(ind_old_elts) != 0:
             #     sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
 
-            SolveFMM(sgndDist_last_coarse,
-                     EltRibbon,
-                     EltChannel,
-                     coarse_mesh,
-                     cells_outside,
-                     [])
+            # SolveFMM(sgndDist_last_coarse,
+            #          EltRibbon,
+            #          EltChannel,
+            #          coarse_mesh,
+            #          cells_outside,
+            #          [])
+
+            fmmStruct = fmm(self.mesh)
+
+            fmmStruct.solveFMM((sgndDist_last_coarse[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
+
+            sgndDist_last_coarse[cells_outside] = fmmStruct.LS[cells_outside]
 
             if self.timeStep_last is None:
                 self.timeStep_last = 1

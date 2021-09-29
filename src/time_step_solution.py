@@ -21,6 +21,7 @@ from anisotropy import *
 from labels import TS_errorMessages
 from explicit_RKL import solve_width_pressure_RKL2
 from postprocess_fracture import append_to_json_file
+from FMM import fmm
 
 def attempt_time_step(Frac, C, mat_properties, fluid_properties, sim_properties, inj_properties,
                       timeStep, perfNode=None):
@@ -538,23 +539,38 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
         #     Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
-        front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+        # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
 
         # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
 
         # the search region outwards from the front position at last time step
-        pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-                                                                       Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+        #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
         # the search region inwards from the front position at last time step
-        ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+        # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
 
         # SOLVE EIKONAL eq via Fast Marching Method to get the distance from tip for each cell.
-        SolveFMM(sgndDist_k,
-                 Fr_lstTmStp.EltRibbon,
-                 Fr_lstTmStp.EltChannel,
-                 Fr_lstTmStp.mesh,
-                 front_region[pstv_region],
-                 front_region[ngtv_region])
+        # SolveFMM(sgndDist_k,
+        #          Fr_lstTmStp.EltRibbon,
+        #          Fr_lstTmStp.EltChannel,
+        #          Fr_lstTmStp.mesh,
+        #          front_region[pstv_region],
+        #          front_region[ngtv_region])
+
+        toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
+        fmmStruct = fmm(Fr_lstTmStp.mesh)
+
+        fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval, Fr_lstTmStp.mesh)
+
+        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), Fr_lstTmStp.EltChannel,
+                           Fr_lstTmStp.mesh)
+
+        sgndDist_k = fmmStruct.LS
+        sgndDist_k[Fr_lstTmStp.EltChannel] = -sgndDist_k[Fr_lstTmStp.EltChannel]
+
+        front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+        pstv_region = np.where(sgndDist_k[front_region] >=
+                               - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
@@ -627,23 +643,41 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
                 # - pstv_region by 1 cell tickness
                 # - ngtv_region by 1 cell tickness
 
-                # front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
-                front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-                # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
-                #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
-                # the search region outwards from the front position at last time step
-                pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-                                                                               Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-                # the search region inwards from the front position at last time step
-                ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+                # # front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
+                # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+                # # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+                # #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
+                # # the search region outwards from the front position at last time step
+                # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+                #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+                # # the search region inwards from the front position at last time step
+                # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+                #
+                # # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
+                # SolveFMM(sgndDist_k,
+                #          Fr_lstTmStp.EltTip,
+                #          Fr_lstTmStp.EltCrack,
+                #          Fr_lstTmStp.mesh,
+                #          front_region[pstv_region],
+                #          front_region[ngtv_region])
+                print('As long as we calculate it on all elements we should never get here!')
+                fmmStruct = fmm(Fr_lstTmStp.mesh)
 
-                # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
-                SolveFMM(sgndDist_k,
-                         Fr_lstTmStp.EltTip,
-                         Fr_lstTmStp.EltCrack,
-                         Fr_lstTmStp.mesh,
-                         front_region[pstv_region],
-                         front_region[ngtv_region])
+                fmmStruct.solveFMM(
+                    (-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
+                    np.hstack((Fr_lstTmStp.EltChannel, Fr_lstTmStp.EltTip)), Fr_lstTmStp.mesh)
+
+                toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
+                fmmStruct.solveFMM(
+                    (Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
+                    toEval, Fr_lstTmStp.mesh)
+
+                sgndDist_k = -fmmStruct.LS
+                sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+                pstv_region = np.where(sgndDist_k[front_region] >=
+                                       - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
         sgndDist_k = sgndDist_k_temp
 
         del correct_size_of_pstv_region
@@ -651,9 +685,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, timeStep, Qin, mat_propert
         raise SystemExit("projection method not supported")
 
 
-    if not np.in1d(EltsTipNew, front_region).any():
-        raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
-                         " level set.")
+    # if not np.in1d(EltsTipNew, front_region).any():
+    #     raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
+    #                      " level set.")
 
     # If the angle and length of the perpendicular are not correct
     nan = np.logical_or(np.isnan(alpha_k), np.isnan(l_k))
@@ -1655,34 +1689,48 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
 
     """
     log = logging.getLogger('PyFrac.time_step_explicit_front')
-    sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
-                                                                          # float value. (algorithm requires inf)
-    sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
-
-    sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
-                                                                                 Fr_lstTmStp.v)
-    # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+    # sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with maximum
+    #                                                                       # float value. (algorithm requires inf)
+    # sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
     #
-    # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
-    #         Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    # sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
+    #                                                                              Fr_lstTmStp.v)
+    # # # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+    # # #
+    # # # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
+    # # #         Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+    #
+    # #front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
+    #
+    # # the search region outwards from the front position at last time step
+    # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+    #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    # # the search region inwards from the front position at last time step
+    # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+    #
+    # # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
+    # SolveFMM(sgndDist_k,
+    #          Fr_lstTmStp.EltTip,
+    #          Fr_lstTmStp.EltCrack,
+    #          Fr_lstTmStp.mesh,
+    #          front_region[pstv_region],
+    #          front_region[ngtv_region])
+    fmmStruct = fmm(Fr_lstTmStp.mesh)
+
+    fmmStruct.solveFMM((-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
+                    np.hstack((Fr_lstTmStp.EltChannel, Fr_lstTmStp.EltTip)), Fr_lstTmStp.mesh)
+
+    toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
+    fmmStruct.solveFMM((Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
+                       toEval, Fr_lstTmStp.mesh)
+
+    sgndDist_k = -fmmStruct.LS
+    sgndDist_k[toEval] = -sgndDist_k[toEval]
+
     front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-
-    # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
-    #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
-
-    # the search region outwards from the front position at last time step
-    pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-                                                                   Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-    # the search region inwards from the front position at last time step
-    ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
-
-    # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
-    SolveFMM(sgndDist_k,
-             Fr_lstTmStp.EltTip,
-             Fr_lstTmStp.EltCrack,
-             Fr_lstTmStp.mesh,
-             front_region[pstv_region],
-             front_region[ngtv_region])
+    pstv_region = np.where(sgndDist_k[front_region] >=
+                           - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -1719,7 +1767,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                                                                           lstTmStp_EltCrack0=Fr_lstTmStp.fronts_dictionary['crackcells_0'], oldfront=Fr_lstTmStp.Ffront)
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
-                                # or because a fictitius cell has intersected the mesh.frontlist
+                               # or because a fictitius cell has intersected the mesh.frontlist
                 return exitstatus, None
 
             if correct_size_of_pstv_region[1]:
@@ -1738,32 +1786,50 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
                 # - pstv_region by 1 cell tickness
                 # - ngtv_region by 1 cell tickness
 
-                #front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
+                # #front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
+                # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+                #
+                # # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+                # #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
+                #
+                # # the search region outwards from the front position at last time step
+                # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+                #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+                # # the search region inwards from the front position at last time step
+                # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+                #
+                # #sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,),float)  # Initializing the cells with extremely
+                #                                                                      # large float value. (algorithm requires inf)
+                # #sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
+                #
+                # #sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
+                # #                                                                             Fr_lstTmStp.v)
+                #
+                # # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
+                # SolveFMM(sgndDist_k,
+                #          Fr_lstTmStp.EltTip,
+                #          Fr_lstTmStp.EltCrack,
+                #          Fr_lstTmStp.mesh,
+                #          front_region[pstv_region],
+                #          front_region[ngtv_region])
+                print('As long as we calculate it on all elements we should never get here!')
+                fmmStruct = fmm(Fr_lstTmStp.mesh)
+
+                fmmStruct.solveFMM(
+                    (-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
+                    np.hstack((Fr_lstTmStp.EltChannel, Fr_lstTmStp.EltTip)), Fr_lstTmStp.mesh)
+
+                toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
+                fmmStruct.solveFMM(
+                    (Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
+                    toEval, Fr_lstTmStp.mesh)
+
+                sgndDist_k = -fmmStruct.LS
+                sgndDist_k[toEval] = -sgndDist_k[toEval]
+
                 front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-
-                # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
-                #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
-
-                # the search region outwards from the front position at last time step
-                pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-                                                                               Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-                # the search region inwards from the front position at last time step
-                ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
-
-                #sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,),float)  # Initializing the cells with extremely
-                                                                                     # large float value. (algorithm requires inf)
-                #sgndDist_k[Fr_lstTmStp.EltChannel] = 0  # for cells inside the fracture
-
-                #sgndDist_k[Fr_lstTmStp.EltTip] = Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep *
-                #                                                                             Fr_lstTmStp.v)
-
-                # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
-                SolveFMM(sgndDist_k,
-                         Fr_lstTmStp.EltTip,
-                         Fr_lstTmStp.EltCrack,
-                         Fr_lstTmStp.mesh,
-                         front_region[pstv_region],
-                         front_region[ngtv_region])
+                pstv_region = np.where(sgndDist_k[front_region] >=
+                                       - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
         sgndDist_k = sgndDist_k_temp
         del correct_size_of_pstv_region
@@ -1888,8 +1954,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         # todo close tip width instrumentation
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
-    stagnant = (-(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) /
-                (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
+    stagnant = ( Vel_k / (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
     # we need to remove it:
     # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
     #     log.warning("Stagnant front is only supported with universal tip asymptote. Continuing...")
@@ -2178,32 +2243,43 @@ def time_step_explicit_front(Fr_lstTmStp, C, timeStep, Qin, mat_properties, flui
         sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
                                                        Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
 
-        # region expected to have the front after propagation. The signed distance of the cells only in this region will
-        # evaluated with the fast marching method to avoid unnecessary computation cost
-        # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
-        # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
-        #     Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-        front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+        # # region expected to have the front after propagation. The signed distance of the cells only in this region will
+        # # evaluated with the fast marching method to avoid unnecessary computation cost
+        # # current_prefactor = sim_properties.get_time_step_prefactor(Fr_lstTmStp.time + timeStep)
+        # # front_region = np.where(abs(Fr_lstTmStp.sgndDist) < current_prefactor * sim_properties.prefactorLevelSetBand * (
+        # #     Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+        #
+        # # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
+        # #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
+        #
+        # if not np.in1d(Fr_kplus1.EltTip, front_region).any():
+        #     raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
+        #                      " level set.")
+        # # the search region outwards from the front position at last time step
+        # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
+        #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # # the search region inwards from the front position at last time step
+        # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+        #
+        # # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
+        # SolveFMM(sgndDist_k,
+        #          Fr_lstTmStp.EltRibbon,
+        #          Fr_lstTmStp.EltChannel,
+        #          Fr_lstTmStp.mesh,
+        #          front_region[pstv_region],
+        #          front_region[ngtv_region])
 
-        # front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon,
-        #                                 sgndDist_k[Fr_lstTmStp.EltRibbon])
+        toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
+        fmmStruct = fmm(Fr_lstTmStp.mesh)
 
-        if not np.in1d(Fr_kplus1.EltTip, front_region).any():
-            raise SystemExit("The tip elements are not in the band. Increase the size of the band for FMM to evaluate"
-                             " level set.")
-        # the search region outwards from the front position at last time step
-        pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-                                                                       Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-        # the search region inwards from the front position at last time step
-        ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+        fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval, Fr_lstTmStp.mesh)
 
-        # SOLVE EIKONAL eq via Fast Marching Method starting to get the distance from tip for each cell.
-        SolveFMM(sgndDist_k,
-                 Fr_lstTmStp.EltRibbon,
-                 Fr_lstTmStp.EltChannel,
-                 Fr_lstTmStp.mesh,
-                 front_region[pstv_region],
-                 front_region[ngtv_region])
+        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), Fr_lstTmStp.EltChannel,
+                           Fr_lstTmStp.mesh)
+
+        sgndDist_k = fmmStruct.LS
+        sgndDist_k[Fr_lstTmStp.EltChannel] = -sgndDist_k[Fr_lstTmStp.EltChannel]
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
