@@ -24,7 +24,6 @@ fp.close()
 # generate the list with all examples
 example_list = glob.glob('*.py')
 example_list.remove('batch_run.py')
-example_list.remove('ReproduceDikeSimulations.py')
 
 # get the name of the file
 filename = 'timing__' + socket.gethostname() + '__' + datetime.datetime.now().strftime("%Y-%m-%d__%H_%M_%S")
