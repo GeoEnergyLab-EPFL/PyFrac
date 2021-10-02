@@ -239,34 +239,20 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
         - sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.
     """
 
-    # sgndDist = np.full((mesh.NumberOfElts,), 1e50)
-    # sgndDist[surv_cells] = -dist_surv_cells
-    #
-    # front_region = get_front_region(mesh, surv_cells, sgndDist[surv_cells])
-    #
-    # front_region = np.arange(mesh.NumberOfElts)
-    #
-    # # the search region outwards from the front position at last time step
-    # pstv_region = np.where(sgndDist[front_region] >= -(mesh.hx ** 2 + mesh.hy ** 2) ** 0.5)[0]
-    # # the search region inwards from the front position at last time step
-    # ngtv_region = np.where(sgndDist[front_region] < 0)[0]
-    #
-    # # fast marching to get level set
-    # SolveFMM(sgndDist,
-    #          surv_cells,
-    #          inner_region,
-    #          mesh,
-    #          front_region[pstv_region],
-    #          front_region[ngtv_region])
-
+    # Creating a fmm structure to solve the level set
     fmmStruct = fmm(mesh)
 
+    # We define the survey cells as the known elements and solve from there inwards (inside the fracture). To do
+    # so, we need a sign change on the level set (positive inside)
     fmmStruct.solveFMM((-dist_surv_cells, surv_cells),
                        np.hstack((np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region), surv_cells)), mesh)
 
+    # We define the survey cells as the known elements and solve from there outwards to the domain boundary.
     toEval = np.hstack((surv_cells, inner_region))
     fmmStruct.solveFMM((dist_surv_cells, surv_cells), toEval, mesh)
 
+    # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+    # negative inside and positive outside.
     sgndDist = fmmStruct.LS
     sgndDist[toEval] = -sgndDist[toEval]
 

@@ -654,20 +654,19 @@ class Fracture:
         #     ind_old_elts = []
 
         if direction == None or direction == 'reduce':
-            # # interpolate the level set by first advancing and then interpolating
-            # SolveFMM(self.sgndDist,
-            #          self.EltRibbon,
-            #          self.EltChannel,
-            #          self.mesh,
-            #          [],
-            #          self.EltChannel)
 
+            ## -- We interpolate the level set everywhere inside the fracture -- ##
+            # Creating a fmm structure to solve the level set
             fmmStruct = fmm(self.mesh)
 
+            # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture).
+            # To do so, we need a sign change on the level set (positive inside).
             fmmStruct.solveFMM((-self.sgndDist[self.EltRibbon], self.EltRibbon), self.EltChannel, self.mesh)
 
+            # We adapt the level set of the fracture object by chaning back the sign.
             self.sgndDist[self.EltChannel] = -fmmStruct.LS[self.EltChannel]
 
+            # Now we interpolate the level set inside the fracture from the old mesh to the new mesh.
             sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
                                        self.sgndDist[self.EltChannel],
                                        coarse_mesh.CenterCoor,
@@ -743,20 +742,18 @@ class Fracture:
                                     method='linear',
                                     fill_value=0.)
 
-            # # interpolate last level set by first advancing to the end of the grid and then interpolating
-            # SolveFMM(self.sgndDist_last,
-            #          self.EltRibbon,
-            #          self.EltChannel,
-            #          self.mesh,
-            #          [],
-            #          self.EltChannel)
-
+            ## -- We interpolate the level set of the last time step everywhere inside the fracture -- ##
+            # Creating a fmm structure to solve the level set
             fmmStruct = fmm(self.mesh)
 
+            # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture).
+            # To do so, we need a sign change on the level set (positive inside).
             fmmStruct.solveFMM((-self.sgndDist_last[self.EltRibbon], self.EltRibbon), self.EltChannel, self.mesh)
 
+            # We adapt the level set of the fracture object by chaning back the sign.
             self.sgndDist_last[self.EltChannel] = -fmmStruct.LS[self.EltChannel]
 
+            # Now we interpolate the level set of the last tmStp inside the fracture from the old mesh to the new mesh.
             sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
                                        self.sgndDist_last[self.EltChannel],
                                        coarse_mesh.CenterCoor,
@@ -784,43 +781,32 @@ class Fracture:
             EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
             EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
 
-            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
-            # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-            # if len(ind_old_elts) != 0:
-            #     sgndDist_copy[ind_old_elts] = self.sgndDist
+            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
 
-            # SolveFMM(sgndDist_copy,
-            #          EltRibbon,
-            #          EltChannel,
-            #          coarse_mesh,
-            #          cells_outside,
-            #          [])
+            ## -- We interpolate the level set of the fractue everywhere outside the fracture -- ##
+            # Creating a fmm structure to solve the level set
             fmmStruct = fmm(self.mesh)
 
+            # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
             fmmStruct.solveFMM((sgndDist_copy[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
 
+            # We adapt the level set of the fracture object.
             sgndDist_copy[cells_outside] = fmmStruct.LS[cells_outside]
 
             # evaluate last level set on the coarse mesh to evaluate velocity of the tip
             EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
             EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
 
-            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
-            # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-            # if len(ind_old_elts) != 0:
-            #     sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
+            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
 
-            # SolveFMM(sgndDist_last_coarse,
-            #          EltRibbon,
-            #          EltChannel,
-            #          coarse_mesh,
-            #          cells_outside,
-            #          [])
-
+            ## -- We interpolate the level set of the last time step everywhere outside the fracture -- ##
+            # Creating a fmm structure to solve the level set
             fmmStruct = fmm(self.mesh)
 
+            # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
             fmmStruct.solveFMM((sgndDist_last_coarse[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
 
+            # We adapt the level set of the fracture object.
             sgndDist_last_coarse[cells_outside] = fmmStruct.LS[cells_outside]
 
             if self.timeStep_last is None:
