@@ -3112,31 +3112,23 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
 
                     #fig1 = plot_cells(anularegion, mesh, sgndDist_k, Ribbon, negative_cells, None, True)
 
-                    # sgndDist_k =  1e50 * np.ones((mesh.NumberOfElts,), float)
-                    # sgndDist_k[global_list_of_TIPcellsONLY] = original_sgndDist_k[global_list_of_TIPcellsONLY]
-                    # SolveFMM(sgndDist_k, np.asarray(global_list_of_TIPcellsONLY), negative_cells, mesh, np.setdiff1d(anularegion,negative_cells), negative_cells)
-                    #delta_sgndDist_k = sgndDist_k - original_sgndDist_k
-
-                    toEval = np.setdiff1d(anularegion, negative_cells)
+                    # Creating a fmm structure to solve the level set
                     fmmStruct = fmm(mesh)
 
+                    # The original tip cells are the location of the known solution and we solve outwards from there.
+                    toEval = np.setdiff1d(anularegion, negative_cells)
                     fmmStruct.solveFMM((original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
                                        toEval, mesh)
 
+                    # The original tip cells are the location of the known solution and we solve inwards from there.
+                    # Sign change needed.
                     toEval = np.hstack((negative_cells, global_list_of_TIPcellsONLY))
                     fmmStruct.solveFMM((-original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
                                        toEval, mesh)
 
+                    # Assign the LS and change back the sign.
                     sgndDist_k = fmmStruct.LS
                     sgndDist_k[toEval] = -sgndDist_k[toEval]
-
-                    # Usage of SolveFMM:
-                    # 1st arg: vector with the LS value everywhere
-                    # 2nd arg: list of positions (or cell names) where the LS is KNOWN => it should be a set of closed fronts!
-                    # 3rd arg: unknown need ??
-                    # 4th arg: mesh obj
-                    # 5th arg: name of the cells where to compute the LS => we expect positive LS values here!
-                    # 6th arg: name of the cells where to compute the LS => we expect negative LS values here!
 
                 fullyfractured_angle = []
                 fullyfractured_distance = []
