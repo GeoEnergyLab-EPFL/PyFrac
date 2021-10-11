@@ -577,21 +577,21 @@ class CartesianMesh:
         cellIDs = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2. + precision),
                        np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2. + precision))
 
-        # if len(cellIDs) > 1:
-        #     deltaXi = self.CenterCoor[cellIDs, 0] - x
-        #     deltaXi = deltaXi * deltaXi
-        #     deltaYi = self.CenterCoor[cellIDs, 1] - y
-        #     deltaYi = deltaYi * deltaYi
-        #     dist = deltaXi + deltaYi
-        #     closest = np.where(dist==dist.min())[0]
-        #     if len(closest)>1:
-        #         log.warning("Can't find the closest among "+str(len(closest))+" cells --> returning the first of them")
-        #         return np.asarray([cellIDs[0]])
-        #     else:
-        #         return np.asarray([cellIDs[closest]])
-        # else:
-        #     return cellIDs
-        return cellIDs
+        if len(cellIDs) > 1:
+            deltaXi = self.CenterCoor[cellIDs, 0] - x
+            deltaXi = deltaXi * deltaXi
+            deltaYi = self.CenterCoor[cellIDs, 1] - y
+            deltaYi = deltaYi * deltaYi
+            dist = deltaXi + deltaYi
+            closest = np.where(dist==dist.min())[0]
+            if len(closest)>1:
+                log.warning("Can't find the closest among "+str(len(closest))+" cells --> returning the first of them")
+                return np.asarray([cellIDs[0]])
+            else:
+                return np.asarray([cellIDs[closest]])
+        else:
+            return cellIDs
+
 #-----------------------------------------------------------------------------------------------------------------------
 
     def Neighbors(self, elem, nx, ny):
