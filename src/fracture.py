@@ -572,9 +572,9 @@ class Fracture:
             if mytype is None:
                 new = np.full(new_size, value_new_elem)
             else:
-                new = np.full(new_size, value_new_elem,mytype)
+                new = np.full(new_size, value_new_elem, mytype)
 
-        new[ind_old_elts]=old
+        new[ind_old_elts] = old
         return new
 
     def update_index(self, old, ind_old_elts, size, mytype=None):
@@ -869,10 +869,11 @@ class Fracture:
             ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
             newNumberOfElts = coarse_mesh.NumberOfElts
             self.CellStatus=        self.update_value(self.CellStatus,        ind_new_elts,ind_old_elts,newNumberOfElts,     value_new_elem=0,mytype=int)
-            self.EltChannel=        self.update_index(self.EltChannel,        ind_old_elts,self.EltChannel.size,mytype=int)
+            self.EltChannel=        self.update_index(self.EltChannel,        ind_old_elts,self.EltChannel.size, mytype=int)
             self.EltCrack=          self.update_index(self.EltCrack,          ind_old_elts,self.EltCrack.size,  mytype=int)
             self.EltRibbon=         self.update_index(self.EltRibbon,         ind_old_elts,self.EltRibbon.size, mytype=int)
-            self.EltTip=            self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size,    mytype=int)
+            self.EltTip=            self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size, mytype=int)
+            self.EltTipBefore=      self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size, mytype=int)
             self.InCrack=           self.update_value(self.InCrack,           ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0,  mytype=int)
             self.LkOff=             self.update_value(self.LkOff,             ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
             self.Tarrival=          self.update_value(self.Tarrival,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.nan,mytype=np.float64)
@@ -882,8 +883,8 @@ class Fracture:
             self.muPrime=           self.update_value(self.muPrime,           ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=fluid_prop.muPrime, mytype=np.float64)
             self.pFluid=            self.update_value(self.pFluid,            ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0., mytype=np.float64)
             self.pNet=              self.update_value(self.pNet,              ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0., mytype=np.float64)
-            self.sgndDist=          self.update_value(self.sgndDist,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=1.e50,mytype=np.float64)
-            self.sgndDist_last=     self.update_value(self.sgndDist_last,     ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=1.e50,mytype=np.float64)
+            self.sgndDist=          self.update_value(self.sgndDist,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.inf,mytype=np.float64)
+            self.sgndDist_last=     self.update_value(self.sgndDist_last,     ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.inf,mytype=np.float64)
             self.w=                 self.update_value(self.w,                 ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
             self.wHist=             self.update_value(self.wHist,             ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
 
