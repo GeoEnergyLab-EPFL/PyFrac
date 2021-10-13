@@ -1286,7 +1286,9 @@ def get_fracture_geometric_parameters(fr_list):
                                  [np.argmin((left.shape[0], right.shape[0])), :]))
 
         max_breadth[iter] = np.max(breadth[0, ::])
-        dist_max_breadth[iter] = np.abs(np.min(breadth[1, breadth[0, ::] == max_breadth[iter]]))
+
+        dist_max_breadth[iter] = np.abs(np.min(breadth[1, breadth[0, ::] >= 0.975 * max_breadth[iter]])) # we account for
+        # a 2.5% error on the breadth
 
         avg_breadth[iter] = np.mean(breadth[0, ::])
         var_breadth[iter] = np.var(breadth[0, ::])
@@ -1322,13 +1324,21 @@ def get_fracture_geometric_parameters(fr_list):
                                    z_coord[ind_zero + 1:ind_max_w - 1][
                                        np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)[-2][0] + 1]
         elif not (np.sign(
-                np.diff(opening[ind_zero + 1:ind_tip - 2])) == 1.0).any():  # the max is at the origin: and there
+                np.diff(opening[ind_zero + 1:ind_tip - 2])) == 1.0)[4:].any():  # the max is at the origin: and there
             # is no sign change so we should still be radial
             # Note: sometimes we get a numerical non-linearity at the tip so that is what we want to exclude here.
             # The -2 is thus used to exclude the elements closest to the tip.
             l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
         else:
-            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+            # So we have the max at the origin but we have a head. We need to get where the max of the head
+            # is located as to solve again for the inflection point from there on
+            ind_inc = np.argwhere((np.diff(np.sign(np.diff(opening[ind_zero + 1:]))) == 1) * 1)[0][0] # Index where we
+                                                                                    # get out of the source influence
+            ind_w_max_head = np.argmax(opening[ind_zero + 1:][ind_inc:]) # index of the maximum opening in the head
+            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                               z_coord[ind_zero + 1:][ind_inc:][:ind_w_max_head][np.where(((np.diff(np.sign(
+                                   np.diff(opening[ind_zero + 1:][ind_inc:][:ind_w_max_head]))) != 0) * 1) == 1)[0][-1]
+                                                                   + 1]
 
         behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] -
                                                       (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
