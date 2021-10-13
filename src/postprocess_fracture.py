@@ -1332,7 +1332,7 @@ def get_fracture_geometric_parameters(fr_list):
         else:
             # So we have the max at the origin but we have a head. We need to get where the max of the head
             # is located as to solve again for the inflection point from there on
-            ind_inc = np.argwhere((np.diff(np.sign(np.diff(opening[ind_zero + 1:]))) == 1) * 1)[0][0] # Index where we
+            ind_inc = np.argwhere((np.sign(np.diff(opening[ind_zero + 1:])) == 1) * 1)[0][0] - 1 # Index where we
                                                                                     # get out of the source influence
             ind_w_max_head = np.argmax(opening[ind_zero + 1:][ind_inc:]) # index of the maximum opening in the head
             l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
