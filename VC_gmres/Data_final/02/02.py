@@ -77,20 +77,19 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-#run = False
-plot_B = False
+run = False
 #----
-run_dir =  "./"
+run_dir =  "./Data/02"
 #----
 restart = False
 #----
 use_HMAT = False
 #----
 use_direct_TOEPLITZ = True
-output_fol  = "./"
+output_fol  = run_dir
 output_fol_B = run_dir
 #----
-use_iterative = False
+use_iterative = True
 ftPntJUMP = 1
 ############################
 
@@ -128,7 +127,6 @@ if run:
         delta = 0.0005
         return smoothing(K_Ic, 1.47*K_Ic, r, delta, x)
 
-
     # plot x_max vs time
     # import matplotlib.pyplot as plt
     # xlabel = 'x [m]'
@@ -152,6 +150,7 @@ if run:
                               Eprime,
                               K1c_func=K1c_func,
                               confining_stress_func = sigmaO_func,
+                              confining_stress=0.,
                               minimum_width=0.)
 
     if use_iterative:
@@ -175,7 +174,7 @@ if run:
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=0.001)
+    Fluid = FluidProperties(viscosity=0.)
 
     # simulation properties
     simulProp = SimulationProperties()
@@ -185,12 +184,12 @@ if run:
     simulProp.saveToDisk = True
     simulProp.tolFractFront = 0.0001
     simulProp.plotTSJump = 1
-    simulProp.set_volumeControl(False)
+    simulProp.set_volumeControl(True)
     if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
     simulProp.set_outputFolder(run_dir)   # the disk address where the files are saved
-    #simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
-    simulProp.plotVar = ['footprint', 'custom','regime']
+    simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
+    simulProp.plotVar = ['footprint', 'custom']#,'regime']
     simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
 
@@ -207,7 +206,7 @@ if run:
     simulProp.tHyst__ = []
 
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=0.4)
+    Fr_geometry = Geometry('radial', radius=0.3)
 
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:
@@ -219,7 +218,7 @@ if run:
             C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
     #init_param = InitializationParameters(Fr_geometry, regime='K')
-    init_param = InitializationParameters(Fr_geometry, regime='static',net_pressure=1.1e6, elasticity_matrix=C)
+    init_param = InitializationParameters(Fr_geometry, regime='static-radial-K', elasticity_matrix=C)
 
     # creating fracture object
     Fr = Fracture(Mesh,
@@ -285,12 +284,12 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     time_srs_A = get_fracture_variable(Fr_list_A, variable='time')  # list of times
     Solid_A, Fluid_A, Injection_A, simulProp_A = properties_A
     double_L_A, x_max_A, p_A, w_A, time_simul_A = get_info(Fr_list_A)
-    if plot_B:
-        # loading simulation results B
-        Fr_list_B, properties_B = load_fractures(address=output_fol_B, load_all=True)  # load all fractures
-        time_srs_B = get_fracture_variable(Fr_list_B, variable='time')  # list of times
-        Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
-        double_L_B, x_max_B, p_B, w_B, time_simul_B = get_info(Fr_list_B)
+
+    # loading simulation results B
+    Fr_list_B, properties_B = load_fractures(address=output_fol_B, load_all=True)  # load all fractures
+    time_srs_B = get_fracture_variable(Fr_list_B, variable='time')  # list of times
+    Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
+    double_L_B, x_max_B, p_B, w_B, time_simul_B = get_info(Fr_list_B)
 
     # plot fracture radius
     my_list = []
@@ -298,10 +297,9 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
         if Fr_list_A[i].time < mytime:
             my_list.append(Fr_list_A[i])
-    if plot_B:
-        for i in np.arange(0, len(Fr_list_B), ftPntJUMP):
-            if Fr_list_B[i].time < mytime:
-                my_list.append(Fr_list_B[i])
+    for i in np.arange(0, len(Fr_list_B), ftPntJUMP):
+        if Fr_list_B[i].time < mytime:
+            my_list.append(Fr_list_B[i])
     plot_prop = PlotProperties()
     Fig_R = plot_fracture_list(my_list,
                                variable='footprint',
@@ -432,13 +430,13 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
         p_rad.append(((np.pi ** 3. * (0.5e6)**6 /(12*Solid_A.Eprime*Injection_A.injectionRate.max()*time_simul_A[i]))**(1/5))/1.e6)
     ax.plot(time_simul_A, p_ana, color='g')
     ax.plot(time_simul_A, p_rad, color='g')
-    if plot_B: ax.scatter(time_simul_B, p_B, color='r')
+    ax.scatter(time_simul_B, p_B, color='r')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
     #     p_scaling.append(0.05/time_simul_A[i])
     # ax.plot(time_simul_A, p_scaling, color='b')
 
-    if plot_B: ax.scatter(time_simul_B, p_B, color='g')
+    ax.scatter(time_simul_B, p_B, color='g')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
     #     p_scaling.append(0.2660 * time_simul_A[i] ** (-1 / 7))
@@ -473,10 +471,10 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ax.scatter(time_simul_A, double_L_A, color='k')
 
     ax.plot(time_simul_A, doubleL_scaling, color='g')
-    if plot_B:
-        for i in range(len(time_simul_B)):
-            double_L_B[i] = double_L_B[i]/H
-        ax.scatter(time_simul_B, double_L_B, color='r')
+
+    for i in range(len(time_simul_B)):
+        double_L_B[i] = double_L_B[i]/H
+    ax.scatter(time_simul_B, double_L_B, color='r')
     doubleL_radial = []
     for i in range(len(time_simul_A)):
         doubleL_radial.append(6/H*time_simul_A[i]**(2/5))
@@ -502,7 +500,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ylabel = 'x max [m]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, x_max_A, color='k')
-    if plot_B: ax.scatter(time_simul_B, x_max_B, color='r')
+    ax.scatter(time_simul_B, x_max_B, color='r')
     p_const = []
     for i in range(len(time_simul_A)):
         p_const.append(1.6)
@@ -524,7 +522,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ylabel = 'w center [m]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, w_A, color='k')
-    if plot_B: ax.scatter(time_simul_B, w_B, color='r')
+    ax.scatter(time_simul_B, w_B, color='r')
     w_scaling = []
     w_radial = []
     for i in range(len(time_simul_A)):
