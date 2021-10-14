@@ -145,8 +145,8 @@ if run:
     # # the following lines are needed if you want to restart an existing simulation #
     # ################################################################################
     if restart:
-        newMesh = CartesianMesh(4, 4, 101, 101)
-
+        #newMesh = CartesianMesh(4, 4, 101, 101)
+        newMesh = CartesianMesh(0.3, 0.3, 31, 31)
 
         from visualization import *
         Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
@@ -161,7 +161,7 @@ if run:
                                   minimum_width=0.)
 
         C = load_isotropic_elasticity_matrix_toepliz(newMesh, Eprime)
-        Solid, Fr = Fr.project_solution_to_a_new_mesh( C, newMesh, Solid, Fluid, Injection, simulProp)
+        Solid, Fr = Fr.project_solution_to_a_new_mesh( C, newMesh, Solid, Fluid, Injection, simulProp, Fr.Ffront)
 
     #############################################################################
 
