@@ -256,8 +256,8 @@ def check_exe(folders_list, simul_list, to_export, destination):
 to_export = [1,2,3,7,8]
 
 #-------> SPECIFY OUT ID AND FOLDER NAME:
-simul_list = ["04"]#["01", "02","03","04"]
-folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/04"]
+simul_list = ["02bis"]#["01", "02","03","04"]
+folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis"]
 # ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
 #                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
 destination = "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final"
