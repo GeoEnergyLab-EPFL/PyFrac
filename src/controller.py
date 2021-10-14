@@ -305,8 +305,6 @@ class Controller:
                     if Fr_n_pls1.time > self.lastSavedTime:
                         self.output(Fr_n_pls1)
 
-
-
                 # add the advanced fracture to the last five fractures list
                 self.fracture = copy.deepcopy(Fr_n_pls1)
                 self.fr_queue[self.successfulTimeSteps % 5] = copy.deepcopy(Fr_n_pls1)
@@ -444,7 +442,20 @@ class Controller:
 
                             elems = new_elems
                             direction = 'reduce'
-                            self.remesh(new_limits, elems, direction)
+                            # Check that the injection cell does not become a ribbon cell
+                            if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
+                                           + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
+                                2.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                                               (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
+                                self.sim_prop.meshExtensionAllDir = True
+                                self.sim_prop.set_mesh_extension_direction(['all'])
+                                self.sim_prop.set_mesh_extension_factor(1.2)
+                                self.sim_prop.meshReductionPossible = False
+                                self.fracture.EltTip = self.fracture.EltTipBefore
+                                log.debug(
+                                    "\n Injection would become a Ribbon cell switching to only mesh extension....")
+                            else:
+                                self.remesh(new_limits, elems, direction)
 
                             # set all other to zero
                             side_bools = [False, False, False, False]
@@ -547,8 +558,19 @@ class Controller:
 
                         if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
-
-                        self.remesh(new_limits, elems, rem_factor=compression_factor)
+                        # Check that the injection cell does not become a ribbon cell
+                        if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
+                                       + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
+                            2.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                                           (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
+                            self.sim_prop.meshExtensionAllDir = True
+                            self.sim_prop.set_mesh_extension_direction(['all'])
+                            self.sim_prop.set_mesh_extension_factor(1.2)
+                            self.sim_prop.meshReductionPossible = False
+                            self.fracture.EltTip = self.fracture.EltTipBefore
+                            log.debug("\n Injection would become a Ribbon cell switching to only mesh extension....")
+                        else:
+                            self.remesh(new_limits, elems, rem_factor=compression_factor)
 
                         side_bools = [False, False, False, False]
 
@@ -742,10 +764,20 @@ class Controller:
 
                         if len(np.intersect1d(self.fracture.mesh.CenterElts, index)) == 0:
                             compression_factor = 10
-
-                        self.remesh(new_limits, elems, rem_factor=compression_factor)
-
-                    log_only_to_logfile.info("\nRemeshed at " + repr(self.fracture.time))
+                        # Check that the injection cell does not become a ribbon cell
+                        if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
+                                           + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
+                                2.0*np.min(np.abs([(new_limits[0][0] - new_limits[0][1]) / elems[0],
+                                               (new_limits[1][0] - new_limits[1][1]) / elems[1]]))):
+                            self.sim_prop.meshExtensionAllDir = True
+                            self.sim_prop.set_mesh_extension_direction(['all'])
+                            self.sim_prop.set_mesh_extension_factor(1.2)
+                            self.sim_prop.meshReductionPossible = False
+                            self.fracture.EltTip = self.fracture.EltTipBefore
+                            log.debug("\n Injection would become a Ribbon cell switching to only mesh extension....")
+                        else:
+                            self.remesh(new_limits, elems, rem_factor=compression_factor)
+                            log_only_to_logfile.info("\nRemeshed at " + repr(self.fracture.time))
 
                 else:
                     log.info("Reached end of the domain. Exiting...")
@@ -1059,9 +1091,9 @@ class Controller:
                         # plotting source elements
                         self.Figures[index] = plot_injection_source(self.fracture,
                                               fig=self.Figures[index])
+
                     elif plt_var == 'custom':
                         self.Figures[index] = custom_plot(self.sim_prop, fig=self.Figures[index])
-
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
@@ -1197,7 +1229,7 @@ class Controller:
         if not time_step_given and not self.sim_prop.force_time_schedule:
             delta_x = min(self.fracture.mesh.hx, self.fracture.mesh.hy)
             if np.any(self.fracture.v == np.nan):
-                log.warning("WARNING: you should not get nan velocities")
+                log.warning("you should not get nan velocities")
             non_zero_v = np.where(self.fracture.v > 0)[0]
             # time step is calculated with the current propagation velocity
             if len(non_zero_v) > 0:
@@ -1347,23 +1379,15 @@ class Controller:
                         self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
                     else:
                         self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
-                #rem_factor = self.sim_prop.remeshFactor
-                #self.C *= 1 / rem_factor
             elif direction == 'reduce':
-                #rem_factor = 10
                 if not self.sim_prop.symmetric:
                     self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
                 else:
                     self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
             else:
-                #rem_factor = 10
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         elif self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
-            # if direction is None:
-            #     rem_factor = self.sim_prop.remeshFactor
-            # else:
-            #     rem_factor = 10
             self.C.reload(coarse_mesh)
         elif not self.sim_prop.useBlockToeplizCompression and self.sim_prop.useHmat:
             max_leaf_size = self.C.max_leaf_size

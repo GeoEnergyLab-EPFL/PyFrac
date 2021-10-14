@@ -12,11 +12,13 @@ import numpy as np
 import copy
 import math
 import sys
-from level_set import SolveFMM, reconstruct_front, UpdateLists
+from level_set import SolveFMM, reconstruct_front, UpdateLists, get_front_region
 from volume_integral import Integral_over_cell
 from symmetry import self_influence
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 from Hdot import gmres_counter
+from FMM import fmm
+
 
 
 def get_eliptical_survey_cells(mesh, a, b, center=None):
@@ -400,44 +402,24 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
         - sgndDist (ndarray-float)    -- signed minimun distance from fracture front of each cell in the domain.
     """
 
-    sgndDist = np.full((mesh.NumberOfElts,), 1e50)
-    sgndDist[surv_cells] = -dist_surv_cells
+    # Creating a fmm structure to solve the level set
+    fmmStruct = fmm(mesh)
 
-    # rest of the cells outside the survey cell ring
-    #EltRest = np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region)
-    #band = np.arange(mesh.NumberOfElts)
+    # We define the survey cells as the known elements and solve from there inwards (inside the fracture). To do
+    # so, we need a sign change on the level set (positive inside)
+    fmmStruct.solveFMM((-dist_surv_cells, surv_cells),
+                       np.hstack((np.setdiff1d(np.arange(mesh.NumberOfElts), inner_region), surv_cells)), mesh)
 
-    # Reducing the cells where to compute the levelset
-    # computing a distance based on the level set value
-    distMax = np.max([dist_surv_cells.max(), mesh.cellDiag])
-    if distMax <= mesh.cellDiag:
-        iter = 3
-    else:
-        iter = int(3 + distMax/mesh.cellDiag)
+    # We define the survey cells as the known elements and solve from there outwards to the domain boundary.
+    toEval = np.hstack((surv_cells, inner_region))
+    fmmStruct.solveFMM((dist_surv_cells, surv_cells), toEval, mesh)
 
-    #adding the neighbours
-    externalRibbon = surv_cells
-    currentBand = surv_cells
-    for i in range(iter):
-        nei = np.unique(mesh.NeiElements[externalRibbon].flatten())
-        externalRibbon = np.setdiff1d(nei, currentBand)
-        currentBand = np.concatenate((currentBand, externalRibbon))
+    # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+    # negative inside and positive outside.
+    sgndDist = fmmStruct.LS
+    sgndDist[toEval] = -sgndDist[toEval]
 
-    band = np.unique(currentBand)
-    bandINcrack = np.setdiff1d(inner_region, band)
-    bandOUTcrack = np.setdiff1d(band, inner_region)
-    if len(bandINcrack) == 0:
-        bandINcrack = inner_region
-
-    # fast marching to get level set
-    SolveFMM(sgndDist,
-             surv_cells,
-             inner_region,
-             mesh,
-             bandOUTcrack, #EltRest,
-             bandINcrack) #inner_region)
-
-
+    band = np.arange(mesh.NumberOfElts)
     # costruct the front
     if projMethod == 'LS_continousfront':
         correct_size_of_pstv_region = [False, False, False]
@@ -589,8 +571,8 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         else:
             w_calculated = w
 
-    if not w is None and not p is None:
-        return w_calculated, p_calculated, None
+        if not w is None and not p is None:
+            return w_calculated, p_calculated, None
 
         if symmetric and not useBlockToeplizCompression and not volumeControlHMAT:
 

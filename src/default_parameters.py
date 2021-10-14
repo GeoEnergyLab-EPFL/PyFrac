@@ -89,6 +89,7 @@ tip_asymptote = 'U1'                    # the tip_asymptote to be used (see clas
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 send_phone_msg = False                  # if True, you need to set up the function send_phone_message in the file utility
+levelSetBandPrefactor = 12.66           # prefactor deciding on the thickness of the band where the level set get's
 
 # performances and memory savings
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
