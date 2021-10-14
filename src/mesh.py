@@ -531,8 +531,7 @@ class CartesianMesh:
 
 
 
-        # the element in the center (used for fluid injection)
-        # todo: No it is not necessarily where we inject!
+        # the element in the center
         self.CenterElts = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - centerMesh[0]) < self.hx/2),
                                          np.where(abs(self.CenterCoor[:, 1] - centerMesh[1]) < self.hy/2))
         if len(self.CenterElts) != 1:

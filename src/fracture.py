@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import dill
 import numpy as np
 import math
-
+import copy
 import scipy
 from scipy.interpolate import griddata
 from elasticity import mapping_old_indexes
@@ -33,6 +33,7 @@ from HF_reference_solutions import HF_analytical_sol
 from visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory
 from labels import unidimensional_variables
 from properties import PlotProperties
+from FMM import fmm
 
 
 class Fracture:
@@ -612,9 +613,9 @@ class Fracture:
             if mytype is None:
                 new = np.full(new_size, value_new_elem)
             else:
-                new = np.full(new_size, value_new_elem,mytype)
+                new = np.full(new_size, value_new_elem, mytype)
 
-        new[ind_old_elts]=old
+        new[ind_old_elts] = old
         return new
 
     def update_index(self, old, ind_old_elts, size, mytype=None):
@@ -681,18 +682,12 @@ class Fracture:
         Returns:
             Fr_coarse (Fracture):   -- the new fracture after re-meshing.
         """
+        # todo: in case of mesh reduction with a factor == 2 the projection is made using "griddata" that is assuming an unstructured locations of known values ad buiding a trianglulation for the interpolation
 
-        if self.sgndDist_last is None:
-            import copy
-            self.sgndDist_last = copy.deepcopy(self.sgndDist)
-
-        # if direction != None and direction != 'reduce': #in the case direction is ['left', 'bottom', 'top', 'right']
-        #     ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
-        #                         np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction)))
-        #     ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
-        # else:
-        #     ind_new_elts = np.arange(coarse_mesh.NumberOfElts)
-        #     ind_old_elts = []
+        # the following in principle should not be needed -----
+        # if self.sgndDist_last is None:
+        #     self.sgndDist_last = copy.deepcopy(self.sgndDist)
+        # -------
 
         # from utility import plot_as_matrix
         # K = np.zeros((self.mesh.NumberOfElts,), )
@@ -701,29 +696,29 @@ class Fracture:
         # plot_as_matrix(K, self.mesh)
 
         if direction == None or direction == 'reduce':
-            # Task: interpolate the level set by first advancing and then interpolating
-            #       -check the cells in the channel and find where they still have to be computed
-            channel_to_compute = np.where(self.sgndDist[self.EltChannel] >= 1.e+50)[0]
-            channel_computed = np.setdiff1d(self.EltChannel, self.EltChannel[channel_to_compute])
-            if len(channel_to_compute) >0:
-                SolveFMM(self.sgndDist,
-                         channel_computed, #take the channel as ribbon
-                         self.EltChannel,
-                         self.mesh,
-                         [],
-                         self.EltChannel[channel_to_compute])
 
-            known = np.where(self.sgndDist < 1.e+50)[0]
-            sgndDist_coarse = griddata(self.mesh.CenterCoor[known], #self.mesh.CenterCoor[self.EltChannel],
-                                       self.sgndDist[known],#self.sgndDist[self.EltChannel],
+            ## -- We interpolate the level set everywhere inside the fracture -- ##
+            # Creating a fmm structure to solve the level set
+            fmmStruct = fmm(self.mesh)
+
+            # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture).
+            # To do so, we need a sign change on the level set (positive inside).
+            fmmStruct.solveFMM((-self.sgndDist[self.EltRibbon], self.EltRibbon), self.EltChannel, self.mesh)
+
+            # We adapt the level set of the fracture object by chaning back the sign.
+            self.sgndDist[self.EltChannel] = -fmmStruct.LS[self.EltChannel]
+
+            # Now we interpolate the level set inside the fracture from the old mesh to the new mesh.
+            sgndDist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                       self.sgndDist[self.EltChannel],
                                        coarse_mesh.CenterCoor,
                                        method='linear',
-                                       fill_value=1.e+50)
+                                       fill_value=np.inf)
 
             # avoid adding tip cells from the fine mesh to get into the channel cells of the coarse mesh
             excluding_tip = np.where(sgndDist_coarse <= -coarse_mesh.cellDiag)[0]
             sgndDist_copy = copy.deepcopy(sgndDist_coarse)
-            sgndDist_coarse = np.full(sgndDist_coarse.shape, 1.e+50, dtype=np.float64)
+            sgndDist_coarse = np.full(sgndDist_coarse.shape, np.inf, dtype=np.float64)
             sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
 
             # enclosing cells for each cell in the grid
@@ -771,228 +766,35 @@ class Fracture:
                                           + np.sum(self.wHist[enclosing[corresponding, :4]] / 2, axis=1) +
                                           np.sum(self.wHist[enclosing[corresponding, 4:8]] / 4, axis=1)) / 4
 
-                # interpolate last level set by first advancing to the end of the grid and then interpolating
-                knownIN_LS = np.where(self.sgndDist_last[self.EltChannel] < 1.e+50)[0]
-                uknownIN_LS = np.setdiff1d(self.EltChannel, self.EltChannel[knownIN_LS])
-                if len(uknownIN_LS) > 0:
-                    SolveFMM(self.sgndDist_last,
-                             self.EltRibbon,
-                             self.EltChannel,
-                             self.mesh,
-                             [],
-                             uknownIN_LS)
+                ###
+                # todo: check for redundant command below between the case of factor == 2 and !=2
+                # from here on up to return , it was common between the case of factor == 2 and !=2
+                ###
 
-                # it is a bit weird that we do not avoid adding tip cells from the fine mesh to get into the channel cells
-                # of the coarse mesh after the projection
-                sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                                self.sgndDist_last[self.EltChannel],
-                                                coarse_mesh.CenterCoor,
-                                                method='linear',
-                                                fill_value=1.e+50)
+                ## -- We interpolate the level set of the last time step everywhere inside the fracture -- ##
+                # Creating a fmm structure to solve the level set
+                fmmStruct = fmm(self.mesh)
 
-                # Initialize the fracture
-                Fr_Geometry = Geometry(shape='level set',
-                                       survey_cells=excluding_tip,
-                                       inner_cells=excluding_tip,
-                                       tip_distances=-sgndDist_coarse[excluding_tip])
+                # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture).
+                # To do so, we need a sign change on the level set (positive inside).
+                fmmStruct.solveFMM((-self.sgndDist_last[self.EltRibbon], self.EltRibbon), self.EltChannel, self.mesh)
 
-                # you should get pNet from C*w and tipconst
-                init_data = InitializationParameters(geometry=Fr_Geometry,
-                                                     regime='static',
-                                                     net_pressure=pNet_coarse,
-                                                     width=w_coarse,
-                                                     elasticity_matrix=C,
-                                                     tip_velocity=np.nan)
+                # We adapt the level set of the fracture object by chaning back the sign.
+                self.sgndDist_last[self.EltChannel] = -fmmStruct.LS[self.EltChannel]
 
-                Fr_coarse = Fracture(coarse_mesh,
-                                     init_data,
-                                     solid=material_prop,  # unchanged within this routine, until now
-                                     fluid=fluid_prop,  # unchanged within this routine, until now
-                                     injection=inj_prop,  # unchanged within this routine, until now
-                                     simulProp=sim_prop,  # unchanged within this routine, until now
-                                     Ffront=self.Ffront)
-
-                # evaluate current level set on the coarse mesh
-                EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1.e+50)[0])
-                EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1.e+50)[0])
-
-                cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)  # cp
-                # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-                # if len(ind_old_elts) != 0:
-                #     sgndDist_copy[ind_old_elts] = self.sgndDist
-
-                SolveFMM(sgndDist_copy,
-                         EltRibbon,
-                         EltChannel,
-                         coarse_mesh,
-                         cells_outside,
-                         [])
-
-                # evaluate last level set on the coarse mesh to evaluate velocity of the tip
-                EltRibbon = np.delete(Fr_coarse.EltRibbon,
-                                      np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1.e+50)[0])
-                EltChannel = np.delete(Fr_coarse.EltChannel,
-                                       np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1.e+50)[0])
-
-                cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)  # cp
-                # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-                # if len(ind_old_elts) != 0:
-                #     sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
-
-                SolveFMM(sgndDist_last_coarse,
-                         EltRibbon,
-                         EltChannel,
-                         coarse_mesh,
-                         cells_outside,
-                         [])
-
-                if self.timeStep_last is None:
-                    self.timeStep_last = 1
-                Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
-                                sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
-
-                Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                                                    self.Tarrival[self.EltChannel],
-                                                                    coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
-                                                                    method='linear')
-                Tarrival_nan = np.where(np.isnan(Fr_coarse.Tarrival[Fr_coarse.EltChannel]))[0]
-                if Tarrival_nan.size > 0:
-                    for elt in Tarrival_nan:
-                        Fr_coarse.Tarrival[Fr_coarse.EltChannel[elt]] = np.nanmean(
-                            Fr_coarse.Tarrival[coarse_mesh.NeiElements[Fr_coarse.EltChannel[elt]]])
-
-                Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                                                        self.TarrvlZrVrtx[self.EltChannel],
-                                                                        coarse_mesh.CenterCoor[Fr_coarse.EltChannel],
-                                                                        method='linear')
-
-                # The zero vertex arrival time for the tip elements is taken equal to the corresponding element in the
-                # fine mesh. If not available, average is taken of the enclosing elements
-                to_correct = []
-                for indx, elt in enumerate(Fr_coarse.EltTip):
-                    corr_tip = self.mesh.locate_element(coarse_mesh.CenterCoor[elt, 0], coarse_mesh.CenterCoor[elt, 1])[
-                        0]
-                    if np.isnan(self.TarrvlZrVrtx[corr_tip]):
-                        TarrvlZrVrtx = 0
-                        cnt = 0
-                        for j in range(8):
-                            if not np.isnan(self.TarrvlZrVrtx[enclosing[corr_tip][j]]):
-                                TarrvlZrVrtx += self.TarrvlZrVrtx[enclosing[corr_tip][j]]
-                                cnt += 1
-                        if cnt > 0:
-                            Fr_coarse.TarrvlZrVrtx[elt] = TarrvlZrVrtx / cnt
-                        else:
-                            to_correct.append(indx)
-                            Fr_coarse.TarrvlZrVrtx[elt] = np.nan
-                    else:
-                        Fr_coarse.TarrvlZrVrtx[elt] = self.TarrvlZrVrtx[corr_tip]
-                if len(to_correct) > 0:
-                    for elt in to_correct:
-                        Fr_coarse.TarrvlZrVrtx[Fr_coarse.EltTip[elt]] = np.nanmean(Fr_coarse.TarrvlZrVrtx[
-                                                                                       Fr_coarse.mesh.NeiElements[
-                                                                                           Fr_coarse.EltTip[elt]]])
-
-                Fr_coarse.LkOff = LkOff
-                Fr_coarse.LkOffTotal = self.LkOffTotal
-                Fr_coarse.injectedVol = self.injectedVol
-                Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
-                Fr_coarse.time = self.time
-                Fr_coarse.closed = np.asarray([])
-                Fr_coarse.wHist = wHist_coarse
-
-                self.source = inj_prop.sourceElem
-                return Fr_coarse
-
-            else:
-                """
-                ATTENTION! this remeshing is not properly made.
-                It should be:
-                1- reconstruct the front from Ffront (current crack and old crack)
-                2- get tip cells and the sign distances
-                3- get opening at the tip using asimpt (and get the velocity between two time steps)
-                4- get tip volume 
-                5- get in-crack volume as total volume - in crack
-                6- use a least square method to satisfy both the total volume and to satisfy the projection
-                7- initialize a new crack (compute Pnet)
-                
-                
-                """
-
-                print("\n")
-                print(" FUNCTION NOT COMPLETED !!")
-                print("\n")
-                """
-                Attention, the function needs to be finished!
-                """
-                # 1 - reconstruct the front from Ffront
-
-                self.EltChannel, self.EltTip, self.EltCrack, \
-                self.EltRibbon, self.ZeroVertex, self.CellStatus, \
-                self.l, self.alpha, self.FillF, self.sgndDist, \
-                self.Ffront, self.number_of_fronts, self.fronts_dictionary =  generate_footprint_from_Ffront(self.mesh, self.Ffront)
-
-                scipy.interpolate.RegularGridInterpolator
-                # In case the factor by which mesh is compressed is not 2
-                # project the opening bu solving a least square problem and imposing the volume and the projection at the same time
-                # [scipy.optimize.least_squares]
-                w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                    self.w[self.EltChannel],
-                                    coarse_mesh.CenterCoor,
-                                    method='linear',
-                                    fill_value=0.)
-
-                # this should come from elasticity not from interpolation
-                pNet_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                    self.pNet[self.EltChannel],
-                                    coarse_mesh.CenterCoor,
-                                    method='linear',
-                                    fill_value=0.)
-
-                # actually here 4 is not correct because the factor is not 2!
-                # we need to do a least squate
-                LkOff = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
-                                    self.LkOff[self.EltChannel],
-                                    coarse_mesh.CenterCoor,
-                                    method='linear',
-                                    fill_value=0.)
-
-                # this should come form a least square problem with volume conservation
-                wHist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
-                                    self.wHist[self.EltChannel],
-                                    coarse_mesh.CenterCoor,
-                                    method='linear',
-                                    fill_value=0.)
-
-
-                # interpolate last level set by first advancing to the end of the grid and then interpolating
-                knownIN_LS = np.where(self.sgndDist_last[self.EltChannel]<1.e+50)[0]
-                uknownIN_LS = np.setdiff1d(self.EltChannel, self.EltChannel[knownIN_LS])
-                if len(uknownIN_LS) >0:
-                    SolveFMM(self.sgndDist_last,
-                             self.EltRibbon,
-                             self.EltChannel,
-                             self.mesh,
-                             [],
-                             uknownIN_LS)
-
-                # it is a bit weird that we do not avoid adding tip cells from the fine mesh to get into the channel cells
-                # of the coarse mesh after the projection
+                # Now we interpolate the level set of the last tmStp inside the fracture from the old mesh to the new mesh.
                 sgndDist_last_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
                                            self.sgndDist_last[self.EltChannel],
                                            coarse_mesh.CenterCoor,
                                            method='linear',
-                                           fill_value=1.e+50)
-
+                                           fill_value=np.inf)
                 # Initialize the fracture
                 Fr_Geometry = Geometry(shape='level set',
                                        survey_cells=excluding_tip,
                                        inner_cells=excluding_tip,
                                        tip_distances=-sgndDist_coarse[excluding_tip])
-
-                #you should get pNet from C*w and tipconst
                 init_data = InitializationParameters(geometry=Fr_Geometry,
                                                      regime='static',
-                                                     net_pressure=pNet_coarse,
                                                      width=w_coarse,
                                                      elasticity_matrix=C,
                                                      tip_velocity=np.nan)
@@ -1002,45 +804,30 @@ class Fracture:
                                     solid=material_prop, #unchanged within this routine, until now
                                     fluid=fluid_prop,    #unchanged within this routine, until now
                                     injection=inj_prop,  #unchanged within this routine, until now
-                                    simulProp=sim_prop,  #unchanged within this routine, until now
-                                    Ffront=self.Ffront)
+                                    simulProp=sim_prop)  #unchanged within this routine, until now
 
-                # evaluate current level set on the coarse mesh
-                EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1.e+50)[0])
-                EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1.e+50)[0])
-
-                cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
-                # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-                # if len(ind_old_elts) != 0:
-                #     sgndDist_copy[ind_old_elts] = self.sgndDist
-
-                SolveFMM(sgndDist_copy,
-                         EltRibbon,
-                         EltChannel,
-                         coarse_mesh,
-                         cells_outside,
-                         [])
 
                 # evaluate last level set on the coarse mesh to evaluate velocity of the tip
-                EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1.e+50)[0])
-                EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1.e+50)[0])
+                known_LS = np.arange(Fr_coarse.mesh.NumberOfElts)[sgndDist_last_coarse != np.inf]
+                toEval = np.setdiff1d(np.arange(Fr_coarse.mesh.NumberOfElts), known_LS)
 
-                cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel) #cp
-                # cells_outside = np.setdiff1d(ind_new_elts, EltChannel)
-                # if len(ind_old_elts) != 0:
-                #     sgndDist_last_coarse[ind_old_elts] = self.sgndDist_last
+                ## -- We interpolate the level set of the last time step everywhere outside the known channel -- ##
+                # Creating a fmm structure to solve the level set
+                fmmStruct = fmm(Fr_coarse.mesh)
 
-                SolveFMM(sgndDist_last_coarse,
-                         EltRibbon,
-                         EltChannel,
-                         coarse_mesh,
-                         cells_outside,
-                         [])
+                # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
+                fmmStruct.solveFMM((sgndDist_last_coarse[known_LS], known_LS), toEval, Fr_coarse.mesh)
+
+                # We adapt the level set of the fracture object.
+                sgndDist_last_coarse[toEval] = fmmStruct.LS[toEval]
+
+                # We assign the newly calculated level set of the last time step to the fracture
+                Fr_coarse.sgndDist_last = sgndDist_last_coarse
 
                 if self.timeStep_last is None:
                     self.timeStep_last = 1
-                Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
-                                sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
+                Fr_coarse.v = -(Fr_coarse.sgndDist[Fr_coarse.EltTip] -
+                                Fr_coarse.sgndDist_last[Fr_coarse.EltTip]) / self.timeStep_last
 
                 Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
                                                                     self.Tarrival[self.EltChannel],
@@ -1091,6 +878,61 @@ class Fracture:
 
                 self.source = inj_prop.sourceElem
                 return Fr_coarse
+            else:
+                """
+                ATTENTION! this remeshing is not properly made.
+                It should be:
+                1- reconstruct the front from Ffront (current crack and old crack)
+                2- get tip cells and the sign distances
+                3- get opening at the tip using asimpt (and get the velocity between two time steps)
+                4- get tip volume 
+                5- get in-crack volume as total volume - in crack
+                6- use a least square method to satisfy both the total volume and to satisfy the projection
+                7- initialize a new crack (compute Pnet)
+
+
+                """
+
+                print("\n")
+                print(" FUNCTION NOT COMPLETED !!")
+                print("\n")
+                """
+                Attention, the function needs to be finished!
+                """
+                # 1 - reconstruct the front from Ffront
+
+                self.EltChannel, self.EltTip, self.EltCrack, \
+                self.EltRibbon, self.ZeroVertex, self.CellStatus, \
+                self.l, self.alpha, self.FillF, self.sgndDist, \
+                self.Ffront, self.number_of_fronts, self.fronts_dictionary =  generate_footprint_from_Ffront(self.mesh, self.Ffront)
+
+                # 6- scipy.interpolate.RegularGridInterpolator
+
+
+                # In case the factor by which mesh is compressed is not 2
+                # project the opening bu solving a least square problem and imposing the volume and the projection at the same time
+                # [scipy.optimize.least_squares]
+                w_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                    self.w[self.EltChannel],
+                                    coarse_mesh.CenterCoor,
+                                    method='linear',
+                                    fill_value=0.)
+
+                # actually here 4 is not correct because the factor is not 2!
+                # we need to do a least squate
+                LkOff = 4 * griddata(self.mesh.CenterCoor[self.EltChannel],
+                                    self.LkOff[self.EltChannel],
+                                    coarse_mesh.CenterCoor,
+                                    method='linear',
+                                    fill_value=0.)
+
+                # this should come form a least square problem with volume conservation
+                wHist_coarse = griddata(self.mesh.CenterCoor[self.EltChannel],
+                                    self.wHist[self.EltChannel],
+                                    coarse_mesh.CenterCoor,
+                                    method='linear',
+                                    fill_value=0.)
+
 
         else: # in case of mesh extension just update
             ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
@@ -1098,10 +940,11 @@ class Fracture:
             ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
             newNumberOfElts = coarse_mesh.NumberOfElts
             self.CellStatus=        self.update_value(self.CellStatus,        ind_new_elts,ind_old_elts,newNumberOfElts,     value_new_elem=0,mytype=int)
-            self.EltChannel=        self.update_index(self.EltChannel,        ind_old_elts,self.EltChannel.size,mytype=int)
+            self.EltChannel=        self.update_index(self.EltChannel,        ind_old_elts,self.EltChannel.size, mytype=int)
             self.EltCrack=          self.update_index(self.EltCrack,          ind_old_elts,self.EltCrack.size,  mytype=int)
             self.EltRibbon=         self.update_index(self.EltRibbon,         ind_old_elts,self.EltRibbon.size, mytype=int)
-            self.EltTip=            self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size,    mytype=int)
+            self.EltTip=            self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size, mytype=int)
+            self.EltTipBefore=      self.update_index(self.EltTipBefore,      ind_old_elts,self.EltTipBefore.size, mytype=int)
             self.InCrack=           self.update_value(self.InCrack,           ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0,  mytype=int)
             self.LkOff=             self.update_value(self.LkOff,             ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
             self.Tarrival=          self.update_value(self.Tarrival,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.nan,mytype=np.float64)
@@ -1111,8 +954,8 @@ class Fracture:
             self.muPrime=           self.update_value(self.muPrime,           ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=fluid_prop.muPrime, mytype=np.float64)
             self.pFluid=            self.update_value(self.pFluid,            ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0., mytype=np.float64)
             self.pNet=              self.update_value(self.pNet,              ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0., mytype=np.float64)
-            self.sgndDist=          self.update_value(self.sgndDist,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=1.e50,mytype=np.float64)
-            self.sgndDist_last=     self.update_value(self.sgndDist_last,     ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=1.e50,mytype=np.float64)
+            self.sgndDist=          self.update_value(self.sgndDist,          ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.inf,mytype=np.float64)
+            self.sgndDist_last=     self.update_value(self.sgndDist_last,     ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=np.inf,mytype=np.float64)
             self.w=                 self.update_value(self.w,                 ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
             self.wHist=             self.update_value(self.wHist,             ind_new_elts,ind_old_elts,newNumberOfElts,value_new_elem=0.,mytype=np.float64)
 
