@@ -220,22 +220,47 @@ def f(K, Cb, Con):
 
 def TipAsym_Universal_1stOrder_Res(dist, *args):
     """More precise function to be minimized to find root for universal Tip asymptote (see Donstov and Pierce)"""
+    if len(args) == 7:
+        # case where Kprime is a single value
+        (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
+        Kprime_val = Kprime
 
-    (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt) = args
+        if Cbar == 0:
+            args = (wEltRibbon, Kprime_val, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt)
+            return TipAsym_MK_deltaC_Res(dist, *args)
 
-    if Cbar == 0:
-        return TipAsym_MK_deltaC_Res(dist, *args)
+        Vel = (dist - DistLstTSEltRibbon) / dt
+        Kh = Kprime_val * dist ** 0.5 / (Eprime * wEltRibbon)
+        Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
+        sh = fluidProp.muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
 
-    Vel = (dist - DistLstTSEltRibbon) / dt
-    Kh = Kprime * dist ** 0.5 / (Eprime * wEltRibbon)
-    Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
-    sh = fluidProp.muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
+        g0 = f(Kh, cnst_mc * Ch, cnst_m)
+        delt = cnst_m * (1 + cnst_mc * Ch) * g0
+        gdelt = f(Kh, Ch * C2(delt) / C1(delt), C1(delt))
 
-    g0 = f(Kh, cnst_mc * Ch, cnst_m)
-    delt = cnst_m * (1 + cnst_mc * Ch) * g0
-    gdelt = f(Kh, Ch * C2(delt) / C1(delt), C1(delt))
+        return sh - gdelt
+    else:
+        # case where Kprime is a function
+        (wEltRibbon, Kprime, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt, i, mesh) = args #heterog K
+        Kprime_val = Kprime.of(dist, index=i, mesh=mesh)
 
-    return sh - gdelt
+        if isinstance(Kprime_val, (list, np.ndarray)):
+            to_return = []
+            for i in range(len(Kprime_val)):
+                Kprime_val_i = Kprime_val[i]
+                if DistLstTSEltRibbon - dist[i] != 0.:
+                    args = (wEltRibbon, Kprime_val_i, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt)
+                    to_return.append(-TipAsym_Universal_1stOrder_Res(dist[i], *args))
+                else:
+                    to_return.append(-1.e50)
+                if len(to_return)>1:
+                    if to_return[-1]*to_return[-2]<0:
+                        break
+            return np.asarray(to_return)
+        else: #case where dist is a single val
+            args = (wEltRibbon, Kprime_val, Eprime, fluidProp, Cbar, DistLstTSEltRibbon, dt)
+            return TipAsym_Universal_1stOrder_Res(dist, *args)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -530,7 +555,7 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
     initial_prefactor = 8
     maxprop = initial_prefactor  * mesh.cellDiag
 
-    if fluidProp.rheology == "Newtonian" or sum(Cprime) == 0:
+    if fluidProp.rheology == "Newtonian":
         a = -DistLstTS
         b = np.zeros(a.size)
         for i in range(0, len(w)):
@@ -569,9 +594,9 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
                             return a, b, 1
                     else:
                         prefactor = prefactor + 0.1
-            elif np.sum(test_Res_grid1D) == 1:
+            elif np.sum(test_Res_grid1D) == len(test_Res_grid1D): #you have got all true
                 # the residual is positive everywhere. This means that
-                # the fracture should not advance there
+                # the fracture should not even advance
                 a[i] = np.nan
                 b[i] = np.nan
                 log.debug("The fracture should not advance at this location ")
@@ -581,7 +606,6 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
                 b[i] = grid1D[b_index.min()]
                 # move a[i] closer to the solution will make the convergence faster
                 a[i] = grid1D[b_index.min()-1]
-
                 #test if there is a jump
                 # - we use the bisection and we test if a limit exist for DK/Ds
                 # - if the limit does not exist, find the jump using the bisection method up to a distance
@@ -613,10 +637,10 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
                 # ---------------------------------------
         return a, b, 0
     else:
-        raise SystemExit("FindBracket not supported for the selected rheology!")
+        raise SystemExit("FindBracket not tested for the selected rheology!")
 # ----------------------------------------------------------------------------------------------------------------------
 
-def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=None, Eprime_k=None, perfNode=None):
+def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=None, Eprime_k=None, perfNode=None, ):
     """ 
     Evaluate distance from the front using tip assymptotics according to the given regime, given the fracture width in
     the ribbon cells.
@@ -688,7 +712,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                                             Eprime * w[frac.EltRibbon]) > 1.)[0]
     moving = np.arange(frac.EltRibbon.shape[0])[~np.in1d(frac.EltRibbon, frac.EltRibbon[stagnant])]
 
-    if matProp.inv_with_heter_K1c and simParmtrs.get_volumeControl():
+    if matProp.inv_with_heter_K1c : #and simParmtrs.get_volumeControl():
         Kprime.keepRibbonThatAre(moving)
         a, b, status = FindBracket_dist_K_heterog(w[frac.EltRibbon[moving]],
                                             Kprime,
@@ -714,7 +738,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                                 ResFunc,
                                 simParmtrs)
     ## AM: part added to take care of nan's in the bracketing if bracketing is no longer possible.
-    ## CP this part is very much needed for heterogeneous K
+    ## CP such part is also very much needed for heterogeneous K
     if any(np.isnan(a)):
         # from utility import plot_as_matrix
         # K = np.zeros((frac.mesh.NumberOfElts,), )

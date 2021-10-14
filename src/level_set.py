@@ -525,6 +525,34 @@ def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
             front_region.append(j)
     front_region = np.unique(front_region)
 
+    # Sanity check:
+    # find the cells that are out and surrounded by in and add them to the front region
+    #
+    #       o----o
+    #       | in |
+    #  o----o----o----o
+    #  | in |out | in |
+    #  o----o----o----o
+    #       | in |
+    #       o----o
+    #   -look among the neielem of the current front_region
+    probably_out = np.ndarray.flatten(mesh.NeiElements[front_region,:])
+    probably_out = np.unique(probably_out)
+    #   -take out the current front_region
+    probably_out = np.setdiff1d(probably_out, front_region)
+    #   -loop over
+    probably_out_nei = mesh.NeiElements[probably_out,:]
+    out_to_add = []
+    i = 0
+    for nei in probably_out_nei:
+        common = np.intersect1d(front_region, nei, assume_unique=True)
+        if len(common)>3:
+            out_to_add.append(probably_out[i])
+        i = i+1
+    if len(out_to_add)>0:
+        front_region = np.concatenate((front_region,out_to_add))
+
+
     # take out the ribbon
     front_region =np.setdiff1d(front_region, EltRibbon)
 

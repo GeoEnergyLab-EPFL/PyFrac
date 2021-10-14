@@ -888,13 +888,23 @@ class get_toughness_from_cellCenter_iter():
 
 
     def of(self, dist, index='all',mesh = None, ribbon=None):
+        # the distance "dist" can be a single value and an array
+        # one can:
+        #   - give a single index (representing a single ribbon) and multiple distances
+        #   - consider indexes ('all' ribbons) and one distances  per ribbon
         #
-        # single index (single ribbon) and multiple distances or 'all' ribbon and 'all' distances i.e. one per ribbon
-        if index == 'all':
-            local_indxs = self.index2keep
-        else:
-            local_indxs = self.index2keep[index] #in this case you are selecting a specific index that defines x and y
+        #
+        # the index plays on the list of indexes that have been kept using the function keepRibbonThatAre
+        #
+        #
 
+        # select the index to be kept
+        if index == 'all':
+            local_indxs = self.index2keep # in this case you use all indexes specified before
+        else:
+            local_indxs = self.index2keep[index] # in this case you are selecting a specific index that defines x and y
+
+        # make sure the distance is positive
         minus = False
         if isinstance(dist, float):
             if dist<0.:
@@ -903,7 +913,9 @@ class get_toughness_from_cellCenter_iter():
                 minus = True
         else: SystemExit("Type not recognized.")
 
-        # to be vectorized!
+        # compute the coordinates of the points starting from the centers of the ribbon cells x and y
+        # and then using the angle and the distance get to the location where K is needed.
+        #       (to be vectorized!)
         if minus:
             # (the minus is because the dist is negative)
             x = self.CenterCoorR[local_indxs, 0] - np.multiply(dist, self.cos_alpha[local_indxs])
@@ -911,6 +923,8 @@ class get_toughness_from_cellCenter_iter():
         else:
             x = self.CenterCoorR[local_indxs, 0] + np.multiply(dist, self.cos_alpha[local_indxs])
             y = self.CenterCoorR[local_indxs, 1] + np.multiply(dist, self.sin_alpha[local_indxs])
+
+        # in case multiple points are asked, do them one by one
         if x.size > 1:
             Kprime = np.zeros(x.size)
             for i in range(x.size):
@@ -931,6 +945,7 @@ class get_toughness_from_cellCenter_iter():
         return Kprime
 
     def keepRibbonThatAre(self, index2keep):
+        # index2keep are the positions of the ribbbons in the vector of ribbon IDs
         self.index2keep = np.arange(self.NoR)[index2keep]
 
 #-----------------------------------------------------------------------------------------------------------------------

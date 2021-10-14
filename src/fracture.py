@@ -172,6 +172,7 @@ class Fracture:
                                                          Kc_1=solid.Kc1)
                 init_param.netPressure = self.pNet
 
+
             self.w, self.pNet, self.boundEffTraction = get_width_pressure(self.mesh,
                                                    self.EltCrack,
                                                    self.EltTip,
@@ -184,6 +185,7 @@ class Fracture:
                                                    simulProp.useBlockToeplizCompression,
                                                    simulProp.volumeControlGMRES,
                                                    solid.Eprime,
+                                                   prescribe_w_and_pnet = init_param.prescribe_w_and_pnet,
                                                    boundaryEffect = boundaryEffect,
                                                    gmres_tol = simulProp.gmres_tol,
                                                    gmres_maxiter = simulProp.gmres_maxiter)
