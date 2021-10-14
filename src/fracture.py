@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import dill
 import numpy as np
 import math
+import copy
 from scipy.interpolate import griddata
 from elasticity import mapping_old_indexes
 
@@ -671,13 +672,13 @@ class Fracture:
                                        self.sgndDist[self.EltChannel],
                                        coarse_mesh.CenterCoor,
                                        method='linear',
-                                       fill_value=1e10)
+                                       fill_value=np.inf)
 
             # avoid adding tip cells from the fine mesh to get into the channel cells of the coarse mesh
             max_diag = (coarse_mesh.hx ** 2 + coarse_mesh.hy ** 2) ** 0.5
             excluding_tip = np.where(sgndDist_coarse <= -max_diag)[0]
-            sgndDist_copy = np.copy(sgndDist_coarse)
-            sgndDist_coarse = np.full(sgndDist_coarse.shape, 1e10, dtype=np.float64)
+            sgndDist_copy = copy.deepcopy(sgndDist_coarse)
+            sgndDist_coarse = np.full(sgndDist_coarse.shape, np.inf, dtype=np.float64)
             sgndDist_coarse[excluding_tip] = sgndDist_copy[excluding_tip]
 
             # enclosing cells for each cell in the grid
@@ -758,7 +759,7 @@ class Fracture:
                                        self.sgndDist_last[self.EltChannel],
                                        coarse_mesh.CenterCoor,
                                        method='linear',
-                                       fill_value=1e10)
+                                       fill_value=np.inf)
 
             Fr_Geometry = Geometry(shape='level set',
                                    survey_cells=excluding_tip,
@@ -777,42 +778,45 @@ class Fracture:
                                 injection=inj_prop,  #unchanged within this routine, until now
                                 simulProp=sim_prop)  #unchanged within this routine, until now
 
+
+            # This is redundant in fracture initialization we already calculate the levelset everywhere!
             # evaluate current level set on the coarse mesh
-            EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] >= 1e10)[0])
-            EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] >= 1e10)[0])
-
-            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
-
-            ## -- We interpolate the level set of the fractue everywhere outside the fracture -- ##
-            # Creating a fmm structure to solve the level set
-            fmmStruct = fmm(self.mesh)
-
-            # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
-            fmmStruct.solveFMM((sgndDist_copy[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
-
-            # We adapt the level set of the fracture object.
-            sgndDist_copy[cells_outside] = fmmStruct.LS[cells_outside]
+            # EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] == np.inf)[0])
+            # EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] == np.inf)[0])
+            #
+            # cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
+            #
+            # ## -- We interpolate the level set of the fractue everywhere outside the fracture -- ##
+            # # Creating a fmm structure to solve the level set
+            # fmmStruct = fmm(self.mesh)
+            #
+            # # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
+            # fmmStruct.solveFMM((sgndDist_copy[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
+            #
+            # # We adapt the level set of the fracture object.
+            # sgndDist_copy[cells_outside] = fmmStruct.LS[cells_outside]
 
             # evaluate last level set on the coarse mesh to evaluate velocity of the tip
-            EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] >= 1e10)[0])
-            EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] >= 1e10)[0])
+            known_LS = np.arange(Fr_coarse.mesh.NumberOfElts)[sgndDist_last_coarse != np.inf]
+            toEval = np.setdiff1d(np.arange(Fr_coarse.mesh.NumberOfElts), known_LS)
 
-            cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
-
-            ## -- We interpolate the level set of the last time step everywhere outside the fracture -- ##
+            ## -- We interpolate the level set of the last time step everywhere outside the known channel -- ##
             # Creating a fmm structure to solve the level set
-            fmmStruct = fmm(self.mesh)
+            fmmStruct = fmm(Fr_coarse.mesh)
 
             # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
-            fmmStruct.solveFMM((sgndDist_last_coarse[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
+            fmmStruct.solveFMM((sgndDist_last_coarse[known_LS], known_LS), toEval, Fr_coarse.mesh)
 
             # We adapt the level set of the fracture object.
-            sgndDist_last_coarse[cells_outside] = fmmStruct.LS[cells_outside]
+            sgndDist_last_coarse[toEval] = fmmStruct.LS[toEval]
+
+            # We assign the newly calculated level set of the last time step to the fracture
+            Fr_coarse.sgndDist_last = sgndDist_last_coarse
 
             if self.timeStep_last is None:
                 self.timeStep_last = 1
-            Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
-                            sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
+            Fr_coarse.v = -(Fr_coarse.sgndDist[Fr_coarse.EltTip] -
+                            Fr_coarse.sgndDist_last[Fr_coarse.EltTip]) / self.timeStep_last
 
             Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
                                                                 self.Tarrival[self.EltChannel],
