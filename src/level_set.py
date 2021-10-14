@@ -484,7 +484,7 @@ def get_cells_inside_circle(mesh, r, center):
         center (list or ndarray):           -- the coordinates [x, y] of the center.
 
     Returns:
-        - inner_cells (ndarray)             -- the list of cells inside the given circle.
+        - inner_cells (list)             -- the list of cells inside the given circle.
     """
 
     # distances of the cell centers

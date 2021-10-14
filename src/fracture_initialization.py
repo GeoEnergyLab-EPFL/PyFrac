@@ -210,6 +210,166 @@ def get_rectangular_survey_cells(mesh, length, height, center=None):
     return surv_cells, surv_dist, inner_cells
 
 # ----------------------------------------------------------------------------------------------------------------------
+def reduce_based_on_interval(edges_, coord_pt1, coord_pt2 ,coords_):
+    """
+      Based on the coord, one can exclude any intersection between the segment defined by pt1 and pt2 and the
+      vertical (or horizhontal) segment
+
+      o-----|------|----|----------> coord
+         coord    pt1  pt2
+                       pt2
+            o         /
+            |        /
+            |       /
+            |     pt1
+            o
+
+    """
+    to_keep = []
+    for i in range(len(coords_)):
+        coord = coords_[i]
+        if (coord - coord_pt1) * (coord - coord_pt2) < 0.:
+            to_keep.append(i)
+    return edges_[to_keep], coords_[to_keep]
+
+def get_intersections(mesh_new,Ffront_old):
+    from level_set import get_cells_inside_circle
+    Ffront_new = []
+    EltTip = []
+
+    edges = []
+    x_int_tot = []
+    y_int_tot = []
+    h_or_v = []
+
+    for segment in Ffront_old:
+
+        # get the coordinates of the extremes of the points
+        x1 = segment[0]; x2 = segment[2]
+        y1 = segment[1]; y2 = segment[3]
+
+        # get the distance between the two elements
+        Lseg = np.sqrt((x1-x2)**2 + (y1-y2)**2)**(0.5)
+
+        # get a band of cells where the old front is passing
+        elem_around_1st_vertex = get_cells_inside_circle(mesh_new, 1.2*Lseg, [segment[0], segment[1]])
+        elem_around_2nd_vertex = get_cells_inside_circle(mesh_new, 1.2*Lseg, [segment[2], segment[3]])
+
+        # take the elements in the intersection of the two circles
+        elems = np.unique(elem_around_1st_vertex + elem_around_2nd_vertex)
+
+        # take the list unique vertexes of these elements
+        vertexes = np.unique(mesh_new.Connetivity[elems].flatten())
+
+        # take the list of unique horizhontal edges that might be intersected
+        # connNodesEdges is [vertical_top, horizotal_left, vertical_bottom, horizotal_right]
+        edges = mesh_new.Connetivitynodesedges[vertexes]
+        edges_v = (edges[:,[0,2]]).flatten()
+        edges_h = (edges[:,[1,3]]).flatten()
+
+        # get the x and y coordinates of the vertexes
+        vertexes_x = mesh_new.VertexCoor[vertexes,0]
+        vertexes_y = mesh_new.VertexCoor[vertexes,1]
+
+        # take the list of unique edges that might be intersected
+        edges_v_indxs = np.unque(edges_v, unique_indices = True)
+        edges_h_indxs = np.unque(edges_h, unique_indices = True)
+        edges_v = edges_v[edges_v_indxs]
+        edges_h = edges_h[edges_h_indxs]
+
+        # take the x coord of the vertical edges and the y coord of the horizontal edges
+        x_v = vertexes_x[edges_v_indxs]
+        y_h = vertexes_y[edges_h_indxs]
+
+        # reduce the list of edges based on the fact that pt1 and pt2 can not be on the same side of one edge
+        edges_v, x_v = reduce_based_on_interval(edges_v, x1, x2, x_v)
+        edges_h, y_h = reduce_based_on_interval(edges_h, y1, y2, y_h)
+
+        # get intersections between the edges and the segments, even if those are on the on the edge prolongation
+        #   - intersections with the horizontal edge
+        if y2-y1 != 0. :
+            alpha = (y_h - y1) * Lseg / (y2-y1)
+            x_int = alpha * (x2 - x1) / Lseg + x1
+        else:
+            x_int = None
+
+        # check if x_int lies in the range of the edge
+        e = 0 ; indx_to_keep = []
+        for edge in edges_h:
+            A = mesh_new.Connetivityedgesnodes[edge][0]
+            B = mesh_new.Connetivityedgesnodes[edge][1]
+            xA = mesh_new.VertexCoor[A,0]
+            xB = mesh_new.VertexCoor[B,0]
+            if (x_int[e] - xA)*(x_int[e] - xB)<=0:
+                indx_to_keep.append(e)
+            e = e + 1
+        edges_h = edges_h[indx_to_keep]
+        x_int = x_int[indx_to_keep]
+        y_h = y_h[indx_to_keep]
+
+        #   - intersections with the vertical edge
+        if x2-x1 != 0. :
+            alpha = (x_v - x1) * Lseg / (x2-x1)
+            y_int = alpha * (y2 - y1) / Lseg + y1
+        else:
+            y_int = None
+
+        # check if y_int lies in the range of the edge
+        e = 0 ; indx_to_keep = []
+        for edge in edges_v:
+            A = mesh_new.Connetivityedgesnodes[edge][0]
+            B = mesh_new.Connetivityedgesnodes[edge][1]
+            yA = mesh_new.VertexCoor[A,1]
+            yB = mesh_new.VertexCoor[B,1]
+            if (y_int[e] - yA)*(y_int[e] - yB)<=0:
+                indx_to_keep.append(e)
+            e = e + 1
+        edges_v = edges_v[indx_to_keep]
+        y_int = y_int[indx_to_keep]
+        x_v = x_v[indx_to_keep]
+
+        # store all info
+        edges = edges + edges_v + edges_h
+        x_int_tot = x_int_tot + x_v   + x_int
+        y_int_tot = y_int_tot + y_int + y_h
+        h_or_v = h_or_v + [1] * len(edges_v) + [0] * len(edges_h)
+        print("\n")
+        print(" FUNCTION NOT COMPLETED !!")
+        print("\n")
+        """
+        Attention, the function needs to be finished!
+        """
+
+    return Ffront_new, EltTip
+
+def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
+    # the following routine assumes Ffront to be a closed polygon
+    # the following routine does not work - yet - with coalescing or fractures that can disappear - yet
+    EltChannel = None; EltTip = None; EltCrack = None
+    EltRibbon = None; ZeroVertex = None; CellStatus = None
+    l = None; alpha = None; FillF = None; sgndDist = None
+    Ffront_new = None; number_of_fronts = None; fronts_dictionary = None
+
+    # 1) find the intersections of the old Ffront with the new mesh
+    Ffront_new, EltTip = get_intersections(mesh_new, Ffront_old)
+    # 2) define alpha, zerovertex and "l"s
+    # 3) define Eltribbon, Eltchannel an Eltcrack and CellStatus
+    # 4) define the distances between the ribbon and the front
+    # 5) compute the
+
+    print("\n")
+    print(" FUNCTION NOT COMPLETED !!")
+    print("\n")
+    """
+    Attention, the function needs to be finished!
+    """
+
+    return EltChannel, EltTip, EltCrack, \
+           EltRibbon,  ZeroVertex,  CellStatus, \
+           l,  alpha,  FillF,  sgndDist, \
+            Ffront_new,  number_of_fronts,  fronts_dictionary
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMethod):
     """
@@ -412,7 +572,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         w_calculated = w
 
     if not w is None and not p is None:
-        return w_calculated, p_calculated
+        return w_calculated, p_calculated, None
 
     if symmetric and not useBlockToeplizCompression and not volumeControlHMAT:
 
