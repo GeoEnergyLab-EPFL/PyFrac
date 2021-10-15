@@ -806,28 +806,54 @@ class Fracture:
                                     injection=inj_prop,  #unchanged within this routine, until now
                                     simulProp=sim_prop)  #unchanged within this routine, until now
 
+                ### --- We evaluate the level set from the griddata interpolation everywhere on the coarse mesh --- ###
+                # Note: this is only needed to estimate the velocity. The correct sgndDist is already stored in
+                #       Fr_coarse.sgndDist
 
-                # evaluate last level set on the coarse mesh to evaluate velocity of the tip
-                known_LS = np.arange(Fr_coarse.mesh.NumberOfElts)[sgndDist_last_coarse != np.inf]
-                toEval = np.setdiff1d(np.arange(Fr_coarse.mesh.NumberOfElts), known_LS)
+                # evaluate current level set on the coarse mesh
+                EltRibbon = np.delete(Fr_coarse.EltRibbon, np.where(sgndDist_copy[Fr_coarse.EltRibbon] == np.inf)[0])
+                EltChannel = np.delete(Fr_coarse.EltChannel, np.where(sgndDist_copy[Fr_coarse.EltChannel] == np.inf)[0])
 
-                ## -- We interpolate the level set of the last time step everywhere outside the known channel -- ##
+                cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
+
+                ## -- We interpolate the level set of the fractue everywhere outside the fracture -- ##
                 # Creating a fmm structure to solve the level set
                 fmmStruct = fmm(Fr_coarse.mesh)
 
                 # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
-                fmmStruct.solveFMM((sgndDist_last_coarse[known_LS], known_LS), toEval, Fr_coarse.mesh)
+                fmmStruct.solveFMM((sgndDist_copy[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
 
                 # We adapt the level set of the fracture object.
-                sgndDist_last_coarse[toEval] = fmmStruct.LS[toEval]
+                sgndDist_copy[cells_outside] = fmmStruct.LS[cells_outside]
 
-                # We assign the newly calculated level set of the last time step to the fracture
+                # evaluate last level set on the coarse mesh to evaluate velocity of the tip
+                EltRibbon = np.delete(Fr_coarse.EltRibbon,
+                                      np.where(sgndDist_last_coarse[Fr_coarse.EltRibbon] == np.inf)[0])
+                EltChannel = np.delete(Fr_coarse.EltChannel,
+                                       np.where(sgndDist_last_coarse[Fr_coarse.EltChannel] == np.inf)[0])
+
+                cells_outside = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), EltChannel)
+
+                ## -- We interpolate the level set of the last time step everywhere outside the fracture -- ##
+                # Creating a fmm structure to solve the level set
+                fmmStruct = fmm(Fr_coarse.mesh)
+
+                # We define the ribbon elements as the known elements and solve from there outwards to the boundary.
+                fmmStruct.solveFMM((sgndDist_last_coarse[EltRibbon], EltRibbon), cells_outside, coarse_mesh)
+
+                # We adapt the level set of the fracture object.
+                sgndDist_last_coarse[cells_outside] = fmmStruct.LS[cells_outside]
+
+                # Assigning the sgndDist of the last time step to the new coarse mesh
                 Fr_coarse.sgndDist_last = sgndDist_last_coarse
 
                 if self.timeStep_last is None:
                     self.timeStep_last = 1
-                Fr_coarse.v = -(Fr_coarse.sgndDist[Fr_coarse.EltTip] -
-                                Fr_coarse.sgndDist_last[Fr_coarse.EltTip]) / self.timeStep_last
+
+                # We evaluate the velocity from the two interpolated solutions (preciser than using the new object
+                # but we do not really know why! maybe because the level set is calculated one time less?)
+                Fr_coarse.v = -(sgndDist_copy[Fr_coarse.EltTip] -
+                                sgndDist_last_coarse[Fr_coarse.EltTip]) / self.timeStep_last
 
                 Fr_coarse.Tarrival[Fr_coarse.EltChannel] = griddata(self.mesh.CenterCoor[self.EltChannel],
                                                                     self.Tarrival[self.EltChannel],

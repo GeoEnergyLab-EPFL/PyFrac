@@ -11,14 +11,16 @@ All rights reserved. See the LICENSE.TXT file for more details.
 toleranceFractureFront = 1.0e-3         # tolerance for the fracture front position solver.
 toleranceEHL = 1.0e-4                   # tolerance for the elastohydrodynamic system solver.
 tol_projection = 1.0e-4                 # tolerance for the toughness iteration.
-toleranceVStagnant = 1.e-6               # tolerance on the velocity to decide if a cell is stagnant.
-tolerancewIncr = 1.e-5                   # tolerance on the fracture opening increment (dw). If |dw| is less than the tolerance then it is difficault to know
-                                        # if the fracture front is really stagnant
+toleranceVStagnant = 1.e-6              # tolerance on the velocity to decide if a cell is stagnant.
+tolerancewIncr = 1.e-15                 # tolerance on the fracture opening increment (dw). If |dw| is less than the
+                                        # tolerance then it is difficault to know if the fracture front is really
+                                        # stagnant
+
 gmres_tol = 1e-14
 gmres_maxiter = 1000
 
 # max iterations
-max_front_itrs = 28                     # maximum iterations for the fracture front.
+max_front_itrs = 25                     # maximum iterations for the fracture front.
 max_solver_itrs = 140                   # maximum iterations for the elastohydrodynamic solver.
 max_proj_Itrs = 10                      # maximum projection iterations.
 
