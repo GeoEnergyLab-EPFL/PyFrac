@@ -908,13 +908,19 @@ class Fracture:
                 """
                 ATTENTION! this remeshing is not properly made.
                 It should be:
-                1- reconstruct the front from Ffront (current crack and old crack)
-                2- get tip cells and the sign distances
-                3- get opening at the tip using asimpt (and get the velocity between two time steps)
-                4- get tip volume 
-                5- get in-crack volume as total volume - in crack
-                6- use a least square method to satisfy both the total volume and to satisfy the projection
-                7- initialize a new crack (compute Pnet)
+                1- reconstruct the front from the sign distances from the previous time step
+                2- reconstruct the front from Ffront of the old time step (get the sign distances) on the coarse mesh
+                3- reconstruct the front from Ffront of the current crack (get tip cells and the sign distances) on the coarse mesh
+                4- use fmm to get the sign distances at the tip of the current step (for old and new time step)
+                5- get the velocity as the difference between the sign distances at the tip of the current step
+                6- get the tip volume using velocity 
+                7- get channel volume as total volume - tip volume
+                8- use a least square method to satisfy both the total volume in the channel and to satisfy the projection
+                    - to be written the residual function 
+                        o> the residual function will use the result from scipy.interpolate.RegularGridInterpolator
+                        o> scipy.optimize.root  
+                        o> rememnber to use penalty on volume conservation and makes the penalty depending on the lenght of the vector of opening
+                9- initialize a new crack ( Pnet will be computed according to the elasticity )
 
 
                 """
