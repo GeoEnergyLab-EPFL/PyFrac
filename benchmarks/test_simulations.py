@@ -357,6 +357,8 @@ class TestClass:
             diff_max_vs_time.append(diff_i.max())
             diff_total_vs_time.append(diff)
         #print('here')
+        # The pressure here is everywhere the analytical one even in the cells that are outside the fracture. This is
+        # true for the toughness regime. To be changed in the evaluation.
         for i in range(len(Fr_list)):
             assert diff_max_vs_time[i] < toll['p_section_toll_max_value'][i]
             assert diff_total_vs_time[i] < toll['p_section_toll_cumulative_value'][i]

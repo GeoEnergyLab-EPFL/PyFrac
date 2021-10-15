@@ -111,7 +111,7 @@ tolerances = dict(
 
     radial_M_implicit_newfront= { 'radius_toll':   [0.05],
                                   'w_center_toll': [0.05],
-                                  'w_section_toll_max_value': tollerance*np.asarray([0.004880975343805993, 0.010262367304877278, 0.012095130290441514, 0.022877454209472875, 0.02418652647775324]),
+                                  'w_section_toll_max_value': tollerance*np.asarray([0.008022965221912426, 0.010262367304877278, 0.012095130290441514, 0.022877454209472875, 0.02418652647775324]),
                                   'w_section_toll_cumulative_value': tollerance*np.asarray([0.07159952843060052, 0.13737053759671722, 0.18007063436978632, 0.25846963749054014, 0.2757035962019126]),
                                   'p_section_toll_max_value': tollerance*np.asarray([0.4030735794640704, 0.07223606649612363, 0.07309287073423798, 0.014127970716044061, 0.009098165166454383]),
                                   'p_section_toll_cumulative_value': tollerance*np.asarray([1.9974664294027917, 0.3293929059902019, 0.29002723906615946, 0.07568889201933869, 0.039251737583412265])
@@ -146,7 +146,7 @@ tolerances = dict(
                                   'w_section_toll_max_value': tollerance*np.asarray([0.018359540892071917, 0.0489673935174775, 0.04466881695605066, 0.19301207711285495, 0.16578774995491702]),
                                   'w_section_toll_cumulative_value': tollerance*np.asarray([0.29438692338900774, 0.6909368689842579, 0.5577647811989626, 3.0943913646854515, 3.36992046733513]),
                                   'p_section_toll_max_value': tollerance*np.asarray([0.505127187853307, 0.20109475552592493, 0.10563619334172399, 0.07382143663099446, 0.0580238769751372]),
-                                  'p_section_toll_cumulative_value': tollerance*np.asarray([11.674538269556486, 5.450862721248992, 0.6640452988667384, 0.9981660517343405, 1.1768907768589338])
+                                  'p_section_toll_cumulative_value': tollerance*np.asarray([11.674538269556486, 5.450862721248992, 0.6640452988667384, 1.7481404525831432, 1.1768907768589338])
                                   },
 
     radial_K_implicit_oldfront= { 'radius_toll':   [0.062],
@@ -154,7 +154,7 @@ tolerances = dict(
                                   'w_section_toll_max_value': tollerance*np.asarray([0.01252526754957263, 0.023417182611892313, 0.04529184785762364, 0.11003074255575, 0.07077950153844755]),
                                   'w_section_toll_cumulative_value': tollerance*np.asarray([0.22105493672659873, 0.2417927047460269, 0.5312834784926783, 1.992671257583858, 0.9252994045224927]),
                                   'p_section_toll_max_value': tollerance*np.asarray([0.505127187853307, 0.20109475552592493, 0.10563619334172399, 0.07382143663099446, 0.0580238769751372]),
-                                  'p_section_toll_cumulative_value': tollerance*np.asarray([10.770874986865927, 4.393265945008475, 0.6492505338105509, 0.7834893918056701, 0.7035883579162517])
+                                  'p_section_toll_cumulative_value': tollerance*np.asarray([10.770874986865927, 4.393265945008475, 0.6492505338105509, 1.729701303039856, 0.7035883579162517])
                                 },
 
     radial_MtoK_explicit_oldfront = {'front_reconstruction': 'ILSA_orig',
