@@ -14,7 +14,7 @@ import logging
 from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from symmetry import get_symetric_elements, self_influence
 from tip_inversion import TipAsymInversion, StressIntensityFactor
-from elastohydrodynamic_solver import *
+from elastohydrodynamic_systems import *
 from level_set import SolveFMM, reconstruct_front, reconstruct_front_LS_gradient, UpdateLists, get_front_region
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, you_advance_more_than_2_cells
 from properties import IterationProperties, instrument_start, instrument_close
@@ -22,6 +22,9 @@ from anisotropy import *
 from labels import TS_errorMessages
 from explicit_RKL import solve_width_pressure_RKL2
 from postprocess_fracture import append_to_json_file
+from non_linear_solvers.picard_newton import Picard_Newton
+from non_linear_solvers.anderson import Anderson
+
 import Hdot
 from utility import append_new_line
 from FMM import fmm
@@ -1154,6 +1157,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Fr_kplus1.alpha = alpha_k[partlyFilledTip]
     Fr_kplus1.l = l_k[partlyFilledTip]
     Fr_kplus1.v = Vel_k[partlyFilledTip]
+    Fr_kplus1.Ffront_last = Fr_lstTmStp.Ffront
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
     Fr_kplus1.InCrack = InCrack_k
@@ -1301,7 +1305,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
             if sol_GMRES[1] > 0:
                 log.warning(
-                    "WARNING: Volume Control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
+                    "Volume Control system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
                 rel_err = np.linalg.norm(system_dot_prod._matvec(sol_GMRES[0]) - (rhs_prec)) / np.linalg.norm(
                     rhs_prec)
                 log.warning("         error of the solution: " + str(rel_err))
@@ -1725,14 +1729,16 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                            sim_properties,
                                            *arg,
                                            perf_node=perfNode_widthConstrItr)
-                else:
+                elif sim_properties.elastohydrSolver == 'implicit_Anderson':
                     sol, data_nonLinSolve = Anderson(sys_fun,
                                              guess,
                                              inter_itr_init,
                                              sim_properties,
                                              *arg,
                                              perf_node=perfNode_widthConstrItr)
-
+                elif sim_properties.elastohydrSolver == 'JacobianFreeNewton':
+                    log.error("NOT YET IMPLEMENTED!")
+                    # another option is scipy.optimize.newton_krylov
             elif sim_properties.elastohydrSolver == 'RKL2':
                 sol, data_nonLinSolve = solve_width_pressure_RKL2(mat_properties.Eprime,
                                                           sim_properties.enableGPU,
@@ -1970,8 +1976,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
     # We define a front region and a pstv_region needed to construct the front.
     front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-    pstv_region = np.where(sgndDist_k[front_region] >=
-                           - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+    pstv_region = np.where(sgndDist_k[front_region] >= - Fr_lstTmStp.mesh.cellDiag)[0]
 
     # Gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -2538,6 +2543,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
     Fr_kplus1.v = -(sgndDist_k[Fr_kplus1.EltTip] - Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip]) / timeStep
     Fr_kplus1.sgndDist = sgndDist_k
+    Fr_kplus1.Ffront_last = Fr_lstTmStp.Ffront
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
     Fr_kplus1.timeStep_last = timeStep
     new_tip = np.where(np.isnan(Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip]))[0]

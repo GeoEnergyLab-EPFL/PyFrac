@@ -110,4 +110,17 @@ def test_toepliz_get_submatrix_different_dim():
     C_sliced = C[np.ix_(xslice, yslice)]
     common_test_for_all_toepliz_tests(C_sliced, C_new_sliced, expect_simmetric=False)
 
+def test_toepliz_dot_product():
+    #This will test the dot product made in parallel
+    Mesh = CartesianMesh(0.45, 0.6, 29, 29)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float64)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision=np.float64)
 
+    # array test
+    x = np.ones(C.shape[0],dtype=np.float64)
+    x1 = C.dot(x)
+    x2 = C_obj._matvec_fast(x)
+    diff = np.linalg.norm(x1 - x2)
+    assert(diff < 0.05)

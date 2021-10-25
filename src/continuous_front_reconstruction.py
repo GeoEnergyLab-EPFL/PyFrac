@@ -111,7 +111,9 @@ def plot_ray_tracing_numpy_results(mesh,x,y,poly,inside):
 def ray_tracing_numpy(x,y,poly):
     """given a polygon this function tests if each of the points in a given set is inside or outside
 
-    The answer is obtained by drawing an horizontal line on the right side of the point
+    The answer is obtained by drawing an horizontal line on the right side of the point.
+    TRUE  (1) <=> INside
+    FALSE (0) <=> OUTside
 
     :param x: an array containing the x coordinates of the points to be tested e.g.: np.asarray([[0.,5.]])
     :param y: an array containing the y coordinates of the points to be tested e.g.: np.asarray([[0.,5.]])
@@ -316,6 +318,32 @@ def filltable(nodeVScommonelementtable, nodeindex, common, sgndDist_k, column):
         exitstatus = False
     return nodeVScommonelementtable, exitstatus
 
+def get_cells_in_neighborhood(i,mesh):
+    """
+    you are in cell i and get the cells [a,b,c,d,e,f,g,h,i]
+      _   _   _   _   _
+    | _ | _ | _ | _ | _ |
+    | _ | e | a | f | _ |
+    | _ | _ | _ | _ | _ |
+    | _ | d | i | b | _ |
+    | _ | _ | _ | _ | _ |
+    | _ | h | c | g | _ |
+    | _ | _ | _ | _ | _ |
+    """
+    #                         0     1      2      3
+    #       NeiElements[i]->[left, right, bottom, up]
+    [left_elem, right_elem, bottom_elem, top_elem] = [0, 1, 2, 3]
+
+    a = mesh.NeiElements[i, top_elem]
+    b = mesh.NeiElements[i, right_elem]
+    c = mesh.NeiElements[i, bottom_elem]
+    d = mesh.NeiElements[i, left_elem]
+    e = mesh.NeiElements[d, top_elem]
+    f = mesh.NeiElements[b, top_elem]
+    g = mesh.NeiElements[b, bottom_elem]
+    h = mesh.NeiElements[d, bottom_elem]
+    return [a,b,c,d,e,f,g,h,i]
+
 def ISinsideFracture(i,mesh,sgndDist_k):
     """
     you are in cell i
@@ -408,7 +436,8 @@ def plot_final_reconstruction(mesh,
                               list_of_xintersectionsfromzerovertex,
                               list_of_yintersectionsfromzerovertex,
                               list_of_vertexID,
-                              oldRibbon):
+                              oldRibbon,
+                              oldfront = None):
     A = np.full(mesh.NumberOfElts, np.nan)
     A[anularegion] = sgndDist_k[anularegion]
     from visualization import plot_fracture_variable_as_image
@@ -435,6 +464,22 @@ def plot_final_reconstruction(mesh,
     plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
     plt.plot(mesh.CenterCoor[oldRibbon,0]*1.05, mesh.CenterCoor[oldRibbon,1], '.',color='green')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
+
+
+    if oldfront is not None:
+        n = oldfront.shape[0]
+        for i in range(0, n):
+            plt.plot([oldfront[i, 0], oldfront[i, 2]],
+                     [oldfront[i, 1], oldfront[i, 3]], '-g')
+
+
+def plot_just_xy_points(x,y,fig,joinPoints = True, color = 'red'):
+    ax = fig.get_axes()[0]
+    if joinPoints:
+        plt.plot(np.asarray(x), np.asarray(y), '.-', color = color)
+    else:
+        plt.plot(np.asarray(x), np.asarray(y), '.', color = color)
+    return fig
 
 def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotate_cellName=False,annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=None, joinPoints = True, disregard_plus=False):
         #fig = None
@@ -1223,7 +1268,7 @@ def find_xy_intersections_type3_case_2_intersections(return_info, indexesFC_T3_2
 def check_if_point_inside_cell(xORy_grid,xORy_Candidate,hx_OR_hy,mac_precision):
     xORy_max = xORy_grid + hx_OR_hy * .5
     xORy_min = xORy_grid - hx_OR_hy * .5
-    return (((xORy_Candidate - xORy_max) / hx_OR_hy) <= mac_precision/10000 ) * (((xORy_Candidate - xORy_min) / hx_OR_hy) >= -mac_precision/10000 )
+    return (((xORy_Candidate - xORy_max) / hx_OR_hy) <= mac_precision/10000. ) * (((xORy_Candidate - xORy_min) / hx_OR_hy) >= -mac_precision/10000. )
 
 def reorder_intersections(Fracturelist,
                           xCandidate_2_inter,
@@ -2101,7 +2146,8 @@ def recompute_LS_at_tip_cells(sgndDist_k, p_zero_vertex, p_center, p1, p2, mac_p
             sgndDist_k[p_center.name] = + distance_center_to_front
     return sgndDist_k
 
-def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh,recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0 = None, oldfront=None):
+#@profile
+def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, mesh, recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, lstTmStp_EltCrack0 = None, oldfront=None):
 
         """
         description of the function.
@@ -3393,7 +3439,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         #                           global_list_of_TIPcells,
         #                           list_of_xintersectionsfromzerovertex,
         #                           list_of_yintersectionsfromzerovertex,
-        #                           list_of_vertexID, Ribbon)
+        #                           list_of_vertexID, Ribbon, oldfront=oldfront)
 
         return \
             np.asarray(global_list_of_TIPcells),\

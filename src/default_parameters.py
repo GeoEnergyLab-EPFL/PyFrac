@@ -15,14 +15,14 @@ toleranceVStagnant = 1.e-6              # tolerance on the velocity to decide if
 tolerancewIncr = 1.e-5                  # tolerance on the fracture opening increment (dw). If |dw| is less than the
                                         # tolerance then it is difficault to know if the fracture front is really
                                         # stagnant
+gmres_tol = 1e-14                       # tolerance for the convergence of a gmres solver
 
-gmres_tol = 1e-14
-gmres_maxiter = 1000
 
 # max iterations
 max_front_itrs = 25                     # maximum iterations for the fracture front.
 max_solver_itrs = 140                   # maximum iterations for the elastohydrodynamic solver.
 max_proj_Itrs = 10                      # maximum projection iterations.
+gmres_maxiter = 1000                    # max number of iterations of a gmres solver
 
 # time and time stepping
 tmStp_prefactor = 0.8                   # time step prefactor(pf) to determine the time step(dt = pf*min(dx, dy)/max(v).
@@ -78,6 +78,7 @@ mech_loading = False                    # if True, the mechanical loading solver
 volume_control = False                  # if True, the volume control solver will be used.
 double_fracture_vol_contr = False       # enable the volume control solver for two fractures
 volumeControlGMRES = False              # enable the volume control solver using GMRES with either HMAT or Toeplitz for elasticity
+EHLGMRES = False                        # enable the EHL solver using GMRES (no special elasticity care)
 useHMAT = False
 viscous_injection = True                # if True, the viscous fluid solver solver will be used.
 substitute_pressure = True              # if True, the pressure will be substituted with width to make the EHL system.

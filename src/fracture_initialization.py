@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 import logging
 from scipy.sparse.linalg import gmres
+from scipy.sparse import csc_matrix
 import numpy as np
 import copy
 import math
@@ -15,10 +16,12 @@ import sys
 from level_set import SolveFMM, reconstruct_front, UpdateLists, get_front_region
 from volume_integral import Integral_over_cell
 from symmetry import self_influence
-from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
+from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, \
+    plot_cell_lists, plot_xy_points, plot_just_xy_points, get_xy_from_Ffront, get_cells_in_neighborhood, \
+    ray_tracing_numpy
 from Hdot import gmres_counter
 from FMM import fmm
-
+from scipy.optimize import least_squares
 
 
 def get_eliptical_survey_cells(mesh, a, b, center=None):
@@ -230,16 +233,21 @@ def reduce_based_on_interval(edges_, coord_pt1, coord_pt2 ,coords_):
     to_keep = []
     for i in range(len(coords_)):
         coord = coords_[i]
-        if (coord - coord_pt1) * (coord - coord_pt2) < 0.:
+        if ((coord - coord_pt1) * (coord - coord_pt2)) < 0.:
             to_keep.append(i)
-    return edges_[to_keep], coords_[to_keep]
+    return edges_[to_keep]
 
 def get_intersections(mesh_new,Ffront_old):
+    """
+    :param mesh_new:
+    :param Ffront_old:
+    :return:
+    """
     from level_set import get_cells_inside_circle
     Ffront_new = []
     EltTip = []
 
-    edges = []
+    edges_int = []
     x_int_tot = []
     y_int_tot = []
     h_or_v = []
@@ -250,7 +258,7 @@ def get_intersections(mesh_new,Ffront_old):
         x1 = segment[0]; x2 = segment[2]
         y1 = segment[1]; y2 = segment[3]
 
-        # get the distance between the two elements
+        # get the distance between the two points
         Lseg = np.sqrt((x1-x2)**2 + (y1-y2)**2)**(0.5)
 
         # get a band of cells where the old front is passing
@@ -260,89 +268,360 @@ def get_intersections(mesh_new,Ffront_old):
         # take the elements in the intersection of the two circles
         elems = np.unique(elem_around_1st_vertex + elem_around_2nd_vertex)
 
+        ## plot only for debugging ##
+        #fig = plot_cell_lists(mesh_new, elems, fig=None, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01, annotate_cellName=False, grid=True)
+        #fig = plot_just_xy_points([x1,x2], [y1,y2], fig, joinPoints=True, color='red')
+        ## ----------------------- ##
+
         # take the list unique vertexes of these elements
-        vertexes = np.unique(mesh_new.Connetivity[elems].flatten())
+        vertexes = np.unique(mesh_new.Connectivity[elems].flatten())
 
         # take the list of unique horizhontal edges that might be intersected
         # connNodesEdges is [vertical_top, horizotal_left, vertical_bottom, horizotal_right]
-        edges = mesh_new.Connetivitynodesedges[vertexes]
+        edges = mesh_new.Connectivitynodesedges[vertexes]
         edges_v = (edges[:,[0,2]]).flatten()
         edges_h = (edges[:,[1,3]]).flatten()
 
-        # get the x and y coordinates of the vertexes
-        vertexes_x = mesh_new.VertexCoor[vertexes,0]
-        vertexes_y = mesh_new.VertexCoor[vertexes,1]
-
         # take the list of unique edges that might be intersected
-        edges_v_indxs = np.unque(edges_v, unique_indices = True)
-        edges_h_indxs = np.unque(edges_h, unique_indices = True)
-        edges_v = edges_v[edges_v_indxs]
-        edges_h = edges_h[edges_h_indxs]
+        edges_v = np.unique(edges_v)
+        edges_h = np.unique(edges_h)
 
         # take the x coord of the vertical edges and the y coord of the horizontal edges
-        x_v = vertexes_x[edges_v_indxs]
-        y_h = vertexes_y[edges_h_indxs]
+        x_v = mesh_new.VertexCoor[mesh_new.Connectivityedgesnodes[edges_v,0]][:,0]
+        y_h = mesh_new.VertexCoor[mesh_new.Connectivityedgesnodes[edges_h,0]][:,1]
 
         # reduce the list of edges based on the fact that pt1 and pt2 can not be on the same side of one edge
-        edges_v, x_v = reduce_based_on_interval(edges_v, x1, x2, x_v)
-        edges_h, y_h = reduce_based_on_interval(edges_h, y1, y2, y_h)
+        edges_v = reduce_based_on_interval(edges_v, x1, x2, x_v)
+        edges_h = reduce_based_on_interval(edges_h, y1, y2, y_h)
+
+        # take the x coord of the vertical edges and the y coord of the horizontal edges
+        x_v = mesh_new.VertexCoor[mesh_new.Connectivityedgesnodes[edges_v,0]][:,0]
+        y_h = mesh_new.VertexCoor[mesh_new.Connectivityedgesnodes[edges_h,0]][:,1]
 
         # get intersections between the edges and the segments, even if those are on the on the edge prolongation
-        #   - intersections with the horizontal edge
-        if y2-y1 != 0. :
-            alpha = (y_h - y1) * Lseg / (y2-y1)
-            x_int = alpha * (x2 - x1) / Lseg + x1
-        else:
-            x_int = None
+        if len(edges_h) > 0 :
+            #   - intersections with the horizontal edge
+            if y2-y1 != 0. :
+                alpha = (y_h - y1) * Lseg / (y2-y1)
+                x_int = alpha * (x2 - x1) / Lseg + x1
+            else:
+                x_int = None
 
-        # check if x_int lies in the range of the edge
-        e = 0 ; indx_to_keep = []
-        for edge in edges_h:
-            A = mesh_new.Connetivityedgesnodes[edge][0]
-            B = mesh_new.Connetivityedgesnodes[edge][1]
-            xA = mesh_new.VertexCoor[A,0]
-            xB = mesh_new.VertexCoor[B,0]
-            if (x_int[e] - xA)*(x_int[e] - xB)<=0:
-                indx_to_keep.append(e)
-            e = e + 1
-        edges_h = edges_h[indx_to_keep]
-        x_int = x_int[indx_to_keep]
-        y_h = y_h[indx_to_keep]
+            # check if x_int lies in the range of the edge
+            e = 0 ; indx_to_keep = []
+            for edge in edges_h:
+                A = mesh_new.Connectivityedgesnodes[edge][0]
+                B = mesh_new.Connectivityedgesnodes[edge][1]
+                xA = mesh_new.VertexCoor[A,0]
+                xB = mesh_new.VertexCoor[B,0]
+                if (x_int[e] - xA)*(x_int[e] - xB)<=0:
+                    indx_to_keep.append(e)
+                e = e + 1
+            edges_h = edges_h[indx_to_keep]
+            x_int = x_int[indx_to_keep]
+            y_h = y_h[indx_to_keep]
+            ## plot only for debugging ##
+            #fig = plot_just_xy_points(x_int, y_h, fig, joinPoints=True, color='blue')
+            ## ----------------------- ##
+        else: x_int = []
 
-        #   - intersections with the vertical edge
-        if x2-x1 != 0. :
-            alpha = (x_v - x1) * Lseg / (x2-x1)
-            y_int = alpha * (y2 - y1) / Lseg + y1
-        else:
-            y_int = None
+        if len(edges_v) > 0 :
+            #   - intersections with the vertical edge
+            if x2-x1 != 0. :
+                alpha = (x_v - x1) * Lseg / (x2-x1)
+                y_int = alpha * (y2 - y1) / Lseg + y1
+            else:
+                y_int = None
 
-        # check if y_int lies in the range of the edge
-        e = 0 ; indx_to_keep = []
-        for edge in edges_v:
-            A = mesh_new.Connetivityedgesnodes[edge][0]
-            B = mesh_new.Connetivityedgesnodes[edge][1]
-            yA = mesh_new.VertexCoor[A,1]
-            yB = mesh_new.VertexCoor[B,1]
-            if (y_int[e] - yA)*(y_int[e] - yB)<=0:
-                indx_to_keep.append(e)
-            e = e + 1
-        edges_v = edges_v[indx_to_keep]
-        y_int = y_int[indx_to_keep]
-        x_v = x_v[indx_to_keep]
+            # check if y_int lies in the range of the edge
+            e = 0 ; indx_to_keep = []
+            for edge in edges_v:
+                A = mesh_new.Connectivityedgesnodes[edge][0]
+                B = mesh_new.Connectivityedgesnodes[edge][1]
+                yA = mesh_new.VertexCoor[A,1]
+                yB = mesh_new.VertexCoor[B,1]
+                if (y_int[e] - yA)*(y_int[e] - yB)<=0:
+                    indx_to_keep.append(e)
+                e = e + 1
+            edges_v = edges_v[indx_to_keep]
+            y_int = y_int[indx_to_keep]
+            x_v = x_v[indx_to_keep]
+            ## plot only for debugging ##
+            #fig = plot_just_xy_points(x_v, y_int, fig, joinPoints=True, color='blue')
+            ## ----------------------- ##
+        else: y_int = []
 
         # store all info
-        edges = edges + edges_v + edges_h
-        x_int_tot = x_int_tot + x_v   + x_int
-        y_int_tot = y_int_tot + y_int + y_h
-        h_or_v = h_or_v + [1] * len(edges_v) + [0] * len(edges_h)
-        print("\n")
-        print(" FUNCTION NOT COMPLETED !!")
-        print("\n")
+        if len(x_v)>0:
+            edges_int = edges_int + edges_v.tolist()
+            x_int_tot = x_int_tot + x_v.tolist()
+            y_int_tot = y_int_tot + y_int.tolist()
+            h_or_v = h_or_v + [1] * len(edges_v)
+        if len(y_h)>0:
+            edges_int = edges_int + edges_h.tolist()
+            x_int_tot = x_int_tot + x_int.tolist()
+            y_int_tot = y_int_tot + y_h.tolist()
+            h_or_v = h_or_v + [0] * len(edges_h)
+
+
+    ## plot only for debugging ##
+    #fig = plot_cell_lists(mesh_new, [], fig=None, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01, annotate_cellName=False, grid=True)
+    #x, y = get_xy_from_Ffront(Ffront_old)
+    #fig = plot_just_xy_points(x, y, fig, joinPoints=True, color='red')
+    #fig = plot_just_xy_points(x_int_tot, y_int_tot, fig, joinPoints=False, color='blue')
+    ## ----------------------- ##
+
+    # all arguments that can be returned:
+    #       return edges_int, x_int_tot, y_int_tot, h_or_v
+
+    return x_int_tot, y_int_tot
+
+def get_nodes_to_fictitius_cell(mesh_new, x, y):
+    fictitius_cells = []
+    for i in range(len(x)):
+        # find the minimum distance
+        cell_name = np.argmin( ((mesh_new.CenterCoor[:,0]-x[i])**2. + (mesh_new.CenterCoor[:,1]-y[i])**2.)**0.5 ).tolist()
+        xmin = mesh_new.CenterCoor[cell_name, 0]
+        ymin = mesh_new.CenterCoor[cell_name, 1]
+
+        neighborhood_ID = get_cells_in_neighborhood(cell_name, mesh_new)
         """
-        Attention, the function needs to be finished!
+                                             0 1 2 3 4 5 6 7 8   
+        you are in cell i and get the cells [a,b,c,d,e,f,g,h,i]
+          _   _   _   _   _
+        | _ | _ | _ | _ | _ |
+        | _ | e | a | f | _ |
+        | _ | _ | _ | _ | _ |
+        | _ | d | i | b | _ |
+        | _ | _ | _ | _ | _ |
+        | _ | h | c | g | _ |
+        | _ | _ | _ | _ | _ |
         """
 
-    return Ffront_new, EltTip
+        fictitius_cell = None
+        # define the fictitius_cell
+        if   (xmin - x[i] > 0) and (ymin - y[i] > 0):
+            """
+             ( )      ( )
+                center
+             (*)      ( )
+            """
+            fictitius_cell = neighborhood_ID[7] # h
+        elif (xmin - x[i] > 0) and (ymin - y[i] < 0):
+            """
+             (*)      ( )
+                center
+             ( )      ( )
+            """
+            fictitius_cell = neighborhood_ID[3]  # d
+        elif (xmin - x[i] < 0) and (ymin - y[i] > 0):
+            """
+             ( )      ( )
+                center
+             ( )      (*)
+            """
+            fictitius_cell = neighborhood_ID[2]  # c
+        elif (xmin - x[i] < 0) and (ymin - y[i] < 0):
+            """
+             ( )      (*)
+                center
+             ( )      ( )
+            """
+            fictitius_cell = neighborhood_ID[8]  # i
+        elif (xmin - x[i] > 0) and (ymin - y[i] == 0):
+            """
+             ( )      ( )
+             (*)center
+             ( )      ( )
+            """
+            fictitius_cell = neighborhood_ID[7]  # h
+        elif (xmin - x[i] < 0) and (ymin - y[i] == 0):
+            """
+             ( )      ( )
+                center(*)
+             ( )      ( )
+            """
+            fictitius_cell = neighborhood_ID[2]  # c
+        elif (xmin - x[i] == 0) and (ymin - y[i] > 0):
+            """
+             ( )      ( )
+                center
+             ( ) (*)  ( )
+            """
+            fictitius_cell = neighborhood_ID[7]  # h
+        elif (xmin - x[i] == 0) and (ymin - y[i] < 0):
+            """
+             ( ) (*)  ( )
+                center
+             ( )      ( )
+            """
+            fictitius_cell = neighborhood_ID[3]  # d
+        elif (xmin - x[i] == 0) and (ymin - y[i] == 0):
+            """
+             ( )      ( )
+                c(*)r
+             ( )      ( )
+            """
+            fictitius_cell = neighborhood_ID[8]  # i
+        else:
+            SystemExit("value not allowed")
+
+        # append the cell
+        if fictitius_cell is not None: fictitius_cells.append(fictitius_cell)
+
+    ## plot only for debugging ##
+    # fig = plot_cell_lists(mesh_new, [], fig=None, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
+    #                       annotate_cellName=False, grid=True)
+    # fig = plot_just_xy_points(x, y, fig, joinPoints=False, color='red')
+    #
+    # fig = plot_just_xy_points(mesh_new.CenterCoor[np.asarray(fictitius_cells),0],
+    #                           mesh_new.CenterCoor[np.asarray(fictitius_cells),1], fig, joinPoints=False, color='blue')
+    ## ----------------------- ##
+
+    return fictitius_cells
+
+class Bilinear_int():
+  def __init__(self, mesh_new, x, y, fictitius_cells_names):
+      self.x_ = x
+      self.y_ = y
+      self.fictitius_cells_names_ = fictitius_cells_names
+      self.mesh_new_ = mesh_new
+
+      # check if the number of equations is sufficient
+      self.nrow = len(x)
+      self.unique_fc = np.unique(fictitius_cells_names)
+      LS_unknowns = []
+      for fc in self.unique_fc:
+          """
+              0 1 2 3 4 5 6 7 8   
+             [a,b,c,d,e,f,g,h,i]
+             take [8, 1, 5, 0]
+          """
+          [a,b,c,d,e,f,g,h,i] = get_cells_in_neighborhood(fc, mesh_new)
+          LS_unknowns = LS_unknowns + [i, b, f, a]
+      del a,b,c,d,e,f,g,h,i
+      LS_unknowns = np.unique(LS_unknowns)
+      self.LS_unknowns = LS_unknowns
+      self.ncol = len(LS_unknowns)
+      self.map_IDtoDOF = dict(zip(LS_unknowns, range(self.ncol)))
+      self.checkdimension()
+
+      # initializing the matrix
+      data, row_ind, col_ind = self.fillM()
+      self.M_ = csc_matrix((data, (row_ind, col_ind)), shape = (self.nrow, self.ncol))
+
+  def fillM(self):
+      dA = self.mesh_new_.hx * self.mesh_new_.hy
+      data = []
+      row_ind = []
+      col_ind = []
+      for row in range(self.nrow):
+          x = self.x_[row]
+          y = self.y_[row]
+          """
+                   _   _ (x2,y2)   
+                 | a | f |  
+                 | _ | _ | 
+                 | i | b |  
+            --(y1,x1)--------------> x
+          """
+          fc_name = self.fictitius_cells_names_[row]
+          [a, b, c, d, e, f, g, h, i] = get_cells_in_neighborhood(fc_name, self.mesh_new_)
+          i_dof = self.map_IDtoDOF[i]
+          b_dof = self.map_IDtoDOF[b]
+          f_dof = self.map_IDtoDOF[f]
+          a_dof = self.map_IDtoDOF[a]
+          x_1 = self.mesh_new_.CenterCoor[i,0]
+          y_1 = self.mesh_new_.CenterCoor[i,1]
+          x_2 = self.mesh_new_.CenterCoor[f,0]
+          y_2 = self.mesh_new_.CenterCoor[f,1]
+          """
+          Writing the value of the LS at one point as a wheighted mean:
+            LS(x,y) = w11*LS_11 + w12*LS_12 + w21*LS_21 + w22*LS_22
+          and with the weights satisfying the following system:
+          | 1    1    1    1    |  |w11|      |1 |
+          | x1   x1   x2   x2   |  |w21|      |x |
+          | y1   y2   y1   y2   |  |w12|  =   |y |
+          | x1y1 x1y2 x2y1 x2y2 |  |w22|      |xy|
+          referring to the positions on the picture above
+          """
+          row_ind.append(row)
+          col_ind.append(i_dof)
+          data.append((x_2 - x) * (y_2 - y) /dA)
+
+          row_ind.append(row)
+          col_ind.append(a_dof)
+          data.append((x_2 - x) * (y - y_1) /dA)
+
+          row_ind.append(row)
+          col_ind.append(b_dof)
+          data.append((x - x_1) * (y_2 - y) /dA)
+
+          row_ind.append(row)
+          col_ind.append(f_dof)
+          data.append((x - x_1) * (y - y_1) /dA)
+      return data, row_ind, col_ind
+
+
+  def checkdimension(self):
+      log = logging.getLogger('PyFrac.remeshing.checkdimension')
+      if self.nrow < self.ncol:
+          log.error("The size of the system does not allow for a well posed least square problem: too few equations")
+
+  def residual(self, x):
+      return self.M_.dot(x) # - zeros() (the rhs is an array of 0)
+
+def get_bounds(LS_unknowns, mesh_new, Ffront_old):
+    x = np.asarray([mesh_new.CenterCoor[LS_unknowns, 0]])
+    y = np.asarray([mesh_new.CenterCoor[LS_unknowns, 1]])
+    x_fr_old, y_fr_old = get_xy_from_Ffront(Ffront_old)
+    poly = np.column_stack((x_fr_old, y_fr_old))
+    answers_in_out = ray_tracing_numpy(x, y, poly)
+    upper_bound = []
+    lower_bound = []
+    x0 = []
+    for answer_in in answers_in_out:
+        if answer_in:
+            upper_bound.append(0.)
+            lower_bound.append(-np.inf)
+            x0.append(-mesh_new.cellDiag/2.)
+        else:
+            upper_bound.append(+np.inf)
+            lower_bound.append(0.)
+            x0.append(+mesh_new.cellDiag/2.)
+    return upper_bound, lower_bound, x0
+
+def get_ribbon_and_channel(mesh_new, Ffront_old):
+    # 0) define if each vertex is outside or inside the odl front
+    x = np.asarray([mesh_new.VertexCoor[:, 0]])
+    y = np.asarray([mesh_new.VertexCoor[:, 1]])
+    x_fr_old, y_fr_old = get_xy_from_Ffront(Ffront_old)
+    poly = np.column_stack((x_fr_old, y_fr_old))
+    answers_in_out = ray_tracing_numpy(x, y, poly)
+
+    tip = []
+    channel = []
+
+    #1) get cell type: tip, channel, out
+    for i in range(mesh_new.NumberOfElts):
+        vertexes = mesh_new.Connectivity[i]
+        answers_in_out_el = np.sum(answers_in_out[vertexes])
+        if answers_in_out_el == 4:
+            channel.append(i)
+        elif answers_in_out_el < 4 and answers_in_out_el > 0:
+            tip.append(i)
+
+    #2) intersect tip_nei and channel to get ribbon
+    ribbon = np.intersect1d(channel, np.unique((mesh_new.NeiElements[tip]).flatten()))
+
+    # CHECK THE SOLUTION
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh_new.NumberOfElts,), )
+    # K[tip] = 1
+    # K[ribbon] = 2
+    # plot_as_matrix(K, mesh_new)
+
+    return ribbon, channel
 
 def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
     # the following routine assumes Ffront to be a closed polygon
@@ -353,18 +632,80 @@ def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
     Ffront_new = None; number_of_fronts = None; fronts_dictionary = None
 
     # 1) find the intersections of the old Ffront with the new mesh
-    Ffront_new, EltTip = get_intersections(mesh_new, Ffront_old)
-    # 2) define alpha, zerovertex and "l"s
-    # 3) define Eltribbon, Eltchannel an Eltcrack and CellStatus
-    # 4) define the distances between the ribbon and the front
-    # 5) compute the
+    x_new, y_new = get_intersections(mesh_new, Ffront_old)
+    x_old, y_old = get_xy_from_Ffront(Ffront_old)
 
-    print("\n")
-    print(" FUNCTION NOT COMPLETED !!")
-    print("\n")
-    """
-    Attention, the function needs to be finished!
-    """
+    # 2) join old cells and new cells
+    x = x_new + x_old
+    y = y_new + y_old
+
+    # 3) get fictitius cells
+    # see front reconstruction for its definition
+    fictitius_cells_names = get_nodes_to_fictitius_cell(mesh_new, x, y)
+
+    # 4) initialize residual function & check number of equations
+    bilinear_int = Bilinear_int(mesh_new, x, y, fictitius_cells_names)
+
+    # 5) check that the number of equations (rows) is sufficient, i.e. > number of rows
+    if bilinear_int.nrow < bilinear_int.ncol:
+        SystemExit("the number of points describing the fracture front is insufficient to define its location")
+
+    # 6) get bounds (if levelset is greater or smaller than zero)
+    upper, lower, x0 = get_bounds(bilinear_int.LS_unknowns, mesh_new, Ffront_old)
+
+    # 7) solve the least square problem
+    LS_res = least_squares(bilinear_int.residual, x0=x0, bounds=(lower, upper))
+    if LS_res['status'] !=1:
+        SystemExit("the solution for the LS was not found")
+
+    # CHECK THE SOLUTION
+    # from utility import plot_as_matrix
+    # K = np.zeros((mesh_new.NumberOfElts,), )
+    # K[bilinear_int.LS_unknowns] = LS_res.x
+    # plot_as_matrix(K, mesh_new)
+
+    # 8) define the ribbon cells as all the cells that have all the vertexes inside the front at the last time step
+    EltRibbon, EltChannel = get_ribbon_and_channel(mesh_new, Ffront_old)
+
+    # 9) compute the LS everywhere
+    #       - Creating a fmm structure to solve the level set
+    fmmStruct = fmm(mesh_new)
+    fmmStruct.solveFMM((-LS_res.x, bilinear_int.LS_unknowns), EltChannel, mesh_new)
+    outside_elts = np.setdiff1d(np.arange(mesh_new.NumberOfElts), EltChannel)
+    fmmStruct.solveFMM((LS_res.x, bilinear_int.LS_unknowns), outside_elts, mesh_new)
+
+    #       -  The solution stored in the object is the calculated level set. we need however to change the sign as to have
+    #           negative inside and positive outside.
+    sgndDist_k = -fmmStruct.LS
+    sgndDist_k[outside_elts] = -sgndDist_k[outside_elts]
+    sgndDist_k[bilinear_int.LS_unknowns] = LS_res.x # just to be sure than we are a sign change where we know it
+
+    #       -  We define a front region and a pstv_region needed to construct the front.
+    front_region = np.arange(mesh_new.NumberOfElts)
+    pstv_region = np.where(sgndDist_k[front_region] >= - mesh_new.cellDiag)[0]
+
+    # 10) reconstruct the front
+
+    correct_size_of_pstv_region = [False, False, False]
+    recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
+
+    EltsTipNew, \
+    listofTIPcellsONLY, \
+    l_k, \
+    alpha_k, \
+    CellStatus, \
+    newRibbon, \
+    zrVertx_k_with_fully_traversed, \
+    zrVertx_k_without_fully_traversed, \
+    correct_size_of_pstv_region,\
+    sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
+                                                                  front_region[pstv_region],
+                                                                  EltRibbon,
+                                                                  EltChannel,
+                                                                  mesh_new,
+                                                                  recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, oldfront=Ffront_old)
+    if not correct_size_of_pstv_region[0]:
+        SystemExit("the region where the level set should be known does not allow for front reconstruction")
 
     return EltChannel, EltTip, EltCrack, \
            EltRibbon,  ZeroVertex,  CellStatus, \

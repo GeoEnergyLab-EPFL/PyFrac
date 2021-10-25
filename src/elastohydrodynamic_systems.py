@@ -7,18 +7,13 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-import logging
+
 from scipy import sparse
 from scipy.optimize import brentq
 import numpy as np
-#import numdifftools as nd
-import copy
-from scipy.optimize import lsq_linear
-import matplotlib.pyplot as plt
 
 #local imports
 from fluid_model import friction_factor_vector, friction_factor_MDR
-from properties import instrument_start, instrument_close
 
 
 def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack, neiInCrack, simProp):
@@ -633,7 +628,6 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
-
 def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, *args):
     """
     This function makes the linearized system of equations to be solved by a linear system solver. The finite difference
@@ -790,7 +784,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-
+#@profile
 def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, interItr, *args):
     """
     This function makes the linearized system of equations to be solved by a linear system solver. The system is
@@ -839,6 +833,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
         - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
                                     obtained for width, pressure and active width constraint cells.
     """
+    # see https://matteding.github.io/2019/04/25/sparse-matrices/ for more info about CSC matrix
+    precision = np.float64
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
     sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
@@ -868,8 +864,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
         delta_tb = tb_np1 - tb_n
 
     else:
-        tb_n = np.zeros((len(wNplusOne),), dtype=np.float64)
-        delta_tb = np.zeros((len(wNplusOne),), dtype=np.float64)
+        tb_n = np.zeros((len(wNplusOne),), dtype=precision)
+        delta_tb = np.zeros((len(wNplusOne),), dtype=precision)
 
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
@@ -891,26 +887,35 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     act_indxs = n_ch + np.arange(n_act)
     tip_indxs = n_ch + n_act + np.arange(n_tip)
 
-    A = np.zeros((n_total, n_total), dtype=np.float64)
+    A = np.zeros((n_total, n_total), dtype=precision)
 
     ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
 
+    # 1
     A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
-    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
+
+    # 2
+    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=precision)
 
     A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
 
+    # 3
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
+
+    # 4
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
                                        sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
                                                     [0], format='csr')).toarray()
     A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
 
+    # 5
     A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
                                         ).dot(C[np.ix_(to_solve, to_solve)])
+
+    # 6
     A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
                                        sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
@@ -1439,123 +1444,6 @@ def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args,
-                  PicardPerNewton=1000, perf_node=None):
-    """
-    Mixed Picard Newton solver for nonlinear systems.
-
-    Args:
-        Res_fun (function):                 -- The function calculating the residual.
-        sys_fun (function):                 -- The function giving the system A, b for the Picard solver to solve the
-                                               linear system of the form Ax=b.
-        guess (ndarray):                    -- The initial guess.
-        TypValue (ndarray):                 -- Typical value of the variable to estimate the Epsilon to calculate
-                                               Jacobian.
-        interItr_init (ndarray):            -- Initial value of the variable(s) exchanged between the iterations (if
-                                               any).
-        sim_prop (SimulationProperties):    -- the SimulationProperties object giving simulation parameters.
-        relax (float):                      -- The relaxation factor.
-        args (tuple):                       -- arguments given to the residual and systems functions.
-        PicardPerNewton (int):              -- For hybrid Picard/Newton solution. Number of picard iterations for every
-                                               Newton iteration.
-        perf_node (IterationProperties):    -- the IterationProperties object passed to be populated with data.
-
-    Returns:
-        - solk (ndarray)       -- solution at the end of iteration.
-        - data (tuple)         -- any data to be returned
-    """
-    log = logging.getLogger('PyFrac.Picard_Newton')
-    relax = sim_prop.relaxation_factor
-    solk = guess
-    k = 0
-    normlist = []
-    interItr = interItr_init
-    newton = 0
-    converged = False
-
-    while not converged: #todo:check system change (AM)
-
-        solkm1 = solk
-        if (k + 1) % PicardPerNewton == 0:
-            Fx, interItr, indices = Elastohydrodynamic_ResidualFun(solk, sys_fun, interItr, *args)
-            Jac = Jacobian(Elastohydrodynamic_ResidualFun, sys_fun, solk, TypValue, interItr, *args)
-            # Jac = nd.Jacobian(Elastohydrodynamic_ResidualFun)(solk, sys_fun, interItr, interItr_o, indices, *args)
-            dx = np.linalg.solve(Jac, -Fx)
-            solk = solkm1 + dx
-            newton += 1
-        else:
-            try:
-                A, b, interItr, indices = sys_fun(solk, interItr, *args)
-                perfNode_linSolve = instrument_start("linear system solve", perf_node)
-                sol = np.linalg.solve(A, b)
-                # if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
-                #     solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
-                # else:
-                solk = relax * solkm1 + (1 - relax) * sol
-            except np.linalg.linalg.LinAlgError:
-                log.error('singular matrix!')
-                solk = np.full((len(solk),), np.nan, dtype=np.float64)
-                if perf_node is not None:
-                    instrument_close(perf_node, perfNode_linSolve, None,
-                                     len(b), False, 'singular matrix', None)
-                    perf_node.linearSolve_data.append(perfNode_linSolve)
-                return solk, None
-
-        converged, norm = check_covergance(solk, solkm1, indices, sim_prop.toleranceEHL)
-        normlist.append(norm)
-        k = k + 1
-
-        if perf_node is not None:
-            instrument_close(perf_node, perfNode_linSolve, norm, len(b), True, None, None)
-            perf_node.linearSolve_data.append(perfNode_linSolve)
-
-        if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
-            log.warning('Picard iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
-                  ' iterations, norm:' + repr(norm))
-            solk = np.full((len(solk),), np.nan, dtype=np.float64)
-            if perf_node is not None:
-                perfNode_linSolve.failure_cause = 'singular matrix'
-                perfNode_linSolve.status = 'failed'
-            return solk, None
-
-
-    log.debug("Converged after " + repr(k) + " iterations")
-    data = [interItr[0], interItr[2], interItr[3]]
-    return solk, data
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def Jacobian(Residual_function, sys_func, x, TypValue, interItr, *args):
-    """
-    This function returns the Jacobian of the given function.
-    """
-
-    central = False
-    Fx, interItr, indices = Residual_function(x, sys_func, interItr, *args)
-    Jac = np.zeros((len(x), len(x)), dtype=np.float64)
-    for i in range(0, len(x)):
-        Epsilon = np.finfo(float).eps ** 0.5 * abs(max(x[i], TypValue[i]))
-        if Epsilon == 0:
-            Epsilon = np.finfo(float).eps ** 0.5
-        xip = np.copy(x)
-        xip[i] = xip[i] + Epsilon
-        if central:
-            xin = np.copy(x)
-            xin[i] = xin[i]-Epsilon
-            Jac[:,i] = (Residual_function(xip, sys_func, interItr, *args)[0] - Residual_function(
-                xin, sys_func, interItr, *args)[0])/(2*Epsilon)
-            if np.isnan(Jac[:, i]).any():
-                Jac[:,:] = np.nan
-                return Jac
-        else:
-            Fxi, interItr, indices = Residual_function(xip, sys_func, interItr, *args)
-            Jac[:, i] = (Fxi - Fx) / Epsilon
-
-    return Jac
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 
 def check_covergance(solk, solkm1, indices, tol):
     """ This function checks for convergence of the solution
@@ -1750,123 +1638,6 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
         raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to compute the fluid velocity or the fluid flux')
 
 
-    #-----------------------------------------------------------------------------------------------------------------------
-
-
-def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
-    """
-    Anderson solver for non linear system.
-
-    Args:
-        sys_fun (function):                 -- The function giving the system A, b for the Anderson solver to solve the
-                                               linear system of the form Ax=b.
-        guess (ndarray):                    -- The initial guess.
-        interItr_init (ndarray):            -- Initial value of the variable(s) exchanged between the iterations (if
-                                               any).
-        sim_prop (SimulationProperties):    -- the SimulationProperties object giving simulation parameters.
-        relax (float):                      -- The relaxation factor.
-        args (tuple):                       -- arguments given to the residual and systems functions.
-        perf_node (IterationProperties):    -- the IterationProperties object passed to be populated with data.
-        m_Anderson                          -- value of the recursive time steps to consider for the anderson iteration
-
-    Returns:
-        - Xks[mk+1] (ndarray)  -- final solution at the end of the iterations.
-        - data (tuple)         -- any data to be returned
-    """
-    log=logging.getLogger('PyFrac.Anderson')
-    m_Anderson = sim_prop.Anderson_parameter
-    relax = sim_prop.relaxation_factor
-
-    ## Initialization of solution vectors
-    xks = np.full((m_Anderson+2, guess.size), 0.)
-    Fks = np.full((m_Anderson+1, guess.size), 0.)
-    Gks = np.full((m_Anderson+1, guess.size), 0.)
-
-    ## Initialization of iteration parameters
-    k = 0
-    normlist = []
-    cond_num = []
-    interItr = interItr_init
-    converged = False
-    try:
-        perfNode_linSolve = instrument_start("linear system solve", perf_node)
-        # First iteration
-        xks[0, ::] = np.array([guess])                                       # xo
-        (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
-        cond_num.append(np.linalg.cond(A))
-        Gks[0, ::] = np.linalg.solve(A, b)
-        Fks[0, ::] = Gks[0, ::] - xks[0, ::]
-        xks[1, ::] = Gks[0, ::]                                               # x1
-    except np.linalg.linalg.LinAlgError:
-        log.error('singular matrix!')
-        solk = np.full((len(xks[0]),), np.nan, dtype=np.float64)
-        if perf_node is not None:
-            instrument_close(perf_node, perfNode_linSolve, None,
-                             len(b), False, 'singular matrix', None)
-            perf_node.linearSolve_data.append(perfNode_linSolve)
-        return solk, None
-
-    while not converged:
-
-        try:
-            mk = np.min([k, m_Anderson-1])  # Asses the amount of solutions available for the least square problem
-            if k >= m_Anderson:
-                (A, b, interItr, indices) = sys_fun(xks[mk + 2, ::], interItr, *args)
-                Gks = np.roll(Gks, -1, axis=0)
-                Fks = np.roll(Fks, -1, axis=0)
-            else:
-                (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
-            perfNode_linSolve = instrument_start("linear system solve", perf_node)
-
-            Gks[mk + 1, ::] = np.linalg.solve(A, b)
-            Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
-
-            ## Setting up the Least square problem of Anderson
-            A_Anderson = np.transpose(Fks[:mk+1, ::] - Fks[mk+1, ::])
-            b_Anderson = -Fks[mk+1, ::]
-
-            # Solving the least square problem for the coefficients
-            omega_s = np.linalg.lstsq(A_Anderson, b_Anderson, rcond=None)[0]
-            omega_s = np.append(omega_s, 1.0 - sum(omega_s))
-
-            ## Updating xk in a relaxed version
-            if k >= m_Anderson:# + 1:
-                xks = np.roll(xks, -1, axis=0)
-
-            xks[mk + 2, ::] = (1-relax) * np.sum(np.transpose(np.multiply(np.transpose(xks[:mk+2,::]), omega_s)),axis=0)\
-                 + relax * np.sum(np.transpose(np.multiply(np.transpose(Gks[:mk+2,::]), omega_s)),axis=0)
-
-        except np.linalg.linalg.LinAlgError:
-            log.error('singular matrix!')
-            solk = np.full((len(xks[mk]),), np.nan, dtype=np.float64)
-            if perf_node is not None:
-                instrument_close(perf_node, perfNode_linSolve, None,
-                                 len(b), False, 'singular matrix', None)
-                perf_node.linearSolve_data.append(perfNode_linSolve)
-            return solk, None
-
-        ## Check for convergency of the solution
-        converged, norm = check_covergance(xks[mk + 1, ::], xks[mk + 2, ::], indices, sim_prop.toleranceEHL)
-        normlist.append(norm)
-        k = k + 1
-
-        if perf_node is not None:
-            instrument_close(perf_node, perfNode_linSolve, norm, len(b), True, None, None)
-            perf_node.linearSolve_data.append(perfNode_linSolve)
-
-        if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
-            log.warning('Anderson iteration not converged after ' + repr(sim_prop.maxSolverItrs) + \
-                  ' iterations, norm:' + repr(norm))
-            solk = np.full((np.size(xks[0,::]),), np.nan, dtype=np.float64)
-            if perf_node is not None:
-                perfNode_linSolve.failure_cause = 'singular matrix'
-                perfNode_linSolve.status = 'failed'
-            return solk, None
-
-    log.debug("Converged after " + repr(k) + " iterations")
-
-    data = [interItr[0], interItr[2], interItr[3]]
-    return xks[mk + 2, ::], data
 
 
 #-----------------------------------------------------------------------------------------------------------------------
