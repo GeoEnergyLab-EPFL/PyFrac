@@ -72,7 +72,7 @@ def checkOvelappingEntries(row_ind_tract, row_ind_displ):
         exit()
 
 ##############################
-# Mdot operator for GMRES    #
+# Mdot operator for GMRES VC #
 ##############################
 class Mdot(LinearOperator):
   def __init__(self, blockHmat_iLU):

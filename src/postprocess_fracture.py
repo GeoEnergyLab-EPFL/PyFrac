@@ -1429,7 +1429,7 @@ def get_fracture_fp(fr_list):
     return fp_list
 
 #-----------------------------------------------------------------------------------------------------------------------
-from elastohydrodynamic_solver import calculate_fluid_flow_characteristics_laminar
+from elastohydrodynamic_systems import calculate_fluid_flow_characteristics_laminar
 
 def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
     """This function gets the velocity components of the fluid flux for a given list of fractures

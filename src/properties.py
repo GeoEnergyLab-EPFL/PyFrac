@@ -840,6 +840,7 @@ class SimulationProperties:
         self.solveStagnantTip = simul_param.solve_stagnant_tip
         self.solveTipCorrRib = simul_param.solve_tip_corr_rib
         self.solveSparse = simul_param.solve_sparse
+        self.EHL_GMRES = simul_param.EHLGMRES
 
         # miscellaneous
         self.send_phone_msg = simul_param.send_phone_msg

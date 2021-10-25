@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 from numba import njit, prange
 from numba import config, threading_layer
 from scipy.sparse.linalg import LinearOperator
+from scipy.sparse import csc_matrix
 import numpy as np
 import logging
 import json
@@ -88,7 +89,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 #config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'tbb' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'workqueue' #'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 @njit( parallel = True) #  <------parallel compilation
 #@njit() # <------serial compilation
@@ -140,7 +141,8 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
         return np.empty((dimY, dimX), dtype=C_precision)
     else:
         C_sub = np.empty((dimY, dimX), dtype=C_precision)  # submatrix of C
-        localC_toeplotz_coe = np.copy(C_toeplitz_coe)  # local access is faster
+        #localC_toeplotz_coe = np.copy(C_toeplitz_coe)  # local access is faster
+        localC_toeplotz_coe = C_toeplitz_coe
         if dimX != dimY:
             iY = np.floor_divide(elemY, nx)
             jY = elemY - nx * iY
@@ -257,6 +259,10 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         :return: submatrix of C
         """
         return getFast(elementsXY, self.nx, self.C_toeplitz_coe, self.C_precision)
+
+    def _matvec_fast(self, uk):
+        return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+                           self.C_toeplitz_coe, self.C_precision)
 
     def _matvec(self,uk):
         # if self.C_precision == np.float32:

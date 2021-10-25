@@ -14,6 +14,18 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import heapq
 import numpy as np
 
+# TODO: speed it up with numba @jitclass(spec). See https://numba.pydata.org/numba-doc/dev/user/jitclass.html
+# from numba import int32, float32, float64    # import the types
+# from numba.experimental import jitclass
+#
+# spec = [
+#     ('value', float64),               # a simple scalar field
+#     ('array', float32[:]),            # an array field
+# ]
+#
+# @jitclass(spec)
+
+
 class fmm:
     """
     Class to solve the fast marching method (fmm) on a given mesh.

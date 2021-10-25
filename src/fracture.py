@@ -207,6 +207,7 @@ class Fracture:
             self.v = np.full((self.EltTip.size,), np.nan, dtype=np.float64)
         self.pFluid = np.zeros((self.mesh.NumberOfElts,))
         self.pFluid[self.EltCrack] = self.pNet[self.EltCrack] + solid.SigmaO[self.EltCrack]
+        self.Ffront_last = None
         self.sgndDist_last = None
         self.timeStep_last = None
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
@@ -908,35 +909,43 @@ class Fracture:
                 """
                 ATTENTION! this remeshing is not properly made.
                 It should be:
-                1- reconstruct the front from the sign distances from the previous time step
-                2- reconstruct the front from Ffront of the old time step (get the sign distances) on the coarse mesh
-                3- reconstruct the front from Ffront of the current crack (get tip cells and the sign distances) on the coarse mesh
-                4- use fmm to get the sign distances at the tip of the current step (for old and new time step)
-                5- get the velocity as the difference between the sign distances at the tip of the current step
-                6- get the tip volume using velocity 
-                7- get channel volume as total volume - tip volume
-                8- use a least square method to satisfy both the total volume in the channel and to satisfy the projection
+                1- reconstruct the front from Ffront of the old time step (get the sign distances) on the coarse mesh
+                2- reconstruct the front from Ffront of the current crack (get tip cells and the sign distances) on the coarse mesh
+                3- get the velocity as the difference between the sign distances at the tip of the current step
+                4- get the tip volume using velocity 
+                5- get channel volume as total volume - tip volume
+                6- use a least square method to satisfy both the total volume in the channel and to satisfy the projection
                     - to be written the residual function 
                         o> the residual function will use the result from scipy.interpolate.RegularGridInterpolator
                         o> scipy.optimize.root  
                         o> rememnber to use penalty on volume conservation and makes the penalty depending on the lenght of the vector of opening
-                9- initialize a new crack ( Pnet will be computed according to the elasticity )
+                7- initialize a new crack ( Pnet will be computed according to the elasticity )
 
 
                 """
 
-                print("\n")
-                print(" FUNCTION NOT COMPLETED !!")
-                print("\n")
-                """
-                Attention, the function needs to be finished!
-                """
-                # 1 - reconstruct the front from Ffront
+                # 1 - reconstruct the front from Ffront_last
+                EltChannel_last, EltTip_last, EltCrack_last, \
+                EltRibbon_last, ZeroVertex_last, CellStatus_last, \
+                l_last, alpha_last, FillF_last, self.sgndDist_last, \
+                self.Ffront_last, number_of_fronts_last, fronts_dictionary_last =  generate_footprint_from_Ffront(coarse_mesh, self.Ffront_last)
 
+                # 2 - reconstruct the front from Ffront
                 self.EltChannel, self.EltTip, self.EltCrack, \
                 self.EltRibbon, self.ZeroVertex, self.CellStatus, \
                 self.l, self.alpha, self.FillF, self.sgndDist, \
-                self.Ffront, self.number_of_fronts, self.fronts_dictionary =  generate_footprint_from_Ffront(self.mesh, self.Ffront)
+                self.Ffront, self.number_of_fronts, self.fronts_dictionary =  generate_footprint_from_Ffront(coarse_mesh, self.Ffront)
+
+                # 3 - get velocity using:   
+                # self.sgndDist
+                # self.sgndDist_last
+
+                print("\n")
+                print(" FROM THIS POINT ON THE FUNCTION IS NOT COMPLETED !!")
+                print("\n")
+                """
+                Attention, from this point on the function needs to be finished!
+                """
 
                 # 6- scipy.interpolate.RegularGridInterpolator
 
