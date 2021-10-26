@@ -23,7 +23,7 @@ from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matr
 from elasticity import load_isotropic_elasticity_matrix_toepliz
 from Hdot import Hdot_3DR0opening
 from mesh import CartesianMesh
-from time_step_solution import attempt_time_step
+from time_step.time_step_solution import attempt_time_step
 from visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
 from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full

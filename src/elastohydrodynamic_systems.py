@@ -7,7 +7,8 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-
+# external
+from scipy.sparse.linalg import LinearOperator
 from scipy import sparse
 from scipy.optimize import brentq
 import numpy as np
@@ -785,7 +786,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 #@profile
-def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, interItr, *args):
+def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, interItr, *args, return_w=False, dtype = np.float64):
     """
     This function makes the linearized system of equations to be solved by a linear system solver. The system is
     assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
@@ -834,7 +835,6 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                                     obtained for width, pressure and active width constraint cells.
     """
     # see https://matteding.github.io/2019/04/25/sparse-matrices/ for more info about CSC matrix
-    precision = np.float64
 
     (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
     sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
@@ -864,8 +864,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
         delta_tb = tb_np1 - tb_n
 
     else:
-        tb_n = np.zeros((len(wNplusOne),), dtype=precision)
-        delta_tb = np.zeros((len(wNplusOne),), dtype=precision)
+        tb_n = np.zeros((len(wNplusOne),), dtype=dtype)
+        delta_tb = np.zeros((len(wNplusOne),), dtype=dtype)
 
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
@@ -887,7 +887,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     act_indxs = n_ch + np.arange(n_act)
     tip_indxs = n_ch + n_act + np.arange(n_tip)
 
-    A = np.zeros((n_total, n_total), dtype=precision)
+    A = np.zeros((n_total, n_total), dtype=dtype)
 
     ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
@@ -896,7 +896,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
     A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
 
     # 2
-    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=precision)
+    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
 
     A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
@@ -970,8 +970,262 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     interItr_kp1[1] = below_wc
 
-    return A, S, interItr_kp1, indices
+    if not return_w:
+        return A, S, interItr_kp1, indices
+    else:
+        return A, S, interItr_kp1, indices, wcNplusHalf, FinDiffOprtr.tocsr()
 
+# -----------------------------------------------------------------------------------------------------------------------
+class ADot(LinearOperator):
+  # TESTED FOR NEWTONIAN FLUIDS ONLY!
+  def __init__(self, system_dim, dtype=np.float64):
+    self.dtype_ = dtype
+    self.shape_ = (system_dim,system_dim)
+    super().__init__(self.dtype_, self.shape_)
+    self.args = None
+    self.wcNplusHalf = None
+    self.FinDiffOprtr = None
+
+  def _matvec(self, xks):
+    """
+    This function implements the dot product.
+    :param v: vector expected to be of size unknowns_number_
+    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    """
+    return EHL_dot(xks, self.args, self.wcNplusHalf, self.FinDiffOprtr )
+
+  def _getsys(self, solk, interItr, *args):
+    """
+    This function implements the dot product.
+    :param v: vector expected to be of size unknowns_number_
+    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    """
+    self.args = args # args never change within the solution of 1 non-linear system
+
+    (A, b, interItr, indices, wcNplusHalf, FinDiffOprtr) = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, interItr, *args,  return_w=True)
+
+    self.wcNplusHalf = wcNplusHalf
+    self.FinDiffOprtr = FinDiffOprtr
+    return (A, b, interItr, indices)
+
+  def _update_sys(self, solk, interItr):
+      (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+       sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = self.args
+
+      wNplusOne = np.copy(frac.w)
+      wNplusOne[to_solve] += solk[:len(to_solve)]
+      wNplusOne[to_impose] = imposed_val
+      if len(wc_to_impose) > 0:
+          wNplusOne[active] = wc_to_impose
+
+      below_wc = np.where(wNplusOne[to_solve] < mat_prop.wc)[0]
+      below_wc_km1 = interItr[1]
+      below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
+      wNplusOne[to_solve[below_wc]] = mat_prop.wc
+
+      wcNplusHalf = (frac.w + wNplusOne) / 2.
+
+      # store data
+      self.wcNplusHalf = wcNplusHalf
+
+      # return updated list of cells below k1c
+      interItr_kp1 = [None] * 4
+      interItr_kp1[1] = below_wc
+
+      # get b (rhs of the system)
+
+      n_ch = len(to_solve)
+      n_act = len(active)
+      n_tip = len(imposed_val)
+      n_total = n_ch + n_act + n_tip
+
+      ch_indxs = np.arange(n_ch)
+      act_indxs = n_ch + np.arange(n_act)
+      tip_indxs = n_ch + n_act + np.arange(n_tip)
+
+      # Account for the presence of boundaries
+      if Boundary is not None:
+          tb_np1 = Boundary.getTraction(wNplusOne, EltCrack)
+          # from utility import plot_as_matrix
+          # K = tb_np1
+          # plot_as_matrix(K, frac.mesh)
+          tb_n = frac.boundEffTraction
+          delta_tb = tb_np1 - tb_n
+
+      else:
+          tb_n = np.zeros((len(wNplusOne),), dtype=self.dtype)
+          delta_tb = np.zeros((len(wNplusOne),), dtype=self.dtype)
+
+      FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk, frac,
+                                                  EltCrack, neiInCrack, fluid_prop,
+                                                  mat_prop, sim_prop, frac.mesh,
+                                                  InCrack, C, interItr, to_solve,
+                                                  to_impose, active, interItr_kp1,
+                                                  lst_edgeInCrk)
+      FinDiffOprtr = FinDiffOprtr.tocsr()
+      self.FinDiffOprtr = FinDiffOprtr
+
+      G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
+                       frac.mesh, InCrack, sim_prop)
+
+      S = np.zeros((n_total,), dtype=self.dtype)
+
+      # compute pf_ch_prime:
+      C._set_domain_IDX(to_solve)
+      C._set_codomain_IDX(to_solve)
+      pf_ch_prime = C._matvec_fast(frac.w[to_solve])
+
+      C._set_domain_IDX(to_impose)
+      pf_ch_prime = pf_ch_prime + C._matvec_fast(imposed_val)
+
+      C._set_domain_IDX(active)
+      pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active]) + mat_prop.SigmaO[to_solve]
+
+      ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
+                   - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0],
+                                  format='csr')
+
+      S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+                    dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                    dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                    dt * G[to_solve] + \
+                    dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
+                    + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve] + \
+                    + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+
+      S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
+                     dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                     dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                     dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                     dt * G[to_impose] + \
+                     dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea + \
+                     - dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+
+      S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
+                     dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                     dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                     dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                     dt * G[active] + \
+                     dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea + \
+                     - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+
+      return S, interItr_kp1
+
+  @property
+  def _init_shape(self):
+    return self.shape_
+
+  def _init_dtype(self):
+    return self.dtype_
+
+# -----------------------------------------------------------------------------------------------------------------------
+def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
+    """
+    This function has been coded from:
+    MakeEquationSystem_DOT_ViscousFluid_pressure_substituted_deltaP_sparse
+
+    It implements the dot product of the linearized system of equations to be solved by a linear system solver. The system is
+    never assembled but accounts for the extended footprint (treating the channel and the extended tip elements distinctly; see
+    description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is
+    active are solved separately. The pressure in the channel cells to be solved for change in width is substituted
+    with width using the elasticity relation (see Zia and Lecamption 2019). The finite difference difference operator
+    is saved as a sparse matrix.
+
+    Arguments:
+        solk (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
+
+            - EltChannel (ndarray)          -- list of channel elements
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
+                                               the cells in the crack.
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+        wcNplusHalf (ndarray)         -- [wN + w(N+1)] / 2. where wN is the opening at time step N
+        FinDiffOprtr (matrix)         -- the finite difference operator
+
+    Returns:
+        - res (ndarray)           -- the res vector obtained by the multiplication A*x (in the system Ax=b).
+
+    """
+    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+    sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
+
+    n_ch = len(to_solve)
+    n_act = len(active)
+    n_tip = len(imposed_val)
+    n_total = n_ch + n_act + n_tip
+
+    ch_indxs = np.arange(n_ch)
+    act_indxs = n_ch + np.arange(n_act)
+    tip_indxs = n_ch + n_act + np.arange(n_tip)
+
+    res = np.zeros(n_total, dtype=dtype)
+
+    ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
+                 - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
+
+    """
+    We can divide the whole matrix in blocks:
+        ch   act   tip
+      [1,1] [1,2] [1,3] ch
+      [2,1] [2,2] [2,3] act
+      [3,1] [3,2] [3,3] tip
+    """
+    # [1,1] INDEXES: ch ch
+    C._set_domain_IDX(to_solve)
+    C._set_codomain_IDX(to_solve)
+    res[ch_indxs] = C._matvec_fast(solk[ch_indxs])
+    c_dot_solk = np.copy(res[ch_indxs])
+    res[ch_indxs] = - ch_AplusCf.dot(res[ch_indxs]) + solk[ch_indxs]
+
+    # [2,1] INDEXES: act ch
+    res[act_indxs] = - (dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(c_dot_solk)
+
+    # [3,1] INDEXES: tip ch
+    res[tip_indxs] = - (dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(c_dot_solk)
+
+    # [1,2] INDEXES: ch act
+    res[ch_indxs] = res[ch_indxs] - dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs])
+
+    # [2,2] INDEXES: act act
+    res[act_indxs] = res[act_indxs] + (- dt * FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs] +
+                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
+                                                    [0], format='csr')).dot(solk[act_indxs])
+
+    # [3,2] INDEXES: tip act
+    res[tip_indxs] = res[tip_indxs] -dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs])
+
+
+    # [1,3] INDEXES: ch tip
+    res[ch_indxs] = res[ch_indxs] -dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(solk[tip_indxs])
+
+    # [2,3] INDEXES: act tip
+    res[act_indxs] = res[act_indxs] -dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).dot(solk[tip_indxs])
+
+    # [3,3] INDEXES: tip tip
+    res[tip_indxs] = res[tip_indxs] + (- dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs] +
+                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
+                                                    [0], format='csr')).dot(solk[tip_indxs])
+
+    return res
 
 # -----------------------------------------------------------------------------------------------------------------------
 

@@ -886,8 +886,7 @@ class get_toughness_from_cellCenter_iter():
         self.matProp = matProp
         self.index2keep = np.arange(self.NoR)
 
-
-    def of(self, dist, index='all',mesh = None, ribbon=None):
+    def of(self, dist, index='all', mesh = None, ribbon=None):
         # the distance "dist" can be a single value and an array
         # one can:
         #   - give a single index (representing a single ribbon) and multiple distances
@@ -1141,5 +1140,4 @@ def TI_plain_strain_modulus(alpha, Cij):
     Eprime = 2 * deltag / gammag
 
     return Eprime
-
 #-----------------------------------------------------------------------------------------------------------------------

@@ -57,7 +57,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         perfNode_linSolve = instrument_start("linear system solve", perf_node)
         # First iteration
         xks[0, ::] = np.array([guess])                                       # xo
-        (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
+        if not sim_prop.EHL_GMRES: (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
+        else: (A, b, interItr, indices) = sys_fun._getsys(xks[0, ::], interItr, *args)
         #cond_num.append(np.linalg.cond(A)) #this is expensive to compute! do it only while debugging
 
         if sim_prop.EHL_GMRES:
@@ -65,7 +66,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
             EHL_iLU = spilu(A, drop_tol=1.e-4, fill_factor=1)
             Aprec = APrec(EHL_iLU)
             counter = gmres_counter()  # to obtain the number of iteration and residual
-            sol_GMRES = gmres(A,
+            sol_GMRES = gmres(sys_fun,
                               b,
                               M=Aprec,
                               atol=sim_prop.gmres_tol,
@@ -100,16 +101,19 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         try:
             mk = np.min([k, m_Anderson-1])  # Asses the amount of solutions available for the least square problem
             if k >= m_Anderson:
-                (A, b, interItr, indices) = sys_fun(xks[mk + 2, ::], interItr, *args)
+                if not sim_prop.EHL_GMRES: (A, b, interItr, indices) = sys_fun(xks[mk + 2, ::], interItr, *args)
+                else : (b, interItr) = sys_fun._update_sys(xks[mk + 2, ::], interItr)
                 Gks = np.roll(Gks, -1, axis=0)
                 Fks = np.roll(Fks, -1, axis=0)
             else:
-                (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
+                if not sim_prop.EHL_GMRES: (A, b, interItr, indices) = sys_fun(xks[mk + 1, ::], interItr, *args)
+                else: (b, interItr) = sys_fun._update_sys(xks[mk + 1, ::], interItr)
+
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
 
             if sim_prop.EHL_GMRES:
                 counter = gmres_counter()  # to obtain the number of iteration and residual
-                sol_GMRES = gmres(A,
+                sol_GMRES = gmres(sys_fun,
                                   b,
                                   M=Aprec,
                                   x0=Gks[mk, ::],
