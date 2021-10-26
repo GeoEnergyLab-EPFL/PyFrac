@@ -176,8 +176,39 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
+
+
 class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
+    """
+    This class implements the isotropic elasticity matrix.
+    It takes advantage of if toeplitz structure due to the cartesian mesh that it refers to.
+
+    Quick features description:
+        - get item via "[]"
+        - rebuild the matrix on a different mesh via "reload"
+        - set domain indexes via "_set_domain_IDX"
+        - set codomain indexes via "_set_codomain_IDX"
+        - set tip correction for the diagonal values of the partially filled elements
+        - matrix vector multiplication (_matvec_fast or _matvec) both are parallelized.
+            i) "_matvec_fast" directly returns the dot product between the matrix and a vector.
+               one can change the domanin and codomain
+            ii) "_matvec" checks if the user asked for:
+                o tip correction
+                o preconditioner
+                if not the behaviour is same as "_matvec_fast"
+
+    """
     def __init__(self, Mesh, Ep, C_precision = np.float64):
+        """
+            Arguments:
+                Mesh:                           -- Cartesian Mesh object
+                    hx (float):                 -- x size of a mesh cell
+                    hy (float):                 -- y size of a mesh cell
+                    nx (float):                 -- num. of elements in x dir
+                    ny (float):                 -- num. of elements in y dir
+                Ep (float):                     -- plain strain modulus.
+                C_precision (type):             -- accuracy of the entries e.g.: np.float64
+        """
         self.C_precision = C_precision
         self.Ep = Ep
         const = (Ep / (8. * np.pi))
@@ -203,9 +234,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self.nx = nx
         const = self.const
 
-        ################
-        # Cdot section #
-        ################
+        #################### Cdot SECTION ###################
         # diagonal value of the matrix
         self.diag_val = get_isotropic_el_self_eff(hx, hy, self.Ep)
 
@@ -216,13 +245,13 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self.matvec_size_ = self.C_size_
 
         # it is mandatory to define shape and dtype of the dot product
-        self.dtype_ = float
+        self.dtype_ = self.C_precision
         self.shape_ = (self.matvec_size_, self.matvec_size_)
         super().__init__(self.dtype_, self.shape_)
 
         self._set_domain_IDX(np.arange(self.C_size_))
         self._set_codomain_IDX(np.arange(self.C_size_))
-        ################ END Cdot SECTION ###################
+        ################ END Cdot SECTION ######################
         """
         Let us make some definitions:
         cartesian mesh             := a structured rectangular mesh of (nx,ny) cells of rectaungular shape
@@ -360,12 +389,16 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self._changeShape(codomainIDX.size)
 
     def _set_tipcorr(self, correction_val, correction_INDX):
+        """
+        :param correction_val: (array) contains the factors to be applied to each diagonal val. of the specified indexes based on the filling fraction of the cell
+        :param correction_INDX: (array) specified indexes where the correction_val should apply
+        :return:
+        """
+
         self.enable_tip_corr = True
         self.tipcorrINDX = correction_INDX #list of tip elem. IDs
         self.tipcorr = np.full(self.C_size_, np.nan)
         self.tipcorr[correction_INDX] = correction_val * self.diag_val
-
-
 
     def _changeShape(self, shape_):
         self.matvec_size_ = shape_
