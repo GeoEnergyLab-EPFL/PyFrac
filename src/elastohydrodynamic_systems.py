@@ -1008,6 +1008,7 @@ class ADot(LinearOperator):
     self.FinDiffOprtr = FinDiffOprtr
     return (A, b, interItr, indices)
 
+#  @profile
   def _update_sys(self, solk, interItr):
       (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
        sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = self.args
@@ -1081,17 +1082,15 @@ class ADot(LinearOperator):
       C._set_domain_IDX(active)
       pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active]) + mat_prop.SigmaO[to_solve]
 
-      ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
-                   - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0],
-                                  format='csr')
-
-      S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+      S[ch_indxs] = dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) - \
+                    fluid_prop.compressibility * wcNplusHalf[to_solve] * pf_ch_prime+ \
                     dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                     dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                     dt * G[to_solve] + \
                     dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
                     + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve] + \
-                    + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+                    + dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve]) - \
+                    fluid_prop.compressibility * wcNplusHalf[to_solve] * pf_ch_prime * delta_tb[to_solve]
 
       S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                      dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
@@ -1119,6 +1118,7 @@ class ADot(LinearOperator):
     return self.dtype_
 
 # -----------------------------------------------------------------------------------------------------------------------
+#@profile
 def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
     """
     This function has been coded from:
@@ -1179,9 +1179,6 @@ def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
 
     res = np.zeros(n_total, dtype=dtype)
 
-    ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
-                 - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
-
     """
     We can divide the whole matrix in blocks:
         ch   act   tip
@@ -1194,7 +1191,9 @@ def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
     C._set_codomain_IDX(to_solve)
     res[ch_indxs] = C._matvec_fast(solk[ch_indxs])
     c_dot_solk = np.copy(res[ch_indxs])
-    res[ch_indxs] = - ch_AplusCf.dot(res[ch_indxs]) + solk[ch_indxs]
+
+    res[ch_indxs] = - (dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs]).dot(res[ch_indxs]) \
+                    + fluid_prop.compressibility * wcNplusHalf[to_solve] * res[ch_indxs] + solk[ch_indxs]
 
     # [2,1] INDEXES: act ch
     res[act_indxs] = - (dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(c_dot_solk)
@@ -1206,9 +1205,8 @@ def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
     res[ch_indxs] = res[ch_indxs] - dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs])
 
     # [2,2] INDEXES: act act
-    res[act_indxs] = res[act_indxs] + (- dt * FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs] +
-                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
-                                                    [0], format='csr')).dot(solk[act_indxs])
+    res[act_indxs] = res[act_indxs] - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs]) \
+                     + fluid_prop.compressibility * wcNplusHalf[active] * solk[act_indxs]
 
     # [3,2] INDEXES: tip act
     res[tip_indxs] = res[tip_indxs] -dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs])
@@ -1221,9 +1219,8 @@ def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
     res[act_indxs] = res[act_indxs] -dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).dot(solk[tip_indxs])
 
     # [3,3] INDEXES: tip tip
-    res[tip_indxs] = res[tip_indxs] + (- dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs] +
-                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
-                                                    [0], format='csr')).dot(solk[tip_indxs])
+    res[tip_indxs] = res[tip_indxs] - dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs]).dot(solk[tip_indxs]) \
+                     + fluid_prop.compressibility * wcNplusHalf[to_impose]* solk[tip_indxs]
 
     return res
 
