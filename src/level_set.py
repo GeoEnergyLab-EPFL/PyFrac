@@ -553,8 +553,8 @@ def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
         front_region = np.concatenate((front_region,out_to_add))
 
 
-    # take out the ribbon
-    front_region =np.setdiff1d(front_region, EltRibbon)
+    # take out the ribbon (we let them inside as anyway we do not recalculte the level set there)
+    # front_region =np.setdiff1d(front_region, EltRibbon)
 
     # from utility import plot_as_matrix
     # K = np.zeros((mesh.NumberOfElts,), )
