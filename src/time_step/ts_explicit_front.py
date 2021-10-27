@@ -95,9 +95,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     sgndDist_k = -fmmStruct.LS
     sgndDist_k[toEval] = -sgndDist_k[toEval]
 
-    # We define a front region and a pstv_region needed to construct the front.
-    front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-    pstv_region = np.where(sgndDist_k[front_region] >= - Fr_lstTmStp.mesh.cellDiag)[0]
+    # # We define a front region and a pstv_region needed to construct the front.
+    # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+    # pstv_region = np.where(sgndDist_k[front_region] >= - Fr_lstTmStp.mesh.cellDiag)[0]
 
     # Gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -188,11 +188,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                 # negative inside and positive outside.
                 sgndDist_k = -fmmStruct.LS
                 sgndDist_k[toEval] = -sgndDist_k[toEval]
-
-                # We define a front region and a pstv_region needed to construct the front.
-                front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-                pstv_region = np.where(sgndDist_k[front_region] >=
-                                       - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+                #
+                # # We define a front region and a pstv_region needed to construct the front.
+                # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+                # pstv_region = np.where(sgndDist_k[front_region] >=
+                #                        - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
         sgndDist_k = sgndDist_k_temp
         del correct_size_of_pstv_region

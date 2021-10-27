@@ -13,7 +13,7 @@ from FMM import fmm
 from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from tip_inversion import TipAsymInversion, StressIntensityFactor
 from elastohydrodynamic_systems import *
-from level_set import  reconstruct_front,  UpdateLists
+from level_set import reconstruct_front,  UpdateLists, get_front_region
 from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 from properties import IterationProperties, instrument_start, instrument_close
 from anisotropy import *
@@ -385,25 +385,26 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         ## -- The following part is to only calculate the level set in a narrow band -- ##
         # Note: for now we calculate the level set everywhere with same or better performance than in the band rendering
         #       the code more stable
-        #front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
-        #
-        # # the search region outwards from the front position at last time step
-        # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-        #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-        # # the search region inwards from the front position at last time step
-        # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+        front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
+
+        # the search region outwards from the front position at last time step
+        pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
+
+        # the search region inwards from the front position at last time step
+        ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
         ## -- End of possible acceleration of the code -- ##
 
         # Creating a fmm structure to solve the level set
         fmmStruct = fmm(Fr_lstTmStp.mesh)
 
         # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
-        toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
+        toEval = np.unique(np.hastack((front_region[pstv_region], Fr_lstTmStp.EltRibbon)))
         fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval, Fr_lstTmStp.mesh)
 
         # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
         # so, we need a sign change on the level set (positive inside)
-        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), Fr_lstTmStp.EltChannel,
+        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
+                           np.unique(np.hastack((front_region[ngtv_region], Fr_lstTmStp.EltRibbon))),
                            Fr_lstTmStp.mesh)
 
         # The solution stored in the object is the calculated level set. we need however to change the sign as to have
@@ -411,10 +412,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         sgndDist_k = fmmStruct.LS
         sgndDist_k[Fr_lstTmStp.EltChannel] = -sgndDist_k[Fr_lstTmStp.EltChannel]
 
-        # We define a front region and a pstv_region needed to construct the front.
-        front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-        pstv_region = np.where(sgndDist_k[front_region] >=
-                               - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        # # We define a front region and a pstv_region needed to construct the front.
+        # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+        # pstv_region = np.where(sgndDist_k[front_region] >=
+        #                        - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
@@ -492,41 +493,40 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 #       rendering the code more stable. We only get here if the region defined to solve for was not big
                 #       enough. As long as we calculate it everywhere we thus never get here. This is if we start again
                 #       using a narrow band.
-                #
-                # # Extend the front region with the neighbours (by one cell)
-                # front_region = np.unique(np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))
-                #
-                # # the search region outwards from the front position at last time step
-                # pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -(Fr_lstTmStp.mesh.hx ** 2 +
-                #                                                                Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
-                # # the search region inwards from the front position at last time step
-                # ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
+
+                # Extend the front region with the neighbours (by one cell)
+                front_region = np.unique(np.hstack((front_region,
+                                                    np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))))
+
+                # the search region outwards from the front position at last time step
+                pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
+
+                # the search region inwards from the front position at last time step
+                ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
                 ## -- End of possible acceleration of the code -- ##
 
                 # Creating a fmm structure to solve the level set
                 fmmStruct = fmm(Fr_lstTmStp.mesh)
 
-                # We define the tip elements as the known elements and solve from there inwards (inside the fracture).
-                # To do so, we need a sign change on the level set (positive inside)
-                fmmStruct.solveFMM(
-                    (-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
-                    np.hstack((Fr_lstTmStp.EltChannel, Fr_lstTmStp.EltTip)), Fr_lstTmStp.mesh)
+                # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
+                toEval = np.unique(np.hastack((front_region[pstv_region], Fr_lstTmStp.EltRibbon)))
+                fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval, Fr_lstTmStp.mesh)
 
-                # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
-                toEval = np.setdiff1d(np.arange(Fr_lstTmStp.mesh.NumberOfElts), Fr_lstTmStp.EltChannel)
-                fmmStruct.solveFMM(
-                    (Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
-                    toEval, Fr_lstTmStp.mesh)
+                # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
+                # so, we need a sign change on the level set (positive inside)
+                fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
+                                   np.unique(np.hastack((front_region[ngtv_region], Fr_lstTmStp.EltRibbon))),
+                                   Fr_lstTmStp.mesh)
 
                 # The solution stored in the object is the calculated level set. we need however to change the sign as to have
                 # negative inside and positive outside.
-                sgndDist_k = -fmmStruct.LS
-                sgndDist_k[toEval] = -sgndDist_k[toEval]
+                sgndDist_k = fmmStruct.LS
+                sgndDist_k[Fr_lstTmStp.EltChannel] = -sgndDist_k[Fr_lstTmStp.EltChannel]
 
-                # We define a front region and a pstv_region needed to construct the front.
-                front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-                pstv_region = np.where(sgndDist_k[front_region] >=
-                                       - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+                # # We define a front region and a pstv_region needed to construct the front.
+                # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
+                # pstv_region = np.where(sgndDist_k[front_region] >=
+                #                        - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
 
         sgndDist_k = sgndDist_k_temp
 
