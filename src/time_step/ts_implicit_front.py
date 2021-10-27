@@ -382,40 +382,32 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
                                                        Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
 
-        ## -- The following part is to only calculate the level set in a narrow band -- ##
-        # Note: for now we calculate the level set everywhere with same or better performance than in the band rendering
-        #       the code more stable
+        # We calculate the front region
         front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
 
         # the search region outwards from the front position at last time step
-        pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
+        pstv_region = np.setdiff1d(front_region, Fr_lstTmStp.EltChannel)
 
         # the search region inwards from the front position at last time step
-        ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
-        ## -- End of possible acceleration of the code -- ##
+        ngtv_region = np.setdiff1d(front_region, pstv_region)
 
         # Creating a fmm structure to solve the level set
         fmmStruct = fmm(Fr_lstTmStp.mesh)
 
         # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
-        toEval = np.unique(np.hastack((front_region[pstv_region], Fr_lstTmStp.EltRibbon)))
-        fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval, Fr_lstTmStp.mesh)
+        fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
+                           np.unique(np.hastack((front_region[pstv_region], Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
 
         # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
         # so, we need a sign change on the level set (positive inside)
-        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
-                           np.unique(np.hastack((front_region[ngtv_region], Fr_lstTmStp.EltRibbon))),
+        toEval = np.unique(np.hastack((front_region[ngtv_region], Fr_lstTmStp.EltRibbon)))
+        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval,
                            Fr_lstTmStp.mesh)
 
         # The solution stored in the object is the calculated level set. we need however to change the sign as to have
         # negative inside and positive outside.
         sgndDist_k = fmmStruct.LS
-        sgndDist_k[Fr_lstTmStp.EltChannel] = -sgndDist_k[Fr_lstTmStp.EltChannel]
-
-        # # We define a front region and a pstv_region needed to construct the front.
-        # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-        # pstv_region = np.where(sgndDist_k[front_region] >=
-        #                        - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+        sgndDist_k[toEval] = -sgndDist_k[toEval]
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
@@ -462,7 +454,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region, \
             sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
-                                                                          front_region[pstv_region],
+                                                                          front_region,
                                                                           Fr_lstTmStp.EltRibbon,
                                                                           Fr_lstTmStp.EltChannel,
                                                                           Fr_lstTmStp.mesh,
@@ -499,34 +491,30 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                     np.ndarray.flatten(Fr_lstTmStp.mesh.NeiElements[front_region]))))
 
                 # the search region outwards from the front position at last time step
-                pstv_region = np.where(Fr_lstTmStp.sgndDist[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
+                pstv_region = np.setdiff1d(front_region, Fr_lstTmStp.EltChannel)
 
                 # the search region inwards from the front position at last time step
-                ngtv_region = np.where(Fr_lstTmStp.sgndDist[front_region] < 0)[0]
-                ## -- End of possible acceleration of the code -- ##
+                ngtv_region = np.setdiff1d(front_region, pstv_region)
 
                 # Creating a fmm structure to solve the level set
                 fmmStruct = fmm(Fr_lstTmStp.mesh)
 
-                # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
-                toEval = np.unique(np.hastack((front_region[pstv_region], Fr_lstTmStp.EltRibbon)))
-                fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval, Fr_lstTmStp.mesh)
+                # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+                fmmStruct.solveFMM(
+                    (Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
+                    np.unique(np.hstack((front_region[pstv_region], Fr_lstTmStp.EltTip))), Fr_lstTmStp.mesh)
 
-                # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
-                # so, we need a sign change on the level set (positive inside)
-                fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
-                                   np.unique(np.hastack((front_region[ngtv_region], Fr_lstTmStp.EltRibbon))),
-                                   Fr_lstTmStp.mesh)
+                # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+                # we need a sign change on the level set (positive inside)
+                toEval = np.unique(np.hstack((front_region[ngtv_region], Fr_lstTmStp.EltTip)))
+                fmmStruct.solveFMM(
+                    (-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
+                    toEval, Fr_lstTmStp.mesh)
 
                 # The solution stored in the object is the calculated level set. we need however to change the sign as to have
                 # negative inside and positive outside.
                 sgndDist_k = fmmStruct.LS
-                sgndDist_k[Fr_lstTmStp.EltChannel] = -sgndDist_k[Fr_lstTmStp.EltChannel]
-
-                # # We define a front region and a pstv_region needed to construct the front.
-                # front_region = np.arange(Fr_lstTmStp.mesh.NumberOfElts)
-                # pstv_region = np.where(sgndDist_k[front_region] >=
-                #                        - (Fr_lstTmStp.mesh.hx ** 2 + Fr_lstTmStp.mesh.hy ** 2) ** 0.5)[0]
+                sgndDist_k[toEval] = -sgndDist_k[toEval]
 
         sgndDist_k = sgndDist_k_temp
 
