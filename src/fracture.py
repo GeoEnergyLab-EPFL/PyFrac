@@ -20,12 +20,12 @@ import copy
 import scipy
 from scipy.interpolate import griddata
 from elasticity import mapping_old_indexes
+from volume_integral import Integral_over_cell, find_corresponding_ribbon_cell, Pdistance
+from anisotropy import *
+from continuous_front_reconstruction import UpdateListsFromContinuousFrontRec
+from tip_inversion import StressIntensityFactor
 
-# local import
-# import fracture_initialization
-# import visualization
-from level_set import SolveFMM, get_front_region
-from volume_integral import Pdistance
+from level_set import get_front_region,  UpdateLists
 from fracture_initialization import get_survey_points, get_width_pressure, generate_footprint, \
     generate_footprint_from_Ffront
 from fracture_initialization import Geometry, InitializationParameters
@@ -928,17 +928,159 @@ class Fracture:
                 EltChannel_last, EltTip_last, EltCrack_last, \
                 EltRibbon_last, ZeroVertex_last, CellStatus_last, \
                 l_last, alpha_last, FillF_last, self.sgndDist_last, \
-                self.Ffront_last, number_of_fronts_last, fronts_dictionary_last =  generate_footprint_from_Ffront(coarse_mesh, self.Ffront_last)
+                self.Ffront_last, number_of_fronts_last, fronts_dictionary_last = \
+                    generate_footprint_from_Ffront(coarse_mesh, self.Ffront_last)
 
                 # 2 - reconstruct the front from Ffront
                 self.EltChannel, self.EltTip, self.EltCrack, \
                 self.EltRibbon, self.ZeroVertex, self.CellStatus, \
                 self.l, self.alpha, self.FillF, self.sgndDist, \
-                self.Ffront, self.number_of_fronts, self.fronts_dictionary =  generate_footprint_from_Ffront(coarse_mesh, self.Ffront)
+                self.Ffront, self.number_of_fronts, self.fronts_dictionary = \
+                    generate_footprint_from_Ffront(coarse_mesh, self.Ffront)
+
+                print("\n")
+                print(" FROM THIS POINT ON THE FUNCTION IS NOT TESTED YET !!")
+                print("\n")
 
                 # 3 - get velocity using:   
-                # self.sgndDist
-                # self.sgndDist_last
+                self.v = -(self.sgndDist[self.EltTip] - self.sgndDist_last[self.EltTip]) / self.timeStep_last
+
+                # 4 - we want to get the tip volume:
+                # We already generate the interpolating function for the opening as we might need it for stagnant cells.
+                openingIntFunc = scipy.interpolate.RegularGridInterpolator((self.mesh.CenterCoor[::, 0],
+                                                                            self.mesh.CenterCoor[::, 1]),
+                                                                           self.w)
+                if sim_prop.projMethod != 'LS_continousfront':
+                    # todo: some of the list are redundant to calculate on each iteration
+                    # Evaluate the element lists for the trial fracture front
+                    (EltChannel_k,
+                     EltTip_k,
+                     EltCrack_k,
+                     EltRibbon_k,
+                     zrVertx_k,
+                     CellStatus_k,
+                     fully_traversed_k) = UpdateLists(EltChannel_last,
+                                                      self.EltTip,
+                                                      self.FillF,
+                                                      self.sgndDist,
+                                                      coarse_mesh)
+                elif sim_prop.projMethod == 'LS_continousfront':
+                    zrVertx_k = self.ZeroVertex
+                    (EltChannel_k,
+                     EltTip_k,
+                     EltCrack_k,
+                     EltRibbon_k,
+                     CellStatus_k,
+                     fully_traversed_k) = UpdateListsFromContinuousFrontRec(self.EltRibbon,
+                                                                            self.sgndDist,
+                                                                            self.EltChannel,
+                                                                            self.EltTip,
+                                                                            self.EltTip,
+                                                                            coarse_mesh)
+
+                    if np.isnan(EltChannel_k).any():
+                        exitstatus = 3
+                        return exitstatus, None
+                if sim_prop.projMethod != 'LS_continousfront':
+                    zrVrtx_newTip = find_zero_vertex(self.EltTip, self.sgndDist, coarse_mesh)
+                else:
+                    zrVrtx_newTip = self.ZeroVertex.transpose()
+
+                # finding ribbon cells corresponding to tip cells
+                corr_ribbon = find_corresponding_ribbon_cell(self.EltTip,
+                                                             self.alpha,
+                                                             zrVrtx_newTip,
+                                                             coarse_mesh)
+                Cprime_tip = material_prop.Cprime[corr_ribbon]
+
+                # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
+                if sim_prop.paramFromTip or material_prop.anisotropic_K1c or material_prop.inv_with_heter_K1c:
+                    if sim_prop.projMethod != 'LS_continousfront':
+                        zrVrtx_newTip = find_zero_vertex(self.EltTip, self.sgndDist, coarse_mesh)
+                        # get toughness from tip in case of anisotropic or
+                        Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(self.EltTip,
+                                                                                          coarse_mesh,
+                                                                                          material_prop,
+                                                                                          self.alpha,
+                                                                                          self.l,
+                                                                                          zrVrtx_newTip)
+                    else:
+                        toughness_from_zeroVertex = False
+                        zrVrtx_newTip = self.ZeroVertex.transpose()
+                        if toughness_from_zeroVertex:
+                            # get toughness from tip in case of anisotropic or
+                            Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(self.EltTip,
+                                                                                              coarse_mesh,
+                                                                                              material_prop,
+                                                                                              self.alpha,
+                                                                                              self.l,
+                                                                                              zrVrtx_newTip)
+                        else:
+                            Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(self.Ffront,
+                                                                                         EltTip_last,
+                                                                                         self.EltTip,
+                                                                                         fully_traversed_k,
+                                                                                         coarse_mesh,
+                                                                                         material_prop,
+                                                                                         self.alpha,
+                                                                                         get_from_mid_front=False)
+
+                elif not material_prop.inv_with_heter_K1c:
+                    Kprime_tip = material_prop.Kprime[corr_ribbon]
+
+                if material_prop.TI_elasticity:
+                    Eprime_tip = TI_plain_strain_modulus(self.alpha,
+                                                         material_prop.Cij)
+                else:
+                    Eprime_tip = np.full((self.EltTip.size,), material_prop.Eprime, dtype=np.float64)
+
+                # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
+                stagnant = (-(self.sgndDist[self.EltTip] - self.sgndDist_last[self.EltTip]) /
+                            coarse_mesh.cellDiag < sim_prop.toleranceVStagnant)
+
+                if stagnant.any():
+                    # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
+                    KIPrime = StressIntensityFactor(openingIntFunc(coarse_mesh.CenterCoor),
+                                                    self.sgndDist,
+                                                    self.EltTip,
+                                                    self.EltRibbon,
+                                                    stagnant,
+                                                    coarse_mesh,
+                                                    Eprime=Eprime_tip)
+
+                    # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
+                    # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
+                    tipVolume = Integral_over_cell(self.EltTip,
+                                                   self.alpha,
+                                                   self.l,
+                                                   coarse_mesh,
+                                                   sim_prop.get_tipAsymptote(),
+                                                   frac=self,
+                                                   mat_prop=material_prop,
+                                                   fluid_prop=fluid_prop,
+                                                   Vel=self.v,
+                                                   KIPrime=KIPrime,
+                                                   Kprime=Kprime_tip,
+                                                   Eprime=Eprime_tip,
+                                                   Cprime=Cprime_tip,
+                                                   stagnant=stagnant)
+                else:
+                    # Calculate average width in the tip cells by integrating tip asymptote
+                    tipVolume = Integral_over_cell(self.EltTip,
+                                              self.alpha,
+                                              self.l,
+                                              coarse_mesh,
+                                              sim_prop.get_tipAsymptote(),
+                                              frac=self,
+                                              mat_prop=material_prop,
+                                              fluid_prop=fluid_prop,
+                                              Vel=self.v,
+                                              Kprime=Kprime_tip,
+                                              Eprime=Eprime_tip,
+                                              Cprime=Cprime_tip,
+                                              stagnant=stagnant)
+
+                channelVolume = self.injectedVol - tipVolume
 
                 print("\n")
                 print(" FROM THIS POINT ON THE FUNCTION IS NOT COMPLETED !!")

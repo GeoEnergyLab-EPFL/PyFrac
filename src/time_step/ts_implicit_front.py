@@ -396,11 +396,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
         # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
         fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
-                           np.unique(np.hstack((front_region[pstv_region], Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
+                           np.unique(np.hstack((pstv_region, Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
 
         # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
         # so, we need a sign change on the level set (positive inside)
-        toEval = np.unique(np.hastack((front_region[ngtv_region], Fr_lstTmStp.EltRibbon)))
+        toEval = np.unique(np.hstack((ngtv_region, Fr_lstTmStp.EltRibbon)))
         fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval,
                            Fr_lstTmStp.mesh)
 
@@ -408,6 +408,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         # negative inside and positive outside.
         sgndDist_k = fmmStruct.LS
         sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+        eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
         # do it only once if not anisotropic
         if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
@@ -454,7 +456,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             zrVertx_k_without_fully_traversed, \
             correct_size_of_pstv_region, \
             sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
-                                                                          front_region,
+                                                                          front_region[eval_region],
                                                                           Fr_lstTmStp.EltRibbon,
                                                                           Fr_lstTmStp.EltChannel,
                                                                           Fr_lstTmStp.mesh,
@@ -502,11 +504,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
                 fmmStruct.solveFMM(
                     (Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
-                    np.unique(np.hstack((front_region[pstv_region], Fr_lstTmStp.EltTip))), Fr_lstTmStp.mesh)
+                    np.unique(np.hstack((pstv_region, Fr_lstTmStp.EltTip))), Fr_lstTmStp.mesh)
 
                 # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
                 # we need a sign change on the level set (positive inside)
-                toEval = np.unique(np.hstack((front_region[ngtv_region], Fr_lstTmStp.EltTip)))
+                toEval = np.unique(np.hstack((ngtv_region, Fr_lstTmStp.EltTip)))
                 fmmStruct.solveFMM(
                     (-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
                     toEval, Fr_lstTmStp.mesh)
@@ -515,6 +517,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 # negative inside and positive outside.
                 sgndDist_k = fmmStruct.LS
                 sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
         sgndDist_k = sgndDist_k_temp
 
@@ -621,7 +625,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     if sim_properties.projMethod != 'LS_continousfront':
     # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
         zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-    else: zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
+    else:
+        zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
 
     # finding ribbon cells corresponding to tip cells
     corr_ribbon = find_corresponding_ribbon_cell(EltsTipNew,
