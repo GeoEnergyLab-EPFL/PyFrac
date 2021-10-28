@@ -7,6 +7,7 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 from numba import njit, prange
+from scipy.sparse import coo_matrix
 from numba import config, threading_layer
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse import csc_matrix
@@ -176,7 +177,32 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
+def getFast_bandedC(coeff9stencilC, elmts, nx, dtype = np.float64):
+    # coeff9stencilC contains [C_0dx_0dy, C_1dx_0dy, C_0dx_1dy, C_1dx_1dy]
+    i = np.floor_divide(elmts, nx)
+    j = elmts - nx * i
+    dimX = len(elmts)
 
+    data = dimX * [coeff9stencilC[0]]
+    rows = [ii for ii in range(dimX)]
+    cols = [ii for ii in range(dimX)]
+    for iter1 in range(dimX):
+        i1 = i[iter1]
+        j1 = j[iter1]
+        delta_j = np.abs(j - j1)
+        delta_i = np.abs(i - i1)
+        coeff9stencilC_array_coord = delta_j**3 + 2 * delta_i**3
+        coeff9stencilC_array_coord_bool = coeff9stencilC_array_coord < 4
+        for iter2 in range(iter1+1,dimX):
+            if coeff9stencilC_array_coord_bool[iter2]:
+                cols.append(iter2)
+                rows.append(iter1)
+                data.append(coeff9stencilC[coeff9stencilC_array_coord[iter2]])
+                cols.append(iter1)
+                rows.append(iter2)
+                data.append(coeff9stencilC[coeff9stencilC_array_coord[iter2]])
+
+    return coo_matrix((data, (rows, cols)), shape = (dimX, dimX), dtype=dtype).tocsc()
 
 class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
     """
@@ -279,6 +305,11 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         """
 
         self.C_toeplitz_coe = get_toeplitzCoe(nx,ny,hx,hy,a,b,const, self.C_precision)
+        self.coeff9stencilC = [self.C_toeplitz_coe[0],    # 0 dx 0 dy
+                               self.C_toeplitz_coe[1],    # 1 dx 0 dy
+                               self.C_toeplitz_coe[nx],   # 0 dx 1 dy
+                               self.C_toeplitz_coe[nx+1]  # 1 dx 1 dy
+                              ]
 
     def __getitem__(self, elementsXY):
         """
@@ -405,7 +436,8 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self.shape_ = (shape_, shape_)
         super().__init__(self.dtype_, self.shape_)
 
-
+    def _get9stencilC(self, elmts):
+        return getFast_bandedC(self.coeff9stencilC, elmts, self.nx, dtype = self.C_precision)
 
 # -----------------------------------------------------------------------------------------------------------------------
 def get_Cij_Matrix(youngs_mod, nu):

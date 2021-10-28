@@ -396,7 +396,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
         # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
         fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
-                           np.unique(np.hastack((front_region[pstv_region], Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
+                           np.unique(np.hstack((front_region[pstv_region], Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
 
         # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
         # so, we need a sign change on the level set (positive inside)
