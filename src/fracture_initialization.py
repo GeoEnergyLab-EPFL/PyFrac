@@ -626,10 +626,6 @@ def get_ribbon_and_channel(mesh_new, Ffront_old):
 def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
     # the following routine assumes Ffront to be a closed polygon
     # the following routine does not work - yet - with coalescing or fractures that can disappear - yet
-    EltChannel = None; EltTip = None; EltCrack = None
-    EltRibbon = None; ZeroVertex = None; CellStatus = None
-    l = None; alpha = None; FillF = None; sgndDist = None
-    Ffront_new = None; number_of_fronts = None; fronts_dictionary = None
 
     # 1) find the intersections of the old Ffront with the new mesh
     x_new, y_new = get_intersections(mesh_new, Ffront_old)
@@ -655,7 +651,7 @@ def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
 
     # 7) solve the least square problem
     LS_res = least_squares(bilinear_int.residual, x0=x0, bounds=(lower, upper))
-    if LS_res['status'] !=1:
+    if LS_res['status'] != 1:
         SystemExit("the solution for the LS was not found")
 
     # CHECK THE SOLUTION
@@ -676,41 +672,48 @@ def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
 
     #       -  The solution stored in the object is the calculated level set. we need however to change the sign as to have
     #           negative inside and positive outside.
-    sgndDist_k = -fmmStruct.LS
-    sgndDist_k[outside_elts] = -sgndDist_k[outside_elts]
-    sgndDist_k[bilinear_int.LS_unknowns] = LS_res.x # just to be sure than we are a sign change where we know it
+    sgndDist = -fmmStruct.LS
+    sgndDist[outside_elts] = -sgndDist[outside_elts]
+    sgndDist[bilinear_int.LS_unknowns] = LS_res.x # just to be sure than we are a sign change where we know it
 
     #       -  We define a front region and a pstv_region needed to construct the front.
     front_region = np.arange(mesh_new.NumberOfElts)
-    pstv_region = np.where(sgndDist_k[front_region] >= - mesh_new.cellDiag)[0]
+    pstv_region = np.where(sgndDist[front_region] >= - mesh_new.cellDiag)[0]
 
     # 10) reconstruct the front
-
-    correct_size_of_pstv_region = [False, False, False]
     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
 
-    EltsTipNew, \
+    EltTip, \
     listofTIPcellsONLY, \
-    l_k, \
-    alpha_k, \
+    l, \
+    alpha, \
     CellStatus, \
     newRibbon, \
     zrVertx_k_with_fully_traversed, \
     zrVertx_k_without_fully_traversed, \
     correct_size_of_pstv_region,\
-    sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
+    sgndDist_k_temp, Ffront_new, number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist,
                                                                   front_region[pstv_region],
                                                                   EltRibbon,
                                                                   EltChannel,
                                                                   mesh_new,
-                                                                  recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, oldfront=Ffront_old)
+                                                                  recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                                                    oldfront=Ffront_old)
     if not correct_size_of_pstv_region[0]:
         SystemExit("the region where the level set should be known does not allow for front reconstruction")
 
-    return EltChannel, EltTip, EltCrack, \
-           EltRibbon,  ZeroVertex,  CellStatus, \
-           l,  alpha,  FillF,  sgndDist, \
-            Ffront_new,  number_of_fronts,  fronts_dictionary
+    # Calculate filling fraction of the tip cells for the current fracture position
+    FillFrac = Integral_over_cell(EltTip,
+                                  alpha,
+                                  l,
+                                  mesh_new,
+                                  'A',
+                                  projMethod='LS_continuousfront') / mesh_new.EltArea
+
+    return EltChannel, EltTip, np.hstack((EltChannel, EltTip)), \
+           EltRibbon,  zrVertx_k_with_fully_traversed,  CellStatus, \
+           l,  alpha,  FillFrac,  sgndDist, \
+           Ffront_new,  number_of_fronts,  fronts_dictionary
 
 # ----------------------------------------------------------------------------------------------------------------------
 
