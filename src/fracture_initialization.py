@@ -349,7 +349,8 @@ def get_intersections(mesh_new,Ffront_old):
             ## plot only for debugging ##
             #fig = plot_just_xy_points(x_v, y_int, fig, joinPoints=True, color='blue')
             ## ----------------------- ##
-        else: y_int = []
+        else:
+            y_int = []
 
         # store all info
         if len(x_v)>0:
@@ -583,10 +584,10 @@ def get_bounds(LS_unknowns, mesh_new, Ffront_old):
     for answer_in in answers_in_out:
         if answer_in:
             upper_bound.append(0.)
-            lower_bound.append(-np.inf)
+            lower_bound.append(-mesh_new.cellDiag)
             x0.append(-mesh_new.cellDiag/2.)
         else:
-            upper_bound.append(+np.inf)
+            upper_bound.append(mesh_new.cellDiag)
             lower_bound.append(0.)
             x0.append(+mesh_new.cellDiag/2.)
     return upper_bound, lower_bound, x0
@@ -621,9 +622,9 @@ def get_ribbon_and_channel(mesh_new, Ffront_old):
     # K[ribbon] = 2
     # plot_as_matrix(K, mesh_new)
 
-    return ribbon, channel
+    return ribbon, np.asarray(channel)
 
-def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
+def generate_footprint_from_Ffront(mesh_new,Ffront_old):
     # the following routine assumes Ffront to be a closed polygon
     # the following routine does not work - yet - with coalescing or fractures that can disappear - yet
 
