@@ -953,6 +953,12 @@ class Fracture:
                                                                             np.unique(self.mesh.CenterCoor[::, 1])),
                                                                            self.w.reshape(self.mesh.nx, self.mesh.ny))
 
+                # We define the set of elements which are within the interpolation area.
+                ind_asc = np.where((coarse_mesh.CenterCoor[::, 0] > self.mesh.domainLimits[2]) &
+                                   (coarse_mesh.CenterCoor[::, 0] < self.mesh.domainLimits[3]) &
+                                   (coarse_mesh.CenterCoor[::, 1] > self.mesh.domainLimits[0]) &
+                                   (coarse_mesh.CenterCoor[::, 1] < self.mesh.domainLimits[1]))
+
                 # Now we need to get the tip volume so we need a bunch of other stuff
                 if sim_prop.projMethod != 'LS_continousfront':
                     # Evaluate the element lists for the footprint on the new mesh
@@ -1038,7 +1044,9 @@ class Fracture:
 
                 if stagnant.any():
                     # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
-                    KIPrime = StressIntensityFactor(openingIntFunc(coarse_mesh.CenterCoor),
+                    wTest = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
+                    wTest[ind_asc] = openingIntFunc(coarse_mesh.CenterCoor[ind_asc])
+                    KIPrime = StressIntensityFactor(wTest,
                                                     self.sgndDist,
                                                     self.EltTip,
                                                     self.EltRibbon,
@@ -1224,12 +1232,6 @@ class Fracture:
                 wHistInt = scipy.interpolate.RegularGridInterpolator((np.unique(self.mesh.CenterCoor[::, 0]),
                                                                       np.unique(self.mesh.CenterCoor[::, 1])),
                                                                      self.wHist.reshape(self.mesh.nx, self.mesh.ny))
-
-                # We define the set of elements which are within the interpolation area.
-                ind_asc = np.where((coarse_mesh.CenterCoor[::, 0] > self.mesh.domainLimits[2]) &
-                                   (coarse_mesh.CenterCoor[::, 0] < self.mesh.domainLimits[3]) &
-                                   (coarse_mesh.CenterCoor[::, 1] > self.mesh.domainLimits[0]) &
-                                   (coarse_mesh.CenterCoor[::, 1] < self.mesh.domainLimits[1]))
 
                 # We get the history from the interpolation
                 self.wHist = np.zeros((coarse_mesh.NumberOfElts,), dtype=np.float64)
