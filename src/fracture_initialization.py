@@ -262,8 +262,9 @@ def get_intersections(mesh_new,Ffront_old):
         Lseg = np.sqrt((x1-x2)**2 + (y1-y2)**2)**(0.5)
 
         # get a band of cells where the old front is passing
-        elem_around_1st_vertex = get_cells_inside_circle(mesh_new, 1.2*Lseg, [segment[0], segment[1]])
-        elem_around_2nd_vertex = get_cells_inside_circle(mesh_new, 1.2*Lseg, [segment[2], segment[3]])
+        dist_max = np.maximum(1.2 * Lseg, mesh_new.cellDiag)
+        elem_around_1st_vertex = get_cells_inside_circle(mesh_new, dist_max, [segment[0], segment[1]])
+        elem_around_2nd_vertex = get_cells_inside_circle(mesh_new, dist_max, [segment[2], segment[3]])
 
         # take the elements in the intersection of the two circles
         elems = np.unique(elem_around_1st_vertex + elem_around_2nd_vertex)
@@ -273,6 +274,9 @@ def get_intersections(mesh_new,Ffront_old):
         #fig = plot_just_xy_points([x1,x2], [y1,y2], fig, joinPoints=True, color='red')
         ## ----------------------- ##
 
+        # The segment has no intersection with the new mesh. So we simply jump to the next segment
+        if len(elems) == 0:
+            continue
         # take the list unique vertexes of these elements
         vertexes = np.unique(mesh_new.Connectivity[elems].flatten())
 
