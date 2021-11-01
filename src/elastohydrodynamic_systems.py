@@ -976,6 +976,207 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
         return A, S, interItr_kp1, indices, wcNplusHalf, FinDiffOprtr.tocsr()
 
 # -----------------------------------------------------------------------------------------------------------------------
+#@profile
+def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float64):
+    """
+    ATTENTION: derived from
+
+    MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+
+
+    This function makes the linearized system of equations to be solved by a linear system solver. The system is
+    assembled with the extended footprint (treating the channel and the extended tip elements distinctly; see
+    description of the ILSA algorithm). The change is pressure in the tip cells and the cells where width constraint is
+    active are solved separately. The pressure in the channel cells to be solved for change in width is substituted
+    with width using the elasticity relation (see Zia and Lecamption 2019). The finite difference difference operator
+    is saved as a sparse matrix.
+
+    Arguments:
+        solk (ndarray):               -- the trial change in width and pressure for the current iteration of
+                                          fracture front.
+        interItr (ndarray):            -- the information from the last iteration.
+        args (tupple):                 -- arguments passed to the function. A tuple containing the following in order:
+
+            - EltChannel (ndarray)          -- list of channel elements
+            - to_solve (ndarray)            -- the cells where width is to be solved (channel cells).
+            - to_impose (ndarray)           -- the cells where width is to be imposed (tip cells).
+            - imposed_vel (ndarray)         -- the values to be imposed in the above list (tip volumes)
+            - wc_to_impose (ndarray)        -- the values to be imposed in the cells where the width constraint is active. \
+                                               These can be different then the minimum width if the overall fracture width is \
+                                               small and it has not reached the minimum width yet.
+            - frac (Fracture)               -- fracture from last time step to get the width and pressure.
+            - fluidProp (object):           -- FluidProperties class object giving the fluid properties.
+            - matProp (object):             -- an instance of the MaterialProperties class giving the material properties.
+            - sim_prop (object):            -- An object of the SimulationProperties class.
+            - dt (float)                    -- the current time step.
+            - Q (float)                     -- fluid injection rate at the current time step.
+            - C (ndarray)                   -- the elasticity matrix.
+            - InCrack (ndarray)             -- an array with one for all the elements in the fracture and zero for rest.
+            - LeakOff (ndarray)             -- the leaked off fluid volume for each cell.
+            - active (ndarray)              -- index of cells where the width constraint is active.
+            - neiInCrack (ndarray)          -- an ndarray giving indices(in the EltCrack list) of the neighbours of all\
+                                               the cells in the crack.
+            - edgeInCrk_lst (ndarray)       -- this list provides the indices of those cells in the EltCrack list whose neighbors are not\
+                                               outside the crack. It is used to evaluate the conductivity on edges of only these cells who\
+                                               are inside. It consists of four lists, one for each edge.
+
+    Returns:
+        - A (ndarray)            -- the A matrix (in the system Ax=b) to be solved by a linear system solver.
+        - S (ndarray)            -- the b vector (in the system Ax=b) to be solved by a linear system solver.
+        - interItr_kp1 (list)    -- the information transferred between iterations. It has three ndarrays
+                                        - fluid velocity at edges
+                                        - cells where width is closed
+                                        - effective newtonian viscosity
+        - indices (list)         -- the list containing 3 arrays giving indices of the cells where the solution is\
+                                    obtained for width, pressure and active width constraint cells.
+    """
+    # see https://matteding.github.io/2019/04/25/sparse-matrices/ for more info about CSC matrix
+
+    (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
+    sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = args
+
+    wNplusOne = np.copy(frac.w)
+    wNplusOne[to_solve] += solk[:len(to_solve)]
+    wNplusOne[to_impose] = imposed_val
+    if len(wc_to_impose) > 0:
+        wNplusOne[active] = wc_to_impose
+
+    below_wc = np.where(wNplusOne[to_solve] < mat_prop.wc)[0]
+    below_wc_km1 = interItr[1]
+    below_wc = np.append(below_wc_km1, np.setdiff1d(below_wc, below_wc_km1))
+    wNplusOne[to_solve[below_wc]] = mat_prop.wc
+
+    wcNplusHalf = (frac.w + wNplusOne) / 2
+
+    interItr_kp1 = [None] * 4
+
+    # Account for the presence of boundaries
+    if Boundary is not None:
+        tb_np1 = Boundary.getTraction(wNplusOne, EltCrack)
+        # from utility import plot_as_matrix
+        # K = tb_np1
+        # plot_as_matrix(K, frac.mesh)
+        tb_n = frac.boundEffTraction
+        delta_tb = tb_np1 - tb_n
+
+    else:
+        tb_n = np.zeros((len(wNplusOne),), dtype=dtype)
+        delta_tb = np.zeros((len(wNplusOne),), dtype=dtype)
+
+    FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
+                                 EltCrack,  neiInCrack, fluid_prop,
+                                 mat_prop,  sim_prop,   frac.mesh,
+                                 InCrack,   C,  interItr,   to_solve,
+                                 to_impose, active, interItr_kp1,
+                                 lst_edgeInCrk)
+
+
+    G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
+                    frac.mesh,  InCrack,    sim_prop)
+
+    n_ch = len(to_solve)
+    n_act = len(active)
+    n_tip = len(imposed_val)
+    n_total = n_ch + n_act + n_tip
+
+    ch_indxs = np.arange(n_ch)
+    act_indxs = n_ch + np.arange(n_act)
+    tip_indxs = n_ch + n_act + np.arange(n_tip)
+
+    A = np.zeros((n_total, n_total), dtype=dtype)
+
+    ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
+                 - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
+
+    # 1
+    #A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C.[np.ix_(to_solve, to_solve)])
+    A[np.ix_(ch_indxs, ch_indxs)] = - (ch_AplusCf.tocsc().dot(C._get9stencilC(to_solve))).toarray()
+
+    # 2
+    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
+
+    A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
+
+    # 3
+    # A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+    #                                     ).dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(tip_indxs, ch_indxs)] = - ((dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+                                        ).tocsc().dot(C._get9stencilC(to_solve))).toarray()
+
+    # 4
+    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
+                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
+                                                    [0], format='csr')).toarray()
+    A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
+
+    # 5
+    # A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+    #                                     ).dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(act_indxs, ch_indxs)] = - ((dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+                                    ).tocsc().dot(C._get9stencilC(to_solve))).toarray()
+
+    # 6
+    A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
+                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
+                                                    [0], format='csr')).toarray()
+
+    S = np.zeros((n_total,), dtype=np.float64)
+    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
+                  np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
+                  np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
+                  mat_prop.SigmaO[to_solve]
+
+    S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                  dt * G[to_solve] + \
+                  dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
+                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]+ \
+                  + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+
+    S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                   dt * G[to_impose] + \
+                   dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea + \
+                   - dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+
+    S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                   dt * G[active] + \
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea+ \
+                   - dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+
+    # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
+    # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
+    to_del = []
+    if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
+        for i in range(n_tip + n_act):
+                if not A[n_ch + i, :].any():
+                    to_del.append(i)
+
+        if len(to_del) > 0:
+            deleted = n_ch + np.asarray(to_del)
+            A = np.delete(A, deleted, 0)
+            A = np.delete(A, deleted, 1)
+            S = np.delete(S, deleted)
+
+    # indices of solved width, pressure and active width constraint in the solution
+    indices = [ch_indxs, tip_indxs, act_indxs, to_del]
+
+    interItr_kp1[1] = below_wc
+
+    if not return_w:
+        return A, S, interItr_kp1, indices
+    else:
+        return A, S, interItr_kp1, indices, wcNplusHalf, FinDiffOprtr.tocsr()
+
+# -----------------------------------------------------------------------------------------------------------------------
 class ADot(LinearOperator):
   # TESTED FOR NEWTONIAN FLUIDS ONLY!
   def __init__(self, system_dim, dtype=np.float64):
@@ -1003,6 +1204,20 @@ class ADot(LinearOperator):
     self.args = args # args never change within the solution of 1 non-linear system
 
     (A, b, interItr, indices, wcNplusHalf, FinDiffOprtr) = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, interItr, *args,  return_w=True)
+
+    self.wcNplusHalf = wcNplusHalf
+    self.FinDiffOprtr = FinDiffOprtr
+    return (A, b, interItr, indices)
+
+  def _getsys_simplif(self, solk, interItr, *args):
+    """
+    This function implements the dot product.
+    :param v: vector expected to be of size unknowns_number_
+    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    """
+    self.args = args # args never change within the solution of 1 non-linear system
+
+    (A, b, interItr, indices, wcNplusHalf, FinDiffOprtr) = make_local_elast_sys(solk, interItr, *args,  return_w=True)
 
     self.wcNplusHalf = wcNplusHalf
     self.FinDiffOprtr = FinDiffOprtr

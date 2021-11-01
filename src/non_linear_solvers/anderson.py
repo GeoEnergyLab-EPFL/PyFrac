@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 import logging
 import numpy as np
+from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import spilu
 
@@ -18,6 +19,9 @@ from EHL_gmres_prec import APrec
 from Hdot import gmres_counter
 
 #@profile
+from utility import append_new_line
+
+
 def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     """
     Anderson solver for non linear system.
@@ -58,12 +62,15 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         # First iteration
         xks[0, ::] = np.array([guess])                                       # xo
         if not sim_prop.EHL_GMRES: (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
-        else: (A, b, interItr, indices) = sys_fun._getsys(xks[0, ::], interItr, *args)
+        #else: (A, b, interItr, indices) = sys_fun._getsys(xks[0, ::], interItr, *args)
+        else:
+            (A, b, interItr, indices) = sys_fun._getsys_simplif(xks[0, ::], interItr, *args)
+
         #cond_num.append(np.linalg.cond(A)) #this is expensive to compute! do it only while debugging
 
         if sim_prop.EHL_GMRES:
             # prepare preconditioner
-            EHL_iLU = spilu(A, drop_tol=1.e-4, fill_factor=1)
+            EHL_iLU = spilu(csc_matrix(A), drop_tol=1.e-4, fill_factor=1)
             Aprec = APrec(EHL_iLU)
             counter = gmres_counter()  # to obtain the number of iteration and residual
             sol_GMRES = gmres(sys_fun,
@@ -78,6 +85,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                 log.warning("EHL system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
             elif sol_GMRES[1] == 0:
                 log.debug(" --> GMRES EHL converged after " + str(counter.niter) + " iter. ")
+                file_name = "/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_parallel_Hdot/gmres_iter_vs_size.txt"
+                append_new_line(file_name, str(len(b)) + ' ' + str(counter.niter))
             Gks[0, ::] = sol_GMRES[0]
         else:
             # DIRECT SOLVER #
@@ -126,6 +135,8 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
                     log.warning( "EHL system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
                 elif sol_GMRES[1] == 0:
                     log.debug(" --> GMRES EHL converged after " + str(counter.niter) + " iter. ")
+                    file_name = "/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_parallel_Hdot/gmres_iter_vs_size.txt"
+                    append_new_line(file_name, str(len(b)) + ' ' + str(counter.niter))
                 Gks[mk + 1, ::] = sol_GMRES[0]
             else: # DIRECT SOLVER #
                 Gks[mk + 1, ::] = np.linalg.solve(A, b)
