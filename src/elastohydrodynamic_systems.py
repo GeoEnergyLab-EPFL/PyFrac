@@ -977,7 +977,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
 # -----------------------------------------------------------------------------------------------------------------------
 #@profile
-def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float64):
+def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float64, decay_tshold = 0.9, probability = 0.15):
     """
     ATTENTION: derived from
 
@@ -1088,9 +1088,11 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
 
+    C_loc = C._get9stencilC(to_solve, decay_tshold = decay_tshold, probability = probability)
+
     # 1
-    #A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C.[np.ix_(to_solve, to_solve)])
-    A[np.ix_(ch_indxs, ch_indxs)] = - (ch_AplusCf.tocsc().dot(C._get9stencilC(to_solve))).toarray()
+    # A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    A[np.ix_(ch_indxs, ch_indxs)] = - ((ch_AplusCf.tocsc()).dot(C_loc)).toarray()
 
     # 2
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
@@ -1101,8 +1103,8 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     # 3
     # A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
     #                                     ).dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(tip_indxs, ch_indxs)] = - ((dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-                                        ).tocsc().dot(C._get9stencilC(to_solve))).toarray()
+    A[np.ix_(tip_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+                                        ).tocsc()).dot(C_loc)).toarray()
 
     # 4
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
@@ -1113,8 +1115,8 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     # 5
     # A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
     #                                     ).dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(act_indxs, ch_indxs)] = - ((dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-                                    ).tocsc().dot(C._get9stencilC(to_solve))).toarray()
+    A[np.ix_(act_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+                                    ).tocsc()).dot(C_loc)).toarray()
 
     # 6
     A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
@@ -1209,7 +1211,7 @@ class ADot(LinearOperator):
     self.FinDiffOprtr = FinDiffOprtr
     return (A, b, interItr, indices)
 
-  def _getsys_simplif(self, solk, interItr, *args):
+  def _getsys_simplif(self, solk, interItr, *args, decay_tshold = 0.9, probability = 0.15):
     """
     This function implements the dot product.
     :param v: vector expected to be of size unknowns_number_
@@ -1217,7 +1219,7 @@ class ADot(LinearOperator):
     """
     self.args = args # args never change within the solution of 1 non-linear system
 
-    (A, b, interItr, indices, wcNplusHalf, FinDiffOprtr) = make_local_elast_sys(solk, interItr, *args,  return_w=True)
+    (A, b, interItr, indices, wcNplusHalf, FinDiffOprtr) = make_local_elast_sys(solk, interItr, *args,  return_w=True, decay_tshold = decay_tshold , probability = probability)
 
     self.wcNplusHalf = wcNplusHalf
     self.FinDiffOprtr = FinDiffOprtr

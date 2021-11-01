@@ -7,7 +7,9 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 import logging
-from scipy.sparse.linalg import gmres
+
+from EHL_gmres_prec import APrec
+from scipy.sparse.linalg import gmres, spilu, bicgstab
 from scipy.sparse import csc_matrix
 import numpy as np
 import copy
@@ -1013,6 +1015,34 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
                 else:
                     w_calculated[EltCrack] = np.linalg.solve(C_Crack, p_calculated[EltCrack])
+
+                    # w_calculated[EltCrack] = np.linalg.solve(C[np.ix_(EltCrack, EltCrack)], p_calculated[EltCrack])
+                    # # prepare preconditioner
+                    # EHL_iLU = spilu(csc_matrix(C._get9stencilC(EltCrack)), drop_tol=0., fill_factor=1)
+                    # Aprec = APrec(EHL_iLU)
+                    # counter = gmres_counter()  # to obtain the number of iteration and residual
+                    # C._set_domain_IDX(EltCrack)
+                    # C._set_codomain_IDX(EltCrack)
+                    # # sol_GMRES = gmres(C,
+                    # #                   p_calculated[EltCrack],
+                    # #                   M=Aprec,
+                    # #                   atol=10.e-14,
+                    # #                   tol=1.e-9,
+                    # #                   maxiter=1000,
+                    # #                   callback=counter,
+                    # #                   restart=1000)
+                    #
+                    # sol_GMRES = bicgstab(C,
+                    #                   p_calculated[EltCrack],
+                    #                   M=Aprec,
+                    #                   atol=10.e-14,
+                    #                   tol=1.e-9,
+                    #                   maxiter=1000,
+                    #                   callback=counter)
+                    # if sol_GMRES[1] > 0:
+                    #     log.warning("EHL system did NOT converge after " + str(sol_GMRES[1]) + " iterations!")
+                    # elif sol_GMRES[1] == 0:
+                    #     log.debug(" --> GMRES EHL converged after " + str(counter.niter) + " iter. ")
 
             # known w
             if not w is None and p is None:
