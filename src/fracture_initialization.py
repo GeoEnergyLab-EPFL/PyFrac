@@ -264,8 +264,9 @@ def get_intersections(mesh_new,Ffront_old):
         Lseg = np.sqrt((x1-x2)**2 + (y1-y2)**2)**(0.5)
 
         # get a band of cells where the old front is passing
-        elem_around_1st_vertex = get_cells_inside_circle(mesh_new, 1.2*Lseg, [segment[0], segment[1]])
-        elem_around_2nd_vertex = get_cells_inside_circle(mesh_new, 1.2*Lseg, [segment[2], segment[3]])
+        dist_max = np.maximum(1.2 * Lseg, mesh_new.cellDiag)
+        elem_around_1st_vertex = get_cells_inside_circle(mesh_new, dist_max, [segment[0], segment[1]])
+        elem_around_2nd_vertex = get_cells_inside_circle(mesh_new, dist_max, [segment[2], segment[3]])
 
         # take the elements in the intersection of the two circles
         elems = np.unique(elem_around_1st_vertex + elem_around_2nd_vertex)
@@ -275,6 +276,9 @@ def get_intersections(mesh_new,Ffront_old):
         #fig = plot_just_xy_points([x1,x2], [y1,y2], fig, joinPoints=True, color='red')
         ## ----------------------- ##
 
+        # The segment has no intersection with the new mesh. So we simply jump to the next segment
+        if len(elems) == 0:
+            continue
         # take the list unique vertexes of these elements
         vertexes = np.unique(mesh_new.Connectivity[elems].flatten())
 
@@ -351,7 +355,8 @@ def get_intersections(mesh_new,Ffront_old):
             ## plot only for debugging ##
             #fig = plot_just_xy_points(x_v, y_int, fig, joinPoints=True, color='blue')
             ## ----------------------- ##
-        else: y_int = []
+        else:
+            y_int = []
 
         # store all info
         if len(x_v)>0:
@@ -585,10 +590,10 @@ def get_bounds(LS_unknowns, mesh_new, Ffront_old):
     for answer_in in answers_in_out:
         if answer_in:
             upper_bound.append(0.)
-            lower_bound.append(-np.inf)
+            lower_bound.append(-mesh_new.cellDiag)
             x0.append(-mesh_new.cellDiag/2.)
         else:
-            upper_bound.append(+np.inf)
+            upper_bound.append(mesh_new.cellDiag)
             lower_bound.append(0.)
             x0.append(+mesh_new.cellDiag/2.)
     return upper_bound, lower_bound, x0
@@ -623,15 +628,11 @@ def get_ribbon_and_channel(mesh_new, Ffront_old):
     # K[ribbon] = 2
     # plot_as_matrix(K, mesh_new)
 
-    return ribbon, channel
+    return ribbon, np.asarray(channel)
 
-def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
+def generate_footprint_from_Ffront(mesh_new,Ffront_old):
     # the following routine assumes Ffront to be a closed polygon
     # the following routine does not work - yet - with coalescing or fractures that can disappear - yet
-    EltChannel = None; EltTip = None; EltCrack = None
-    EltRibbon = None; ZeroVertex = None; CellStatus = None
-    l = None; alpha = None; FillF = None; sgndDist = None
-    Ffront_new = None; number_of_fronts = None; fronts_dictionary = None
 
     # 1) find the intersections of the old Ffront with the new mesh
     x_new, y_new = get_intersections(mesh_new, Ffront_old)
@@ -657,7 +658,7 @@ def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
 
     # 7) solve the least square problem
     LS_res = least_squares(bilinear_int.residual, x0=x0, bounds=(lower, upper))
-    if LS_res['status'] !=1:
+    if LS_res['status'] != 1:
         SystemExit("the solution for the LS was not found")
 
     # CHECK THE SOLUTION
@@ -678,41 +679,48 @@ def  generate_footprint_from_Ffront(mesh_new,Ffront_old):
 
     #       -  The solution stored in the object is the calculated level set. we need however to change the sign as to have
     #           negative inside and positive outside.
-    sgndDist_k = -fmmStruct.LS
-    sgndDist_k[outside_elts] = -sgndDist_k[outside_elts]
-    sgndDist_k[bilinear_int.LS_unknowns] = LS_res.x # just to be sure than we are a sign change where we know it
+    sgndDist = -fmmStruct.LS
+    sgndDist[outside_elts] = -sgndDist[outside_elts]
+    sgndDist[bilinear_int.LS_unknowns] = LS_res.x # just to be sure than we are a sign change where we know it
 
     #       -  We define a front region and a pstv_region needed to construct the front.
     front_region = np.arange(mesh_new.NumberOfElts)
-    pstv_region = np.where(sgndDist_k[front_region] >= - mesh_new.cellDiag)[0]
+    pstv_region = np.where(sgndDist[front_region] >= - mesh_new.cellDiag)[0]
 
     # 10) reconstruct the front
-
-    correct_size_of_pstv_region = [False, False, False]
     recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
 
-    EltsTipNew, \
+    EltTip, \
     listofTIPcellsONLY, \
-    l_k, \
-    alpha_k, \
+    l, \
+    alpha, \
     CellStatus, \
     newRibbon, \
     zrVertx_k_with_fully_traversed, \
     zrVertx_k_without_fully_traversed, \
     correct_size_of_pstv_region,\
-    sgndDist_k_temp, Ffront,number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist_k,
+    sgndDist_k_temp, Ffront_new, number_of_fronts, fronts_dictionary = reconstruct_front_continuous(sgndDist,
                                                                   front_region[pstv_region],
                                                                   EltRibbon,
                                                                   EltChannel,
                                                                   mesh_new,
-                                                                  recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge, oldfront=Ffront_old)
+                                                                  recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge,
+                                                                                                    oldfront=Ffront_old)
     if not correct_size_of_pstv_region[0]:
         SystemExit("the region where the level set should be known does not allow for front reconstruction")
 
-    return EltChannel, EltTip, EltCrack, \
-           EltRibbon,  ZeroVertex,  CellStatus, \
-           l,  alpha,  FillF,  sgndDist, \
-            Ffront_new,  number_of_fronts,  fronts_dictionary
+    # Calculate filling fraction of the tip cells for the current fracture position
+    FillFrac = Integral_over_cell(EltTip,
+                                  alpha,
+                                  l,
+                                  mesh_new,
+                                  'A',
+                                  projMethod='LS_continuousfront') / mesh_new.EltArea
+
+    return EltChannel, EltTip, np.hstack((EltChannel, EltTip)), \
+           EltRibbon,  zrVertx_k_with_fully_traversed,  CellStatus, \
+           l,  alpha,  FillFrac,  sgndDist, \
+           Ffront_new,  number_of_fronts,  fronts_dictionary
 
 # ----------------------------------------------------------------------------------------------------------------------
 
