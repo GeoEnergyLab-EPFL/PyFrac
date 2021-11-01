@@ -6,6 +6,7 @@ Created by Haseeb Zia on Tue Dec 27 17:41:56 2016.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+
 from numba import njit, prange
 from scipy.sparse import coo_matrix
 from numba import config, threading_layer
@@ -18,6 +19,7 @@ import subprocess
 import pickle
 from array import array
 import os, sys
+import random
 
 def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32):
     """
@@ -92,7 +94,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
 #config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
 config.THREADING_LAYER = 'workqueue' #'workqueue', 'threadsafe' ,'tbb', 'omp'
 
-@njit( parallel = True) #  <------parallel compilation
+@njit( parallel = True, fastmath=True, nopython = True) #  <------parallel compilation
 #@njit() # <------serial compilation
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe,  C_precision):
     #elemX = self.domain_INDX
@@ -101,7 +103,8 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe,  C_precision):
     # dimX = elemX.size  # number of elements to consider on x axis
     # dimY = elemY.size  # number of elements to consider on y axis
 
-    res = np.empty(dimY, dtype=C_precision)  # subvector result
+    #res = np.empty(dimY, dtype=C_precision)  # subvector result
+    res = np.zeros(dimY, dtype=C_precision)  # subvector result
 
     iY = np.floor_divide(elemY, nx)
     jY = elemY - nx * iY
@@ -109,12 +112,10 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe,  C_precision):
     jX = elemX - nx * iX
     for iter1 in prange(dimY):
         # assembly matrix row
-        i1 = iY[iter1]
-        j1 = jY[iter1]
-        res[iter1] = np.dot(C_toeplitz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)],uk)
+        res[iter1] += np.dot(C_toeplitz_coe[np.abs(jY[iter1] - jX) + nx * np.abs(iY[iter1] - iX)],uk)
     return res
 
-@njit()
+@njit(fastmath=True, nopython = True)
 def get_toeplitzCoe(nx,ny,hx,hy,a,b,const,C_precision):
     C_toeplitz_coe = np.empty(ny * nx, dtype=C_precision)
     xindrange = np.arange(nx)
@@ -131,7 +132,7 @@ def get_toeplitzCoe(nx,ny,hx,hy,a,b,const,C_precision):
                                                        + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
     return C_toeplitz_coe
 
-@njit()
+@njit(fastmath=True, nopython = True)
 def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
     elemX = elementsXY[1].flatten()
     elemY = elementsXY[0].flatten()
@@ -177,6 +178,7 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
+@njit( fastmath=True, nopython = True)
 def getFast_bandedC(coeff9stencilC, elmts, nx, dtype = np.float64):
     # coeff9stencilC contains [C_0dx_0dy, C_1dx_0dy, C_0dx_1dy, C_1dx_1dy]
     i = np.floor_divide(elmts, nx)
@@ -204,6 +206,39 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype = np.float64):
 
     return coo_matrix((data, (rows, cols)), shape = (dimX, dimX), dtype=dtype).tocsc()
 
+@njit( parallel = True, fastmath=True, nopython = True)
+def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold = 0.9, probability = 0.05):
+    i = np.floor_divide(elmts, nx)
+    j = elmts - nx * i
+    dimX = len(elmts)
+    self_c = C_toeplitz_coe[0]
+    myR = range(dimX)
+    data = []
+    rows = []
+    cols = []
+    for iter1 in range(dimX):
+        index = np.abs(j - j[iter1]) + nx * np.abs(i - i[iter1])
+        for iter2 in range(iter1+1,dimX):
+            ii2 = index[iter2]
+            if C_toeplitz_coe_decay[ii2] > decay_tshold or random.random() < probability:
+                cols.append(iter2)
+                rows.append(iter1)
+                data.append(C_toeplitz_coe[ii2])
+
+    data = [*data, *data]
+    rows1 = [*rows , *cols]
+    cols = [*cols , *rows]
+    data = [*data , * [self_c for ii in myR]]
+    rows = [*rows1 , * [ii for ii in myR]]
+    cols = [*cols , * [ii for ii in myR]]
+    # import matplotlib
+    # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
+
+    # fill ratio:
+    #print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
+    return data, rows, cols, dimX
+
+
 class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
     """
     This class implements the isotropic elasticity matrix.
@@ -224,7 +259,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
                 if not the behaviour is same as "_matvec_fast"
 
     """
-    def __init__(self, Mesh, Ep, C_precision = np.float64):
+    def __init__(self, Mesh, Ep, C_precision = np.float64, get_full_blocks = False, nu = None):
         """
             Arguments:
                 Mesh:                           -- Cartesian Mesh object
@@ -247,6 +282,16 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         # ---- JACOBI PREC ----
         self.left_precJ = False
         self.right_precJ = False
+
+        # if get_full_blocks:
+        #     if nu is None: SystemExit("please, provide the Poisson's ratio to get the full blocks")
+        #     self.tractionKernel = "3DR0opening"
+        #     self.max_leaf_size = 100
+        #     self.eta = 5
+        #     self.eps_aca = 0.00001
+        #     self.HMATtract = None
+        #     elas_prop = [Ep * (1 - nu ** 2), nu] #  youngs_mod, nu
+        #     self._get_full_blocks(Mesh.VertexCoor, Mesh.Connectivity, elas_prop)
 
     def reload(self, Mesh):
         hx = Mesh.hx
@@ -305,6 +350,10 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         """
 
         self.C_toeplitz_coe = get_toeplitzCoe(nx,ny,hx,hy,a,b,const, self.C_precision)
+        C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe))
+        C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
+        C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
+        self.C_toeplitz_coe_decay = C_toeplitz_coe_exp # between 0 and 1
         self.coeff9stencilC = [self.C_toeplitz_coe[0],    # 0 dx 0 dy
                                self.C_toeplitz_coe[1],    # 1 dx 0 dy
                                self.C_toeplitz_coe[nx],   # 0 dx 1 dy
@@ -436,9 +485,35 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self.shape_ = (shape_, shape_)
         super().__init__(self.dtype_, self.shape_)
 
-    def _get9stencilC(self, elmts):
-        return getFast_bandedC(self.coeff9stencilC, elmts, self.nx, dtype = self.C_precision)
+    def _get9stencilC(self, elmts, decay_tshold = 0.9, probability = 0.15):
+        data, rows, cols, dimX = getFast_sparseC(self.C_toeplitz_coe.tolist(), self.C_toeplitz_coe_decay.tolist(), elmts, self.nx,
+                        decay_tshold=decay_tshold, probability=probability)
+        return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=self.C_precision).tocsc()
 
+
+    # def _get_full_blocks(self, VertexCoor, Connectivity, elas_prop):
+    #     from pypart import Bigwhamio
+    #     from pypart import pyGetFullBlocks
+    #     from Hdot import applyPermutation
+    #     self.HMATtract.set(VertexCoor,
+    #                           Connectivity,
+    #                           self.tractionKernel,
+    #                           elas_prop,
+    #                           self.max_leaf_size,
+    #                           self.eta,
+    #                           self.eps_aca)
+    #     # ---> the memory here consist mainly of the Hmat
+    #     myget = pyGetFullBlocks()
+    #     myget.set(self.HMATtract)
+    #     # ---> the memory here consist at most of 3 * Hmat
+    #     col_ind_tract = myget.getColumnN()
+    #     row_ind_tract = myget.getRowN()
+    #     # here we need to permute the rows and columns
+    #     # ---> the memory here consist at most of 3 * Hmat
+    #     [row_ind_tract, col_ind_tract] = applyPermutation(self.HMATtract, row_ind_tract, col_ind_tract )
+    #     # ---> the memory here consist at most of 5 * Hmat for a while and it goes back to 4 Hmat
+    #     values_tract = myget.getValList()
+    #     del myget
 # -----------------------------------------------------------------------------------------------------------------------
 def get_Cij_Matrix(youngs_mod, nu):
 

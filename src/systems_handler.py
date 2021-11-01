@@ -7,6 +7,7 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 #import time
+import time
 
 from scipy.sparse.linalg import gmres
 import logging
@@ -24,6 +25,7 @@ from non_linear_solvers.anderson import Anderson
 import Hdot
 from properties import IterationProperties, instrument_start, instrument_close
 # ----------------------------------------------------------------------------------------------------------------------
+from utility import append_new_line
 
 
 def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
@@ -456,9 +458,10 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k]
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if sim_properties.solveDeltaP:
+                    sys_size = len(to_solve_k) + len(pf_guess_neg) + len(pf_guess_tip)
                     if sim_properties.solveSparse:
                         if sim_properties.EHL_GMRES:
-                            sys_fun = ADot(len(to_solve_k)+len(pf_guess_neg)+len(pf_guess_tip), dtype=np.float64)
+                            sys_fun = ADot(sys_size, dtype=np.float64)
                         else:
                             sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
                     else:
@@ -496,12 +499,16 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                            *arg,
                                            perf_node=perfNode_widthConstrItr)
                 elif sim_properties.elastohydrSolver == 'implicit_Anderson':
+                    #Ander_time = -time.time()
                     sol, data_nonLinSolve = Anderson(sys_fun,
                                              guess,
                                              inter_itr_init,
                                              sim_properties,
                                              *arg,
                                              perf_node=perfNode_widthConstrItr)
+                    Ander_time = Ander_time + time.time()
+                    #file_name = '/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_random_E/iterT.csv'
+                    #append_new_line(file_name, str(sys_size)+','+str(Ander_time))
                 elif sim_properties.elastohydrSolver == 'JacobianFreeNewton':
                     log.error("NOT YET IMPLEMENTED!")
                     # another option is scipy.optimize.newton_krylov
