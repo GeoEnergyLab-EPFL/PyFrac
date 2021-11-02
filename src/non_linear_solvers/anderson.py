@@ -17,8 +17,8 @@ from scipy.sparse.linalg import spilu
 # internal import
 from systems.sys_back_subst_EHL import check_covergance
 from properties import instrument_start, instrument_close
-from systems.EHL_gmres_prec import APrec
-from systems.Hdot import gmres_counter
+from systems.preconditioners.prec_back_subst_EHL import APrec
+from utilities.utility import gmres_counter
 
 #@profile
 def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):

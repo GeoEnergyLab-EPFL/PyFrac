@@ -29,7 +29,8 @@ from level_set.anisotropy import get_toughness_from_cellCenter
 from level_set.anisotropy import get_toughness_from_cellCenter_iter
 from level_set.anisotropy import get_toughness_from_Front
 from level_set.FMM import fmm
-from level_set.level_set import reconstruct_front,  UpdateLists, get_front_region
+from level_set.level_set_utils import get_front_region
+from level_set.discontinuous_front_reconstruction import UpdateLists, reconstruct_front
 from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 
 from properties import IterationProperties, instrument_start, instrument_close

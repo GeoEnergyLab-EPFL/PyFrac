@@ -123,7 +123,7 @@ controller = Controller(Fr,
 #                                                 #
 ###################################################
 from utilities.visualization import *
-from level_set.level_set import pointtolinedistance
+from level_set.continuous_front_reconstruction import pointtolinedistance
 # loading simulation results
 Fr_list, properties = load_fractures(address=myfolder,load_all=True)       # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                                                  # list of times

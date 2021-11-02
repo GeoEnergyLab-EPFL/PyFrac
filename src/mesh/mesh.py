@@ -642,6 +642,29 @@ class CartesianMesh:
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+    def get_cells_inside_circle(self, r, center):
+        """
+        This function would provide a list of all the cells inside of the
+        perimeter of a circle with the given radius. A list of all the cells inside the fracture is also provided.
+
+        Arguments:
+            mesh (CartesianMesh object):        -- a CartesianMesh class object describing the grid.
+            r (float):                          -- the radius of the circle.
+            center (list or ndarray):           -- the coordinates [x, y] of the center.
+
+        Returns:
+            - inner_cells (list)             -- the list of cells inside the given circle.
+        """
+
+        # distances of the cell centers
+        dist_vertx = (((self.CenterCoor[:, 0] - center[0])) ** 2 + ((self.CenterCoor[:, 1] - center[1])) ** 2) \
+                     ** (1 / 2) / r - 1.
+
+        inner_cells = np.where(dist_vertx <= 0)[0]
+
+        return inner_cells.tolist()
+
+    # ----------------------------------------------------------------------------------------------------------------------
 
     def plot(self, material_prop=None, backGround_param=None, fig=None, plot_prop=None):
         """
@@ -924,6 +947,27 @@ class CartesianMesh:
                         self.hy / 4, repr(elements[i]), fontsize=plot_prop.textSize)
 
         return fig
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_8neighbors(NeiElements, elt):
+    # neighbors
+    #     6     5       4
+    #     7    elt      3
+    #     0     1       2
+    # mesh.NeiElements is [left right bottom top]
+    neighbors_band = np.zeros(8, dtype=int)
+    neighbors_band[7] = NeiElements[elt][0]
+    neighbors_band[3] = NeiElements[elt][1]
+    neighbors_band[1] = NeiElements[elt][2]
+    neighbors_band[5] = NeiElements[elt][3]
+
+    neighbors_band[0] = NeiElements[neighbors_band[7]][2]
+    neighbors_band[6] = NeiElements[neighbors_band[7]][3]
+
+    neighbors_band[2] = NeiElements[neighbors_band[3]][2]
+    neighbors_band[4] = NeiElements[neighbors_band[3]][3]
+    return neighbors_band
 
 #-----------------------------------------------------------------------------------------------------------------------
 

@@ -18,7 +18,7 @@ from fracture.fracture import Fracture
 from controller import Controller
 from fracture.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
-from systems.Boundary_effect import BoundaryEffect
+from solid.elasticity_boundary_effect_get_traction import BoundaryEffect
 from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console

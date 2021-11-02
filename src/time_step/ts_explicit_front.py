@@ -14,7 +14,8 @@ import logging
 
 # Internal imports
 from level_set.FMM import fmm
-from level_set.level_set import reconstruct_front,  UpdateLists, get_front_region
+from level_set.level_set_utils import get_front_region
+from level_set.discontinuous_front_reconstruction import reconstruct_front, UpdateLists
 from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 from level_set.anisotropy import reconstruct_front_LS_gradient
 from level_set.anisotropy import find_zero_vertex

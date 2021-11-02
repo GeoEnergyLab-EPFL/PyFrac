@@ -10,10 +10,12 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # external imports
 import numpy as np
 import logging
+import copy
 
 # internal imports
-from level_set.level_set import reconstruct_front_LS_gradient
+from level_set.discontinuous_front_reconstruction import reconstruct_front_LS_gradient
 from tip.volume_integral import Integral_over_cell
+from mesh.mesh import get_8neighbors
 
 
 def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist, global_alpha = False):
@@ -988,26 +990,6 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_8neighbors(NeiElements, elt):
-    # neighbors
-    #     6     5       4
-    #     7    elt      3
-    #     0     1       2
-    # mesh.NeiElements is [left right bottom top]
-    neighbors_band = np.zeros(8, dtype=int)
-    neighbors_band[7] = NeiElements[elt][0]
-    neighbors_band[3] = NeiElements[elt][1]
-    neighbors_band[1] = NeiElements[elt][2]
-    neighbors_band[5] = NeiElements[elt][3]
-
-    neighbors_band[0] = NeiElements[neighbors_band[7]][2]
-    neighbors_band[6] = NeiElements[neighbors_band[7]][3]
-
-    neighbors_band[2] = NeiElements[neighbors_band[3]][2]
-    neighbors_band[4] = NeiElements[neighbors_band[3]][3]
-    return neighbors_band
-#-----------------------------------------------------------------------------------------------------------------------
-import copy
 def process_closer_to_done(still_to_be_done, done, mesh, K1c, elts, k):
     # this function computes the fracture toughness
     still_to_be_done_new = []

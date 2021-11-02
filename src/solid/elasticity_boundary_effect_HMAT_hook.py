@@ -16,32 +16,7 @@ from scipy.sparse.linalg import LinearOperator
 # from scipy.sparse.linalg import splu #used for testing purposes
 
 # Internal imports
-from solid.elasticity_isotropic import get_isotropic_el_self_eff
-
-
-class gmres_counter(object):
-    def __init__(self, disp=True):
-        self._disp = disp
-        self.niter = 0
-        self.threshold = 100
-    def __call__(self, rk=None):
-        self.niter += 1
-        if self._disp:
-            if self.niter == self.threshold:
-                print('WARNING: GMRES has not converged in '+str(self.niter)+' iter, monitoring the residual')
-            if self.niter > self.threshold:
-                print('iter %3i\trk = %s' % (self.niter, str(rk)))
-
-
-def getMemUse():
-    # some memory statistics
-    import os, psutil
-
-    process = psutil.Process(os.getpid())
-    byte_use = process.memory_info().rss  # byte
-    GiByte_use = byte_use / 1024 / 1024 / 1024  # GiB
-    print("  -> Current memory use: " + str(GiByte_use) + " GiB")
-    return GiByte_use
+from utilities.utility import getMemUse
 
 def getPermutation(HMATobj):
     permut = HMATobj.getPermutation()
@@ -152,7 +127,7 @@ class Hdot(LinearOperator):
 
   """
   def __init__(self):
-      from pypart import Bigwhamio
+      from solid.pypart import Bigwhamio
       self.unknowns_number_ = None
       self.matvec_size_ = None
       self.HMAT_size_ = None
@@ -162,7 +137,7 @@ class Hdot(LinearOperator):
       self.HMATdispl = Bigwhamio()
 
   def set(self, data):
-    from pypart import pyGetFullBlocks
+    from solid.pypart import pyGetFullBlocks
 
     # instantiating the objects and variables
 
@@ -417,191 +392,3 @@ class Hdot(LinearOperator):
     return self.dtype_
 
 #--------------------------------
-
-
-class Hdot_3DR0opening(LinearOperator):
-    """
-    This function provides the dot product between the Hmatrix approx of the elasticity matrix and a vector
-
-    """
-    def __init__(self):
-        from pypart import Bigwhamio
-        self.unknowns_number_ = None
-        self.matvec_size_ = None
-        self.HMAT_size_ = None
-        self.shape_ = None
-        self.dtype_ = float
-        self.HMATtract = Bigwhamio()
-        self.tractionKernel = "3DR0opening"
-        self.diag_val = None
-        self.domain_INDX = None
-        self.codomain_INDX = None
-        self.tipcorr = None
-        self.tipcorrINDX = None
-        self.enable_tip_corr = False
-        #------
-        self.max_leaf_size = None
-        self.eta = None
-        self.eps_aca = None
-
-    def set(self, data):
-        # properties = [youngs_mod, nu]
-        max_leaf_size, eta, eps_aca,  properties, coor2D, conn, hx, hy = data
-
-        self.diag_val = get_isotropic_el_self_eff(hx, hy, properties[0])
-
-        # number of vertexes in the mesh
-        NoV = coor2D.shape[0]
-
-        # number of elements in the mesh
-        self.NoE = conn.shape[0]
-
-        # define the HMAT size
-        # define the total number of unknowns to be output by the matvet method
-        unknowns_per_element_ = 1
-        self.HMAT_size_ = int(self.NoE  * unknowns_per_element_)
-        self.matvec_size_ = self.HMAT_size_
-
-        # it is mandatory to define shape and dtype of the dot product
-        self.shape_ = (self.matvec_size_, self.matvec_size_)
-        super().__init__(self.dtype_, self.shape_)
-
-        # size of the vector containing the coordinates in 3D
-        size_coor3D = NoV * 3
-        coor3D = np.zeros(size_coor3D)
-
-        # setting the coordinate z to be 0
-        for i in range(NoV):
-            #put 0 at z
-            coor3D[i*3] = coor2D[i,0]
-            coor3D[i*3+1] = coor2D[i,1]
-            coor3D[i*3+2]= 0.
-
-        # it is mandatory to flatten the array
-        coor3D = coor3D.flatten()               # coor : is an array with the coordinates of all the vertexes of the elements of the mesh
-        conn3D = conn.flatten()               # conn : is an array with all the connectivity of the mesh
-
-        # save the parameters in case of mesh extension
-        self.max_leaf_size = max_leaf_size
-        self.eta = eta
-        self.eps_aca = eps_aca
-
-        # set the object
-        self.HMATtract.set(coor3D,
-                              conn3D,
-                              self.tractionKernel,
-                              properties,
-                              max_leaf_size,
-                              eta,
-                              eps_aca)
-
-        self.compressionratio = self.HMATtract.getCompressionRatio()
-
-        self._set_domain_IDX(np.arange(self.HMAT_size_))
-        self._set_codomain_IDX(np.arange(self.HMAT_size_))
-
-
-    def _matvec(self, uk):
-        """
-        E.uk
-        (E + DiagTipCorrection).uk
-        """
-        uk_full = np.zeros(self.HMAT_size_)
-        uk_full[self.domain_INDX] = uk
-        traction = np.asarray(self.HMATtract.hdotProduct(uk_full))
-
-        # TIP CORRECTION TO BE LOOKED AGAIN
-        # if self.enable_tip_corr:
-        #     # make tip correction
-        #     effective_corrINDX = np.intersect1d(self.tipcorrINDX, self.domain_INDX)
-        #     corr_array = np.zeros(self.HMAT_size_)
-        #     corr_array[effective_corrINDX] = self.tipcorr[effective_corrINDX]
-        #     corr_array = np.multiply(corr_array,uk_full)
-        #     traction = traction + corr_array
-
-        return traction[self.codomain_INDX]
-
-    # def _set_tipcorr(self, correction_val, correction_INDX):
-    #     self.tipcorr = np.zeros(self.HMAT_size_)
-    #     self.tipcorr[correction_INDX] = correction_val
-    #     self.tipcorrINDX = correction_INDX
-    #     self.enable_tip_corr = True
-
-    def _set_domain_IDX(self, domainIDX):
-        """
-        General example:
-        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
-        codomain indexes are [0, 2] of elements returned after the dot product
-        o o o o    0 <-0    x <-0
-        o o o o    x <-1  = o <-1
-        o o o o    x <-2    x <-2
-        o o o o    0 <-3    o <-3
-        """
-        self.domain_INDX = domainIDX
-
-    def _set_codomain_IDX(self, codomainIDX):
-        """
-        General example:
-        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
-        codomain indexes are [0, 2] of elements returned after the dot product
-        o o o o    0 <-0    x <-0
-        o o o o    x <-1  = o <-1
-        o o o o    x <-2    x <-2
-        o o o o    0 <-3    o <-3
-        """
-        self.codomain_INDX = codomainIDX
-        self._changeShape(codomainIDX.size)
-
-    def _changeShape(self, shape_):
-        self.shape_ = (shape_, shape_)
-        super().__init__(self.dtype_, self.shape_)
-
-
-
-
-class Volume_Control(LinearOperator):
-    """
-    This class provides the dot product for a volume control system i.e.
-
-       CC0  CC01|  1    w     sigma0
-                |  1    w     sigma0
-       CC10 CC1 |  1    w     sigma0
-       --------------   ---   --------
-       -1 -1 -1  0      p0    Q00*Dt/A
-
-
-    this is left preconditioned i.e.:
-    P(-1) . A . x = P(-1) . b
-
-    P(-1) -> preconditioner
-    A -> matrix of the system
-    """
-
-    def __init__(self,data):
-        HmatC, EltChannel, D_i, S_i = data
-        self.HmatC = HmatC
-        self.HmatC._set_domain_IDX(EltChannel)
-        self.HmatC._set_codomain_IDX(EltChannel)
-        self.D_i = D_i
-        self.S_i = S_i
-        self.EltChannel = EltChannel
-        self.NiC = EltChannel.size # number of elem in the channel
-
-        # it is mandatory to define shape and dtype
-        self.shape_ = (self.NiC + 1, self.NiC + 1)
-        self.dtype_ = float
-        super().__init__(self.dtype_, self.shape_)
-
-    def _matvec(self, xk):
-
-        yk = self.HmatC._matvec(xk[0:self.NiC])
-
-        # construction of A*xk
-        gp1 = yk - np.ones(self.NiC) * xk[-1]              # E*x_1+[1...1](vertical)x_2
-        gp2 = np.sum(xk[0:self.NiC])                       # [1...1](horiz)x_1
-
-        # construction of P^-1*(A*xk)
-        b1=self.D_i * gp1 + self.S_i * self.D_i * gp2 * np.ones(self.NiC)  # D_e^-1*(E*x_1+[1...1](vertical)x_2)-S^-1*D_e^-1*[1...1](horiz)x_1
-        b2=self.S_i * gp2                                     # S^-1*[1...1](horiz)x_1
-
-        return np.concatenate((b1,np.asarray([b2])))

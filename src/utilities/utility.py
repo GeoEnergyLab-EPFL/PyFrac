@@ -13,6 +13,32 @@ import matplotlib.pyplot as plt
 import dill
 import requests
 
+class gmres_counter(object):
+    def __init__(self, disp=True):
+        self._disp = disp
+        self.niter = 0
+        self.threshold = 100
+    def __call__(self, rk=None):
+        self.niter += 1
+        if self._disp:
+            if self.niter == self.threshold:
+                print('WARNING: GMRES has not converged in '+str(self.niter)+' iter, monitoring the residual')
+            if self.niter > self.threshold:
+                print('iter %3i\trk = %s' % (self.niter, str(rk)))
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def getMemUse():
+    # some memory statistics
+    import os, psutil
+
+    process = psutil.Process(os.getpid())
+    byte_use = process.memory_info().rss  # byte
+    GiByte_use = byte_use / 1024 / 1024 / 1024  # GiB
+    print("  -> Current memory use: " + str(GiByte_use) + " GiB")
+    return GiByte_use
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def plot_as_matrix(data, mesh, fig=None):
 
@@ -86,6 +112,8 @@ def logging_level(logging_level_string):
     else:
         SystemExit('Options are: debug, info, warning, error, critical')
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 def setup_logging_to_console(verbosity_level='debug'):
     """This function sets up the log to the console
         Note: from any module in the code you can use the logging capabilities. You just have to:
@@ -152,6 +180,8 @@ def setup_logging_to_console(verbosity_level='debug'):
     # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
     # logger_to_files.info('this comment will go only to the log file')
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 def append_new_line(file_name, text_to_append):
     """Append given text as a new line at the end of file"""
     # Open the file in append & read mode ('a+')
@@ -165,6 +195,7 @@ def append_new_line(file_name, text_to_append):
         # Append text at the end of file
         file_object.write(text_to_append)
 
+#-----------------------------------------------------------------------------------------------------------------------
 
 # SENDING A MESSAGE TO MONITOR THE SIMULATION
 """
@@ -187,3 +218,5 @@ def send_phone_message(bot_message):
     except Exception as e:
         # there may be many error coming...
         print(e);
+
+#-----------------------------------------------------------------------------------------------------------------------

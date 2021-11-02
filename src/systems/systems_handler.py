@@ -16,13 +16,12 @@ from scipy.sparse.linalg import gmres
 
 # Internal imports
 from systems.sys_volume_and_load_control import MakeEquationSystem_volumeControl, MakeEquationSystem_volumeControl_double_fracture, \
-    MakeEquationSystem_volumeControl_symmetric
+    MakeEquationSystem_volumeControl_symmetric, Volume_Control_4_gmres
 from systems.sys_back_subst_EHL import MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse, \
     MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP, ADot, \
     MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted
 from systems.explicit_RKL import solve_width_pressure_RKL2
 from systems.systems_functions import velocity
-from systems import Hdot
 
 from mesh.symmetry import get_symetric_elements
 
@@ -30,6 +29,7 @@ from non_linear_solvers.picard_newton import Picard_Newton
 from non_linear_solvers.anderson import Anderson
 
 from properties import instrument_start, instrument_close
+from utilities.utility import gmres_counter
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
             S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
 
-            counter = Hdot.gmres_counter()  # to obtain the number of iteration and residual
+            counter = gmres_counter()  # to obtain the number of iteration and residual
 
             total_vol = (sum(Fr_lstTmStp.w)+ sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea)  # - something
 
@@ -69,7 +69,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
             # solving the system using a left preconditioner
             data = C, Fr_lstTmStp.EltChannel, D_i, S_i
-            system_dot_prod = Hdot.Volume_Control(data)
+            system_dot_prod = Volume_Control_4_gmres(data)
             #begtime_gmres=time.time()
             sol_GMRES = gmres(system_dot_prod, rhs_prec, tol=sim_properties.gmres_tol,
                               maxiter=sim_properties.gmres_maxiter, callback=counter)
