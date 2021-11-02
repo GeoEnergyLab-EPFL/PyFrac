@@ -7,12 +7,13 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# external imports
 import numpy as np
 import logging
 
-# local imports
-from level_set import reconstruct_front_LS_gradient
-from volume_integral import Integral_over_cell
+# internal imports
+from level_set.level_set import reconstruct_front_LS_gradient
+from tip.volume_integral import Integral_over_cell
 
 
 def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist, global_alpha = False):
@@ -1097,47 +1098,4 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
         #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
         return K1c
 
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def TI_plain_strain_modulus(alpha, Cij):
-    """
-    This function computes the plain strain elasticity modulus in transverse isotropic medium. The modulus is a function
-    of the orientation of the fracture front with respect to the bedding plane. This functions is used for the tip
-    inversion and for evaluation of the fracture volume for the case of TI elasticity.
-
-    Arguments:
-        alpha (ndarray-float)             -- the angle inscribed by the perpendiculars drawn on the front from the \
-                                             ribbon cell centers.
-        Cij (ndarray-float)               -- the TI stiffness matrix in the canonical basis
-
-    Returns:
-        E' (ndarray-float)               -- plain strain TI elastic modulus.
-    """
-
-    C11 = Cij[0, 0]
-    C12 = Cij[0, 1]
-    C13 = Cij[0, 2]
-    C33 = Cij[2, 2]
-    C44 = Cij[3, 3]
-
-    # we use the same notation for the elastic paramateres as S. Fata et al. (2013).
-
-    alphag = (C11 * (C11-C12) * np.cos(alpha) ** 4 + (C11 * C13
-                 - C12 * (C13 + 2 * C44)) * (np.cos(alpha) * np.sin(alpha)) ** 2
-                 - (C13 ** 2 - C11 * C33 + 2 * C13 * C44) * np.sin(alpha) ** 4
-                 + C11 * C44 * np.sin(2 * alpha) ** 2) / (C11 * (C11 - C12) * np.cos(alpha) ** 2
-                                                          + 2 * C11 * C44 * np.sin(alpha) ** 2)
-
-    gammag = ((C11 * np.cos(alpha) ** 4 + 2 * C13 * (np.cos(alpha) * np.sin(alpha)) ** 2
-                 + C33 * np.sin(alpha) ** 4 + C44 * np.sin(2 * alpha) ** 2) / C11) ** 0.5
-
-    deltag = ((C11 - C12) * (C11 + C12) * np.cos(alpha) ** 4
-                 + 2 * (C11 - C12) * C13 * (np.cos(alpha) * np.sin(alpha)) ** 2
-                 + (- C13 ** 2 + C11 * C33) * np.sin(alpha) ** 4
-                 + C11 * C44 * np.sin(2 * alpha) ** 2) / (C11 * (2 * (alphag + gammag)) ** 0.5)
-
-    Eprime = 2 * deltag / gammag
-
-    return Eprime
 #-----------------------------------------------------------------------------------------------------------------------

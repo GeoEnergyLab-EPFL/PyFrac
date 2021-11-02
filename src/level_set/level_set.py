@@ -7,7 +7,7 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# local imports
+# external imports
 import numpy as np
 import logging
 import warnings

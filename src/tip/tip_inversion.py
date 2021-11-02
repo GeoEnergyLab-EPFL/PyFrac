@@ -7,13 +7,15 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-import logging
-from properties import instrument_start, instrument_close
+# External imports
 import numpy as np
+import logging
 from scipy.optimize import brentq
 import warnings
 from scipy.optimize import fsolve
+
+# Internal imports
+from properties import instrument_start, instrument_close
 
 
 beta_m = 2**(1/3) * 3**(5/6)

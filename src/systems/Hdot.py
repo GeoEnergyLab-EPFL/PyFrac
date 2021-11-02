@@ -1,13 +1,23 @@
+# -*- coding: utf-8 -*-
+"""
+This file is part of PyFrac.
 
-#external
+Created by Carlo Peruzzo on Tue Nov 2 15:09:38 2021.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
+All rights reserved. See the LICENSE.TXT file for more details.
+"""
+
+# External imports
 import numpy as np
 import timeit
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 from scipy.sparse.linalg import LinearOperator
+# from scipy.sparse.linalg import splu #used for testing purposes
 
-#from scipy.sparse.linalg import splu #used for testing purposes
-import logging
+# Internal imports
+from solid.elasticity_isotropic import get_isotropic_el_self_eff
+
 
 class gmres_counter(object):
     def __init__(self, disp=True):
@@ -142,7 +152,6 @@ class Hdot(LinearOperator):
 
   """
   def __init__(self):
-      import pypart
       from pypart import Bigwhamio
       self.unknowns_number_ = None
       self.matvec_size_ = None
@@ -408,7 +417,7 @@ class Hdot(LinearOperator):
     return self.dtype_
 
 #--------------------------------
-from elasticity import get_isotropic_el_self_eff
+
 
 class Hdot_3DR0opening(LinearOperator):
     """
@@ -416,7 +425,6 @@ class Hdot_3DR0opening(LinearOperator):
 
     """
     def __init__(self):
-        import pypart
         from pypart import Bigwhamio
         self.unknowns_number_ = None
         self.matvec_size_ = None

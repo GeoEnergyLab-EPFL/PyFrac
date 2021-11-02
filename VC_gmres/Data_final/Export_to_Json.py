@@ -1,8 +1,6 @@
-import numpy as np
-from continuous_front_reconstruction import pointtolinedistance
-from utility import setup_logging_to_console
-from visualization import *
-from postprocess_fracture import append_to_json_file
+from utilities.utility import setup_logging_to_console
+from utilities.visualization import *
+from utilities.postprocess_fracture import append_to_json_file
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')

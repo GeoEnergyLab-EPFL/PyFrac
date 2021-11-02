@@ -7,12 +7,14 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-import logging
+# External imports
 import numpy as np
+import logging
 from scipy.optimize import brentq
-from tip_inversion import f, C1, C2
 from scipy.integrate import quad
+
+# Internal imports
+from tip.tip_inversion import f, C1, C2
 
 beta_m = 2**(1/3) * 3**(5/6)
 beta_mtld = 4/(15**(1/4) * (2**0.5 - 1)**(1/4))

@@ -10,21 +10,20 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # imports
 import os
 import time
-import numpy as np
-from datetime import datetime
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from utility import append_new_line
-from pypart import Bigwhamio
-import math
-from utility import setup_logging_to_console
-from Hdot import Hdot_3DR0opening
-from Hdot import gmres_counter
+from fracture.fracture_initialization import Geometry, InitializationParameters
+from utilities.utility import append_new_line
+from utilities.utility import setup_logging_to_console
+from systems.Hdot import Hdot_3DR0opening
+from utilities.postprocess_fracture import load_fractures
+
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
 
@@ -68,7 +67,7 @@ if run:
             print("Compression Ratio of the HMAT : ", C.compressionratio)
 
         else:
-            from elasticity import load_isotropic_elasticity_matrix_toepliz
+            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
@@ -110,10 +109,10 @@ if run:
     if not simulProp.volumeControlGMRES:
         if use_direct_TOEPLITZ:
             simulProp.useBlockToeplizCompression = True
-            from elasticity import load_isotropic_elasticity_matrix_toepliz
+            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
         else:
-            from elasticity import load_isotropic_elasticity_matrix
+            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
             C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
     init_param = InitializationParameters(Fr_geometry, regime='K')
@@ -187,7 +186,7 @@ if run:
 ####################
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
-    from visualization import *
+    from utilities.visualization import *
     #Fr_list, properties = load_fractures(address="./Data/sim_red", step_size=1)
     Fr_list, properties = load_fractures(address="./Data/radial_VC_gmres", step_size=1)
     time_srs = get_fracture_variable(Fr_list, variable='time')                                                 # list of times

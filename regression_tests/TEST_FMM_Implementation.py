@@ -7,14 +7,12 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-import pytest
-
 # local imports
-from mesh import CartesianMesh
+from mesh.mesh import CartesianMesh
 import numpy as np
-from fracture_initialization import get_radial_survey_cells, get_rectangular_survey_cells
-from level_set import SolveFMM
-from FMM import fmm
+from fracture.fracture_initialization import get_radial_survey_cells, get_rectangular_survey_cells
+from level_set.level_set import SolveFMM
+from level_set.FMM import fmm
 
 def evaluate_eikonal_equation_solution(num_solution, analy_solution, mesh, test, tol):
 

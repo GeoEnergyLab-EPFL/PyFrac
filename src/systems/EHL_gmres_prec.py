@@ -7,7 +7,7 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# external
+# External imports
 from scipy.sparse.linalg import LinearOperator
 
 class APrec(LinearOperator):

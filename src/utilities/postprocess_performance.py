@@ -7,12 +7,12 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# External Imports
 import sys
 if "win32" in sys.platform or "win64" in sys.platform:
     slash = "\\"
 else:
     slash = "/"
-
 
 import dill
 import numpy as np
@@ -20,8 +20,9 @@ import logging
 import re
 import os
 
+# internal Imports
 from properties import PlotProperties
-from visualization import plot_variable_vs_time
+from utilities.visualization import plot_variable_vs_time
 
 
 def load_performance_data(address, sim_name='simulation'):

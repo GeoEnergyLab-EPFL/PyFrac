@@ -7,13 +7,11 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# External imports
 import numpy as np
 import matplotlib.pyplot as plt
 import dill
-import copy
-
 import requests
-from tip_inversion import TipAsymInversion
 
 
 def plot_as_matrix(data, mesh, fig=None):

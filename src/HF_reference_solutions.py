@@ -13,14 +13,15 @@ Hydraulic fracture propagation Analytical solutions notably for
     - height contained fractures.
 """
 
-# imports
+# External imports
 import numpy as np
-from numpy import genfromtxt
 from scipy import interpolate
 import warnings
 from scipy import special
 import scipy.integrate as integrate
-from anisotropy import TI_plain_strain_modulus
+
+# Internal imports
+from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
 
 
 def MDR_M_vertex_solution(Eprime, Q0, density, visc, Mesh, R=None, t=None, required='111111'):

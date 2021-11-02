@@ -6,22 +6,21 @@ Created by Carlo Peruzzo on 20.10.21.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+
+# external import
 import logging
 import numpy as np
 from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import gmres, bicgstab
+from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import spilu
 
-# local import
-from elastohydrodynamic_systems import check_covergance
+# internal import
+from systems.sys_back_subst_EHL import check_covergance
 from properties import instrument_start, instrument_close
-from EHL_gmres_prec import APrec
-from Hdot import gmres_counter
+from systems.EHL_gmres_prec import APrec
+from systems.Hdot import gmres_counter
 
 #@profile
-from utility import append_new_line
-
-
 def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
     """
     Anderson solver for non linear system.
@@ -64,7 +63,7 @@ def Anderson(sys_fun, guess, interItr_init, sim_prop, *args, perf_node=None):
         if not sim_prop.EHL_GMRES: (A, b, interItr, indices) = sys_fun(xks[0, ::], interItr, *args)     # assembling A and b
         #else: (A, b, interItr, indices) = sys_fun._getsys(xks[0, ::], interItr, *args)
         else:
-            (A, b, interItr, indices) = sys_fun._getsys_simplif(xks[0, ::], interItr, *args, decay_tshold = 0.68, probability = 0.45)
+            (A, b, interItr, indices) = sys_fun._getsys_simplif(xks[0, ::], interItr, *args, decay_tshold = 0.68, probability = 0.25)
 
         #cond_num.append(np.linalg.cond(A)) #this is expensive to compute! do it only while debugging
 

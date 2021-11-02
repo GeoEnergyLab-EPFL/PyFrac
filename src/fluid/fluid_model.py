@@ -7,10 +7,10 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# external imports
 import numpy as np
 from scipy.special import factorial
 from scipy.optimize import fsolve
-
 
 def FF_YangJoseph_vector(ReNum, rough):
     """
@@ -62,7 +62,8 @@ def FF_YangJoseph_vector(ReNum, rough):
     return ff
 
 
-#######################################
+#-----------------------------------------------------------------------------------------------------------------------
+
 def FF_YangJoseph(ReNum, rough):
     """
     This function approximate the friction factor for the given Reynold's number and the relative roughness float 
@@ -108,6 +109,8 @@ def FF_YangJoseph(ReNum, rough):
 
         return (lamdaS + (lamdaR - lamdaS) / (1 + (ReNum / (45.196502 * rough ** 1.2369807 + 1891)) ** -5) ** 0.5) / 4
 
+#-----------------------------------------------------------------------------------------------------------------------
+
 def FF_Yang_Dou_residual(vbyu, *args):
     """
     The Yang_Dou residual function; to be used by numerical root finder
@@ -130,6 +133,7 @@ def FF_Yang_Dou_residual(vbyu, *args):
         * (alpha * beta * Rstar / (5 + alpha * beta * Rstar)) ** 2 - 2.5 * (alpha * beta * Rstar / (
         5 + alpha * beta * Rstar))))
 
+#-----------------------------------------------------------------------------------------------------------------------
 
 def FF_Yang_Dou(Re, rough):
     """
@@ -222,3 +226,5 @@ def friction_factor_vector(Re, roughness):
         ff[i] = friction_factor_MDR(Re[i], roughness[i])
         # ff[i] = friction_factor_lam_turb_rough(Re[i], roughness[i])
     return ff
+
+#-----------------------------------------------------------------------------------------------------------------------

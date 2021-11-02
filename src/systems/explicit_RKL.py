@@ -7,12 +7,17 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
-from elastohydrodynamic_systems import finiteDiff_operator_laminar, FiniteDiff_operator_turbulent_implicit, Gravity_term
-import copy as cp
+# External imports
 import numpy as np
 import logging
 from math import ceil
 import sys
+import copy as cp
+
+# Internal imports
+from systems.systems_functions import finiteDiff_operator_laminar, FiniteDiff_operator_turbulent_implicit, Gravity_term
+
+
 from properties import instrument_start, instrument_close
 
 s_max = 1000

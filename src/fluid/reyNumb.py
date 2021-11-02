@@ -6,7 +6,10 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-# -----------------------------------------------------------------------------------------------------------------------
+
+# external imports
+import numpy as np
+
 
 def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
     """
@@ -25,17 +28,20 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
         - boolean          -- True if any of the edge between the ribbon and tip cells is turbulent (i.e. Reynolds \
                                number is more than 2100).
     """
+
     # width at the adges by averaging
-    wLftEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 0]]) / 2
-    wRgtEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 1]]) / 2
-    wBtmEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 2]]) / 2
-    wTopEdge = (Fr.w[Fr.EltRibbon] + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 3]]) / 2
+    w_ribbon = Fr.w[Fr.EltRibbon]
+    wLftEdge = (w_ribbon + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 0]]) / 2
+    wRgtEdge = (w_ribbon + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 1]]) / 2
+    wBtmEdge = (w_ribbon + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 2]]) / 2
+    wTopEdge = (w_ribbon + Fr.w[Fr.mesh.NeiElements[Fr.EltRibbon, 3]]) / 2
 
     Re = np.zeros((4, Fr.EltRibbon.size,), dtype=np.float64)
-    Re[0, :] = 4 / 3 * fluid.density * wLftEdge * vel[0, Fr.EltRibbon] / fluid.viscosity
-    Re[1, :] = 4 / 3 * fluid.density * wRgtEdge * vel[1, Fr.EltRibbon] / fluid.viscosity
-    Re[2, :] = 4 / 3 * fluid.density * wBtmEdge * vel[2, Fr.EltRibbon] / fluid.viscosity
-    Re[3, :] = 4 / 3 * fluid.density * wTopEdge * vel[3, Fr.EltRibbon] / fluid.viscosity
+    const = 4. / 3. * fluid.density / fluid.viscosity
+    Re[0, :] = const * wLftEdge * vel[0, Fr.EltRibbon]
+    Re[1, :] = const * wRgtEdge * vel[1, Fr.EltRibbon]
+    Re[2, :] = const * wBtmEdge * vel[2, Fr.EltRibbon]
+    Re[3, :] = const * wTopEdge * vel[3, Fr.EltRibbon]
 
     ReNum_Ribbon = []
     # adding Reynolds number of the edges between the ribbon and tip cells to a list
@@ -46,18 +52,19 @@ def turbulence_check_tip(vel, Fr, fluid, return_ReyNumb=False):
                 ReNum_Ribbon = np.append(ReNum_Ribbon, Re[j, i])
 
     if return_ReyNumb:
-        wLftEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 0]]) / 2
-        wRgtEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 1]]) / 2
-        wBtmEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 2]]) / 2
-        wTopEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 3]]) / 2
+        wLftEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 0]]) / 2.
+        wRgtEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 1]]) / 2.
+        wBtmEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 2]]) / 2.
+        wTopEdge = (Fr.w[Fr.EltCrack] + Fr.w[Fr.mesh.NeiElements[Fr.EltCrack, 3]]) / 2.
 
         Re = np.zeros((4, Fr.mesh.NumberOfElts,), dtype=np.float64)
-        Re[0, Fr.EltCrack] = 4 / 3 * fluid.density * wLftEdge * vel[0, Fr.EltCrack] / fluid.viscosity
-        Re[1, Fr.EltCrack] = 4 / 3 * fluid.density * wRgtEdge * vel[1, Fr.EltCrack] / fluid.viscosity
-        Re[2, Fr.EltCrack] = 4 / 3 * fluid.density * wBtmEdge * vel[2, Fr.EltCrack] / fluid.viscosity
-        Re[3, Fr.EltCrack] = 4 / 3 * fluid.density * wTopEdge * vel[3, Fr.EltCrack] / fluid.viscosity
+        Re[0, Fr.EltCrack] = const * wLftEdge * vel[0, Fr.EltCrack]
+        Re[1, Fr.EltCrack] = const * wRgtEdge * vel[1, Fr.EltCrack]
+        Re[2, Fr.EltCrack] = const * wBtmEdge * vel[2, Fr.EltCrack]
+        Re[3, Fr.EltCrack] = const * wTopEdge * vel[3, Fr.EltCrack]
 
         return Re, (ReNum_Ribbon > 2100.).any()
     else:
         return (ReNum_Ribbon > 2100.).any()
 
+#-----------------------------------------------------------------------------------------------------------------------

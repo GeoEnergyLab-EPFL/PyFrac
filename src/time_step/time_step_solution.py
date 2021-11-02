@@ -7,13 +7,19 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# local imports
-from level_set import  get_front_region
-from continuous_front_reconstruction import  you_advance_more_than_2_cells
-from properties import IterationProperties
-from labels import TS_errorMessages
+# External imports
+import numpy as np
+import logging
+
+# Internal imports
+from level_set.continuous_front_reconstruction import you_advance_more_than_2_cells
+from utilities.labels import TS_errorMessages
 from time_step.ts_explicit_front import time_step_explicit_front
-from time_step.ts_implicit_front import *
+from time_step.ts_implicit_front import injection_same_footprint, injection_extended_footprint
+from level_set.level_set import get_front_region
+from level_set.anisotropy import projection_from_ribbon_LS_gradient_at_tip, get_toughness_from_cellCenter_iter
+from properties import IterationProperties, instrument_start, instrument_close
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_properties, inj_properties,

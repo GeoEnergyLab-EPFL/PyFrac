@@ -7,9 +7,9 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# local
-import logging
+# External imports
 import numpy as np
+import logging
 from scipy.interpolate import griddata
 import dill
 import os
@@ -17,9 +17,11 @@ import re
 import sys
 import json
 
-from utility import ReadFracture
+# Internal Imports
+from systems.systems_functions import calculate_fluid_flow_characteristics_laminar
+from utilities.utility import ReadFracture
 from HF_reference_solutions import HF_analytical_sol, get_fracture_dimensions_analytical
-from labels import *
+from utilities.labels import *
 # import FractureInitialization
 
 
@@ -686,7 +688,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                                                   samp_cell=samp_cell,
                                                                                   gamma=gamma)
 
-                from mesh import CartesianMesh
+                from mesh.mesh import CartesianMesh
                 mesh_i = CartesianMesh(x_len, y_len, 151, 151)
             else:
                 mesh_i = mesh
@@ -766,7 +768,7 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
     else:
         srs_length = len(length_srs)
 
-    from mesh import CartesianMesh
+    from mesh.mesh import CartesianMesh
     if point[0] == 0.:
         mesh_Lx = 1.
     else:
@@ -1429,7 +1431,6 @@ def get_fracture_fp(fr_list):
     return fp_list
 
 #-----------------------------------------------------------------------------------------------------------------------
-from elastohydrodynamic_systems import calculate_fluid_flow_characteristics_laminar
 
 def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
     """This function gets the velocity components of the fluid flux for a given list of fractures
