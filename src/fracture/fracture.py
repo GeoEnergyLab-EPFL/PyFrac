@@ -18,6 +18,7 @@ import scipy
 from scipy.interpolate import griddata
 
 # internal imports
+from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
 from mesh.remesh import mapping_old_indexes
 
 from tip.volume_integral import find_corresponding_ribbon_cell, Pdistance, leak_off_stagnant_tip
@@ -25,7 +26,8 @@ from tip.tip_inversion import StressIntensityFactor
 
 from level_set.anisotropy import *
 from level_set.continuous_front_reconstruction import UpdateListsFromContinuousFrontRec
-from level_set.level_set import get_front_region,  UpdateLists
+from level_set.level_set_utils import get_front_region
+from level_set.discontinuous_front_reconstruction import UpdateLists
 from level_set.FMM import fmm
 
 from fracture.fracture_initialization import get_survey_points, get_width_pressure, generate_footprint, \

@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # External imports
 import numpy as np
+from scipy.sparse.linalg import LinearOperator
 
 def MakeEquationSystem_volumeControl_symmetric(w_lst_tmstp, wTip_sym, EltChannel_sym, EltTip_sym, C_s, dt, Q, sigma_o,
                                                           ElemArea, LkOff, vol_weights, sym_elements, dwTip):
@@ -123,4 +124,53 @@ def MakeEquationSystem_mechLoading(wTip, EltChannel, EltTip, C, EltLoaded, w_loa
     S = np.append(S, w_loaded)
 
     return A, S
+
+
 #-----------------------------------------------------------------------------------------------------------------------
+
+class Volume_Control_4_gmres(LinearOperator):
+    """
+    This class provides the dot product for a volume control system i.e.
+
+       CC0  CC01|  1    w     sigma0
+                |  1    w     sigma0
+       CC10 CC1 |  1    w     sigma0
+       --------------   ---   --------
+       -1 -1 -1  0      p0    Q00*Dt/A
+
+
+    this is left preconditioned i.e.:
+    P(-1) . A . x = P(-1) . b
+
+    P(-1) -> preconditioner
+    A -> matrix of the system
+    """
+
+    def __init__(self,data):
+        HmatC, EltChannel, D_i, S_i = data
+        self.HmatC = HmatC
+        self.HmatC._set_domain_IDX(EltChannel)
+        self.HmatC._set_codomain_IDX(EltChannel)
+        self.D_i = D_i
+        self.S_i = S_i
+        self.EltChannel = EltChannel
+        self.NiC = EltChannel.size # number of elem in the channel
+
+        # it is mandatory to define shape and dtype
+        self.shape_ = (self.NiC + 1, self.NiC + 1)
+        self.dtype_ = float
+        super().__init__(self.dtype_, self.shape_)
+
+    def _matvec(self, xk):
+
+        yk = self.HmatC._matvec(xk[0:self.NiC])
+
+        # construction of A*xk
+        gp1 = yk - np.ones(self.NiC) * xk[-1]              # E*x_1+[1...1](vertical)x_2
+        gp2 = np.sum(xk[0:self.NiC])                       # [1...1](horiz)x_1
+
+        # construction of P^-1*(A*xk)
+        b1=self.D_i * gp1 + self.S_i * self.D_i * gp2 * np.ones(self.NiC)  # D_e^-1*(E*x_1+[1...1](vertical)x_2)-S^-1*D_e^-1*[1...1](horiz)x_1
+        b2=self.S_i * gp2                                     # S^-1*[1...1](horiz)x_1
+
+        return np.concatenate((b1,np.asarray([b2])))

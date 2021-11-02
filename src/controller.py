@@ -33,7 +33,7 @@ from utilities.visualization import plot_footprint_analytical, plot_analytical_s
                           plot_injection_source, get_elements
 from utilities.labels import TS_errorMessages, supported_projections, suitable_elements
 
-from systems.Hdot import Hdot_3DR0opening
+from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from custom_functions import *
 
 class Controller:

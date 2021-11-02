@@ -16,7 +16,7 @@ import math
 import sys
 
 # internal imports
-from level_set.level_set import reconstruct_front, UpdateLists
+from level_set.discontinuous_front_reconstruction import reconstruct_front, UpdateLists
 from level_set.FMM import fmm
 from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, \
     get_xy_from_Ffront, get_cells_in_neighborhood, \
@@ -24,7 +24,7 @@ from level_set.continuous_front_reconstruction import reconstruct_front_continuo
 
 from tip.volume_integral import Integral_over_cell
 from solid.elasticity_isotropic_symmetric import self_influence
-from systems.Hdot import gmres_counter
+from utilities.utility import gmres_counter
 from scipy.optimize import least_squares
 
 
@@ -247,7 +247,6 @@ def get_intersections(mesh_new,Ffront_old):
     :param Ffront_old:
     :return:
     """
-    from level_set.level_set import get_cells_inside_circle
     Ffront_new = []
     EltTip = []
 
@@ -267,8 +266,8 @@ def get_intersections(mesh_new,Ffront_old):
 
         # get a band of cells where the old front is passing
         dist_max = np.maximum(1.2 * Lseg, mesh_new.cellDiag)
-        elem_around_1st_vertex = get_cells_inside_circle(mesh_new, dist_max, [segment[0], segment[1]])
-        elem_around_2nd_vertex = get_cells_inside_circle(mesh_new, dist_max, [segment[2], segment[3]])
+        elem_around_1st_vertex = mesh_new.get_cells_inside_circle(dist_max, [segment[0], segment[1]])
+        elem_around_2nd_vertex = mesh_new.get_cells_inside_circle(dist_max, [segment[2], segment[3]])
 
         # take the elements in the intersection of the two circles
         elems = np.unique(elem_around_1st_vertex + elem_around_2nd_vertex)

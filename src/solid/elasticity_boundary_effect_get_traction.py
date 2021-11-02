@@ -6,14 +6,17 @@ Created by Carlo Peruzzo on Tue Nov 2 15:09:38 2021.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+
 # External imports
+import numpy as np
 import logging
 import copy
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import lgmres
 
 # Internal Imports
-from systems.Hdot import *
+from utilities.utility import getMemUse, gmres_counter
+from solid.elasticity_boundary_effect_HMAT_hook import Mdot, Hdot
 
 class BoundaryEffect:
     """
