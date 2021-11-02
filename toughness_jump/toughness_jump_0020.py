@@ -8,12 +8,15 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from utility import setup_logging_to_console
+from fracture.fracture_initialization import Geometry, InitializationParameters
+from utilities.utility import setup_logging_to_console
+from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
@@ -122,8 +125,8 @@ if run:
 # print the max curvature                         #
 #                                                 #
 ###################################################
-from visualization import *
-from continuous_front_reconstruction import pointtolinedistance
+from utilities.visualization import *
+from level_set.level_set import pointtolinedistance
 # loading simulation results
 Fr_list, properties = load_fractures(address=myfolder,load_all=True)       # load all fractures
 time_srs = get_fracture_variable(Fr_list, variable='time')                                                  # list of times
@@ -179,7 +182,7 @@ print("\n")
 ####################
 plot = True
 if plot:
-    from visualization import *
+    from utilities.visualization import *
 
     # loading simulation results
     Fr_list, properties = load_fractures(address=myfolder,step_size=20,load_all=True)       # load all fractures
@@ -273,8 +276,8 @@ if export_results:
 
     # 0) import some functions needed later
     if 1 in to_export:
-        from visualization import *
-        from postprocess_fracture import append_to_json_file
+        from utilities.visualization import *
+        from utilities.postprocess_fracture import append_to_json_file
 
 
     # 1) decide the names of the Json files:
@@ -447,7 +450,7 @@ if export_results:
     # 9) get ux(x) along a horizontal line passing through mypoint for different times
     if 9 in to_export:
         print("\n 7) writing ux, qx")
-        from postprocess_fracture import get_velocity_slice
+        from utilities.postprocess_fracture import get_velocity_slice
         my_X = 0.01; my_Y = 0.
         ux_val, ux_times, ux_coord_x = get_velocity_slice(Solid, Fluid, Fr_list, [my_X, my_Y], orientation='horizontal')
         towrite = {'ux_horizontal_y0_value': ux_val,
@@ -461,7 +464,7 @@ if export_results:
     # 10) get uy(y) along a vertical line passing through mypoint for different times
     if 10 in to_export:
         print("\n 8) writing uy, qy")
-        from postprocess_fracture import get_velocity_slice
+        from utilities.postprocess_fracture import get_velocity_slice
         my_X = 0.01; my_Y = 0.
         uy_val, uy_times, uy_coord_y = get_velocity_slice(Solid, Fluid, Fr_list, [my_X, my_Y], vel_direction='uy',
                                                           orientation='vertical')

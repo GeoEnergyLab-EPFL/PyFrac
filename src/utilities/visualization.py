@@ -6,6 +6,9 @@ Created by Haseeb Zia on Friday, July 06, 2018.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020. All rights
 reserved. See the LICENSE.TXT file for more details.
 """
+
+# External imports
+import numpy as np
 import logging
 import math
 import matplotlib.pyplot as plt
@@ -16,13 +19,11 @@ import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 import copy
-import pickle
-import io
 
-# local imports
-from postprocess_fracture import *
+# Internal imports
+from utilities.postprocess_fracture import griddata, err_msg_variable, get_HF_analytical_solution_at_point, get_fracture_variable, bidimensional_variables, get_HF_analytical_solution, get_fracture_dimensions_analytical, get_fracture_variable_at_point
 from properties import PlotProperties, LabelProperties
-from labels import supported_variables, supported_projections, \
+from utilities.labels import supported_variables, supported_projections, \
                    unidimensional_variables, suitable_elements
 
 

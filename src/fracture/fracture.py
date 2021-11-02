@@ -7,33 +7,38 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
-import logging
+# external imports
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import mpl_toolkits.mplot3d.art3d as art3d
 import matplotlib.pyplot as plt
 import dill
-import numpy as np
 import math
-import copy
 import scipy
 from scipy.interpolate import griddata
-from elasticity import mapping_old_indexes
-from volume_integral import Integral_over_cell, find_corresponding_ribbon_cell, Pdistance, leak_off_stagnant_tip
-from anisotropy import *
-from continuous_front_reconstruction import UpdateListsFromContinuousFrontRec
-from tip_inversion import StressIntensityFactor
 
-from level_set import get_front_region,  UpdateLists
-from fracture_initialization import get_survey_points, get_width_pressure, generate_footprint, \
+# internal imports
+from mesh.remesh import mapping_old_indexes
+
+from tip.volume_integral import find_corresponding_ribbon_cell, Pdistance, leak_off_stagnant_tip
+from tip.tip_inversion import StressIntensityFactor
+
+from level_set.anisotropy import *
+from level_set.continuous_front_reconstruction import UpdateListsFromContinuousFrontRec
+from level_set.level_set import get_front_region,  UpdateLists
+from level_set.FMM import fmm
+
+from fracture.fracture_initialization import get_survey_points, get_width_pressure, generate_footprint, \
     generate_footprint_from_Ffront
-from fracture_initialization import Geometry, InitializationParameters
+from fracture.fracture_initialization import Geometry, InitializationParameters
+
 from HF_reference_solutions import HF_analytical_sol
-from visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory
-from labels import unidimensional_variables
+
+from utilities.visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory
+from utilities.labels import unidimensional_variables
+
 from properties import PlotProperties
-from FMM import fmm
+
 
 
 class Fracture:
@@ -1356,7 +1361,7 @@ class Fracture:
         Fr.mesh = newMesh # the new mesh
 
         #plot the new front and the old one together
-        from continuous_front_reconstruction import plot_xy_points, get_xy_from_Ffront
+        from level_set.continuous_front_reconstruction import plot_xy_points, get_xy_from_Ffront
         x, y = get_xy_from_Ffront(Fr.Ffront)
         plot_xy_points(Fr.front_region, newMesh, Fr.sgndDist, Fr.EltRibbon, x, y, fig=None, annotate_cellName=False,
                        annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=oldfront, joinPoints=True,
@@ -1416,3 +1421,5 @@ class Fracture:
                 Nmtilde = 0
 
             self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
+
+# -----------------------------------------------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import os
-import numpy as np
 
-from visualization import *
+from utilities.visualization import *
+from utilities.postprocess_fracture import load_fractures
 output_fol = "./Data/radial_VC_gmres_res"
 
 # loading simulation results A

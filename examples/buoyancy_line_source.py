@@ -7,17 +7,20 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import os
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
-from elasticity import load_isotropic_elasticity_matrix
-from utility import setup_logging_to_console
+from fracture.fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+from utilities.utility import setup_logging_to_console
+from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
@@ -107,7 +110,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from visualization import *
+    from utilities.visualization import *
 
     # loading simulation results
     time_srs = np.linspace(1, 1e4, 7)

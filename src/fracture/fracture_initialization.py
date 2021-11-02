@@ -6,23 +6,25 @@ Created by Haseeb Zia on Wed Aug 09 16:22:33 2016.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-import logging
 
-from EHL_gmres_prec import APrec
-from scipy.sparse.linalg import gmres, spilu, bicgstab
-from scipy.sparse import csc_matrix
+# external imports
 import numpy as np
-import copy
+import logging
+from scipy.sparse.linalg import gmres
+from scipy.sparse import csc_matrix
 import math
 import sys
-from level_set import SolveFMM, reconstruct_front, UpdateLists, get_front_region
-from volume_integral import Integral_over_cell
-from symmetry import self_influence
-from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, \
-    plot_cell_lists, plot_xy_points, plot_just_xy_points, get_xy_from_Ffront, get_cells_in_neighborhood, \
+
+# internal imports
+from level_set.level_set import reconstruct_front, UpdateLists
+from level_set.FMM import fmm
+from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, \
+    get_xy_from_Ffront, get_cells_in_neighborhood, \
     ray_tracing_numpy
-from Hdot import gmres_counter
-from FMM import fmm
+
+from tip.volume_integral import Integral_over_cell
+from solid.elasticity_isotropic_symmetric import self_influence
+from systems.Hdot import gmres_counter
 from scipy.optimize import least_squares
 
 
@@ -245,7 +247,7 @@ def get_intersections(mesh_new,Ffront_old):
     :param Ffront_old:
     :return:
     """
-    from level_set import get_cells_inside_circle
+    from level_set.level_set import get_cells_inside_circle
     Ffront_new = []
     EltTip = []
 

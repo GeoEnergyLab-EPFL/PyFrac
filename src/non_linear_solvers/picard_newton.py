@@ -7,12 +7,14 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+#external imports
 import numpy as np
 import logging
 
-# local import
-from elastohydrodynamic_systems import check_covergance, Elastohydrodynamic_ResidualFun
+# internal imports
+from systems.sys_back_subst_EHL import check_covergance, Elastohydrodynamic_ResidualFun
 from properties import instrument_start, instrument_close
+
 
 def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args,
                   PicardPerNewton=1000, perf_node=None):

@@ -7,18 +7,21 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 2016-2019. All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import numpy as np
 import os
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from anisotropy import TI_plain_strain_modulus
-from utility import setup_logging_to_console
+from fracture.fracture_initialization import Geometry, InitializationParameters
+from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
+from utilities.utility import setup_logging_to_console
+from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
@@ -123,7 +126,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from visualization import *
+    from utilities.visualization import *
 
     # loading simulation results
     time_srs = np.geomspace(0.7, 1000, 8)

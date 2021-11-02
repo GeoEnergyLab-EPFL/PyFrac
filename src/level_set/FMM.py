@@ -6,13 +6,16 @@ Created by Andreas Möri.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2021.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+
+# external imports
+import numpy as np
+import heapq
+
+
 # TODO: For now we need a PyFrac mesh object --> Generalize
 # TODO: Implement the possibility of adding a Velocity field
 # TODO: allow to pass a function to solve for (not necessarily the distance funciton of the level set)
 
-# imports
-import heapq
-import numpy as np
 
 # TODO: speed it up with numba @jitclass(spec). See https://numba.pydata.org/numba-doc/dev/user/jitclass.html
 # from numba import int32, float32, float64    # import the types

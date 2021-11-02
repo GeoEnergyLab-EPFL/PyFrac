@@ -1,13 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+This file is part of PyFrac.
 
-#external
-import numpy as np
+Created by Carlo Peruzzo on Tue Nov 2 15:09:38 2021.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2020.
+All rights reserved. See the LICENSE.TXT file for more details.
+"""
+# External imports
+import logging
 import copy
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import lgmres
-import logging
 
-#local
-from Hdot import *
+# Internal Imports
+from systems.Hdot import *
 
 class BoundaryEffect:
     """

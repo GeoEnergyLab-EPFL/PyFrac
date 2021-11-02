@@ -6,26 +6,34 @@ Created by Haseeb Zia on 03.04.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-#import time
-import time
-
-from scipy.sparse.linalg import gmres
-import logging
+# External imports
 import numpy as np
-# local imports
-from elastohydrodynamic_systems import velocity, MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse, \
-    MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP, ADot, \
-    MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted, \
-    MakeEquationSystem_volumeControl, MakeEquationSystem_volumeControl_double_fracture, \
+import logging
+import time
+from scipy.sparse.linalg import gmres
+
+
+
+# Internal imports
+from systems.sys_volume_and_load_control import MakeEquationSystem_volumeControl, MakeEquationSystem_volumeControl_double_fracture, \
     MakeEquationSystem_volumeControl_symmetric
-from symmetry import get_symetric_elements
-from explicit_RKL import solve_width_pressure_RKL2
+from systems.sys_back_subst_EHL import MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse, \
+    MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP, ADot, \
+    MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted
+from systems.explicit_RKL import solve_width_pressure_RKL2
+from systems.systems_functions import velocity
+from systems import Hdot
+
+from mesh.symmetry import get_symetric_elements
+
 from non_linear_solvers.picard_newton import Picard_Newton
 from non_linear_solvers.anderson import Anderson
-import Hdot
-from properties import IterationProperties, instrument_start, instrument_close
+
+from properties import instrument_start, instrument_close
+
+
 # ----------------------------------------------------------------------------------------------------------------------
-from utility import append_new_line
+
 
 
 def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
@@ -506,8 +514,8 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                              sim_properties,
                                              *arg,
                                              perf_node=perfNode_widthConstrItr)
-                    Ander_time = Ander_time + time.time()
-                    #file_name = '/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_random_E/iterT.csv'
+                    #Ander_time = Ander_time + time.time()
+                    #file_name = '/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_random_E/iterT_25.csv'
                     #append_new_line(file_name, str(sys_size)+','+str(Ander_time))
                 elif sim_properties.elastohydrSolver == 'JacobianFreeNewton':
                     log.error("NOT YET IMPLEMENTED!")

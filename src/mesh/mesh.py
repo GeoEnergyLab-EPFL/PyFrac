@@ -7,19 +7,22 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 See the LICENSE.TXT file for more details.
 """
 
-# import
+# external imports
+import numpy as np
+import logging
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
 from matplotlib.colors import to_rgb
 from matplotlib.collections import PatchCollection
-from properties import PlotProperties
 
-from visualization import zoom_factory, to_precision, text3d
-from symmetry import *
-import numpy as np
-import logging
+# internal imports
+from properties import PlotProperties
+from utilities.visualization import zoom_factory, to_precision, text3d
+from mesh.symmetry import *
+
+
 
 class CartesianMesh:
     """Class defining a Cartesian Mesh.

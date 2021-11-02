@@ -6,15 +6,13 @@ Created by Carlo Peruzzo on 01.09.20.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-import matplotlib.pyplot
-import pytest
 
 # local imports
-from fracture_initialization import get_radial_survey_cells
-from mesh import CartesianMesh
+from fracture.fracture_initialization import get_radial_survey_cells
+from mesh.mesh import CartesianMesh
 import numpy as np
-from elasticity import load_isotropic_elasticity_matrix
-from elasticity import load_isotropic_elasticity_matrix_toepliz
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 def common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=False):
 

@@ -7,14 +7,16 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# external imports
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from properties import PlotProperties
 from matplotlib.collections import PatchCollection
-from level_set import *
-from FMM import fmm
+
+# internal imports
+from properties import PlotProperties
+from level_set.FMM import fmm
 
 def plotgrid(mesh,ax):
     """Plots the 2D mesh grid
@@ -440,7 +442,7 @@ def plot_final_reconstruction(mesh,
                               oldfront = None):
     A = np.full(mesh.NumberOfElts, np.nan)
     A[anularegion] = sgndDist_k[anularegion]
-    from visualization import plot_fracture_variable_as_image
+    from utilities.visualization import plot_fracture_variable_as_image
     figure = plot_fracture_variable_as_image(A, mesh)
     ax = figure.get_axes()[0]
     for iiii in range(len(list_of_vertexID)):
@@ -488,7 +490,7 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
             ax = fig.add_subplot(111)
             A = np.full(mesh.NumberOfElts, np.nan)
             A[anularegion] = sgndDist_k[anularegion]
-            from visualization import plot_fracture_variable_as_image
+            from utilities.visualization import plot_fracture_variable_as_image
             fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
         else:
             ax = fig.get_axes()[0]
@@ -557,7 +559,7 @@ def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True, ce
         fig = plt.figure()
         ax = fig.add_subplot(111)
         A = np.full(mesh.NumberOfElts, 0.)
-        from visualization import plot_fracture_variable_as_image
+        from utilities.visualization import plot_fracture_variable_as_image
         fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
     else:
         ax = fig.get_axes()[0]
@@ -589,7 +591,7 @@ def plot_cells(anularegion,mesh,sgndDist_k, Ribbon,list,fig=None, annotate_cellN
         ax = fig.add_subplot(111)
         A = np.full(mesh.NumberOfElts, np.nan)
         A[anularegion] = sgndDist_k[anularegion]
-        from visualization import plot_fracture_variable_as_image
+        from utilities.visualization import plot_fracture_variable_as_image
 
         fig = plot_fracture_variable_as_image(A, mesh, fig=fig)
     else:

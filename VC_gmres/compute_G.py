@@ -1,9 +1,10 @@
-from Hdot import gmres_counter
+from systems.Hdot import gmres_counter
 from scipy.sparse.linalg import gmres
-from scipy.sparse.linalg import lgmres
-from utility import setup_logging_to_console
-from visualization import *
-from elasticity import load_isotropic_elasticity_matrix_toepliz
+from utilities.utility import setup_logging_to_console
+from utilities.visualization import *
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
+from utilities.postprocess_fracture import load_fractures, append_to_json_file
+
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
 
