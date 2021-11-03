@@ -565,7 +565,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
         return A, S, interItr_kp1, indices, wcNplusHalf, FinDiffOprtr.tocsr()
 
 # -----------------------------------------------------------------------------------------------------------------------
-class ADot(LinearOperator):
+class EHL_sys_obj(LinearOperator):
   # TESTED FOR NEWTONIAN FLUIDS ONLY!
   def __init__(self, system_dim, dtype=np.float64):
     self.dtype_ = dtype
@@ -711,7 +711,12 @@ class ADot(LinearOperator):
                      dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea + \
                      - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
-      return S, interItr_kp1
+
+      # indices of solved width, pressure and active width constraint in the solution
+      to_del = []
+      indices = [ch_indxs, tip_indxs, act_indxs, to_del]
+      # S is the right hand side vector
+      return S, interItr_kp1, indices
 
   @property
   def _init_shape(self):

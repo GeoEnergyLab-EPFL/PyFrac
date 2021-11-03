@@ -15,7 +15,8 @@ from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import lgmres
 
 # Internal Imports
-from utilities.utility import getMemUse, gmres_counter
+from utilities.utility import getMemUse
+from linear_solvers.linear_iterative_solver import iteration_counter
 from solid.elasticity_boundary_effect_HMAT_hook import Mdot, Hdot
 
 class BoundaryEffect:
@@ -287,7 +288,7 @@ class BoundaryEffect:
         # The output indexes are already set to be self.boundaryINDX
 
         # - solve for the boundary displacement discontinuities
-        counter = gmres_counter()
+        counter = iteration_counter(log)
 
         rhs = - rhs + self.Pu[RhsOUTindx]
         maxiter = 500

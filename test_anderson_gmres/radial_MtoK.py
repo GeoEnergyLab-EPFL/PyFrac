@@ -57,6 +57,7 @@ simulProp.plotVar = ['regime', 'w']
 simulProp.EHL_GMRES = True
 simulProp.useBlockToeplizCompression = True
 simulProp.frontAdvancing = 'implicit'
+simulProp.elastohydrSolver = 'implicit_Picard'
 
 # initializing fracture
 Fr_geometry = Geometry('radial',radius=1.598)
