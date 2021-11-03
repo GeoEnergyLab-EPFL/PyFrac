@@ -24,7 +24,7 @@ from level_set.continuous_front_reconstruction import reconstruct_front_continuo
 
 from tip.volume_integral import Integral_over_cell
 from solid.elasticity_isotropic_symmetric import self_influence
-from utilities.utility import gmres_counter
+from linear_solvers.linear_iterative_solver import iteration_counter
 from scipy.optimize import least_squares
 
 
@@ -1089,7 +1089,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
             if w is None and not p is None:
                 # solving the system using no preconditioner
                 rhs = p_calculated[EltCrack]
-                counter = gmres_counter()  # to obtain the number of iteration and residual
+                counter = iteration_counter(log)  # to obtain the number of iteration and residual
                 sol_GMRES = gmres(C, rhs, tol=gmres_tol, maxiter=gmres_maxiter, callback=counter)
 
                 # check convergence

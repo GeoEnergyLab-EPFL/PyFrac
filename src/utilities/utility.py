@@ -13,20 +13,6 @@ import matplotlib.pyplot as plt
 import dill
 import requests
 
-class gmres_counter(object):
-    def __init__(self, disp=True):
-        self._disp = disp
-        self.niter = 0
-        self.threshold = 100
-    def __call__(self, rk=None):
-        self.niter += 1
-        if self._disp:
-            if self.niter == self.threshold:
-                print('WARNING: GMRES has not converged in '+str(self.niter)+' iter, monitoring the residual')
-            if self.niter > self.threshold:
-                print('iter %3i\trk = %s' % (self.niter, str(rk)))
-
-#-----------------------------------------------------------------------------------------------------------------------
 
 def getMemUse():
     # some memory statistics

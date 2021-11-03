@@ -13,7 +13,6 @@ import logging
 import time
 import datetime
 import random
-import math
 from matplotlib.colors import to_rgb
 
 # Internal imports
@@ -493,6 +492,7 @@ class SimulationProperties:
         self.tolerancewIncr = simul_param.tolerancewIncr
         self.gmres_tol = simul_param.gmres_tol
         self.gmres_maxiter = simul_param.gmres_maxiter
+        self.gmres_Restart = simul_param.gmresRestart
 
         # max iterations
         self.maxFrontItrs = simul_param.max_front_itrs

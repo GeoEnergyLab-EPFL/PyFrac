@@ -18,7 +18,7 @@ from scipy.sparse.linalg import gmres
 from systems.sys_volume_and_load_control import MakeEquationSystem_volumeControl, MakeEquationSystem_volumeControl_double_fracture, \
     MakeEquationSystem_volumeControl_symmetric, Volume_Control_4_gmres
 from systems.sys_back_subst_EHL import MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse, \
-    MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP, ADot, \
+    MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP, EHL_sys_obj, \
     MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted
 from systems.explicit_RKL import solve_width_pressure_RKL2
 from systems.systems_functions import velocity
@@ -29,8 +29,10 @@ from non_linear_solvers.picard_newton import Picard_Newton
 from non_linear_solvers.anderson import Anderson
 
 from properties import instrument_start, instrument_close
-from utilities.utility import gmres_counter
 
+from linear_solvers.linear_direct_solver import Direct_linear_solver
+from linear_solvers.linear_iterative_solver import Iterative_linear_solver, iteration_counter
+from linear_solvers.preconditioners.prec_back_subst_EHL import EHL_iLU_Prec
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -52,7 +54,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
             S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
 
-            counter = gmres_counter()  # to obtain the number of iteration and residual
+            counter = iteration_counter(log)  # to obtain the number of iteration and residual
 
             total_vol = (sum(Fr_lstTmStp.w)+ sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea)  # - something
 
@@ -469,7 +471,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     sys_size = len(to_solve_k) + len(pf_guess_neg) + len(pf_guess_tip)
                     if sim_properties.solveSparse:
                         if sim_properties.EHL_GMRES:
-                            sys_fun = ADot(sys_size, dtype=np.float64)
+                            sys_fun = EHL_sys_obj(sys_size, dtype=np.float64)
                         else:
                             sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
                     else:
@@ -494,12 +496,17 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
                 inter_itr_init = [vk, np.array([], dtype=int), None]
 
+                if sim_properties.EHL_GMRES:
+                    linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol, sim_properties.gmres_maxiter, sim_properties.gmres_Restart, prec_func = EHL_iLU_Prec)
+                else:
+                    linear_solver = Direct_linear_solver(sys_fun)
+
                 if sim_properties.elastohydrSolver == 'implicit_Picard':
 
                     typValue = np.copy(guess)
 
                     sol, data_nonLinSolve = Picard_Newton(None,
-                                           sys_fun,
+                                           linear_solver,
                                            guess,
                                            typValue,
                                            inter_itr_init,
@@ -508,7 +515,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                            perf_node=perfNode_widthConstrItr)
                 elif sim_properties.elastohydrSolver == 'implicit_Anderson':
                     #Ander_time = -time.time()
-                    sol, data_nonLinSolve = Anderson(sys_fun,
+                    sol, data_nonLinSolve = Anderson(linear_solver,
                                              guess,
                                              inter_itr_init,
                                              sim_properties,

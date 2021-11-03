@@ -10,20 +10,20 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # External imports
 from scipy.sparse.linalg import LinearOperator
 
-class APrec(LinearOperator):
-  def __init__(self, EHL_iLU):
+class Preconditioner(LinearOperator):
+  def __init__(self, prec_csc_matrix):
     self.dtype_ = float
-    self.shape_ = EHL_iLU.shape
-    self.EHL_iLU = EHL_iLU
+    self.shape_ = prec_csc_matrix.shape
+    self.prec_csc_matrix = prec_csc_matrix
     super().__init__(self.dtype_, self.shape_)
 
   def _matvec(self, v):
     """
     This function implements the dot product.
     :param v: vector expected to be of size unknowns_number_
-    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    :return: prec_csc_matrix.v, where prec_csc_matrix is a precoditioner matrix
     """
-    return self.EHL_iLU.solve(v)
+    return self.prec_csc_matrix.solve(v)
 
   @property
   def _init_shape(self):

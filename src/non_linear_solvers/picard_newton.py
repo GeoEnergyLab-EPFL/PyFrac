@@ -16,15 +16,14 @@ from systems.sys_back_subst_EHL import check_covergance, Elastohydrodynamic_Resi
 from properties import instrument_start, instrument_close
 
 
-def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *args,
+def Picard_Newton(Res_fun, linear_solver, guess, TypValue, interItr_init, sim_prop, *args,
                   PicardPerNewton=1000, perf_node=None):
     """
     Mixed Picard Newton solver for nonlinear systems.
 
     Args:
         Res_fun (function):                 -- The function calculating the residual.
-        sys_fun (function):                 -- The function giving the system A, b for the Picard solver to solve the
-                                               linear system of the form Ax=b.
+        linear_solver (Linear_solver):      -- An object creating and solving the linear system A(x) * x = b(x).
         guess (ndarray):                    -- The initial guess.
         TypValue (ndarray):                 -- Typical value of the variable to estimate the Epsilon to calculate
                                                Jacobian.
@@ -54,27 +53,29 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
 
         solkm1 = solk
         if (k + 1) % PicardPerNewton == 0:
-            Fx, interItr, indices = Elastohydrodynamic_ResidualFun(solk, sys_fun, interItr, *args)
-            Jac = Jacobian(Elastohydrodynamic_ResidualFun, sys_fun, solk, TypValue, interItr, *args)
+            Fx, interItr, indices = Elastohydrodynamic_ResidualFun(solk, linear_solver.sys_func, interItr, *args)
+            Jac = Jacobian(Elastohydrodynamic_ResidualFun, linear_solver.sys_func, solk, TypValue, interItr, *args)
             # Jac = nd.Jacobian(Elastohydrodynamic_ResidualFun)(solk, sys_fun, interItr, interItr_o, indices, *args)
             dx = np.linalg.solve(Jac, -Fx)
             solk = solkm1 + dx
             newton += 1
         else:
             try:
-                A, b, interItr, indices = sys_fun(solk, interItr, *args)
+                #A, b, interItr, indices = sys_fun(solk, interItr, *args)
                 perfNode_linSolve = instrument_start("linear system solve", perf_node)
-                sol = np.linalg.solve(A, b)
+                sol = linear_solver.solve(solk, interItr, *args)
+                interItr = linear_solver.interItr
+                indices = linear_solver.indices
                 # if len(indices[3]) > 0:             # if the size of system is varying between iterations (in case of HB fluid)
-                #     solk = relax * solkm1 + (1 - relax) * get_complete_solution(sol, indices, *args)
+                #     solk = (1 - relax) * solkm1 + relax * get_complete_solution(sol, indices, *args)
                 # else:
-                solk = relax * solkm1 + (1 - relax) * sol
+                solk = (1 - relax) * solkm1 +  relax * sol
             except np.linalg.linalg.LinAlgError:
                 log.error('singular matrix!')
                 solk = np.full((len(solk),), np.nan, dtype=np.float64)
                 if perf_node is not None:
                     instrument_close(perf_node, perfNode_linSolve, None,
-                                     len(b), False, 'singular matrix', None)
+                                     len(linear_solver.b), False, 'singular matrix', None)
                     perf_node.linearSolve_data.append(perfNode_linSolve)
                 return solk, None
 
@@ -83,7 +84,7 @@ def Picard_Newton(Res_fun, sys_fun, guess, TypValue, interItr_init, sim_prop, *a
         k = k + 1
 
         if perf_node is not None:
-            instrument_close(perf_node, perfNode_linSolve, norm, len(b), True, None, None)
+            instrument_close(perf_node, perfNode_linSolve, norm, len(linear_solver.b), True, None, None)
             perf_node.linearSolve_data.append(perfNode_linSolve)
 
         if k == sim_prop.maxSolverItrs:  # returns nan as solution if does not converge
