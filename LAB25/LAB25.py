@@ -9,17 +9,18 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # imports
 import os
-import numpy as np
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-import math
-from utility import setup_logging_to_console
-from boundary_effect import BoundaryEffect
+from fracture.fracture_initialization import Geometry, InitializationParameters
+from utilities.utility import setup_logging_to_console
+from solid.elasticity_boundary_effect_get_traction import BoundaryEffect
+from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
@@ -120,7 +121,7 @@ if run:
     #Fr_geometry = Geometry('radial', radius=0.0025)
     Fr_geometry = Geometry('radial', radius=0.005)
 
-    from elasticity import load_isotropic_elasticity_matrix_toepliz
+    from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
     #from elasticity import load_isotropic_elasticity_matrix
     C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
     #C = load_isotropic_elasticity_matrix(Mesh, Eprime)
@@ -157,7 +158,7 @@ if run:
 
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
-    from visualization import *
+    from utilities.visualization import *
 
     # loading simulation results
     Fr_list, properties = load_fractures(address="./Data/LAB25_boundary",step_size=1)                  # load all fractures

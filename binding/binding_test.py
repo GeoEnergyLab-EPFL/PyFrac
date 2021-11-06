@@ -1,6 +1,8 @@
+## External imports
 # import numpy as np
-# import pypart
 #
+## Internal imports
+# import pypart
 # from pyparty import Bigwhamio
 #
 #
@@ -105,10 +107,12 @@
 # print("point 2 ")
 # print(mydisplacements[3:7])
 
-
+# External imports
 import numpy as np
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
+
+# Internal imports
 import pypart
 from pypart import Bigwhamio
 

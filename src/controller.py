@@ -6,28 +6,34 @@ Created by Haseeb Zia on 11.05.17.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+
+# External imports
 import logging
 import copy
-import matplotlib.pyplot as plt
 import dill
 import os
-import numpy as np
 import time
-from time import gmtime, strftime
 import warnings
 
-# local imports
+# Internal imports
 from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
-from elasticity import load_isotropic_elasticity_matrix, load_TI_elasticity_matrix, mapping_old_indexes
-from elasticity import load_isotropic_elasticity_matrix_toepliz
-from Hdot import Hdot_3DR0opening
-from mesh import CartesianMesh
+
+from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
+from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
+
+from mesh.mesh import CartesianMesh
+from mesh.remesh import mapping_old_indexes
+
 from time_step.time_step_solution import attempt_time_step
-from visualization import plot_footprint_analytical, plot_analytical_solution,\
+
+from utilities.visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
-from symmetry import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
-from labels import TS_errorMessages, supported_projections, suitable_elements
+from utilities.labels import TS_errorMessages, supported_projections, suitable_elements
+
+from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from custom_functions import *
 
 class Controller:
@@ -257,7 +263,7 @@ class Controller:
 
         log.info("Starting time = " + repr(self.fracture.time))
         if self.sim_prop.send_phone_msg:
-            from utility import send_phone_message
+            from utilities.utility import send_phone_message
             send_phone_message("---Simulation " + self.sim_prop.simID + " started---")
             send_phone_message("Starting time = " + repr(self.fracture.time))
 
@@ -833,7 +839,7 @@ class Controller:
 
                     log.info("\n\n---Simulation failed---")
                     if self.sim_prop.send_phone_msg:
-                        from utility import send_phone_message
+                        from utilities.utility import send_phone_message
                         send_phone_message("---Simulation "+ self.sim_prop.simID +" failed---")
                     raise SystemExit("Simulation failed.")
                 else:
@@ -863,7 +869,7 @@ class Controller:
 
                     log.info("\n\n---Simulation failed---")
                     if self.sim_prop.send_phone_msg:
-                        from utility import send_phone_message
+                        from utilities.utility import send_phone_message
                         send_phone_message("---Simulation " + self.sim_prop.simID +" failed---")
                     raise SystemExit("Simulation failed.")
                 else:
@@ -899,7 +905,7 @@ class Controller:
         log.info("failed time steps = " + repr(self.failedTimeSteps))
         log.info("number of remeshings = " + repr(self.remeshings))
         if self.sim_prop.send_phone_msg:
-            from utility import send_phone_message
+            from utilities.utility import send_phone_message
             send_phone_message("---Simulation "+ self.sim_prop.simID +" finished---")
             send_phone_message("Final time = " + repr(self.fracture.time))
             send_phone_message("-------------------------")

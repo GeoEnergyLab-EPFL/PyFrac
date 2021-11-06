@@ -7,18 +7,33 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# local
-from systems_handler import solve_width_pressure
-from FMM import fmm
-from volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
-from tip_inversion import TipAsymInversion, StressIntensityFactor
-from elastohydrodynamic_systems import *
-from level_set import reconstruct_front,  UpdateLists, get_front_region
-from continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
+# External imports
+import numpy as np
+import copy
+import logging
+
+# Internal imports
+from level_set.FMM import fmm
+from level_set.level_set_utils import get_front_region
+from level_set.discontinuous_front_reconstruction import reconstruct_front, UpdateLists
+from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
+from level_set.anisotropy import reconstruct_front_LS_gradient
+from level_set.anisotropy import find_zero_vertex
+from level_set.anisotropy import get_toughness_from_zeroVertex
+from level_set.anisotropy import projection_from_ribbon_LS_gradient_at_tip
+from level_set.anisotropy import projection_from_ribbon
+from level_set.anisotropy import get_toughness_from_cellCenter
+
+from tip.volume_integral import Integral_over_cell
+from tip.volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
+from tip.tip_inversion import TipAsymInversion, StressIntensityFactor
+
+from systems.systems_handler import solve_width_pressure
+from systems.systems_functions import calculate_fluid_flow_characteristics_laminar
 from properties import IterationProperties, instrument_start, instrument_close
-from anisotropy import *
-from cheks import turbulence_check_tip
-from postprocess_fracture import append_to_json_file
+from fluid.reyNumb import turbulence_check_tip
+from utilities.postprocess_fracture import append_to_json_file
+from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
 # ----------------------------------------------------------------------------------------------------------------------
 
 

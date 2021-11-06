@@ -6,7 +6,10 @@ Created by Carlo Peruzzo on 01.09.20.
 Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2020.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
+
+# External imports
 import numpy as np
+
 tollerance = 1.20
 testnames = dict(
     radial_M_explicit_newfront={'front_reconstruction': 'LS_continousfront',

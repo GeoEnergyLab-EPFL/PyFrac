@@ -7,16 +7,19 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# External imports
 import shutil
-import os
+
+# Internal imports
 from benchmarks.simulparam_and_tolerances import *
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-import numpy as np
-from visualization import *
+from fracture.fracture_initialization import Geometry, InitializationParameters
+from utilities.visualization import *
 
 def pytest_generate_tests(metafunc):
     # called once per each test function
@@ -154,12 +157,12 @@ class TestClass:
         # checking the results #
         ########################
 
-        from postprocess_fracture import get_fracture_dimensions_analytical_with_properties
-        from postprocess_fracture import get_HF_analytical_solution_at_point
-        from postprocess_fracture import get_fracture_variable_at_point
-        from visualization import load_fractures
-        from visualization import get_fracture_variable
-        from visualization import plot_fracture_list_slice
+        from utilities.postprocess_fracture import get_fracture_dimensions_analytical_with_properties
+        from utilities.postprocess_fracture import get_HF_analytical_solution_at_point
+        from utilities.postprocess_fracture import get_fracture_variable_at_point
+        from utilities.visualization import load_fractures
+        from utilities.visualization import get_fracture_variable
+        from utilities.visualization import plot_fracture_list_slice
         from properties import LabelProperties
 
         # loading simulation results
@@ -263,7 +266,7 @@ class TestClass:
                                                               export2Json=True,
                                                               export2Json_assuming_no_remeshing=False)
 
-            from postprocess_fracture import get_HF_analytical_solution
+            from utilities.postprocess_fracture import get_HF_analytical_solution
             labels = LabelProperties('w', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'w',
@@ -330,7 +333,7 @@ class TestClass:
                                                               export2Json=True,
                                                               export2Json_assuming_no_remeshing=False)
 
-            from postprocess_fracture import get_HF_analytical_solution
+            from utilities.postprocess_fracture import get_HF_analytical_solution
             labels = LabelProperties('pn', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'pn',

@@ -10,13 +10,16 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
+from mesh.mesh import CartesianMesh
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+from properties import InjectionProperties, SimulationProperties
+from fracture.fracture import Fracture
 from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from utility import setup_logging_to_console
-from boundary_effect import BoundaryEffect
+from fracture.fracture_initialization import Geometry, InitializationParameters
+from utilities.utility import setup_logging_to_console
+from solid.elasticity_boundary_effect_get_traction import BoundaryEffect
+from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
@@ -105,7 +108,7 @@ simulProp.maxSolverItrs=240
 
 if run:
     # initializing fracture
-    from fracture_initialization import get_radial_survey_cells
+    from fracture.fracture_initialization import get_radial_survey_cells
     #initRad1 = 0.000802
     initRad1 = 0.0016
     initRad2 = initRad1
@@ -122,7 +125,7 @@ if run:
                            tip_distances=surv_cells_dist,
                            inner_cells=inner_cells)
 
-    from elasticity import load_isotropic_elasticity_matrix
+    from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
     C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
     # init_param = InitializationParameters(Fr_geometry,
@@ -164,7 +167,7 @@ write = True
 if export_results   :
     myJsonName="Z:\exp_pivdb13_shared_folder\coalescence_expPivdb13_4mma2.json"
     myfolder="./Data/coalescence_exp_pivdb13_265x171"
-    from visualization import *
+    from utilities.visualization import *
 
     # loading five fractures from the simulation separated with equal time period
 
@@ -187,7 +190,7 @@ if export_results   :
     time_srs = get_fracture_variable(Fr_list,
                                      variable='time')
 
-    from postprocess_fracture import append_to_json_file
+    from utilities.postprocess_fracture import append_to_json_file
 
     # append_to_json_file(file_name, content, action, key=None, delete_existing_filename=False)
 
