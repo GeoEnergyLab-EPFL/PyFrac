@@ -57,6 +57,7 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
 # imports
 import os
 import time
+import numpy as np
 
 # local imports
 from mesh.mesh import CartesianMesh
@@ -75,9 +76,9 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-run = False
+#run = False
 #----
-run_dir =  "./Data/02"
+run_dir =  "./Data/02break"
 #----
 restart = False
 #----
@@ -123,7 +124,7 @@ if run:
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 1.47*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 1.15*K_Ic, r, delta, x)
 
     # plot x_max vs time
     # import matplotlib.pyplot as plt

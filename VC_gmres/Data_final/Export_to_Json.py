@@ -1,6 +1,6 @@
 from utilities.utility import setup_logging_to_console
 from utilities.visualization import *
-from utilities.postprocess_fracture import append_to_json_file
+from utilities.postprocess_fracture import append_to_json_file, load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
