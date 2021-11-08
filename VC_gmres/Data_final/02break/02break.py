@@ -124,7 +124,7 @@ if run:
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 1.15*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 1.30*K_Ic, r, delta, x)
 
     # plot x_max vs time
     # import matplotlib.pyplot as plt
@@ -197,8 +197,8 @@ if run:
     simulProp.set_mesh_extension_factor(1.5)
     simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
-    simulProp.simID = 'K1/K2=1.47' # do not use _
-
+    #simulProp.simID = 'K1/K2=1.38' # do not use _
+    simulProp.simID = 'K1/K2=1.30'  # do not use _
 
     simulProp.customPlotsOnTheFly = True
     simulProp.LHyst__ = []

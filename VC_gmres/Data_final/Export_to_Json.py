@@ -254,15 +254,17 @@ def check_exe(folders_list, simul_list, to_export, destination):
 to_export = [1,2,3,7,8]
 
 #-------> SPECIFY OUT ID AND FOLDER NAME:
-simul_list = ["01", "02", "02bis", "03", "04"]#["02bis"]
-folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
-                "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02",
-                "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis",
-                "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/03",
-                "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/04"]
+# simul_list = ["01", "02", "02bis", "03", "04"]#["02bis"]
+# folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/03",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/04"]
 #folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis"]
 # ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
 #                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
+simul_list = ["02break"]
+folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02break"]
 destination = "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/exports"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)
