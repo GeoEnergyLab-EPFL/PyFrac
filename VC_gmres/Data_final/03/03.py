@@ -68,7 +68,7 @@ from controller import Controller
 from fracture.fracture_initialization import Geometry, InitializationParameters
 #from pypart import Bigwhamio
 from utilities.utility import setup_logging_to_console
-from systems.Hdot import Hdot_3DR0opening
+from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console

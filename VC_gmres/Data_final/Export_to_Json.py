@@ -1,6 +1,6 @@
 from utilities.utility import setup_logging_to_console
 from utilities.visualization import *
-from utilities.postprocess_fracture import append_to_json_file
+from utilities.postprocess_fracture import append_to_json_file, load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
@@ -188,7 +188,7 @@ def export(myfolder, simulation_name, to_export, destination):
                                                            point1=[my_X , my_Y],
                                                            export2Json=True,
                                                            export2Json_assuming_no_remeshing=False)
-            towrite = {'pf_horiz_slice_': fracture_list_slice}
+            towrite = {'w_horiz_slice_': fracture_list_slice}
             append_to_json_file(myJsonName_1, towrite, 'extend_dictionary')
             print(" <-- DONE\n")
 
@@ -254,10 +254,17 @@ def check_exe(folders_list, simul_list, to_export, destination):
 to_export = [1,2,3,7,8]
 
 #-------> SPECIFY OUT ID AND FOLDER NAME:
-simul_list = ["02bis"]#["01", "02","03","04"]
-folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis"]
+# simul_list = ["01", "02", "02bis", "03", "04"]#["02bis"]
+# folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/03",
+#                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/04"]
+#folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis"]
 # ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
 #                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
-destination = "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final"
+simul_list = ["02break"]
+folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02break"]
+destination = "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/exports"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)
