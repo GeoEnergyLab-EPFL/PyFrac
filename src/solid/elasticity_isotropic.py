@@ -381,7 +381,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         return getFast(elementsXY, self.nx, self.C_toeplitz_coe, self.C_precision)
 
     def _matvec_fast(self, uk):
-        return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+        return matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                            self.C_toeplitz_coe, self.C_precision)
 
     def _matvec(self, uk):

@@ -12,8 +12,6 @@ import logging
 import time
 from scipy.sparse.linalg import gmres
 
-
-
 # Internal imports
 from systems.sys_volume_and_load_control import MakeEquationSystem_volumeControl, MakeEquationSystem_volumeControl_double_fracture, \
     MakeEquationSystem_volumeControl_symmetric, Volume_Control_4_gmres
@@ -22,6 +20,7 @@ from systems.sys_back_subst_EHL import MakeEquationSystem_ViscousFluid_pressure_
     MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted
 from systems.explicit_RKL import solve_width_pressure_RKL2
 from systems.systems_functions import velocity
+from systems.sys_monolithic_EHL import Monolithic_EHL_sys_obj, MakeEquationSystem_Monolithic_precond
 
 from mesh.symmetry import get_symetric_elements
 
@@ -459,6 +458,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     imposed_val_k - Fr_lstTmStp.w[to_impose_k])) / len(to_solve_k)
             w_guess[to_solve_k] = Fr_lstTmStp.w[to_solve_k] #+ avg_dw
             w_guess[to_impose_k] = imposed_val_k
+
             if Boundary is not None:
                 traction_guess =  Boundary.getTraction(w_guess, EltCrack)
                 pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]  + traction_guess[neg]
@@ -466,20 +466,33 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             else:
                 pf_guess_neg = np.dot(C[np.ix_(neg, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[neg]
                 pf_guess_tip = np.dot(C[np.ix_(to_impose_k, EltCrack_k)], w_guess[EltCrack_k]) +  mat_properties.SigmaO[to_impose_k]
+
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if sim_properties.solveDeltaP:
                     sys_size = len(to_solve_k) + len(pf_guess_neg) + len(pf_guess_tip)
                     if sim_properties.solveSparse:
                         if sim_properties.EHL_GMRES:
-                            sys_fun = EHL_sys_obj(sys_size, dtype=np.float64)
+                            if not sim_properties.solve_monolithic:
+                                sys_fun = EHL_sys_obj(sys_size, dtype=np.float64)
+                            else:
+                                sys_fun = Monolithic_EHL_sys_obj(len(to_solve_k) + len(to_solve_k) + len(pf_guess_neg) + len(pf_guess_tip), dtype=np.float64, *arg)
                         else:
-                            sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+                            if not sim_properties.solve_monolithic:
+                                sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse
+                            else:
+                                sys_fun = MakeEquationSystem_Monolithic_precond
                     else:
                         sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP
-                    #guess = np.concatenate((np.full(len(to_solve_k), avg_dw, dtype=np.float64),
-                    guess = np.concatenate((np.full(len(to_solve_k), 0., dtype=np.float64),
-                                            pf_guess_neg - Fr_lstTmStp.pFluid[neg],
-                                            pf_guess_tip - Fr_lstTmStp.pFluid[to_impose_k]))
+                    if not sim_properties.solve_monolithic:
+                        #guess = np.concatenate((np.full(len(to_solve_k), avg_dw, dtype=np.float64),
+                        guess = np.concatenate((np.full(len(to_solve_k), 0., dtype=np.float64),
+                                                pf_guess_neg - Fr_lstTmStp.pFluid[neg],
+                                                pf_guess_tip - Fr_lstTmStp.pFluid[to_impose_k]))
+                    else:
+                        guess = np.concatenate((np.full(len(to_solve_k), 0., dtype=np.float64),
+                                                np.full(len(to_solve_k), 0., dtype=np.float64),
+                                                pf_guess_neg - Fr_lstTmStp.pFluid[neg],
+                                                pf_guess_tip - Fr_lstTmStp.pFluid[to_impose_k]))
                 else:
                     if sim_properties.solveSparse:
                         sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_sparse
@@ -497,7 +510,13 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                 inter_itr_init = [vk, np.array([], dtype=int), None]
 
                 if sim_properties.EHL_GMRES:
-                    linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol, sim_properties.gmres_maxiter, sim_properties.gmres_Restart, prec_func = EHL_iLU_Prec)
+                    if not sim_properties.solve_monolithic:
+                        linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
+                                                                sim_properties.gmres_maxiter, sim_properties.gmres_Restart,
+                                                                prec_func=EHL_iLU_Prec)
+                    else:
+                        linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
+                                                                sim_properties.gmres_maxiter, sim_properties.gmres_Restart)
                 else:
                     linear_solver = Direct_linear_solver(sys_fun)
 
@@ -603,19 +622,26 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             else:
                 active_contraint = False
 
-
+        # from utilities.utility import plot_as_matrix
+        # K = np.full(Fr_lstTmStp.mesh.NumberOfElts, np.NaN)
+        # K[to_solve] = w[to_solve]
+        # plot_as_matrix(K, Fr_lstTmStp.mesh)
         pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-        # pressure evaluated by dot product of width and elasticity matrix
-        if Boundary is not None:
-            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k] + Boundary.last_traction[to_solve_k]
-        else:
-            pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
-        if sim_properties.solveDeltaP:
-            pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-            pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
-        else:
-            pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-            pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+        if sim_properties.solve_monolithic and sim_properties.solveDeltaP:
+            ch_act_toimpose = np.concatenate((to_solve_k, to_impose_k, neg_km1))
+            pf[ch_act_toimpose] = Fr_lstTmStp.pFluid[ch_act_toimpose] + sol[len(to_solve_k):]
+        elif not sim_properties.solve_monolithic:
+            # pressure evaluated by dot product of width and elasticity matrix
+            if Boundary is not None:
+                pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k] + Boundary.last_traction[to_solve_k]
+            else:
+                pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
+            if sim_properties.solveDeltaP:
+                pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+            else:
+                pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
 
 
         if perfNode_nonLinSys is not None:

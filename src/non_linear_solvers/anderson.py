@@ -55,7 +55,11 @@ def Anderson(linear_solver, guess, interItr_init, sim_prop, *args, perf_node=Non
         # First iteration
         xks[0, ::] = np.array([guess])                                       # xo
         #cond_num.append(np.linalg.cond(A)) #this is expensive to compute! do it only while debugging
-        Gks[0, ::] = linear_solver.solve(xks[0, ::], interItr, *args)
+        sol = linear_solver.solve(xks[0, ::], interItr, *args)
+        if sim_prop.solve_monolithic:
+            Gks[0, ::] = linear_solver.sys_func._matvec_PastSolution(sol)
+        else:
+            Gks[0, ::] = sol
         interItr = linear_solver.interItr
         Fks[0, ::] = Gks[0, ::] - xks[0, ::]
         xks[1, ::] = Gks[0, ::]                                               # x1
@@ -81,7 +85,11 @@ def Anderson(linear_solver, guess, interItr_init, sim_prop, *args, perf_node=Non
 
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
 
-            Gks[mk + 1, ::] = linear_solver.solve(xks_current, interItr, *args)
+            sol = linear_solver.solve(xks_current, interItr, *args)
+            if sim_prop.solve_monolithic:
+                Gks[mk + 1, ::] = linear_solver.sys_func._matvec_PastSolution(sol)
+            else:
+                Gks[mk + 1, ::] = sol
             interItr = linear_solver.interItr
             Fks[mk + 1, ::] = Gks[mk + 1, ::] - xks[mk + 1, ::]
 

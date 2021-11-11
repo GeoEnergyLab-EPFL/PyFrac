@@ -72,6 +72,7 @@ collect_perf_data = False               # if True, performance data will be coll
 log_to_file = True                      # set it True or False depending if you would like to log the messages to a log file
 
 # type of solver
+solve_monolithic = False                # if True, you will solve the monolithic system of elasticity and lubrication i.e. not the system with elasticity being back substituted
 elastohydr_solver = 'implicit_Anderson' # set the elasto-hydrodynamic system solver to implicit with Anderson iteration.
 m_Anderson = 4                          # number of previous solutions to take into account in the Anderson scheme
 relaxation_param = 1.0                  # parameter defining the under-relaxation performed (default is not relaxed)

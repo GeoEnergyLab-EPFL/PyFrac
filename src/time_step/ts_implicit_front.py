@@ -116,7 +116,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  sim_properties,
                                                  fluid_properties,
                                                  mat_properties,
-                                                 Fr_lstTmStp.EltTip, #empty, #EltTip
+                                                 empty, #Fr_lstTmStp.EltTip, #empty, #EltTip
                                                  empty, #partlyFilledTip
                                                  C,
                                                  Boundary,
@@ -124,7 +124,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  Fr_lstTmStp.EltCrack,
                                                  Fr_lstTmStp.InCrack,
                                                  LkOff,
-                                                 Fr_lstTmStp.w[Fr_lstTmStp.EltTip],#empty, #wTip
+                                                 empty,#Fr_lstTmStp.w[Fr_lstTmStp.EltTip],#empty, #wTip
                                                  timeStep,
                                                  Qin,
                                                  perfNode,

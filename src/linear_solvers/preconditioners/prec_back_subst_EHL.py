@@ -15,7 +15,7 @@ from scipy.sparse import csc_matrix
 from linear_solvers.preconditioners.preconditioner import Preconditioner
 
 class EHL_iLU_Prec(Preconditioner):
-  def __init__(self, A, drop_tol=0., fill_factor=1):
+  def __init__(self, A, drop_tol=1e-10, fill_factor=10):
     EHL_iLU = spilu(csc_matrix(A), drop_tol=drop_tol, fill_factor=fill_factor)
 
     # ---> to check the sparsity pattern

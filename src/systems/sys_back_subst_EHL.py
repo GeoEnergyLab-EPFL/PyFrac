@@ -510,6 +510,63 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
                                        sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
                                                     [0], format='csr')).toarray()
 
+    # import numpy as np
+    # import matplotlib.pyplot as plt
+    # ei = np.linalg.eig(A)
+    # x = np.arange(len(ei[0]))
+    # y = ei[0]
+    # plt.scatter(x, y, s=1, marker='o', cmap='hue')
+    # plt.show()
+    # import matplotlib.pyplot as plt
+    # plt.spy(C_loc, marker='o',markersize=0.5)
+    #aaaa = np.count_nonzero(C_loc.toarray())
+
+    # from numpy.linalg import inv
+    # import numpy as np
+    # import matplotlib.pyplot as plt
+    # Iapp = np.dot(inv(A), Afull)
+    # fig, ax = plt.subplots()
+    # ax.matshow(Iapp, cmap=plt.cm.Blues)
+
+    # from scipy.sparse.linalg import spilu
+    # from scipy.sparse import csc_matrix
+    # EHL_iLU = spilu(csc_matrix(A), drop_tol=0., fill_factor=1.)
+    #
+    Afull = np.zeros((n_total, n_total), dtype=dtype)
+
+    Afull[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    #Afull[np.ix_(ch_indxs, ch_indxs)] = - ((ch_AplusCf.tocsc()).dot(C_loc)).toarray()
+
+    # 2
+    Afull[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
+
+    Afull[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    Afull[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
+
+    # 3
+    Afull[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
+    # Afull[np.ix_(tip_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+    #                                     ).tocsc()).dot(C_loc)).toarray()
+
+    # 4
+    Afull[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
+                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
+                                                    [0], format='csr')).toarray()
+    Afull[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
+
+    # 5
+    Afull[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+                                        ).dot(C[np.ix_(to_solve, to_solve)])
+    # Afull[np.ix_(act_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+    #                                 ).tocsc()).dot(C_loc)).toarray()
+
+    # 6
+    Afull[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    Afull[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
+                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
+                                                    [0], format='csr')).toarray()
+
     S = np.zeros((n_total,), dtype=np.float64)
     pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
@@ -585,9 +642,7 @@ class EHL_sys_obj(LinearOperator):
 
   def _getsys(self, solk, interItr, *args):
     """
-    This function implements the dot product.
-    :param v: vector expected to be of size unknowns_number_
-    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    This function gets the system of equations to be solved
     """
     self.args = args # args never change within the solution of 1 non-linear system
 
@@ -599,9 +654,7 @@ class EHL_sys_obj(LinearOperator):
 
   def _getsys_simplif(self, solk, interItr, *args, decay_tshold = 0.9, probability = 0.15):
     """
-    This function implements the dot product.
-    :param v: vector expected to be of size unknowns_number_
-    :return: HMAT.v, where HMAT is a matrix obtained by selecting equations from either HMATtract or HMATdispl
+    This function gets a simplified version of the system of equations to be decomposed (see ILU) and used as preconditioner
     """
     self.args = args # args never change within the solution of 1 non-linear system
 
@@ -613,6 +666,10 @@ class EHL_sys_obj(LinearOperator):
 
 #  @profile
   def _update_sys(self, solk, interItr):
+      """
+      Consider the system of equations: A(x) * x = b(x)
+      This function updates x (for A(x)) and returns b(x)
+      """
       (EltCrack, to_solve, to_impose, imposed_val, wc_to_impose, frac, fluid_prop, mat_prop,
        sim_prop, dt, Q, C, Boundary, InCrack, LeakOff, active, neiInCrack, lst_edgeInCrk) = self.args
 
