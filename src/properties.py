@@ -534,6 +534,7 @@ class SimulationProperties:
         self.plotATsolTimeSeries = simul_param.plot_at_sol_time_series
 
         # solver type
+        self.solve_monolithic = simul_param.solve_monolithic
         self.elastohydrSolver = simul_param.elastohydr_solver
         self.Anderson_parameter = simul_param.m_Anderson
         self.relaxation_factor = simul_param.relaxation_param

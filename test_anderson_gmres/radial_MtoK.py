@@ -55,9 +55,11 @@ simulProp.saveTSJump, simulProp.plotTSJump = 1, 50   # save and plot after every
 simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
 simulProp.EHL_GMRES = True
+simulProp.solve_monolithic = False
 simulProp.useBlockToeplizCompression = True
 simulProp.frontAdvancing = 'implicit'
-simulProp.elastohydrSolver = 'implicit_Picard'
+#simulProp.elastohydrSolver = 'implicit_Picard'
+# simulProp.gmres_tol = 1.e-6
 
 # initializing fracture
 Fr_geometry = Geometry('radial',radius=1.598)

@@ -17,7 +17,7 @@ from linear_solvers.linear_solver import Linear_solver
 
 
 class Iterative_linear_solver(Linear_solver):
-  def __init__(self, sys_func, atol, maxiter, gmresRestart, prec_func = None, solver_type = 'gmres'):
+  def __init__(self, sys_func, atol, maxiter, gmresRestart, prec_func = None, solver_type = 'bicgstab'):
     super().__init__(sys_func)
     self.prec= prec_func
     self.interItr = None
@@ -45,8 +45,8 @@ class Iterative_linear_solver(Linear_solver):
 
       if self.prec is not None and self.call_ID == 0:
           # (A, self.b, self.interItr, self.indicies) = self.sys_fun._getsys(solk, interItr, *args)
-          (A, self.b, self.interItr, self.indices) = self.sys_func._getsys_simplif(solk, interItr, *args, decay_tshold=0.68, probability=0.25)
-          self.prec = self.prec(A, drop_tol=0., fill_factor=1)
+          (A, self.b, self.interItr, self.indices) = self.sys_func._getsys_simplif(solk, interItr, *args, decay_tshold=0.81, probability=0.0)
+          self.prec = self.prec(A, drop_tol=0., fill_factor=10)
       else:
           # to update the system A and RHS b
           (self.b, self.interItr, self.indices) = self.sys_func._update_sys(solk, interItr)
@@ -67,7 +67,7 @@ class Iterative_linear_solver(Linear_solver):
   def call_gmres(self, counter, x0 = None):
       sol_GMRES = gmres(self.sys_func,
                         self.b,
-                        x0=x0,
+                        # x0=x0,
                         M=self.prec,
                         atol=self.atol,
                         tol=1.e-9,
