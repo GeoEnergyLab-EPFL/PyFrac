@@ -12,7 +12,8 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator
 
 # Internal imports
-from solid.elasticity_isotropic import get_isotropic_el_self_eff
+from solid.elasticity_isotropic_utils import get_isotropic_el_self_eff
+
 
 class Hdot_3DR0opening(LinearOperator):
     """

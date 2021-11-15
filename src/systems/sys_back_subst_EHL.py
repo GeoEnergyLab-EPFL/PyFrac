@@ -456,6 +456,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
 
+    FinDiffOprtr = FinDiffOprtr.tocsr()
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
                     frac.mesh,  InCrack,    sim_prop)
@@ -469,57 +470,171 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     act_indxs = n_ch + np.arange(n_act)
     tip_indxs = n_ch + n_act + np.arange(n_tip)
 
-    A = np.zeros((n_total, n_total), dtype=dtype)
+    #A = np.zeros((n_total, n_total), dtype=dtype)
 
-    ch_AplusCf = dt * FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs] \
+    ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
 
     C_loc = C._get9stencilC(to_solve, decay_tshold = decay_tshold, probability = probability)
 
-    # 1
+    """
+    (1)
+    *ch_ch*  ch_act    ch_tip
+    act_ch   act_act   act_tip
+    tip_ch   tip_act   tip_tip
+    """
     # A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(ch_indxs, ch_indxs)] = - ((ch_AplusCf.tocsc()).dot(C_loc)).toarray()
+    # A[np.ix_(ch_indxs, ch_indxs)] = - ((ch_AplusCf.tocsc()).dot(C_loc)).toarray()
+    # A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
+    A_ch_ch = - ((ch_AplusCf.tocsc()).dot(C_loc)) + sparse.identity(n_ch, dtype=dtype, format='csc')
 
-    # 2
-    A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
+    if n_act == 0 and n_tip == 0 :
+        A = A_ch_ch
+    else:
+        A_ch_ch = A_ch_ch.tocoo(copy=False)
 
-    A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
-    A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
 
-    # 3
-    # A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-    #                                     ).dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(tip_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-                                        ).tocsc()).dot(C_loc)).toarray()
+        """
+        (2)
+        (ch_ch)    ch_act    *ch_tip*
+        act_ch    act_act    act_tip
+        tip_ch    tip_act    tip_tip
+        """
+        # A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
+        A_temp = (-dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs])).tocoo(copy=False)
+        row = [*A_ch_ch.row, *A_temp.row]
+        col = [*A_ch_ch.col, *A_temp.col + n_ch + n_act]
+        data = [*A_ch_ch.data, *A_temp.data]
 
-    # 4
-    A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
-                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
-                                                    [0], format='csr')).toarray()
-    A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
 
-    # 5
-    # A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-    #                                     ).dot(C[np.ix_(to_solve, to_solve)])
-    A[np.ix_(act_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-                                    ).tocsc()).dot(C_loc)).toarray()
+        """
+        (3)
+        (ch_ch)  ch_act    (ch_tip)
+        act_ch   act_act   act_tip
+        *tip_ch*   tip_act   tip_tip
+        """
+        # with full C
+        # A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
+        #                                     ).dot(C[np.ix_(to_solve, to_solve)])
+        # with approx C but slow
+        # A[np.ix_(tip_indxs, ch_indxs)] = - (((dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]
+        #                                     ).tocsc()).dot(C_loc)).toarray()
+        A_temp = (- (((dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).tocsc()).dot(C_loc))).tocoo(copy=False)
+        row.extend(A_temp.row + n_ch + n_act)
+        col.extend(A_temp.col)
+        data.extend(A_temp.data)
 
-    # 6
-    A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
-    A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
-                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
-                                                    [0], format='csr')).toarray()
 
+        """
+        (4)
+        (ch_ch)  ch_act    (ch_tip)
+        act_ch   act_act   act_tip
+        (tip_ch)   tip_act   *tip_tip*
+        """
+        # A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs] +
+        #                                    sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
+        #                                                 [0], format='csc')).toarray()
+        A_temp = (- dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs] + sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],[0],format='csc')).tocoo(copy=False)
+        row.extend(A_temp.row + n_ch + n_act)
+        col.extend(A_temp.col + n_ch + n_act)
+        data.extend(A_temp.data)
+
+
+        """
+        (5)
+        (ch_ch)      ch_act    (ch_tip)
+        act_ch      act_act     act_tip
+        (tip_ch)   *tip_act*   (tip_tip)
+        """
+        # A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
+        A_temp = (-dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs])).tocoo(copy=False)
+        row.extend(A_temp.row + n_ch + n_act)
+        col.extend(A_temp.col + n_ch)
+        data.extend(A_temp.data)
+
+
+        """
+        (6)
+        (ch_ch)    *ch_act*     (ch_tip)
+        act_ch     act_act     act_tip
+        (tip_ch)  (tip_act)   (tip_tip)
+        """
+        # A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
+        A_temp = (-dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs])).tocoo(copy=False)
+        row.extend(A_temp.row)
+        col.extend(A_temp.col + n_ch)
+        data.extend(A_temp.data)
+
+
+        """
+        (7)
+        (ch_ch)   (ch_act)    (ch_tip)
+        *act_ch*   act_act     act_tip
+        (tip_ch)  (tip_act)   (tip_tip)
+        """
+        # with full C
+        # A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
+        #                                     ).dot(C[np.ix_(to_solve, to_solve)])
+        # with approx C but slow
+        # A[np.ix_(act_indxs, ch_indxs)] = - (((dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]
+        #                                 ).tocsc()).dot(C_loc)).toarray()
+        A_temp = (- (((dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).tocsc()).dot(C_loc))).tocoo(copy=False)
+        row.extend(A_temp.row + n_ch)
+        col.extend(A_temp.col)
+        data.extend(A_temp.data)
+
+        """
+        (8)
+        (ch_ch)   (ch_act)    (ch_tip)
+        (act_ch)   act_act    *act_tip*
+        (tip_ch)  (tip_act)   (tip_tip)
+        """
+        # A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
+        A_temp = (-dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs])).tocoo(copy=False)
+        row.extend(A_temp.row + n_ch)
+        col.extend(A_temp.col + n_ch + n_act)
+        data.extend(A_temp.data)
+
+
+        """
+        (9)
+        (ch_ch)   (ch_act)    (ch_tip)
+        (act_ch)  *act_act*    (act_tip)
+        (tip_ch)  (tip_act)   (tip_tip)
+        """
+        # A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs] +
+        #                                    sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
+        #                                                 [0], format='csc')).toarray()
+        A_temp = (- dt * FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs] + sparse.diags(
+            [np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])], [0], format='csc')).tocoo(copy=False)
+        row.extend(A_temp.row + n_ch)
+        col.extend(A_temp.col + n_ch)
+        data.extend(A_temp.data)
+
+
+        A = sparse.csc_matrix((data, (row, col)), shape=(n_total, n_total))
+
+    # from scipy.sparse.linalg import spilu
+    # from scipy.sparse import csc_matrix
     # import numpy as np
     # import matplotlib.pyplot as plt
-    # ei = np.linalg.eig(A)
+    # EHL_iLU = spilu(csc_matrix(A), drop_tol=1.e-10, fill_factor=5)
+    #
+    # ei = np.linalg.eig(EHL_iLU.solve(A))
+    # x = np.arange(len(ei[0]))
+    # y = ei[0]
+    # plt.scatter(x, y, s=10, marker='o', cmap='hue')
+    #
+    # EHL_iLU = spilu(csc_matrix(A), drop_tol=1.e-10, fill_factor=10)
+    # ei = np.linalg.eig(EHL_iLU.solve(A))
     # x = np.arange(len(ei[0]))
     # y = ei[0]
     # plt.scatter(x, y, s=1, marker='o', cmap='hue')
+    #
     # plt.show()
     # import matplotlib.pyplot as plt
     # plt.spy(C_loc, marker='o',markersize=0.5)
-    #aaaa = np.count_nonzero(C_loc.toarray())
+    # aaaa = np.count_nonzero(C_loc.toarray())
 
     # from numpy.linalg import inv
     # import numpy as np
@@ -532,84 +647,102 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     # from scipy.sparse import csc_matrix
     # EHL_iLU = spilu(csc_matrix(A), drop_tol=0., fill_factor=1.)
     #
-    Afull = np.zeros((n_total, n_total), dtype=dtype)
-
-    Afull[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
-    #Afull[np.ix_(ch_indxs, ch_indxs)] = - ((ch_AplusCf.tocsc()).dot(C_loc)).toarray()
-
-    # 2
-    Afull[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
-
-    Afull[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
-    Afull[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
-
-    # 3
-    Afull[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-                                        ).dot(C[np.ix_(to_solve, to_solve)])
-    # Afull[np.ix_(tip_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-    #                                     ).tocsc()).dot(C_loc)).toarray()
-
-    # 4
-    Afull[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
-                                       sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
-                                                    [0], format='csr')).toarray()
-    Afull[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
-
-    # 5
-    Afull[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-                                        ).dot(C[np.ix_(to_solve, to_solve)])
-    # Afull[np.ix_(act_indxs, ch_indxs)] = - (((dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-    #                                 ).tocsc()).dot(C_loc)).toarray()
-
-    # 6
-    Afull[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
-    Afull[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
-                                       sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
-                                                    [0], format='csr')).toarray()
+    # Afull = np.zeros((n_total, n_total), dtype=dtype)
+    #
+    # Afull[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    # #Afull[np.ix_(ch_indxs, ch_indxs)] = - ((ch_AplusCf.tocsc()).dot(C_loc)).toarray()
+    #
+    # # 2
+    # Afull[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
+    #
+    # Afull[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    # Afull[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
+    #
+    # # 3
+    # Afull[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]
+    #                                     ).dot(C[np.ix_(to_solve, to_solve)])
+    # # Afull[np.ix_(tip_indxs, ch_indxs)] = - (((dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]
+    # #                                     ).tocsc()).dot(C_loc)).toarray()
+    #
+    # # 4
+    # Afull[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs] +
+    #                                    sparse.diags([np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
+    #                                                 [0], format='csr')).toarray()
+    # Afull[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
+    #
+    # # 5
+    # Afull[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]
+    #                                     ).dot(C[np.ix_(to_solve, to_solve)])
+    # # Afull[np.ix_(act_indxs, ch_indxs)] = - (((dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]
+    # #                                 ).tocsc()).dot(C_loc)).toarray()
+    #
+    # # 6
+    # Afull[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
+    # Afull[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs] +
+    #                                    sparse.diags([np.full((n_act,), fluid_prop.compressibility * wcNplusHalf[active])],
+    #                                                 [0], format='csr')).toarray()
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
-                  np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
-                  np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
-                  mat_prop.SigmaO[to_solve]
+
+    # pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
+    #               np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
+    #               np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
+    #               mat_prop.SigmaO[to_solve]
+
+    C._set_domain_IDX(to_solve)
+    C._set_codomain_IDX(to_solve)
+    pf_ch_prime = C._matvec_fast(frac.w[to_solve])
+
+    if n_tip > 0:
+        C._set_domain_IDX(to_impose)
+        pf_ch_prime = pf_ch_prime + C._matvec_fast(imposed_val)
+
+    if n_act > 0:
+        C._set_domain_IDX(active)
+        pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active])
+
+    pf_ch_prime = pf_ch_prime + mat_prop.SigmaO[to_solve]
+
 
     S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
-                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
-                  dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                  dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                  dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                   dt * G[to_solve] + \
                   dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
                   + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]+ \
                   + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
-                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
-                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
-                   dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                   dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                   dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[to_impose] + \
                    dt * Q[to_impose] / frac.mesh.EltArea - LeakOff[to_impose] / frac.mesh.EltArea + \
-                   - dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+                   - dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     S[act_indxs] = -(wc_to_impose - frac.w[active]) + \
-                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
-                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
-                   dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                   dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
+                   dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                   dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[active] + \
                    dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea+ \
-                   - dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+                   - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
+    # --- OMITTED AT THE MOMENT ---
     # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
     to_del = []
-    if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
-        for i in range(n_tip + n_act):
-                if not A[n_ch + i, :].any():
-                    to_del.append(i)
-
-        if len(to_del) > 0:
-            deleted = n_ch + np.asarray(to_del)
-            A = np.delete(A, deleted, 0)
-            A = np.delete(A, deleted, 1)
-            S = np.delete(S, deleted)
+    # if fluid_prop.rheology  in ["Herschel-Bulkley", "HBF"]:
+    #     for i in range(n_tip + n_act):
+    #             if not A[n_ch + i, :].any():
+    #                 to_del.append(i)
+    #
+    #     if len(to_del) > 0:
+    #         deleted = n_ch + np.asarray(to_del)
+    #         A = np.delete(A, deleted, 0)
+    #         A = np.delete(A, deleted, 1)
+    #         S = np.delete(S, deleted)
+    #  --- OMITTED AT THE MOMENT ---
 
     # indices of solved width, pressure and active width constraint in the solution
     indices = [ch_indxs, tip_indxs, act_indxs, to_del]
@@ -619,7 +752,8 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     if not return_w:
         return A, S, interItr_kp1, indices
     else:
-        return A, S, interItr_kp1, indices, wcNplusHalf, FinDiffOprtr.tocsr()
+        # A is a csc matrix
+        return A, S, interItr_kp1, indices, wcNplusHalf, FinDiffOprtr
 
 # -----------------------------------------------------------------------------------------------------------------------
 class EHL_sys_obj(LinearOperator):
