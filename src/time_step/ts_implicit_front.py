@@ -130,7 +130,8 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  perfNode,
                                                  empty, #Vel
                                                  empty, #corr_ribbon
-                                                 doublefracturedictionary= doublefracturedictionary)
+                                                 doublefracturedictionary= doublefracturedictionary,
+                                                 inj_same_footprint = True)
     # from utility import plot_as_matrix
     # K = w_k
     # plot_as_matrix(K, Fr_lstTmStp.mesh)
