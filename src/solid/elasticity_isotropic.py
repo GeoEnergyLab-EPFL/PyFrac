@@ -22,6 +22,7 @@ from math import floor
 # local imports
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from solid.elasticity_isotropic_utils import get_isotropic_el_self_eff
+from utilities.utility import append_new_line
 
 
 def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
@@ -112,6 +113,35 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         # 6) execute the dot product
         res[iter1] = np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
     return res
+#
+# @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+# def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
+#     # uk (numpy array), vector to which multiply the matrix C
+#     # nx (int), n. of element in x direction in the cartesian mesh
+#     # elemX (numpy array), IDs of elements to consider on x axis of the mesh
+#     # elemY (numpy array), IDs of elements to consider on y axis of the mesh
+#     # dimY (int), length(elemY) = length(elemX)
+#     # C_toeplitz_coe (numpy array), array containing the N unique coefficients of the matrix C of size NxN
+#     # C_precision (e.g.: float)
+#
+#     # 1) vector where to store the result of the dot product
+#     res = np.zeros(dimY, dtype=C_precision)
+#
+#     # 2) some indexes to build the row of a submatrix of C from the array of its unique entries
+#     iY = np.floor_divide(elemY, nx)
+#     jY = elemY - nx * iY
+#     iX = np.floor_divide(elemX, nx)
+#     jX = elemX - nx * iX
+#
+#     iX *= nx
+#     iY *= nx
+#
+#     chunksize = 300
+#     splitrange = np.floor_divide(dimY, chunksize)
+#     residualrange = dimY - chunksize
+#     for iter1 in prange(splitrange):
+#         res[iter1] += np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
+#     return res
 
 
 @njit(fastmath=True, nopython=True)
@@ -395,8 +425,14 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         if self.useHMATdot and len(uk) > 25000:
             return self.HMAT._matvec(uk)
         else:
-            return matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+            #mv_time = - time.time()
+            aa= matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                                self.C_toeplitz_coe, self.C_precision)
+            #mv_time = mv_time + time.time()
+
+            #file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/Ex_time.csv'
+            #append_new_line(file_name,str(len(aa)) + ',' + str(mv_time))
+            return aa
 
     def _matvec(self, uk):
         # if self.C_precision == np.float32:
