@@ -18,7 +18,7 @@ from linear_solvers.linear_solver import Linear_solver
 from utilities.utility import append_new_line
 
 class Iterative_linear_solver(Linear_solver):
-  def __init__(self, sys_func, atol, maxiter, gmresRestart, prec_func = None, solver_type = 'bicgstab', rcmp_prec_after2iter = False):
+  def __init__(self, sys_func, atol, maxiter, gmresRestart, prec_func = None, solver_type = 'bicgstab', rcmp_prec_before2ndIter = False):
     super().__init__(sys_func)
     self.prec_func = prec_func
     self.prec = None
@@ -27,7 +27,7 @@ class Iterative_linear_solver(Linear_solver):
     self.indices = None
     self.call_ID = 0
     self.cumulativeITERsSOLVER = 0
-    self.rcmp_prec_after2iter = rcmp_prec_after2iter
+    self.rcmp_prec_before2ndIter = rcmp_prec_before2ndIter
 
     # iterative solver params
     self.solver_type = solver_type
@@ -47,7 +47,7 @@ class Iterative_linear_solver(Linear_solver):
       # to obtain the number of iteration and residual
       self.counter = iteration_counter(self.log)
 
-      if self.prec_func is not None and (self.call_ID == 0 or self.rcmp_prec_after2iter and self.call_ID == 2):
+      if self.prec_func is not None and (self.call_ID == 0 or self.rcmp_prec_before2ndIter and self.call_ID < 2):
           A_creation = -time.time()
           sys_size = len(solk)
           if sys_size < 3000:

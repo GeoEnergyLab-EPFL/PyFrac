@@ -511,13 +511,13 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
                 if sim_properties.EHL_GMRES:
                     if not sim_properties.solve_monolithic:
-                        if inj_same_footprint: rcmp_prec_after2iter = True
-                        else: rcmp_prec_after2iter = False
+                        if inj_same_footprint: rcmp_prec_before2ndIter = True
+                        else: rcmp_prec_before2ndIter = False
 
                         linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
                                                                 sim_properties.gmres_maxiter, sim_properties.gmres_Restart,
                                                                 prec_func=EHL_iLU_Prec,
-                                                                rcmp_prec_after2iter = rcmp_prec_after2iter)
+                                                                rcmp_prec_before2ndIter= rcmp_prec_before2ndIter)
                     else:
                         linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
                                                                 sim_properties.gmres_maxiter, sim_properties.gmres_Restart)
@@ -553,14 +553,14 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                     #                 + str(linear_solver.A_creation) + ','
                     #                 + str(linear_solver.call_ID))
                     # file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/iterT.csv'
-                    file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/iterHMATT.csv'
-                    append_new_line(file_name,
-                                     str(sys_size)+','
-                                    +str(Ander_time)+','
-                                    +str(linear_solver.A_creation)+','
-                                    +str(linear_solver.ILU_comp)+','
-                                    + str(linear_solver.cumulativeITERsSOLVER) + ','
-                                    + str(linear_solver.call_ID))
+                    # file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/iterHMATT.csv'
+                    # append_new_line(file_name,
+                    #                  str(sys_size)+','
+                    #                 +str(Ander_time)+','
+                    #                 +str(linear_solver.A_creation)+','
+                    #                 +str(linear_solver.ILU_comp)+','
+                    #                 + str(linear_solver.cumulativeITERsSOLVER) + ','
+                    #                 + str(linear_solver.call_ID))
                 elif sim_properties.elastohydrSolver == 'JacobianFreeNewton':
                     log.error("NOT YET IMPLEMENTED!")
                     # another option is scipy.optimize.newton_krylov

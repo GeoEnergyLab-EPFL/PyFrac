@@ -15,7 +15,7 @@ toleranceVStagnant = 1.e-6              # tolerance on the velocity to decide if
 tolerancewIncr = 1.e-5                  # tolerance on the fracture opening increment (dw). If |dw| is less than the
                                         # tolerance then it is difficault to know if the fracture front is really
                                         # stagnant
-gmres_tol = 1e-9                       # tolerance for the convergence of a gmres solver
+gmres_tol = 1e-10                       # tolerance for the convergence of a gmres solver
 
 
 # max iterations
