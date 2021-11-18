@@ -166,7 +166,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
     if np.all(stagnant):
         delta_w = np.abs(Fr_k.w[Fr_k.EltRibbon]-Frac.w[Fr_k.EltRibbon])
-        if np.sum(Qin) != 0 and np.max(delta_w) < sim_properties.tolerancewIncr:
+        if np.sum(Qin) * timeStep != 0. and np.max(delta_w) < sim_properties.tolerancewIncr:
             log.warning('The time step is too small to induce a significant change in opening')
             return 18, Fr_k
         else:

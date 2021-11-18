@@ -537,14 +537,14 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                            *arg,
                                            perf_node=perfNode_widthConstrItr)
                 elif sim_properties.elastohydrSolver == 'implicit_Anderson':
-                    Ander_time = -time.time()
+                    # Ander_time = -time.time()
                     sol, data_nonLinSolve = Anderson(linear_solver,
                                              guess,
                                              inter_itr_init,
                                              sim_properties,
                                              *arg,
                                              perf_node=perfNode_widthConstrItr)
-                    Ander_time = Ander_time + time.time()
+                    # Ander_time = Ander_time + time.time()
 
                     # file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/directT.csv'
                     # append_new_line(file_name,

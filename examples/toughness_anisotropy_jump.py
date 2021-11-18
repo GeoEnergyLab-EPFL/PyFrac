@@ -35,7 +35,14 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 
 # the function below will make the fracture propagate a specific shape at large time (see Zia et al. IJF 2018)
 # somehow "eye" like at large time
-def K1c_func(alpha):
+def K1c_func(x,y,alpha):
+    if alpha > np.pi/2. and alpha <= np.pi:
+        alpha = np.pi-alpha
+    elif alpha > np.pi and alpha <= 3*np.pi/2:
+        alpha = alpha - np.pi
+    elif alpha > 3*np.pi/2 and alpha <= 2*np.pi:
+        alpha = 2*np.pi - alpha
+
     K1c_1 = 2.0e6                    # fracture toughness along x-axis
     K1c_2 = 3.0e6                    # fracture toughness along y-axis
 # the evolution between the 0 and 90 deg angle is a smooth Heaviside starting at "sharp" angle  3 pi/20
@@ -64,10 +71,10 @@ simulProp.set_outputFolder("./Data/toughness_jump") # the disk address where the
 simulProp.set_simulation_name('anisotropic_toughness_jump')
 simulProp.symmetric = True            # set the fracture to symmetric
 simulProp.projMethod = 'ILSA_orig'
-simulProp.set_tipAsymptote('U')
+simulProp.set_tipAsymptote('U1')
 
 # initializing fracture
-gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
+gamma = (K1c_func(0.,0.,np.pi/2) / K1c_func(0.,0.,0.))**2    # gamma = (Kc1/Kc3)**2
 Fr_geometry = Geometry('elliptical', minor_axis=15., gamma=gamma)
 init_param = InitializationParameters(Fr_geometry, regime='E_K')
 

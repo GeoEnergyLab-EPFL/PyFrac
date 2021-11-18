@@ -122,21 +122,21 @@ class MaterialProperties:
         self.anisotropic_K1c = anisotropic_K1c
         if anisotropic_K1c:
             try:
-                self.Kc1 = K1c_func(0)
+                self.Kc1 = K1c_func(0,0,0)
             except TypeError:
-                raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take one'
-                                 ' argument, i.e. the angle and return a toughness value.')
+                raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take three'
+                                 ' arguments, i.e. the coordinates x and y and the angle of propagation (0 to 2Pi) and return a toughness value.')
         else:
             self.Kc1 = None
 
-        if K1c_func is not None and not self.anisotropic_K1c:
-            # the function should return toughness by taking x and y coordinates
+        if K1c_func is not None: # and not self.anisotropic_K1c:
+            # the function should return toughness by taking x and y coordinates and the local propagation direction given by the angle alpha
             self.inv_with_heter_K1c = True
             try:
-                K1c_func(0.,0.)
+                K1c_func(0.,0.,0.)
             except TypeError:
                 raise SystemExit('The  given Kprime function is not correct! It should take two arguments, '
-                           'i.e. the x and y coordinates of a point and return the toughness at this point.')
+                           'i.e. the x and y coordinates of a point and the angle of propagation (0 to 2Pi) and return a toughness value.')
         else:
             self.inv_with_heter_K1c = False
 
@@ -187,12 +187,12 @@ class MaterialProperties:
         if self.K1cFunc is not None and not self.anisotropic_K1c:
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
-                self.K1c[i] = self.K1cFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+                self.K1c[i] = self.K1cFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1],0.)
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
         elif self.K1cFunc is not None and self.anisotropic_K1c:
             self.K1c = np.empty((mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
-                self.K1c[i] = self.K1cFunc(np.pi/2)
+                self.K1c[i] = self.K1cFunc(0,0,np.pi/2)
             self.Kprime = self.K1c * ((32 / math.pi) ** 0.5)
         else:
             self.Kprime = np.full((mesh.NumberOfElts,), self.Kprime[0])
@@ -213,7 +213,7 @@ class MaterialProperties:
         else:
             self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
-    def Kprime_func(self, x, y):
-        return self.K1cFunc(x, y) * (32. / np.pi) ** 0.5
+    def Kprime_func(self, x, y, alpha):
+        return self.K1cFunc(x, y, alpha) * (32. / np.pi) ** 0.5
 
 #-----------------------------------------------------------------------------------------------------------------------
