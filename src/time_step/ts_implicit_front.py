@@ -15,25 +15,22 @@ import copy
 # Internal Imports
 from systems.systems_handler import solve_width_pressure
 from systems.systems_functions import calculate_fluid_flow_characteristics_laminar
+from time_step.ts_toughess_direction_loop import toughness_direction_loop
 
 from tip.volume_integral import Integral_over_cell
 from tip.volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
-from tip.tip_inversion import TipAsymInversion, StressIntensityFactor
+from tip.tip_inversion import StressIntensityFactor
 
 from level_set.anisotropy import reconstruct_front_LS_gradient
 from level_set.anisotropy import find_zero_vertex
 from level_set.anisotropy import get_toughness_from_zeroVertex
-from level_set.anisotropy import projection_from_ribbon_LS_gradient_at_tip
-from level_set.anisotropy import projection_from_ribbon
-from level_set.anisotropy import get_toughness_from_cellCenter
-from level_set.anisotropy import get_toughness_from_cellCenter_iter
+
 from level_set.anisotropy import get_toughness_from_Front
 from level_set.FMM import fmm
-from level_set.level_set_utils import get_front_region
 from level_set.discontinuous_front_reconstruction import UpdateLists, reconstruct_front
 from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
 
-from properties import IterationProperties, instrument_start, instrument_close
+from properties import IterationProperties, instrument_start
 from fluid.reyNumb import turbulence_check_tip
 from utilities.postprocess_fracture import append_to_json_file
 from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
@@ -279,177 +276,14 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
     """
     log = logging.getLogger('PyFrac.injection_extended_footprint')
-    itr = 0
+
     sgndDist_k = np.copy(Fr_lstTmStp.sgndDist)
 
     # from utility import plot_as_matrix
     # plot_as_matrix(w_k, Fr_lstTmStp.mesh)
 
     # toughness iteration loop
-    while itr < sim_properties.maxProjItrs:
-        # get the current direction of propagation
-        if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.TI_elasticity or mat_properties.inv_with_heter_K1c:
-            if sim_properties.projMethod == 'ILSA_orig':
-                projection_method = projection_from_ribbon
-                second_arg = Fr_lstTmStp.EltChannel
-            elif sim_properties.projMethod == 'LS_grad':
-                projection_method = projection_from_ribbon_LS_gradient_at_tip
-                second_arg = Fr_lstTmStp.front_region
-            elif sim_properties.projMethod == 'LS_continousfront':
-                projection_method = projection_from_ribbon_LS_gradient_at_tip
-                second_arg = Fr_lstTmStp.front_region
-            if itr == 0 :
-                # first iteration
-                alpha_ribbon_k = projection_method(Fr_lstTmStp.EltRibbon,
-                                                   second_arg,
-                                                   Fr_lstTmStp.mesh,
-                                                   sgndDist_k,
-                                                   global_alpha=mat_properties.inv_with_heter_K1c)
-                alpha_ribbon_km1 = np.zeros(Fr_lstTmStp.EltRibbon.size, )
-            elif not mat_properties.inv_with_heter_K1c:
-                alpha_ribbon_k = 0.25 * alpha_ribbon_k + 0.75 * projection_method(Fr_lstTmStp.EltRibbon,
-                                                                                second_arg,
-                                                                                Fr_lstTmStp.mesh,
-                                                                                sgndDist_k, global_alpha=mat_properties.inv_with_heter_K1c)
-            else :
-                alpha_ribbon_k = 0.0 * alpha_ribbon_k + 1. * projection_method(Fr_lstTmStp.EltRibbon,
-                                                                                second_arg,
-                                                                                Fr_lstTmStp.mesh,
-                                                                                sgndDist_k, global_alpha=mat_properties.inv_with_heter_K1c)
-                #alpha_ribbon_k[np.where(alpha_ribbon_k>2.*np.pi)[0]] = alpha_ribbon_k[np.where(alpha_ribbon_k>2.*np.pi)[0]] - 2. * np.pi
-            # from utility import plot_as_matrix
-            # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-            # K[Fr_lstTmStp.EltRibbon] = alpha_ribbon_k
-            # plot_as_matrix(K, Fr_lstTmStp.mesh)
-            if np.isnan(alpha_ribbon_k).any():
-                exitstatus = 11
-                return exitstatus, None
-
-        # if (sim_properties.paramFromTip or mat_properties.anisotropic_K1c) and not mat_properties.inv_with_heter_K1c:
-        #     Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
-        #                                              sgndDist_k,
-        #                                              Fr_lstTmStp.EltRibbon,
-        #                                              mat_properties,
-        #                                              Fr_lstTmStp.mesh) * (32 / np.pi) ** 0.5
-        #     if np.isnan(Kprime_k).any():
-        #         exitstatus = 11
-        #         return exitstatus, None
-        # elif mat_properties.inv_with_heter_K1c:
-        #     Kprime_k =  get_toughness_from_cellCenter_iter(alpha_ribbon_k, Fr_lstTmStp.mesh.CenterCoor[Fr_lstTmStp.EltRibbon], mat_properties)
-
-        if mat_properties.inv_with_heter_K1c:
-            Kprime_k =  get_toughness_from_cellCenter_iter(alpha_ribbon_k, Fr_lstTmStp.mesh.CenterCoor[Fr_lstTmStp.EltRibbon], mat_properties)
-        else:
-            Kprime_k = None
-
-        # ----- plot to check -----
-        #K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-        #K[Fr_lstTmStp.EltRibbon] = Kprime_k.of(sgndDist_k[Fr_lstTmStp.EltRibbon],mesh=Fr_lstTmStp.mesh, ribbon=Fr_lstTmStp.EltRibbon)
-        # from utility import plot_as_matrix
-        # plot_as_matrix(K, Fr_lstTmStp.mesh)
-
-        if mat_properties.TI_elasticity : #and not mat_properties.inv_with_heter_K1c:
-            Eprime_k = TI_plain_strain_modulus(alpha_ribbon_k,
-                                               mat_properties.Cij)
-            if np.isnan(Eprime_k).any():
-                exitstatus = 11
-                return exitstatus, None
-        else:
-            Eprime_k = None
-
-        # Initialization of the signed distance in the ribbon element - by inverting the tip asymptotics
-        # large float value. (algorithm requires inf)
-        #todo: check the sgndDist initiation process
-        sgndDist_k = 1e50 * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)  # Initializing the cells with extremely
-
-        perfNode_tipInv = instrument_start('tip inversion', perfNode)
-
-        sgndDist_k[Fr_lstTmStp.EltRibbon] = - TipAsymInversion(w_k,
-                                                               Fr_lstTmStp,
-                                                               mat_properties,
-                                                               fluid_properties,
-                                                               sim_properties,
-                                                               timeStep,
-                                                               Kprime_k=Kprime_k,
-                                                               Eprime_k=Eprime_k,
-                                                               perfNode=perfNode_tipInv)
-
-        status = True
-        fail_cause = None
-        # if tip inversion returns nan
-        if np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon]).any():
-            status = False
-            fail_cause = 'tip inversion failed'
-            exitstatus = 7
-            # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-            # K[Fr_lstTmStp.EltRibbon] = sgndDist_k[Fr_lstTmStp.EltRibbon]
-            # from utility import plot_as_matrix
-            # plot_as_matrix(K, Fr_lstTmStp.mesh)
-            # np.argwhere(np.isnan(sgndDist_k[Fr_lstTmStp.EltRibbon])).flatten()
-
-        if perfNode_tipInv is not None:
-            instrument_close(perfNode, perfNode_tipInv, None, len(Fr_lstTmStp.EltRibbon),
-                             status, fail_cause, Fr_lstTmStp.time)
-            perfNode.tipInv_data.append(perfNode_tipInv)
-
-        if not status:
-            return exitstatus, None
-
-        # # Check for positive
-        # if np.any(sgndDist_k[Fr_lstTmStp.EltRibbon]>0):
-        #     log.debug("found a positive signed distance: it must not happen ")
-        # Check if the front is receding
-        # Define the level set in the ribbon elements as not to allow the fracture to reced.
-        sgndDist_k[Fr_lstTmStp.EltRibbon] = np.minimum(sgndDist_k[Fr_lstTmStp.EltRibbon],
-                                                       Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltRibbon])
-
-        # We calculate the front region
-        front_region = get_front_region(Fr_lstTmStp.mesh, Fr_lstTmStp.EltRibbon, sgndDist_k[Fr_lstTmStp.EltRibbon])
-
-        # the search region outwards from the front position at last time step
-        pstv_region = np.setdiff1d(front_region, Fr_lstTmStp.EltChannel)
-
-        # the search region inwards from the front position at last time step
-        ngtv_region = np.setdiff1d(front_region, pstv_region)
-
-        # Creating a fmm structure to solve the level set
-        fmmStruct = fmm(Fr_lstTmStp.mesh)
-
-        # We define the ribbon elements as the known elements and solve from there outwards to the domain boundary.
-        fmmStruct.solveFMM((sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
-                           np.unique(np.hstack((pstv_region, Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
-
-        # We define the ribbon elements as the known elements and solve from there inwards (inside the fracture). To do
-        # so, we need a sign change on the level set (positive inside)
-        toEval = np.unique(np.hstack((ngtv_region, Fr_lstTmStp.EltRibbon)))
-        fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval,
-                           Fr_lstTmStp.mesh)
-
-        # The solution stored in the object is the calculated level set. we need however to change the sign as to have
-        # negative inside and positive outside.
-        sgndDist_k = fmmStruct.LS
-        sgndDist_k[toEval] = -sgndDist_k[toEval]
-
-        eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
-
-        # do it only once if not anisotropic
-        if not (sim_properties.paramFromTip or mat_properties.anisotropic_K1c
-                or mat_properties.TI_elasticity or mat_properties.inv_with_heter_K1c) or sim_properties.explicitProjection:
-            break
-
-        norm = np.linalg.norm(np.abs(np.sin(alpha_ribbon_k) - np.sin(alpha_ribbon_km1)) + np.abs(np.cos(alpha_ribbon_k) - np.cos(alpha_ribbon_km1)))
-        if norm < sim_properties.toleranceProjection:
-            log.debug("projection iteration converged after " + repr(itr - 1) + " iterations; exiting norm " +
-                      repr(norm))
-            break
-
-        alpha_ribbon_km1 = np.copy(alpha_ribbon_k)
-        log.debug("iterating on projection... norm " + repr(norm))
-        itr += 1
-
-    # if itr == sim_properties.maxProjItrs:
-    #     exitstatus = 10
-    #     return exitstatus, None
+    front_region, eval_region, sgndDist_k = toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_properties, fluid_properties, timeStep, log, perfNode)
 
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
@@ -659,9 +493,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
     if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c:
         if sim_properties.projMethod != 'LS_continousfront':
-            # Calculating Carter's coefficient at tip to be used to calculate the volume integral in the tip cells
-            zrVrtx_newTip = find_zero_vertex(EltsTipNew, sgndDist_k, Fr_lstTmStp.mesh)
-            # get toughness from tip in case of anisotropic or
+            # get toughness from zero vertex
             Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                              Fr_lstTmStp.mesh,
                                                                              mat_properties,
@@ -672,7 +504,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             toughness_from_zeroVertex = False
             zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
             if toughness_from_zeroVertex:
-                # get toughness from tip in case of anisotropic or
+                # get toughness from zero vertex
                 Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                                  Fr_lstTmStp.mesh,
                                                                                  mat_properties,
@@ -680,6 +512,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                                  l_k,
                                                                                  zrVrtx_newTip)
             else:
+                # get toughness from Ffront
                 Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(Ffront,
                                                                                EltsTipNew,
                                                                                EltTip_k,

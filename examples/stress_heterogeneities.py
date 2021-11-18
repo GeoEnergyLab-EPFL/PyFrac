@@ -9,6 +9,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # External imports
 import os
+import numpy as np
+import math
 
 # local imports
 from mesh.mesh import CartesianMesh
@@ -34,8 +36,15 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 K_Ic1 = 5.6e6                       # fracture toughness
 
 
-def My_KIc_func(x, y):
+def My_KIc_func(x, y, alpha):
     """ The function providing the fracture toughness"""
+    if alpha > np.pi/2. and alpha <= np.pi:
+        alpha = np.pi-alpha
+    elif alpha > np.pi and alpha <= 3*np.pi/2:
+        alpha = alpha - np.pi
+    elif alpha > 3*np.pi/2 and alpha <= 2*np.pi:
+        alpha = 2*np.pi - alpha
+
     return K_Ic1
 
 
@@ -81,7 +90,7 @@ Solid = MaterialProperties(Mesh,
 
 
 # injection parameters
-Q0 = 0.001  # injection rate
+Q0 = 0.01  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
