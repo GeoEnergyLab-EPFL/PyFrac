@@ -14,6 +14,15 @@ from scipy.sparse import coo_matrix
 from numba import config
 from scipy.sparse.linalg import LinearOperator
 import random
+import time
+import multiprocessing
+import copy
+from math import floor
+
+# local imports
+from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
+from solid.elasticity_isotropic_utils import get_isotropic_el_self_eff
+from utilities.utility import append_new_line
 
 
 def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
@@ -67,51 +76,72 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-@njit()
-def get_isotropic_el_self_eff(hx, hy, Ep):
-    """
-    Evaluate the self effect term (diagonal value) for isotropic elasticity.
-    Arguments:
-        hx (float):                     -- x size of a mesh cell
-        hy (float):                     -- y size of a mesh cell
-        Ep (float):                     -- plain strain modulus.
-    Returns:
-        ndarray-float:                  -- the diagonal term.
-    """
-
-    a = hx / 2.  # Lx/nx-1
-    b = hy / 2.  # Ly/ny-1
-    bb = b * b
-    aa = a * a
-    sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
-    return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
 
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'tbb'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
-@njit(parallel=True, fastmath=True, nogil=True)  # <------parallel compilation
-# @njit() # <------serial compilation
+@njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
-    # elemX = self.domain_INDX
-    # elemY = self.codomain_INDX
-    # nx  # number of element in x direction in the global mesh
-    # dimX = elemX.size  # number of elements to consider on x axis
-    # dimY = elemY.size  # number of elements to consider on y axis
+    # uk (numpy array), vector to which multiply the matrix C
+    # nx (int), n. of element in x direction in the cartesian mesh
+    # elemX (numpy array), IDs of elements to consider on x axis of the mesh
+    # elemY (numpy array), IDs of elements to consider on y axis of the mesh
+    # dimY (int), length(elemY) = length(elemX)
+    # C_toeplitz_coe (numpy array), array containing the N unique coefficients of the matrix C of size NxN
+    # C_precision (e.g.: float)
 
-    res = np.empty(dimY, dtype=C_precision)  # subvector result
+    # 1) vector where to store the result of the dot product
+    res = np.empty(dimY, dtype=C_precision)
 
+    # 2) some indexes to build the row of a submatrix of C from the array of its unique entries
     iY = np.floor_divide(elemY, nx)
     jY = elemY - nx * iY
     iX = np.floor_divide(elemX, nx)
     jX = elemX - nx * iX
+
+    iX *= nx
+    iY *= nx
+
+    # 3)loop over the rows of the matrix
     for iter1 in prange(dimY):
-        # assembly matrix row
-        res[iter1] = np.dot(C_toeplitz_coe[np.abs(jY[iter1] - jX) + nx * np.abs(iY[iter1] - iX)], uk)
+        # 4) get the indexes to access the array of C unique entries
+        # 5) assembly a matrix row and execute the dot product
+        # 6) execute the dot product
+        res[iter1] = np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
     return res
+#
+# @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+# def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
+#     # uk (numpy array), vector to which multiply the matrix C
+#     # nx (int), n. of element in x direction in the cartesian mesh
+#     # elemX (numpy array), IDs of elements to consider on x axis of the mesh
+#     # elemY (numpy array), IDs of elements to consider on y axis of the mesh
+#     # dimY (int), length(elemY) = length(elemX)
+#     # C_toeplitz_coe (numpy array), array containing the N unique coefficients of the matrix C of size NxN
+#     # C_precision (e.g.: float)
+#
+#     # 1) vector where to store the result of the dot product
+#     res = np.zeros(dimY, dtype=C_precision)
+#
+#     # 2) some indexes to build the row of a submatrix of C from the array of its unique entries
+#     iY = np.floor_divide(elemY, nx)
+#     jY = elemY - nx * iY
+#     iX = np.floor_divide(elemX, nx)
+#     jX = elemX - nx * iX
+#
+#     iX *= nx
+#     iY *= nx
+#
+#     chunksize = 300
+#     splitrange = np.floor_divide(dimY, chunksize)
+#     residualrange = dimY - chunksize
+#     for iter1 in prange(splitrange):
+#         res[iter1] += np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
+#     return res
 
 
 @njit(fastmath=True, nogil=True, parallel=True)
@@ -214,26 +244,30 @@ def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshol
     j = elmts - nx * i
     dimX = len(elmts)
     self_c = C_toeplitz_coe[0]
-    myR = range(dimX)
+    #myR = range(dimX)
     data = []
     rows = []
     cols = []
     i *= nx
     for iter1 in prange(dimX):
         index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
+        # self effect
+        data.append(self_c)
+        rows.append(iter1)
+        cols.append(iter1)
         for iter2 in range(iter1 + 1, dimX):
             ii2 = index[iter2]
-            if C_toeplitz_coe_decay[ii2] > decay_tshold or random.random() < probability:
+            if C_toeplitz_coe_decay[ii2] > decay_tshold:# and random.random() < probability:
+            #if C_toeplitz_coe_decay[ii2] > decay_tshold:
                 cols.append(iter2)
                 rows.append(iter1)
                 data.append(C_toeplitz_coe[ii2])
+                # symmetry
+                rows.append(iter2)
+                cols.append(iter1)
+                data.append(C_toeplitz_coe[ii2])
 
-    data = [*data, *data]
-    rows1 = [*rows, *cols]
-    cols = [*cols, *rows]
-    data = [*data, *[self_c for _ in myR]]
-    rows = [*rows1, *[ii for ii in myR]]
-    cols = [*cols, *[ii for ii in myR]]
+
     # import matplotlib
     # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
 
@@ -263,7 +297,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
 
     """
 
-    def __init__(self, Mesh, Ep, C_precision=np.float64, get_full_blocks=False, nu=None):
+    def __init__(self, Mesh, Ep, C_precision=np.float64, useHMATdot=False, nu=None):
         """
             Arguments:
                 Mesh:                           -- Cartesian Mesh object
@@ -278,6 +312,13 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self.Ep = Ep
         const = (Ep / (8. * np.pi))
         self.const = const
+
+        self.useHMATdot = useHMATdot
+        if useHMATdot:
+            if nu is None: SystemExit("please, provide the Poisson's ratio to get the full blocks")
+            self.HMATcreationTime = []
+            self.nu = nu
+
         self.reload(Mesh)
         # ---- TIP CORRECTION ----
         self.enable_tip_corr = False  # one needs to specifically activate it in case it is needed
@@ -286,16 +327,6 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         # ---- JACOBI PREC ----
         self.left_precJ = False
         self.right_precJ = False
-
-        # if get_full_blocks:
-        #     if nu is None: SystemExit("please, provide the Poisson's ratio to get the full blocks")
-        #     self.tractionKernel = "3DR0opening"
-        #     self.max_leaf_size = 100
-        #     self.eta = 5
-        #     self.eps_aca = 0.00001
-        #     self.HMATtract = None
-        #     elas_prop = [Ep * (1 - nu ** 2), nu] #  youngs_mod, nu
-        #     self._get_full_blocks(Mesh.VertexCoor, Mesh.Connectivity, elas_prop)
 
     def reload(self, Mesh):
         hx = Mesh.hx
@@ -309,7 +340,24 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         self.nx = nx
         const = self.const
 
-        #################### Cdot SECTION ###################
+        #################### HMAT Cdot SECTION ###################
+        if self.useHMATdot:
+            self.tractionKernel = "3DR0opening"
+            self.max_leaf_size = 100
+            self.eta = 5
+            self.eps_aca = 1.e-6
+            self.HMATtract = None
+            self.elas_prop = [self.Ep * (1 - self.nu ** 2), self.nu]  # youngs_mod, nu
+            data = [self.max_leaf_size, self.eta, self.eps_aca, self.elas_prop, Mesh.VertexCoor, Mesh.Connectivity,
+                    Mesh.hx, Mesh.hy]
+            self.HMAT = Hdot_3DR0opening()
+            HMATcreationTime = -time.time()
+            self.HMAT.set(data)
+            self.HMATcreationTime.append(HMATcreationTime + time.time())
+            # self._get_full_blocks(Mesh.VertexCoor, Mesh.Connectivity, elas_prop)
+        ################ END HMAT Cdot SECTION ######################
+
+        #################### TOEPLITZ Cdot SECTION ###################
         # diagonal value of the matrix
         self.diag_val = get_isotropic_el_self_eff(hx, hy, self.Ep)
 
@@ -326,7 +374,8 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
 
         self._set_domain_IDX(np.arange(self.C_size_))
         self._set_codomain_IDX(np.arange(self.C_size_))
-        ################ END Cdot SECTION ######################
+
+        ################ TOEPLITZ END Cdot SECTION ######################
         """
         Let us make some definitions:
         cartesian mesh             := a structured rectangular mesh of (nx,ny) cells of rectaungular shape
@@ -357,7 +406,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe))
         C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
         C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
-        self.C_toeplitz_coe_decay = C_toeplitz_coe_exp  # between 0 and 1
+        self.C_toeplitz_coe_decay = C_toeplitz_coe_exp.tolist()  # between 0 and 1
         self.coeff9stencilC = [self.C_toeplitz_coe[0],  # 0 dx 0 dy
                                self.C_toeplitz_coe[1],  # 1 dx 0 dy
                                self.C_toeplitz_coe[nx],  # 0 dx 1 dy
@@ -374,8 +423,17 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         return getFast(elementsXY, self.nx, self.C_toeplitz_coe, self.C_precision)
 
     def _matvec_fast(self, uk):
-        return matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
-                           self.C_toeplitz_coe, self.C_precision)
+        if self.useHMATdot and len(uk) > 25000:
+            return self.HMAT._matvec(uk)
+        else:
+            #mv_time = - time.time()
+            aa= matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+                               self.C_toeplitz_coe, self.C_precision)
+            #mv_time = mv_time + time.time()
+
+            #file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/Ex_time.csv'
+            #append_new_line(file_name,str(len(aa)) + ',' + str(mv_time))
+            return aa
 
     def _matvec(self, uk):
         # if self.C_precision == np.float32:
@@ -464,6 +522,8 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         o o o o    0 <-3    o <-3
         """
         self.domain_INDX = domainIDX
+        if self.useHMATdot:
+            return self.HMAT._set_domain_IDX(domainIDX)
 
     def _set_codomain_IDX(self, codomainIDX):
         """
@@ -477,6 +537,8 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         """
         self.codomain_INDX = codomainIDX
         self._changeShape(codomainIDX.size)
+        if self.useHMATdot:
+            return self.HMAT._set_codomain_IDX(codomainIDX)
 
     def _set_tipcorr(self, correction_val, correction_INDX):
         """

@@ -10,10 +10,13 @@ from line_profiler import LineProfiler
 profile = LineProfiler()
 # imports
 import os
+import numpy as np
+from line_profiler import LineProfiler
 
 # local imports
 from mesh.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
 from fracture.fracture import Fracture
@@ -24,9 +27,10 @@ from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
-
+# profile = LineProfiler()
 # creating mesh
-Mesh = CartesianMesh(10, 10, 121, 121)
+#Mesh = CartesianMesh(10, 10, 121, 121)
+Mesh = CartesianMesh(20, 20, 241, 241)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -50,8 +54,8 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 4.155421804482037                        # the time at which the simulation stops
-simulProp.saveTSJump, simulProp.plotTSJump = 1, 50   # save and plot after every 5 time steps
+simulProp.finalTime = 140.155421804482037                        # the time at which the simulation stops
+simulProp.saveTSJump, simulProp.plotTSJump = 1, 1   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
 simulProp.EHL_GMRES = True
@@ -62,9 +66,9 @@ simulProp.frontAdvancing = 'implicit'
 # simulProp.gmres_tol = 1.e-6
 
 # initializing fracture
-Fr_geometry = Geometry('radial',radius=1.598)
-# C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64)
-init_param = InitializationParameters(Fr_geometry, regime='M', time=0.05)
+Fr_geometry = Geometry('radial',radius=1.598) #1
+C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64, useHMATdot=False, nu=nu)
+init_param = InitializationParameters(Fr_geometry, regime='M', time=0.05, elasticity_matrix=C)
 # init_param = InitializationParameters(Fr_geometry,
 #                                       regime='static',
 #                                       net_pressure=36.2e3,
@@ -79,13 +83,25 @@ Fr = Fracture(Mesh,
               Injection,
               simulProp)
 
+restart = False
+if restart:
+    from utilities.visualization import *
+
+    Fr_list, properties = load_fractures(address="./Data/MtoK",
+                                         step_size=1, load_all=True)  # load all fractures                                                # list of times
+    Solid, Fluid, Injection, simulProp = properties
+    #simulProp.finalTime = 24.155421804482037
+    Fr = Fr_list[-1]
+
+
 
 # create a Controller
 controller = Controller(Fr,
                         Solid,
                         Fluid,
                         Injection,
-                        simulProp)
+                        simulProp,
+                        C=C)
 
 # run the simulation
 controller.run()

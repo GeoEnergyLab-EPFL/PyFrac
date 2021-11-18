@@ -32,14 +32,14 @@ from properties import instrument_start, instrument_close
 from linear_solvers.linear_direct_solver import Direct_linear_solver
 from linear_solvers.linear_iterative_solver import Iterative_linear_solver, iteration_counter
 from linear_solvers.preconditioners.prec_back_subst_EHL import EHL_iLU_Prec
-
+from utilities.utility import append_new_line
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 
 def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
                          FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
-                         doublefracturedictionary = None):
+                         doublefracturedictionary = None, inj_same_footprint = False):
     """
     This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow
     equations. The system of equations are formed according to the type of solver given in the simulation properties.
@@ -511,9 +511,13 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
                 if sim_properties.EHL_GMRES:
                     if not sim_properties.solve_monolithic:
+                        if inj_same_footprint: rcmp_prec_after2iter = True
+                        else: rcmp_prec_after2iter = False
+
                         linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
                                                                 sim_properties.gmres_maxiter, sim_properties.gmres_Restart,
-                                                                prec_func=EHL_iLU_Prec)
+                                                                prec_func=EHL_iLU_Prec,
+                                                                rcmp_prec_after2iter = rcmp_prec_after2iter)
                     else:
                         linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
                                                                 sim_properties.gmres_maxiter, sim_properties.gmres_Restart)
@@ -533,16 +537,30 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
                                            *arg,
                                            perf_node=perfNode_widthConstrItr)
                 elif sim_properties.elastohydrSolver == 'implicit_Anderson':
-                    #Ander_time = -time.time()
+                    # Ander_time = -time.time()
                     sol, data_nonLinSolve = Anderson(linear_solver,
                                              guess,
                                              inter_itr_init,
                                              sim_properties,
                                              *arg,
                                              perf_node=perfNode_widthConstrItr)
-                    #Ander_time = Ander_time + time.time()
-                    #file_name = '/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_random_E/iterT_25.csv'
-                    #append_new_line(file_name, str(sys_size)+','+str(Ander_time))
+                    # Ander_time = Ander_time + time.time()
+
+                    # file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/directT.csv'
+                    # append_new_line(file_name,
+                    #                 str(sys_size) + ','
+                    #                 + str(Ander_time) + ','
+                    #                 + str(linear_solver.A_creation) + ','
+                    #                 + str(linear_solver.call_ID))
+                    # file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/iterT.csv'
+                    # file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/iterHMATT.csv'
+                    # append_new_line(file_name,
+                    #                  str(sys_size)+','
+                    #                 +str(Ander_time)+','
+                    #                 +str(linear_solver.A_creation)+','
+                    #                 +str(linear_solver.ILU_comp)+','
+                    #                 + str(linear_solver.cumulativeITERsSOLVER) + ','
+                    #                 + str(linear_solver.call_ID))
                 elif sim_properties.elastohydrSolver == 'JacobianFreeNewton':
                     log.error("NOT YET IMPLEMENTED!")
                     # another option is scipy.optimize.newton_krylov

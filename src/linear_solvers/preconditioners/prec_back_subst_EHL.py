@@ -10,13 +10,15 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # External imports
 from scipy.sparse.linalg import spilu
 from scipy.sparse import csc_matrix
+#from ilupp import ilu0, ICholTPreconditioner
 
 # Internal imports
 from linear_solvers.preconditioners.preconditioner import Preconditioner
 
 class EHL_iLU_Prec(Preconditioner):
   def __init__(self, A, drop_tol=1e-10, fill_factor=10):
-    EHL_iLU = spilu(csc_matrix(A), drop_tol=drop_tol, fill_factor=fill_factor)
+    EHL_iLU = spilu(A, drop_tol=drop_tol, fill_factor=fill_factor)
+    #EHL_iLU = ilu0(csc_matrix(A))[0]
 
     # ---> to check the sparsity pattern
     # import matplotlib
