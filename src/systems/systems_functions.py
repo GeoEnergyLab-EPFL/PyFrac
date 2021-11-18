@@ -11,13 +11,13 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 from scipy import sparse
 from scipy.optimize import brentq
-
+from numba import jit, prange
 
 # Internal imports
 from fluid.fluid_model import friction_factor_vector, friction_factor_MDR
 
-
-def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack, neiInCrack, simProp):
+#@jit()
+def finiteDiff_operator_laminar(w, EltCrack, muPrime, NeiElements, dx, dy, InCrack, neiInCrack, sparse_flag=True):
     """
     The function evaluate the finite difference 5 point stencil matrix, i.e. the A matrix in the ElastoHydrodynamic
     equations in e.g. Dontsov and Peirce 2008. The matrix is evaluated with the laminar flow assumption.
@@ -26,31 +26,30 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, Mesh, InCrack, neiInCrack,
         w (ndarray):            -- the width of the trial fracture.
         EltCrack (ndarray):     -- the list of elements inside the fracture.
         muPrime (ndarray):      -- the scaled local viscosity of the injected fluid (12 * viscosity).
-        Mesh (CartesianMesh):   -- the mesh.
+        Mesh.NeiElements (CartesianMesh):   -- see mesh class
+        dx (CartesianMesh):     -- see Mesh.hx in the mesh class
+        dy (CartesianMesh):     -- see Mesh.hy in the mesh class
         InCrack (ndarray):      -- an array specifying whether elements are inside the fracture or not with
                                    1 or 0 respectively.
         neiInCrack (ndarray):   -- an ndarray giving indices of the neighbours of all the cells in the crack, in the
                                    EltCrack list.
-        simProp (object):       -- An object of the SimulationProperties class.
+        sparse_flag (bool):     -- A bool to decide if returning a sparse matrix or a full matrix.
 
     Returns:
         FinDiffOprtr (ndarray): -- the finite difference matrix.
 
     """
 
-    if simProp.solveSparse:
+    if sparse_flag:
         FinDiffOprtr = sparse.lil_matrix((len(EltCrack), len(EltCrack) + 1), dtype=np.float64)
     else:
         FinDiffOprtr = np.zeros((len(EltCrack), len(EltCrack) + 1), dtype=np.float64)
 
-    dx = Mesh.hx
-    dy = Mesh.hy
-
     # width at the cell edges evaluated by averaging. Zero if the edge is outside fracture
-    wLftEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 0]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 0]]
-    wRgtEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 1]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 1]]
-    wBtmEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 2]]
-    wTopEdge = (w[EltCrack] + w[Mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[Mesh.NeiElements[EltCrack, 3]]
+    wLftEdge = (w[EltCrack] + w[NeiElements[EltCrack, 0]]) / 2 * InCrack[NeiElements[EltCrack, 0]]
+    wRgtEdge = (w[EltCrack] + w[NeiElements[EltCrack, 1]]) / 2 * InCrack[NeiElements[EltCrack, 1]]
+    wBtmEdge = (w[EltCrack] + w[NeiElements[EltCrack, 2]]) / 2 * InCrack[NeiElements[EltCrack, 2]]
+    wTopEdge = (w[EltCrack] + w[NeiElements[EltCrack, 3]]) / 2 * InCrack[NeiElements[EltCrack, 3]]
 
     indx_elts = np.arange(len(EltCrack))
     FinDiffOprtr[indx_elts, indx_elts] = (-(wLftEdge ** 3 + wRgtEdge ** 3) / dx ** 2 - (
@@ -579,10 +578,12 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
         FinDiffOprtr = finiteDiff_operator_laminar(wNplusOne,
                                                    EltCrack,
                                                    fluid_prop.muPrime,
-                                                   mesh,
+                                                   mesh.NeiElements,
+                                                   mesh.hx,
+                                                   mesh.hy,
                                                    InCrack,
                                                    neiInCrack,
-                                                   sim_prop)
+                                                   sim_prop.solveSparse)
 
     else:
         pf = np.zeros((mesh.NumberOfElts,), dtype=np.float64)

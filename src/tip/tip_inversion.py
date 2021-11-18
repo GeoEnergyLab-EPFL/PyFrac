@@ -611,7 +611,7 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
                 #test if there is a jump
                 # - we use the bisection and we test if a limit exist for DK/Ds
                 # - if the limit does not exist, find the jump using the bisection method up to a distance
-                Kjump_bool, a_new, b_new = bisection_Kjump_finder(a[i],b[i],Kprime, i, mesh)
+                Kjump_bool, a_new, b_new = bisection_Kjump_finder(a[i], b[i], Kprime, i, mesh)
                 if Kjump_bool:
                     # check the residuals before and after the jump
                     # if they are of the same sign then you can find the root before or after the jump
