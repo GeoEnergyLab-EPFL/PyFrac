@@ -295,7 +295,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             elif sim_properties.projMethod == 'LS_grad':
                 projection_method = projection_from_ribbon_LS_gradient_at_tip
                 second_arg = Fr_lstTmStp.front_region
-            elif sim_properties.projMethod == 'LS_continousfront': #todo: test this case!!!
+            elif sim_properties.projMethod == 'LS_continousfront':
                 projection_method = projection_from_ribbon_LS_gradient_at_tip
                 second_arg = Fr_lstTmStp.front_region
             if itr == 0 :
@@ -325,16 +325,19 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 exitstatus = 11
                 return exitstatus, None
 
-        if (sim_properties.paramFromTip or mat_properties.anisotropic_K1c) and not mat_properties.inv_with_heter_K1c:
-            Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
-                                                     sgndDist_k,
-                                                     Fr_lstTmStp.EltRibbon,
-                                                     mat_properties,
-                                                     Fr_lstTmStp.mesh) * (32 / np.pi) ** 0.5
-            if np.isnan(Kprime_k).any():
-                exitstatus = 11
-                return exitstatus, None
-        elif mat_properties.inv_with_heter_K1c:
+        # if (sim_properties.paramFromTip or mat_properties.anisotropic_K1c) and not mat_properties.inv_with_heter_K1c:
+        #     Kprime_k = get_toughness_from_cellCenter(alpha_ribbon_k,
+        #                                              sgndDist_k,
+        #                                              Fr_lstTmStp.EltRibbon,
+        #                                              mat_properties,
+        #                                              Fr_lstTmStp.mesh) * (32 / np.pi) ** 0.5
+        #     if np.isnan(Kprime_k).any():
+        #         exitstatus = 11
+        #         return exitstatus, None
+        # elif mat_properties.inv_with_heter_K1c:
+        #     Kprime_k =  get_toughness_from_cellCenter_iter(alpha_ribbon_k, Fr_lstTmStp.mesh.CenterCoor[Fr_lstTmStp.EltRibbon], mat_properties)
+
+        if mat_properties.inv_with_heter_K1c:
             Kprime_k =  get_toughness_from_cellCenter_iter(alpha_ribbon_k, Fr_lstTmStp.mesh.CenterCoor[Fr_lstTmStp.EltRibbon], mat_properties)
         else:
             Kprime_k = None
@@ -345,7 +348,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         # from utility import plot_as_matrix
         # plot_as_matrix(K, Fr_lstTmStp.mesh)
 
-        if mat_properties.TI_elasticity and not mat_properties.inv_with_heter_K1c:
+        if mat_properties.TI_elasticity : #and not mat_properties.inv_with_heter_K1c:
             Eprime_k = TI_plain_strain_modulus(alpha_ribbon_k,
                                                mat_properties.Cij)
             if np.isnan(Eprime_k).any():

@@ -60,7 +60,9 @@ def solve_width_pressure_RKL2(Eprime, GPU, n_threads, perf_node, *args):
         cond_0_lil = finiteDiff_operator_laminar(wLastTS,
                                              EltCrack,
                                              muPrime,
-                                             Mesh,
+                                             Mesh.NeiElements,
+                                             Mesh.hx,
+                                             Mesh.hy,
                                              InCrack,
                                              neiInCrack,
                                              sparse_flag=True)
@@ -141,7 +143,9 @@ def RKL_substep_neg(j, s, W_jm1, W_jm2, W_0, crack, n_channel, tip_delw_step, pa
         cond_lil = finiteDiff_operator_laminar(w_jm1,
                                                crack,
                                                muPrime,
-                                               Mesh,
+                                               Mesh.NeiElements,
+                                               Mesh.hx,
+                                               Mesh.hy,
                                                InCrack,
                                                neiInCrack,
                                                sparse_flag=True)

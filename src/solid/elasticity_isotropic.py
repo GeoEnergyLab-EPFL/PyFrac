@@ -11,15 +11,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 from numba import njit, prange
 from scipy.sparse import coo_matrix
-from numba import config, threading_layer
+from numba import config
 from scipy.sparse.linalg import LinearOperator
-from scipy.sparse import csc_matrix
-import logging
-import json
-import subprocess
-import pickle
-from array import array
-import os, sys
 import random
 
 
@@ -74,7 +67,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-
+@njit()
 def get_isotropic_el_self_eff(hx, hy, Ep):
     """
     Evaluate the self effect term (diagonal value) for isotropic elasticity.
@@ -100,7 +93,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
 config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
-@njit(parallel=True, fastmath=True, nopython=True)  # <------parallel compilation
+@njit(parallel=True, fastmath=True, nogil=True)  # <------parallel compilation
 # @njit() # <------serial compilation
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # elemX = self.domain_INDX
@@ -109,8 +102,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # dimX = elemX.size  # number of elements to consider on x axis
     # dimY = elemY.size  # number of elements to consider on y axis
 
-    # res = np.empty(dimY, dtype=C_precision)  # subvector result
-    res = np.zeros(dimY, dtype=C_precision)  # subvector result
+    res = np.empty(dimY, dtype=C_precision)  # subvector result
 
     iY = np.floor_divide(elemY, nx)
     jY = elemY - nx * iY
@@ -118,16 +110,16 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     jX = elemX - nx * iX
     for iter1 in prange(dimY):
         # assembly matrix row
-        res[iter1] += np.dot(C_toeplitz_coe[np.abs(jY[iter1] - jX) + nx * np.abs(iY[iter1] - iX)], uk)
+        res[iter1] = np.dot(C_toeplitz_coe[np.abs(jY[iter1] - jX) + nx * np.abs(iY[iter1] - iX)], uk)
     return res
 
 
-@njit(fastmath=True, nopython=True)
+@njit(fastmath=True, nogil=True, parallel=True)
 def get_toeplitzCoe(nx, ny, hx, hy, a, b, const, C_precision):
     C_toeplitz_coe = np.empty(ny * nx, dtype=C_precision)
     xindrange = np.arange(nx)
     xrange = xindrange * hx
-    for i in range(ny):
+    for i in prange(ny):
         y = i * hy
         amx = a - xrange
         apx = a + xrange
@@ -140,7 +132,7 @@ def get_toeplitzCoe(nx, ny, hx, hy, a, b, const, C_precision):
     return C_toeplitz_coe
 
 
-@njit(fastmath=True, nopython=True)
+@njit(fastmath=True, nogil=True, parallel=True)
 def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
     elemX = elementsXY[1].flatten()
     elemY = elementsXY[0].flatten()
@@ -158,7 +150,7 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
             jY = elemY - nx * iY
             iX = np.floor_divide(elemX, nx)
             jX = elemX - nx * iX
-            for iter1 in range(dimY):
+            for iter1 in prange(dimY):
                 i1 = iY[iter1]
                 j1 = jY[iter1]
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
@@ -168,7 +160,7 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
             i = np.floor_divide(elemX, nx)
             j = elemX - nx * i
 
-            for iter1 in range(dimX):
+            for iter1 in prange(dimX):
                 i1 = i[iter1]
                 j1 = j[iter1]
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
@@ -180,14 +172,14 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
             iX = np.floor_divide(elemX, nx)
             jX = elemX - nx * iX
 
-            for iter1 in range(dimY):
+            for iter1 in prange(dimY):
                 i1 = iY[iter1]
                 j1 = jY[iter1]
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
 
-@njit(fastmath=True, nopython=True)
+@njit(fastmath=True, nogil=True, parallel=True)
 def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     # coeff9stencilC contains [C_0dx_0dy, C_1dx_0dy, C_0dx_1dy, C_1dx_1dy]
     i = np.floor_divide(elmts, nx)
@@ -197,7 +189,7 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     data = dimX * [coeff9stencilC[0]]
     rows = [ii for ii in range(dimX)]
     cols = [ii for ii in range(dimX)]
-    for iter1 in range(dimX):
+    for iter1 in prange(dimX):
         i1 = i[iter1]
         j1 = j[iter1]
         delta_j = np.abs(j - j1)
@@ -216,7 +208,7 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype).tocsc()
 
 
-@njit(parallel=True, fastmath=True, nopython=True)
+@njit(fastmath=True)
 def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
@@ -226,8 +218,9 @@ def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshol
     data = []
     rows = []
     cols = []
-    for iter1 in range(dimX):
-        index = np.abs(j - j[iter1]) + nx * np.abs(i - i[iter1])
+    i *= nx
+    for iter1 in prange(dimX):
+        index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
         for iter2 in range(iter1 + 1, dimX):
             ii2 = index[iter2]
             if C_toeplitz_coe_decay[ii2] > decay_tshold or random.random() < probability:
@@ -238,7 +231,7 @@ def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshol
     data = [*data, *data]
     rows1 = [*rows, *cols]
     cols = [*cols, *rows]
-    data = [*data, *[self_c for ii in myR]]
+    data = [*data, *[self_c for _ in myR]]
     rows = [*rows1, *[ii for ii in myR]]
     cols = [*cols, *[ii for ii in myR]]
     # import matplotlib
@@ -503,7 +496,7 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         super().__init__(self.dtype_, self.shape_)
 
     def _get9stencilC(self, elmts, decay_tshold=0.9, probability=0.15):
-        data, rows, cols, dimX = getFast_sparseC(self.C_toeplitz_coe.tolist(), self.C_toeplitz_coe_decay.tolist(),
+        data, rows, cols, dimX = getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
                                                  elmts, self.nx,
                                                  decay_tshold=decay_tshold, probability=probability)
         return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=self.C_precision).tocsc()
