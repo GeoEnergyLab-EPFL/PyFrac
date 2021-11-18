@@ -48,8 +48,15 @@ Cij = Cij * 1e9
 Eprime = TI_plain_strain_modulus(np.pi/2, Cij) # plain strain modulus
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion, 2018)
-def K1c_func(alpha):
+def K1c_func(x,y,alpha):
     """ function giving the dependence of fracture toughness on propagation direction alpha"""
+
+    if alpha > np.pi/2. and alpha <= np.pi:
+        alpha = np.pi-alpha
+    elif alpha > np.pi and alpha <= 3*np.pi/2:
+        alpha = alpha - np.pi
+    elif alpha > 3*np.pi/2 and alpha <= 2*np.pi:
+        alpha = 2*np.pi - alpha
 
     K1c_3 = 2e6 *1.2                # fracture toughness along y-axis
     K1c_1 = 2e6                     # fracture toughness along x-axis
@@ -65,7 +72,7 @@ def K1c_func(alpha):
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            anisotropic_K1c=True,
-                           toughness=K1c_func(np.pi/2),
+                           toughness=K1c_func(0.,0.,np.pi/2),
                            K1c_func=K1c_func,
                            TI_elasticity=True,
                            Cij=Cij)
@@ -78,7 +85,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.1e-4)
 
 # aspect ratio of the elliptical fracture
-gamma  = (K1c_func(np.pi/2) / K1c_func(0) * TI_plain_strain_modulus(    # gamma = (Kc3/Kc1*E1/E3)**2
+gamma  = (K1c_func(0.,0.,np.pi/2) / K1c_func(0.,0.,0.) * TI_plain_strain_modulus(    # gamma = (Kc3/Kc1*E1/E3)**2
             0, Cij)/TI_plain_strain_modulus(np.pi/2, Cij))**2
 
 # simulation properties
@@ -94,7 +101,7 @@ simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the execut
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 simulProp.remeshFactor = 1.5            # the factor by which the domain is expanded
 simulProp.projMethod = 'ILSA_orig'
-simulProp.set_tipAsymptote('U')
+simulProp.set_tipAsymptote('U1')
 
 # initialization parameters
 Fr_geometry = Geometry('elliptical',

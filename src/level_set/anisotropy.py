@@ -885,6 +885,7 @@ class get_toughness_from_cellCenter_iter():
         self.NoR = len(alpha)  # number of ribbon
         self.cos_alpha = np.cos(alpha)
         self.sin_alpha = np.sin(alpha)
+        self.alpha = alpha
         self.CenterCoorR = center_ribbon_coor
         self.matProp = matProp
         self.index2keep = np.arange(self.NoR)
@@ -927,13 +928,18 @@ class get_toughness_from_cellCenter_iter():
             y = self.CenterCoorR[local_indxs, 1] + np.multiply(dist, self.sin_alpha[local_indxs])
 
         # in case multiple points are asked, do them one by one
+        alpha_loc = self.alpha[local_indxs]
         if x.size > 1:
             Kprime = np.zeros(x.size)
-            for i in range(x.size):
-                Kprime[i] = self.matProp.Kprime_func(x[i], y[i])
+            if isinstance(alpha_loc, np.ndarray):
+                for i in range(x.size):
+                    Kprime[i] = self.matProp.Kprime_func(x[i], y[i], alpha_loc[[i]])
+            else:
+                for i in range(x.size):
+                    Kprime[i] = self.matProp.Kprime_func(x[i], y[i], alpha_loc)
         else:
             if isinstance(x, float):
-                Kprime = self.matProp.Kprime_func(x, y)
+                Kprime = self.matProp.Kprime_func(x, y, alpha_loc)
 
         # ------- plot point's location --------
         # from continuous_front_reconstruction import plot_xy_points
@@ -962,31 +968,31 @@ def get_toughness_from_zeroVertex(elts, mesh, mat_prop, alpha, l, zero_vrtx):
     if mat_prop.K1cFunc is None:
         return mat_prop.K1c[elts]
 
-    if mat_prop.anisotropic_K1c:
-        return mat_prop.K1cFunc(alpha)
-    else:
-        x = np.zeros((len(elts),), )
-        y = np.zeros((len(elts),), )
-        for i in range(0, len(elts)):
-            if zero_vrtx[i] == 0:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 1:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 2:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
-            elif zero_vrtx[i] == 3:
-                x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
-                y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
+    # if mat_prop.anisotropic_K1c:
+    #     return mat_prop.K1cFunc(alpha)
+    # else:
+    x = np.zeros((len(elts),), )
+    y = np.zeros((len(elts),), )
+    for i in range(0, len(elts)):
+        if zero_vrtx[i] == 0:
+            x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 0] + l[i] * np.cos(alpha[i])
+            y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 0], 1] + l[i] * np.sin(alpha[i])
+        elif zero_vrtx[i] == 1:
+            x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 0] - l[i] * np.cos(alpha[i])
+            y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 1], 1] + l[i] * np.sin(alpha[i])
+        elif zero_vrtx[i] == 2:
+            x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 0] - l[i] * np.cos(alpha[i])
+            y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 2], 1] - l[i] * np.sin(alpha[i])
+        elif zero_vrtx[i] == 3:
+            x[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 0] + l[i] * np.cos(alpha[i])
+            y[i] = mesh.VertexCoor[mesh.Connectivity[elts[i], 3], 1] - l[i] * np.sin(alpha[i])
 
-        # returning the Kprime according to the given function
-        K1c = np.empty((len(elts),), dtype=np.float64)
-        for i in range(len(elts)):
-            K1c[i] = mat_prop.K1cFunc(x[i], y[i])
+    # returning the Kprime according to the given function
+    K1c = np.empty((len(elts),), dtype=np.float64)
+    for i in range(len(elts)):
+        K1c[i] = mat_prop.K1cFunc(x[i], y[i], alpha[i])
 
-        return K1c
+    return K1c
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -1025,9 +1031,6 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
 
     if mat_prop.K1cFunc is None:
         return mat_prop.K1c[tip_and_fully_trav]
-
-    if mat_prop.anisotropic_K1c:
-        return mat_prop.K1cFunc(alpha)
     else:
         # returning the Kprime according to the given function
         K1c = np.empty((len(tip_and_fully_trav),), dtype=np.float64)
@@ -1050,9 +1053,9 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
 
                 #K1c[i] = (mat_prop.K1cFunc(x1, y1) + mat_prop.K1cFunc(x2, y2))/2.
                 if get_from_mid_front:
-                    K1c[i] = mat_prop.K1cFunc(xm, ym)
+                    K1c[i] = mat_prop.K1cFunc(xm, ym, alpha[i])
                 else:
-                    K1c[i] = np.minimum(mat_prop.K1cFunc(x1, y1), mat_prop.K1cFunc(x2, y2))
+                    K1c[i] = np.minimum(mat_prop.K1cFunc(x1, y1, alpha[i]), mat_prop.K1cFunc(x2, y2, alpha[i]))
         # now defining K in the fully traversed cells as the average of K in the cells where K has been computed
         done = (copy.deepcopy(tip)).tolist()
         still_to_be_done = fully_traversed

@@ -22,6 +22,7 @@ from math import floor
 # local imports
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from solid.elasticity_isotropic_utils import get_isotropic_el_self_eff
+from utilities.utility import append_new_line
 
 
 def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
@@ -112,14 +113,43 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         # 6) execute the dot product
         res[iter1] = np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
     return res
+#
+# @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+# def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
+#     # uk (numpy array), vector to which multiply the matrix C
+#     # nx (int), n. of element in x direction in the cartesian mesh
+#     # elemX (numpy array), IDs of elements to consider on x axis of the mesh
+#     # elemY (numpy array), IDs of elements to consider on y axis of the mesh
+#     # dimY (int), length(elemY) = length(elemX)
+#     # C_toeplitz_coe (numpy array), array containing the N unique coefficients of the matrix C of size NxN
+#     # C_precision (e.g.: float)
+#
+#     # 1) vector where to store the result of the dot product
+#     res = np.zeros(dimY, dtype=C_precision)
+#
+#     # 2) some indexes to build the row of a submatrix of C from the array of its unique entries
+#     iY = np.floor_divide(elemY, nx)
+#     jY = elemY - nx * iY
+#     iX = np.floor_divide(elemX, nx)
+#     jX = elemX - nx * iX
+#
+#     iX *= nx
+#     iY *= nx
+#
+#     chunksize = 300
+#     splitrange = np.floor_divide(dimY, chunksize)
+#     residualrange = dimY - chunksize
+#     for iter1 in prange(splitrange):
+#         res[iter1] += np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
+#     return res
 
 
-@njit(fastmath=True, nopython=True)
+@njit(fastmath=True, nogil=True, parallel=True)
 def get_toeplitzCoe(nx, ny, hx, hy, a, b, const, C_precision):
     C_toeplitz_coe = np.empty(ny * nx, dtype=C_precision)
     xindrange = np.arange(nx)
     xrange = xindrange * hx
-    for i in range(ny):
+    for i in prange(ny):
         y = i * hy
         amx = a - xrange
         apx = a + xrange
@@ -132,7 +162,7 @@ def get_toeplitzCoe(nx, ny, hx, hy, a, b, const, C_precision):
     return C_toeplitz_coe
 
 
-@njit(fastmath=True, nopython=True)
+@njit(fastmath=True, nogil=True, parallel=True)
 def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
     elemX = elementsXY[1].flatten()
     elemY = elementsXY[0].flatten()
@@ -150,7 +180,7 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
             jY = elemY - nx * iY
             iX = np.floor_divide(elemX, nx)
             jX = elemX - nx * iX
-            for iter1 in range(dimY):
+            for iter1 in prange(dimY):
                 i1 = iY[iter1]
                 j1 = jY[iter1]
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
@@ -160,7 +190,7 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
             i = np.floor_divide(elemX, nx)
             j = elemX - nx * i
 
-            for iter1 in range(dimX):
+            for iter1 in prange(dimX):
                 i1 = i[iter1]
                 j1 = j[iter1]
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
@@ -172,14 +202,14 @@ def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
             iX = np.floor_divide(elemX, nx)
             jX = elemX - nx * iX
 
-            for iter1 in range(dimY):
+            for iter1 in prange(dimY):
                 i1 = iY[iter1]
                 j1 = jY[iter1]
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
 
-@njit(fastmath=True, nopython=True)
+@njit(fastmath=True, nogil=True, parallel=True)
 def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     # coeff9stencilC contains [C_0dx_0dy, C_1dx_0dy, C_0dx_1dy, C_1dx_1dy]
     i = np.floor_divide(elmts, nx)
@@ -189,7 +219,7 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     data = dimX * [coeff9stencilC[0]]
     rows = [ii for ii in range(dimX)]
     cols = [ii for ii in range(dimX)]
-    for iter1 in range(dimX):
+    for iter1 in prange(dimX):
         i1 = i[iter1]
         j1 = j[iter1]
         delta_j = np.abs(j - j1)
@@ -208,7 +238,7 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype).tocsc()
 
 
-@njit(parallel=True, fastmath=True, nopython=True)
+@njit(fastmath=True)
 def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
@@ -218,8 +248,9 @@ def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshol
     data = []
     rows = []
     cols = []
-    for iter1 in range(dimX):
-        index = np.abs(j - j[iter1]) + nx * np.abs(i - i[iter1])
+    i *= nx
+    for iter1 in prange(dimX):
+        index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
         # self effect
         data.append(self_c)
         rows.append(iter1)
@@ -395,8 +426,14 @@ class load_isotropic_elasticity_matrix_toepliz(LinearOperator):
         if self.useHMATdot and len(uk) > 25000:
             return self.HMAT._matvec(uk)
         else:
-            return matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+            #mv_time = - time.time()
+            aa= matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                                self.C_toeplitz_coe, self.C_precision)
+            #mv_time = mv_time + time.time()
+
+            #file_name = '/home/carlo/Desktop/test_EHL_direct_vs_iter/Ex_time.csv'
+            #append_new_line(file_name,str(len(aa)) + ',' + str(mv_time))
+            return aa
 
     def _matvec(self, uk):
         # if self.C_precision == np.float32:
