@@ -24,8 +24,8 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 
-from mesh.mesh import CartesianMesh
-from mesh.remesh import mapping_old_indexes
+from mesh_obj.mesh import CartesianMesh
+from mesh_obj.remesh import mapping_old_indexes
 
 from time_step.time_step_solution import attempt_time_step
 

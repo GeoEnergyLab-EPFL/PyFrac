@@ -688,7 +688,7 @@ def get_HF_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, 
                                                                                   samp_cell=samp_cell,
                                                                                   gamma=gamma)
 
-                from mesh.mesh import CartesianMesh
+                from mesh_obj.mesh import CartesianMesh
                 mesh_i = CartesianMesh(x_len, y_len, 151, 151)
             else:
                 mesh_i = mesh
@@ -768,7 +768,7 @@ def get_HF_analytical_solution_at_point(regime, variable, point, mat_prop, inj_p
     else:
         srs_length = len(length_srs)
 
-    from mesh.mesh import CartesianMesh
+    from mesh_obj.mesh import CartesianMesh
     if point[0] == 0.:
         mesh_Lx = 1.
     else:

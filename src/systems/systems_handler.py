@@ -22,7 +22,7 @@ from systems.explicit_RKL import solve_width_pressure_RKL2
 from systems.systems_functions import velocity
 from systems.sys_monolithic_EHL import Monolithic_EHL_sys_obj, MakeEquationSystem_Monolithic_precond
 
-from mesh.symmetry import get_symetric_elements
+from mesh_obj.symmetry import get_symetric_elements
 
 from non_linear_solvers.picard_newton import Picard_Newton
 from non_linear_solvers.anderson import Anderson

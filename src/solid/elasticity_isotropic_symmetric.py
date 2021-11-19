@@ -11,7 +11,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 
 # internal imports
-from mesh.symmetry import get_symetric_elements, get_active_symmetric_elements
+from mesh_obj.symmetry import get_symetric_elements, get_active_symmetric_elements
 
 
 def symmetric_elasticity_matrix_from_full(C, mesh):

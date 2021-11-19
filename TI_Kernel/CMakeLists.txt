@@ -19,12 +19,12 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIL_OPENBLAS -DIL_BLAS")
 set(CMAKE_OPENBLAS_LIBRARIES "openblas")
 
-
+link_directories(/home/carlo/OpenBLAS/build/lib)
 if (UNIX AND NOT APPLE)
     # For windows, provide the correct path of folders containing OpenBLAS include files and libraries in the following.
     # Note that we are using msys2 on windows, so we are setting it for UNIX.
-    include_directories(/C/repositories/OpenBLAS/include)
-    link_directories(/C/repositories/OpenBLAS/lib)
+    #include_directories(/C/repositories/OpenBLAS/include)
+    #link_directories(/home/carlo/OpenBLAS/build/lib)
 elseif(APPLE)  # for APPLE
     include_directories(/usr/local/opt/openblas/include)
     link_directories(/usr/local/opt/openblas/lib)

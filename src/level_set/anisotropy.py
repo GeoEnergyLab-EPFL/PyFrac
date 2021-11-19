@@ -15,7 +15,7 @@ import copy
 # internal imports
 from level_set.discontinuous_front_reconstruction import reconstruct_front_LS_gradient
 from tip.volume_integral import Integral_over_cell
-from mesh.mesh import get_8neighbors
+from mesh_obj.mesh import get_8neighbors
 
 
 def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist, global_alpha = False):

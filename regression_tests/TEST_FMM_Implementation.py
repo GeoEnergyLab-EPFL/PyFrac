@@ -8,9 +8,9 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 import numpy as np
-from fracture.fracture_initialization import get_radial_survey_cells, get_rectangular_survey_cells
+from fracture_obj.fracture_initialization import get_radial_survey_cells, get_rectangular_survey_cells
 from regression_tests._FMM_Implementation_OLD import SolveFMM
 from level_set.FMM import fmm
 
