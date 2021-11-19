@@ -166,9 +166,14 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
     if np.all(stagnant):
         delta_w = np.abs(Fr_k.w[Fr_k.EltRibbon]-Frac.w[Fr_k.EltRibbon])
-        if np.sum(Qin) * timeStep != 0. and np.max(delta_w) < sim_properties.tolerancewIncr:
-            log.warning('The time step is too small to induce a significant change in opening')
-            return 18, Fr_k
+        if np.sum(Qin) * timeStep != 0. and np.max(delta_w) < sim_properties.tolerancewIncr :
+            log.critical(f'The time step is too small to induce a significant change in opening (max dw = {np.max(delta_w)})')
+            if sim_properties.get_volumeControl():
+                log.critical('   the time step will NOT be accepted!')
+                return 18, Fr_k
+            else:
+                log.critical('   nevertheless the time step will be accepted...continuing')
+                return 1, Fr_k
         else:
             return 1, Fr_k
 
@@ -241,33 +246,39 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 exitstatus = 15
                 return exitstatus, None
 
-        # preventing infinite or not effective loops
-        if (k >= sim_properties.maxFrontItrs and norm > 0.026) or k > 100:
-            if norm > 10 * sim_properties.tolFractFront or k > 200:
-                exitstatus = 6
-                return exitstatus, None
+        if sim_properties.get_volumeControl():
+            # preventing infinite or not effective loops
+            if (k >= sim_properties.maxFrontItrs and norm > 0.026) or k > 100:
+                if norm > 10 * sim_properties.tolFractFront or k > 200:
+                    exitstatus = 6
+                    return exitstatus, None
 
-        if norm < sim_properties.tolFractFront and loop_already_forced:
-            if norm < previous_norm:
-                # the convergence has been achieved
-                loop_already_forced = False
-                force_1loop = False
-            else:
-                # forcing another loop
+            if norm < sim_properties.tolFractFront and loop_already_forced:
+                if norm < previous_norm:
+                    # the convergence has been achieved
+                    loop_already_forced = False
+                    force_1loop = False
+                else:
+                    # forcing another loop
+                    loop_already_forced = True
+                    force_1loop = True
+            elif norm < sim_properties.tolFractFront and not loop_already_forced:
+                log.debug(' --> Forcing one more loop to see if the convergence has been really achieved')
                 loop_already_forced = True
                 force_1loop = True
-        elif norm < sim_properties.tolFractFront and not loop_already_forced:
-            log.debug(' --> Forcing one more loop to see if the convergence has been really achieved')
-            loop_already_forced = True
-            force_1loop = True
-        elif norm >= sim_properties.tolFractFront and loop_already_forced:
-            log.debug(' --> convergence not achieved, iterate more if other conditions allows for that')
-            loop_already_forced = False
-            force_1loop = False
-        elif norm >= sim_properties.tolFractFront and not loop_already_forced:
-            # normal case
-            loop_already_forced = False
-            force_1loop = False
+            elif norm >= sim_properties.tolFractFront and loop_already_forced:
+                log.debug(' --> convergence not achieved, iterate more if other conditions allows for that')
+                loop_already_forced = False
+                force_1loop = False
+            elif norm >= sim_properties.tolFractFront and not loop_already_forced:
+                # normal case
+                loop_already_forced = False
+                force_1loop = False
+        else:
+            # in case of not volume control
+            if (k >= sim_properties.maxFrontItrs):
+                exitstatus = 6
+                return exitstatus, None
 
         previous_norm = norm
 

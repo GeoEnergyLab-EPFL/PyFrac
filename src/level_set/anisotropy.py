@@ -1040,8 +1040,10 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
                 # assuming that Ffront is ordered as tip
                 # Ffront[-1] == tip[0]
                 # assuming that size Ffront == size tip
-                x1 = Ffront[ind-1, 2] ; x2 = Ffront[ind-1, 0]
-                y1 = Ffront[ind-1, 3] ; y2 = Ffront[ind-1, 1]
+                #x1 = Ffront[ind-1, 2] ; x2 = Ffront[ind-1, 0]
+                #y1 = Ffront[ind-1, 3] ; y2 = Ffront[ind-1, 1]
+                x1 = Ffront[ind, 2] ; x2 = Ffront[ind, 0]
+                y1 = Ffront[ind, 3] ; y2 = Ffront[ind, 1]
                 # checking the assumptions ----
                 xc=mesh.CenterCoor[tip[ind],0]; yc=mesh.CenterCoor[tip[ind],1]
                 xm = 0.5 * (x1 + x2) ; ym = 0.5 * (y1 + y2)
@@ -1061,17 +1063,34 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
         still_to_be_done = fully_traversed
         end = False
         k = 0
+        old_length = len(still_to_be_done)
         while not end:
             if len(still_to_be_done) <1:
                 end = True
             else:
                 still_to_be_done, done, K1c = process_closer_to_done(still_to_be_done, done, mesh, K1c, tip_and_fully_trav, k)
                 k = k + 1
+                if old_length == len(still_to_be_done):
+                    # if we do not reduce the length of "still_to_be_done" it means that we are some small
+                    # small patches of material inside the crack that were unbroken that got broken.
+                    end = True
+                elif old_length > len(still_to_be_done):
+                    old_length = len(still_to_be_done)
+                else:
+                    SystemExit("violating the assumption that len(still_to_be_done) is decreasing within the loop ")
 
+        if len(still_to_be_done) > 0:
+            log.warning("It looks like there were some cells that become fully traversed and are far from a front")
+            log.warning("----> taking K1cFunc(xcenter, ycenter, 0.)")
+            for i in still_to_be_done:
+                i_indx = np.where(tip_and_fully_trav == i)[0]
+                xc = mesh.CenterCoor[i, 0];
+                yc = mesh.CenterCoor[i, 1]
+                K1c[i_indx] = mat_prop.K1cFunc(xc, yc, 0.)
 
-        # from utility import plot_as_matrix
+        # from utilities.utility import plot_as_matrix
         # K = np.zeros((mesh.NumberOfElts,), )
-        # K[elts] = K1c
+        # K[tip_and_fully_trav] = K1c
         # plot_as_matrix(K, mesh)
 
         # from continuous_front_reconstruction import plot_xy_points

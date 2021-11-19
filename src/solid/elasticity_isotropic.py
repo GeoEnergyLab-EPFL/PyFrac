@@ -81,7 +81,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'tbb'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
 @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation

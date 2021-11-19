@@ -171,6 +171,7 @@ if len(fixed_times) != 0:
     simulProp.set_solTimeSeries(np.asarray(fixed_times))
 simulProp.tolFractFront = 1e-3          # 4e-3         # increase tolerance for the anisotropic case
 simulProp.maxFrontItrs  = 25
+simulProp.tmStp_prefactor = 1.
 simulProp.frontAdvancing = "implicit"   # set the front advancing scheme to implicit
 simulProp.set_outputFolder("./Data/TI_elasticity_ellipse")  # setting the output folder
 simulProp.set_simulation_name('TI_ellasticy_benchmark')     # setting the simulation name
