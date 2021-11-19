@@ -704,7 +704,8 @@ class Fracture:
         # K[self.EltRibbon] = 2
         # plot_as_matrix(K, self.mesh)
 
-        old_volume = self.mesh.EltArea * (self.w[self.EltTip]*self.FillF + self.w[self.EltChannel])
+        old_volume = self.mesh.EltArea * (np.sum(self.w[self.EltTipBefore]*self.FillF) +
+                                          np.sum(self.w[self.EltChannel]))
 
         if direction == None or direction == 'reduce':
 
@@ -929,8 +930,8 @@ class Fracture:
 
             self.source = inj_prop.sourceElem
 
-            new_volume = coarse_mesh.EltArea * (Fr_coarse.w[Fr_coarse.EltTip] * Fr_coarse.FillF +
-                                                Fr_coarse.w[Fr_coarse.EltChannel])
+            new_volume = coarse_mesh.EltArea * (np.sum(Fr_coarse.w[Fr_coarse.EltTip] * Fr_coarse.FillF) +
+                                                np.sum(Fr_coarse.w[Fr_coarse.EltChannel]))
             if abs(old_volume - new_volume)/old_volume > 1e-2:
                 log.critical('The error on the volume is bigger than 1% it is Ev = ' +
                              str(abs(old_volume - new_volume)/old_volume))
