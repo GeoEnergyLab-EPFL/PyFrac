@@ -119,6 +119,7 @@ def Anderson(linear_solver, guess, interItr_init, sim_prop, *args, perf_node=Non
 
         ## Check for convergency of the solution
         converged, norm = check_covergance(xks[mk + 1, ::], xks[mk + 2, ::], linear_solver.indices, sim_prop.toleranceEHL)
+        #log.debug(f'Anderson norm: {norm}')
         normlist.append(norm)
         k = k + 1
 

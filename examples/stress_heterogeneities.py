@@ -24,7 +24,7 @@ from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='info')
+setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
 Mesh = CartesianMesh(0.65, 0.65, 69, 69)
