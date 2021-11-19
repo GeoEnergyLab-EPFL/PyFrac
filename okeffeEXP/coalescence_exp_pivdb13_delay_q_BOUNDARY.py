@@ -10,13 +10,13 @@ See the LICENSE.TXT file for more details.
 import numpy as np
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from solid.elasticity_boundary_effect_get_traction import BoundaryEffect
 from utilities.postprocess_fracture import load_fractures
@@ -108,7 +108,7 @@ simulProp.maxSolverItrs=240
 
 if run:
     # initializing fracture
-    from fracture.fracture_initialization import get_radial_survey_cells
+    from fracture_obj.fracture_initialization import get_radial_survey_cells
     #initRad1 = 0.000802
     initRad1 = 0.0016
     initRad2 = initRad1

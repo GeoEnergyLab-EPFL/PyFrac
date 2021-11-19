@@ -11,13 +11,13 @@ reserved. See the LICENSE.TXT file for more details.
 import os
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
 from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures

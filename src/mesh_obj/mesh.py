@@ -20,7 +20,7 @@ from matplotlib.collections import PatchCollection
 # internal imports
 from properties import PlotProperties
 from utilities.visualization import zoom_factory, to_precision, text3d
-from mesh.symmetry import *
+from mesh_obj.symmetry import *
 
 
 

@@ -19,6 +19,10 @@ from matplotlib.colors import to_rgb
 from utilities.labels import var_labels, supported_variables, units, err_msg_variable, \
                     unit_conversion, Fig_labels, unidimensional_variables
 
+# for compatibility
+from solid.solid_prop import MaterialProperties
+from fluid.fluid_prop import FluidProperties
+
 class InjectionProperties:
     """
     Class defining the injection parameters.

@@ -59,13 +59,13 @@ import os
 import time
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from utilities.postprocess_fracture import load_fractures
@@ -75,17 +75,16 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-#run = False
-plot_B = False
+run = False
 #----
-run_dir =  "./"
+run_dir =  "./Data/04"
 #----
-restart = True
+restart = False
 #----
 use_HMAT = False
 #----
 use_direct_TOEPLITZ = True
-output_fol  = "./"
+output_fol  = run_dir
 output_fol_B = run_dir
 #----
 use_iterative = True
@@ -102,18 +101,18 @@ if run:
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
-    def smoothing(K1, K2, r, delta, amp, freq, x, y):
+    def smoothing(K1, K2, r, delta, x):
         # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
         #### LINEAR - DIRAC DELTA ####
         x = np.abs(x)
-        if  x < amp*np.sin(freq*y)+r -delta :
+        if  x < r-delta :
             return K1
-        elif x >= amp*np.sin(freq*y)+r - delta and x< amp*np.sin(freq*y)+r :
+        elif x >= r-delta and x<r :
             K12 = K1 + (K2-K1)*0.001
             a = (K12 - K1) / (delta)
             b = K1 - a * (r - delta)
             return a * x + b
-        elif x >= amp*np.sin(freq*y)+r:
+        elif x >= r:
             return K2
         else:
             print("ERROR")
@@ -124,9 +123,7 @@ if run:
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        amp = 0.2
-        freq = 1.
-        return smoothing(K_Ic, 1.47*K_Ic, r, delta, amp, freq, x, y)
+        return smoothing(K_Ic, 1.47*K_Ic, r, delta, x)
 
     # plot x_max vs time
     # import matplotlib.pyplot as plt
@@ -171,7 +168,7 @@ if run:
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     # injection parameters
-    Q0 = 0.001
+    Q0 = 0.0001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
@@ -179,7 +176,7 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 105.12  # the time at which the simulation stops
+    simulProp.finalTime = 100005.12  # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
@@ -232,12 +229,11 @@ if run:
     # ################################################################################
     # # the following lines are needed if you want to restart an existing simulation #
     # ################################################################################
-    if restart:
-        from utilities.visualization import *
-        Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
-        Solid, Fluid, Injection, simulProp = properties
-        Fr = Fr_list[-1]
-        simulProp.tmStpPrefactor = 0.4
+    # if restart:
+    #     from visualization import *
+    #     Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
+    #     Solid, Fluid, Injection, simulProp = properties
+    #     Fr = Fr_list[-1]
     #     simulProp.set_outputFolder(run_dir)
     #     # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
     #     #                                             np.arange(1.0965, 7.9965, 0.025),)))
@@ -286,12 +282,12 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     time_srs_A = get_fracture_variable(Fr_list_A, variable='time')  # list of times
     Solid_A, Fluid_A, Injection_A, simulProp_A = properties_A
     double_L_A, x_max_A, p_A, w_A, time_simul_A = get_info(Fr_list_A)
-    if plot_B:
-        # loading simulation results B
-        Fr_list_B, properties_B = load_fractures(address=output_fol_B, load_all=True)  # load all fractures
-        time_srs_B = get_fracture_variable(Fr_list_B, variable='time')  # list of times
-        Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
-        double_L_B, x_max_B, p_B, w_B, time_simul_B = get_info(Fr_list_B)
+
+    # loading simulation results B
+    Fr_list_B, properties_B = load_fractures(address=output_fol_B, load_all=True)  # load all fractures
+    time_srs_B = get_fracture_variable(Fr_list_B, variable='time')  # list of times
+    Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
+    double_L_B, x_max_B, p_B, w_B, time_simul_B = get_info(Fr_list_B)
 
     # plot fracture radius
     my_list = []
@@ -299,10 +295,9 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
         if Fr_list_A[i].time < mytime:
             my_list.append(Fr_list_A[i])
-    if plot_B:
-        for i in np.arange(0, len(Fr_list_B), ftPntJUMP):
-            if Fr_list_B[i].time < mytime:
-                my_list.append(Fr_list_B[i])
+    for i in np.arange(0, len(Fr_list_B), ftPntJUMP):
+        if Fr_list_B[i].time < mytime:
+            my_list.append(Fr_list_B[i])
     plot_prop = PlotProperties()
     Fig_R = plot_fracture_list(my_list,
                                variable='footprint',
@@ -432,13 +427,13 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
         p_rad.append(((np.pi ** 3. * (0.5e6)**6 /(12*Solid_A.Eprime*Injection_A.injectionRate.max()*time_simul_A[i]))**(1/5))/1.e6)
     ax.plot(time_simul_A, p_ana, color='g')
     ax.plot(time_simul_A, p_rad, color='g')
-    if plot_B: ax.scatter(time_simul_B, p_B, color='r')
+    ax.scatter(time_simul_B, p_B, color='r')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
     #     p_scaling.append(0.05/time_simul_A[i])
     # ax.plot(time_simul_A, p_scaling, color='b')
 
-    if plot_B: ax.scatter(time_simul_B, p_B, color='g')
+    ax.scatter(time_simul_B, p_B, color='g')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
     #     p_scaling.append(0.2660 * time_simul_A[i] ** (-1 / 7))
@@ -473,10 +468,10 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ax.scatter(time_simul_A, double_L_A, color='k')
 
     ax.plot(time_simul_A, doubleL_scaling, color='g')
-    if plot_B:
-        for i in range(len(time_simul_B)):
-            double_L_B[i] = double_L_B[i]/H
-        ax.scatter(time_simul_B, double_L_B, color='r')
+
+    for i in range(len(time_simul_B)):
+        double_L_B[i] = double_L_B[i]/H
+    ax.scatter(time_simul_B, double_L_B, color='r')
     doubleL_radial = []
     for i in range(len(time_simul_A)):
         doubleL_radial.append(6/H*time_simul_A[i]**(2/5))
@@ -502,7 +497,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ylabel = 'x max [m]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, x_max_A, color='k')
-    if plot_B: ax.scatter(time_simul_B, x_max_B, color='r')
+    ax.scatter(time_simul_B, x_max_B, color='r')
     p_const = []
     for i in range(len(time_simul_A)):
         p_const.append(1.6)
@@ -524,7 +519,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ylabel = 'w center [m]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, w_A, color='k')
-    if plot_B: ax.scatter(time_simul_B, w_B, color='r')
+    ax.scatter(time_simul_B, w_B, color='r')
     w_scaling = []
     w_radial = []
     for i in range(len(time_simul_A)):

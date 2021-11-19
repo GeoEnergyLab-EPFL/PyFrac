@@ -12,13 +12,13 @@ import os
 import numpy as np
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures
 
@@ -54,7 +54,7 @@ simulProp.set_outputFolder("./Data/star")     # the address of the output folder
 simulProp.plotTSJump = 4
 
 # initializing fracture
-from fracture.fracture_initialization import get_radial_survey_cells
+from fracture_obj.fracture_initialization import get_radial_survey_cells
 initRad = np.pi
 surv_cells, _, inner_cells = get_radial_survey_cells(Mesh, initRad)
 surv_cells_dist = np.cos(Mesh.CenterCoor[surv_cells, 0]) + 2.5 - abs(Mesh.CenterCoor[surv_cells, 1])

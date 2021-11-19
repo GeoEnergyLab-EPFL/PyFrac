@@ -59,13 +59,13 @@ import os
 import time
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from utilities.postprocess_fracture import load_fractures
@@ -77,7 +77,7 @@ setup_logging_to_console(verbosity_level='debug')
 run = True
 run = False
 #----
-run_dir =  "./Data/04"
+run_dir =  "./Data/02"
 #----
 restart = False
 #----
@@ -168,7 +168,7 @@ if run:
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     # injection parameters
-    Q0 = 0.0001
+    Q0 = 0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
@@ -176,7 +176,7 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 100005.12  # the time at which the simulation stops
+    simulProp.finalTime = 105.12  # the time at which the simulation stops
     simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True

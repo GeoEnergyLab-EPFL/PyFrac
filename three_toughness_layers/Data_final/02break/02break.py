@@ -57,15 +57,16 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
 # imports
 import os
 import time
+import numpy as np
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from utilities.postprocess_fracture import load_fractures
@@ -75,9 +76,9 @@ setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-run = False
+#run = False
 #----
-run_dir =  "./Data/1p47_noHmat_0p0005regul"
+run_dir =  "./Data/02break"
 #----
 restart = False
 #----
@@ -97,7 +98,7 @@ if run:
 
     # solid properties
     nu = 0.4  # Poisson's ratio
-    youngs_mod = 3.3e10  # Young's modulus
+    youngs_mod = 3.3e9  # Young's modulus
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
@@ -117,12 +118,13 @@ if run:
         else:
             print("ERROR")
 
+
     def K1c_func(x,y):
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 1.47*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 1.30*K_Ic, r, delta, x)
 
     # plot x_max vs time
     # import matplotlib.pyplot as plt
@@ -195,7 +197,8 @@ if run:
     simulProp.set_mesh_extension_factor(1.5)
     simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
-    simulProp.simID = 'K1/K2=1.47' # do not use _
+    #simulProp.simID = 'K1/K2=1.38' # do not use _
+    simulProp.simID = 'K1/K2=1.30'  # do not use _
 
     simulProp.customPlotsOnTheFly = True
     simulProp.LHyst__ = []
@@ -307,7 +310,103 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
                                backGround_param='K1c',
                                plot_prop=plot_prop)
     plt.show()
+    #
+    # # plot fracture radius
+    # plot_prop = PlotProperties()
+    # plot_prop.lineStyle = '.'               # setting the linestyle to point
+    # plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    # Fig_R = plot_fracture_list(Fr_list,
+    #                            variable='d_mean',
+    #                            plot_prop=plot_prop)
+    #
+    # # plot analytical radius
+    # Fig_R = plot_analytical_solution(regime='K',
+    #                                  variable='d_mean',
+    #                                  mat_prop=Solid,
+    #                                  inj_prop=Injection,
+    #                                  fluid_prop=Fluid,
+    #                                  time_srs=time_srs,
+    #                                  fig=Fig_R)
+    #
+    # # # plot width at center
+    # Fig_w = plot_fracture_list_at_point(Fr_list,
+    #                                     variable='w',
+    #                                     plot_prop=plot_prop)
+    # # # plot analytical width at center
+    # Fig_w = plot_analytical_solution_at_point('K',
+    #                                           'w',
+    #                                           Solid,
+    #                                           Injection,
+    #                                           fluid_prop=Fluid,
+    #                                           time_srs=time_srs,
+    #                                           fig=Fig_w)
+    #
+    #
+    # Fig_pf = plot_fracture_list_at_point(Fr_list,
+    #                                     variable='pn',
+    #                                     plot_prop=plot_prop)
+    #
+    # Fig_pf = plot_analytical_solution_at_point('K',
+    #                                           'pn',
+    #                                           Solid,
+    #                                           Injection,
+    #                                           fluid_prop=Fluid,
+    #                                           time_srs=time_srs,
+    #                                           fig=Fig_pf)
+    #
+    #
+    # # plot slice
+    # #ext_pnts = np.empty((2, 2), dtype=np.float64)
+    # my_X = 0.
+    # my_Y = 0.
+    # ext_pnts = np.empty((2, 2), dtype=np.float64)
+    # Fig_WS = plot_fracture_list_slice(Fr_list,
+    #                                   variable='w',
+    #                                   projection='2D',
+    #                                   plot_cell_center=True,
+    #                                   extreme_points=ext_pnts,
+    #                                   orientation='horizontal',
+    #                                   point1=[my_X, my_Y]
+    #                                   )
 
+    #################################
+
+
+
+
+
+    #print("\n get w(x) with x passing through a specific point for different times... ")
+    # my_X = 0.
+    # my_Y = 0.
+    # ext_pnts = np.empty((2, 2), dtype=np.float64)
+    # fracture_list_slice_A = plot_fracture_list_slice(Fr_list_A,
+    #                                                variable='w',
+    #                                                projection='2D',
+    #                                                plot_cell_center=True,
+    #                                                extreme_points=ext_pnts,
+    #                                                orientation='horizontal',
+    #                                                point1=[my_X, my_Y],
+    #                                                export2Json=True,
+    #                                                export2Json_assuming_no_remeshing=True)
+    # loading simulation results B
+    # Fr_list_B, properties_B = load_fractures(address="./Data/sim_B",step_size=1)                  # load all fractures
+    # time_srs_B = get_fracture_variable(Fr_list_A, variable='time')                                                 # list of times
+    # Solid_B, Fluid_B, Injection_B, simulProp_B = properties_B
+    # double_L_B, x_max_B, p_B, time_simul_B = get_info(Fr_list_B)
+    # # plot slice
+    # print("\n get w(x) with x passing through a specific point for different times... ")
+    # my_X = 0.
+    # my_Y = 0.
+    # ext_pnts = np.empty((2, 2), dtype=np.float64)
+    # fracture_list_slice_B = plot_fracture_list_slice(Fr_list_B,
+    #                                                variable='w',
+    #                                                projection='2D',
+    #                                                plot_cell_center=True,
+    #                                                extreme_points=ext_pnts,
+    #                                                orientation='horizontal',
+    #                                                point1=[my_X, my_Y],
+    #                                                export2Json=True,
+    #                                                export2Json_assuming_no_remeshing=True)
 
     #### BUILDING OUR PLOTS ###
     import numpy as np

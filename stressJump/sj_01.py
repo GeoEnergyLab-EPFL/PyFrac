@@ -11,13 +11,13 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # local imports
 from level_set.continuous_front_reconstruction import pointtolinedistance
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from utilities.postprocess_fracture import load_fractures

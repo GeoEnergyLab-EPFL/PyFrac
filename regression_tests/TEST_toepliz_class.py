@@ -8,8 +8,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # local imports
-from fracture.fracture_initialization import get_radial_survey_cells
-from mesh.mesh import CartesianMesh
+from fracture_obj.fracture_initialization import get_radial_survey_cells
+from mesh_obj.mesh import CartesianMesh
 import numpy as np
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz

@@ -59,13 +59,13 @@ import os
 import time
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
 from properties import InjectionProperties, SimulationProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from utilities.postprocess_fracture import load_fractures
@@ -74,13 +74,13 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-#run = True
-run = False
+run = True
+#run = False
 plot_B = False
 #----
-run_dir =  "./Data/02bis"
+run_dir =  "./"
 #----
-restart = False
+restart = True
 #----
 use_HMAT = False
 #----
@@ -94,7 +94,7 @@ ftPntJUMP = 1
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(1.95, 17.55, 131, 1171)
+    Mesh = CartesianMesh(2.7, 17.55, 91, 585)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -102,18 +102,18 @@ if run:
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
     properties = [youngs_mod, nu]
 
-    def smoothing(K1, K2, r, delta, x):
+    def smoothing(K1, K2, r, delta, amp, freq, x, y):
         # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
         #### LINEAR - DIRAC DELTA ####
         x = np.abs(x)
-        if  x < r-delta :
+        if  x < amp*np.sin(freq*y)+r -delta :
             return K1
-        elif x >= r-delta and x<r :
+        elif x >= amp*np.sin(freq*y)+r - delta and x< amp*np.sin(freq*y)+r :
             K12 = K1 + (K2-K1)*0.001
             a = (K12 - K1) / (delta)
             b = K1 - a * (r - delta)
             return a * x + b
-        elif x >= r:
+        elif x >= amp*np.sin(freq*y)+r:
             return K2
         else:
             print("ERROR")
@@ -124,7 +124,9 @@ if run:
         K_Ic = 0.5e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 1.47*K_Ic, r, delta, x)
+        amp = 0.2
+        freq = 1.
+        return smoothing(K_Ic, 1.47*K_Ic, r, delta, amp, freq, x, y)
 
     # plot x_max vs time
     # import matplotlib.pyplot as plt
@@ -230,11 +232,12 @@ if run:
     # ################################################################################
     # # the following lines are needed if you want to restart an existing simulation #
     # ################################################################################
-    # if restart:
-    #     from visualization import *
-    #     Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
-    #     Solid, Fluid, Injection, simulProp = properties
-    #     Fr = Fr_list[-1]
+    if restart:
+        from utilities.visualization import *
+        Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
+        Solid, Fluid, Injection, simulProp = properties
+        Fr = Fr_list[-1]
+        simulProp.tmStpPrefactor = 0.4
     #     simulProp.set_outputFolder(run_dir)
     #     # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
     #     #                                             np.arange(1.0965, 7.9965, 0.025),)))
