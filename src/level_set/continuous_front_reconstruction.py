@@ -3328,15 +3328,29 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             xinters4all_closed_paths_2 = []
             yinters4all_closed_paths_1 = []
             yinters4all_closed_paths_2 = []
+            # loop over the lists for each fracture front
             for jj in range(len(list_of_xintersections_for_all_closed_paths)):
                 xintersection = list_of_xintersections_for_all_closed_paths[jj]
                 yintersection = list_of_yintersections_for_all_closed_paths[jj]
-                xintersection.append(xintersection[0]) # close the front
-                yintersection.append(yintersection[0]) # close the front
+
+                #------- to be deleted in future ----
+                # append at the end the x of the first point
+                # xintersection.append(xintersection[0]) # close the front
+                # append at the end the y of the first point
+                # yintersection.append(yintersection[0]) # close the front
+                # now we need to get a list of segments i.e. couples of points
+                # xinters4all_closed_paths_1.append(xintersection[0:-1])
+                # xinters4all_closed_paths_2.append(xintersection[1:])
+                # yinters4all_closed_paths_1.append(yintersection[0:-1])
+                # yinters4all_closed_paths_2.append(yintersection[1:])
+                # ------- --------------------- ----
+                xinters4all_closed_paths_1.append([xintersection[-1]])
                 xinters4all_closed_paths_1.append(xintersection[0:-1])
-                xinters4all_closed_paths_2.append(xintersection[1:])
+                xinters4all_closed_paths_2.append(xintersection)
+                yinters4all_closed_paths_1.append([yintersection[-1]])
                 yinters4all_closed_paths_1.append(yintersection[0:-1])
-                yinters4all_closed_paths_2.append(yintersection[1:])
+                yinters4all_closed_paths_2.append(yintersection)
+
             xinters4all_closed_paths_1 = itertools_chain_from_iterable(xinters4all_closed_paths_1)
             xinters4all_closed_paths_2 = itertools_chain_from_iterable(xinters4all_closed_paths_2)
             yinters4all_closed_paths_1 = itertools_chain_from_iterable(yinters4all_closed_paths_1)

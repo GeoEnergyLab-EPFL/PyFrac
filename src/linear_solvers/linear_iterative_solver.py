@@ -122,7 +122,7 @@ class Iterative_linear_solver(Linear_solver):
   def residual_iter(self, x0, niter = 5):
       for i in range(niter):
           rk = self.get_residual(x0)
-          self.log.debug("Residual corr: " + str(np.linalg.norm(rk)))
+          #self.log.debug("Residual corr: " + str(np.linalg.norm(rk)))
           x0 = x0 + self.prec._matvec(rk)
       return x0
 
