@@ -41,7 +41,7 @@ def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_p
                                                    sgndDist_k,
                                                    global_alpha=mat_properties.inv_with_heter_K1c)
                 alpha_ribbon_km1 = np.zeros(Fr_lstTmStp.EltRibbon.size, )
-            elif not mat_properties.inv_with_heter_K1c:
+            elif not sim_properties.get_volumeControl():
                 alpha_ribbon_k = 0.25 * alpha_ribbon_k + 0.75 * projection_method(Fr_lstTmStp.EltRibbon,
                                                                                   second_arg,
                                                                                   Fr_lstTmStp.mesh,
