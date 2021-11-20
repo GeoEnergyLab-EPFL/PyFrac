@@ -26,7 +26,7 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
-Mesh = CartesianMesh(0.1, 0.1, 141, 141)
+Mesh = CartesianMesh(0.1, 0.1, 161, 161)
 
 
 sigma_o = 0.5e6  # confining stress [Pa]
@@ -91,7 +91,7 @@ def smoothing(K2, Ylim, delta, y, alpha):
     if  y < Ylim-delta :
         return K1c_angle_func(alpha)
     elif y >= Ylim-delta and y<Ylim :
-        K12 = K1c_angle_func(alpha) + (K2-K1c_angle_func(alpha))*0.001
+        K12 = K1c_angle_func(alpha) + (K2-K1c_angle_func(alpha))*0.1
         a = (K12 - K1c_angle_func(alpha)) / (delta)
         b = K1c_angle_func(alpha) - a * (Ylim - delta)
         return a * y + b
@@ -103,8 +103,8 @@ def smoothing(K2, Ylim, delta, y, alpha):
 def K1c_func(x,y,alpha):
     """ The function providing the toughness"""
     ylim = 0.015
-    delta = 0.0005
-    K2 = 1E7
+    delta = 0.001
+    K2 = 2.E7
     res = smoothing(K2, ylim, delta, y, alpha)
     return res
 
