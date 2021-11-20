@@ -26,8 +26,8 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
-Mesh = CartesianMesh(0.1, 0.1, 161, 161)
-
+#Mesh = CartesianMesh(0.1, 0.1, 161, 161)
+Mesh = CartesianMesh([-0.12,0.12], [-0.12, 0.02], 161, 161)
 
 sigma_o = 0.5e6  # confining stress [Pa]
 
