@@ -1,6 +1,6 @@
 //
 // Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland,
-// Geo-Energy Laboratory, 2016-2019.  All rights reserved.
+// Geo-Energy Laboratory, 2016-2022.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
 // Contributors:
