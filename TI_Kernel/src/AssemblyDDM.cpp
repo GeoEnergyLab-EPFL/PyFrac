@@ -7,6 +7,7 @@
 // Weihan Zhang
 // Fatima-Ezzahra Moukhtari
 // Brice Lecampion
+// Carlo Peruzzo
 
 #include <src/AssemblyDDM.h>
 
@@ -14,10 +15,9 @@
 namespace hfp3d {
 
 
-    //de is the angle inclined between the crack plan and the isotropic plan,
-    // which is defined in elasticity_kernel_integration.cpp
+   // de is the angle inclined between the crack plane and the isotropic plane,
+   // which is defined in elasticity_kernel_integration.cpp
    extern double de;
-
 
 
     il::Array2D<double> basic_assembly(Mesh mesh){
@@ -25,11 +25,10 @@ namespace hfp3d {
         double dx=mesh.dx;
         double dy=mesh.dy;
 
-
         //nelts is the number of elements in the mesh
         int nelts=mesh.nelts();
 
-          il::Array2D<double> kmat{3*nelts,3*nelts};
+        il::Array2D<double> kmat{3*nelts,3*nelts};
         il::StaticArray<double,3> xA,xB,xC,xD;
         xA[0]=-dx/2;xA[1]=dy/2;xA[2]=0;
         xB[0]=dx/2; xB[1]=dy/2;xB[2]=0;
@@ -112,9 +111,7 @@ namespace hfp3d {
 
                 kmat(k,j)=local_matrix(2,2);
 
-
             }
-
         }
 
 
@@ -138,33 +135,27 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=-dy/2;xD[2]=0;
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
-
-
-
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
         il::Array<double> reference{nelts*nelts,0};
 
 
-            local_point[0]=mesh.node(0)[0];
-            local_point[1]=mesh.node(0)[1];
-            local_point[2]=0;
+        local_point[0]=mesh.node(0)[0];
+        local_point[1]=mesh.node(0)[1];
+        local_point[2]=0;
 
 
-            for(int k=0;k<nelts;k++){
+        for(int k=0;k<nelts;k++){
+            relativeP[0]=mesh.node(k)[0]-local_point[0];
+            relativeP[1]=mesh.node(k)[1]-local_point[1];
+            relativeP[2]=0;
 
-                relativeP[0]=mesh.node(k)[0]-local_point[0];
-                relativeP[1]=mesh.node(k)[1]-local_point[1];
-                relativeP[2]=0;
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
 
-
-                //influence de j a k
-
-
-               reference[mesh.coor(k)[0]*nelts+mesh.coor(k)[1]]=Stress(2, xA, xB, xC, xD, relativeP)[2];
-
-
-            }
+            //influence from j to k
+            reference[mesh_coor_k[0]*nelts+mesh_coor_k[1]]=Stress(2, xA, xB, xC, xD, relativeP)[2];
+        }
 
 
         for(int j=0;j<nelts/2;j++){
@@ -173,28 +164,29 @@ namespace hfp3d {
             local_point[1]=mesh.node(j)[1];
             local_point[2]=0;
 
+            // [colum_index  ,   row_index] of the element j in the mesh
+            mesh_coor_j = mesh.coor(j);
 
-            for(int k=j;k<nelts-j;k++){
+            for(int k=j; k<nelts-j; k++){
 
                 relativeP[0]=mesh.node(k)[0]-local_point[0];
                 relativeP[1]=mesh.node(k)[1]-local_point[1];
                 relativeP[2]=0;
 
-               int nn=abs(mesh.coor(k)[0]-mesh.coor(j)[0])*nelts+abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+                // [colum_index  ,   row_index] of the element k in the mesh
+                mesh_coor_k = mesh.coor(k);
+
+                int nn=abs(mesh_coor_k[0]-mesh_coor_j[0])*nelts+abs(mesh_coor_k[1]-mesh_coor_j[1]);
 
                 kmat(k,j)=-reference[nn];
                 kmat(j,k)=kmat(k,j);
               //  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
-
             }
-
         }
 
 
         // By the symetry
-
         for(int j=0;j<nelts;j++){
-
             for(int k=0;k<nelts-j;k++){
                  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
             }
@@ -209,7 +201,6 @@ namespace hfp3d {
     il::Array2D<double> shearing_assembly(Mesh mesh){
         double dx=mesh.dx;
         double dy=mesh.dy;
-
         int nelts=mesh.nelts();
 
         il::Array2D<double> kmat{nelts,nelts};
@@ -220,13 +211,9 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=-dy/2;xD[2]=0;
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
-
-
-
         il::Array<double> reference{nelts*nelts,0};
-
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
 
         local_point[0]=mesh.node(0)[0];
         local_point[1]=mesh.node(0)[1];
@@ -239,20 +226,24 @@ namespace hfp3d {
             relativeP[1]=mesh.node(k)[1]-local_point[1];
             relativeP[2]=0;
 
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
+
             //local_matrix=Normal_Shear_Stress( xA, xB, xC, xD, relativeP);
             //influence de j a k
 
-
             //reference[mesh.coor(k)[0]*nelts+mesh.coor(k)[1]]=local_matrix(0,0);
-            reference[mesh.coor(k)[0]*nelts+mesh.coor(k)[1]] =Stress(0, xA, xB, xC, xD, relativeP)[4];
-
+            reference[mesh_coor_k[0]*nelts+mesh_coor_k[1]] =Stress(0, xA, xB, xC, xD, relativeP)[4];
         }
+
         for(int j=0;j<nelts/2;j++){
 
             local_point[0]=mesh.node(j)[0];
             local_point[1]=mesh.node(j)[1];
             local_point[2]=0;
 
+            // [colum_index  ,   row_index] of the element j in the mesh
+            mesh_coor_j = mesh.coor(j);
 
             for(int k=j;k<nelts-j;k++){
 
@@ -260,33 +251,23 @@ namespace hfp3d {
                 relativeP[1]=mesh.node(k)[1]-local_point[1];
                 relativeP[2]=0;
 
-                int nn=abs(mesh.coor(k)[0]-mesh.coor(j)[0])*nelts+abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+                // [colum_index  ,   row_index] of the element k in the mesh
+                mesh_coor_k = mesh.coor(k);
+
+                int nn=abs(mesh_coor_k[0]-mesh_coor_j[0])*nelts+abs(mesh_coor_k[1]-mesh_coor_j[1]);
 
                 kmat(k,j)=reference[nn];
                 kmat(j,k)=kmat(k,j);
                 //  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
-
             }
-
         }
 
 
         // By the symetry
-
         for(int j=0;j<nelts;j++){
-
-
-
-
             for(int k=0;k<nelts-j;k++){
-
-
-
-
                 kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
-
             }
-
         }
 
         kmat((nelts-1)/2,(nelts-1)/2)=kmat(0,0);
@@ -297,86 +278,80 @@ namespace hfp3d {
     ////////////////////////////////////////////////////////////////////////////////////
 
     il::Array2D<double> perpendicular_opening_assembly(Mesh mesh){
-        double dx=mesh.dx;
-        double dy=mesh.dy;
+        double dx=mesh.dx; // elem size x
+        double dy=mesh.dy; // elem size y
 
-        int nelts=mesh.nelts();
+        int nelts = mesh.nelts(); // number of elements
 
+        // output matrix
         il::Array2D<double> kmat{nelts,nelts};
+
         il::StaticArray<double,3> xA,xB,xC,xD;
-        xA[0]=-dx/2;xA[1]=0;xA[2]=dy/2;
-        xB[0]=dx/2; xB[1]=0;xB[2]=dy/2;
-        xC[0]=dx/2; xC[1]=0;xC[2]=-dy/2;
-        xD[0]=-dx/2; xD[1]=0;xD[2]=-dy/2;
+        xA[0]=-dx/2; xA[1]=0.; xA[2]=+dy/2.;
+        xB[0]=+dx/2; xB[1]=0.; xB[2]=+dy/2.;
+        xC[0]=+dx/2; xC[1]=0.; xC[2]=-dy/2.;
+        xD[0]=-dx/2; xD[1]=0.; xD[2]=-dy/2.;
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
+        il::Array<long double> reference{nelts * nelts , 0};
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
 
+        // considering the center of element 0
+        local_point[0] = mesh.node(0)[0];
+        local_point[1] = 0.;
+        local_point[2] = mesh.node(0)[1];
 
-        il::Array<long double> reference{nelts*nelts,0};
+        for(int k=0; k < nelts; k++){
+            // computing the relative distance between element 0 and all the rest of the elemens in the domain
+            relativeP[0] = mesh.node(k)[0] - local_point[0];
+            relativeP[1] = 0.;
+            relativeP[2] = mesh.node(k)[1] - local_point[2];
 
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
 
-        local_point[0]=mesh.node(0)[0];
-        local_point[1]=0;
-        local_point[2]=mesh.node(0)[1];
-
-
-        for(int k=0;k<nelts;k++){
-
-            relativeP[0]=mesh.node(k)[0]-local_point[0];
-            relativeP[1]=0;
-            relativeP[2]=mesh.node(k)[1]-local_point[2];
-
-            //influence de j a k
-
-            reference[mesh.coor(k)[0]*nelts+mesh.coor(k)[1]]= Stress(2, xA, xB, xC,
-                                                                     xD,relativeP)[1];
+            // influence from j to k
+            reference[ mesh_coor_k[0] * nelts + mesh_coor_k[1] ] = Stress(2, xA, xB, xC, xD, relativeP)[1];
         }
 
-        for(int j=0;j<nelts/2;j++){
+        // NOTE:
+        // To understand the following code, remember that the matrix is symmetric with
+        // both the diagonals
+        for(int j=0; j < nelts/2; j++){
 
-            local_point[0]=mesh.node(j)[0];
-            local_point[1]=0;
-            local_point[2]=mesh.node(j)[1];
+            // [colum_index  ,   row_index] of the element j in the mesh
+            mesh_coor_j = mesh.coor(j);
 
+            for(int k=j; k < nelts-j; k++){
 
-            for(int k=j;k<nelts-j;k++){
+                // [colum_index  ,   row_index] of the element k in the mesh
+                mesh_coor_k = mesh.coor(k);
 
-                relativeP[0]=mesh.node(k)[0]-local_point[0];
-                relativeP[1]=0;
-                relativeP[2]=mesh.node(k)[1]-local_point[2];
+                // index in the array "reference"
+                int nn = abs(mesh_coor_k[0] - mesh_coor_j[0]) * nelts +abs(mesh_coor_k[1] - mesh_coor_j[1]);
 
-                int nn=abs(mesh.coor(k)[0]-mesh.coor(j)[0])*nelts+abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+                // assign the value:
+                kmat(k,j) = - reference[nn];
 
-                kmat(k,j)=-reference[nn];
-                kmat(j,k)=kmat(k,j);
-                //  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
-
+                // By the symmetry with respect to the diagonal going from north-west to south-east of the matrix:
+                kmat(j,k) = kmat(k,j);
             }
-
         }
 
 
-        // By the symetry
-
-        for(int j=0;j<nelts;j++){
-
-
-
-
-            for(int k=0;k<nelts-j;k++){
-
-
-
-
-                kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
-
+        // By the symmetry with respect to the diagonal going from south-west to north-east of the matrix:
+        // loop over all the columns
+        for(int j=0; j < nelts; j++){
+            // loop over the rows from 0 to nelts-j
+            for(int k=0; k < nelts-j; k++){
+                kmat(nelts-k-1,nelts-j-1) = kmat(k,j);
             }
-
         }
 
-        kmat((nelts-1)/2,(nelts-1)/2)=kmat(0,0);
+        // this is needed to fill the very central element of the matrix
+        kmat((nelts-1)/2,(nelts-1)/2) = kmat(0,0);
+
         return kmat;
     }
 
@@ -385,15 +360,15 @@ namespace hfp3d {
     //////////////////////////////////////////////////////////////////////////
 
     il::Array2D<double> simplified_opening_assembly_2(Mesh mesh){
+
         //dx and dy evaluate the size of each element
         double dx=mesh.dx;
         double dy=mesh.dy;
 
-        //nelts is the number of elements of the mesh
+        // nelts is the number of elements of the mesh
         int nelts=mesh.nelts();
 
-
-       //kmat is the global matrix
+        // kmat is the global matrix
         il::Array2D<double> kmat{nelts,nelts};
 
         // four corner of the rectangular dislocation loop
@@ -406,15 +381,17 @@ namespace hfp3d {
         // the center of the first element in the mesh
         il::StaticArray<double,3> local_point;
 
-        //the distance vector from the kth element to the first element in the mesh
+        // the distance vector from the kth element to the first element in the mesh
         il::StaticArray<double,3> relativeP;
 
-        //the 2D array to store the influence coefficient relating the first element and every other element in the mesh
+        // the 2D array to store the influence coefficient relating the first element and every other element in the mesh
         il::Array2D<double> reference{mesh.nx,mesh.ny};
 
         local_point[0]=mesh.node(0)[0];
         local_point[1]=mesh.node(0)[1];
         local_point[2]=0;
+
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
 
         for(int k=0;k<nelts;k++){
 
@@ -422,25 +399,33 @@ namespace hfp3d {
             relativeP[1]=mesh.node(k)[1]-local_point[1];
             relativeP[2]=0;
 
-            //influence from j to k
-            reference(mesh.coor(k)[0],mesh.coor(k)[1])=Stress(2, xA, xB, xC, xD, relativeP)[2];
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
+
+            // influence from j to k
+            reference(mesh_coor_k[0],mesh_coor_k[1])=Stress(2, xA, xB, xC, xD, relativeP)[2];
         }
 
 
 
-        //Full the global matrix by the coefficient in the 2D array reference
+        // Full the global matrix by the coefficient in the 2D array reference
         for(int j=0;j<nelts/2;j++){
+
+            // [colum_index  ,   row_index] of the element j in the mesh
+            mesh_coor_j = mesh.coor(j);
 
             for(int k=j;k<nelts-j;k++){
 
-                int refx=abs(mesh.coor(k)[0]-mesh.coor(j)[0]);
-                int refy=abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+                // [colum_index  ,   row_index] of the element k in the mesh
+                mesh_coor_k = mesh.coor(k);
+
+                int refx=abs(mesh_coor_k[0]-mesh_coor_j[0]);
+                int refy=abs(mesh_coor_k[1]-mesh_coor_j[1]);
                 kmat(k,j)=reference(refx,refy);
                 kmat(j,k)=kmat(k,j);
                 //  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
             }
         }
-
 
 
         // Full all the position of the global matrix by using the symetry
@@ -468,12 +453,9 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=0;xD[2]=-dy/2;
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
-
-
         il::Array2D<double> reference{mesh.nx,mesh.ny};
-
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
 
         local_point[0]=mesh.node(0)[0];
         local_point[1]=0;
@@ -486,33 +468,39 @@ namespace hfp3d {
             relativeP[1]=0;
             relativeP[2]=mesh.node(k)[1]-local_point[2];
 
-            //influence de j a k
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
 
-            reference(mesh.coor(k)[0],mesh.coor(k)[1])= Stress(2, xA, xB, xC,
+            // influence from j to k
+            reference(mesh_coor_k[0],mesh_coor_k[1])= Stress(2, xA, xB, xC,
                                                                      xD,relativeP)[1];
         }
 
         for(int j=0;j<nelts/2;j++){
 
+            // [colum_index  ,   row_index] of the element j in the mesh
+            mesh_coor_j = mesh.coor(j);
 
             for(int k=j;k<nelts-j;k++){
 
+                // [colum_index  ,   row_index] of the element k in the mesh
+                mesh_coor_k = mesh.coor(k);
 
-                int refx=abs(mesh.coor(k)[0]-mesh.coor(j)[0]);
-                int refy=abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+                int refx=abs(mesh_coor_k[0]-mesh_coor_j[0]);
+                int refy=abs(mesh_coor_k[1]-mesh_coor_j[1]);
                 kmat(k,j)=reference(refx,refy);
                 kmat(j,k)=kmat(k,j);
                 //  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
             }
         }
 
-        // By the symetry
-
+        // By the symmetry
         for(int j=0;j<nelts;j++){
             for(int k=0;k<nelts-j;k++){
                 kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
             }
         }
+
         kmat((nelts-1)/2,(nelts-1)/2)=kmat(0,0);
         return kmat;
     }
@@ -531,14 +519,13 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=-dy/2*cos(de);xD[2]=-dy/2*sin(de);
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
-
         il::Array2D<double> reference{mesh.nx,mesh.ny};
 
         local_point[0]=mesh.node(0)[0];
         local_point[1]=mesh.node(0)[1]*cos(de);
         local_point[2]=mesh.node(0)[1]*sin(de);
+        il::StaticArray<int,2> mesh_coor_k;
 
         for(int k=0;k<nelts;k++){
 
@@ -546,8 +533,11 @@ namespace hfp3d {
             relativeP[1]=mesh.node(k)[1]*cos(de)-local_point[1];
             relativeP[2]=mesh.node(k)[1]*sin(de)-local_point[2];
 
-            //influence de j a k
-            reference(mesh.coor(k)[0],mesh.coor(k)[1])=Stress(2, xA, xB, xC, xD, relativeP)[2]*cos(de)
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
+
+            //influence from j to k
+            reference(mesh_coor_k[0],mesh_coor_k[1])=Stress(2, xA, xB, xC, xD, relativeP)[2]*cos(de)
                                                        +Stress(2, xA, xB, xC, xD, relativeP)[1]*sin(de);
         }
         return reference;
@@ -557,7 +547,6 @@ namespace hfp3d {
     il::Array2D<double> make_vector_opening(Mesh mesh){
         double dx=mesh.dx;
         double dy=mesh.dy;
-
         int nelts=mesh.nelts();
 
 
@@ -568,10 +557,9 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=-dy/2;xD[2]=0;
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
-
         il::Array2D<double> reference{mesh.nx,mesh.ny};
+        il::StaticArray<int,2> mesh_coor_k;
 
         local_point[0]=mesh.node(0)[0];
         local_point[1]=mesh.node(0)[1];
@@ -583,8 +571,11 @@ namespace hfp3d {
             relativeP[1]=mesh.node(k)[1]-local_point[1];
             relativeP[2]=0;
 
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
+
             //influence de j a k
-            reference(mesh.coor(k)[0],mesh.coor(k)[1])=Stress(2, xA, xB, xC, xD, relativeP)[2];
+            reference(mesh_coor_k[0],mesh_coor_k[1])=Stress(2, xA, xB, xC, xD, relativeP)[2];
         }
         return reference;
     }
@@ -597,7 +588,6 @@ namespace hfp3d {
 
         int nelts=mesh.nelts();
 
-
         il::StaticArray<double,3> xA,xB,xC,xD;
         xA[0]=-dx/2;xA[1]=0;xA[2]=dy/2;
         xB[0]=dx/2; xB[1]=0;xB[2]=dy/2;
@@ -605,10 +595,9 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=0;xD[2]=-dy/2;
 
         il::StaticArray<double,3> local_point;
-
         il::StaticArray<double,3> relativeP;
-
         il::Array2D<double> reference{mesh.nx,mesh.ny};
+        il::StaticArray<int,2> mesh_coor_k;
 
         local_point[0]=mesh.node(0)[0];
         local_point[1]=0;
@@ -620,8 +609,11 @@ namespace hfp3d {
             relativeP[1]=0;
             relativeP[2]=mesh.node(k)[1]-local_point[2];
 
-            //influence de j a k
-            reference(mesh.coor(k)[0],mesh.coor(k)[1])= Stress(2, xA, xB, xC, xD, relativeP)[1];
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
+
+            //influence from j to k
+            reference(mesh_coor_k[0],mesh_coor_k[1])= Stress(2, xA, xB, xC, xD, relativeP)[1];
         }
         return reference;
     }
@@ -630,19 +622,27 @@ namespace hfp3d {
         int nelts=mesh.nelts();
         il::Array2D<double> kmat{nelts,nelts};
         il::Array2D<double> reference=make_vector(mesh);
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
+
         for(int j=0;j<nelts/2;j++){
+
+            // [colum_index  ,   row_index] of the element j in the mesh
+            mesh_coor_j = mesh.coor(j);
 
             for(int k=j;k<nelts-j;k++){
 
-                int refx=abs(mesh.coor(k)[0]-mesh.coor(j)[0]);
-                int refy=abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+                // [colum_index  ,   row_index] of the element k in the mesh
+                mesh_coor_k = mesh.coor(k);
+
+                int refx=abs(mesh_coor_k[0]-mesh_coor_j[0]);
+                int refy=abs(mesh_coor_k[1]-mesh_coor_j[1]);
                 kmat(k,j)=reference(refx,refy);
                 kmat(j,k)=kmat(k,j);
                 //  kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
             }
         }
-        // By the symetry
 
+        // By the symmetry
         for(int j=0;j<nelts;j++){
             for(int k=0;k<nelts-j;k++){
                 kmat(nelts-k-1,nelts-j-1)=kmat(k,j);
@@ -653,9 +653,18 @@ namespace hfp3d {
     }
  ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    double find_coeff (il::Array2D<double> reference,Mesh mesh,int k,int j){
-        int refx=abs(mesh.coor(k)[0]-mesh.coor(j)[0]);
-        int refy=abs(mesh.coor(k)[1]-mesh.coor(j)[1]);
+    double find_coeff (il::Array2D<double> reference, Mesh mesh, int k, int j){
+
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
+
+        // [colum_index  ,   row_index] of the element k in the mesh
+        mesh_coor_k = mesh.coor(k);
+        // [colum_index  ,   row_index] of the element j in the mesh
+        mesh_coor_j = mesh.coor(j);
+
+        int refx=abs(mesh_coor_k[0]-mesh_coor_j[0]);
+        int refy=abs(mesh_coor_k[1]-mesh_coor_j[1]);
+
         return reference(refx,refy);
     }
 

@@ -27,8 +27,8 @@ namespace hfp3d {
 
     //phi=0, and if delta=0, dislocation loop in the isotropic plan, delta=pi/2, dislocation loop perpendicular to
     //the isotropic plan
-    double de=il::pi/2;
-    double phi=il::pi/180*0;
+    double de=il::pi / 2.;
+    double phi=il::pi / 180. * 0.;
 
     il::Array<double>  Ce{hfp3d::Cmatrix("stiffness_matrix.json")};
     double c11=Ce[0];
@@ -641,14 +641,20 @@ namespace hfp3d {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    il::StaticArray<double,6> Stress(int Q,il::StaticArray<double,3> xA,il::StaticArray<double,3> xB,il::StaticArray<double,3> xC,
-                                     il::StaticArray<double,3> xD,il::StaticArray<double,3> x){
+    il::StaticArray<double,6> Stress(int Q,
+                                     il::StaticArray<double,3> xA,
+                                     il::StaticArray<double,3> xB,
+                                     il::StaticArray<double,3> xC,
+                                     il::StaticArray<double,3> xD,
+                                     il::StaticArray<double,3> x){
+
         double e11=-strain(0,Q,0,xA,xB,xC,xD,x);
         double e22=-strain(1,Q,1,xA,xB,xC,xD,x);
         double e33=-strain(2,Q,2,xA,xB,xC,xD,x);
         double e23=-0.5*(strain(1,Q,2,xA,xB,xC,xD,x)+strain(2,Q,1,xA,xB,xC,xD,x));
         double e31=-0.5*(strain(0,Q,2,xA,xB,xC,xD,x)+strain(2,Q,0,xA,xB,xC,xD,x));
         double e12=-0.5*(strain(1,Q,0,xA,xB,xC,xD,x)+strain(0,Q,1,xA,xB,xC,xD,x));
+
         il::StaticArray<double,6> deformation;
         deformation[0]=e11;
         deformation[1]=e22;
@@ -656,6 +662,7 @@ namespace hfp3d {
         deformation[3]=2*e23;
         deformation[4]=2*e31;
         deformation[5]=2*e12;
+
         il::StaticArray2D<double,6,6> Stiff={0};
         Stiff(0,0)=c11;
         Stiff(0,1)=c12;
@@ -674,7 +681,6 @@ namespace hfp3d {
         Stress=il::dot(Stiff,deformation);
 
         return Stress;
-
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////

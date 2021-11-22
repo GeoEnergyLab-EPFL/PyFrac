@@ -96,14 +96,14 @@ class CartesianMesh:
             self.Lx = Lx
             xlims = np.asarray([-Lx, Lx])
         else:
-            self.Lx = abs(Lx[0]-Lx[1]) / 2
+            self.Lx = abs(Lx[0]-Lx[1]) / 2.
             xlims = np.asarray([Lx[0], Lx[1]])
 
         if not isinstance(Ly, list):
             self.Ly = Ly
             ylims = np.asarray([-Ly, Ly])
         else:
-            self.Ly = abs(Ly[0]-Ly[1]) / 2
+            self.Ly = abs(Ly[0]-Ly[1]) / 2.
             ylims = np.asarray([Ly[0], Ly[1]])
 
         self.domainLimits = np.hstack((ylims, xlims))

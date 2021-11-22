@@ -23,6 +23,7 @@
 #include <il/Array2D.h>
 
 namespace hfp3d{
+
     class Mesh {
 
     private:
@@ -30,12 +31,14 @@ namespace hfp3d{
 
     public:
 
-        //the mesh occupies the domaine [-Real_Lx,Real_Lx] times [-Real_Ly,Real_Ly]
-        // the centers of the mesh occupz the domaine [-Lx,Lx] times [-Ly,Ly]
+        //the mesh occupies the domain [-Real_Lx,Real_Lx] times [-Real_Ly,Real_Ly]
+        // the centers of the mesh occupy the domain [-Lx,Lx] times [-Ly,Ly]
         double Lx,Ly,dx,dy,Real_Lx,Real_Ly;
 
-        // nx and ny are separately the number of elements in x direction and y direction
+
+        // nx and ny are respectively the number of elements in x and y direction
         int nx,ny;
+
 
         void set_values(il::Array<il::StaticArray<double,2>> xy,int nnx,int nny,double LLx, double LLy,double ddx, double ddy);
 
@@ -44,19 +47,18 @@ namespace hfp3d{
         il::StaticArray<double,2> node(il::int_t k);
 
 
-
         // for example, return (3,5) the fourth in x direction, the sixth in y direction
         il::StaticArray<int,2> coor(il::int_t k);
 
+
         // return number of elements of the mesh
-     int nelts();
+        int nelts();
     };
+
 
     // Create a mesh in the 2D domaine [-Real_Lx,Real_Lx] times [-Real_Ly,Real_Ly] with nx times ny elements
     //the nomination of the nodes is from left to right and from bottom to top
     Mesh create_Mesh(double Lx, double Ly,int nx, int ny);
-
-
 
 }
 
