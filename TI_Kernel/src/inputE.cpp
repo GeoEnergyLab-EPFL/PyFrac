@@ -17,7 +17,6 @@ namespace hfp3d {
         i >> j;
 
         //create the stiffness matrix
-
         il::Array<double> Ce{5};
         int ii=0;
         for (json::iterator it = j["Solid parameters"].begin(); it != j["Solid parameters"].end(); ++it) {

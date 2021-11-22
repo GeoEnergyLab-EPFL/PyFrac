@@ -8,6 +8,7 @@
 // Fatima-Ezzahra Moukhtari
 // Brice Lecampion
 // Dmitry Nikolskiy
+// Carlo Peruzzo
 
 #ifndef HFPX3D_VC_ASSEMBLYDDM_H
 #define HFPX3D_VC_ASSEMBLYDDM_H
@@ -38,39 +39,39 @@ namespace hfp3d{
 
     // basic_assembly returns the global matrix for the pre-mesh parallel to the isotropic plan
     // which contains the influence component of all three
-    //directions, the size of the matrix is (3 nelts) times (3 nelts)
+    // directions, the size of the matrix is (3 nelts) times (3 nelts)
     il::Array2D<double> basic_assembly(Mesh mesh);
 
 
-    //opening_assembly returns the global matrix for the pre-mesh parallel to the isotropic plan
+    // opening_assembly returns the global matrix for the pre-mesh parallel to the isotropic plan
     // which contains only the influence component of the opening mode
     // the size of the matrix is nelts times nelts
     il::Array2D<double> opening_assembly(Mesh mesh);
 
 
-    //simplified_opening_assembly returns the same result of opening_assembly but it uses the toeplitz property
-    //which reduces the cost of calculation
+    // simplified_opening_assembly returns the same result of opening_assembly but it uses the toeplitz property
+    // which reduces the cost of calculation
     il::Array2D<double> simplified_opening_assembly(Mesh mesh);
 
 
-    //shearing_assembly returns the global matrix for the pre-mesh parallel to the isotropic plan
+    // shearing_assembly returns the global matrix for the pre-mesh parallel to the isotropic plan
     // which contains only the influence component for a shear mode (dislocation in x direction and shear stress is sigma31)
     il::Array2D<double> shearing_assembly(Mesh mesh);
 
 
-//perpendicular_opening_assembly returns the global matrix for the pre-mesh perpendicular to the isotropic plan
+    // perpendicular_opening_assembly returns the global matrix for the pre-mesh perpendicular to the isotropic plan
     // which contains only the influence component for opening mode.
     il::Array2D<double> perpendicular_opening_assembly(Mesh mesh);
 
 
 
-    //similar to simplified_opening_assembly, but the influence coefficients for the first element in the mesh are
-    //stored in a 2D array instead of 1D array. it reduces the memory from O(nelts times nelts) to O(nelts)
+    // similar to simplified_opening_assembly, but the influence coefficients for the first element in the mesh are
+    // stored in a 2D array instead of 1D array. it reduces the memory from O(nelts times nelts) to O(nelts)
     il::Array2D<double> simplified_opening_assembly_2(Mesh mesh);
 
 
-    //similar to perpendicular_opening_assembly, but the influence coefficients for the first element in the mesh are
-    //stored in a 2D array instead of 1D array. it reduces the memory from O(nelts times nelts) to O(nelts)
+    // similar to perpendicular_opening_assembly, but the influence coefficients for the first element in the mesh are
+    // stored in a 2D array instead of 1D array. it reduces the memory from O(nelts times nelts) to O(nelts)
     il::Array2D<double> perpendicular_opening_assembly_2(Mesh mesh);
 
 
