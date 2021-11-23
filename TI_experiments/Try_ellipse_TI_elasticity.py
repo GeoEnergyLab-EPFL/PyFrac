@@ -179,6 +179,7 @@ simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the execut
 simulProp.remeshFactor = 2            # the factor by which the domain is expanded
 #simulProp.projMethod = 'ILSA_orig'    # comment out this line so the default is continuous front scheme
 simulProp.set_tipAsymptote('U1')
+simulProp.useBlockToeplizCompression = True
 # simulProp.fixedTmStp = np.asarray([[0.0001, 0.5],[1., 0.6]])
 # simulProp.tmStpPrefactor = 1.
 # initialization parameters

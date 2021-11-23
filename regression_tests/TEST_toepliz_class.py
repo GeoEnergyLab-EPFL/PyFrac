@@ -7,10 +7,13 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+# external imports
+import numpy as np
+
 # local imports
 from fracture_obj.fracture_initialization import get_radial_survey_cells
 from mesh_obj.mesh import CartesianMesh
-import numpy as np
+from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix, load_TI_elasticity_matrix_toepliz
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
@@ -39,91 +42,91 @@ nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Ep = youngs_mod / (1 - nu ** 2) # plain strain modulus
 
-# def test_toepliz_get_submatrix_hy_eq_hx_and_nx_eq_ny():
-#     # Mesh hx=hy, nx=ny
-#     # creating mesh
-#     print("Mesh hx=hy, nx=ny ...")
-#     Mesh = CartesianMesh(0.6, 0.6, 19, 19)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
-#     slice = np.asarray(range(Mesh.NumberOfElts))
-#     C_new = C_obj[np.ix_(slice, slice)]
-#     common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
-#
-# def test_toepliz_get_submatrix_hy_noteq_hx_and_nx_noteq_ny():
-#     # Mesh hx!=hy, nx!=ny
-#     Mesh = CartesianMesh(0.5, 0.6, 23, 27)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
-#     slice = np.asarray(range(Mesh.NumberOfElts))
-#     C_new = C_obj[np.ix_(slice, slice)]
-#     common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
-#
-# def test_toepliz_get_submatrix_hy_eq_hx_and_nx_noteq_ny():
-#     # Mesh hx=hy, nx!=ny
-#     Mesh = CartesianMesh(31*1/63, 1, 11, 23)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
-#     slice = np.asarray(range(Mesh.NumberOfElts))
-#     C_new = C_obj[np.ix_(slice, slice)]
-#     common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
-#
-# def test_toepliz_get_submatrix_hy_noteq_hx_and_nx_eq_ny():
-#     # Mesh hx!=hy, nx=ny
-#     Mesh = CartesianMesh(1.4, 1.6, 19, 19)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
-#     slice = np.asarray(range(Mesh.NumberOfElts))
-#     C_new = C_obj[np.ix_(slice, slice)]
-#     common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
-#
-# def test_toepliz_get_submatrix_same_dim():
-#     Mesh = CartesianMesh(0.45, 0.6, 39, 49)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
-#     xslice = np.asarray([33, 55, 66])
-#     yslice = np.asarray([27, 12, 41])
-#     C_new_sliced = C_obj[np.ix_(xslice,yslice)]
-#     C_sliced = C[np.ix_(xslice, yslice)]
-#     common_test_for_all_toepliz_tests(C_sliced, C_new_sliced, expect_simmetric=False)
-#
-# def test_toepliz_get_submatrix_different_dim():
-#     Mesh = CartesianMesh(0.45, 0.6, 29, 29)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
-#     xslice = np.asarray([33,55,66])
-#     yslice = np.asarray([2,18,22,45])
-#     C_new_sliced = C_obj[np.ix_(xslice, yslice)]
-#     C_sliced = C[np.ix_(xslice, yslice)]
-#     common_test_for_all_toepliz_tests(C_sliced, C_new_sliced, expect_simmetric=False)
-#
-# def test_toepliz_dot_product():
-#     #This will test the dot product made in parallel
-#     Mesh = CartesianMesh(0.45, 0.6, 29, 29)
-#     # old way
-#     C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float64)
-#     # new way
-#     C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision=np.float64)
-#
-#     # array test
-#     x = np.ones(C.shape[0],dtype=np.float64)
-#     x1 = C.dot(x)
-#     x2 = C_obj._matvec_fast(x)
-#     diff = np.linalg.norm(x1 - x2)
-#     assert(diff < 0.05)
-#
+def test_toepliz_get_submatrix_hy_eq_hx_and_nx_eq_ny():
+    # Mesh hx=hy, nx=ny
+    # creating mesh
+    print("Mesh hx=hy, nx=ny ...")
+    Mesh = CartesianMesh(0.6, 0.6, 19, 19)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
+    slice = np.asarray(range(Mesh.NumberOfElts))
+    C_new = C_obj[np.ix_(slice, slice)]
+    common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
+
+def test_toepliz_get_submatrix_hy_noteq_hx_and_nx_noteq_ny():
+    # Mesh hx!=hy, nx!=ny
+    Mesh = CartesianMesh(0.5, 0.6, 23, 27)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
+    slice = np.asarray(range(Mesh.NumberOfElts))
+    C_new = C_obj[np.ix_(slice, slice)]
+    common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
+
+def test_toepliz_get_submatrix_hy_eq_hx_and_nx_noteq_ny():
+    # Mesh hx=hy, nx!=ny
+    Mesh = CartesianMesh(31*1/63, 1, 11, 23)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
+    slice = np.asarray(range(Mesh.NumberOfElts))
+    C_new = C_obj[np.ix_(slice, slice)]
+    common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
+
+def test_toepliz_get_submatrix_hy_noteq_hx_and_nx_eq_ny():
+    # Mesh hx!=hy, nx=ny
+    Mesh = CartesianMesh(1.4, 1.6, 19, 19)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
+    slice = np.asarray(range(Mesh.NumberOfElts))
+    C_new = C_obj[np.ix_(slice, slice)]
+    common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=True)
+
+def test_toepliz_get_submatrix_same_dim():
+    Mesh = CartesianMesh(0.45, 0.6, 39, 49)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
+    xslice = np.asarray([33, 55, 66])
+    yslice = np.asarray([27, 12, 41])
+    C_new_sliced = C_obj[np.ix_(xslice,yslice)]
+    C_sliced = C[np.ix_(xslice, yslice)]
+    common_test_for_all_toepliz_tests(C_sliced, C_new_sliced, expect_simmetric=False)
+
+def test_toepliz_get_submatrix_different_dim():
+    Mesh = CartesianMesh(0.45, 0.6, 29, 29)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision = np.float32)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision = np.float32)
+    xslice = np.asarray([33,55,66])
+    yslice = np.asarray([2,18,22,45])
+    C_new_sliced = C_obj[np.ix_(xslice, yslice)]
+    C_sliced = C[np.ix_(xslice, yslice)]
+    common_test_for_all_toepliz_tests(C_sliced, C_new_sliced, expect_simmetric=False)
+
+def test_toepliz_dot_product():
+    #This will test the dot product made in parallel
+    Mesh = CartesianMesh(0.45, 0.6, 29, 29)
+    # old way
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float64)
+    # new way
+    C_obj = load_isotropic_elasticity_matrix_toepliz(Mesh, Ep, C_precision=np.float64)
+
+    # array test
+    x = np.ones(C.shape[0],dtype=np.float64)
+    x1 = C.dot(x)
+    x2 = C_obj._matvec_fast(x)
+    diff = np.linalg.norm(x1 - x2)
+    assert(diff < 0.05)
+
 
 def test_toepliz_bandedC():
 
@@ -175,3 +178,47 @@ def test_toepliz_bandedC():
     assert res2 < 10.e-2
 
     #matplotlib.pyplot.spy(C9stencilC)
+
+
+def test_toepliz_TI_Kernel():
+
+    #This will test the toeplitz TI_kernel
+    # solid properties
+    Cij = np.zeros((6, 6), dtype=float)
+    Cij[0, 0] = 114.6
+    Cij[0, 1] = 28.46
+    Cij[5, 5] = 0.5 * (Cij[0, 0] - Cij[0, 1])
+    Cij[0, 2] = 47.49
+    Cij[2, 2] = 75.49
+    Cij[3, 3] = 35.86
+    Cij[1, 1] = Cij[0, 0]
+    Cij[1, 0] = Cij[0, 1]
+    Cij[2, 0] = Cij[0, 2]
+    Cij[2, 1] = Cij[0, 2]
+    Cij[1, 2] = Cij[0, 2]
+    Cij[4, 4] = Cij[3, 3]
+    Cij = Cij * 1e9
+
+    TI_Kernel_exec_path = '../TI_Kernel/build'
+
+    Mesh = CartesianMesh(0.45, 0.6, 41, 51)
+
+    # old way
+    C = load_TI_elasticity_matrix(Mesh.Lx,
+                                  Mesh.Ly,
+                                  Mesh.nx,
+                                  Mesh.ny,
+                                  Cij,
+                                  TI_Kernel_exec_path,
+                                  toeplitz = False)
+    # new way
+    C_obj = load_TI_elasticity_matrix_toepliz(Mesh,
+                                              Cij,
+                                              TI_Kernel_exec_path)
+
+    C_obj_asfull = C_obj[np.arange(C_obj.C_size_),np.arange(C_obj.C_size_)]
+
+    diff = C_obj_asfull - C
+    assert diff.max() + diff.min() < 1.e-6
+
+

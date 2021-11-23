@@ -11,10 +11,6 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 from scipy.sparse.linalg import LinearOperator
 
-# Internal imports
-from solid.elasticity_isotropic_utils import get_isotropic_el_self_eff
-
-
 class Hdot_3DR0opening(LinearOperator):
     """
     This function provides the dot product between the Hmatrix approx of the elasticity matrix and a vector
@@ -42,9 +38,9 @@ class Hdot_3DR0opening(LinearOperator):
 
     def set(self, data):
         # properties = [youngs_mod, nu]
-        max_leaf_size, eta, eps_aca,  properties, coor2D, conn, hx, hy = data
+        max_leaf_size, eta, eps_aca,  properties, coor2D, conn, hx, hy, self_eff = data
 
-        self.diag_val = get_isotropic_el_self_eff(hx, hy, properties[0])
+        self.diag_val = self_eff
 
         # number of vertexes in the mesh
         NoV = coor2D.shape[0]
