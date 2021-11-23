@@ -18,6 +18,7 @@ import os, sys
 
 # internal imports
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+from solid.elasticity_toeplitz import elasticity_matrix_toepliz
 
 
 def get_Cij_Matrix(youngs_mod, nu):
@@ -37,7 +38,7 @@ def get_Cij_Matrix(youngs_mod, nu):
 
 
 # --------------------------------------------------------------------------------------------------------------------------
-def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
+def load_TI_elasticity_matrix(Lx, Ly, nx, ny, Cij, TI_KernelExecPath, toeplitz = False):
     """
     Create the elasticity matrix for transversely isotropic materials.  It is under development and will be refactored
     soon.
@@ -45,27 +46,29 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
     Args:
         Mesh (object CartesianMesh):        -- a mesh object describing the domain.
         mat_prop (MaterialProperties):      -- the MaterialProperties object giving the material properties.
-        sim_prop (SimulationProperties):    -- the SimulationProperties object giving the numerical parameters to be
-                                               used in the simulation.
+        TI_KernelExecPath (string):         -- the folder containing the executable to calculate transverse isotropic
+                                               kernel or kernel with free surface.
+        toeplitz (bool)                     -- if that is true then the matrix will be compressed exploiting its Toeplitz structure
 
     Returns:
         C (ndarray):                        -- the elasticity matrix.
     """
     log = logging.getLogger('PyFrac.load_TI_elasticity_matrix')
-    data = {'Solid parameters': {'C11': mat_prop.Cij[0][0],
-                                 'C12': mat_prop.Cij[0][1],
-                                 'C13': mat_prop.Cij[0][2],
-                                 'C33': mat_prop.Cij[2][2],
-                                 'C44': mat_prop.Cij[3][3]},
-            'Mesh': {'L1': Mesh.Lx,
-                     'L3': Mesh.Ly,
-                     'n1': Mesh.nx,
-                     'n3': Mesh.ny}
+    data = {'Solid parameters': {'C11': Cij[0][0],
+                                 'C12': Cij[0][1],
+                                 'C13': Cij[0][2],
+                                 'C33': Cij[2][2],
+                                 'C44': Cij[3][3]},
+            'Mesh': {'L1': Lx,
+                     'L3': Ly,
+                     'n1': nx,
+                     'n3': ny},
+            'Options':{'toeplitz_compr': toeplitz}
             }
 
     log.info('Writing parameters to a file...')
     curr_directory = os.getcwd()
-    os.chdir(sim_prop.TI_KernelExecPath)
+    os.chdir(TI_KernelExecPath)
     with open('stiffness_matrix.json', 'w') as outfile:
         json.dump(data, outfile, indent=3)
 
@@ -79,13 +82,22 @@ def load_TI_elasticity_matrix(Mesh, mat_prop, sim_prop):
     subprocess.run(suffix + 'TI_elasticity_kernel', shell=True)
 
     log.info('Reading global TI elasticity matrix...')
+    if toeplitz:
+        amount_of_data_to_get = data['Mesh']['n1'] * data['Mesh']['n3']
+    else:
+        amount_of_data_to_get = pow(data['Mesh']['n1'] * data['Mesh']['n3'], 2)
     try:
         file = open('StrainResult.bin', "rb")
         C = array('d')
-        C.fromfile(file, pow(data['Mesh']['n1'] * data['Mesh']['n3'], 2))
-        C = np.reshape(C,
-                       (data['Mesh']['n1'] * data['Mesh']['n3'],
-                        data['Mesh']['n1'] * data['Mesh']['n3']))
+        C.fromfile(file, amount_of_data_to_get)
+
+        if toeplitz:
+            C = np.asarray(C)
+        else:
+            C = np.reshape(C,
+                           (data['Mesh']['n1'] * data['Mesh']['n3'],
+                            data['Mesh']['n1'] * data['Mesh']['n3']))
+
 
     except FileNotFoundError:
         # if 'CMatrix' file is not found
@@ -184,3 +196,16 @@ def TI_plain_strain_modulus(alpha, Cij):
 
     return Eprime
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+class load_TI_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
+
+    def __init__(self, Mesh, Cij, TI_KernelExecPath, C_precision=np.float64):
+
+        useHMATdot = False # because one needs to implement TI in HMAT
+        elas_prop_HMAT = None
+        self.TI_KernelExecPath = TI_KernelExecPath
+        super().__init__(Mesh, Cij, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Transverse-Isotropic')
+
+    def reload_toepliz_Coe(self, Lx, Ly, nx, ny, hx, hy, mat_prop):
+        return load_TI_elasticity_matrix(Lx, Ly, nx, ny, mat_prop, self.TI_KernelExecPath, toeplitz = True)

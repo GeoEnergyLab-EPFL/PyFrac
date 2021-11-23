@@ -10,7 +10,10 @@
 // Carlo Peruzzo
 
 #include <src/AssemblyDDM.h>
+#include <cstdio>
+#include <fstream>
 
+using namespace std;
 
 namespace hfp3d {
 
@@ -117,9 +120,6 @@ namespace hfp3d {
 
         return kmat;
     }
-
-
-
 
     il::Array2D<double> simplified_opening_assembly(Mesh mesh){
         double dx=mesh.dx;
@@ -371,7 +371,7 @@ namespace hfp3d {
         // kmat is the global matrix
         il::Array2D<double> kmat{nelts,nelts};
 
-        // four corner of the rectangular dislocation loop
+        // four corners of the rectangular dislocation loop
         il::StaticArray<double,3> xA,xB,xC,xD;
         xA[0]=-dx/2;xA[1]=dy/2;xA[2]=0;
         xB[0]=dx/2; xB[1]=dy/2;xB[2]=0;
@@ -405,7 +405,6 @@ namespace hfp3d {
             // influence from j to k
             reference(mesh_coor_k[0],mesh_coor_k[1])=Stress(2, xA, xB, xC, xD, relativeP)[2];
         }
-
 
 
         // Full the global matrix by the coefficient in the 2D array reference
@@ -472,8 +471,7 @@ namespace hfp3d {
             mesh_coor_k = mesh.coor(k);
 
             // influence from j to k
-            reference(mesh_coor_k[0],mesh_coor_k[1])= Stress(2, xA, xB, xC,
-                                                                     xD,relativeP)[1];
+            reference(mesh_coor_k[0],mesh_coor_k[1])= Stress(2, xA, xB, xC, xD,relativeP)[1];
         }
 
         for(int j=0;j<nelts/2;j++){
@@ -614,6 +612,49 @@ namespace hfp3d {
 
             //influence from j to k
             reference(mesh_coor_k[0],mesh_coor_k[1])= Stress(2, xA, xB, xC, xD, relativeP)[1];
+        }
+        return reference;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    il::Array<double> make_vector_perp_1D(Mesh mesh){
+        double dx=mesh.dx; // elem size x
+        double dy=mesh.dy; // elem size y
+
+        int nelts = mesh.nelts(); // number of elements
+
+        il::StaticArray<double,3> xA,xB,xC,xD;
+        xA[0]=-dx/2; xA[1]=0.; xA[2]=+dy/2.;
+        xB[0]=+dx/2; xB[1]=0.; xB[2]=+dy/2.;
+        xC[0]=+dx/2; xC[1]=0.; xC[2]=-dy/2.;
+        xD[0]=-dx/2; xD[1]=0.; xD[2]=-dy/2.;
+
+        il::StaticArray<double,3> local_point;
+        il::StaticArray<double,3> relativeP;
+        il::Array<double> reference{nelts, 0.};
+        il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
+
+        // considering the center of element 0
+        local_point[0] = mesh.node(0)[0];
+        local_point[1] = 0.;
+        local_point[2] = mesh.node(0)[1];
+
+        #pragma omp parallel for num_threads(4)
+
+        for(int k=0; k < nelts; k++){
+
+            //il::StaticArray<double,3> relativeP;
+
+            // computing the relative distance between element 0 and all the rest of the elemens in the domain
+            relativeP[0] = il::abs(mesh.node(k)[0] - local_point[0]);
+            relativeP[1] = 0.;
+            relativeP[2] = il::abs(mesh.node(k)[1] - local_point[2]);
+
+            // [colum_index  ,   row_index] of the element k in the mesh
+            mesh_coor_k = mesh.coor(k);
+
+            // influence from j to k
+            reference[ mesh_coor_k[0] + mesh_coor_k[1] * mesh.nx ] = - Stress(2, xA, xB, xC, xD, relativeP)[1];
         }
         return reference;
     }

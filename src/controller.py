@@ -19,7 +19,7 @@ import warnings
 from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
 
-from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix
+from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix, load_TI_elasticity_matrix_toepliz
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
@@ -222,9 +222,7 @@ class Controller:
         # DO THIS CHECK BEFORE COMPUTING C!
         if self.C is not None: # in the case C is provided
             self.sim_prop.useBlockToeplizCompression = False
-        elif self.solid_prop.TI_elasticity: # in case of TI_elasticity
-            self.sim_prop.useBlockToeplizCompression = False
-        elif not self.solid_prop.TI_elasticity and self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
+        elif self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
             self.sim_prop.useBlockToeplizCompression = False
 
         # load elasticity matrix
@@ -246,14 +244,23 @@ class Controller:
                         self.C = load_isotropic_elasticity_matrix_toepliz(self.fracture.mesh,
                                                                           self.solid_prop.Eprime)
             else:
-                C = load_TI_elasticity_matrix(self.fracture.mesh,
-                                                   self.solid_prop,
-                                                   self.sim_prop)
-                # compressing the elasticity matrix for symmetric fracture
-                if self.sim_prop.symmetric:
-                    self.C = symmetric_elasticity_matrix_from_full(C, self.fracture.mesh)
+                if not self.sim_prop.useBlockToeplizCompression:
+                    C = load_TI_elasticity_matrix(self.fracture.mesh.Lx,
+                                                  self.fracture.mesh.Ly,
+                                                  self.fracture.mesh.nx,
+                                                  self.fracture.mesh.ny,
+                                                  self.solid_prop.Cij,
+                                                  self.sim_prop.TI_KernelExecPath,
+                                                  toeplitz = False)
+                    # compressing the elasticity matrix for symmetric fracture
+                    if self.sim_prop.symmetric:
+                        self.C = symmetric_elasticity_matrix_from_full(C, self.fracture.mesh)
+                    else:
+                        self.C = C
                 else:
-                    self.C = C
+                    self.C = load_TI_elasticity_matrix_toepliz(self.fracture.mesh,
+                                                          self.solid_prop.Cij,
+                                                          self.sim_prop.TI_KernelExecPath)
             log.info('Done!')
 
         # # perform first time step with implicit front advancing due to non-availability of velocity

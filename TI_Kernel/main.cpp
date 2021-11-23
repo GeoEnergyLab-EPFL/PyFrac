@@ -48,8 +48,7 @@ int main() {
     il::Array<double>  Ce{hfp3d::Cmatrix("stiffness_matrix.json")};
 
 
-    // "global" is the array where to save the matrix that hsa been created
-    il::Array2D<double> global;
+    // in what follows "global" is the array where to save the matrix that hsa been created
 
 
     if(( (Ce[0]==Ce[3]) && (Ce[2]==Ce[1]) && (Ce[4]==0.5*(Ce[0]-Ce[1])) )) {
@@ -61,7 +60,7 @@ int main() {
         double Ep=(Ce[0]-Ce[1])*(Ce[0]+Ce[1])/Ce[0];
 
         // calculate the Isotropic elasticity matrix
-        global = hfp3d::CIMatrix(mesh1, Ep);
+        il::Array2D<double> global = hfp3d::CIMatrix(mesh1, Ep);
 
         // output the Isotropic elasticity matrix to file
         for (int i=0;i<(nx*ny);i++){
@@ -74,11 +73,25 @@ int main() {
         // if condition is true then transverse isotropic case
         cout << "Transverse Isotropic case;" << "\n";
 
-        //calculate the elasticity matrix
-        global = hfp3d::perpendicular_opening_assembly(mesh1);
-        for (int i=0;i<(nx*ny);i++){
-            for (int j=0;j<(nx*ny);j++) {
-                outputFile.write((char *) (&(global(i,j))), sizeof(global(i,j)));
+        //  Read the options
+        bool return_toeplitz_compression= j["Options"]["toeplitz_compr"].get<bool>();
+
+        if(return_toeplitz_compression) {
+            cout << "---> toeplitz compression;" << "\n";
+            // return the vector containing the influences of a corner point of the mesh
+            // with all the other points
+            il::Array<double> global = hfp3d::make_vector_perp_1D(mesh1);
+            for (int i=0;i<(nx*ny);i++){
+                    outputFile.write((char *) (&(global[i])), sizeof(global[i]));
+            }
+        } else {
+            cout << "---> computing the full matrix;" << "\n";
+            // calculate the whole elasticity matrix
+            il::Array2D<double> global = hfp3d::perpendicular_opening_assembly(mesh1);
+            for (int i=0;i<(nx*ny);i++){
+                for (int j=0;j<(nx*ny);j++) {
+                    outputFile.write((char *) (&(global(i,j))), sizeof(global(i,j)));
+                }
             }
         }
     }

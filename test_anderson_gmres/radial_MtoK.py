@@ -67,7 +67,7 @@ simulProp.frontAdvancing = 'implicit'
 
 # initializing fracture
 Fr_geometry = Geometry('radial',radius=1.598) #1
-C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64, useHMATdot=False, nu=nu)
+C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64, useHMATdot=True, nu=nu)
 init_param = InitializationParameters(Fr_geometry, regime='M', time=0.05, elasticity_matrix=C)
 # init_param = InitializationParameters(Fr_geometry,
 #                                       regime='static',

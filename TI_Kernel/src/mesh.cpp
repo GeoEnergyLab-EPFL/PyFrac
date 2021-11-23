@@ -58,7 +58,7 @@ namespace hfp3d{
     *      0  1  2  3  4  5 ----> y
     *
     *   k is going from 0 to 17
-    *   the result is x and y (column and row)
+    *   the result is x and y (row and column)
     */
         int x = k / nx;
         int y = k - x * nx;
