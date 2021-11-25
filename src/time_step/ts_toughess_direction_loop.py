@@ -19,6 +19,11 @@ def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_p
     front_region = None
     eval_region  = None
 
+    if mat_properties.TI_elasticity:
+        relax_factor = 0.75
+    else:
+        relax_factor = 1.
+
     itr = 0
     while itr < sim_properties.maxProjItrs:
         # get the current direction of propagation
@@ -41,14 +46,8 @@ def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_p
                                                    sgndDist_k,
                                                    global_alpha=mat_properties.inv_with_heter_K1c)
                 alpha_ribbon_km1 = np.zeros(Fr_lstTmStp.EltRibbon.size, )
-            elif not sim_properties.get_volumeControl():
-                alpha_ribbon_k = 0.25 * alpha_ribbon_k + 0.75 * projection_method(Fr_lstTmStp.EltRibbon,
-                                                                                  second_arg,
-                                                                                  Fr_lstTmStp.mesh,
-                                                                                  sgndDist_k,
-                                                                                  global_alpha=mat_properties.inv_with_heter_K1c)
             else:
-                alpha_ribbon_k = 0.0 * alpha_ribbon_k + 1. * projection_method(Fr_lstTmStp.EltRibbon,
+                alpha_ribbon_k = (1-relax_factor) * alpha_ribbon_k + relax_factor * projection_method(Fr_lstTmStp.EltRibbon,
                                                                                second_arg,
                                                                                Fr_lstTmStp.mesh,
                                                                                sgndDist_k,

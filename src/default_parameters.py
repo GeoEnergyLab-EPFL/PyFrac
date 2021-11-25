@@ -22,8 +22,8 @@ gmres_tol = 1.e-9                       # tolerance for the convergence of a gmr
 max_front_itrs = 25                     # maximum iterations for the fracture front.
 max_solver_itrs = 140                   # maximum iterations for the elastohydrodynamic solver.
 max_proj_Itrs = 10                      # maximum projection iterations.
-gmres_maxiter = 1000                    # max number of iterations of a gmres solver
-gmresRestart = 1000                     # number of iterations after which there is a restart
+gmres_maxiter = 1000                    # max number of iterations of the iterative linear solver
+gmresRestart = 1000                     # number of iterations after which there is a restart for GMRES
 
 # time and time stepping
 tmStp_prefactor = 0.8                   # time step prefactor(pf) to determine the time step(dt = pf*min(dx, dy)/max(v).

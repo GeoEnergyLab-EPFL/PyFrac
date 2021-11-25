@@ -218,11 +218,8 @@ class Controller:
         if self.sim_prop.log2file:
             self.sim_prop.set_logging_to_file(self.logAddress)
 
-        # deactivate the block_toepliz_compression functions
-        # DO THIS CHECK BEFORE COMPUTING C!
-        if self.C is not None: # in the case C is provided
-            self.sim_prop.useBlockToeplizCompression = False
-        elif self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
+        # deactivate the block_toepliz_compression functions in case of symmetric
+        if self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
             self.sim_prop.useBlockToeplizCompression = False
 
         # load elasticity matrix
