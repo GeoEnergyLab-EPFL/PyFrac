@@ -26,7 +26,7 @@ from utilities.utility import append_new_line
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'omp'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
 @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
@@ -90,9 +90,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
 
 
 @njit(fastmath=True, nogil=True, parallel=True)
-def getFast(elementsXY, nx, C_toeplitz_coe, C_precision):
-    elemX = elementsXY[1].flatten()
-    elemY = elementsXY[0].flatten()
+def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
     dimX = elemX.size  # number of elements to consider on x axis
     dimY = elemY.size  # number of elements to consider on y axis
 
@@ -327,7 +325,10 @@ class elasticity_matrix_toepliz(LinearOperator):
         :param elemY: (numpy array) rows to take
         :return: submatrix of C
         """
-        return getFast(elementsXY, self.nx, self.C_toeplitz_coe, self.C_precision)
+
+        elemX = elementsXY[1].flatten()
+        elemY = elementsXY[0].flatten()
+        return getFast(elemX, elemY, self.nx, self.C_toeplitz_coe, self.C_precision)
 
 
     def _matvec_fast(self, uk):

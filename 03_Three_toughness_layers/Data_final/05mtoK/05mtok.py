@@ -57,6 +57,7 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
 # imports
 import os
 import time
+import numpy as np
 
 # local imports
 from mesh_obj.mesh import CartesianMesh
@@ -67,28 +68,21 @@ from fracture_obj.fracture import Fracture
 from controller import Controller
 from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
-from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from utilities.postprocess_fracture import load_fractures
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
 run = True
-run = False
-plot_B = False
-#----
 run_dir =  "./"
-#----
-restart = False
-#----
-use_HMAT = False
-#----
-use_direct_TOEPLITZ = True
-output_fol  = "./"
+restart = True
+
+# postprocessing
+plot_B = False
 output_fol_B = run_dir
-#----
-use_iterative = False
+output_fol  = "./"
 ftPntJUMP = 40
 plot_slices = False
 ############################
@@ -101,7 +95,6 @@ if run:
     nu = 0.4  # Poisson's ratio
     youngs_mod = 3.3e9  # Young's modulus
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
-    properties = [youngs_mod, nu]
 
     def smoothing(K1, K2, r, delta, x):
         # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
@@ -120,7 +113,7 @@ if run:
             print("ERROR")
 
 
-    def K1c_func(x,y):
+    def K1c_func(x,y, alpha):
         """ The function providing the toughness"""
         K_Ic = 0.4e6  # fracture toughness
         r = 1.48
@@ -128,7 +121,7 @@ if run:
         return smoothing(K_Ic, 5.*K_Ic, r, delta, x)
 
 
-    # plot x_max vs time
+    # ---- plot Kic_max vs time ---
     # import matplotlib.pyplot as plt
     # xlabel = 'x [m]'
     # ylabel = 'KIc [kPa.m^(1/2)]'
@@ -153,22 +146,6 @@ if run:
                               confining_stress_func = sigmaO_func,
                               minimum_width=0.)
 
-    if use_iterative:
-        if use_HMAT:
-            # set the Hmatrix for elasticity
-            begtime_HMAT = time.time()
-            C = Hdot_3DR0opening()
-            max_leaf_size = 100
-            eta = 10
-            eps_aca = 0.001
-            data = [max_leaf_size, eta, eps_aca, properties, Mesh.VertexCoor, Mesh.Connectivity, Mesh.hx, Mesh.hy]
-            C.set(data)
-            endtime_HMAT = time.time()
-            compute_HMAT = endtime_HMAT - begtime_HMAT
-        else:
-            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
-            C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
-
     # injection parameters
     Q0 = 0.001
     Injection = InjectionProperties(Q0, Mesh)
@@ -178,20 +155,22 @@ if run:
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 105.12  # the time at which the simulation stops
-    simulProp.tmStpPrefactor = 0.8  # decrease the pre-factor due to explicit front tracking
+    simulProp.finalTime = 105.12
+    simulProp.tmStpPrefactor = 0.8
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
     simulProp.tolFractFront = 0.0001
     simulProp.plotTSJump = 1
     simulProp.set_volumeControl(False)
-    if use_iterative: simulProp.volumeControlGMRES = True
     simulProp.bckColor = 'K1c'
-    simulProp.set_outputFolder(run_dir)   # the disk address where the files are saved
-    #simulProp.set_tipAsymptote('K')  # the tip asymptote is evaluated with the toughness dominated assumption
+    simulProp.set_outputFolder(run_dir)
     simulProp.plotVar = ['footprint', 'custom','regime']
-    simulProp.frontAdvancing = 'implicit'  # <--- mandatory use
-    simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
+    simulProp.frontAdvancing = 'implicit'
+    simulProp.projMethod = 'LS_continousfront'
+    simulProp.customPlotsOnTheFly = True
+    simulProp.useBlockToeplizCompression = True
+    simulProp.LHyst__ = []
+    simulProp.tHyst__ = []
 
     # setting up mesh extension options
     simulProp.meshExtensionAllDir = False
@@ -200,24 +179,11 @@ if run:
     simulProp.meshReductionPossible = False
     simulProp.simID = 'K1/K2=5.' # do not use _
 
-
-    simulProp.customPlotsOnTheFly = True
-    simulProp.LHyst__ = []
-    simulProp.tHyst__ = []
-
     # initialization parameters
     Fr_geometry = Geometry('radial', radius=0.4)
 
-    if not simulProp.volumeControlGMRES:
-        if use_direct_TOEPLITZ:
-            simulProp.useBlockToeplizCompression = True
-            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
-            C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
-        else:
-            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
-            C = load_isotropic_elasticity_matrix(Mesh, Eprime)
+    C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
 
-    #init_param = InitializationParameters(Fr_geometry, regime='K')
     init_param = InitializationParameters(Fr_geometry, regime='static',net_pressure=1.1e6, elasticity_matrix=C)
 
     # creating fracture object
@@ -228,36 +194,34 @@ if run:
                   Injection,
                   simulProp)
 
-    # ################################################################################
-    # # the following lines are needed if you want to restart an existing simulation #
-    # ################################################################################
-    # if restart:
-    #     from visualization import *
-    #     Fr_list, properties = load_fractures(address=run_dir, step_size=100)       # load all fractures                                                # list of times
-    #     Solid, Fluid, Injection, simulProp = properties
-    #     Fr = Fr_list[-1]
-    #     simulProp.set_outputFolder(run_dir)
-    #     # simulProp.set_solTimeSeries(np.concatenate((np.arange(0., 1.0965, 0.0085),
-    #     #                                             np.arange(1.0965, 7.9965, 0.025),)))
-    #     simulProp.set_solTimeSeries(np.arange(0.,5., 0.0085))
-    #     Solid = MaterialProperties(Mesh,
-    #                               Eprime,
-    #                               K1c_func=K1c_func,
-    #                               confining_stress_func = sigmaO_func,
-    #                               confining_stress=0.,
-    #                               minimum_width=0.)
-    #     #simulProp.send_phone_msg = True
-    #     #simulProp.useHmat=True
-    #     Solid.youngs_mod=3.3e10
-    #     Solid.nu=0.4
-    #     #simulProp.tolFractFront = 0.0001
-    #
-    #     # setting up mesh extension options
-    #     simulProp.meshExtensionAllDir = False
-    #     simulProp.set_mesh_extension_factor(1.5)
-    #     simulProp.set_mesh_extension_direction(['vertical'])
-    #     simulProp.meshReductionPossible = False
-    #############################################################################
+    ################################################################################
+    # the following lines are needed if you want to restart an existing simulation #
+    ################################################################################
+    if restart:
+        from utilities.visualization import *
+        Fr_list, properties = load_fractures(address=run_dir, step_size=100)
+        Solid, Fluid, Injection, simulProp = properties
+        Fr = Fr_list[-1]
+        simulProp.set_outputFolder(run_dir)
+        simulProp.useBlockToeplizCompression = True
+        simulProp.EHL_GMRES = True
+        simulProp.solve_monolithic = False
+        simulProp.gmres_Restart = 1000
+        simulProp.gmres_maxiter = 1000
+
+        Solid = MaterialProperties(Mesh,
+                                  Eprime,
+                                  K1c_func=K1c_func,
+                                  confining_stress_func = sigmaO_func,
+                                  confining_stress=0.,
+                                  minimum_width=0.)
+
+        # setting up mesh extension options
+        simulProp.meshExtensionAllDir = False
+        simulProp.set_mesh_extension_factor(1.5)
+        simulProp.set_mesh_extension_direction(['vertical'])
+        simulProp.meshReductionPossible = False
+    ############################################################################
 
 
     # create a Controller
