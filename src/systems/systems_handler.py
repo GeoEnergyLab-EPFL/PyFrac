@@ -649,7 +649,7 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             ch_act_toimpose = np.concatenate((to_solve_k, to_impose_k, neg_km1))
             pf[ch_act_toimpose] = Fr_lstTmStp.pFluid[ch_act_toimpose] + sol[len(to_solve_k):]
         elif not sim_properties.solve_monolithic:
-            if sim_properties.seBlockToeplizCompression:
+            if sim_properties.useBlockToeplizCompression:
                 C._set_domain_IDX(EltCrack)
                 C._set_codomain_IDX(to_solve_k)
 
