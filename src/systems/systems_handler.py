@@ -649,11 +649,21 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
             ch_act_toimpose = np.concatenate((to_solve_k, to_impose_k, neg_km1))
             pf[ch_act_toimpose] = Fr_lstTmStp.pFluid[ch_act_toimpose] + sol[len(to_solve_k):]
         elif not sim_properties.solve_monolithic:
-            # pressure evaluated by dot product of width and elasticity matrix
-            if Boundary is not None:
-                pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k] + Boundary.last_traction[to_solve_k]
+            if sim_properties.seBlockToeplizCompression:
+                C._set_domain_IDX(EltCrack)
+                C._set_codomain_IDX(to_solve_k)
+
+                # pressure evaluated by dot product of width and elasticity matrix
+                if Boundary is not None:
+                    pf[to_solve_k] = C._matvec_fast(w[EltCrack]) + mat_properties.SigmaO[to_solve_k] + Boundary.last_traction[to_solve_k]
+                else:
+                    pf[to_solve_k] = C._matvec_fast(w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
             else:
-                pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
+                # pressure evaluated by dot product of width and elasticity matrix
+                if Boundary is not None:
+                    pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k] + Boundary.last_traction[to_solve_k]
+                else:
+                    pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) +  mat_properties.SigmaO[to_solve_k]
             if sim_properties.solveDeltaP:
                 pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
                 pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
