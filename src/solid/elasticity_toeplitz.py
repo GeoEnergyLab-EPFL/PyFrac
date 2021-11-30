@@ -26,7 +26,7 @@ from utilities.utility import append_new_line
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'omp'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
 @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation

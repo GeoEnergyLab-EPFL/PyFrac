@@ -630,7 +630,7 @@ namespace hfp3d {
         xD[0]=-dx/2; xD[1]=0.; xD[2]=-dy/2.;
 
         il::StaticArray<double,3> local_point;
-        il::StaticArray<double,3> relativeP;
+
         il::Array<double> reference{nelts, 0.};
         il::StaticArray<int,2> mesh_coor_k, mesh_coor_j;
 
@@ -639,11 +639,11 @@ namespace hfp3d {
         local_point[1] = 0.;
         local_point[2] = mesh.node(0)[1];
 
-        #pragma omp parallel for num_threads(4)
+        #pragma omp parallel for num_threads(6)
 
         for(int k=0; k < nelts; k++){
 
-            //il::StaticArray<double,3> relativeP;
+            il::StaticArray<double,3> relativeP;
 
             // computing the relative distance between element 0 and all the rest of the elemens in the domain
             relativeP[0] = il::abs(mesh.node(k)[0] - local_point[0]);
@@ -653,8 +653,9 @@ namespace hfp3d {
             // [colum_index  ,   row_index] of the element k in the mesh
             mesh_coor_k = mesh.coor(k);
 
+            int a = mesh_coor_k[0] + mesh_coor_k[1] * mesh.nx ;
             // influence from j to k
-            reference[ mesh_coor_k[0] + mesh_coor_k[1] * mesh.nx ] = - Stress(2, xA, xB, xC, xD, relativeP)[1];
+            reference[ a ] = - Stress(2, xA, xB, xC, xD, relativeP)[1];
         }
         return reference;
     }
