@@ -14,13 +14,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # local imports
-from mesh.mesh import CartesianMesh
+from mesh_obj.mesh import CartesianMesh
 from properties import InjectionProperties, SimulationProperties
 from solid.solid_prop import MaterialProperties
 from fluid.fluid_prop import FluidProperties
-from fracture.fracture import Fracture
+from fracture_obj.fracture import Fracture
 from controller import Controller
-from fracture.fracture_initialization import Geometry, InitializationParameters
+from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.postprocess_fracture import load_fractures
 import utilities.postprocess_fracture
 
@@ -77,12 +77,13 @@ run = True
 plot = False
 export_results = False
 
-simulation_name = 'B02'
+simulation_name = 'R01'
 myfolder = './Data/'+simulation_name
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(150, 150, 241, 241)
+    Mesh = CartesianMesh(5, 5, 101, 101)
+    print(f'hey your mesh sizes are: {Mesh.hx} and {Mesh.hy} \n')
 
     # solid properties
     Eprime = 1.6e10  # plain strain modulus
@@ -92,7 +93,7 @@ if run:
     def sigmaO_func(x, y):
         """ The function providing the confining stress"""
         if np.abs(y) > 47.:
-            return 2.21e6
+            return 2.2e6
         else:
             return 2.2e6
 
@@ -103,7 +104,6 @@ if run:
                                confining_stress_func=sigmaO_func,
                                minimum_width=1.e-8)
 
-    #getStressVertSlice(Mesh, Solid)
 
     # injection parameters
     Q0 = 0.01
@@ -116,10 +116,6 @@ if run:
     simulProp = SimulationProperties()
     simulProp.bckColor = 'confining stress'           # the parameter according to which the background is color coded
     simulProp.frontAdvancing = 'implicit'
-    simulProp.set_outputFolder(myfolder)
-    #simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
-    #fixeddeltat=np.array([[3400],[50]])
-    #simulProp.fixedTmStp=fixeddeltat
     simulProp.finalTime = 1e9  # the time at which the simulation stops
     simulProp.projMethod = 'LS_continousfront'
     simulProp.plotTSJump = 10
@@ -127,8 +123,6 @@ if run:
     simulProp.LHyst__ = []
     simulProp.tHyst__ = []
     simulProp.plotVar = ['footprint','regime','custom']
-    #simulProp.plotVar = ['w', 'regime']
-    simulProp.enableGPU = True
     simulProp.tolFractFront = 0.0001
     simulProp.useBlockToeplizCompression = True  # this is to use less memory on your laptop
     simulProp.EHL_GMRES = True
@@ -136,7 +130,7 @@ if run:
 
     # initializing fracture
     Fr_geometry = Geometry('radial')
-    init_param = InitializationParameters(Fr_geometry, regime='M', time=10.)
+    init_param = InitializationParameters(Fr_geometry, regime='M', time=0.1)
 
     # # creating fracture object
     Fr = Fracture(Mesh,
@@ -155,12 +149,14 @@ if run:
     # Solid, Fluid, Injection, simulProp = properties
     # Fr = Fr_list[-1]
     # setting up mesh extension options
-    simulProp.meshExtension = False
-    simulProp.meshExtensionAllDir = False
-    simulProp.meshReductionPossible = False
-    simulProp.set_mesh_extension_factor(1.4)
-    simulProp.set_mesh_extension_direction(['all'])
-    simulProp.enableRemeshing = False
+
+    # remeshing section --- a special section for special things :)
+    # simulProp.meshExtension = False
+    # simulProp.meshExtensionAllDir = False
+    # simulProp.meshReductionPossible = False
+    # simulProp.set_mesh_extension_factor(1.e6)
+    # simulProp.set_mesh_extension_direction(['all'])
+    # simulProp.enableRemeshing = True
 
     # create a Controller
     controller = Controller(Fr,
