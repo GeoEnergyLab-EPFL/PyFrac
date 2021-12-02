@@ -37,12 +37,18 @@ def getFfrontBounds__(Ffront):
         x1, y1, x2, y2 = segment
         xmax, xmin = update_limits(x1, x2, xmax, xmin)
         ymax, ymin = update_limits(y1, y2, ymax, ymin)
-        return xmax, xmin, ymax, ymin
+    return xmax, xmin, ymax, ymin
 
 def getL__(Ffront):
     xmax, xmin, ymax, ymin = getFfrontBounds__(Ffront)
     Lhalf = (np.abs(xmax)+np.abs(xmin))/2.
     return Lhalf
+
+def getASPECTRATIO__(Ffront):
+    xmax, xmin, ymax, ymin = getFfrontBounds__(Ffront)
+    Lhalf = (np.abs(xmax) + np.abs(xmin))/2.
+    Hhalf = (np.abs(ymax) + np.abs(ymin)) / 2.
+    return Lhalf/Hhalf
 
 def getwAtMovingCenter__(fr):
     xmax, xmin, ymax, ymin = getFfrontBounds__(fr.Ffront)
@@ -56,10 +62,10 @@ def getwmax__(w):
     return w.max()
 
 def apply_custom_prop(sim_prop, fr):
-    #sim_prop.LHyst__.append(getH__(fr.Ffront))
+    sim_prop.LHyst__.append(getASPECTRATIO__(fr.Ffront))
     #sim_prop.LHyst__.append(getL__(fr.Ffront))
     #sim_prop.LHyst__.append(getwmax__(fr.w))
-    sim_prop.LHyst__.append(getwmax__(fr.pFluid))
+    #sim_prop.LHyst__.append(getwmax__(fr.pFluid))
     #sim_prop.LHyst__.append(getwAtMovingCenter__(fr))
     sim_prop.tHyst__.append(fr.time)
 
@@ -72,22 +78,22 @@ def custom_plot(sim_prop, fig = None):
     # plot L vs time
     xlabel = 'time [s]'
     #ylabel = 'H [m]'
-    ylabel = 'p [m]'
+    ylabel = 'L/H [-]'
     ax.scatter(sim_prop.tHyst__, sim_prop.LHyst__, color='k')
     # straight line
-    sl= []
-    sl_ana = []
-    K_Ic = 0.5e6
-    H=2*1.48
-    p_limit = 1.47*K_Ic/np.sqrt(np.pi*H/2)
-    p_ana = 2.*K_Ic/np.sqrt(np.pi*H)
-    for i in range(len(sim_prop.tHyst__)):
-        sl.append(p_limit)
-        sl_ana.append(p_ana)
-    ax.plot(sim_prop.tHyst__, sl, color='r')
-    ax.plot(sim_prop.tHyst__, sl_ana, color='g')
+    # sl= []
+    # sl_ana = []
+    # K_Ic = 0.5e6
+    # H=2*1.48
+    # p_limit = 1.47*K_Ic/np.sqrt(np.pi*H/2)
+    # p_ana = 2.*K_Ic/np.sqrt(np.pi*H)
+    # for i in range(len(sim_prop.tHyst__)):
+    #     sl.append(p_limit)
+    #     sl_ana.append(p_ana)
+    # ax.plot(sim_prop.tHyst__, sl, color='r')
+    # ax.plot(sim_prop.tHyst__, sl_ana, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_yscale('log')
+    #ax.set_yscale('log')
     ax.set_xscale('log')
     return fig
