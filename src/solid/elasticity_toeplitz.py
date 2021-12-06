@@ -11,6 +11,7 @@ import numpy as np
 from numba import njit, prange
 from scipy.sparse import coo_matrix
 from numba import config
+from numba.typed import List
 from scipy.sparse.linalg import LinearOperator
 import time
 # import random
@@ -30,7 +31,7 @@ from utilities.utility import append_new_line
 config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
-@njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+@njit(parallel=True, fastmath=True, nogil=True)  # <------parallel compilation
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # uk (numpy array), vector to which multiply the matrix C
     # nx (int), n. of element in x direction in the cartesian mesh
@@ -60,7 +61,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         res[iter1] = np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
     return res
 #
-# @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+# @njit(parallel=True, fastmath=True, nogil=True)  # <------parallel compilation
 # def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
 #     # uk (numpy array), vector to which multiply the matrix C
 #     # nx (int), n. of element in x direction in the cartesian mesh
@@ -164,16 +165,16 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype).tocsc()
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, nogil=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
 def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
     self_c = C_toeplitz_coe[0]
     #myR = range(dimX)
-    data = []
-    rows = []
-    cols = []
+    data = List()
+    rows = List()
+    cols = List()
     i *= nx
     for iter1 in prange(dimX):
         index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
@@ -300,7 +301,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe))
         C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
         C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
-        self.C_toeplitz_coe_decay = C_toeplitz_coe_exp.tolist()  # between 0 and 1
+        self.C_toeplitz_coe_decay = List(C_toeplitz_coe_exp.tolist())  # between 0 and 1
         self.coeff9stencilC = [self.C_toeplitz_coe[0],  # 0 dx 0 dy
                                self.C_toeplitz_coe[1],  # 1 dx 0 dy
                                self.C_toeplitz_coe[nx],  # 0 dx 1 dy

@@ -12,6 +12,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import os
 import numpy as np
 #from line_profiler import LineProfiler
+import psutil
 
 # local imports
 from mesh_obj.mesh import CartesianMesh
@@ -29,14 +30,20 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='debug')
 # profile = LineProfiler()
 # creating mesh
-Mesh = CartesianMesh(10, 10, 121, 121)
+#Mesh = CartesianMesh(10, 10, 121, 121)
 #Mesh = CartesianMesh(20, 20, 241, 241)
+Mesh = CartesianMesh(20, 20, 501, 501)
 
 # solid properties
-nu = 0.4                            # Poisson's ratio
-youngs_mod = 3.3e10                 # Young's modulus
+nu = 0.25
+G = 1.0
+youngs_mod = 2.0 * G * (1.0 + nu)
+
+#nu = 0.4                            # Poisson's ratio
+#youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu**2)   # plain strain modulus
 K1c = 1e6                           # Fracture toughness
+
 
 
 # material properties
@@ -71,7 +78,16 @@ simulProp.meshReductionPossible = False
 
 # initializing fracture
 Fr_geometry = Geometry('radial',radius=1.598) #1
+
+# gives an object with many fields
+#a = psutil.virtual_memory()
+#used0 = a.used/1024/1024/1024
+#print(used0)
 C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64, useHMATdot=True, nu=nu)
+#a = psutil.virtual_memory()
+#used1= a.used/1024/1024/1024
+#print(used1)
+#exit()
 init_param = InitializationParameters(Fr_geometry, regime='M', time=0.05, elasticity_matrix=C)
 # init_param = InitializationParameters(Fr_geometry,
 #                                       regime='static',
