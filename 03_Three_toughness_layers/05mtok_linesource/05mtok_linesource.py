@@ -15,8 +15,8 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
     p_A = [];
     w_A=[];
     time_simul_A = [];
-    center_indx = (Fr_list_A[0]).mesh.locate_element( 0., 0.)
     for frac_sol in Fr_list_A:
+        center_indx = (frac_sol).mesh.locate_element(0., 0.8)
         # we are at a give time step now,
         # I am getting double_L_A, x_max_A
         x_min_temp = 0.
@@ -49,8 +49,10 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
         double_L_A.append(y_max_temp - y_min_temp)
         x_max_A.append(x_max_temp - x_min_temp)
 
-        p_A.append(frac_sol.pFluid.max() / 1.e6)
-        w_A.append(frac_sol.w.max())
+        #p_A.append(frac_sol.pFluid.max() / 1.e6)
+        #w_A.append(frac_sol.w.max())
+        p_A.append(frac_sol.pFluid[center_indx] / 1.e6)
+        w_A.append(frac_sol.w[center_indx])
         time_simul_A.append(frac_sol.time)
     return double_L_A, x_max_A, p_A,w_A,  time_simul_A
 
@@ -70,6 +72,7 @@ from fracture_obj.fracture_initialization import Geometry, InitializationParamet
 from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
+from utilities.visualization import *
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
@@ -77,19 +80,24 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = False
 run_dir =  "./"
-restart = False
+restart = True
 
 # postprocessing
 plot_B = False
 output_fol_B = run_dir
 output_fol  = "./"
-ftPntJUMP = 20
+ftPntJUMP = 40
 plot_slices = False
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(2.7, 17.55, 91, 585)
+    #Mesh = CartesianMesh(2.7, 17.55, 91, 585)
+    Mesh = CartesianMesh(2.7, 2.7, 91, 91)
+    # loading the mesh and the footprint
+    if not restart:
+        Fr_list, _ = load_fractures(address=run_dir, load_all=True)
+        Fr_ref = Fr_list[0]
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -118,7 +126,7 @@ if run:
         K_Ic = 0.4e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 5.*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 10.*K_Ic, r, delta, x)
 
 
     # ---- plot Kic_max vs time ---
@@ -140,23 +148,32 @@ if run:
     def sigmaO_func(x, y):
         return 0
 
-    Solid = MaterialProperties(Mesh,
-                              Eprime,
-                              K1c_func=K1c_func,
-                              confining_stress_func = sigmaO_func,
-                              minimum_width=0.)
+    if not restart:
+        Solid = MaterialProperties(Fr_ref.mesh,
+                                  Eprime,
+                                  K1c_func=K1c_func,
+                                  confining_stress_func = sigmaO_func,
+                                  minimum_width=0.)
 
     # injection parameters
+    def linesource(x,y,hx,hy):
+        Q0 = 0.001
+        if abs(y) < hy*0.5 and abs(x) < 1.30:
+            return True
+        else:
+            return False
+
     Q0 = 0.001
-    Injection = InjectionProperties(Q0, Mesh)
+    #Injection = InjectionProperties(Q0, Fr_ref.mesh, source_loc_func=linesource)
+    Injection = InjectionProperties(Q0, Mesh, source_loc_func=linesource)
 
     # fluid properties
     Fluid = FluidProperties(viscosity=0.001)
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 105.12
-    simulProp.tmStpPrefactor = 0.8
+    simulProp.finalTime = 1005.12
+    simulProp.tmStpPrefactor = 0.7
     simulProp.gmres_tol = 1e-15
     simulProp.saveToDisk = True
     simulProp.tolFractFront = 0.0001
@@ -164,14 +181,14 @@ if run:
     simulProp.set_volumeControl(False)
     simulProp.bckColor = 'K1c'
     simulProp.set_outputFolder(run_dir)
-    simulProp.plotVar = ['footprint', 'custom','regime']
+    simulProp.plotVar = ['ffvf', 'custom', 'regime']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront'
     simulProp.customPlotsOnTheFly = True
     simulProp.useBlockToeplizCompression = True
     simulProp.LHyst__ = []
     simulProp.tHyst__ = []
-
+    simulProp.saveFluidFluxAsVector = True
     # setting up mesh extension options
     simulProp.meshExtensionAllDir = False
     simulProp.set_mesh_extension_factor(1.5)
@@ -179,26 +196,32 @@ if run:
     simulProp.meshReductionPossible = False
     simulProp.simID = 'K1/K2=5.' # do not use _
 
+    simulProp.EHL_GMRES = True
+    simulProp.solve_monolithic = False
+    simulProp.gmres_Restart = 1000
+    simulProp.gmres_maxiter = 1000
+
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=0.4)
+    if not restart:
+        Fr_geometry = Geometry(shape='level set',survey_cells=Fr_ref.EltRibbon, tip_distances=Fr_ref.sgndDist, inner_cells=Fr_ref.EltChannel)
+    #Fr_geometry = Geometry('radial', radius=1.40)
 
-    C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
+        C = load_isotropic_elasticity_matrix_toepliz(Fr_ref.mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
 
-    init_param = InitializationParameters(Fr_geometry, regime='static',net_pressure=1.1e6, elasticity_matrix=C)
+        init_param = InitializationParameters(Fr_geometry, regime='static',net_pressure=0.1e5, elasticity_matrix=C)
 
     # creating fracture object
-    Fr = Fracture(Mesh,
-                  init_param,
-                  Solid,
-                  Fluid,
-                  Injection,
-                  simulProp)
+    # Fr = Fracture(Fr_ref.mesh,
+    #               init_param,
+    #               Solid,
+    #               Fluid,
+    #               Injection,
+    #               simulProp)
 
     ################################################################################
     # the following lines are needed if you want to restart an existing simulation #
     ################################################################################
     if restart:
-        from utilities.visualization import *
         Fr_list, properties = load_fractures(address=run_dir, step_size=100)
         Solid, Fluid, Injection, simulProp = properties
         Fr = Fr_list[-1]
@@ -227,12 +250,22 @@ if run:
 
 
     # create a Controller
-    controller = Controller(Fr,
-                            Solid,
-                            Fluid,
-                            Injection,
-                            simulProp,
-                            C=C)
+    if not restart:
+        Fr_ref.fluidFlux_components = np.full((Fr_ref.mesh.NumberOfElts,), np.nan)
+        Fr_ref.source = np.asarray(Injection.sourceElem)
+        controller = Controller(Fr_ref,
+                                Solid,
+                                Fluid,
+                                Injection,
+                                simulProp,
+                                C=C)
+    else:
+        controller = Controller(Fr,
+                                Solid,
+                                Fluid,
+                                Injection,
+                                simulProp,
+                                C=C)
 
     # run the simulation
     controller.run()
@@ -259,7 +292,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     # plot fracture radius
     my_list = []
-    mytime = 1.95
+    mytime = 10.4
     for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
         if Fr_list_A[i].time < mytime:
             my_list.append(Fr_list_A[i])
@@ -277,7 +310,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
                                mat_properties=properties_A[0],
                                backGround_param='K1c',
                                plot_prop=plot_prop)
-    plt.show()
+    #plt.show()
     #
     # # plot fracture radius
     # plot_prop = PlotProperties()
@@ -386,16 +419,16 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     ylabel = 'Pressure [MPa]'
     fig, ax = plt.subplots()
     ax.scatter(time_simul_A, p_A, color='k')
-    p_ana = []
-    for i in range(len(time_simul_A)):
-        #p_ana.append(0.3279)
-        p_ana.append(2*0.5/np.sqrt(np.pi*2*1.48))
+    # p_ana = []
+    # for i in range(len(time_simul_A)):
+    #     #p_ana.append(0.3279)
+    #     p_ana.append(2*0.5/np.sqrt(np.pi*2*1.48))
 
-    p_rad = []
-    for i in range(len(time_simul_A)):
-        p_rad.append(((np.pi ** 3. * (0.5e6)**6 /(12*Solid_A.Eprime*Injection_A.injectionRate.max()*time_simul_A[i]))**(1/5))/1.e6)
-    ax.plot(time_simul_A, p_ana, color='g')
-    ax.plot(time_simul_A, p_rad, color='g')
+    # p_rad = []
+    # for i in range(len(time_simul_A)):
+    #     p_rad.append(((np.pi ** 3. * (0.5e6)**6 /(12*Solid_A.Eprime*Injection_A.injectionRate.max()*time_simul_A[i]))**(1/5))/1.e6)
+    # ax.plot(time_simul_A, p_ana, color='g')
+    # ax.plot(time_simul_A, p_rad, color='g')
     if plot_B: ax.scatter(time_simul_B, p_B, color='r')
     # p_scaling = []
     # for i in range(len(time_simul_A)):
@@ -405,17 +438,17 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
     if plot_B: ax.scatter(time_simul_B, p_B, color='g')
     p_scaling = []
     for i in range(len(time_simul_A)):
-        p_scaling.append(0.2660 * time_simul_A[i] ** (1 / 5))
+        p_scaling.append(0.2300 * time_simul_A[i] ** (1 / 5))
     ax.plot(time_simul_A, p_scaling, color='g')
 
-    sl= []
+    # sl= []
 
-    K_Ic = 0.5e6
-    H=2*1.48
-    p_limit = 1.46*K_Ic/np.sqrt(np.pi*H/2)/1.e6
-    for i in range(len(time_simul_A)):
-        sl.append(p_limit)
-    ax.plot(time_simul_A, sl, color='r')
+    # K_Ic = 0.5e6
+    # H=2*1.48
+    # p_limit = 1.46*K_Ic/np.sqrt(np.pi*H/2)/1.e6
+    # for i in range(len(time_simul_A)):
+    #     sl.append(p_limit)
+    # ax.plot(time_simul_A, sl, color='r')
 
 
     ax.set_xlabel(xlabel)
