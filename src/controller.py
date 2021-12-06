@@ -28,6 +28,7 @@ from mesh_obj.mesh import CartesianMesh
 from mesh_obj.remesh import mapping_old_indexes
 
 from time_step.time_step_solution import attempt_time_step
+from utilities.utility import append_new_line
 
 from utilities.visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
@@ -1398,7 +1399,7 @@ class Controller:
                 log.info("Extending the elasticity matrix...")
                 self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
         elif self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
-            self.C.reload(coarse_mesh)
+            self.C.reload(coarse_mesh, len_eltcrack=len(self.fracture.EltCrack))
         elif not self.sim_prop.useBlockToeplizCompression and self.sim_prop.useHmat:
             max_leaf_size = self.C.max_leaf_size
             eta = self.C.eta
