@@ -588,11 +588,12 @@ class Controller:
                         nx_init = self.fracture.mesh.nx
                         ny_init = self.fracture.mesh.ny
                         for side in range(4):
+                            # chek if extension is allowed on this side
                             if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
                                 if side == 0:
 
                                     elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
-                                    if elems_add % 2 != 0:
+                                    if elems_add % 2 != 0: # add an odd number
                                         elems_add = elems_add + 1
 
                                     if not self.sim_prop.symmetric:
@@ -603,6 +604,7 @@ class Controller:
                                                        elems_add * self.fracture.mesh.hy,
                                                        self.fracture.mesh.domainLimits[1]]]
                                     else:
+                                        # add at the bottom and at the top
                                         log.info("Remeshing by extending in vertical direction to keep symmetry...")
                                         new_limits = [[self.fracture.mesh.domainLimits[2],
                                                        self.fracture.mesh.domainLimits[3]],
@@ -1126,6 +1128,9 @@ class Controller:
                                                                        projection='2D_vectorfield',
                                                                        mat_properties=self.solid_prop,
                                                                        fig=self.Figures[index])
+                        # plotting source elements
+                        self.Figures[index] = plot_injection_source(self.fracture,
+                                              fig=self.Figures[index])
                     else:
                         if self.sim_prop.plotAnalytical:
                             proj = supported_projections[plt_var][0]
