@@ -75,7 +75,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = False
+run = True
 run_dir =  "./"
 restart = False
 
@@ -151,7 +151,7 @@ if run:
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=0.001)
+    Fluid = FluidProperties(viscosity=0.01)
 
     # simulation properties
     simulProp = SimulationProperties()
@@ -164,19 +164,27 @@ if run:
     simulProp.set_volumeControl(False)
     simulProp.bckColor = 'K1c'
     simulProp.set_outputFolder(run_dir)
-    simulProp.plotVar = ['footprint', 'custom','regime']
+    simulProp.plotVar = ['ffvf', 'custom', 'regime']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront'
     simulProp.customPlotsOnTheFly = True
     simulProp.useBlockToeplizCompression = True
     simulProp.LHyst__ = []
     simulProp.tHyst__ = []
+    simulProp.saveFluidFluxAsVector = True
 
     # setting up mesh extension options
     simulProp.meshExtensionAllDir = False
     simulProp.set_mesh_extension_factor(1.5)
     simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
+    simulProp.simID = 'K1/K2=5.' # do not use _
+
+    simulProp.EHL_GMRES = True
+    simulProp.solve_monolithic = False
+    simulProp.gmres_Restart = 1000
+    simulProp.gmres_maxiter = 1000
+
     simulProp.simID = 'K1/K2=5.' # do not use _
 
     # initialization parameters
