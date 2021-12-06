@@ -11,6 +11,7 @@ import numpy as np
 from numba import njit, prange
 from scipy.sparse import coo_matrix
 from numba import config
+from numba.typed import List
 from scipy.sparse.linalg import LinearOperator
 # import random
 # import time
@@ -163,16 +164,16 @@ def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
     return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype).tocsc()
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, nogil=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
 def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
     self_c = C_toeplitz_coe[0]
     #myR = range(dimX)
-    data = []
-    rows = []
-    cols = []
+    data = List()
+    rows = List()
+    cols = List()
     i *= nx
     for iter1 in prange(dimX):
         index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
@@ -292,7 +293,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe))
         C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
         C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
-        self.C_toeplitz_coe_decay = C_toeplitz_coe_exp.tolist()  # between 0 and 1
+        self.C_toeplitz_coe_decay = List(C_toeplitz_coe_exp.tolist())  # between 0 and 1
         self.coeff9stencilC = [self.C_toeplitz_coe[0],  # 0 dx 0 dy
                                self.C_toeplitz_coe[1],  # 1 dx 0 dy
                                self.C_toeplitz_coe[nx],  # 0 dx 1 dy
