@@ -79,7 +79,7 @@ Fr_geometry = Geometry('radial',radius=1.598) #1
 #a = psutil.virtual_memory()
 #used0 = a.used/1024/1024/1024
 #print(used0)
-#C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64, useHMATdot=True, nu=nu)
+C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision = np.float64, useHMATdot=True, nu=nu)
 #a = psutil.virtual_memory()
 #used1= a.used/1024/1024/1024
 #print(used1)

@@ -29,7 +29,7 @@ from utilities.utility import append_new_line
 config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
-@njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+@njit(parallel=True, fastmath=True, nogil=True)  # <------parallel compilation
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # uk (numpy array), vector to which multiply the matrix C
     # nx (int), n. of element in x direction in the cartesian mesh
@@ -59,7 +59,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         res[iter1] = np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
     return res
 #
-# @njit(parallel=True, fastmath=True, nopython=True, nogil=True)  # <------parallel compilation
+# @njit(parallel=True, fastmath=True, nogil=True)  # <------parallel compilation
 # def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
 #     # uk (numpy array), vector to which multiply the matrix C
 #     # nx (int), n. of element in x direction in the cartesian mesh
