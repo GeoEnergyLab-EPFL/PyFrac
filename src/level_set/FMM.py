@@ -10,6 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # external imports
 import numpy as np
 import heapq
+import warnings
 
 
 # TODO: For now we need a PyFrac mesh object --> Generalize
@@ -150,8 +151,10 @@ class fmm:
         nmask = np.invert(mask)
 
         # assigne the value of the solution to the eikonal equation according to the fact if theta^2 > or < 0
-        newLS[mask] = np.asarray((theta_1 + beta ** 2 * theta_2 + theta_sq ** 0.5) / (1 + beta ** 2))[mask]
-        newLS[nmask] = np.asarray([theta_2 + mesh.hy, theta_1 + mesh.hx]).min(axis=0)[nmask]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            newLS[mask] = np.asarray((theta_1 + beta ** 2 * theta_2 + theta_sq ** 0.5) / (1 + beta ** 2))[mask]
+            newLS[nmask] = np.asarray([theta_2 + mesh.hy, theta_1 + mesh.hx]).min(axis=0)[nmask]
 
         # Returning a list with the newly calculated solution and the cells.
         return [newLS, calcLS]
