@@ -706,8 +706,8 @@ class Fracture:
 
         old_volume = self.mesh.EltArea * (np.sum(self.w[self.EltTipBefore]*self.FillF) +
                                           np.sum(self.w[self.EltChannel]))
-
-        if direction == None or direction == 'reduce':
+        if not isinstance(direction, np.ndarray):
+        # if direction == None or direction == 'reduce':
 
             ## -- We interpolate the level set everywhere inside the fracture -- ##
             # Creating a fmm structure to solve the level set
@@ -1512,9 +1512,8 @@ class Fracture:
 
 
         else: # in case of mesh extension just update
-            ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts),
-                                np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction)))
             ind_old_elts = np.array(mapping_old_indexes(coarse_mesh, self.mesh, direction))
+            ind_new_elts = np.setdiff1d(np.arange(coarse_mesh.NumberOfElts), ind_old_elts)
             newNumberOfElts = coarse_mesh.NumberOfElts
             self.CellStatus=        self.update_value(self.CellStatus,        ind_new_elts,ind_old_elts,newNumberOfElts,     value_new_elem=0,mytype=int)
             self.EltChannel=        self.update_index(self.EltChannel,        ind_old_elts,self.EltChannel.size, mytype=int)
