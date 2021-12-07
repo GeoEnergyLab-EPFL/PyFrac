@@ -596,6 +596,9 @@ class Controller:
                             self.sim_prop.symmetric,
                             log)
 
+                        # Check if we missed one side
+                        side_bools = np.invert(direction) * np.asarray(side_bools)
+
                         # Do the remeshing
                         self.remesh(new_limits, elems, direction=direction)
 
