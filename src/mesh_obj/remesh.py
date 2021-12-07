@@ -23,11 +23,47 @@ def mapping_old_indexes(new_mesh, mesh, direction = None):
 
     # If the direction is not none, then we have some sides to which we extend
     if not direction == None:
-        # Now we loop over all five sides to get the new elements
-        for side in range(4):
-            # Check if the corresponding side is prone to a mesh extension (extension_side is a boolean indicating this)
-            if direction[side]:
-                # --- Extension in y --- #
+        # Tells us to how many sides we did extend
+        true_count = np.count_nonzero(direction)
+
+        # If we extended to only one side.
+        if true_count == 1:
+            if direction[0]: # extend to negative y
+                new_indexes = old_indexes + dne
+            elif direction[1]: # extend to positive y
+                new_indexes = old_indexes
+            elif direction[2]: # extend to negative x
+                new_indexes = old_indexes + (np.floor(old_indexes / mesh.nx) + 1) * dnx
+            elif direction[3]: # extend to positive x
+                new_indexes = old_indexes + np.floor(old_indexes / mesh.nx) * dnx
+        # If we extended to two sides.
+        elif true_count == 2:
+            if direction[0] and direction[1]: # vertical extension
+                new_indexes = old_indexes + dne / 2
+            elif direction[2] and direction[3]: # horizontal extension
+                new_indexes = old_indexes + (np.floor(old_indexes / mesh.nx) + 1 / 2) * dnx
+            elif direction[0] and direction[2]: # bottom and left
+                new_indexes = old_indexes + new_mesh.nx * dny + (np.floor(old_indexes / mesh.nx) + 1) * dnx
+            elif direction[0] and direction[3]: # bottom and right
+                new_indexes = old_indexes + new_mesh.nx * dny + np.floor(old_indexes / mesh.nx) * dnx
+            elif direction[1] and direction[2]: # left and top
+                new_indexes = old_indexes + (np.floor(old_indexes / mesh.nx) + 1) * dnx
+            elif direction[1] and direction[3]: # right and top
+                new_indexes = old_indexes + np.floor(old_indexes / mesh.nx) * dnx
+        # If we extended to three sides.
+        elif true_count == 3:
+            if not direction[0]: # extend everywhere except on the bottom
+                new_indexes = old_indexes + (np.floor(old_indexes / mesh.nx) + 1 / 2) * dnx
+            elif not direction[1]: # extend everywhere except on the top
+                new_indexes = old_indexes + new_mesh.nx * dny + (np.floor(old_indexes / mesh.nx) + 1 / 2) * dnx
+            elif not direction[2]: # extend everywhere except on the left
+                new_indexes = old_indexes + new_mesh.nx * dny + np.floor(old_indexes / mesh.nx) * dnx
+            elif not direction[3]: # extend everywhere except on the right
+                new_indexes = old_indexes + new_mesh.nx * dny + (np.floor(old_indexes / mesh.nx) + 1) * dnx
+        # If we extended to all four sides.
+        elif true_count == 4:
+            # extend everywhere
+            new_indexes = old_indexes + new_mesh.nx * dny + (np.floor(old_indexes / mesh.nx) + 1 / 2) * dnx
 
         # if direction == 'top':
         #     new_indexes = old_indexes
