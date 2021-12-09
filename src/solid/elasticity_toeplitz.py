@@ -13,6 +13,7 @@ from scipy.sparse import coo_matrix
 from numba import config
 from numba.typed import List
 from scipy.sparse.linalg import LinearOperator
+import time
 # import random
 # import time
 # import multiprocessing
@@ -251,13 +252,20 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.left_precJ = False
         self.right_precJ = False
 
-    def reload(self, Mesh):
+    def reload(self, Mesh, len_eltcrack=0.):
         hx = Mesh.hx; hy = Mesh.hy
         nx = Mesh.nx; ny = Mesh.ny
         Lx = Mesh.Lx; Ly = Mesh.Ly
         self.nx = nx
         self.C_toeplitz_coe = self.reload_toepliz_Coe(Lx, Ly, nx, ny, hx, hy, self.mat_prop)
+        #time_HMAT_build = -time.time()
         self.reload_HMAT_Coe(Mesh, self_eff = self.C_toeplitz_coe[0])
+        #time_HMAT_build = time_HMAT_build + time.time()
+        # file_name = '/home/peruzzo/Desktop/test_EHL_direct_vs_iter/iterT_recomputingHMAT.csv'
+        # append_new_line(file_name,
+        #                 str(time_HMAT_build) + ','
+        #                 + str(len_eltcrack) + ','
+        #                 + str(Mesh.NumberOfElts))
         self.reload_dot(Mesh)
 
     def reload_HMAT_Coe(self, Mesh, self_eff = None):
@@ -333,7 +341,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _matvec_fast(self, uk):
-        if self.useHMATdot and len(uk) > 25000:
+        if self.useHMATdot and len(uk) > 10000:
             return self.HMAT._matvec(uk)
         else:
             #mv_time = - time.time()

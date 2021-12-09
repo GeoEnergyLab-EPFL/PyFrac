@@ -6,12 +6,12 @@ Created by Haseeb Zia on Fri Dec 16 17:49:21 2017.
 Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
 All rights reserved. See the LICENSE.TXT file for more details.
 """
-from line_profiler import LineProfiler
-profile = LineProfiler()
+#from line_profiler import LineProfiler
+#profile = LineProfiler()
 # imports
 import os
 import numpy as np
-from line_profiler import LineProfiler
+#from line_profiler import LineProfiler
 import psutil
 
 # local imports
@@ -61,7 +61,7 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 140.155421804482037                        # the time at which the simulation stops
+simulProp.finalTime = 1400.155421804482037                        # the time at which the simulation stops
 simulProp.saveTSJump, simulProp.plotTSJump = 1, 1   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
@@ -71,6 +71,10 @@ simulProp.useBlockToeplizCompression = True
 simulProp.frontAdvancing = 'implicit'
 #simulProp.elastohydrSolver = 'implicit_Picard'
 # simulProp.gmres_tol = 1.e-6
+simulProp.meshExtensionAllDir = True
+simulProp.set_mesh_extension_factor(1.5)
+simulProp.set_mesh_extension_direction(['all'])
+simulProp.meshReductionPossible = False
 
 # initializing fracture
 Fr_geometry = Geometry('radial',radius=1.598) #1
