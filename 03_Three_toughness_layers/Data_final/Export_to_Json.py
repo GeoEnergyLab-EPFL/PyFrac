@@ -251,7 +251,7 @@ def check_exe(folders_list, simul_list, to_export, destination):
 # 8) get w(x) along a horizontal line passing through mypoint for different times
 # 9) get w(x,y,t) and pf(x,y,t)
 
-to_export = [1,2,3,7,8]
+to_export = [1,2,3,4,7,8]
 
 #-------> SPECIFY OUT ID AND FOLDER NAME:
 # simul_list = ["01", "02", "02bis", "03", "04"]#["02bis"]
@@ -263,8 +263,14 @@ to_export = [1,2,3,7,8]
 #folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02bis"]
 # ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
 #                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
-simul_list = ["02break"]
-folders_list = ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02break"]
-destination = "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/exports"
+#simul_list = ["02break"]
+#simul_list = ["05mtoK", "06mtoK"]
+simul_list = ["08mtoK"]
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
+# folders_list = [common_address + "05mtoK",
+#                 common_address + "06mtoK"]
+folders_list = [
+                common_address + "08mtoK"]
+destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)
