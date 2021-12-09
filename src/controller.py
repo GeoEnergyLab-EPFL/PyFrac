@@ -25,9 +25,10 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 
 from mesh_obj.mesh import CartesianMesh
-from mesh_obj.remesh import mapping_old_indexes
+from mesh_obj.remesh import *
 
 from time_step.time_step_solution import attempt_time_step
+from utilities.utility import append_new_line
 
 from utilities.visualization import plot_footprint_analytical, plot_analytical_solution,\
                           plot_injection_source, get_elements
@@ -585,121 +586,137 @@ class Controller:
                         side_bools = [False, False, False, False]
 
                     else:
-                        nx_init = self.fracture.mesh.nx
-                        ny_init = self.fracture.mesh.ny
-                        for side in range(4):
-                            # chek if extension is allowed on this side
-                            if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
-                                if side == 0:
+                        # --- This is the mesh extension --- #
 
-                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
-                                    if elems_add % 2 != 0: # add an odd number
-                                        elems_add = elems_add + 1
+                        # We get the new limits
+                        new_limits, elems, direction = get_extensionsal_domain_limits(
+                            np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools)),
+                            self.sim_prop.meshExtensionFactor,
+                            self.fracture.mesh,
+                            self.sim_prop.symmetric,
+                            log)
 
-                                    if not self.sim_prop.symmetric:
-                                        log.info("Remeshing by extending towards negative y...")
-                                        new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                       self.fracture.mesh.domainLimits[3]],
-                                                      [self.fracture.mesh.domainLimits[0] -
-                                                       elems_add * self.fracture.mesh.hy,
-                                                       self.fracture.mesh.domainLimits[1]]]
-                                    else:
-                                        # add at the bottom and at the top
-                                        log.info("Remeshing by extending in vertical direction to keep symmetry...")
-                                        new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                       self.fracture.mesh.domainLimits[3]],
-                                                      [self.fracture.mesh.domainLimits[0] -
-                                                       elems_add * self.fracture.mesh.hy/2,
-                                                       self.fracture.mesh.domainLimits[1] +
-                                                       elems_add * self.fracture.mesh.hy/2]]
-                                        side_bools[1] = False
+                        # Check if we missed one side
+                        side_bools = np.invert(direction) * np.asarray(side_bools)
 
-                                    direction = 'bottom'
+                        # Do the remeshing
+                        self.remesh(new_limits, elems, direction=direction)
 
-                                    elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
-
-
-                                if side == 1:
-
-                                    elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
-                                    if elems_add % 2 != 0:
-                                        elems_add = elems_add + 1
-
-                                    if not self.sim_prop.symmetric:
-                                        log.info("Remeshing by extending towards positive y...")
-                                        new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                       self.fracture.mesh.domainLimits[3]],
-                                                      [self.fracture.mesh.domainLimits[0],
-                                                       self.fracture.mesh.domainLimits[1] +
-                                                       elems_add * self.fracture.mesh.hy]]
-                                    else:
-                                        log.info("Remeshing by extending in vertical direction to keep symmetry...")
-                                        new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                       self.fracture.mesh.domainLimits[3]],
-                                                      [self.fracture.mesh.domainLimits[0] -
-                                                       elems_add * self.fracture.mesh.hy/2,
-                                                       self.fracture.mesh.domainLimits[1] +
-                                                       elems_add * self.fracture.mesh.hy/2]]
-                                        side_bools[0] = False
-
-                                    direction = 'top'
-
-                                    elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
-
-                                if side == 2:
-
-                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
-                                    if elems_add % 2 != 0:
-                                        elems_add = elems_add + 1
-
-                                    if not self.sim_prop.symmetric:
-                                        log.info("Remeshing by extending towards negative x...")
-                                        new_limits = [
-                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
-                                             self.fracture.mesh.domainLimits[3]],
-                                            [self.fracture.mesh.domainLimits[0],
-                                             self.fracture.mesh.domainLimits[1]]]
-                                    else:
-                                        log.info("Remeshing by extending in horizontal direction to keep symmetry...")
-                                        new_limits = [
-                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx/2,
-                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx/2],
-                                            [self.fracture.mesh.domainLimits[0],
-                                             self.fracture.mesh.domainLimits[1]]]
-                                        side_bools[3] = False
-
-                                    direction = 'left'
-
-                                    elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
-
-                                if side == 3:
-
-                                    elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
-                                    if elems_add % 2 != 0:
-                                        elems_add = elems_add + 1
-
-                                    if not self.sim_prop.symmetric:
-                                        log.info("Remeshing by extending towards positive x...")
-                                        new_limits = [[self.fracture.mesh.domainLimits[2],
-                                                       self.fracture.mesh.domainLimits[
-                                                           3] + elems_add * self.fracture.mesh.hx],
-                                                      [self.fracture.mesh.domainLimits[0],
-                                                       self.fracture.mesh.domainLimits[1]]]
-                                    else:
-                                        log.info("Remeshing by extending in horizontal direction to keep symmetry...")
-                                        new_limits = [
-                                            [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx/2,
-                                             self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx/2],
-                                            [self.fracture.mesh.domainLimits[0],
-                                             self.fracture.mesh.domainLimits[1]]]
-                                        side_bools[2] = False
-
-                                    direction = 'right'
-
-                                    elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
-
-                                self.remesh(new_limits, elems, direction=direction)
-                                side_bools[side] = False
+                        # nx_init = self.fracture.mesh.nx
+                        # ny_init = self.fracture.mesh.ny
+                        # for side in range(4):
+                        #     # chek if extension is allowed on this side
+                        #     if np.asarray(np.asarray(self.sim_prop.meshExtension) * np.asarray(side_bools))[side]:
+                        #         if side == 0:
+                        #
+                        #             elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
+                        #             if elems_add % 2 != 0: # add an odd number
+                        #                 elems_add = elems_add + 1
+                        #
+                        #             if not self.sim_prop.symmetric:
+                        #                 log.info("Remeshing by extending towards negative y...")
+                        #                 new_limits = [[self.fracture.mesh.domainLimits[2],
+                        #                                self.fracture.mesh.domainLimits[3]],
+                        #                               [self.fracture.mesh.domainLimits[0] -
+                        #                                elems_add * self.fracture.mesh.hy,
+                        #                                self.fracture.mesh.domainLimits[1]]]
+                        #             else:
+                        #                 # add at the bottom and at the top
+                        #                 log.info("Remeshing by extending in vertical direction to keep symmetry...")
+                        #                 new_limits = [[self.fracture.mesh.domainLimits[2],
+                        #                                self.fracture.mesh.domainLimits[3]],
+                        #                               [self.fracture.mesh.domainLimits[0] -
+                        #                                elems_add * self.fracture.mesh.hy/2,
+                        #                                self.fracture.mesh.domainLimits[1] +
+                        #                                elems_add * self.fracture.mesh.hy/2]]
+                        #                 side_bools[1] = False
+                        #
+                        #             direction = 'bottom'
+                        #
+                        #             elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
+                        #
+                        #
+                        #         if side == 1:
+                        #
+                        #             elems_add = int(ny_init * (self.sim_prop.meshExtensionFactor[side] - 1))
+                        #             if elems_add % 2 != 0:
+                        #                 elems_add = elems_add + 1
+                        #
+                        #             if not self.sim_prop.symmetric:
+                        #                 log.info("Remeshing by extending towards positive y...")
+                        #                 new_limits = [[self.fracture.mesh.domainLimits[2],
+                        #                                self.fracture.mesh.domainLimits[3]],
+                        #                               [self.fracture.mesh.domainLimits[0],
+                        #                                self.fracture.mesh.domainLimits[1] +
+                        #                                elems_add * self.fracture.mesh.hy]]
+                        #             else:
+                        #                 log.info("Remeshing by extending in vertical direction to keep symmetry...")
+                        #                 new_limits = [[self.fracture.mesh.domainLimits[2],
+                        #                                self.fracture.mesh.domainLimits[3]],
+                        #                               [self.fracture.mesh.domainLimits[0] -
+                        #                                elems_add * self.fracture.mesh.hy/2,
+                        #                                self.fracture.mesh.domainLimits[1] +
+                        #                                elems_add * self.fracture.mesh.hy/2]]
+                        #                 side_bools[0] = False
+                        #
+                        #             direction = 'top'
+                        #
+                        #             elems = [self.fracture.mesh.nx, self.fracture.mesh.ny + elems_add]
+                        #
+                        #         if side == 2:
+                        #
+                        #             elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
+                        #             if elems_add % 2 != 0:
+                        #                 elems_add = elems_add + 1
+                        #
+                        #             if not self.sim_prop.symmetric:
+                        #                 log.info("Remeshing by extending towards negative x...")
+                        #                 new_limits = [
+                        #                     [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx,
+                        #                      self.fracture.mesh.domainLimits[3]],
+                        #                     [self.fracture.mesh.domainLimits[0],
+                        #                      self.fracture.mesh.domainLimits[1]]]
+                        #             else:
+                        #                 log.info("Remeshing by extending in horizontal direction to keep symmetry...")
+                        #                 new_limits = [
+                        #                     [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx/2,
+                        #                      self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx/2],
+                        #                     [self.fracture.mesh.domainLimits[0],
+                        #                      self.fracture.mesh.domainLimits[1]]]
+                        #                 side_bools[3] = False
+                        #
+                        #             direction = 'left'
+                        #
+                        #             elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
+                        #
+                        #         if side == 3:
+                        #
+                        #             elems_add = int(nx_init * (self.sim_prop.meshExtensionFactor[side] - 1))
+                        #             if elems_add % 2 != 0:
+                        #                 elems_add = elems_add + 1
+                        #
+                        #             if not self.sim_prop.symmetric:
+                        #                 log.info("Remeshing by extending towards positive x...")
+                        #                 new_limits = [[self.fracture.mesh.domainLimits[2],
+                        #                                self.fracture.mesh.domainLimits[
+                        #                                    3] + elems_add * self.fracture.mesh.hx],
+                        #                               [self.fracture.mesh.domainLimits[0],
+                        #                                self.fracture.mesh.domainLimits[1]]]
+                        #             else:
+                        #                 log.info("Remeshing by extending in horizontal direction to keep symmetry...")
+                        #                 new_limits = [
+                        #                     [self.fracture.mesh.domainLimits[2] - elems_add * self.fracture.mesh.hx/2,
+                        #                      self.fracture.mesh.domainLimits[3] + elems_add * self.fracture.mesh.hx/2],
+                        #                     [self.fracture.mesh.domainLimits[0],
+                        #                      self.fracture.mesh.domainLimits[1]]]
+                        #                 side_bools[2] = False
+                        #
+                        #             direction = 'right'
+                        #
+                        #             elems = [self.fracture.mesh.nx + elems_add, self.fracture.mesh.ny]
+                        #
+                        #         self.remesh(new_limits, elems, direction=direction)
+                        #         side_bools[side] = False
 
                     if np.asarray(side_bools).any():
                         log.info("Remeshing by compressing the domain...")
@@ -1384,61 +1401,70 @@ class Controller:
         self.solid_prop.remesh(coarse_mesh)
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
-        # We adapt the elasticity matrix
-        if not self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
-            if direction is None:
-                if rem_factor == self.sim_prop.remeshFactor:
-                    self.C *= 1 / self.sim_prop.remeshFactor
-                else:
-                    if not self.sim_prop.symmetric:
-                        self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                    else:
-                        self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
-            elif direction == 'reduce':
-                if not self.sim_prop.symmetric:
-                    self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
-                else:
-                    self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
-            else:
-                log.info("Extending the elasticity matrix...")
-                self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
-        elif self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
-            self.C.reload(coarse_mesh)
-        elif not self.sim_prop.useBlockToeplizCompression and self.sim_prop.useHmat:
-            max_leaf_size = self.C.max_leaf_size
-            eta = self.C.eta
-            eps_aca = self.C.eps_aca
-            self.C = Hdot_3DR0opening()
-            try:
-                properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
-            except:
-                log.info("Variable youngs_mod is not defined")
-                log.info("Enter your value for the Young mod (use [Pa] if you do not know): ")
-                self.solid_prop.youngs_mod = input("youngs_mod value? : ")
-                self.solid_prop.youngs_mod = float(self.solid_prop.youngs_mod)
-                log.info("Enter your value for the Poisson's ratio: ")
-                self.solid_prop.nu = input("Poisson's ratio value? : ")
-                self.solid_prop.nu = float(self.solid_prop.nu)
-                #check
-                Eprime = self.solid_prop.youngs_mod / (1 - self.solid_prop.nu ** 2)
-                if np.abs(Eprime - self.solid_prop.Eprime)/ self.solid_prop.Eprime > 0.02:
-                    message = "Either youngs_mod or nu are wrong and E'=E/(1-nu^2) is >2% different from the one known"
-                    log.error(message)
-                    raise SystemExit(message)
-                properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
-            data = [max_leaf_size, eta, eps_aca, properties, coarse_mesh.VertexCoor, coarse_mesh.Connectivity, coarse_mesh.hx, coarse_mesh.hy]
-            log.info("Building C form Hmat...\n")
-            log.info("this might take some time...\n")
-            begtime_HMAT = time.time()
-            self.C.set(data)
-            endtime_HMAT = time.time()
-            compute_HMAT = endtime_HMAT - begtime_HMAT
-            log.info("Hmat time : "+ str(compute_HMAT))
-        else:
-            #use toeplitz
-            log.info("Using isotropic elasticity matrix with Block Toepliz Compression")
-            self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh, self.solid_prop.Eprime)
+        log.info("Recalculting the elasticity matrix")
+        self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh, self.solid_prop.Eprime)
+        # Ensuring that we always use block topliz compression.
+        if not self.sim_prop.useBlockToeplizCompression:
             self.sim_prop.useBlockToeplizCompression = True
+
+        # todo: Carlo whe should not need this block anymore if we always use block topliz. I commented!
+        # --- This was need for the old remeshing --- #
+        # # We adapt the elasticity matrix
+        # if not self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
+        #     if direction is None:
+        #         if rem_factor == self.sim_prop.remeshFactor:
+        #             self.C *= 1 / self.sim_prop.remeshFactor
+        #         else:
+        #             if not self.sim_prop.symmetric:
+        #                 self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
+        #             else:
+        #                 self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
+        #     elif direction == 'reduce':
+        #         if not self.sim_prop.symmetric:
+        #             self.C = load_isotropic_elasticity_matrix(coarse_mesh, self.solid_prop.Eprime)
+        #         else:
+        #             self.C = load_isotropic_elasticity_matrix_symmetric(coarse_mesh, self.solid_prop.Eprime)
+        #     else:
+        #         log.info("Extending the elasticity matrix...")
+        #         self.extend_isotropic_elasticity_matrix(coarse_mesh, direction=direction)
+        # if self.sim_prop.useBlockToeplizCompression and not self.sim_prop.useHmat:
+        #     # using topliz
+        #     self.C.reload(coarse_mesh, len_eltcrack=len(self.fracture.EltCrack))
+        # elif not self.sim_prop.useBlockToeplizCompression and self.sim_prop.useHmat:
+        #     max_leaf_size = self.C.max_leaf_size
+        #     eta = self.C.eta
+        #     eps_aca = self.C.eps_aca
+        #     self.C = Hdot_3DR0opening()
+        #     try:
+        #         properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
+        #     except:
+        #         log.info("Variable youngs_mod is not defined")
+        #         log.info("Enter your value for the Young mod (use [Pa] if you do not know): ")
+        #         self.solid_prop.youngs_mod = input("youngs_mod value? : ")
+        #         self.solid_prop.youngs_mod = float(self.solid_prop.youngs_mod)
+        #         log.info("Enter your value for the Poisson's ratio: ")
+        #         self.solid_prop.nu = input("Poisson's ratio value? : ")
+        #         self.solid_prop.nu = float(self.solid_prop.nu)
+        #         #check
+        #         Eprime = self.solid_prop.youngs_mod / (1 - self.solid_prop.nu ** 2)
+        #         if np.abs(Eprime - self.solid_prop.Eprime)/ self.solid_prop.Eprime > 0.02:
+        #             message = "Either youngs_mod or nu are wrong and E'=E/(1-nu^2) is >2% different from the one known"
+        #             log.error(message)
+        #             raise SystemExit(message)
+        #         properties = [self.solid_prop.youngs_mod, self.solid_prop.nu]
+        #     data = [max_leaf_size, eta, eps_aca, properties, coarse_mesh.VertexCoor, coarse_mesh.Connectivity, coarse_mesh.hx, coarse_mesh.hy]
+        #     log.info("Building C form Hmat...\n")
+        #     log.info("this might take some time...\n")
+        #     begtime_HMAT = time.time()
+        #     self.C.set(data)
+        #     endtime_HMAT = time.time()
+        #     compute_HMAT = endtime_HMAT - begtime_HMAT
+        #     log.info("Hmat time : "+ str(compute_HMAT))
+        # else:
+        #     # Save fail to use toeplitz
+        #     log.info("Using isotropic elasticity matrix with Block Toepliz Compression")
+        #     self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh, self.solid_prop.Eprime)
+        #     self.sim_prop.useBlockToeplizCompression = True
 
         self.fracture = self.fracture.remesh(rem_factor,
                                              self.C,
