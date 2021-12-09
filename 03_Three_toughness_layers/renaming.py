@@ -1,12 +1,12 @@
 import os
 import numpy as np
 
-globalpath = 'home/carlo/Desktop/PyFrac/03_Three_toughness_layers/05mtok_linesource'
-date_ext = '2021-11-29__13_03_42'
+globalpath = 'home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/08mtoK'
+date_ext = '2021-12-08__18_53_44'
 basename = '/simulation__'+date_ext+'_file_'
 basenameNew = '/simulation__'+date_ext+'_file1_'
-final_number = 42
-initial_new = 430
+final_number = 149
+initial_new = 75
 for i in range(final_number+1):
     ext_old = str(i)
     ext_new = str(i+initial_new)
