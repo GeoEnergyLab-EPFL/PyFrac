@@ -13,8 +13,9 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
     p_A = [];
     w_A=[];
     time_simul_A = [];
-    center_indx = (Fr_list_A[0]).mesh.locate_element( 0., 0.)
+
     for frac_sol in Fr_list_A:
+        center_indx = frac_sol.mesh.locate_element(0., 0.)
         # we are at a give time step now,
         # I am getting double_L_A, x_max_A
         x_min_temp = 0.
@@ -265,12 +266,14 @@ to_export = [1,2,3,4,7,8]
 #                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
 #simul_list = ["02break"]
 #simul_list = ["05mtoK", "06mtoK"]
-simul_list = ["08mtoK"]
+simul_list = ["09mtoK"]
 common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
+common_address = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/"
 # folders_list = [common_address + "05mtoK",
 #                 common_address + "06mtoK"]
 folders_list = [
-                common_address + "08mtoK"]
-destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
+                common_address + "09mtoK"]
+#destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
+destination ="/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)

@@ -224,7 +224,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
     """
 
-    def __init__(self, Mesh, mat_prop, elas_prop_HMAT, C_precision=np.float64, useHMATdot=False, kerneltype = 'Isotropic'):
+    def __init__(self, Mesh, mat_prop, elas_prop_HMAT, C_precision=np.float64, useHMATdot=False, kerneltype = 'Isotropic', HMATparam = None):
         """
             Arguments:
                 Mesh:                           -- Cartesian Mesh object
@@ -241,6 +241,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.kerneltype = "Isotropic"
 
         self.elas_prop_HMAT = elas_prop_HMAT
+        self.HMATparam = HMATparam
         self.reload(Mesh)
 
         # ---- TIP CORRECTION ----
@@ -271,10 +272,17 @@ class elasticity_matrix_toepliz(LinearOperator):
     def reload_HMAT_Coe(self, Mesh, self_eff = None):
         #################### HMAT dot SECTION ###################
         if self.useHMATdot:
-            self.max_leaf_size = 100
-            self.eta = 5
-            self.eps_aca = 1.e-6
-            self.HMATtract = None
+            if self.HMATparam is None:
+                self.max_leaf_size = 100
+                self.eta = 5
+                self.eps_aca = 1.e-6
+                self.HMATtract = None
+            else:
+                self.max_leaf_size = self.HMATparam[0]
+                self.eta = self.HMATparam[1]
+                self.eps_aca = self.HMATparam[2]
+                self.HMATtract = None
+
 
             data = [self.max_leaf_size, self.eta, self.eps_aca,
                     self.elas_prop_HMAT, Mesh.VertexCoor, Mesh.Connectivity, Mesh.hx, Mesh.hy, self_eff]

@@ -139,7 +139,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
 
 class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
 
-    def __init__(self, Mesh, Ep, C_precision=np.float64, useHMATdot=False, nu=None):
+    def __init__(self, Mesh, Ep, C_precision=np.float64, useHMATdot=False, nu=None, HMATparam = None):
 
         self.nu = nu
         self.Ep = Ep
@@ -152,7 +152,7 @@ class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
             elas_prop_HMAT = []
 
         matprop = [Ep]
-        super().__init__(Mesh, matprop, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Isotropic')
+        super().__init__(Mesh, matprop, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Isotropic', HMATparam = HMATparam)
 
     def reload_toepliz_Coe(self, Lx, Ly, nx, ny, hx, hy, mat_prop):
         typedList_mat_prop = List()
