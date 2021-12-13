@@ -211,13 +211,17 @@ if run:
         Solid, Fluid, Injection, simulProp = properties
         Fr = Fr_list[-1]
         simulProp.saveFluidFluxAsVector = False
-        simulProp.saveTSJump = 1
+        simulProp.saveTSJump = 2
+        simulProp.finalTime = 1005.12
+        simulProp.tmStpPrefactor = 1.
+
         Solid = MaterialProperties(Fr.mesh,
                                   Eprime,
                                   K1c_func=K1c_func,
                                   confining_stress_func = sigmaO_func,
                                   confining_stress=0.,
                                   minimum_width=0.)
+        Injection = InjectionProperties(Q0, Fr.mesh)
         simulProp.meshExtensionAllDir = True
         simulProp.set_mesh_extension_factor(1.5)
         simulProp.set_mesh_extension_direction(['vertical'])

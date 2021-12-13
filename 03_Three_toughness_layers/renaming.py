@@ -5,8 +5,8 @@ globalpath = 'home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/08m
 date_ext = '2021-12-08__18_53_44'
 basename = '/simulation__'+date_ext+'_file_'
 basenameNew = '/simulation__'+date_ext+'_file1_'
-final_number = 149
-initial_new = 75
+final_number = 170 # final number of the new set of results
+initial_new = 234   # last number of the old set of results
 for i in range(final_number+1):
     ext_old = str(i)
     ext_new = str(i+initial_new)
