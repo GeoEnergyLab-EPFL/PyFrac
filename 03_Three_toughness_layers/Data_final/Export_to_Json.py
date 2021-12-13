@@ -48,7 +48,7 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
         double_L_A.append(y_max_temp - y_min_temp)
         x_max_A.append(x_max_temp - x_min_temp)
 
-        p_A.append(frac_sol.pFluid.max() / 1.e6)
+        p_A.append(frac_sol.pFluid[center_indx].tolist()[0] / 1.e6)
         w_A.append(frac_sol.w[center_indx].tolist()[0])
         time_simul_A.append(frac_sol.time)
     return double_L_A, x_max_A, p_A, w_A
@@ -194,9 +194,46 @@ def export(myfolder, simulation_name, to_export, destination):
             print(" <-- DONE\n")
 
 
-
-        # 9) get w(x,y,t) and pf(x,y,t)
+        # 9) get w(y) along a vertical line passing through mypoint for different times
         if 9 in to_export:
+            print("\n 6) get pf(y) with y passing through a specific point for different times... ")
+            my_X = 0.; my_Y = 0.
+            ext_pnts = np.empty((2, 2), dtype=np.float64)
+            fracture_list_slice = plot_fracture_list_slice(Fr_list,
+                                                           variable='pf',
+                                                           projection='2D',
+                                                           plot_cell_center=True,
+                                                           extreme_points=ext_pnts,
+                                                           orientation='vertical',
+                                                           point1=[my_X , my_Y],
+                                                           export2Json=True,
+                                                           export2Json_assuming_no_remeshing=False)
+            towrite = {'pf_vert_slice_': fracture_list_slice}
+            append_to_json_file(myJsonName_1, towrite, 'extend_dictionary')
+            print(" <-- DONE\n")
+
+
+
+        # 10) get w(x) along a horizontal line passing through mypoint for different times
+        if 10 in to_export:
+            print("\n 7) get pf(x) with x passing through a specific point for different times... ")
+            my_X = 0.; my_Y = 0.
+            ext_pnts = np.empty((2, 2), dtype=np.float64)
+            fracture_list_slice = plot_fracture_list_slice(Fr_list,
+                                                           variable='pf',
+                                                           projection='2D',
+                                                           plot_cell_center=True,
+                                                           extreme_points=ext_pnts,
+                                                           orientation='horizontal',
+                                                           point1=[my_X , my_Y],
+                                                           export2Json=True,
+                                                           export2Json_assuming_no_remeshing=False)
+            towrite = {'pf_horiz_slice_': fracture_list_slice}
+            append_to_json_file(myJsonName_1, towrite, 'extend_dictionary')
+            print(" <-- DONE\n")
+
+        # 11) get w(x,y,t) and pf(x,y,t)
+        if 11 in to_export:
             print("\n 8) get w(x,y,t) and  pf(x,y,t)... ")
             wofxyandt = []
             pofxyandt = []
@@ -252,7 +289,7 @@ def check_exe(folders_list, simul_list, to_export, destination):
 # 8) get w(x) along a horizontal line passing through mypoint for different times
 # 9) get w(x,y,t) and pf(x,y,t)
 
-to_export = [1,2,3,4,7,8]
+to_export = [1,2,3,7,8,9,10]
 
 #-------> SPECIFY OUT ID AND FOLDER NAME:
 # simul_list = ["01", "02", "02bis", "03", "04"]#["02bis"]
@@ -265,15 +302,14 @@ to_export = [1,2,3,4,7,8]
 # ["/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/01",
 #                 "/home/carlo/Desktop/PyFrac/VC_gmres/Data_final/02"]
 #simul_list = ["02break"]
-#simul_list = ["05mtoK", "06mtoK"]
+simul_list = ["05mtoK", "06mtoK","07mtoK","08mtoK"]
 simul_list = ["09mtoK"]
 common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
-common_address = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/"
-# folders_list = [common_address + "05mtoK",
-#                 common_address + "06mtoK"]
-folders_list = [
-                common_address + "09mtoK"]
-#destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
-destination ="/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final"
+folders_list = [ common_address + "05mtoK",
+                 common_address + "06mtoK",
+                 common_address + "07mtoK",
+                 common_address + "08mtoK"]
+folders_list = [ common_address + "08mtoK"]
+destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)
