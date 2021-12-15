@@ -237,6 +237,10 @@ class elasticity_matrix_toepliz(LinearOperator):
         """
         self.C_precision = C_precision
         self.useHMATdot = useHMATdot
+        if useHMATdot:
+            self.updateHMATuponRemeshing = True
+        else:
+            self.updateHMATuponRemeshing = False
         self.mat_prop = mat_prop
         self.kerneltype = "Isotropic"
 
@@ -270,7 +274,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
     def reload_HMAT_Coe(self, Mesh, self_eff = None):
         #################### HMAT dot SECTION ###################
-        if self.useHMATdot:
+        if self.updateHMATuponRemeshing:
             self.max_leaf_size = 100
             self.eta = 5
             self.eps_aca = 1.e-6

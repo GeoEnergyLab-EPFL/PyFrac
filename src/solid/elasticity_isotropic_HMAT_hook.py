@@ -17,7 +17,8 @@ class Hdot_3DR0opening(LinearOperator):
 
     """
     def __init__(self):
-        from solid.bigwhamPybind import Bigwhamio
+        #from solid.bigwhamPybind import Bigwhamio
+        from solid.pypart import Bigwhamio
         self.unknowns_number_ = None
         self.matvec_size_ = None
         self.HMAT_size_ = None
