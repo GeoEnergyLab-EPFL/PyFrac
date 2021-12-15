@@ -142,13 +142,6 @@ class Controller:
                       'injection points are located outisde of the fracture footprints'
             raise SystemExit(message)
 
-        # Setting whether sparse matrix is used to make fluid conductivity matrix
-        if Sim_prop.solveSparse is None:
-           if Fracture.mesh.NumberOfElts < 2500:
-               Sim_prop.solveSparse = False
-           else:
-               Sim_prop.solveSparse = True
-
         # basic performance data
         self.remeshings = 0
         self.successfulTimeSteps = 0
@@ -1402,7 +1395,13 @@ class Controller:
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
         log.info("Recalculting the elasticity matrix")
-        self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh, self.solid_prop.Eprime)
+
+        self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh,
+                                                          self.solid_prop.Eprime,
+                                                          C_precision = np.float64,
+                                                          useHMATdot = self.C.updateHMATuponRemeshing,
+                                                          nu=self.C.nu)
+
         # Ensuring that we always use block topliz compression.
         if not self.sim_prop.useBlockToeplizCompression:
             self.sim_prop.useBlockToeplizCompression = True
