@@ -48,7 +48,7 @@ def getASPECTRATIO__(Ffront):
     xmax, xmin, ymax, ymin = getFfrontBounds__(Ffront)
     Lhalf = (np.abs(xmax) + np.abs(xmin))/2.
     Hhalf = (np.abs(ymax) + np.abs(ymin)) / 2.
-    return Lhalf/Hhalf
+    return Hhalf/Lhalf
 
 def getwAtMovingCenter__(fr):
     xmax, xmin, ymax, ymin = getFfrontBounds__(fr.Ffront)
@@ -94,6 +94,6 @@ def custom_plot(sim_prop, fig = None):
     # ax.plot(sim_prop.tHyst__, sl_ana, color='g')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    #ax.set_yscale('log')
+    ax.set_yscale('log')
     ax.set_xscale('log')
     return fig

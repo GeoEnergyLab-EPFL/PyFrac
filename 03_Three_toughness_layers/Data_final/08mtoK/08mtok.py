@@ -75,7 +75,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = False
+run = True
 run_dir =  "./"
 restart = True
 
@@ -83,13 +83,13 @@ restart = True
 plot_B = False
 output_fol_B = run_dir
 output_fol  = "./"
-ftPntJUMP = 20
+ftPntJUMP = 1
 plot_slices = False
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(2.7, 2.7, 91, 91)
+    Mesh = CartesianMesh(0.005, 0.005, 91, 91)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -103,7 +103,7 @@ if run:
         if  x < r-delta :
             return K1
         elif x >= r-delta and x<r :
-            K12 = K1 + (K2-K1)*0.01
+            K12 = K1 + (K2-K1)*0.1
             a = (K12 - K1) / (delta)
             b = K1 - a * (r - delta)
             return a * x + b
@@ -118,7 +118,7 @@ if run:
         K_Ic = 0.4e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 5.*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 10.*K_Ic, r, delta, x)
 
 
     # ---- plot Kic_max vs time ---
@@ -151,7 +151,7 @@ if run:
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=0.01)
+    Fluid = FluidProperties(viscosity=0.0001)
 
     # simulation properties
     simulProp = SimulationProperties()
@@ -160,25 +160,26 @@ if run:
     simulProp.saveToDisk = True
     simulProp.tolFractFront = 0.0001
     simulProp.plotTSJump = 1
+    simulProp.saveTSJump = 4
     simulProp.set_volumeControl(False)
     simulProp.bckColor = 'K1c'
     simulProp.set_outputFolder(run_dir)
     #simulProp.plotVar = ['ffvf', 'custom', 'regime']
-    simulProp.plotVar = ['custom', 'regime']
+    simulProp.plotVar = ['custom', 'regime','footprint']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront'
     simulProp.customPlotsOnTheFly = True
     simulProp.useBlockToeplizCompression = True
     simulProp.LHyst__ = []
     simulProp.tHyst__ = []
-    simulProp.saveFluidFluxAsVector = True
+    simulProp.saveFluidFluxAsVector = False
 
     # setting up mesh extension options
-    simulProp.meshExtensionAllDir = False
-    simulProp.set_mesh_extension_factor(1.5)
-    simulProp.set_mesh_extension_direction(['vertical'])
-    simulProp.meshReductionPossible = False
-    simulProp.simID = 'K1/K2=5.' # do not use _
+    # simulProp.meshExtensionAllDir = False
+    # simulProp.set_mesh_extension_factor(1.5)
+    # simulProp.set_mesh_extension_direction(['vertical'])
+    # simulProp.meshReductionPossible = True
+    simulProp.simID = 'K1/K2=10.' # do not use _
 
     simulProp.EHL_GMRES = True
     simulProp.solve_monolithic = False
@@ -187,11 +188,11 @@ if run:
 
 
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=0.4)
+    Fr_geometry = Geometry('radial', radius=0.001)
 
     C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
 
-    init_param = InitializationParameters(Fr_geometry, regime='static',net_pressure=1.1e6, elasticity_matrix=C)
+    init_param = InitializationParameters(Fr_geometry, regime='M', elasticity_matrix=C)
 
     # creating fracture object
     Fr = Fracture(Mesh,
@@ -210,14 +211,22 @@ if run:
         Solid, Fluid, Injection, simulProp = properties
         Fr = Fr_list[-1]
         simulProp.saveFluidFluxAsVector = False
-        simulProp.plotVar = ['custom', 'regime']
+        simulProp.saveTSJump = 2
+        simulProp.finalTime = 1005.12
+        simulProp.tmStpPrefactor = 1.
+
         Solid = MaterialProperties(Fr.mesh,
                                   Eprime,
                                   K1c_func=K1c_func,
                                   confining_stress_func = sigmaO_func,
                                   confining_stress=0.,
                                   minimum_width=0.)
-
+        Injection = InjectionProperties(Q0, Fr.mesh)
+        simulProp.meshExtensionAllDir = True
+        simulProp.set_mesh_extension_factor(1.5)
+        simulProp.set_mesh_extension_direction(['vertical'])
+        simulProp.plotVar = ['custom', 'regime', 'footprint']
+        simulProp.meshReductionPossible = False
         C = load_isotropic_elasticity_matrix_toepliz(Fr.mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
     ############################################################################
 

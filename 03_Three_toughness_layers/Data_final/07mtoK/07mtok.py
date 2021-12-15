@@ -77,19 +77,19 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = False
 run_dir =  "./"
-restart = True
+restart = False
 
 # postprocessing
 plot_B = False
 output_fol_B = run_dir
 output_fol  = "./"
-ftPntJUMP = 20
+ftPntJUMP = 5
 plot_slices = False
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(2.7, 2.7, 91, 91)
+    Mesh = CartesianMesh(0.7, 0.7, 91, 91)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -118,7 +118,7 @@ if run:
         K_Ic = 0.4e6  # fracture toughness
         r = 1.48
         delta = 0.0005
-        return smoothing(K_Ic, 5.*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 10.*K_Ic, r, delta, x)
 
 
     # ---- plot Kic_max vs time ---
@@ -151,7 +151,7 @@ if run:
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=0.01)
+    Fluid = FluidProperties(viscosity=0.1)
 
     # simulation properties
     simulProp = SimulationProperties()
@@ -164,21 +164,21 @@ if run:
     simulProp.bckColor = 'K1c'
     simulProp.set_outputFolder(run_dir)
     #simulProp.plotVar = ['ffvf', 'custom', 'regime']
-    simulProp.plotVar = ['custom', 'regime']
+    simulProp.plotVar = ['custom', 'regime','footprint']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront'
     simulProp.customPlotsOnTheFly = True
     simulProp.useBlockToeplizCompression = True
     simulProp.LHyst__ = []
     simulProp.tHyst__ = []
-    simulProp.saveFluidFluxAsVector = True
+    simulProp.saveFluidFluxAsVector = False
 
     # setting up mesh extension options
     simulProp.meshExtensionAllDir = False
     simulProp.set_mesh_extension_factor(1.5)
     simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
-    simulProp.simID = 'K1/K2=5.' # do not use _
+    simulProp.simID = 'K1/K2=10.' # do not use _
 
     simulProp.EHL_GMRES = True
     simulProp.solve_monolithic = False
@@ -187,11 +187,11 @@ if run:
 
 
     # initialization parameters
-    Fr_geometry = Geometry('radial', radius=0.4)
+    Fr_geometry = Geometry('radial', radius=0.2)
 
     C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
 
-    init_param = InitializationParameters(Fr_geometry, regime='static',net_pressure=1.1e6, elasticity_matrix=C)
+    init_param = InitializationParameters(Fr_geometry, regime='M', elasticity_matrix=C)
 
     # creating fracture object
     Fr = Fracture(Mesh,
@@ -255,7 +255,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     # plot fracture radius
     my_list = []
-    mytime = 1.95
+    mytime = 195
     for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
         if Fr_list_A[i].time < mytime:
             my_list.append(Fr_list_A[i])
