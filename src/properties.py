@@ -559,6 +559,7 @@ class SimulationProperties:
         self.simID = str(random.randint(0,10000))
         self.customPlotsOnTheFly = simul_param.custom_plots_on_the_fly
         self.useBlockToeplizCompression=simul_param.use_block_toepliz_compression
+        self.elasticKernel = simul_param.elastic_Kernel
         self.verbositylevel = simul_param.verbosity_level
         self.log2file = simul_param.log_to_file
         self.set_tipAsymptote(simul_param.tip_asymptote)

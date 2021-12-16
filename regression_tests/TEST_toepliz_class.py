@@ -14,7 +14,7 @@ import numpy as np
 from fracture_obj.fracture_initialization import get_radial_survey_cells
 from mesh_obj.mesh import CartesianMesh
 from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix, load_TI_elasticity_matrix_toepliz
-from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 def common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=False):
