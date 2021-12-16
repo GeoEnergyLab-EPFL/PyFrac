@@ -112,7 +112,8 @@ if run:
             from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
             C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
         else:
-            from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+            from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+
             C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 
     init_param = InitializationParameters(Fr_geometry, regime='K')

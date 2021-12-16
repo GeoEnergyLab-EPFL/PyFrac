@@ -20,7 +20,7 @@ from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
 
 from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix, load_TI_elasticity_matrix_toepliz
-from solid.elasticity_isotropic import load_isotropic_elasticity_matrix
+from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 
@@ -233,7 +233,8 @@ class Controller:
                                                                   self.solid_prop.Eprime)
                     else:
                         self.C = load_isotropic_elasticity_matrix_toepliz(self.fracture.mesh,
-                                                                          self.solid_prop.Eprime)
+                                                                          self.solid_prop.Eprime,
+                                                                          Kernel = self.sim_prop.elasticKernel)
             else:
                 if not self.sim_prop.useBlockToeplizCompression:
                     C = load_TI_elasticity_matrix(self.fracture.mesh.Lx,

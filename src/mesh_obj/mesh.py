@@ -21,7 +21,53 @@ from matplotlib.collections import PatchCollection
 from properties import PlotProperties
 from utilities.visualization import zoom_factory, to_precision, text3d
 from mesh_obj.symmetry import *
+from numba import njit, uint64
 
+# implicit input
+@njit((uint64, uint64, uint64), nogil=True, cache=True)
+def Neighbors(elem, nx, ny):
+    """
+    Neighbouring elements of an element within the mesh. Boundary elements have themselves as neighbor.
+
+    Args:
+        elem (int):         -- element whose neighbor are to be found.
+        nx (int):           -- number of elements in x direction.
+        ny (int):           -- number of elements in y direction.
+
+    Returns:
+        (tuple): A tuple containing the following:
+
+            | left (int)     -- left neighbour.
+            | right (int)    -- right neighbour.
+            | bottom (int)   -- bottom neighbour.
+            | top (int)      -- top neighbour.
+
+    """
+
+    j = elem // nx
+    i = elem % nx
+
+    if i == 0:
+        left = elem
+    else:
+        left = j * nx + i - 1
+
+    if i == nx - 1:
+        right = elem
+    else:
+        right = j * nx + i + 1
+
+    if j == 0:
+        bottom = elem
+    else:
+        bottom = (j - 1) * nx + i
+
+    if j == ny - 1:
+        up = elem
+    else:
+        up = (j + 1) * nx + i
+
+    return left, right, bottom, up
 
 
 class CartesianMesh:
@@ -183,7 +229,7 @@ class CartesianMesh:
         """
         Nei = np.zeros((self.NumberOfElts, 4), int)
         for i in range(0, self.NumberOfElts):
-            Nei[i, :] = np.asarray(self.Neighbors(i, self.nx, self.ny))
+            Nei[i, :] = np.asarray(Neighbors(i, self.nx, self.ny))
         self.NeiElements = Nei
 
 
@@ -593,52 +639,6 @@ class CartesianMesh:
                 return np.asarray([cellIDs[closest]])
         else:
             return cellIDs
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-    def Neighbors(self, elem, nx, ny):
-        """
-        Neighbouring elements of an element within the mesh. Boundary elements have themselves as neighbor.
-
-        Args:
-            elem (int):         -- element whose neighbor are to be found.
-            nx (int):           -- number of elements in x direction.
-            ny (int):           -- number of elements in y direction.
-
-        Returns:
-            (tuple): A tuple containing the following:
-
-                | left (int)     -- left neighbour.
-                | right (int)    -- right neighbour.
-                | bottom (int)   -- bottom neighbour.
-                | top (int)      -- top neighbour.
-
-        """
-
-        j = elem // nx
-        i = elem % nx
-
-        if i == 0:
-            left = elem
-        else:
-            left = j * nx + i - 1
-
-        if i == nx - 1:
-            right = elem
-        else:
-            right = j * nx + i + 1
-
-        if j == 0:
-            bottom = elem
-        else:
-            bottom = (j - 1) * nx + i
-
-        if j == ny - 1:
-            up = elem
-        else:
-            up = (j + 1) * nx + i
-
-        return left, right, bottom, up
 
 # ----------------------------------------------------------------------------------------------------------------------
 
