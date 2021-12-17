@@ -130,15 +130,26 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
     b = hy / 2.
 
     for i in prange(ny):
-        dyk1 = np.abs(i - 1) * hy
+        dyk1 = (i - 2) * hy
         dyk2 = i * hy
-        dyk3 = (i + 1) * hy
+        dyk3 = (i + 2) * hy
         for j in prange(nx):
-            dx1k = np.abs(j - 1) * hx
+            dx1k = (j - 2) * hx
             dx2k = j * hx
-            dx3k = (j + 1)  * hx
+            dx3k = (j + 2)  * hx
                                                            # dx    dy                         dx    dy                         dx    dy
             C_toeplitz_coe[i * nx + j] = sig_zz_Dz_11(a, b, dx1k, dyk1) + sig_zz_Dz_12(a, b, dx1k, dyk2) + sig_zz_Dz_13(a, b, dx1k, dyk3) + \
                                          sig_zz_Dz_21(a, b, dx2k, dyk1) + sig_zz_Dz_22(a, b, dx2k, dyk2) + sig_zz_Dz_23(a, b, dx2k, dyk3) + \
                                          sig_zz_Dz_31(a, b, dx3k, dyk1) + sig_zz_Dz_32(a, b, dx3k, dyk2) + sig_zz_Dz_33(a, b, dx3k, dyk3)
+
+            """
+                                      ==== ==== ====  
+                                    || 13 | 23 | 33 ||
+                                    ||____|____|____||
+                                    ||    | (i)|    ||
+                                    || 12 | 22 | 32 ||
+                                    ||____|____|____||
+                                    || 11 | 21 | 31 ||
+                                    ||====|====|====||
+            """
     return const * C_toeplitz_coe
