@@ -73,10 +73,10 @@ plot_two_fronts(Mesh, newfront=Ffront, oldfront=None , fig=None, grid=True, cell
 p = 1000000000*np.ones(len(EltCrack))
 sol_R4 = np.zeros(Mesh.NumberOfElts)
 sol_R0 = np.zeros(Mesh.NumberOfElts)
-abs_err_R0 = np.zeros(Mesh.NumberOfElts)
-abs_err_R4 = np.zeros(Mesh.NumberOfElts)
-rel_err_R0 = np.zeros(Mesh.NumberOfElts)
-rel_err_R4 = np.zeros(Mesh.NumberOfElts)
+abs_err_R0 = []
+abs_err_R4 = []
+rel_err_R0 = []
+rel_err_R4 = []
 
 print("loading R4")
 load_time = -time.time()
@@ -97,17 +97,19 @@ true_solution = np.zeros(Mesh.NumberOfElts)
 
 r = []
 radim = []
+radim_all = []
 for el in EltCrack:
     x = Mesh.CenterCoor[el,0]
     y = Mesh.CenterCoor[el,1]
     r.append(np.sqrt(x*x + y*y))
-    radim.append(r[-1]/R)
-    if R - (x**2 + y**2) > 0.:
+    radim_all.append(r[-1] / R)
+    if (R - np.sqrt((x**2 + y**2))) > 0.:
         true_solution[el] = w_radial_solution(x, y, youngs_mod, nu, p[0], R)
-        rel_err_R4[el] = 100. * np.abs(true_solution[el] - sol_R4[el]) / np.abs(true_solution[el])
-        rel_err_R0[el] = 100. * np.abs(true_solution[el] - sol_R0[el]) / np.abs(true_solution[el])
-        abs_err_R4[el] = np.abs(true_solution[el] - sol_R4[el])
-        abs_err_R0[el] = np.abs(true_solution[el] - sol_R0[el])
+        radim.append(r[-1] / R)
+        rel_err_R4.append(100. * np.abs(true_solution[el] - sol_R4[el]) / np.abs(true_solution[el]))
+        rel_err_R0.append(100. * np.abs(true_solution[el] - sol_R0[el]) / np.abs(true_solution[el]))
+        abs_err_R4.append(np.abs(true_solution[el] - sol_R4[el]))
+        abs_err_R0.append(np.abs(true_solution[el] - sol_R0[el]))
 
 # generate true solution
 r_sol = np.arange(0,1,0.01)
@@ -118,28 +120,28 @@ for rsol in r_sol:
 print("Statistics:\n")
 print(f" Num. of elts in the crack: {Mesh.NumberOfElts}")
 print("  - Absolute error")
-print(f"    R0: {abs_err_R0.max()}")
-print(f"    R4: {abs_err_R4.max()}")
+print(f"    R0: {np.min(abs_err_R0)}")
+print(f"    R4: {np.min(abs_err_R4)}")
 
 print("  - Relative error [%]")
-print(f"    R0: {rel_err_R0.max()}")
-print(f"    R4: {rel_err_R4.max()}")
+print(f"    R0: {np.max(rel_err_R0)}")
+print(f"    R4: {np.max(rel_err_R4)}")
 
 fig2 = plt.figure()
 plt.suptitle('Fracture opening')
 #plt.scatter(radim, true_solution[EltCrack], c='b', marker="+")
 plt.scatter(r_sol, w_sol, c='b', marker="+")
-plt.scatter(radim, sol_R0[EltCrack], c='r', marker="+")
-plt.scatter(radim, sol_R4[EltCrack], c='g', marker="+")
+plt.scatter(radim_all, sol_R0[EltCrack], c='r', marker="+")
+plt.scatter(radim_all, sol_R4[EltCrack], c='g', marker="+")
 
 fig3 = plt.figure()
 plt.suptitle('Relative error')
-plt.scatter(radim, rel_err_R0[EltCrack], c='r', marker="+")
-plt.scatter(radim, rel_err_R4[EltCrack], c='g', marker="+")
+plt.scatter(radim, rel_err_R0, c='r', marker="+")
+plt.scatter(radim, rel_err_R4, c='g', marker="+")
 
 fig3 = plt.figure()
 plt.suptitle('Absolute error')
-plt.scatter(radim, abs_err_R0[EltCrack], c='r', marker="+")
-plt.scatter(radim, abs_err_R4[EltCrack], c='g', marker="+")
+plt.scatter(radim, abs_err_R0, c='r', marker="+")
+plt.scatter(radim, abs_err_R4, c='g', marker="+")
 
 plt.show()
