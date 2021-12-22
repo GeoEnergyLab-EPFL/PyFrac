@@ -553,7 +553,7 @@ def plot_xy_points(anularegion, mesh, sgndDist_k, Ribbon, x,y, fig=None, annotat
         return fig
 
 
-def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = None):
+def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = None, my_marker = "_"):
     # fig = None
     if fig is None:
         fig = plt.figure()
@@ -580,7 +580,7 @@ def plot_two_fronts(mesh, newfront=None, oldfront=None , fig=None, grid=True, ce
                      [newfront[i, 1], newfront[i, 3]], '-b')
 
     if cells is not None:
-        plt.plot(mesh.CenterCoor[cells, 0], mesh.CenterCoor[cells, 1], ".", marker="_", color='g')
+        plt.plot(mesh.CenterCoor[cells, 0], mesh.CenterCoor[cells, 1], ".", marker=my_marker, color='g')
 
     plt.show()
     return fig

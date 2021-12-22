@@ -9,7 +9,6 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # External imports
 import numpy as np
-from fracture_obj.fracture_initialization import Geometry, generate_footprint, get_survey_points
 from scipy.sparse.linalg import bicgstab
 import logging
 import time
@@ -92,43 +91,34 @@ def get_mesh(sim_info, refinement_ID):
 
     return CartesianMesh(d_x, d_y, nx, ny)
 
-# ----------------------------------------------
-def w_radial_solution(x,y,Young,nu,p,R):
-    rr = x**2 + y**2
-    return 8. * (1 - nu * nu) * p * np.sqrt(R**2 - rr) / (np.pi * Young)
 
-def Volume_radial_solution(Young,nu,p,R):
-    return 16./3. * p * R**3 * (1 - nu * nu)/ (Young)
 # ----------------------------------------------
 run = False
-file_name = "results_radial.json"
+file_name = "results_rectangular.json"
 
 if run:
     sim_info = {}
 
     # deciding the aspect ratio
     # - it is Ly/Lx
-    sim_info["aspect ratio"] = 1
+    sim_info["aspect ratio"] = 2
 
     # number of mesh refinements
     #   - along x and y
-    sim_info["n. of refinements x"] = 30
-    sim_info["n. of refinements y"] = 30
+    sim_info["n. of refinements x"] = 10
+    sim_info["n. of refinements y"] = 10
     sim_info["max. n. of refinements"] = np.maximum(sim_info["n. of refinements x"], sim_info["n. of refinements y"])
 
     # the coarsest mesh (the y direction will be a function of x)
     sim_info["nx min"] = 7
 
     # set the domain size (the y direction will be a function of x)
-    sim_info["domain x"] = [-6.,6.]
+    sim_info["domain x"] = [-2,2]
 
     # solid properties
     sim_info["nu"] = 0.4                                                    # Poisson's ratio
-    sim_info["youngs mod"] = 3.3e4                                          # Young's modulus
+    sim_info["youngs mod"] = 3.3e10                                         # Young's modulus
     sim_info["Eprime"] = sim_info["youngs mod"] / (1 - sim_info["nu"]**2)   # plain strain modulus
-
-    # geometry
-    sim_info["R"] = 1.1
 
     # uniform load
     sim_info["p"] =1.10**12
@@ -143,12 +133,7 @@ if run:
                "max w R4" : [],
                "frac volume R0": [],
                "frac volume R4": [],
-               "n. of Elts" : [],
-               "nu": sim_info["nu"],  # Poisson's ratio
-               "youngs mod" : sim_info["youngs mod"],
-               "R": sim_info["R"],
-               "p": sim_info["p"],
-                }
+               "n. of Elts" : []}
 
     for refinement_ID in np.arange(1, maxref, 1):
 
@@ -158,25 +143,14 @@ if run:
 
         # creating mesh & plotting
         Mesh = get_mesh(sim_info, refinement_ID)
-
-        # defining the geometry
-        Fr_geometry = Geometry('radial', radius=sim_info["R"])
-        surv_cells, surv_dist, inner_cells = get_survey_points(Fr_geometry, Mesh)
-        EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, \
-        l, alpha, FillF, sgndDist, Ffront, number_of_fronts, fronts_dictionary = generate_footprint(Mesh, surv_cells, inner_cells, surv_dist,
-                                                                         'LS_continousfront')
-        if refinement_ID == 1 or  refinement_ID == maxref -1:
-            plot_two_fronts(Mesh, newfront=Ffront, oldfront=None, fig=None, grid=True, cells=EltCrack)
-        #   plot_two_fronts(Mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = EltCrack, my_marker = " ")
-
+        EltCrack = np.arange(Mesh.NumberOfElts)
+        #plot_two_fronts(Mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = EltCrack, my_marker = " ")
         results["n. of Elts"].append(int(len(EltCrack)))
         results["nx"].append(int(Mesh.nx))
         results["ny"].append(int(Mesh.ny))
         results["Lx"].append(int(Mesh.Lx))
         results["Ly"].append(int(Mesh.Ly))
         print(f"     --> DoF {len(EltCrack)}")
-
-
 
         # setting the load
         p = np.full(len(EltCrack), sim_info["p"])
@@ -205,7 +179,7 @@ if run:
         st = st + 1
         print(f" {st}) solving R_0 matrix")
         dummy = - time.time()
-        sol_R0 = get_solution(C_R0, p, EltCrack)
+        sol_R0 = get_solution(C_R0, p, EltCrack, x0=sol_R4)
         dummy = dummy + time.time()
         print(f"     --> done in {dummy}")
 
@@ -238,14 +212,9 @@ fig1 = plt.figure()
 plt.suptitle('w_max VS DOF')
 plt.plot(results["n. of Elts"], results["max w R0"], c='r', marker="+")
 plt.plot(results["n. of Elts"], results["max w R4"], c='b', marker="+")
-
-y_ana = np.full(2,w_radial_solution(0.,0.,results["youngs mod"],results["nu"],results["p"],results["R"]))
-plt.plot([results["n. of Elts"][0],results["n. of Elts"][-1]], y_ana, c='black', marker=" ")
-plt.tick_params(labeltop=True, labelright=True)
-plt.grid(True, which="both", ls="-")
 plt.xlabel('# of DOF')
 plt.ylabel('w max')
-plt.legend(('R0', 'R4', 'analytical'),loc='upper center', shadow=True)
+plt.legend(('R0', 'R4'),loc='upper center', shadow=True)
 plt.xscale('log')
 plt.yscale('log')
 
@@ -254,50 +223,16 @@ fig1 = plt.figure()
 plt.suptitle('fractue volume VS DOF')
 plt.plot(results["n. of Elts"], results["frac volume R0"], c='r', marker="+")
 plt.plot(results["n. of Elts"], results["frac volume R4"], c='b', marker="+")
-
-y_ana = np.full(2, Volume_radial_solution(results["youngs mod"],results["nu"],results["p"],results["R"]))
-plt.plot([results["n. of Elts"][0],results["n. of Elts"][-1]], y_ana, c='black', marker=" ")
-plt.tick_params(axis='both')
-plt.grid(True, which="both", ls="-")
 plt.xlabel('# of DOF')
 plt.ylabel('frac volume')
-plt.legend(('R0', 'R4', 'analytical'),loc='upper center', shadow=True)
+plt.legend(('R0', 'R4'),loc='upper center', shadow=True)
 plt.xscale('log')
 plt.yscale('log')
+
 print(" <<<< DONE >>>>")
 
-# volume - rel err
-fig1 = plt.figure()
-plt.suptitle('rel err fractue volume VS DOF')
-y_ana = Volume_radial_solution(results["youngs mod"],results["nu"],results["p"],results["R"])
 
-plt.plot(results["n. of Elts"], 100 * np.abs(np.asarray(results["frac volume R0"]) - y_ana)/y_ana, c='r', marker="+")
-plt.plot(results["n. of Elts"], 100 * np.abs(np.asarray(results["frac volume R4"]) - y_ana)/y_ana, c='b', marker="+")
-plt.tick_params(labeltop=True, labelright=True)
-plt.grid(True, which="both", ls="-")
 
-plt.xlabel('# of DOF')
-plt.ylabel('rel err frac volume [%]')
-plt.legend(('R0', 'R4', 'analytical'),loc='upper center', shadow=True)
-plt.xscale('log')
-plt.yscale('log')
-print(" <<<< DONE >>>>")
-
-# rel err w max
-fig1 = plt.figure()
-plt.suptitle('rel err w_max VS DOF')
-
-y_ana = w_radial_solution(0.,0.,results["youngs mod"],results["nu"],results["p"],results["R"])
-plt.plot(results["n. of Elts"], 100 * np.abs(np.asarray(results["max w R0"]) - y_ana)/y_ana, c='r', marker="+")
-plt.plot(results["n. of Elts"], 100 * np.abs(np.asarray(results["max w R4"]) - y_ana)/y_ana, c='b', marker="+")
-plt.tick_params(labeltop=True, labelright=True)
-plt.grid(True, which="both", ls="-")
-
-plt.xlabel('# of DOF')
-plt.ylabel('w max')
-plt.legend(('R0', 'R4', 'analytical'),loc='upper center', shadow=True)
-plt.xscale('log')
-plt.yscale('log')
 
 #
 # rel_err_R4_R0 = []
