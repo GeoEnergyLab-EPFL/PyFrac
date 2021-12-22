@@ -62,7 +62,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
     return C
 
 
-@njit(fastmath=True, nogil=True, parallel=True)
+@njit(fastmath=True, nogil=True, parallel=True, cache=True)
 def get_toeplitzCoe_isotropic(nx, ny, hx, hy, matprop, C_precision):
     """
     Let us make some definitions:
