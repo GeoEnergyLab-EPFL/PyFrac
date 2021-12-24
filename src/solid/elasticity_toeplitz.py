@@ -22,6 +22,7 @@ import time
 
 # local imports
 from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
+from solid.elasticity_tip_correction import tip_correction_factors
 from utilities.utility import append_new_line
 
 
@@ -250,9 +251,10 @@ class elasticity_matrix_toepliz(LinearOperator):
 
         # ---- TIP CORRECTION ----
         self.enable_tip_corr = False  # one needs to specifically activate it in case it is needed
-        self.tipcorrINDX = None  # list of tip elem. IDs
-        self.tipcorr = None
-
+        self.EltTip = None  # list of tip elem. IDs
+        self.tipcorr = None # vector of size & ordering as self.EltTip with the correction factors
+        self.tipINDX_codomain = None # list of indexes of tip elem. in the codomain
+        self.tip_in_codomain = None # list of tip elem. IDs in the codomain
         # ---- JACOBI PREC ----
         self.left_precJ = False
         self.right_precJ = False
@@ -367,53 +369,36 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _matvec(self, uk):
-        # if self.C_precision == np.float32:
-        #     uk = uk.astype('float32')
         if not self.enable_tip_corr and not self.left_precJ and not self.right_precJ:
             return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                                self.C_toeplitz_coe, self.C_precision)
+
         elif self.enable_tip_corr:
-            # find the positions of the tip elements in the codomain
-            tip_codomain, INDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.tipcorrINDX,
-                                                                assume_unique=True, return_indices=True)
             if self.right_precJ:
-                uk = self._precJm1dotvec(uk, INDX_codomain=INDX_codomain)
-                res = matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
-                                  self.C_toeplitz_coe, self.C_precision)
-            else:
-                # the tip correction acts only on the diagonal elements, so:
-                # (A+tipcorr*I)*uk = A*uk+tipcorr*I*uk
-                # compute A*uk
-                res = matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
-                                  self.C_toeplitz_coe, self.C_precision)
+                uk = self._precJm1dotvec(uk, tipINDX_codomain=self.tipINDX_codomain)
+
+            # the tip correction acts only on the diagonal elements, so:
+            # (A+tipcorr*I)*uk = A*uk+tipcorr*I*uk
+            # compute A*uk
+            res = matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+                              self.C_toeplitz_coe, self.C_precision)
 
             if self.left_precJ:
-                # assuming that we are solving the problem for the whole fracture and that we are considering all the tip elem
                 # (A+tipcorr*I)*uk
-                res[INDX_codomain] = res[INDX_codomain] + uk[INDX_codomain] * self.tipcorr[self.tipcorrINDX]
-                res = self._precJm1dotvec(res, INDX_codomain=INDX_codomain)
+                res[self.tipINDX_codomain] = res[self.tipINDX_codomain] + uk[self.tipINDX_codomain] * self.tipcorr[self.tip_in_codomain]
+                res = self._precJm1dotvec(res, tipINDX_codomain = self.tipINDX_codomain)
             elif self.right_precJ:
-                # assuming that we are solving the problem for the whole fracture and that we are considering all the tip elem
                 # (A+tipcorr*I)*res
-                res[INDX_codomain] = res[INDX_codomain] + uk[INDX_codomain] * self.tipcorr[self.tipcorrINDX]
+                res[self.tipINDX_codomain] = res[self.tipINDX_codomain] + uk[self.tipINDX_codomain] * self.tipcorr[self.tip_in_codomain]
             else:
-                # compute tipcorr * I * uk
-                # find the tip elements in common between domain and codomain
-                tip_domain_and_codomain = np.intersect1d(self.domain_INDX, tip_codomain, assume_unique=True)
-
-                # find the positions of the common tip elements between codomain and domain, in the codomain
-                waste, partial_INDX_codomain, waste = np.intersect1d(tip_codomain, tip_domain_and_codomain,
-                                                                     assume_unique=True, return_indices=True)
-                INDX_codomain = INDX_codomain[partial_INDX_codomain]
-                if len(INDX_codomain) > 0:
-                    res[INDX_codomain] = res[INDX_codomain] + uk[INDX_codomain] * self.tipcorr[tip_domain_and_codomain]
+                if len(self.tipINDX_codomain_and_domain) > 0:
+                    res[self.tipINDX_codomain_and_domain] = res[self.tipINDX_codomain_and_domain] + uk[self.tipINDX_codomain_and_domain] * self.tipcorr[self.tip_in_domain_and_codomain]
             return res
-
         else:
-            raise SystemExit('preconditioner without  tip correction is not currently implemented')
+            raise SystemExit('preconditioner without tip correction is not currently implemented')
 
 
-    def _precJm1dotvec(self, uk, INDX_codomain=None):
+    def _precJm1dotvec(self, uk, tipINDX_codomain=None):
         # preconditioning:
         # P~A, P=A_ii
         # P^-1 * (A+tipcorr*I)*uk = P^-1 * res, P^-1 is a diag matrix =>  P^-1 * res == P^-1_ii * res_i
@@ -421,15 +406,14 @@ class elasticity_matrix_toepliz(LinearOperator):
         # the precontioner accounts for the correction of the tip due to partially filled elements
 
         Pm1_vec = np.full(len(uk), 1. / self.diag_val)
-        if INDX_codomain is None:
+        if tipINDX_codomain is None:
             # find the positions of the tip elements in the codomain
-            waste, INDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.tipcorrINDX, assume_unique=True,
-                                                         return_indices=True)
-        Pm1_vec[INDX_codomain] = 1. / (self.diag_val + self.tipcorr[self.tipcorrINDX])
+            waste, tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True, return_indices=True)
+        Pm1_vec[tipINDX_codomain] = 1. / (self.diag_val + self.tipcorr[self.EltTip])
         return Pm1_vec * uk
 
 
-    def _precJdotvec(self, uk, INDX_codomain=None):
+    def _precJdotvec(self, uk, tipINDX_codomain=None):
         # preconditioning:
         # P~A, P=A_ii
         # the precontioner accounts for the correction of the tip due to partially filled elements
@@ -437,11 +421,11 @@ class elasticity_matrix_toepliz(LinearOperator):
         # returning P*vec
 
         Pm1_vec = np.full(len(uk), self.diag_val)
-        if INDX_codomain is None:
+        if tipINDX_codomain is None:
             # find the positions of the tip elements in the codomain
-            waste, INDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.tipcorrINDX, assume_unique=True,
+            waste, tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True,
                                                          return_indices=True)
-        Pm1_vec[INDX_codomain] = (self.diag_val + self.tipcorr[self.tipcorrINDX])
+        Pm1_vec[tipINDX_codomain] = (self.diag_val + self.tipcorr[self.EltTip])
         return Pm1_vec * uk
 
 
@@ -476,7 +460,7 @@ class elasticity_matrix_toepliz(LinearOperator):
             return self.HMAT._set_codomain_IDX(codomainIDX)
 
 
-    def _set_tipcorr(self, correction_val, correction_INDX):
+    def _set_tipcorr(self, FillFrac, EltTip, same_domain_and_codomain = False):
         """
         :param correction_val: (array) contains the factors to be applied to each diagonal val. of the specified indexes based on the filling fraction of the cell
         :param correction_INDX: (array) specified indexes where the correction_val should apply
@@ -484,9 +468,25 @@ class elasticity_matrix_toepliz(LinearOperator):
         """
 
         self.enable_tip_corr = True
-        self.tipcorrINDX = correction_INDX  # list of tip elem. IDs
-        self.tipcorr = np.full(self.C_size_, np.nan)
-        self.tipcorr[correction_INDX] = correction_val * self.diag_val
+        self.EltTip = EltTip  # list of tip elem. IDs
+        self.tipcorr = np.full(self.C_size_, np.nan) # for all elems in the mesh
+        self.tipcorr[EltTip] = tip_correction_factors(FillFrac) * self.diag_val
+        if self.codomain_INDX is None:
+            raise SystemExit('please call _set_codomain_IDX(codomainIDX) before _set_tipcorr(FillFrac, EltTip)')
+        else:
+            # find the positions of the tip elements in the codomain
+            self.tip_in_codomain, self.tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True, return_indices=True)
+
+            if not same_domain_and_codomain:
+                # find the tip elements in common between domain and codomain
+                self.tip_in_domain_and_codomain = np.intersect1d(self.domain_INDX, self.tip_in_codomain, assume_unique=True)
+
+                # find the positions of the common tip elements between codomain and domain, in the codomain
+                waste, partial_INDX_codomain, waste = np.intersect1d(self.tip_in_codomain, self.tip_in_domain_and_codomain, assume_unique=True, return_indices=True)
+                self.tipINDX_codomain_and_domain = self.tipINDX_codomain[partial_INDX_codomain]
+            else:
+                self.tip_in_domain_and_codomain = self.tip_in_codomain
+                self.tipINDX_codomain_and_domain = self.tipINDX_codomain
 
 
     def _changeShape(self, shape_):
