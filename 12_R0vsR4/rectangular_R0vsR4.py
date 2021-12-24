@@ -19,7 +19,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 # ----------------------------------------------
 run = False
-file_name = "results_rectangular.json"
+file_name = "results_rectangular_as10.json"
 
 if run:
     # deciding the aspect ratio (if as > 1 -> Ly > Lx)
@@ -27,7 +27,7 @@ if run:
     # number of mesh refinements
     #   - along x and y
 
-    sim_info = {"aspect ratio": 20, "n. of refinements x": 5, "n. of refinements y": 5}
+    sim_info = {"aspect ratio": 10, "n. of refinements x": 20, "n. of refinements y": 20}
 
     sim_info["max. n. of refinements"] = np.maximum(sim_info["n. of refinements x"], sim_info["n. of refinements y"])
 
@@ -72,8 +72,8 @@ if run:
         Mesh = get_mesh(sim_info, refinement_ID)
         EltCrack = np.arange(Mesh.NumberOfElts)
 
-        if refinement_ID == 1 or  refinement_ID == maxref -1:
-           plot_two_fronts(Mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = EltCrack, my_marker = " ")
+        #if refinement_ID == 1 or  refinement_ID == maxref -1:
+        #   plot_two_fronts(Mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = EltCrack, my_marker = " ")
 
         results["n. of Elts"].append(int(len(EltCrack)))
         results["nx"].append(int(Mesh.nx))
@@ -131,32 +131,53 @@ if run:
     action = 'dump_this_dictionary'
     append_to_json_file(file_name, [content], action, delete_existing_filename=True)
 
-
-with open(file_name, "r+") as json_file:
-    results = json.load(json_file)  # get the data
-
+file_name_1 = "results_rectangular_as10.json"
+file_name_2 = "results_rectangular_as20.json"
+file_name_3 = "results_rectangular_as30.json"
+with open(file_name_1, "r+") as json_file:
+    results1 = json.load(json_file)[0]  # get the data
+with open(file_name_2, "r+") as json_file:
+    results2 = json.load(json_file)[0]  # get the data
+with open(file_name_3, "r+") as json_file:
+    results3 = json.load(json_file)[0]  # get the data
 print("Plotting results")
 
 # w max
 fig1 = plt.figure()
 plt.suptitle('Rectangular crack test')
-plt.plot(results["n. of Elts"], results["max w R0"], c='r', marker="+")
-plt.plot(results["n. of Elts"], results["max w R4"], c='b', marker="+")
+plt.plot(results1["n. of Elts"], results1["max w R0"], c='r', marker="+")
+plt.plot(results1["n. of Elts"], results1["max w R4"], c='b', marker="+")
 
-y_ana = wmax_plane_strain_solution(results["youngs mod"], results["nu"],results["p"], results["H"])
+y_ana = wmax_plane_strain_solution(results1["youngs mod"], results1["nu"],results1["p"], results1["H"])
 y_ana = np.full(2, y_ana)
-plt.plot([results["n. of Elts"][0],results["n. of Elts"][-1]], y_ana, c='black', marker=" ")
+plt.plot([results1["n. of Elts"][0],results1["n. of Elts"][-1]], y_ana, c='black', marker=" ")
 plt.xlabel('# of DOF in the crack')
 plt.ylabel('w max')
-plt.legend(('R0 - tip corr not needed', 'R4 - tip corr not needed'),loc='lower left', shadow=True)
+plt.legend(('R0 - (tip corr not needed)', 'R4 - tip corr not needed'),loc='lower left', shadow=True)
 plt.xscale('log')
 plt.yscale('log')
 
 # volume
 fig1 = plt.figure()
+ax = fig1.add_subplot(1, 1, 1)
+
+# Major ticks every 20, minor ticks every 5
+major_ticks_y = np.arange(0, 101, 20)
+minor_ticks_y = np.arange(0, 101, 5)
+major_ticks_x = np.arange(0, 1.01, 0.2)
+minor_ticks_x = np.arange(0, 1.01, 0.05)
+
+ax.set_xticks(major_ticks_x)
+ax.set_xticks(minor_ticks_x, minor=True)
+ax.set_yticks(major_ticks_y)
+ax.set_yticks(minor_ticks_y, minor=True)
+
+# And a corresponding grid
+ax.grid(which='both')
+
 plt.suptitle('Rectangular crack test')
-plt.plot(results["n. of Elts"], results["frac volume R0"], c='r', marker="+")
-plt.plot(results["n. of Elts"], results["frac volume R4"], c='b', marker="+")
+plt.plot(results1["n. of Elts"], results1["frac volume R0"], c='r', marker="+")
+plt.plot(results1["n. of Elts"], results1["frac volume R4"], c='b', marker="+")
 plt.xlabel('# of DOF in the crack')
 plt.ylabel('frac volume')
 plt.legend(('R0 - tip corr not needed', 'R4 - tip corr not needed'), loc='lower left', shadow=True)
@@ -167,20 +188,27 @@ plt.yscale('log')
 fig1 = plt.figure()
 plt.suptitle('Rectangular crack test')
 
-y_ana = wmax_plane_strain_solution(results["youngs mod"], results["nu"],results["p"], results["H"])
+y_ana = wmax_plane_strain_solution(results1["youngs mod"], results1["nu"],results1["p"], results1["H"])
 # plt.plot(results["n. of Elts"], 100 * np.abs(np.asarray(results["max w R0"]) - y_ana)/y_ana, c='r', marker="+")
 # plt.plot(results["n. of Elts"], 100 * np.abs(np.asarray(results["max w R4"]) - y_ana)/y_ana, c='b', marker="+")
-plt.plot(results["nx"], 100 * np.abs(np.asarray(results["max w R0"]) - y_ana)/y_ana, c='r', marker="+")
-plt.plot(results["nx"], 100 * np.abs(np.asarray(results["max w R4"]) - y_ana)/y_ana, c='b', marker="+")
+plt.plot(results1["nx"], 100 * np.abs(np.asarray(results1["max w R0"]) - y_ana)/y_ana, c='r', marker="+")
+plt.plot(results1["nx"], 100 * np.abs(np.asarray(results1["max w R4"]) - y_ana)/y_ana, c='b', marker="+")
+plt.plot(results2["nx"], 100 * np.abs(np.asarray(results2["max w R0"]) - y_ana)/y_ana, c='r', marker="o")
+plt.plot(results2["nx"], 100 * np.abs(np.asarray(results2["max w R4"]) - y_ana)/y_ana, c='b', marker="o")
+plt.plot(results3["nx"], 100 * np.abs(np.asarray(results3["max w R0"]) - y_ana)/y_ana, c='r', marker="x")
+plt.plot(results3["nx"], 100 * np.abs(np.asarray(results3["max w R4"]) - y_ana)/y_ana, c='b', marker="x")
 plt.tick_params(labeltop=True, labelright=True)
 plt.grid(True, which="both", ls="-")
 
-plt.xlabel('# of DOF in the crack')
+plt.xlabel('# of DOF in the transversal direction')
 plt.ylabel('rel. err. w max [%]')
-plt.legend(('R0 - tip corr not needed', 'R4 - tip corr not needed'), loc='lower left', shadow=True)
+plt.legend(('R0 - aspect ratio 10', 'R4 - aspect ratio 10',
+            'R0 - aspect ratio 20', 'R4 - aspect ratio 20',
+            'R0 - aspect ratio 30', 'R4 - aspect ratio 30'), loc='lower left', shadow=True)
 plt.xscale('log')
 plt.yscale('log')
 
+plt.show()
 print(" <<<< DONE >>>>")
 
 #
