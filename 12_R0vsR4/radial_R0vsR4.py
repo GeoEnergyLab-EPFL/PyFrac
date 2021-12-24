@@ -50,7 +50,7 @@ def get_err_w(w_num, sim_info, geterr):
 
 # ----------------------------------------------
 # ----------------------------------------------
-run = False
+run = True
 file_name = "results_radial.json"
 
 if run:
@@ -62,7 +62,7 @@ if run:
 
     # number of mesh refinements
     #   - along x and y
-    param = 14
+    param = 25
     sim_info["n. of refinements x"] = param
     sim_info["n. of refinements y"] = param
     sim_info["max. n. of refinements"] = np.maximum(sim_info["n. of refinements x"], sim_info["n. of refinements y"])
@@ -119,6 +119,10 @@ if run:
                "KI R4": [],
                "KI R0 with tipcorr": [],
                "KI R4 with tipcorr": [],
+               "KI R0 av": [],
+               "KI R4 av": [],
+               "KI R0 with tipcorr av": [],
+               "KI R4 with tipcorr av": [],
                "n. of Elts" : [],
                "nu": sim_info["nu"],  # Poisson's ratio
                "youngs mod" : sim_info["youngs mod"],
@@ -258,7 +262,9 @@ if run:
                                            Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
 
         relerr_KIPrime_R0 = 100. * (np.abs(KIPrime_R0 - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R0_av = 100. * np.mean(np.abs(KIPrime_R0 - KI_ana) / KI_ana)
         results["KI R0"].append(relerr_KIPrime_R0)
+        results["KI R0 av"].append(relerr_KIPrime_R0_av)
         #
         all_w[EltCrack] = sol_R4
         KIPrime_R4 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
@@ -269,7 +275,9 @@ if run:
                                            Mesh,
                                            Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
         relerr_KIPrime_R4 = 100 * (np.abs(KIPrime_R4 - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R4_av = 100 * np.mean(np.abs(KIPrime_R4 - KI_ana) / KI_ana)
         results["KI R4"].append(relerr_KIPrime_R4)
+        results["KI R4 av"].append(relerr_KIPrime_R4_av)
         #
         all_w[EltCrack] = sol_R0_tipcorr
         KIPrime_R0_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
@@ -280,7 +288,9 @@ if run:
                                         Mesh,
                                         Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
         relerr_KIPrime_R0_tipcorr = 100 * (np.abs(KIPrime_R0_tipcorr - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R0_tipcorr_av = 100 * np.mean(np.abs(KIPrime_R0_tipcorr - KI_ana) / KI_ana)
         results["KI R0 with tipcorr"].append(relerr_KIPrime_R0_tipcorr)
+        results["KI R0 with tipcorr av"].append(relerr_KIPrime_R0_tipcorr_av)
         #
         all_w[EltCrack] = sol_R4_tipcorr
         KIPrime_R4_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
@@ -291,7 +301,9 @@ if run:
                                         Mesh,
                                         Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
         relerr_KIPrime_R4_tipcorr = 100 * (np.abs(KIPrime_R4_tipcorr - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R4_tipcorr_av = 100 * np.mean(np.abs(KIPrime_R4_tipcorr - KI_ana) / KI_ana)
         results["KI R4 with tipcorr"].append(relerr_KIPrime_R4_tipcorr)
+        results["KI R4 with tipcorr av"].append(relerr_KIPrime_R4_tipcorr_av)
 
         # get the relative error w
         rel_e_R0, _ = get_err_w(sol_R0, sim_info, get_rel_err)
@@ -335,7 +347,7 @@ if run:
 
 if not run:
     with open(file_name, "r+") as json_file:
-        results = json.load(json_file)  # get the data
+        results = json.load(json_file)[0]  # get the data
 
 print("Plotting results")
 
@@ -438,6 +450,22 @@ plt.legend(('R0 - NO tip corr', 'R4 - NO tip corr','R0 - tip corr as Ryder & Nap
 plt.xscale('log')
 plt.yscale('log')
 
+# rel err KI mean
+fig1 = plt.figure()
+plt.suptitle('Radial crack test')
+
+plt.plot(results["n. of Elts"], results["KI R0 av"], c='r', marker="+")
+plt.plot(results["n. of Elts"], results["KI R4 av"], c='b', marker="+")
+plt.plot(results["n. of Elts"], results["KI R0 with tipcorr av"], c='r', marker=".")
+plt.plot(results["n. of Elts"], results["KI R4 with tipcorr av"], c='b', marker=".")
+plt.tick_params(labeltop=True, labelright=True)
+plt.grid(True, which="both", ls="-")
+
+plt.xlabel('# of DOF in the crack')
+plt.ylabel('<rel. err. KI> [%]')
+plt.legend(('R0 - NO tip corr', 'R4 - NO tip corr','R0 - tip corr as Ryder & Napier 1985', 'R4 - tip corr as Ryder & Napier 1985', 'analytical'),loc='lower left', shadow=True)
+plt.xscale('log')
+plt.yscale('log')
 # --------------------------
 # rel err w(r) (fine mesh)
 fig1 = plt.figure()
