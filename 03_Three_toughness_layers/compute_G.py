@@ -66,14 +66,7 @@ def getW(fr):
     C = load_isotropic_elasticity_matrix_toepliz(fr.mesh, Solid_A.Eprime)
     C._set_domain_IDX(fr.EltCrack)
     C._set_codomain_IDX(fr.EltCrack)
-
-    # filling fraction correction for element in the tip region
-    r = fr.FillF - .25
-    indx = np.where(np.less(r, 0.1))[0]
-    r[indx] = 0.1
-    ac = (1 - r) / r
-    correction_val = ac * np.pi / 4.
-    C._set_tipcorr(correction_val, fr.EltTip)
+    C._set_tipcorr(fr.FillF, fr.EltTip, same_domain_and_codomain = True)
 
     # solving the system using left or right preconditioner
     left_prec = True

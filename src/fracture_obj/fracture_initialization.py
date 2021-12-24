@@ -1075,15 +1075,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         elif volumeControlHMAT:
             C._set_domain_IDX(EltCrack)
             C._set_codomain_IDX(EltCrack)
-
-
-            # filling fraction correction for element in the tip region
-            r = FillFrac - .25
-            indx = np.where(np.less(r,0.1))[0]
-            r[indx] = 0.1
-            ac = (1 - r) / r
-            correction_val = ac * np.pi / 4.
-            C._set_tipcorr(correction_val, EltTip)
+            C._set_tipcorr(FillFrac, np.asarray(EltTip), same_domain_and_codomain = True)
 
             # known p
             if w is None and not p is None:
