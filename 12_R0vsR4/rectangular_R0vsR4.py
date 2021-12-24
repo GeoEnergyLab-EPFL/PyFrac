@@ -18,7 +18,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 
 # ----------------------------------------------
-run = True
+run = False
 file_name = "results_rectangular.json"
 
 if run:
@@ -131,9 +131,9 @@ if run:
     action = 'dump_this_dictionary'
     append_to_json_file(file_name, [content], action, delete_existing_filename=True)
 
-if not run:
-    with open(file_name, "r+") as json_file:
-        results = json.load(json_file)  # get the data
+
+with open(file_name, "r+") as json_file:
+    results = json.load(json_file)  # get the data
 
 print("Plotting results")
 
