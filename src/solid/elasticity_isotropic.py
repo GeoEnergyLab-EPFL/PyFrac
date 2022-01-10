@@ -13,8 +13,9 @@ from numba.typed import List
 
 # internal imports
 from solid.elasticity_toeplitz import elasticity_matrix_toepliz
-from solid.elsticity_kernels.isotropic_R0_elem import get_toeplitzCoe_isotropic
-from solid.elsticity_kernels.isotropic_R4_elem import get_toeplitzCoe_isotropic_R4
+from solid.elsticity_kernels.isotropic_R0_elem import get_toeplitzCoe_isotropic, get_R0_normal_traction_at
+from solid.elsticity_kernels.isotropic_R4_elem import get_toeplitzCoe_isotropic_R4, get_R4_normal_traction_at
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 
@@ -43,5 +44,13 @@ class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
             return get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
         elif self.Kernel == 'R0':
             return get_toeplitzCoe_isotropic(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
+        else:
+            SystemExit("Elastic kernel non supported: \n try: 'Kernel=R4' or 'Kernel=R0'")
+
+    def get_normal_traction_at(self, xy_obs, xy_crack, w_crack):
+        if self.Kernel == 'R4':
+            return get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, self.Ep, self.hx, self.hy)
+        elif self.Kernel == 'R0':
+            return get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, self.Ep, self.hx, self.hy)
         else:
             SystemExit("Elastic kernel non supported: \n try: 'Kernel=R4' or 'Kernel=R0'")

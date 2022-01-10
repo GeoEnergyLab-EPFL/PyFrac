@@ -14,6 +14,7 @@ from numba import njit, float64, prange
 
 #internal imports
 from mesh_obj.mesh import Neighbors
+from utilities.utility import get_distance_components
 
 """
   
@@ -186,3 +187,44 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
                               sig_zz_Dz_21(a, b, dx2k, dyk1) + sig_zz_Dz_22(a, b, dx2k, dyk2) + sig_zz_Dz_23(a, b, dx2k, dyk3) + \
                               sig_zz_Dz_31(a, b, dx3k, dyk1) + sig_zz_Dz_32(a, b, dx3k, dyk2) + sig_zz_Dz_33(a, b, dx3k, dyk3)
     return const * C_toeplitz_coe
+
+
+def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
+    """
+
+    :param xy_obs: array of coordinates x, y of the points where the stress is needed
+    :param xy_crack: array of coordinates x, y of the points where w is known
+    :param w: crack opening
+    :param Ep: plane strain Young's modulus
+    :param hx: mesh size in x direction
+    :param hy: mesh size in x direction
+    :return: traction at the xy_obs points
+    """
+    const = (Ep / (8. * np.pi))
+    n_xy_obs = xy_obs.shape[0]
+    n_xy_crack = xy_crack.shape[0]
+    normal_trac = np.zeros((n_xy_obs, n_xy_crack))
+    total_comp = n_xy_obs * n_xy_crack
+    a = hx / 2.
+    b = hy / 2.
+
+    for global_ind in prange(total_comp):
+        ind_obs = global_ind // n_xy_crack
+        ind_crack = global_ind - ind_obs * n_xy_crack
+        xy_obs_i = xy_obs[ind_obs,:]
+        xy_crack_i = xy_crack[ind_crack,:]
+        dx_i, dy_i = get_distance_components(xy_obs_i[0], xy_obs_i[1], xy_crack_i[0], xy_crack_i[1])
+
+        dyk1 = dy_i - 2. * hy
+        dyk2 = dy_i
+        dyk3 = dy_i + 2. * hy
+
+        dx1k = dx_i - 2. * hx
+        dx2k = dx_i
+        dx3k = dx_i + 2. * hx
+                                                       # dx    dy                         dx    dy                         dx    dy
+        normal_trac[ind_obs,ind_crack] = w_crack[ind_crack] * (sig_zz_Dz_11(a, b, dx1k, dyk1) + sig_zz_Dz_12(a, b, dx1k, dyk2) + sig_zz_Dz_13(a, b, dx1k, dyk3) +
+                              sig_zz_Dz_21(a, b, dx2k, dyk1) + sig_zz_Dz_22(a, b, dx2k, dyk2) + sig_zz_Dz_23(a, b, dx2k, dyk3) +
+                              sig_zz_Dz_31(a, b, dx3k, dyk1) + sig_zz_Dz_32(a, b, dx3k, dyk2) + sig_zz_Dz_33(a, b, dx3k, dyk3))
+
+    return const * np.sum(normal_trac, axis=1)

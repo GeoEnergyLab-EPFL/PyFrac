@@ -10,6 +10,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # External imports
 import numpy as np
 from numba import njit, prange
+from utilities.utility import get_distance_components
 
 
 def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
@@ -46,6 +47,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
     a = Mesh.hx / 2.
     b = Mesh.hy / 2.
     Ne = Mesh.NumberOfElts
+    const = (Ep / (8. * np.pi))
 
     C = np.empty([Ne, Ne], dtype=C_precision)
 
@@ -53,12 +55,21 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
         x = Mesh.CenterCoor[i, 0] - Mesh.CenterCoor[:, 0]
         y = Mesh.CenterCoor[i, 1] - Mesh.CenterCoor[:, 1]
 
-        C[i] = (Ep / (8. * np.pi)) * (
-                np.sqrt(np.square(a - x) + np.square(b - y)) / ((a - x) * (b - y)) + np.sqrt(
-            np.square(a + x) + np.square(b - y)
-        ) / ((a + x) * (b - y)) + np.sqrt(np.square(a - x) + np.square(b + y)) / ((a - x) * (b + y)) + np.sqrt(
-            np.square(a + x) + np.square(b + y)) / ((a + x) * (b + y)))
+        apx = a + x
+        amx = a - x
+        bmy = b - y
+        bpy = b + y
 
+        SQ_apx = np.square(apx)
+        SQ_amx = np.square(amx)
+        SQ_bpy = np.square(bpy)
+        SQ_bmy = np.square(bmy)
+
+        C[i] = const * (
+                np.sqrt(SQ_amx + SQ_bmy) / (amx * bmy) +
+                np.sqrt(SQ_apx + SQ_bmy) / (apx * bmy) +
+                np.sqrt(SQ_amx + SQ_bpy) / (amx * bpy) +
+                np.sqrt(SQ_apx + SQ_bpy) / (apx * bpy))
     return C
 
 
@@ -105,10 +116,15 @@ def get_toeplitzCoe_isotropic(nx, ny, hx, hy, matprop, C_precision):
         apx = a + xrange
         bmy = b - y
         bpy = b + y
-        C_toeplitz_coe[i * nx:(i + 1) * nx] = const * (np.sqrt(np.square(amx) + np.square(bmy)) / (amx * bmy)
-                                                       + np.sqrt(np.square(apx) + np.square(bmy)) / (apx * bmy)
-                                                       + np.sqrt(np.square(amx) + np.square(bpy)) / (amx * bpy)
-                                                       + np.sqrt(np.square(apx) + np.square(bpy)) / (apx * bpy))
+        SQ_amx = np.square(amx)
+        SQ_bmy = np.square(bmy)
+        SQ_apx = np.square(apx)
+        SQ_bpy = np.square(bpy)
+
+        C_toeplitz_coe[i * nx:(i + 1) * nx] = const * (np.sqrt(SQ_amx + SQ_bmy)   / (amx * bmy)
+                                                       + np.sqrt(SQ_apx + SQ_bmy) / (apx * bmy)
+                                                       + np.sqrt(SQ_amx + SQ_bpy) / (amx * bpy)
+                                                       + np.sqrt(SQ_apx + SQ_bpy) / (apx * bpy))
     return C_toeplitz_coe
 
 
@@ -129,3 +145,45 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     aa = a * a
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
+
+
+def get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
+    """
+
+    :param xy_obs: array of coordinates x, y of the points where the stress is needed
+    :param xy_crack: array of coordinates x, y of the points where w is known
+    :param w: crack opening
+    :param Ep: plane strain Young's modulus
+    :param hx: mesh size in x direction
+    :param hy: mesh size in x direction
+    :return: traction at the xy_obs points
+    """
+    const = (Ep / (8. * np.pi))
+    n_xy_obs = xy_obs.shape[0]
+    n_xy_crack = xy_crack.shape[0]
+    normal_trac = np.zeros((n_xy_obs, n_xy_crack))
+    total_comp = n_xy_obs * n_xy_crack
+    a = hx / 2.
+    b = hy / 2.
+
+    for global_ind in prange(total_comp):
+        ind_obs = global_ind // n_xy_crack
+        ind_crack = global_ind - ind_obs * n_xy_crack
+        xy_obs_i = xy_obs[ind_obs,:]
+        xy_crack_i = xy_crack[ind_crack,:]
+        dx_i, dy_i = get_distance_components(xy_obs_i[0], xy_obs_i[1], xy_crack_i[0], xy_crack_i[1])
+
+        amx = a - dx_i
+        apx = a + dx_i
+        bmy = b - dy_i
+        bpy = b + dy_i
+        SQ_amx = np.square(amx)
+        SQ_bmy = np.square(bmy)
+        SQ_apx = np.square(apx)
+        SQ_bpy = np.square(bpy)
+
+        normal_trac[ind_obs,ind_crack] = w_crack[ind_crack] * const * (np.sqrt(SQ_amx + SQ_bmy) / (amx * bmy)
+                                                       + np.sqrt(SQ_apx + SQ_bmy) / (apx * bmy)
+                                                       + np.sqrt(SQ_amx + SQ_bpy) / (amx * bpy)
+                                                       + np.sqrt(SQ_apx + SQ_bpy) / (apx * bpy))
+    return np.sum(normal_trac, axis=1)

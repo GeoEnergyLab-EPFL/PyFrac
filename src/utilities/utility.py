@@ -12,7 +12,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dill
 import requests
+from numba import njit, float64
 
+@njit((float64, float64, float64, float64), nogil=True, cache=True)
+def get_distance_components(x_i, y_i, x_j, y_j):
+    x_imj = x_i - x_j
+    y_imj = y_i - y_j
+    return x_imj, y_imj
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def getMemUse():
     # some memory statistics

@@ -832,6 +832,8 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
         ndarray-float:                  the stress intensity factor of the stagnant cells. Zero is returned for the 
                                         tip cells that are moving.
     """
+    # todo: compute Kic at all ribbon and then average!
+
     KIPrime = np.zeros((EltTip.size,), float)
     for i in range(0, len(EltTip)):
         if stagnant[i]:

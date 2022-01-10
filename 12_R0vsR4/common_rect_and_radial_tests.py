@@ -31,6 +31,12 @@ def w_radial_solution(x,y,Young,nu,p,R):
     else:
         return 0.
 
+def sig_zz_radial_solution(x,y,p,R):
+    rr = np.sqrt(x**2 + y**2)
+    rho = rr / R
+    sig_zz = - (2. * p / (np.pi)) * (np.arcsin(1. / rho) - 1. / np.sqrt(rho * rho - 1.))
+    return sig_zz
+
 
 def Volume_radial_solution(Young,nu,p,R):
     return 16./3. * p * R**3 * (1 - nu * nu)/ (Young)
