@@ -260,10 +260,10 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.right_precJ = False
 
     def reload(self, Mesh, len_eltcrack=0.):
-        hx = Mesh.hx; hy = Mesh.hy
-        nx = Mesh.nx; ny = Mesh.ny
-        Lx = Mesh.Lx; Ly = Mesh.Ly
-        self.nx = nx
+        hx = Mesh.hx; hy = Mesh.hy; self.hx = hx; self.hy = hy
+        nx = Mesh.nx; ny = Mesh.ny; self.nx = nx; self.ny = ny
+        Lx = Mesh.Lx; Ly = Mesh.Ly; self.Lx = Lx; self.Ly = Ly
+
         self.C_toeplitz_coe = self.reload_toepliz_Coe(Lx, Ly, nx, ny, hx, hy, self.mat_prop)
         #time_HMAT_build = -time.time()
         self.reload_HMAT_Coe(Mesh, self_eff = self.C_toeplitz_coe[0])
@@ -305,6 +305,9 @@ class elasticity_matrix_toepliz(LinearOperator):
         ################ END HMAT dot SECTION ######################
 
     def reload_toepliz_Coe(self, Lx, Ly, nx, ny, hx, hy, mat_prop):
+        raise NotImplementedError()
+
+    def get_normal_traction_at(self,  xy_obs, xy_crack):
         raise NotImplementedError()
 
     def reload_dot(self, Mesh):
