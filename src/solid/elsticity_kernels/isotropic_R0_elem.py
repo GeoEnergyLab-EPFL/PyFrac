@@ -125,7 +125,7 @@ def get_toeplitzCoe_isotropic(nx, ny, hx, hy, matprop, C_precision):
                                                        + np.sqrt(SQ_apx + SQ_bmy) / (apx * bmy)
                                                        + np.sqrt(SQ_amx + SQ_bpy) / (amx * bpy)
                                                        + np.sqrt(SQ_apx + SQ_bpy) / (apx * bpy))
-    return C_toeplitz_coe
+    return C_toeplitz_coe[0], C_toeplitz_coe
 
 
 def get_isotropic_el_self_eff(hx, hy, Ep):

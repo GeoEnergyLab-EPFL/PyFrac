@@ -139,6 +139,11 @@ def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
 
 @njit(fastmath=True, nogil=True, parallel=True, cache=True)
 def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
+    ##############################
+    ##  UNUSED AT THE MOMENT    ##
+    ##  NEED TO BE REWRITTEN    ##
+    ##  IN CASE OF R4 ELEM      ##
+    ##############################
     # coeff9stencilC contains [C_0dx_0dy, C_1dx_0dy, C_0dx_1dy, C_1dx_1dy]
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
@@ -225,7 +230,12 @@ class elasticity_matrix_toepliz(LinearOperator):
 
     """
 
-    def __init__(self, Mesh, mat_prop, elas_prop_HMAT, C_precision=np.float64, useHMATdot=False, kerneltype = 'Isotropic', HMATparam = None):
+    def __init__(self, Mesh, mat_prop, elas_prop_HMAT, C_precision=np.float64, useHMATdot=False,
+                 kerneltype = 'Isotropic',
+                 HMATparam = None,
+                 f_matvec_fast = matvec_fast,
+                 f_getFast = getFast,
+                 f_getFast_sparseC = getFast_sparseC):
         """
             Arguments:
                 Mesh:                           -- Cartesian Mesh object
@@ -236,6 +246,11 @@ class elasticity_matrix_toepliz(LinearOperator):
                 Ep (float):                     -- plain strain modulus.
                 C_precision (type):             -- accuracy of the entries e.g.: np.float64
         """
+        # this is because R4 requires different functions whereas R0 and TI does not
+        self.f_matvec_fast = f_matvec_fast
+        self.f_getFast = f_getFast
+        self.f_getFast_sparseC = f_getFast_sparseC
+
         self.C_precision = C_precision
         self.useHMATdot = useHMATdot
         if useHMATdot:
@@ -264,9 +279,9 @@ class elasticity_matrix_toepliz(LinearOperator):
         nx = Mesh.nx; ny = Mesh.ny; self.nx = nx; self.ny = ny
         Lx = Mesh.Lx; Ly = Mesh.Ly; self.Lx = Lx; self.Ly = Ly
 
-        self.C_toeplitz_coe = self.reload_toepliz_Coe(Lx, Ly, nx, ny, hx, hy, self.mat_prop)
+        self.diag_val, self.C_toeplitz_coe = self.reload_toepliz_Coe(Lx, Ly, nx, ny, hx, hy, self.mat_prop)
         #time_HMAT_build = -time.time()
-        self.reload_HMAT_Coe(Mesh, self_eff = self.C_toeplitz_coe[0])
+        self.reload_HMAT_Coe(Mesh, self_eff = self.diag_val)
         #time_HMAT_build = time_HMAT_build + time.time()
         # file_name = '/home/peruzzo/Desktop/test_EHL_direct_vs_iter/iterT_recomputingHMAT.csv'
         # append_new_line(file_name,
@@ -315,18 +330,23 @@ class elasticity_matrix_toepliz(LinearOperator):
         nx = Mesh.nx
 
         # to build a fast precoditioner for iterative solver see (Peirce A., 2015)
-        C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe))
-        C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
-        C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
-        self.C_toeplitz_coe_decay = List(C_toeplitz_coe_exp.tolist())  # between 0 and 1
-        self.coeff9stencilC = [self.C_toeplitz_coe[0],  # 0 dx 0 dy
-                               self.C_toeplitz_coe[1],  # 1 dx 0 dy
-                               self.C_toeplitz_coe[nx],  # 0 dx 1 dy
-                               self.C_toeplitz_coe[nx + 1]  # 1 dx 1 dy
-                               ]
+        if len(self.C_toeplitz_coe.shape) == 1:
+            C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe))
+            C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
+            C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
+            self.C_toeplitz_coe_decay = List(C_toeplitz_coe_exp.tolist())  # between 0 and 1
+        else:
+            C_toeplitz_coe_exp = np.log(np.abs(self.C_toeplitz_coe[0,:]))
+            C_toeplitz_coe_exp = C_toeplitz_coe_exp - C_toeplitz_coe_exp[-1]
+            C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
+            self.C_toeplitz_coe_decay = List(C_toeplitz_coe_exp.tolist())  # between 0 and 1
 
-        # diagonal value of the matrix
-        self.diag_val = self.C_toeplitz_coe[0]
+        #### NOT USED: IN THE FUTURE IT CAN BE DELETED WITH THE RELATED FUNCTION #####
+        # self.coeff9stencilC = [self.C_toeplitz_coe[0],  # 0 dx 0 dy
+        #                        self.C_toeplitz_coe[1],  # 1 dx 0 dy
+        #                        self.C_toeplitz_coe[nx],  # 0 dx 1 dy
+        #                        self.C_toeplitz_coe[nx + 1]  # 1 dx 1 dy
+        #                        ]
 
         # define the size = number of elements in the mesh
         self.C_size_ = int(Mesh.nx * Mesh.ny)
@@ -354,7 +374,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
         elemX = elementsXY[1].flatten()
         elemY = elementsXY[0].flatten()
-        return getFast(elemX, elemY, self.nx, self.C_toeplitz_coe, self.C_precision)
+        return self.f_getFast(elemX, elemY, self.nx, self.C_toeplitz_coe, self.C_precision)
 
 
     def _matvec_fast(self, uk):
@@ -362,7 +382,7 @@ class elasticity_matrix_toepliz(LinearOperator):
             return self.HMAT._matvec(uk)
         else:
             #mv_time = - time.time()
-            aa= matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+            aa= self.f_matvec_fast(np.float64(uk), self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                                self.C_toeplitz_coe, self.C_precision)
             #mv_time = mv_time + time.time()
 
@@ -373,7 +393,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
     def _matvec(self, uk):
         if not self.enable_tip_corr and not self.left_precJ and not self.right_precJ:
-            return matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+            return self.f_matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                                self.C_toeplitz_coe, self.C_precision)
 
         elif self.enable_tip_corr:
@@ -383,7 +403,7 @@ class elasticity_matrix_toepliz(LinearOperator):
             # the tip correction acts only on the diagonal elements, so:
             # (A+tipcorr*I)*uk = A*uk+tipcorr*I*uk
             # compute A*uk
-            res = matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
+            res = self.f_matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
                               self.C_toeplitz_coe, self.C_precision)
 
             if self.left_precJ:
@@ -499,7 +519,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _get9stencilC(self, elmts, decay_tshold=0.9, probability=0.15):
-        data, rows, cols, dimX = getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
+        data, rows, cols, dimX = self.f_getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
                                                  elmts, self.nx,
                                                  decay_tshold=decay_tshold, probability=probability)
         return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=self.C_precision).tocsc()
