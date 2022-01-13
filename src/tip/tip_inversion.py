@@ -832,6 +832,7 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
         ndarray-float:                  the stress intensity factor of the stagnant cells. Zero is returned for the 
                                         tip cells that are moving.
     """
+    log = logging.getLogger('PyFrac.StressIntensityFactor')
     # todo: compute Kic at all ribbon and then average!
 
     KIPrime = np.zeros((EltTip.size,), float)
@@ -849,10 +850,21 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
 
             if InRibbon.size == 1:
                 KIPrime[i] = w[InRibbon[0]] * Eprime[i] / (-lvlSetData[InRibbon[0]]) ** 0.5
-            elif InRibbon.size > 1:  # evaluate using least squares method
-                KIPrime[i] = Eprime[i] * (w[InRibbon[0]] * (-lvlSetData[InRibbon[0]]) ** 0.5 + w[InRibbon[1]] * (
-                    -lvlSetData[InRibbon[1]]) ** 0.5) / (-lvlSetData[InRibbon[0]] - lvlSetData[InRibbon[1]])
+
+            elif InRibbon.size > 1:  # evaluate using linear least squares method
+                num = 0.; den = 0.
+                for rib in np.arange(len(InRibbon)):
+                    num = num + w[InRibbon[rib]] * (-lvlSetData[InRibbon[rib]]) ** 0.5
+                    den = den - lvlSetData[InRibbon[rib]]
+
+                KIPrime[i] = Eprime[i] * num /den
+
+                # As the paper: case of 2 cracks
+                # KIPrime[i] = Eprime[i] * (w[InRibbon[0]] * (-lvlSetData[InRibbon[0]]) ** 0.5 + w[InRibbon[1]] * (
+                #     -lvlSetData[InRibbon[1]]) ** 0.5) / (-lvlSetData[InRibbon[0]] - lvlSetData[InRibbon[1]])
+
             else:  # ribbon cells not found in enclosure, evaluating with the closest ribbon cell
+                log.warning("ribbon cells not found in enclosure of the tip, evaluating with the closest ribbon cell")
                 RibbonCellsDist = ((mesh.CenterCoor[EltRibbon, 0] - mesh.CenterCoor[EltTip[i], 0]) ** 2 + (
                     mesh.CenterCoor[EltRibbon, 1] - mesh.CenterCoor[EltTip[i], 1]) ** 2) ** 0.5
                 closest = EltRibbon[np.argmin(RibbonCellsDist)]
