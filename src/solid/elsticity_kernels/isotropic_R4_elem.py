@@ -11,6 +11,9 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import cmath as cm
 import numpy as np
 from numba import njit, float64, prange
+from scipy.sparse import coo_matrix
+from numba import config
+from numba.typed import List
 
 #internal imports
 from mesh_obj.mesh import Neighbors
@@ -107,6 +110,20 @@ def sig_zz_Dz_33(a, b, x1, x2):
     return ((0.03125*x1**2*x2*cm.sqrt(Q_x1ma_p_Q_x2mb))/(aa*b*(x1ma)*(x2mb)) + (0.03125*x1*x2**2*cm.sqrt(Q_x1ma_p_Q_x2mb))/(a*bb*(x1ma)*(x2mb)) + (0.015625*x1**2*x2**2*cm.sqrt(Q_x1ma_p_Q_x2mb))/(aa*bb*(x1ma)*(x2mb)) - (0.03125*x1**2*x2*cm.sqrt(Q_x1pa_p_Q_x2mb))/(aa*b*x1pa*(x2mb)) - (0.03125*x1*x2**2*cm.sqrt(Q_x1pa_p_Q_x2mb))/(a*bb*x1pa*(x2mb)) - (0.015625*x1**2*x2**2*cm.sqrt(Q_x1pa_p_Q_x2mb))/(aa*bb*x1pa*(x2mb)) - (0.03125*x1**2*x2*cm.sqrt(Q_x1ma + Q_x2pb))/(aa*b*(x1ma)*x2pb) - (0.03125*x1*x2**2*cm.sqrt(Q_x1ma + Q_x2pb))/(a*bb*(x1ma)*x2pb) - (0.015625*x1**2*x2**2*cm.sqrt(Q_x1ma + Q_x2pb))/(aa*bb*(x1ma)*x2pb) + (0.03125*x1**2*x2*cm.sqrt(Q_x1pa + Q_x2pb))/(aa*b*x1pa*x2pb) + (0.03125*x1*x2**2*cm.sqrt(Q_x1pa + Q_x2pb))/(a*bb*x1pa*x2pb) + (0.015625*x1**2*x2**2*cm.sqrt(Q_x1pa + Q_x2pb))/(aa*bb*x1pa*x2pb) + (0.0625*(Q_x1ma/cm.sqrt(Q_x1ma_p_Q_x2mb) - (Q_x1pa)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x1ma)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x1pa/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*b) + (0.0625*x1*(Q_x1ma/cm.sqrt(Q_x1ma_p_Q_x2mb) - (Q_x1pa)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x1ma)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x1pa/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) + (0.0625*x2*(Q_x1ma/cm.sqrt(Q_x1ma_p_Q_x2mb) - (Q_x1pa)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x1ma)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x1pa/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) + (0.0625*x1*x2*(Q_x1ma/cm.sqrt(Q_x1ma_p_Q_x2mb) - (Q_x1pa)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x1ma)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x1pa/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.015625*((-(x1ma)**3)/cm.sqrt(Q_x1ma_p_Q_x2mb) + x1pa**3/cm.sqrt(Q_x1pa_p_Q_x2mb) + (x1ma)**3/cm.sqrt(Q_x1ma + Q_x2pb) - (x1pa**3)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) + (0.015625*x2*((-(x1ma)**3)/cm.sqrt(Q_x1ma_p_Q_x2mb) + x1pa**3/cm.sqrt(Q_x1pa_p_Q_x2mb) + (x1ma)**3/cm.sqrt(Q_x1ma + Q_x2pb) - (x1pa**3)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.015625*((-Q_x1ma*(x2mb))/cm.sqrt(Q_x1ma_p_Q_x2mb) + (Q_x1pa*(x2mb))/cm.sqrt(Q_x1pa_p_Q_x2mb) + (Q_x1ma*x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) - (Q_x1pa*x2pb)/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) + (0.015625*x1*((-Q_x1ma*(x2mb))/cm.sqrt(Q_x1ma_p_Q_x2mb) + (Q_x1pa*(x2mb))/cm.sqrt(Q_x1pa_p_Q_x2mb) + (Q_x1ma*x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) - (Q_x1pa*x2pb)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.005208333333333333*(((x1ma)**3*(x2mb))/cm.sqrt(Q_x1ma_p_Q_x2mb) - (x1pa**3*(x2mb))/cm.sqrt(Q_x1pa_p_Q_x2mb) - ((x1ma)**3*x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) + (x1pa**3*x2pb)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.0625*((x2mb)**2/cm.sqrt(Q_x1ma_p_Q_x2mb) - ((x2mb)**2)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*b) + (0.0625*x1*((x2mb)**2/cm.sqrt(Q_x1ma_p_Q_x2mb) - ((x2mb)**2)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) + (0.0625*x2*((x2mb)**2/cm.sqrt(Q_x1ma_p_Q_x2mb) - ((x2mb)**2)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) + (0.0625*x1*x2*((x2mb)**2/cm.sqrt(Q_x1ma_p_Q_x2mb) - ((x2mb)**2)/cm.sqrt(Q_x1pa_p_Q_x2mb) - (Q_x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) + Q_x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.015625*((-(x1ma)*Q_x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb) + (x1pa*Q_x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb) + ((x1ma)*Q_x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) - (x1pa*Q_x2pb)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) + (0.015625*x2*((-(x1ma)*Q_x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb) + (x1pa*Q_x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb) + ((x1ma)*Q_x2pb)/cm.sqrt(Q_x1ma + Q_x2pb) - (x1pa*Q_x2pb)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.015625*((-(x2mb)**3)/cm.sqrt(Q_x1ma_p_Q_x2mb) + (x2mb)**3/cm.sqrt(Q_x1pa_p_Q_x2mb) + x2pb**3/cm.sqrt(Q_x1ma + Q_x2pb) - (x2pb**3)/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) + (0.015625*x1*((-(x2mb)**3)/cm.sqrt(Q_x1ma_p_Q_x2mb) + (x2mb)**3/cm.sqrt(Q_x1pa_p_Q_x2mb) + x2pb**3/cm.sqrt(Q_x1ma + Q_x2pb) - (x2pb**3)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.005208333333333333*(((x1ma)*(x2mb)**3)/cm.sqrt(Q_x1ma_p_Q_x2mb) - (x1pa*(x2mb)**3)/cm.sqrt(Q_x1pa_p_Q_x2mb) - ((x1ma)*x2pb**3)/cm.sqrt(Q_x1ma + Q_x2pb) + (x1pa*x2pb**3)/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.0625*x1*x2*(cm.sqrt(Q_x1ma_p_Q_x2mb)/((x1ma)*(x2mb)) - (cm.sqrt(Q_x1pa_p_Q_x2mb))/(x1pa*(x2mb)) - (cm.sqrt(Q_x1ma + Q_x2pb))/((x1ma)*x2pb) + cm.sqrt(Q_x1pa + Q_x2pb)/(x1pa*x2pb)))/(a*b) + (0.03125*x2*((-cm.sqrt((b - x2)**2)*(x2mb)*cm.sqrt(1. + Q_x1ma/Q_x2mb)*cm.asinh((x1ma)/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1ma_p_Q_x2mb) + (cm.sqrt((b - x2)**2)*(x2mb)*cm.sqrt(1. + Q_x1pa/Q_x2mb)*cm.asinh(x1pa/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1pa_p_Q_x2mb) + (x2pb*cm.sqrt(Q_x2pb)*cm.sqrt(1. + Q_x1ma/Q_x2pb)*cm.asinh((x1ma)/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1ma + Q_x2pb) - (x2pb*cm.sqrt(Q_x2pb)*cm.sqrt(1. + Q_x1pa/Q_x2pb)*cm.asinh(x1pa/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) + (0.015625*x2**2*((-cm.sqrt((b - x2)**2)*(x2mb)*cm.sqrt(1. + Q_x1ma/Q_x2mb)*cm.asinh((x1ma)/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1ma_p_Q_x2mb) + (cm.sqrt((b - x2)**2)*(x2mb)*cm.sqrt(1. + Q_x1pa/Q_x2mb)*cm.asinh(x1pa/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1pa_p_Q_x2mb) + (x2pb*cm.sqrt(Q_x2pb)*cm.sqrt(1. + Q_x1ma/Q_x2pb)*cm.asinh((x1ma)/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1ma + Q_x2pb) - (x2pb*cm.sqrt(Q_x2pb)*cm.sqrt(1. + Q_x1pa/Q_x2pb)*cm.asinh(x1pa/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.005208333333333333*((-cm.sqrt((b - x2)**2)*(x2mb)**3*cm.sqrt(1. + Q_x1ma/Q_x2mb)*cm.asinh((x1ma)/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1ma_p_Q_x2mb) + (cm.sqrt((b - x2)**2)*(x2mb)**3*cm.sqrt(1. + Q_x1pa/Q_x2mb)*cm.asinh(x1pa/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1pa_p_Q_x2mb) + (x2pb**3*cm.sqrt(Q_x2pb)*cm.sqrt(1. + Q_x1ma/Q_x2pb)*cm.asinh((x1ma)/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1ma + Q_x2pb) - (x2pb**3*cm.sqrt(Q_x2pb)*cm.sqrt(1. + Q_x1pa/Q_x2pb)*cm.asinh(x1pa/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.015625*((((b - x2)**2)**(3/2)*cm.sqrt(1. + Q_x1ma/Q_x2mb)*cm.asinh((x1ma)/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1ma_p_Q_x2mb) - (((b - x2)**2)**(3/2)*cm.sqrt(1. + Q_x1pa/Q_x2mb)*cm.asinh(x1pa/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1pa_p_Q_x2mb) - ((Q_x2pb)**(3/2)*cm.sqrt(1. + Q_x1ma/Q_x2pb)*cm.asinh((x1ma)/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1ma + Q_x2pb) + ((Q_x2pb)**(3/2)*cm.sqrt(1. + Q_x1pa/Q_x2pb)*cm.asinh(x1pa/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) + (0.015625*x2*((((b - x2)**2)**(3/2)*cm.sqrt(1. + Q_x1ma/Q_x2mb)*cm.asinh((x1ma)/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1ma_p_Q_x2mb) - (((b - x2)**2)**(3/2)*cm.sqrt(1. + Q_x1pa/Q_x2mb)*cm.asinh(x1pa/cm.sqrt((x2mb)**2)))/cm.sqrt(Q_x1pa_p_Q_x2mb) - ((Q_x2pb)**(3/2)*cm.sqrt(1. + Q_x1ma/Q_x2pb)*cm.asinh((x1ma)/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1ma + Q_x2pb) + ((Q_x2pb)**(3/2)*cm.sqrt(1. + Q_x1pa/Q_x2pb)*cm.asinh(x1pa/cm.sqrt(Q_x2pb)))/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.0625*x1*x2*(cm.atanh(cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)/(a - x1)) + cm.atanh(cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)/x1pa) + cm.atanh(cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)/(x1ma)) - cm.atanh(cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)/x1pa)))/(a*bb) + (0.015625*Q_x1ma*cm.atanh((x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb)))/(a*bb) + (0.015625*x1*Q_x1ma*cm.atanh((x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb)))/(aa*bb) - (0.0625*x2*cm.atanh((x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb)))/(a*b) - (0.0625*x1*x2*cm.atanh((x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb)))/(aa*b) - (0.03125*x2**2*cm.atanh((x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb)))/(a*bb) - (0.03125*x1*x2**2*cm.atanh((x2mb)/cm.sqrt(Q_x1ma_p_Q_x2mb)))/(aa*bb) - (0.015625*Q_x1pa*cm.atanh((x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb)))/(a*bb) - (0.015625*x1*Q_x1pa*cm.atanh((x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb)))/(aa*bb) + (0.0625*x2*cm.atanh((x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb)))/(a*b) + (0.0625*x1*x2*cm.atanh((x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb)))/(aa*b) + (0.03125*x2**2*cm.atanh((x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb)))/(a*bb) + (0.03125*x1*x2**2*cm.atanh((x2mb)/cm.sqrt(Q_x1pa_p_Q_x2mb)))/(aa*bb) - (0.015625*Q_x1ma*cm.atanh(x2pb/cm.sqrt(Q_x1ma + Q_x2pb)))/(a*bb) - (0.015625*x1*Q_x1ma*cm.atanh(x2pb/cm.sqrt(Q_x1ma + Q_x2pb)))/(aa*bb) + (0.0625*x2*cm.atanh(x2pb/cm.sqrt(Q_x1ma + Q_x2pb)))/(a*b) + (0.0625*x1*x2*cm.atanh(x2pb/cm.sqrt(Q_x1ma + Q_x2pb)))/(aa*b) + (0.03125*x2**2*cm.atanh(x2pb/cm.sqrt(Q_x1ma + Q_x2pb)))/(a*bb) + (0.03125*x1*x2**2*cm.atanh(x2pb/cm.sqrt(Q_x1ma + Q_x2pb)))/(aa*bb) + (0.015625*Q_x1pa*cm.atanh(x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) + (0.015625*x1*Q_x1pa*cm.atanh(x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) - (0.0625*x2*cm.atanh(x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*b) - (0.0625*x1*x2*cm.atanh(x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*b) - (0.03125*x2**2*cm.atanh(x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) - (0.03125*x1*x2**2*cm.atanh(x2pb/cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) + (0.03125*x1*(-cm.log(a - x1 - cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)) + cm.log((a - x1 + cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2))/(a - x1)) - cm.log(a + x1 - cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)) + cm.log((a + x1 + cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2))/x1pa) + cm.log(a - x1 - cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)) - cm.log((a - x1 + cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2))/(a - x1)) + cm.log(a + x1 - cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)) - cm.log((a + x1 + cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2))/x1pa)))/(a*b) + (0.015625*x1**2*(-cm.log(a - x1 - cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)) + cm.log((a - x1 + cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2))/(a - x1)) - cm.log(a + x1 - cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)) + cm.log((a + x1 + cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2))/x1pa) + cm.log(a - x1 - cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)) - cm.log((a - x1 + cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2))/(a - x1)) + cm.log(a + x1 - cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)) - cm.log((a + x1 + cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2))/x1pa)))/(aa*b) + (0.015625*x1**2*x2*(-cm.log(a - x1 - cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)) + cm.log((a - x1 + cm.sqrt(aa + bb - 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2))/(a - x1)) - cm.log(a + x1 - cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2)) + cm.log((a + x1 + cm.sqrt(aa + bb + 2.*a*x1 + x1**2 - 2.*b*x2 + x2**2))/x1pa) + cm.log(a - x1 - cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)) - cm.log((a - x1 + cm.sqrt(aa + bb - 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2))/(a - x1)) + cm.log(a + x1 - cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2)) - cm.log((a + x1 + cm.sqrt(aa + bb + 2.*a*x1 + x1**2 + 2.*b*x2 + x2**2))/x1pa)))/(aa*bb) - (0.03125*x1*(x1ma)*cm.log(x2mb + cm.sqrt(Q_x1ma_p_Q_x2mb)))/(a*bb) - (0.015625*x1**2*(x1ma)*cm.log(x2mb + cm.sqrt(Q_x1ma_p_Q_x2mb)))/(aa*bb) - (0.005208333333333333*(x1ma)**3*cm.log(x2mb + cm.sqrt(Q_x1ma_p_Q_x2mb)))/(aa*bb) + (0.03125*x1*x1pa*cm.log(x2mb + cm.sqrt(Q_x1pa_p_Q_x2mb)))/(a*bb) + (0.015625*x1**2*x1pa*cm.log(x2mb + cm.sqrt(Q_x1pa_p_Q_x2mb)))/(aa*bb) + (0.005208333333333333*x1pa**3*cm.log(x2mb + cm.sqrt(Q_x1pa_p_Q_x2mb)))/(aa*bb) + (0.03125*x1*(x1ma)*cm.log(b + x2 + cm.sqrt(Q_x1ma + Q_x2pb)))/(a*bb) + (0.015625*x1**2*(x1ma)*cm.log(b + x2 + cm.sqrt(Q_x1ma + Q_x2pb)))/(aa*bb) + (0.005208333333333333*(x1ma)**3*cm.log(b + x2 + cm.sqrt(Q_x1ma + Q_x2pb)))/(aa*bb) - (0.03125*x1*x1pa*cm.log(b + x2 + cm.sqrt(Q_x1pa + Q_x2pb)))/(a*bb) - (0.015625*x1**2*x1pa*cm.log(b + x2 + cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb) - (0.005208333333333333*x1pa**3*cm.log(b + x2 + cm.sqrt(Q_x1pa + Q_x2pb)))/(aa*bb)).real
 # -------- KERNELS END --------
 
+@njit(float64(float64, float64, float64, float64, float64, float64, float64), nogil=True, cache=True)
+def isotropic_R4_kernel(dx, dy, hx, hy, a, b, const):
+    dx1 = dx + hx
+    dx2 = dx
+    dx3 = dx - hx
+
+    dy1 = dy + hy
+    dy2 = dy
+    dy3 = dy - hy
+
+    return const * (sig_zz_Dz_11(a, b, dx1, dy1) + sig_zz_Dz_12(a, b, dx1, dy2) + sig_zz_Dz_13(a, b, dx1, dy3) +
+                          sig_zz_Dz_21(a, b, dx2, dy1) + sig_zz_Dz_22(a, b, dx2, dy2) + sig_zz_Dz_23(a, b, dx2, dy3) +
+                          sig_zz_Dz_31(a, b, dx3, dy1) + sig_zz_Dz_32(a, b, dx3, dy2) + sig_zz_Dz_33(a, b, dx3, dy3))
+
 
 @njit(fastmath=True, nogil=True, parallel=True, cache=True)
 def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
@@ -148,7 +165,7 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
     Matematically speaking:
     for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
     """
-    C_toeplitz_coe = np.empty(ny * nx, dtype=C_precision)
+    C_toeplitz_coe = np.empty((2, ny * nx), dtype=C_precision)
     Ep = matprop[0]
     const = (Ep / (8. * np.pi))
 
@@ -175,18 +192,39 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
         i = ind // nx
         j = ind - i * nx
 
-        dyk1 = (i - 2) * hy
-        dyk2 = i * hy
-        dyk3 = (i + 2) * hy
+        # dyk1 = (i - 2) * hy
+        # dyk2 = i * hy
+        # dyk3 = (i + 2) * hy
+        #
+        # dx1k = (j - 2) * hx
+        # dx2k = j * hx
+        # dx3k = (j + 2) * hx
+        #                                                # dx    dy                         dx    dy                         dx    dy
+        # C_toeplitz_coe[ind] = sig_zz_Dz_11(a, b, dx1k, dyk1) + sig_zz_Dz_12(a, b, dx1k, dyk2) + sig_zz_Dz_13(a, b, dx1k, dyk3) + \
+        #                       sig_zz_Dz_21(a, b, dx2k, dyk1) + sig_zz_Dz_22(a, b, dx2k, dyk2) + sig_zz_Dz_23(a, b, dx2k, dyk3) + \
+        #                       sig_zz_Dz_31(a, b, dx3k, dyk1) + sig_zz_Dz_32(a, b, dx3k, dyk2) + sig_zz_Dz_33(a, b, dx3k, dyk3)
 
-        dx1k = (j - 2) * hx
-        dx2k = j * hx
-        dx3k = (j + 2) * hx
-                                                       # dx    dy                         dx    dy                         dx    dy
-        C_toeplitz_coe[ind] = sig_zz_Dz_11(a, b, dx1k, dyk1) + sig_zz_Dz_12(a, b, dx1k, dyk2) + sig_zz_Dz_13(a, b, dx1k, dyk3) + \
-                              sig_zz_Dz_21(a, b, dx2k, dyk1) + sig_zz_Dz_22(a, b, dx2k, dyk2) + sig_zz_Dz_23(a, b, dx2k, dyk3) + \
-                              sig_zz_Dz_31(a, b, dx3k, dyk1) + sig_zz_Dz_32(a, b, dx3k, dyk2) + sig_zz_Dz_33(a, b, dx3k, dyk3)
-    return const * C_toeplitz_coe
+        # dx1 = (j + 1) * hx
+        # dx2 = j * hx
+        # dx3 = (j - 1) * hx
+        #
+        # dy1 = (i + 1) * hy
+        # dy2 = i * hy
+        # dy3 = (i - 1) * hy
+        # C_toeplitz_coe[ind] = sig_zz_Dz_11(a, b, dx1, dy1) + sig_zz_Dz_12(a, b, dx1, dy2) + sig_zz_Dz_13(a, b, dx1, dy3) + \
+        #                       sig_zz_Dz_21(a, b, dx2, dy1) + sig_zz_Dz_22(a, b, dx2, dy2) + sig_zz_Dz_23(a, b, dx2, dy3) + \
+        #                       sig_zz_Dz_31(a, b, dx3, dy1) + sig_zz_Dz_32(a, b, dx3, dy2) + sig_zz_Dz_33(a, b, dx3, dy3)
+        # C_toeplitz_coe[ind] = sig_zz_Dz_11(a, b, dx1, dy1) + sig_zz_Dz_21(a, b, dx1, dy2) + sig_zz_Dz_31(a, b, dx1, dy3) + \
+        #                       sig_zz_Dz_12(a, b, dx2, dy1) + sig_zz_Dz_22(a, b, dx2, dy2) + sig_zz_Dz_32(a, b, dx2, dy3) + \
+        #                       sig_zz_Dz_13(a, b, dx3, dy1) + sig_zz_Dz_23(a, b, dx3, dy2) + sig_zz_Dz_33(a, b, dx3, dy3)
+
+        dx = j * hx
+        dy = i * hy
+
+        C_toeplitz_coe[0, ind] = isotropic_R4_kernel(dx, dy, hx, hy, a, b, const)
+        C_toeplitz_coe[1, ind] = isotropic_R4_kernel(-dx, dy, hx, hy, a, b, const)
+    #return const * C_toeplitz_coe
+    return C_toeplitz_coe[0,0], C_toeplitz_coe
 
 
 def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
@@ -228,3 +266,184 @@ def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
                               sig_zz_Dz_31(a, b, dx3k, dyk1) + sig_zz_Dz_32(a, b, dx3k, dyk2) + sig_zz_Dz_33(a, b, dx3k, dyk3))
 
     return const * np.sum(normal_trac, axis=1)
+
+
+
+
+@njit(parallel=True, fastmath=True, nogil=True, cache=True)  # <------parallel compilation
+def matvec_fast_R4(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
+    # uk (numpy array), vector to which multiply the matrix C
+    # nx (int), n. of element in x direction in the cartesian mesh
+    # elemX (numpy array), IDs of elements to consider on x axis of the mesh
+    # elemY (numpy array), IDs of elements to consider on y axis of the mesh
+    # dimY (int), length(elemY) = length(elemX)
+    # C_toeplitz_coe (numpy ndarray), matrix containing the 2N unique coefficients used to build the matrix C of size NxN
+    # C_precision (e.g.: float)
+
+    # 1) vector where to store the result of the dot product
+    res = np.empty(dimY, dtype=C_precision)
+
+    # 2) some indexes to build the row of a submatrix of C from the array of its unique entries
+    iY = np.floor_divide(elemY, nx)
+    jY = elemY - nx * iY
+    iX = np.floor_divide(elemX, nx)
+    jX = elemX - nx * iX
+
+    iX *= nx
+    iY *= nx
+
+    # 3)loop over the rows of the matrix
+    for iter1 in prange(dimY):
+        # 4) get the indexes to access the array of C unique entries
+        # 5) assembly a matrix row and execute the dot product
+        # 6) execute the dot product
+        dj = jX - jY[iter1]
+        di = iX - iY[iter1]
+        djdi = (dj > 0.) == (di > 0.)
+        dj = np.abs(dj)
+        di = np.abs(di)
+        row = np.empty(dimY, dtype=C_precision)
+
+        for local_ind in range(dimY):
+            if djdi[local_ind]:
+                row[local_ind] = C_toeplitz_coe[0, dj[local_ind] + di[local_ind]] # dj>0 & di>0 OR dj<0 & di<0
+            else:
+                row[local_ind] = C_toeplitz_coe[1, dj[local_ind] + di[local_ind]] # dj<0 & di>0 OR dj>0 & di<0
+        res[iter1] = np.dot(row, uk)
+    return res
+
+
+@njit(fastmath=True, nogil=True, parallel=True, cache=True)
+def getFast_R4(elemX, elemY, nx, C_toeplitz_coe, C_precision):
+    dimX = elemX.size  # number of elements to consider on x axis
+    dimY = elemY.size  # number of elements to consider on y axis
+
+    if dimX == 0 or dimY == 0:
+        return np.empty((dimY, dimX), dtype=C_precision)
+    else:
+        C_sub = np.empty((dimY, dimX), dtype=C_precision)  # submatrix of C
+        # localC_toeplotz_coe = np.copy(C_toeplitz_coe)  # local access is faster
+        localC_toeplotz_coe = C_toeplitz_coe
+        if dimX != dimY:
+            iY = np.floor_divide(elemY, nx)
+            jY = elemY - nx * iY
+            iX = np.floor_divide(elemX, nx)
+            jX = elemX - nx * iX
+            for iter1 in prange(dimY):
+                # to be deleted next 3 lines:
+                # i1 = iY[iter1]
+                # j1 = jY[iter1]
+                # C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+
+                i1 = iY[iter1]
+                j1 = jY[iter1]
+                dj = j1 - jX
+                di = i1 - iX
+                djdi = (dj > 0.) == (di > 0.)
+                dj = np.abs(dj)
+                di = nx * np.abs(di)
+
+                for local_ind in range(dimX):
+                    if djdi[local_ind]:
+                        C_sub[iter1, local_ind] = C_toeplitz_coe[0, dj[local_ind] + di[local_ind]]  # dj>0 & di>0 OR dj<0 & di<0
+                    else:
+                        C_sub[iter1, local_ind] = C_toeplitz_coe[1, dj[local_ind] + di[local_ind]]  # dj<0 & di>0 OR dj>0 & di<0
+            return C_sub
+
+        elif dimX == dimY and np.all((elemY == elemX)):
+            i = np.floor_divide(elemX, nx)
+            j = elemX - nx * i
+
+            for iter1 in prange(dimX):
+                # to be deleted next 3 lines:
+                # i1 = i[iter1]
+                # j1 = j[iter1]
+                # C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j - j1) + nx * np.abs(i - i1)]
+
+                i1 = i[iter1]
+                j1 = j[iter1]
+                dj = j - j1
+                di = i - i1
+                djdi = (dj > 0.) == (di > 0.)
+                dj = np.abs(dj)
+                di = nx * np.abs(di)
+
+                for local_ind in range(dimX):
+                    if djdi[local_ind]:
+                        C_sub[iter1, local_ind] = C_toeplitz_coe[0, dj[local_ind] + di[local_ind]]  # dj>0 & di>0 OR dj<0 & di<0
+                    else:
+                        C_sub[iter1, local_ind] = C_toeplitz_coe[1, dj[local_ind] + di[local_ind]]  # dj<0 & di>0 OR dj>0 & di<0
+
+            return C_sub
+
+        else:
+            iY = np.floor_divide(elemY, nx)
+            jY = elemY - nx * iY
+            iX = np.floor_divide(elemX, nx)
+            jX = elemX - nx * iX
+
+            for iter1 in prange(dimY):
+                # to be deleted next 3 lines:
+                # i1 = iY[iter1]
+                # j1 = jY[iter1]
+                # C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
+
+                i1 = iY[iter1]
+                j1 = jY[iter1]
+                dj = j1 - jX
+                di = i1 - iX
+                djdi = (dj > 0.) == (di > 0.)
+                dj = np.abs(dj)
+                di = nx * np.abs(di)
+
+                for local_ind in range(dimX):
+                    if djdi[local_ind]:
+                        C_sub[iter1, local_ind] = C_toeplitz_coe[0, dj[local_ind] + di[local_ind]]  # dj>0 & di>0 OR dj<0 & di<0
+                    else:
+                        C_sub[iter1, local_ind] = C_toeplitz_coe[1, dj[local_ind] + di[local_ind]]  # dj<0 & di>0 OR dj>0 & di<0
+            return C_sub
+
+
+@njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
+def getFast_sparseC_R4(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
+    i = np.floor_divide(elmts, nx)
+    j = elmts - nx * i
+    dimX = len(elmts)
+    self_c = C_toeplitz_coe[0,0]
+    #myR = range(dimX)
+    data = List()
+    rows = List()
+    cols = List()
+    i *= nx
+    for iter1 in range(dimX):
+
+        # self effect
+        data.append(self_c)
+        rows.append(iter1)
+        cols.append(iter1)
+        for iter2 in range(iter1 + 1, dimX):
+            dj = j[iter2] - j[iter1]
+            di = i[iter2] - i[iter1]
+            djdi = (dj > 0.) == (di > 0.)
+            ii2 = np.abs(dj) + np.abs(di)
+            if djdi:
+                l = 0  # dj>0 & di>0 OR dj<0 & di<0
+            else:
+                l = 1  # dj<0 & di>0 OR dj>0 & di<0
+            if C_toeplitz_coe_decay[ii2] > decay_tshold:# and random.random() < probability:
+            #if C_toeplitz_coe_decay[ii2] > decay_tshold:
+                cols.append(iter2)
+                rows.append(iter1)
+                data.append(C_toeplitz_coe[l,ii2])
+                # symmetry
+                rows.append(iter2)
+                cols.append(iter1)
+                data.append(C_toeplitz_coe[l,ii2])
+
+
+    # import matplotlib
+    # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
+
+    # fill ratio:
+    # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
+    return data, rows, cols, dimX

@@ -96,8 +96,8 @@ def get_err_sig_zz(sigz_num, xy_obs,sim_info, geterr):
 
 # ----------------------------------------------
 # ----------------------------------------------
-run = False
-file_name = "results_radial.json"
+run =True
+file_name = "results_radial_right_dist.json"
 
 if run:
     sim_info = {}
@@ -115,17 +115,24 @@ if run:
 
     # the coarsest mesh (the y direction will be a function of x)
     sim_info["nx min"] = 11
+    #sim_info["nx min"] = 5
 
     # set the domain size (the y direction will be a function of x)
     sim_info["domain x"] = [-60.,60.]
+    #sim_info["domain x"] = [-4., 4.]
 
     # solid properties
     sim_info["nu"] = 0.4                                                    # Poisson's ratio
+    #sim_info["nu"] = 0.1                                                    # Poisson's ratio
+
     sim_info["youngs mod"] = 3.3e1                                          # Young's modulus
+    #sim_info["youngs mod"] = 2 * 1.0 * (1.0 + 0.1)
+
     sim_info["Eprime"] = sim_info["youngs mod"] / (1 - sim_info["nu"]**2)   # plain strain modulus
 
     # geometry
     sim_info["R"] = 41
+    #sim_info["R"] = 2.
 
     # uniform load
     sim_info["p"] =1.10**12
@@ -191,7 +198,7 @@ if run:
 
         # creating mesh & plotting
         Mesh = get_mesh(sim_info, refinement_ID)
-
+        #C_R4 = load_isotropic_elasticity_matrix_toepliz(Mesh, sim_info["Eprime"], Kernel='R4')  #C_R4[np.arange(Mesh.NumberOfElts), np.arange(Mesh.NumberOfElts)]
         # defining the geometry
         Fr_geometry = Geometry('radial', radius=sim_info["R"])
         surv_cells, surv_dist, inner_cells = get_survey_points(Fr_geometry, Mesh)
@@ -411,194 +418,194 @@ if not run:
 
 print("Plotting results")
 
+sig_ahead_tip = False
+if sig_ahead_tip:
+
+    # ---- sigma ahead of the tip ----
+    R_end = 1.25 * results["R"]
+    n_of_obs = 50
+    ampl_f = 1.007
+    y_obs = np.arange(results["R"] * ampl_f,R_end,(R_end-results["R"] * ampl_f)/n_of_obs)
+    x_obs = np.zeros(len(y_obs))
+
+    xy_obs = np.vstack((x_obs, y_obs)).transpose()
+
+    C_R4_tract = []
+    C_R0_tract = []
+    C_R4R0_tract = []
+
+    C_R4_tract_err = []
+    C_R0_tract_err = []
+    C_R4R0_tract_err = []
+
+    xy_obs_dim_hy = []
+    for ind in [10,15,20]:#range(np.minimum(len(results["nx"]),21) ):
+        # ---- mesh plot ----
+        # creating mesh & plotting
+        nx_coarse = results["nx"][ind]
+        ny_coarse = results["ny"][ind]
+        Lx_coarse = results["Lx"][ind]
+        Ly_coarse = results["Ly"][ind]
+
+        Mesh_ind = CartesianMesh(Lx_coarse, Ly_coarse, nx_coarse, ny_coarse)
+
+
+        # defining the geometry
+        Fr_geometry = Geometry('radial', radius=results["R"])
+        surv_cells, surv_dist, inner_cells = get_survey_points(Fr_geometry, Mesh_ind)
+        EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, \
+        l, alpha, FillF, sgndDist, Ffront, number_of_fronts, fronts_dictionary = generate_footprint(Mesh_ind, surv_cells,
+                                                                                                    inner_cells, surv_dist,
+                                                                                                    'LS_continousfront')
+        #plot_two_fronts(Mesh_ind, newfront=Ffront, oldfront=None, fig=None, grid=True, cells=EltCrack)
+
+        xy_crack = Mesh_ind.CenterCoor[EltCrack,:]
+        C_R4 = load_isotropic_elasticity_matrix_toepliz(Mesh_ind, results["Eprime"], Kernel='R4')
+        C_R4_tract.append( - C_R4.get_normal_traction_at(xy_obs, xy_crack, results["w_R4"][ind]))
+        C_R0 = load_isotropic_elasticity_matrix_toepliz(Mesh_ind, results["Eprime"], Kernel='R0')
+        C_R0_tract.append( - C_R0.get_normal_traction_at(xy_obs, xy_crack, results["w_R0"][ind]))
+        C_R4R0_tract.append( - C_R0.get_normal_traction_at(xy_obs, xy_crack, results["w_R4"][ind]))
+
+        C_R4_tract_err.append(get_err_sig_zz(C_R4_tract[-1], xy_obs, results, get_rel_err))
+        C_R0_tract_err.append(get_err_sig_zz(C_R0_tract[-1], xy_obs, results, get_rel_err))
+        C_R4R0_tract_err.append(get_err_sig_zz(C_R4R0_tract[-1], xy_obs, results, get_rel_err))
+        xy_obs_dim_hy.append(100. * (xy_obs - results["R"])/Mesh_ind.hy)
+        print(f' Iter: {ind} of {len(results["nx"])}')
+
+    fig1 = plt.figure()
+    plt.suptitle('Radial crack test')
+
+    paper_r4_res = np.asarray([[0.02092464962959268, 1.6763990168866765,],
+    [0.04210679236660522, 1.121707248894925,],
+    [0.0843774176225035, 0.6718308339876984,],
+    [0.12589615140594718, 0.4699481186184915,],
+    [0.16804310457815785, 0.3568512304574911,],
+    [0.2511110189651793, 0.28049060556115446]])
+
+
+    paper_ana_sig = np.asarray([[0.00774596101183192, 4.961567413899291],
+    [0.008173521357429415, 4.559266330224471],
+    [0.009052129595585039, 4.007233584524432],
+    [0.010712641171756021, 3.529934733616421],
+    [0.013459814256998999, 3.0712026435959023],
+    [0.01621568643370886, 2.706014783815978],
+    [0.019444354231644055, 2.4249558376123197],
+    [0.023910322805886147, 2.1156712392957684],
+    [0.02899711654114845, 1.815659872482918],
+    [0.034554966079342664, 1.5810685731982153],
+    [0.04166487852008735, 1.369660352672767],
+    [0.04707687329135345, 1.2333107930207774],
+    [0.05295687918353806, 1.1296408203127264],
+    [0.06069718578591651, 1.030404484555632],
+    [0.06658023636011455, 0.9594749924317902],
+    [0.07416642405867131, 0.8696133775788448],
+    [0.08423199781014869, 0.7747497851324399],
+    [0.09243901066972565, 0.6941614017831981],
+    [0.0989450611778106, 0.6558911987232054],
+    [0.10669102218964252, 0.6174586126224977],
+    [0.11381746290417427, 0.5837844295541776],
+    [0.12032394836683258, 0.5501914380062143],
+    [0.13085927305752187, 0.5067162785518677],
+    [0.13922605923037398, 0.47755692395486093],
+    [0.14635249994490576, 0.4438827408865409],
+    [0.1544101784009678, 0.4241184050737745],
+    [0.16029801347547262, 0.4046382395822583],
+    [0.16789072549262957, 0.3849347974097581],
+    [0.18075262219613786, 0.35986401580218885],
+    [0.1885007579808365, 0.3448174872616301],
+    [0.19686797910826193, 0.3203353441766543],
+    [0.2083362813587749, 0.3094788780259776],
+    [0.217635175182304, 0.3035837937085839],
+    [0.226934069005833, 0.2976887093911902],
+    [0.23623339778393546, 0.29647083658582574],
+    [0.2442919461491442, 0.286060923797117],
+    [0.008458271618112204, 4.28794746676657],
+    [0.01177755495216079, 3.3146409189024295]])
+
+    xy_obs_dim = (xy_obs - results["R"])/results["R"]
+    plt.plot(xy_obs_dim[:,1], C_R0_tract[0]/results["p"], c='r', marker="+")
+    plt.plot(xy_obs_dim[:,1], C_R0_tract[1]/results["p"], c='b', marker="+")
+    plt.plot(xy_obs_dim[:,1], C_R0_tract[2]/results["p"], c='g', marker="+")
+    plt.plot(xy_obs_dim[:,1], C_R4_tract[0]/results["p"], c='r', marker="o")
+    plt.plot(xy_obs_dim[:,1], C_R4_tract[1]/results["p"], c='b', marker="o")
+    plt.plot(xy_obs_dim[:,1], C_R4_tract[2]/results["p"], c='g', marker="o")
+    plt.plot(xy_obs_dim[:,1], C_R4R0_tract[0]/results["p"], c='r', marker="x")
+    plt.plot(xy_obs_dim[:,1], C_R4R0_tract[1]/results["p"], c='b', marker="x")
+    plt.plot(xy_obs_dim[:,1], C_R4R0_tract[2]/results["p"], c='g', marker="x")
+    sig_zz_ana = np.zeros(len(xy_obs_dim))
+    for pnt in range(len(xy_obs_dim)):
+        sig_zz_ana[pnt] = sig_zz_radial_solution(xy_obs[pnt,0], xy_obs[pnt,1], results["p"], results["R"])
+    plt.plot(xy_obs_dim[:,1], sig_zz_ana/results["p"], c='black', marker=" ")
+    plt.plot(paper_r4_res[:,0], paper_r4_res[:,1], c='black', marker="*")
+    plt.plot(paper_ana_sig[:,0], paper_ana_sig[:,1], c='black', marker="o")
+
+
+    plt.tick_params(labeltop=True, labelright=True)
+    plt.grid(True, which="both", ls="-")
+    plt.xlabel('(r-R)/R')
+    plt.ylabel('sig z/p')
+    plt.legend(('R0 - 1',
+                'R0 - 2',
+                'R0 - 3',
+                'R4 - 1',
+                'R4 - 2',
+                'R4 - 3',
+                'R4/R0 - 1',
+                'R4/R0 - 2',
+                'R4/R0 - 3','analytical'),loc='upper right', shadow=True)
 
 
 
-# ---- sigma ahead of the tip ----
-R_end = 1.25 * results["R"]
-n_of_obs = 50
-ampl_f = 1.007
-y_obs = np.arange(results["R"] * ampl_f,R_end,(R_end-results["R"] * ampl_f)/n_of_obs)
-x_obs = np.zeros(len(y_obs))
-
-xy_obs = np.vstack((x_obs, y_obs)).transpose()
-
-C_R4_tract = []
-C_R0_tract = []
-C_R4R0_tract = []
-
-C_R4_tract_err = []
-C_R0_tract_err = []
-C_R4R0_tract_err = []
-
-xy_obs_dim_hy = []
-for ind in [10,15,20]:#range(np.minimum(len(results["nx"]),21) ):
-    # ---- mesh plot ----
-    # creating mesh & plotting
-    nx_coarse = results["nx"][ind]
-    ny_coarse = results["ny"][ind]
-    Lx_coarse = results["Lx"][ind]
-    Ly_coarse = results["Ly"][ind]
-
-    Mesh_ind = CartesianMesh(Lx_coarse, Ly_coarse, nx_coarse, ny_coarse)
+    fig1 = plt.figure()
+    plt.suptitle('Radial crack test')
+    plt.plot(xy_obs_dim[:,1], C_R0_tract_err[0], c='r', marker="+")
+    plt.plot(xy_obs_dim[:,1], C_R0_tract_err[1], c='b', marker="+")
+    plt.plot(xy_obs_dim[:,1], C_R0_tract_err[2], c='g', marker="+")
+    plt.plot(xy_obs_dim[:,1], C_R4_tract_err[0], c='r', marker="o")
+    plt.plot(xy_obs_dim[:,1], C_R4_tract_err[1], c='b', marker="o")
+    plt.plot(xy_obs_dim[:,1], C_R4_tract_err[2], c='g', marker="o")
+    plt.plot(xy_obs_dim[:,1], C_R4R0_tract_err[0], c='r', marker="x")
+    plt.plot(xy_obs_dim[:,1], C_R4R0_tract_err[1], c='b', marker="x")
+    plt.plot(xy_obs_dim[:,1], C_R4R0_tract_err[2], c='g', marker="x")
+    plt.tick_params(labeltop=True, labelright=True)
+    plt.grid(True, which="both", ls="-")
+    plt.xlabel('(r-R)/R')
+    plt.ylabel('relative error sig_z')
+    plt.legend(('R0 - 1',
+                'R0 - 2',
+                'R0 - 3',
+                'R4 - 1',
+                'R4 - 2',
+                'R4 - 3',
+                'R4/R0 - 1',
+                'R4/R0 - 2',
+                'R4/R0 - 3','analytical'),loc='upper right', shadow=True)
 
 
-    # defining the geometry
-    Fr_geometry = Geometry('radial', radius=results["R"])
-    surv_cells, surv_dist, inner_cells = get_survey_points(Fr_geometry, Mesh_ind)
-    EltChannel, EltTip, EltCrack, EltRibbon, ZeroVertex, CellStatus, \
-    l, alpha, FillF, sgndDist, Ffront, number_of_fronts, fronts_dictionary = generate_footprint(Mesh_ind, surv_cells,
-                                                                                                inner_cells, surv_dist,
-                                                                                                'LS_continousfront')
-    #plot_two_fronts(Mesh_ind, newfront=Ffront, oldfront=None, fig=None, grid=True, cells=EltCrack)
-
-    xy_crack = Mesh_ind.CenterCoor[EltCrack,:]
-    C_R4 = load_isotropic_elasticity_matrix_toepliz(Mesh_ind, results["Eprime"], Kernel='R4')
-    C_R4_tract.append( - C_R4.get_normal_traction_at(xy_obs, xy_crack, results["w_R4"][ind]))
-    C_R0 = load_isotropic_elasticity_matrix_toepliz(Mesh_ind, results["Eprime"], Kernel='R0')
-    C_R0_tract.append( - C_R0.get_normal_traction_at(xy_obs, xy_crack, results["w_R0"][ind]))
-    C_R4R0_tract.append( - C_R0.get_normal_traction_at(xy_obs, xy_crack, results["w_R4"][ind]))
-
-    C_R4_tract_err.append(get_err_sig_zz(C_R4_tract[-1], xy_obs, results, get_rel_err))
-    C_R0_tract_err.append(get_err_sig_zz(C_R0_tract[-1], xy_obs, results, get_rel_err))
-    C_R4R0_tract_err.append(get_err_sig_zz(C_R4R0_tract[-1], xy_obs, results, get_rel_err))
-    xy_obs_dim_hy.append(100. * (xy_obs - results["R"])/Mesh_ind.hy)
-    print(f' Iter: {ind} of {len(results["nx"])}')
-
-fig1 = plt.figure()
-plt.suptitle('Radial crack test')
-
-paper_r4_res = np.asarray([[0.02092464962959268, 1.6763990168866765,],
-[0.04210679236660522, 1.121707248894925,],
-[0.0843774176225035, 0.6718308339876984,],
-[0.12589615140594718, 0.4699481186184915,],
-[0.16804310457815785, 0.3568512304574911,],
-[0.2511110189651793, 0.28049060556115446]])
-
-
-paper_ana_sig = np.asarray([[0.00774596101183192, 4.961567413899291],
-[0.008173521357429415, 4.559266330224471],
-[0.009052129595585039, 4.007233584524432],
-[0.010712641171756021, 3.529934733616421],
-[0.013459814256998999, 3.0712026435959023],
-[0.01621568643370886, 2.706014783815978],
-[0.019444354231644055, 2.4249558376123197],
-[0.023910322805886147, 2.1156712392957684],
-[0.02899711654114845, 1.815659872482918],
-[0.034554966079342664, 1.5810685731982153],
-[0.04166487852008735, 1.369660352672767],
-[0.04707687329135345, 1.2333107930207774],
-[0.05295687918353806, 1.1296408203127264],
-[0.06069718578591651, 1.030404484555632],
-[0.06658023636011455, 0.9594749924317902],
-[0.07416642405867131, 0.8696133775788448],
-[0.08423199781014869, 0.7747497851324399],
-[0.09243901066972565, 0.6941614017831981],
-[0.0989450611778106, 0.6558911987232054],
-[0.10669102218964252, 0.6174586126224977],
-[0.11381746290417427, 0.5837844295541776],
-[0.12032394836683258, 0.5501914380062143],
-[0.13085927305752187, 0.5067162785518677],
-[0.13922605923037398, 0.47755692395486093],
-[0.14635249994490576, 0.4438827408865409],
-[0.1544101784009678, 0.4241184050737745],
-[0.16029801347547262, 0.4046382395822583],
-[0.16789072549262957, 0.3849347974097581],
-[0.18075262219613786, 0.35986401580218885],
-[0.1885007579808365, 0.3448174872616301],
-[0.19686797910826193, 0.3203353441766543],
-[0.2083362813587749, 0.3094788780259776],
-[0.217635175182304, 0.3035837937085839],
-[0.226934069005833, 0.2976887093911902],
-[0.23623339778393546, 0.29647083658582574],
-[0.2442919461491442, 0.286060923797117],
-[0.008458271618112204, 4.28794746676657],
-[0.01177755495216079, 3.3146409189024295]])
-
-xy_obs_dim = (xy_obs - results["R"])/results["R"]
-plt.plot(xy_obs_dim[:,1], C_R0_tract[0]/results["p"], c='r', marker="+")
-plt.plot(xy_obs_dim[:,1], C_R0_tract[1]/results["p"], c='b', marker="+")
-plt.plot(xy_obs_dim[:,1], C_R0_tract[2]/results["p"], c='g', marker="+")
-plt.plot(xy_obs_dim[:,1], C_R4_tract[0]/results["p"], c='r', marker="o")
-plt.plot(xy_obs_dim[:,1], C_R4_tract[1]/results["p"], c='b', marker="o")
-plt.plot(xy_obs_dim[:,1], C_R4_tract[2]/results["p"], c='g', marker="o")
-plt.plot(xy_obs_dim[:,1], C_R4R0_tract[0]/results["p"], c='r', marker="x")
-plt.plot(xy_obs_dim[:,1], C_R4R0_tract[1]/results["p"], c='b', marker="x")
-plt.plot(xy_obs_dim[:,1], C_R4R0_tract[2]/results["p"], c='g', marker="x")
-sig_zz_ana = np.zeros(len(xy_obs_dim))
-for pnt in range(len(xy_obs_dim)):
-    sig_zz_ana[pnt] = sig_zz_radial_solution(xy_obs[pnt,0], xy_obs[pnt,1], results["p"], results["R"])
-plt.plot(xy_obs_dim[:,1], sig_zz_ana/results["p"], c='black', marker=" ")
-plt.plot(paper_r4_res[:,0], paper_r4_res[:,1], c='black', marker="*")
-plt.plot(paper_ana_sig[:,0], paper_ana_sig[:,1], c='black', marker="o")
-
-
-plt.tick_params(labeltop=True, labelright=True)
-plt.grid(True, which="both", ls="-")
-plt.xlabel('(r-R)/R')
-plt.ylabel('sig z/p')
-plt.legend(('R0 - 1',
-            'R0 - 2',
-            'R0 - 3',
-            'R4 - 1',
-            'R4 - 2',
-            'R4 - 3',
-            'R4/R0 - 1',
-            'R4/R0 - 2',
-            'R4/R0 - 3','analytical'),loc='upper right', shadow=True)
-
-
-
-fig1 = plt.figure()
-plt.suptitle('Radial crack test')
-plt.plot(xy_obs_dim[:,1], C_R0_tract_err[0], c='r', marker="+")
-plt.plot(xy_obs_dim[:,1], C_R0_tract_err[1], c='b', marker="+")
-plt.plot(xy_obs_dim[:,1], C_R0_tract_err[2], c='g', marker="+")
-plt.plot(xy_obs_dim[:,1], C_R4_tract_err[0], c='r', marker="o")
-plt.plot(xy_obs_dim[:,1], C_R4_tract_err[1], c='b', marker="o")
-plt.plot(xy_obs_dim[:,1], C_R4_tract_err[2], c='g', marker="o")
-plt.plot(xy_obs_dim[:,1], C_R4R0_tract_err[0], c='r', marker="x")
-plt.plot(xy_obs_dim[:,1], C_R4R0_tract_err[1], c='b', marker="x")
-plt.plot(xy_obs_dim[:,1], C_R4R0_tract_err[2], c='g', marker="x")
-plt.tick_params(labeltop=True, labelright=True)
-plt.grid(True, which="both", ls="-")
-plt.xlabel('(r-R)/R')
-plt.ylabel('relative error sig_z')
-plt.legend(('R0 - 1',
-            'R0 - 2',
-            'R0 - 3',
-            'R4 - 1',
-            'R4 - 2',
-            'R4 - 3',
-            'R4/R0 - 1',
-            'R4/R0 - 2',
-            'R4/R0 - 3','analytical'),loc='upper right', shadow=True)
-
-
-fig1 = plt.figure()
-plt.suptitle('Radial crack test')
-plt.plot(xy_obs_dim_hy[0][:,1], C_R0_tract_err[0], c='r', marker="+")
-plt.plot(xy_obs_dim_hy[1][:,1], C_R0_tract_err[1], c='b', marker="+")
-plt.plot(xy_obs_dim_hy[2][:,1], C_R0_tract_err[2], c='g', marker="+")
-plt.plot(xy_obs_dim_hy[0][:,1], C_R4_tract_err[0], c='r', marker="o")
-plt.plot(xy_obs_dim_hy[1][:,1], C_R4_tract_err[1], c='b', marker="o")
-plt.plot(xy_obs_dim_hy[2][:,1], C_R4_tract_err[2], c='g', marker="o")
-plt.plot(xy_obs_dim_hy[0][:,1], C_R4R0_tract_err[0], c='r', marker="x")
-plt.plot(xy_obs_dim_hy[1][:,1], C_R4R0_tract_err[1], c='b', marker="x")
-plt.plot(xy_obs_dim_hy[2][:,1], C_R4R0_tract_err[2], c='g', marker="x")
-plt.tick_params(labeltop=True, labelright=True)
-plt.grid(True, which="both", ls="-")
-plt.xlabel('(r-R)/(elem_size)')
-plt.ylabel('relative error sig_z')
-plt.legend(('R0 - 1',
-            'R0 - 2',
-            'R0 - 3',
-            'R4 - 1',
-            'R4 - 2',
-            'R4 - 3',
-            'R4/R0 - 1',
-            'R4/R0 - 2',
-            'R4/R0 - 3','analytical'),loc='upper right', shadow=True)
+    fig1 = plt.figure()
+    plt.suptitle('Radial crack test')
+    plt.plot(xy_obs_dim_hy[0][:,1], C_R0_tract_err[0], c='r', marker="+")
+    plt.plot(xy_obs_dim_hy[1][:,1], C_R0_tract_err[1], c='b', marker="+")
+    plt.plot(xy_obs_dim_hy[2][:,1], C_R0_tract_err[2], c='g', marker="+")
+    plt.plot(xy_obs_dim_hy[0][:,1], C_R4_tract_err[0], c='r', marker="o")
+    plt.plot(xy_obs_dim_hy[1][:,1], C_R4_tract_err[1], c='b', marker="o")
+    plt.plot(xy_obs_dim_hy[2][:,1], C_R4_tract_err[2], c='g', marker="o")
+    plt.plot(xy_obs_dim_hy[0][:,1], C_R4R0_tract_err[0], c='r', marker="x")
+    plt.plot(xy_obs_dim_hy[1][:,1], C_R4R0_tract_err[1], c='b', marker="x")
+    plt.plot(xy_obs_dim_hy[2][:,1], C_R4R0_tract_err[2], c='g', marker="x")
+    plt.tick_params(labeltop=True, labelright=True)
+    plt.grid(True, which="both", ls="-")
+    plt.xlabel('(r-R)/(elem_size)')
+    plt.ylabel('relative error sig_z')
+    plt.legend(('R0 - 1',
+                'R0 - 2',
+                'R0 - 3',
+                'R4 - 1',
+                'R4 - 2',
+                'R4 - 3',
+                'R4/R0 - 1',
+                'R4/R0 - 2',
+                'R4/R0 - 3','analytical'),loc='upper right', shadow=True)
 
 
 # ---- w max -----
@@ -638,7 +645,7 @@ plt.legend(('R0 - 1',
 
 
 
-other_plots = False
+other_plots = True
 if other_plots:
     # volume - rel err
     fig1 = plt.figure()

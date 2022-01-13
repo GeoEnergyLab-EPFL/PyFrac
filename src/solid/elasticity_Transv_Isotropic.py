@@ -208,4 +208,5 @@ class load_TI_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
         super().__init__(Mesh, Cij, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Transverse-Isotropic')
 
     def reload_toepliz_Coe(self, Lx, Ly, nx, ny, hx, hy, mat_prop):
-        return load_TI_elasticity_matrix(Lx, Ly, nx, ny, mat_prop, self.TI_KernelExecPath, toeplitz = True)
+        out = load_TI_elasticity_matrix(Lx, Ly, nx, ny, mat_prop, self.TI_KernelExecPath, toeplitz = True)
+        return out[0], out
