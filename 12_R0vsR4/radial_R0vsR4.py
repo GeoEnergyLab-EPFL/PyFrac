@@ -96,8 +96,8 @@ def get_err_sig_zz(sigz_num, xy_obs,sim_info, geterr):
 
 # ----------------------------------------------
 # ----------------------------------------------
-run =True
-file_name = "results_radial_right_dist.json"
+run =False
+file_name = "results_radial.json"
 
 if run:
     sim_info = {}
@@ -418,7 +418,7 @@ if not run:
 
 print("Plotting results")
 
-sig_ahead_tip = False
+sig_ahead_tip = True
 if sig_ahead_tip:
 
     # ---- sigma ahead of the tip ----
