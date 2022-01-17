@@ -870,11 +870,15 @@ class EHL_sys_obj(LinearOperator):
       C._set_codomain_IDX(to_solve)
       pf_ch_prime = C._matvec_fast(frac.w[to_solve])
 
-      C._set_domain_IDX(to_impose)
-      pf_ch_prime = pf_ch_prime + C._matvec_fast(imposed_val)
+      if len(to_impose) > 0:
+          C._set_domain_IDX(to_impose)
+          pf_ch_prime = pf_ch_prime + C._matvec_fast(imposed_val)
 
-      C._set_domain_IDX(active)
-      pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active]) + mat_prop.SigmaO[to_solve]
+      if len(active) > 0:
+          C._set_domain_IDX(active)
+          pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active]) + mat_prop.SigmaO[to_solve]
+      else:
+          pf_ch_prime = pf_ch_prime + mat_prop.SigmaO[to_solve]
 
       S[ch_indxs] = dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) - \
                     fluid_prop.compressibility * wcNplusHalf[to_solve] * pf_ch_prime+ \

@@ -38,7 +38,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # nx (int), n. of element in x direction in the cartesian mesh
     # elemX (numpy array), IDs of elements to consider on x axis of the mesh
     # elemY (numpy array), IDs of elements to consider on y axis of the mesh
-    # dimY (int), length(elemY) = length(elemX)
+    # dimY (int), length(elemY) != length(elemX)
     # C_toeplitz_coe (numpy array), array containing the N unique coefficients of the matrix C of size NxN
     # C_precision (e.g.: float)
 
@@ -231,7 +231,7 @@ class elasticity_matrix_toepliz(LinearOperator):
     """
 
     def __init__(self, Mesh, mat_prop, elas_prop_HMAT, C_precision=np.float64, useHMATdot=False,
-                 kerneltype = 'Isotropic',
+                 kerneltype = 'Isotropic_R4',
                  HMATparam = None,
                  f_matvec_fast = matvec_fast,
                  f_getFast = getFast,
@@ -258,7 +258,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         else:
             self.updateHMATuponRemeshing = False
         self.mat_prop = mat_prop
-        self.kerneltype = "Isotropic"
+        self.kerneltype = kerneltype
 
         self.elas_prop_HMAT = elas_prop_HMAT
         self.HMATparam = HMATparam
@@ -308,10 +308,10 @@ class elasticity_matrix_toepliz(LinearOperator):
             data = [self.max_leaf_size, self.eta, self.eps_aca,
                     self.elas_prop_HMAT, Mesh.VertexCoor, Mesh.Connectivity, Mesh.hx, Mesh.hy, self_eff]
 
-            if self.kerneltype == "Isotropic":
+            if self.kerneltype == "Isotropic_R0":
                 self.HMAT = Hdot_3DR0opening()
             else:
-                SystemExit("HMAT not implemented for kerneltype different from Isotropic")
+                SystemExit("HMAT not implemented for kerneltype different from Isotropic_R0")
 
             # HMATcreationTime = -time.time()
             self.HMAT.set(data)
@@ -485,6 +485,8 @@ class elasticity_matrix_toepliz(LinearOperator):
 
     def _set_tipcorr(self, FillFrac, EltTip, same_domain_and_codomain = False):
         """
+        Tip correction as Rider & Napier, 1985.
+
         :param correction_val: (array) contains the factors to be applied to each diagonal val. of the specified indexes based on the filling fraction of the cell
         :param correction_INDX: (array) specified indexes where the correction_val should apply
         :return:
@@ -523,6 +525,35 @@ class elasticity_matrix_toepliz(LinearOperator):
                                                  elmts, self.nx,
                                                  decay_tshold=decay_tshold, probability=probability)
         return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=self.C_precision).tocsc()
+
+
+    def _set_kerneltype_as_R0(self):
+        # this function exist because R0 is performing better in case of injection in the same footprint when tip correction is needed.
+        # the counter function is "_set_kerneltype_as_it_used_to_be"
+        if self.kerneltype == "Isotropic_R4":
+            # set the functions needed for the dot product
+            self.f_matvec_fast = matvec_fast
+            self.f_getFast = getFast
+            self.f_getFast_sparseC = getFast_sparseC
+
+            # set the matrix coeff.
+            self.diag_val_pause = self.diag_val
+            self.C_toeplitz_coe_pause =  self.C_toeplitz_coe
+            self.diag_val = self.C_toeplitz_coe[2,0]
+            self.C_toeplitz_coe =  self.C_toeplitz_coe[2,:]
+
+
+    def _set_kerneltype_as_it_used_to_be(self):
+        from solid.elsticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4, getFast_sparseC_R4
+        if self.kerneltype == "Isotropic_R4":
+            # set the functions needed for the dot product back
+            self.f_matvec_fast = matvec_fast_R4
+            self.f_getFast = getFast_R4
+            self.f_getFast_sparseC = getFast_sparseC_R4
+
+            # set the matrix coeff. back
+            self.diag_val = self.diag_val_pause
+            self.C_toeplitz_coe =  self.C_toeplitz_coe_pause
 
     # def _get_full_blocks(self, VertexCoor, Connectivity, elas_prop):
     #     from pypart import Bigwhamio
