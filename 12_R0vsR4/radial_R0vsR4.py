@@ -96,6 +96,9 @@ def get_err_sig_zz(sigz_num, xy_obs,sim_info, geterr):
 
 # ----------------------------------------------
 # ----------------------------------------------
+# RUN
+# ----------------------------------------------
+# ----------------------------------------------
 run =False
 file_name = "results_radial.json"
 
@@ -412,13 +415,20 @@ if run:
         action = 'dump_this_dictionary'
         append_to_json_file(file_name, [content], action, delete_existing_filename=True)
 
+# ----------------------------------------------
+# ----------------------------------------------
+# POSTPROCESS
+# ----------------------------------------------
+# ----------------------------------------------
+
+
 if not run:
     with open(file_name, "r+") as json_file:
         results = json.load(json_file)[0]  # get the data
 
 print("Plotting results")
 
-sig_ahead_tip = True
+sig_ahead_tip = False
 if sig_ahead_tip:
 
     # ---- sigma ahead of the tip ----
@@ -475,7 +485,8 @@ if sig_ahead_tip:
     fig1 = plt.figure()
     plt.suptitle('Radial crack test')
 
-    paper_r4_res = np.asarray([[0.02092464962959268, 1.6763990168866765,],
+    paper_r4_res = np.asarray([
+    [0.02092464962959268, 1.6763990168866765,],
     [0.04210679236660522, 1.121707248894925,],
     [0.0843774176225035, 0.6718308339876984,],
     [0.12589615140594718, 0.4699481186184915,],
@@ -483,10 +494,13 @@ if sig_ahead_tip:
     [0.2511110189651793, 0.28049060556115446]])
 
 
-    paper_ana_sig = np.asarray([[0.00774596101183192, 4.961567413899291],
+    paper_ana_sig = np.asarray([
+    [0.00774596101183192, 4.961567413899291],
     [0.008173521357429415, 4.559266330224471],
+    [0.008458271618112204, 4.28794746676657],
     [0.009052129595585039, 4.007233584524432],
     [0.010712641171756021, 3.529934733616421],
+    [0.01177755495216079, 3.3146409189024295],
     [0.013459814256998999, 3.0712026435959023],
     [0.01621568643370886, 2.706014783815978],
     [0.019444354231644055, 2.4249558376123197],
@@ -518,9 +532,7 @@ if sig_ahead_tip:
     [0.217635175182304, 0.3035837937085839],
     [0.226934069005833, 0.2976887093911902],
     [0.23623339778393546, 0.29647083658582574],
-    [0.2442919461491442, 0.286060923797117],
-    [0.008458271618112204, 4.28794746676657],
-    [0.01177755495216079, 3.3146409189024295]])
+    [0.2442919461491442, 0.286060923797117]])
 
     xy_obs_dim = (xy_obs - results["R"])/results["R"]
     plt.plot(xy_obs_dim[:,1], C_R0_tract[0]/results["p"], c='r', marker="+")
@@ -645,9 +657,11 @@ if sig_ahead_tip:
 
 
 
-other_plots = True
+other_plots = False
 if other_plots:
+    # --------------------
     # volume - rel err
+    # --------------------
     fig1 = plt.figure()
     plt.suptitle('Radial crack test')
     y_ana = Volume_radial_solution(results["youngs mod"],results["nu"],results["p"],results["R"])
@@ -678,8 +692,9 @@ if other_plots:
     plt.xscale('log')
     plt.yscale('log')
 
-
+    # --------------------
     # rel err w max
+    # --------------------
     fig1 = plt.figure()
     plt.suptitle('Radial crack test')
 
@@ -697,7 +712,9 @@ if other_plots:
     plt.xscale('log')
     plt.yscale('log')
 
+    # --------------------
     # rel err KI max
+    # --------------------
     fig1 = plt.figure()
     plt.suptitle('Radial crack test')
 
@@ -714,7 +731,9 @@ if other_plots:
     plt.xscale('log')
     plt.yscale('log')
 
+    # --------------------
     # rel err KI mean
+    # --------------------
     fig1 = plt.figure()
     plt.suptitle('Radial crack test')
 
@@ -730,8 +749,10 @@ if other_plots:
     plt.legend(('R0 - NO tip corr', 'R4 - NO tip corr','R0 - tip corr as Ryder & Napier 1985', 'R4 - tip corr as Ryder & Napier 1985', 'analytical'),loc='lower left', shadow=True)
     plt.xscale('log')
     plt.yscale('log')
+
     # --------------------------
     # rel err w(r) (fine mesh)
+    # --------------------
     fig1 = plt.figure()
     ax = fig1.add_subplot(1, 1, 1)
 
@@ -768,6 +789,7 @@ if other_plots:
 
     # --------------------------
     # rel err w(r) (coarse mesh)
+    # --------------------
     fig1 = plt.figure()
     ax = fig1.add_subplot(1, 1, 1)
 

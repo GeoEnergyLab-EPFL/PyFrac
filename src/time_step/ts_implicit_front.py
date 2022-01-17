@@ -100,15 +100,11 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     else:
         doublefracturedictionary = {"number_of_fronts": Fr_lstTmStp.fronts_dictionary['number_of_fronts']}
 
-    # todo: make tip correction while injecting in the same footprint
-    ##########################################################################################
-    #                                                                                        #
-    #  when we inject on the same footprint we should make the tip correction at the tip     #
-    #  this is not done, but it will not affect the accuracy, only the speed of convergence  #
-    #  since we are never accessing the diagonal of the elasticity matrix when iterating on  #
-    #  the position of the front.                                                            #
-    #                                                                                        #
-    ##########################################################################################
+    # set the Tip correction as Rider & Napier, 1985.
+    # it can be shown that tip correction and R0 kernel are performing better than R4 kernel and this type of tip correction
+
+    C._set_tipcorr(Fr_lstTmStp.FillF, Fr_lstTmStp.EltTip, same_domain_and_codomain=True)
+    C._set_kerneltype_as_R0()
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
                                                  sim_properties,
                                                  fluid_properties,
@@ -129,6 +125,10 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  empty, #corr_ribbon
                                                  doublefracturedictionary= doublefracturedictionary,
                                                  inj_same_footprint = True)
+    C.enable_tip_corr = False
+    C._set_kerneltype_as_it_used_to_be()
+
+
     # from utility import plot_as_matrix
     # K = w_k
     # plot_as_matrix(K, Fr_lstTmStp.mesh)
