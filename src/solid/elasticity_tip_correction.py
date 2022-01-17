@@ -18,9 +18,9 @@ def tip_correction_factors(FillFrac):
     Rider & Napier, 1985, Error Analysis and Design of Large-Scale Tabular Mining Stress Analyser.
 
     :param FillFrac: vector containing the filling fraction
-    :return: the diagonal factors such that
+    :return: array called diag_corr containing the diagonal factors such that
 
-             with NO tip correction:
+             with NO tip correction it would be:
                 C * v = res
 
 

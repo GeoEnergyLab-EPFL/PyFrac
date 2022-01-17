@@ -165,7 +165,7 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
     Matematically speaking:
     for i in (0,ny) and j in (0,nx) take the set of combinations (i,j) such that [i^2 y^2 + j^2 x^2]^1/2 is unique
     """
-    C_toeplitz_coe = np.empty((2, ny * nx), dtype=C_precision)
+    C_toeplitz_coe = np.zeros((3, ny * nx), dtype=C_precision)
     Ep = matprop[0]
     const = (Ep / (8. * np.pi))
 
@@ -181,10 +181,9 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
         dy = i * hy
         C_toeplitz_coe[0, ind] = isotropic_R4_kernel(dx, dy, hx, hy, a, b, const)
         C_toeplitz_coe[1, ind] = isotropic_R4_kernel(-dx, dy, hx, hy, a, b, const)
-    #return const * C_toeplitz_coe
-    return C_toeplitz_coe[0,0], C_toeplitz_coe
+    return C_toeplitz_coe
 
-
+@njit(fastmath=True, nogil=True, parallel=True, cache=True)
 def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     """
 
@@ -196,6 +195,7 @@ def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     :param hy: mesh size in x direction
     :return: traction at the xy_obs points
     """
+
     const = (Ep / (8. * np.pi))
     n_xy_obs = xy_obs.shape[0]
     n_xy_crack = xy_crack.shape[0]
@@ -210,8 +210,7 @@ def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
         xy_obs_i = xy_obs[ind_obs,:]
         xy_crack_i = xy_crack[ind_crack,:]
 
-        dx_i, dy_i = get_distance_components(xy_obs_i[0], xy_obs_i[1], xy_crack_i[0], xy_crack_i[1])
-
+        dx_i, dy_i = get_distance_components(xy_crack_i[0], xy_crack_i[1], xy_obs_i[0], xy_obs_i[1])
         normal_trac[ind_obs, ind_crack] = w_crack[ind_crack] * isotropic_R4_kernel(dx_i, dy_i, hx, hy, a, b, const)
 
     return np.sum(normal_trac, axis=1)
@@ -225,12 +224,13 @@ def matvec_fast_R4(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # nx (int), n. of element in x direction in the cartesian mesh
     # elemX (numpy array), IDs of elements to consider on x axis of the mesh
     # elemY (numpy array), IDs of elements to consider on y axis of the mesh
-    # dimY (int), length(elemY) = length(elemX)
+    # dimY (int), length(elemY) != length(elemX)
     # C_toeplitz_coe (numpy ndarray), matrix containing the 2N unique coefficients used to build the matrix C of size NxN
     # C_precision (e.g.: float)
 
     # 1) vector where to store the result of the dot product
     res = np.empty(dimY, dtype=C_precision)
+    dimX = len(elemX)
 
     # 2) some indexes to build the row of a submatrix of C from the array of its unique entries
     iY = np.floor_divide(elemY, nx)
@@ -251,9 +251,9 @@ def matvec_fast_R4(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         djdi = (dj > 0.) == (di > 0.)
         dj = np.abs(dj)
         di = np.abs(di)
-        row = np.empty(dimY, dtype=C_precision)
+        row = np.empty(dimX, dtype=C_precision)
 
-        for local_ind in range(dimY):
+        for local_ind in range(dimX):
             if djdi[local_ind]:
                 row[local_ind] = C_toeplitz_coe[0, dj[local_ind] + di[local_ind]] # dj>0 & di>0 OR dj<0 & di<0
             else:

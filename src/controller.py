@@ -1401,7 +1401,8 @@ class Controller:
                                                           self.solid_prop.Eprime,
                                                           C_precision = np.float64,
                                                           useHMATdot = self.C.updateHMATuponRemeshing,
-                                                          nu=self.C.nu)
+                                                          nu = self.C.nu,
+                                                          Kernel = self.C.Kernel)
 
         # Ensuring that we always use block topliz compression.
         if not self.sim_prop.useBlockToeplizCompression:

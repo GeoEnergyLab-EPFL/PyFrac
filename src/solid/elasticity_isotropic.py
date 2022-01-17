@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 
 # external imports
 import numpy as np
+from mesh_obj.mesh import Neighbors
 from numba.typed import List
 
 # internal imports
@@ -37,13 +38,13 @@ class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
         matprop = [Ep]
 
         if self.Kernel == 'R4':
-            super().__init__(Mesh, matprop, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Isotropic',
+            super().__init__(Mesh, matprop, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Isotropic_R4',
                              HMATparam = HMATparam,
                              f_matvec_fast = matvec_fast_R4,
                              f_getFast = getFast_R4,
                              f_getFast_sparseC = getFast_sparseC_R4)
         else:
-            super().__init__(Mesh, matprop, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Isotropic',
+            super().__init__(Mesh, matprop, elas_prop_HMAT, C_precision, useHMATdot, kerneltype='Isotropic_R0',
                              HMATparam=HMATparam,
                              f_matvec_fast = matvec_fast,
                              f_getFast = getFast,
@@ -53,7 +54,14 @@ class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
         typedList_mat_prop = List()
         [typedList_mat_prop.append(x) for x in mat_prop]
         if self.Kernel == 'R4':
-            return get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
+            # It should be:
+            # return get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
+            # but because we will use R0 with tip correction, we need to compute the toeplitz coeff. for R0
+
+            C_toeplitz_coe  =  get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
+            waste, C_toeplitz_coe[2,:] = get_toeplitzCoe_isotropic(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
+            return C_toeplitz_coe[0,0], C_toeplitz_coe
+
         elif self.Kernel == 'R0':
             return get_toeplitzCoe_isotropic(nx, ny, hx, hy, typedList_mat_prop, self.C_precision)
         else:
