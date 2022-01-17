@@ -5,8 +5,8 @@ globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Dat
 date_ext = '2021-12-10__12_19_49'
 basename = '/simulation__'+date_ext+'_file_'
 basenameNew = '/simulation__'+date_ext+'_file1_'
-final_number = 247
-initial_new = 115
+final_number = 193
+initial_new = 362
 for i in range(final_number+1):
     ext_old = str(i)
     ext_new = str(i+initial_new)

@@ -18,6 +18,10 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 
 # ----------------------------------------------
+# ----------------------------------------------
+# RUN
+# ----------------------------------------------
+# ----------------------------------------------
 run = False
 file_name = "results_rectangular_as10.json"
 
@@ -113,6 +117,38 @@ if run:
         dummy = dummy + time.time()
         print(f"     --> done in {dummy}")
 
+
+        # # SIF estimation
+        # KI_ana = KI_2DPS_solution(sim_info["p"], sim_info["H"])
+        # #
+        # all_w[EltCrack] = sol_R0
+        # KIPrime_R0 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+        #                                    sgndDist,
+        #                                    EltTip,
+        #                                    EltRibbon,
+        #                                    np.full(len(EltTip), True),
+        #                                    Mesh,
+        #                                    Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
+        #
+        # relerr_KIPrime_R0 = 100. * (np.abs(KIPrime_R0 - KI_ana) / KI_ana).max()
+        # relerr_KIPrime_R0_av = 100. * np.mean(np.abs(KIPrime_R0 - KI_ana) / KI_ana)
+        # results["KI R0"].append(relerr_KIPrime_R0)
+        # results["KI R0 av"].append(relerr_KIPrime_R0_av)
+        # #
+        # all_w[EltCrack] = sol_R4
+        # KIPrime_R4 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+        #                                    sgndDist,
+        #                                    EltTip,
+        #                                    EltRibbon,
+        #                                    np.full(len(EltTip), True),
+        #                                    Mesh,
+        #                                    Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
+        # relerr_KIPrime_R4 = 100 * (np.abs(KIPrime_R4 - KI_ana) / KI_ana).max()
+        # relerr_KIPrime_R4_av = 100 * np.mean(np.abs(KIPrime_R4 - KI_ana) / KI_ana)
+        # results["KI R4"].append(relerr_KIPrime_R4)
+        # results["KI R4 av"].append(relerr_KIPrime_R4_av)
+
+
         # some plots
         # rel_err_num = 100 * np.abs(sol_R0 - sol_R4) / sol_R4
         # plot_as_matrix(rel_err_num, mesh=Mesh) # 2D plot
@@ -126,10 +162,16 @@ if run:
         results["frac volume R4"].append(np.sum(sol_R4) * Mesh.hx * Mesh.hy)
         print(" ------------------- \n")
 
-    print("Saving to file")
-    content = results
-    action = 'dump_this_dictionary'
-    append_to_json_file(file_name, [content], action, delete_existing_filename=True)
+        print("Saving to file")
+        content = results
+        action = 'dump_this_dictionary'
+        append_to_json_file(file_name, [content], action, delete_existing_filename=True)
+
+# ----------------------------------------------
+# ----------------------------------------------
+# POSTPROCESS
+# ----------------------------------------------
+# ----------------------------------------------
 
 file_name_1 = "results_rectangular_as10.json"
 file_name_2 = "results_rectangular_as20.json"

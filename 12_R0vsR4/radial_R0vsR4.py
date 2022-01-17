@@ -19,6 +19,8 @@ from utilities.postprocess_fracture import append_to_json_file
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from level_set.continuous_front_reconstruction import plot_two_fronts
 
+from src.mesh_obj.mesh import CartesianMesh
+
 
 def get_mix_err(var_ana, var_num):
     """

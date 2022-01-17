@@ -305,11 +305,13 @@ to_export = [1,2,3,7,8,9,10]
 simul_list = ["05mtoK", "06mtoK","07mtoK","08mtoK"]
 simul_list = ["09mtoK"]
 common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
+common_address = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/"
 folders_list = [ common_address + "05mtoK",
                  common_address + "06mtoK",
                  common_address + "07mtoK",
                  common_address + "08mtoK"]
-folders_list = [ common_address + "08mtoK"]
+folders_list = [ common_address + "09mtoK"]
 destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
+destination = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final"
 # ---GO ---:
 check_exe(folders_list, simul_list, to_export, destination)
