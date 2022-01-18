@@ -187,34 +187,7 @@ class CartesianMesh:
         self.NumberofNodes = (self.nx+1) * (self.ny+1)
         self.NumberOfElts = self.nx * self.ny
         self.EltArea = self.hx * self.hy
-
-
-        """
-        We create a list of cell IDs that are close to the boundary of the mesh. See the example below.
-        In that case the list will contain the elements identified with a x.
-        The list of elements will be called Frontlist
-        
-         _____________________________
-        |    |    |    |    |    |    |
-        |____|____|____|____|____|____|
-        |    | x  |  x |  x |  x |    |
-        |____|____|____|____|____|____|
-        |    | x  |    |    |  x |    |
-        |____|____|____|____|____|____|
-        |    | x  |    |    |  x |    |
-        |____|____|____|____|____|____|
-        |    | x  |  x |  x |  x |    |
-        |____|____|____|____|____|____|
-        |    |    |    |    |    |    |
-        |____|____|____|____|____|____|            
-        """
-        self.Frontlist=[]
-        self.Frontlist=self.Frontlist + list(range(self.nx+1,2*self.nx-1))
-        self.Frontlist=self.Frontlist + list(range((self.ny-3)*(self.nx)+self.nx + 1, (self.ny-3)*(self.nx)+2 * self.nx - 1))
-        for i in range(1,self.ny-3):
-            self.Frontlist.append(  self.nx+1+i*self.nx)
-            self.Frontlist.append(2*self.nx-2+i*self.nx)
-
+        self.Frontlist = self.get_Frontlist()
 
 
         """
@@ -640,7 +613,87 @@ class CartesianMesh:
         else:
             return cellIDs
 
-# ----------------------------------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------------
+    def get_Frontlist(self):
+        """
+        We create a list of cell IDs that are close to the boundary of the mesh. See the example below.
+        In that case the list will contain the elements identified with a x.
+        The list of elements will be called Frontlist
+
+         _____________________________
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        |    | x  |  x |  x |  x |    |
+        |____|____|____|____|____|____|
+        |    | x  |    |    |  x |    |
+        |____|____|____|____|____|____|
+        |    | x  |    |    |  x |    |
+        |____|____|____|____|____|____|
+        |    | x  |  x |  x |  x |    |
+        |____|____|____|____|____|____|
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        """
+        Frontlist = []
+        # row of x at the bottom
+        Frontlist = Frontlist + list(range(self.nx + 1, 2 * self.nx - 1))
+        # row of x at the top
+        Frontlist = Frontlist + list(
+            range((self.ny - 3) * (self.nx) + self.nx + 1, (self.ny - 3) * (self.nx) + 2 * self.nx - 1))
+        for i in range(1, self.ny - 3):
+            # row of x at the left
+            Frontlist.append(self.nx + 1 + i * self.nx)
+            # row of x at the right
+            Frontlist.append(2 * self.nx - 2 + i * self.nx)
+
+        # To check:
+        # from utilities.utility import plot_as_matrix
+        # K = np.zeros(self.NumberOfElts)
+        # K[Frontlist] = 1
+        # plot_as_matrix(K, self)
+        return Frontlist
+
+    # ----------------------------------------------------------------------------------------------------------------------
+    def get_Boundarylist(self):
+        """
+        We create a list of cell IDs that are at the boundary of the mesh. See the example below.
+        In that case the list will contain the elements identified with a x.
+        The list of elements will be called Boundarylist
+
+         _____________________________
+        | x  | x  | x  | x  | x  | x  |
+        |____|____|____|____|____|____|
+        | x  |    |    |    |    | x  |
+        |____|____|____|____|____|____|
+        | x  |    |    |    |    | x  |
+        |____|____|____|____|____|____|
+        | x  |    |    |    |    | x  |
+        |____|____|____|____|____|____|
+        | x  |    |    |    |    | x  |
+        |____|____|____|____|____|____|
+        | x  | x  | x  | x  | x  | x  |
+        |____|____|____|____|____|____|
+        """
+        Boundarylist = []
+        # row of x at the bottom (except first and last that will be added later)
+        Boundarylist = Boundarylist + list(range(1, self.nx-1))
+        # row of x at the top (except first and last that will be added later)
+        Boundarylist = Boundarylist + list(range((self.ny - 1) * (self.nx)+1, (self.ny) * (self.nx) -1))
+
+        for i in range(0, self.ny ):
+            # row of x at the left
+            Boundarylist.append(i * self.nx)
+            # row of x at the right
+            Boundarylist.append((i+1) * self.nx -1)
+
+        # To check:
+        # from utilities.utility import plot_as_matrix
+        # K=np.zeros(self.NumberOfElts)
+        # K[Boundarylist] = 1
+        # plot_as_matrix(K,self)
+        return Boundarylist
+
+    # ----------------------------------------------------------------------------------------------------------------------
 
     def get_cells_inside_circle(self, r, center):
         """
