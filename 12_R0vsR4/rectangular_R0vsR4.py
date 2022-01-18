@@ -15,14 +15,16 @@ from common_rect_and_radial_tests import *
 from level_set.continuous_front_reconstruction import plot_two_fronts
 from utilities.postprocess_fracture import append_to_json_file
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
-
+from src.tip.tip_inversion import StressIntensityFactor
 
 # ----------------------------------------------
 # ----------------------------------------------
 # RUN
 # ----------------------------------------------
 # ----------------------------------------------
-run = False
+
+
+run = True
 file_name = "results_rectangular_as10.json"
 
 if run:
@@ -51,6 +53,8 @@ if run:
 
     maxref = sim_info["max. n. of refinements"]
 
+    sim_info["H"] = sim_info["domain x"][1] - sim_info["domain x"][0]
+
     results = {"nx" : [],
                "ny" : [],
                "Lx" : [],
@@ -62,8 +66,11 @@ if run:
                "n. of Elts" : [],
                "nu": sim_info["nu"],  # Poisson's ratio
                "youngs mod": sim_info["youngs mod"],
-               "H" : sim_info["domain x"][1] - sim_info["domain x"][0],
+               "H" :  sim_info["H"],
                "p": sim_info["p"],
+               "w_R0": [],
+               "w_R4": [],
+               "eltcrack" : []
                }
 
     for refinement_ID in np.arange(1, maxref, 1):
@@ -119,34 +126,54 @@ if run:
 
 
         # # SIF estimation
-        # KI_ana = KI_2DPS_solution(sim_info["p"], sim_info["H"])
-        # #
-        # all_w[EltCrack] = sol_R0
-        # KIPrime_R0 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
-        #                                    sgndDist,
-        #                                    EltTip,
-        #                                    EltRibbon,
-        #                                    np.full(len(EltTip), True),
-        #                                    Mesh,
-        #                                    Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
+        KI_ana = KI_2DPS_solution(sim_info["p"], sim_info["H"])
         #
-        # relerr_KIPrime_R0 = 100. * (np.abs(KIPrime_R0 - KI_ana) / KI_ana).max()
-        # relerr_KIPrime_R0_av = 100. * np.mean(np.abs(KIPrime_R0 - KI_ana) / KI_ana)
-        # results["KI R0"].append(relerr_KIPrime_R0)
-        # results["KI R0 av"].append(relerr_KIPrime_R0_av)
-        # #
-        # all_w[EltCrack] = sol_R4
-        # KIPrime_R4 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
-        #                                    sgndDist,
-        #                                    EltTip,
-        #                                    EltRibbon,
-        #                                    np.full(len(EltTip), True),
-        #                                    Mesh,
-        #                                    Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
-        # relerr_KIPrime_R4 = 100 * (np.abs(KIPrime_R4 - KI_ana) / KI_ana).max()
-        # relerr_KIPrime_R4_av = 100 * np.mean(np.abs(KIPrime_R4 - KI_ana) / KI_ana)
-        # results["KI R4"].append(relerr_KIPrime_R4)
-        # results["KI R4 av"].append(relerr_KIPrime_R4_av)
+        all_w = np.zeros(Mesh.NumberOfElts)
+
+        # compute sgndDist
+        sgndDist = np.zeros(Mesh.NumberOfElts)
+
+        for cell in range(Mesh.NumberOfElts):
+            coorC = Mesh.CenterCoor[cell]
+            xC = coorC[0]; yC = coorC[1]
+            temp = np.asarray([coorC[1], coorC[1], coorC[0], coorC[0]])
+            # remember Mesh.domainLimits = [yminF,ymaxF,xminF,xmaxF]
+            sgndDist[cell] = - np.min(np.abs(Mesh.domainLimits - temp))
+
+        # from utilities.utility import plot_as_matrix
+        # plot_as_matrix(sgndDist, Mesh)
+
+        EltTip = Mesh.get_Boundarylist()
+        EltRibbon = Mesh.get_Frontlist()
+
+        #
+        all_w[EltCrack] = sol_R0
+        KIPrime_R0 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+                                           sgndDist,
+                                           EltTip,
+                                           EltRibbon,
+                                           np.full(len(EltTip), True),
+                                           Mesh,
+                                           Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
+
+        relerr_KIPrime_R0 = 100. * (np.abs(KIPrime_R0 - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R0_av = 100. * np.mean(np.abs(KIPrime_R0 - KI_ana) / KI_ana)
+        results["KI R0"].append(relerr_KIPrime_R0)
+        results["KI R0 av"].append(relerr_KIPrime_R0_av)
+        #
+        all_w[EltCrack] = sol_R4
+
+        KIPrime_R4 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+                                           sgndDist,
+                                           EltTip,
+                                           EltRibbon,
+                                           np.full(len(EltTip), True),
+                                           Mesh,
+                                           Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
+        relerr_KIPrime_R4 = 100 * (np.abs(KIPrime_R4 - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R4_av = 100 * np.mean(np.abs(KIPrime_R4 - KI_ana) / KI_ana)
+        results["KI R4"].append(relerr_KIPrime_R4)
+        results["KI R4 av"].append(relerr_KIPrime_R4_av)
 
 
         # some plots
@@ -160,6 +187,11 @@ if run:
         results["max w R4"].append(sol_R4.max())
         results["frac volume R0"].append(np.sum(sol_R0) * Mesh.hx * Mesh.hy)
         results["frac volume R4"].append(np.sum(sol_R4) * Mesh.hx * Mesh.hy)
+
+        # store nonzero w and elements index
+        results["w_R0"].append(sol_R0.tolist())
+        results["w_R4"].append(sol_R4.tolist())
+        results["eltcrack"].append(EltCrack.tolist())
         print(" ------------------- \n")
 
         print("Saving to file")

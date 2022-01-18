@@ -20,6 +20,10 @@ log = logging.getLogger('PyFrac.solve_width_pressure')
 
 
 # ----------------------------------------------
+def KI_2DPS_solution(p, H):
+    # SIF of a plane strain crack of total height H
+    return p * np.sqrt(np.pi * H / 2.)
+
 def KI_radial_solution(p,R):
     return 2. * p * np.sqrt(R) / np.sqrt(np.pi)
 
