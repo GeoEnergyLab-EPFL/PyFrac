@@ -253,7 +253,7 @@ def matvec_fast_R4(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         di = np.abs(di)
         row = np.empty(dimX, dtype=C_precision)
 
-        for local_ind in range(dimX):
+        for local_ind in prange(dimX):
             if djdi[local_ind]:
                 row[local_ind] = C_toeplitz_coe[0, dj[local_ind] + di[local_ind]] # dj>0 & di>0 OR dj<0 & di<0
             else:
