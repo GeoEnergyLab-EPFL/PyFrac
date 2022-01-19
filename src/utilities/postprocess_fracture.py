@@ -18,7 +18,7 @@ import sys
 import json
 
 # Internal Imports
-from systems.systems_functions import calculate_fluid_flow_characteristics_laminar
+from systems.make_sys_common_fun import calculate_fluid_flow_characteristics_laminar
 from utilities.utility import ReadFracture
 from HF_reference_solutions import HF_analytical_sol, get_fracture_dimensions_analytical
 from utilities.labels import *

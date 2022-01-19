@@ -12,7 +12,7 @@ import logging
 import numpy as np
 
 # internal import
-from systems.sys_back_subst_EHL import check_covergance
+from systems.make_sys_back_subst_EHL import check_covergance
 from properties import instrument_start, instrument_close
 
 #@profile
