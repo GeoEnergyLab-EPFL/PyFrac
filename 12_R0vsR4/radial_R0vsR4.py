@@ -101,7 +101,7 @@ def get_err_sig_zz(sigz_num, xy_obs,sim_info, geterr):
 # RUN
 # ----------------------------------------------
 # ----------------------------------------------
-run =False
+run =True
 file_name = "results_radial.json"
 
 if run:
@@ -195,15 +195,15 @@ if run:
                 }
 
 
+    # loop over the different meshes
     for refinement_ID in np.arange(1, maxref, 1):
-
 
         print(f"Step {refinement_ID} of {maxref} :")
         st = 0
 
         # creating mesh & plotting
         Mesh = get_mesh(sim_info, refinement_ID)
-        #C_R4 = load_isotropic_elasticity_matrix_toepliz(Mesh, sim_info["Eprime"], Kernel='R4')  #C_R4[np.arange(Mesh.NumberOfElts), np.arange(Mesh.NumberOfElts)]
+
         # defining the geometry
         Fr_geometry = Geometry('radial', radius=sim_info["R"])
         surv_cells, surv_dist, inner_cells = get_survey_points(Fr_geometry, Mesh)
@@ -314,7 +314,8 @@ if run:
         results["frac volume R0 with tipcorr and ff"].append(v_R0_tc_ff)
         results["frac volume R4 with tipcorr and ff"].append(v_R4_tc_ff)
 
-        # SIF estimation
+        # > SIF estimation <
+
         KI_ana = KI_radial_solution(sim_info["p"], sim_info["R"])
         #
         all_w[EltCrack] = sol_R0
@@ -404,7 +405,7 @@ if run:
         results["mix e w R0 with tipcorr"].append(mix_e_R0_tipcorr)
         results["mix e w R4 with tipcorr"].append(mix_e_R4_tipcorr)
 
-        # store nonzero w and elements index
+        # - store nonzero w and elements index
         results["w_R0"].append(sol_R0.tolist())
         results["w_R4"].append(sol_R4.tolist())
         results["w_R0_tipcorr"].append(sol_R0_tipcorr.tolist())

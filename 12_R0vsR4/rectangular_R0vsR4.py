@@ -61,8 +61,16 @@ if run:
                "Ly" : [],
                "max w R0" : [],
                "max w R4" : [],
+               "max w R0 with tipcorr": [],
+               "max w R4 with tipcorr": [],
                "frac volume R0": [],
                "frac volume R4": [],
+               "frac volume R0 with tipcorr": [],
+               "frac volume R4 with tipcorr": [],
+               "KI R0 with tipcorr": [],
+               "KI R0 with tipcorr av": [],
+               "KI R4 with tipcorr": [],
+               "KI R4 with tipcorr av": [],
                "n. of Elts" : [],
                "nu": sim_info["nu"],  # Poisson's ratio
                "youngs mod": sim_info["youngs mod"],
@@ -70,9 +78,13 @@ if run:
                "p": sim_info["p"],
                "w_R0": [],
                "w_R4": [],
+               "w_R0_tipcorr": [],
+               "w_R4_tipcorr": [],
                "eltcrack" : []
                }
 
+
+    # loop over the different meshes
     for refinement_ID in np.arange(1, maxref, 1):
 
 
@@ -82,7 +94,8 @@ if run:
         # creating mesh & plotting
         Mesh = get_mesh(sim_info, refinement_ID)
         EltCrack = np.arange(Mesh.NumberOfElts)
-
+        FillF = np.ones(len(EltTip))
+        
         #if refinement_ID == 1 or  refinement_ID == maxref -1:
         #   plot_two_fronts(Mesh, newfront=None, oldfront=None , fig=None, grid=True, cells = EltCrack, my_marker = " ")
 
@@ -111,6 +124,14 @@ if run:
         print(f"     --> done in {dummy}")
 
         st = st + 1
+        print(f" {st}) solving R_4 matrix (with tip corr)")
+        dummy = - time.time()
+        TipCorr = [FillF, EltTip]
+        sol_R4_tipcorr = get_solution(C_R4, p, EltCrack, TipCorr=TipCorr)
+        dummy = dummy + time.time()
+        print(f"     --> done in {dummy}")
+
+        st = st + 1
         print(f" {st}) loading R_0 matrix")
         dummy = - time.time()
         C_R0 = load_isotropic_elasticity_matrix_toepliz(Mesh, sim_info["Eprime"], Kernel='R0')
@@ -124,12 +145,36 @@ if run:
         dummy = dummy + time.time()
         print(f"     --> done in {dummy}")
 
+        st = st + 1
+        print(f" {st}) solving R_0 matrix (with tip corr)")
+        dummy = - time.time()
+        TipCorr = [FillF, EltTip]
+        sol_R0_tipcorr = get_solution(C_R0, p, EltCrack, TipCorr=TipCorr)
+        dummy = dummy + time.time()
+        print(f"     --> done in {dummy}")
 
-        # # SIF estimation
+
+
+        # some plots
+        # rel_err_num = 100 * np.abs(sol_R0 - sol_R4) / sol_R4
+        # plot_as_matrix(rel_err_num, mesh=Mesh) # 2D plot
+        # plot_3d_scatter(sol_R4, Mesh.CenterCoor[:, 0], Mesh.CenterCoor[:, 1]) # 3D plot
+
+        st = st + 1
+        print(f" {st}) saving stats.")
+        results["max w R0"].append(sol_R0.max())
+        results["max w R4"].append(sol_R4.max())
+        results["max w R0 with tipcorr"].append(sol_R0_tipcorr.max())
+        results["max w R4 with tipcorr"].append(sol_R4_tipcorr.max())
+        results["frac volume R0"].append(np.sum(sol_R0) * Mesh.hx * Mesh.hy)
+        results["frac volume R4"].append(np.sum(sol_R4) * Mesh.hx * Mesh.hy)
+        results["frac volume R0 with tipcorr"].append(np.sum(sol_R0_tipcorr) * Mesh.hx * Mesh.hy)
+        results["frac volume R4 with tipcorr"].append(np.sum(sol_R4_tipcorr) * Mesh.hx * Mesh.hy)
+
+
+        # > SIF estimation <
+
         KI_ana = KI_2DPS_solution(sim_info["p"], sim_info["H"])
-        #
-        all_w = np.zeros(Mesh.NumberOfElts)
-
         # compute sgndDist
         sgndDist = np.zeros(Mesh.NumberOfElts)
 
@@ -147,6 +192,7 @@ if run:
         EltRibbon = Mesh.get_Frontlist()
 
         #
+        all_w = np.zeros(Mesh.NumberOfElts)
         all_w[EltCrack] = sol_R0
         KIPrime_R0 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
                                            sgndDist,
@@ -175,20 +221,38 @@ if run:
         results["KI R4"].append(relerr_KIPrime_R4)
         results["KI R4 av"].append(relerr_KIPrime_R4_av)
 
+        #
+        all_w[EltCrack] = sol_R0_tipcorr
+        KIPrime_R0_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+                                                                          sgndDist,
+                                                                          EltTip,
+                                                                          EltRibbon,
+                                                                          np.full(len(EltTip), True),
+                                                                          Mesh,
+                                                                          Eprime=np.full(Mesh.NumberOfElts,
+                                                                                         sim_info["Eprime"]))
+        relerr_KIPrime_R0_tipcorr = 100 * (np.abs(KIPrime_R0_tipcorr - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R0_tipcorr_av = 100 * np.mean(np.abs(KIPrime_R0_tipcorr - KI_ana) / KI_ana)
+        results["KI R0 with tipcorr"].append(relerr_KIPrime_R0_tipcorr)
+        results["KI R0 with tipcorr av"].append(relerr_KIPrime_R0_tipcorr_av)
+        #
+        all_w[EltCrack] = sol_R4_tipcorr
+        KIPrime_R4_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+                                                                          sgndDist,
+                                                                          EltTip,
+                                                                          EltRibbon,
+                                                                          np.full(len(EltTip), True),
+                                                                          Mesh,
+                                                                          Eprime=np.full(Mesh.NumberOfElts,
+                                                                                         sim_info["Eprime"]))
+        relerr_KIPrime_R4_tipcorr = 100 * (np.abs(KIPrime_R4_tipcorr - KI_ana) / KI_ana).max()
+        relerr_KIPrime_R4_tipcorr_av = 100 * np.mean(np.abs(KIPrime_R4_tipcorr - KI_ana) / KI_ana)
+        results["KI R4 with tipcorr"].append(relerr_KIPrime_R4_tipcorr)
+        results["KI R4 with tipcorr av"].append(relerr_KIPrime_R4_tipcorr_av)
 
-        # some plots
-        # rel_err_num = 100 * np.abs(sol_R0 - sol_R4) / sol_R4
-        # plot_as_matrix(rel_err_num, mesh=Mesh) # 2D plot
-        # plot_3d_scatter(sol_R4, Mesh.CenterCoor[:, 0], Mesh.CenterCoor[:, 1]) # 3D plot
 
-        st = st + 1
-        print(f" {st}) saving stats.")
-        results["max w R0"].append(sol_R0.max())
-        results["max w R4"].append(sol_R4.max())
-        results["frac volume R0"].append(np.sum(sol_R0) * Mesh.hx * Mesh.hy)
-        results["frac volume R4"].append(np.sum(sol_R4) * Mesh.hx * Mesh.hy)
+        # > store nonzero w and elements index <
 
-        # store nonzero w and elements index
         results["w_R0"].append(sol_R0.tolist())
         results["w_R4"].append(sol_R4.tolist())
         results["eltcrack"].append(EltCrack.tolist())
