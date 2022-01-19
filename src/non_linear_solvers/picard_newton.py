@@ -12,7 +12,7 @@ import numpy as np
 import logging
 
 # internal imports
-from systems.sys_back_subst_EHL import check_covergance, Elastohydrodynamic_ResidualFun
+from systems.make_sys_back_subst_EHL import check_covergance, Elastohydrodynamic_ResidualFun
 from properties import instrument_start, instrument_close
 
 

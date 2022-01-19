@@ -13,7 +13,7 @@ from scipy import sparse
 from scipy.sparse.linalg import LinearOperator
 
 # Internal imports
-from systems.systems_functions import Gravity_term, get_finite_difference_matrix
+from systems.make_sys_common_fun import Gravity_term, get_finite_difference_matrix
 
 class Monolithic_EHL_sys_obj(LinearOperator):
   # TESTED FOR NEWTONIAN FLUIDS ONLY!

@@ -13,8 +13,8 @@ import logging
 import copy
 
 # Internal Imports
-from systems.systems_handler import solve_width_pressure
-from systems.systems_functions import calculate_fluid_flow_characteristics_laminar
+from systems.sol_sys_dispatcher import solve_width_pressure
+from systems.make_sys_common_fun import calculate_fluid_flow_characteristics_laminar
 from time_step.ts_toughess_direction_loop import toughness_direction_loop
 
 from tip.volume_integral import Integral_over_cell

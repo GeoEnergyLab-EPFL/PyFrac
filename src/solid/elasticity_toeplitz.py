@@ -407,18 +407,21 @@ class elasticity_matrix_toepliz(LinearOperator):
                               self.C_toeplitz_coe, self.C_precision)
 
             if self.left_precJ:
+                # TIPCORRECTION & LEFT PRECONDITIONER
                 # (A+tipcorr*I)*uk
                 res[self.tipINDX_codomain] = res[self.tipINDX_codomain] + uk[self.tipINDX_codomain] * self.tipcorr[self.tip_in_codomain]
                 res = self._precJm1dotvec(res, tipINDX_codomain = self.tipINDX_codomain)
             elif self.right_precJ:
+                # TIPCORRECTION & RIGHT PRECONDITIONER
                 # (A+tipcorr*I)*res
                 res[self.tipINDX_codomain] = res[self.tipINDX_codomain] + uk[self.tipINDX_codomain] * self.tipcorr[self.tip_in_codomain]
             else:
+                # ONLY TIPCORRECTION - NO PRECONDITIONER
                 if len(self.tipINDX_codomain_and_domain) > 0:
                     res[self.tipINDX_codomain_and_domain] = res[self.tipINDX_codomain_and_domain] + uk[self.tipINDX_codomain_and_domain] * self.tipcorr[self.tip_in_domain_and_codomain]
             return res
         else:
-            raise SystemExit('preconditioner without tip correction is not currently implemented')
+            raise SystemExit('elasticity matvec: case not currently implemented')
 
 
     def _precJm1dotvec(self, uk, tipINDX_codomain=None):
@@ -491,11 +494,14 @@ class elasticity_matrix_toepliz(LinearOperator):
         :param correction_INDX: (array) specified indexes where the correction_val should apply
         :return:
         """
-
+        # the following flag needs to be se to 0 when one wants to disable the tip correction
         self.enable_tip_corr = True
-        self.EltTip = EltTip  # list of tip elem. IDs
-        self.tipcorr = np.full(self.C_size_, np.nan) # for all elems in the mesh
+        # list of tip elem. IDs:
+        self.EltTip = EltTip
+        # build an array for all the elements in the mesh and fill it with the known values
+        self.tipcorr = np.full(self.C_size_, np.nan)
         self.tipcorr[EltTip] = tip_correction_factors(FillFrac) * self.diag_val
+
         if self.codomain_INDX is None:
             raise SystemExit('please call _set_codomain_IDX(codomainIDX) before _set_tipcorr(FillFrac, EltTip)')
         else:

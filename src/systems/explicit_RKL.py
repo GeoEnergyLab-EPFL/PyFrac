@@ -15,7 +15,7 @@ import sys
 import copy as cp
 
 # Internal imports
-from systems.systems_functions import finiteDiff_operator_laminar, FiniteDiff_operator_turbulent_implicit, Gravity_term
+from systems.make_sys_common_fun import finiteDiff_operator_laminar, FiniteDiff_operator_turbulent_implicit, Gravity_term
 
 
 from properties import instrument_start, instrument_close
