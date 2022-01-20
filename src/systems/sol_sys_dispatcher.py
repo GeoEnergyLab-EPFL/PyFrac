@@ -24,11 +24,11 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
     """
     #log = logging.getLogger('PyFrac.solve_width_pressure')
     if sim_properties.get_volumeControl():
-        sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
+        return sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
                          FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
                          doublefracturedictionary = doublefracturedictionary, inj_same_footprint = inj_same_footprint)
 
     if sim_properties.get_viscousInjection():
-        sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
-                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
-                         doublefracturedictionary = doublefracturedictionary, inj_same_footprint = inj_same_footprint)
+        return sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
+                                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
+                                         doublefracturedictionary = doublefracturedictionary, inj_same_footprint = inj_same_footprint)
