@@ -101,7 +101,7 @@ levelSetBandPrefactor = 12.66           # prefactor deciding on the thickness of
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
 enable_GPU = False                      # if True, GPU will be use to do the dense matrix vector product.
 n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
-use_block_toepliz_compression = False   # if True, only the unique coeff. of the elasticity matrix will be saved. It saves memory but it does more operations per time step.
+use_block_toepliz_compression = True   # if True, only the unique coeff. of the elasticity matrix will be saved. It saves memory but it does more operations per time step.
 
 #Front advancement
 proj_method = 'LS_continousfront'       # set the method to evaluate projection on front to the original ILSA method.
