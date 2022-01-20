@@ -22,7 +22,7 @@ from solid.elsticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4
 
 class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
 
-    def __init__(self, Mesh, Ep, C_precision=np.float64, useHMATdot=False, nu=None, HMATparam = None, Kernel='R4'):
+    def __init__(self, Mesh, Ep, C_precision=np.float64, useHMATdot=False, nu=None, HMATparam = None, Kernel='R0'):
 
         self.nu = nu
         self.Ep = Ep
