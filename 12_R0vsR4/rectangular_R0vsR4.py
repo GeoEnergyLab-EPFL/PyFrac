@@ -17,7 +17,7 @@ from common_rect_and_radial_tests import *
 from level_set.continuous_front_reconstruction import plot_two_fronts
 from utilities.postprocess_fracture import append_to_json_file
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
-from src.tip.tip_inversion import StressIntensityFactor
+from src.tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFromVolume
 
 # ----------------------------------------------
 # ----------------------------------------------
@@ -26,7 +26,7 @@ from src.tip.tip_inversion import StressIntensityFactor
 # ----------------------------------------------
 
 
-run = False
+run = True
 
 
 if run:
@@ -34,9 +34,6 @@ if run:
     file_name = "results_rectangular_as10.json"
     aspec_ratio_set = [10, 20, 30]
     file_name_set = ["results_rectangular_as10.json", "results_rectangular_as20.json", "results_rectangular_as30.json"]
-
-    aspec_ratio_set = [30]
-    file_name_set = ["results_rectangular_as30.json"]
 
 
     for ar_i in range(len(aspec_ratio_set)):
@@ -87,6 +84,10 @@ if run:
                    "KI R4": [],
                    "KI R0 with tipcorr": [],
                    "KI R4 with tipcorr": [],
+                   "KI R0_fromVol": [],
+                   "KI R4_fromVol": [],
+                   "KI R0_fromVol with tipcorr": [],
+                   "KI R4_fromVol with tipcorr": [],
                    "n. of Elts" : [],
                    "nu": sim_info["nu"],  # Poisson's ratio
                    "youngs mod": sim_info["youngs mod"],
@@ -214,7 +215,7 @@ if run:
             #
             all_w = np.zeros(Mesh.NumberOfElts)
             all_w[EltCrack] = sol_R0
-            KIPrime_R0 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+            KI_R0 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
                                                sgndDist,
                                                EltTip,
                                                EltRibbon,
@@ -224,25 +225,25 @@ if run:
 
             # find all the elem at the tip with coordinate y==0
             centralTips = np.where(np.abs(Mesh.CenterCoor[EltTip,1]) < 0.9 *Mesh.hy)[0][0]
-            relerr_KIPrime_R0 = 100. * (np.abs(KIPrime_R0[centralTips] - KI_ana) / KI_ana)
-            results["KI R0"].append(relerr_KIPrime_R0)
+            relerr_KI_R0 = 100. * (np.abs(KI_R0[centralTips] - KI_ana) / KI_ana)
+            results["KI R0"].append(relerr_KI_R0)
 
             #
             all_w[EltCrack] = sol_R4
 
-            KIPrime_R4 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+            KI_R4 = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
                                                sgndDist,
                                                EltTip,
                                                EltRibbon,
                                                np.full(len(EltTip), True),
                                                Mesh,
                                                Eprime=np.full(Mesh.NumberOfElts,sim_info["Eprime"]))
-            relerr_KIPrime_R4 = 100 * (np.abs(KIPrime_R4[centralTips] - KI_ana) / KI_ana)
-            results["KI R4"].append(relerr_KIPrime_R4)
+            relerr_KI_R4 = 100 * (np.abs(KI_R4[centralTips] - KI_ana) / KI_ana)
+            results["KI R4"].append(relerr_KI_R4)
 
             #
             all_w[EltCrack] = sol_R0_tipcorr
-            KIPrime_R0_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+            KI_R0_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
                                                                               sgndDist,
                                                                               EltTip,
                                                                               EltRibbon,
@@ -250,11 +251,11 @@ if run:
                                                                               Mesh,
                                                                               Eprime=np.full(Mesh.NumberOfElts,
                                                                                              sim_info["Eprime"]))
-            relerr_KIPrime_R0_tipcorr = 100 * (np.abs(KIPrime_R0_tipcorr[centralTips] - KI_ana) / KI_ana)
-            results["KI R0 with tipcorr"].append(relerr_KIPrime_R0_tipcorr)
+            relerr_KI_R0_tipcorr = 100 * (np.abs(KI_R0_tipcorr[centralTips] - KI_ana) / KI_ana)
+            results["KI R0 with tipcorr"].append(relerr_KI_R0_tipcorr)
             #
             all_w[EltCrack] = sol_R4_tipcorr
-            KIPrime_R4_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
+            KI_R4_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactor(all_w,
                                                                               sgndDist,
                                                                               EltTip,
                                                                               EltRibbon,
@@ -262,8 +263,64 @@ if run:
                                                                               Mesh,
                                                                               Eprime=np.full(Mesh.NumberOfElts,
                                                                                              sim_info["Eprime"]))
-            relerr_KIPrime_R4_tipcorr = 100 * (np.abs(KIPrime_R4_tipcorr[centralTips] - KI_ana) / KI_ana)
-            results["KI R4 with tipcorr"].append(relerr_KIPrime_R4_tipcorr)
+            relerr_KI_R4_tipcorr = 100 * (np.abs(KI_R4_tipcorr[centralTips] - KI_ana) / KI_ana)
+            results["KI R4 with tipcorr"].append(relerr_KI_R4_tipcorr)
+
+            # SIF from volume
+            all_w[EltCrack] = sol_R0
+            KI_R0_vol = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                      sgndDist,
+                                                                      EltTip,
+                                                                      EltRibbon,
+                                                                      np.full(len(EltTip), True),
+                                                                      Mesh,
+                                                                      Eprime=np.full(Mesh.NumberOfElts,
+                                                                                     sim_info["Eprime"]))
+
+            # find all the elem at the tip with coordinate y==0
+            centralTips = np.where(np.abs(Mesh.CenterCoor[EltTip, 1]) < 0.9 * Mesh.hy)[0][0]
+            relerr_KIPrime_R0_vol = 100. * (np.abs(KI_R0_vol[centralTips] - KI_ana) / KI_ana)
+            results["KI R0_fromVol"].append(relerr_KIPrime_R0_vol)
+
+            #
+            all_w[EltCrack] = sol_R4
+
+            KI_R4_vol = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                      sgndDist,
+                                                                      EltTip,
+                                                                      EltRibbon,
+                                                                      np.full(len(EltTip), True),
+                                                                      Mesh,
+                                                                      Eprime=np.full(Mesh.NumberOfElts,
+                                                                                     sim_info["Eprime"]))
+            relerr_KI_R4_vol = 100 * (np.abs(KI_R4_vol[centralTips] - KI_ana) / KI_ana)
+            results["KI R4_fromVol"].append(relerr_KI_R4_vol)
+
+            #
+            all_w[EltCrack] = sol_R0_tipcorr
+            KI_R0_vol_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                              sgndDist,
+                                                                              EltTip,
+                                                                              EltRibbon,
+                                                                              np.full(len(EltTip), True),
+                                                                              Mesh,
+                                                                              Eprime=np.full(Mesh.NumberOfElts,
+                                                                                             sim_info["Eprime"]))
+            relerr_KI_R0_vol_tipcorr = 100 * (np.abs(KI_R0_vol_tipcorr[centralTips] - KI_ana) / KI_ana)
+            results["KI R0_fromVol with tipcorr"].append(relerr_KI_R0_vol_tipcorr)
+            #
+            all_w[EltCrack] = sol_R4_tipcorr
+            KI_R4_vol_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                              sgndDist,
+                                                                              EltTip,
+                                                                              EltRibbon,
+                                                                              np.full(len(EltTip), True),
+                                                                              Mesh,
+                                                                              Eprime=np.full(Mesh.NumberOfElts,
+                                                                                             sim_info["Eprime"]))
+            relerr_KI_R4_vol_tipcorr = 100 * (np.abs(KI_R4_vol_tipcorr[centralTips] - KI_ana) / KI_ana)
+            results["KI R4_fromVol with tipcorr"].append(relerr_KI_R4_vol_tipcorr)
+
 
             # > store nonzero w and elements index <
 
@@ -411,13 +468,23 @@ if post:
     plt.plot(results3["nx"], results3["KI R0 with tipcorr"], c='r', marker=".")
     plt.plot(results3["nx"], results3["KI R4"], c='b', marker="+")
     plt.plot(results3["nx"], results3["KI R4 with tipcorr"], c='b', marker=".")
+
+    # SIF from vol
+    plt.plot(results3["nx"], results3["KI R0_fromVol"], c='r--', marker="+")
+    plt.plot(results3["nx"], results3["KI R0_fromVol with tipcorr"], c='r--', marker=".")
+    plt.plot(results3["nx"], results3["KI R4_fromVol"], c='b--', marker="+")
+    plt.plot(results3["nx"], results3["KI R4_fromVol with tipcorr"], c='b--', marker=".")
+
     plt.tick_params(labeltop=True, labelright=True)
     plt.grid(True, which="both", ls="-")
 
     plt.xlabel('# of DOF in x direction crack')
     plt.ylabel('rel. err. KI [%]')
     plt.legend(('R0 - NO tip corr',  'R0 - tip corr as Ryder & Napier 1985',
-                'R4 - NO tip corr', 'R4 - tip corr as Ryder & Napier 1985'), loc='lower left', shadow=True, title='Aspect ratio = 30')
+                'R4 - NO tip corr', 'R4 - tip corr as Ryder & Napier 1985',
+                'R0 - NO tip corr - vol est', 'R0 - tip corr - vol est',
+                'R4 - NO tip corr - vol est', 'R4 - tip corr - vol est'
+                ), loc='lower left', shadow=True, title='Aspect ratio = 30')
     plt.xscale('log')
     plt.yscale('log')
 
