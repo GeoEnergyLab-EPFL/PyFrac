@@ -17,7 +17,7 @@ from array import array
 import os, sys
 
 # internal imports
-from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+from solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
 from solid.elasticity_toeplitz import elasticity_matrix_toepliz
 
 
