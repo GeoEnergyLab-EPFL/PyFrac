@@ -550,7 +550,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _set_kerneltype_as_it_used_to_be(self):
-        from solid.elsticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4, getFast_sparseC_R4
+        from solid.elasticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4, getFast_sparseC_R4
         if self.kerneltype == "Isotropic_R4":
             # set the functions needed for the dot product back
             self.f_matvec_fast = matvec_fast_R4

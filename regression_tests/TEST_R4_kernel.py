@@ -11,9 +11,9 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 
 # local imports
-from solid.elsticity_kernels.isotropic_R4_elem import sig_zz_Dz_11, sig_zz_Dz_12, sig_zz_Dz_13, isotropic_R4_kernel
-from solid.elsticity_kernels.isotropic_R4_elem import sig_zz_Dz_21, sig_zz_Dz_22, sig_zz_Dz_23
-from solid.elsticity_kernels.isotropic_R4_elem import sig_zz_Dz_31, sig_zz_Dz_32, sig_zz_Dz_33
+from solid.elasticity_kernels.isotropic_R4_elem import sig_zz_Dz_11, sig_zz_Dz_12, sig_zz_Dz_13, isotropic_R4_kernel
+from solid.elasticity_kernels.isotropic_R4_elem import sig_zz_Dz_21, sig_zz_Dz_22, sig_zz_Dz_23
+from solid.elasticity_kernels.isotropic_R4_elem import sig_zz_Dz_31, sig_zz_Dz_32, sig_zz_Dz_33
 
 toll_abs_err = 5*10.**-13
 toll_rel_err = 5*10.**-13
