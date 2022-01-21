@@ -27,7 +27,7 @@ from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matri
 from mesh_obj.mesh import CartesianMesh
 from mesh_obj.remesh import *
 
-from time_step.time_step_solution import attempt_time_step
+from time_step.ts_solution import attempt_time_step
 from utilities.utility import append_new_line
 
 from utilities.visualization import plot_footprint_analytical, plot_analytical_solution,\
