@@ -19,7 +19,7 @@ from time_step.ts_toughess_direction_loop import toughness_direction_loop
 
 from tip.volume_integral import Integral_over_cell
 from tip.volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
-from tip.tip_inversion import StressIntensityFactor
+from tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFormVolume
 
 from level_set.anisotropy import reconstruct_front_LS_gradient
 from level_set.anisotropy import find_zero_vertex
@@ -560,13 +560,24 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
     if stagnant.any():
         # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
-        KIPrime = StressIntensityFactor(w_k,
-                                        sgndDist_k,
-                                        EltsTipNew,
-                                        EltRibbon_k,
-                                        stagnant,
-                                        Fr_lstTmStp.mesh,
-                                        Eprime=Eprime_tip)
+        if mat_properties.TI_elasticity:
+            KIPrime = StressIntensityFactor(w_k,
+                                            sgndDist_k,
+                                            EltsTipNew,
+                                            EltRibbon_k,
+                                            stagnant,
+                                            Fr_lstTmStp.mesh,
+                                            Eprime=Eprime_tip)
+        else:
+            Eprime_ribbon = np.full((EltRibbon_k.size,), mat_properties.Eprime, dtype=np.float64)
+            KIPrime = StressIntensityFactorFormVolume(w_k,
+                                            sgndDist_k,
+                                            EltsTipNew,
+                                            EltRibbon_k,
+                                            stagnant,
+                                            Fr_lstTmStp.mesh,
+                                            Eprime=Eprime_ribbon)
+
 
         # todo: Find the right cause of failure
         # if the stress Intensity factor cannot be found. The most common reason is wiggles in the front resulting
@@ -576,7 +587,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             return exitstatus, None
 
         # Calculate average width in the tip cells by integrating tip asymptote. Width of stagnant cells are calculated
-        # using the stress intensity factor (see Dontsov and Peirce, JFM RAPIDS, 2017)
+        # using the stress intensity factor (see Dontsov and Peirce, CMAME, 2016)
         wTip = Integral_over_cell(EltsTipNew,
                                   alpha_k,
                                   l_k,

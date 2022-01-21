@@ -16,7 +16,8 @@ from scipy.optimize import fsolve
 
 # Internal imports
 from properties import instrument_start, instrument_close
-
+from mesh_obj.mesh import get_8neighbors
+from level_set.level_set_utils import get_LS_on_cell_vertexes, get_LSangle_on_cell_vertexes
 
 beta_m = 2**(1/3) * 3**(5/6)
 beta_mtld = 4/(15**(1/4) * (2**0.5 - 1)**(1/4))
@@ -817,7 +818,7 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
 
 def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Eprime):
     """ 
-    This function evaluate the stress intensity factor. See Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2017
+    This function evaluate the stress intensity factor. See Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2016
     
     Arguments:
         w (ndarray-float):              fracture width
@@ -838,9 +839,7 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
     KIPrime = np.zeros((EltTip.size,), float)
     for i in range(0, len(EltTip)):
         if stagnant[i]:
-            neighbors = mesh.NeiElements[EltTip[i]]
-            enclosing = np.append(neighbors, np.asarray(
-                [neighbors[2] - 1, neighbors[2] + 1, neighbors[3] - 1, neighbors[3] + 1]))  # eight enclosing cells
+            enclosing = get_8neighbors(mesh.NeiElements, EltTip[i]) # eight enclosing cells
 
             InRibbon = np.asarray([], int)  # find neighbors in Ribbon cells
             for e in range(8):
@@ -875,6 +874,78 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
 
     return KIPrime
 
+
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+def StressIntensityFactorFormVolume(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Eprime):
+    """
+    This function evaluate the stress intensity factor (SIF).
+    While in Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2016, the SIF is evaluated by inverting the
+    asymptotic solution of the fracture opening at the tip, here the SIF is obtained by equating the analytical and
+    numerical SIF at the ribbon cells.
+
+    Arguments:
+        w (ndarray-float):              fracture width
+        lvlSetData (ndarray-float):     the level set values, i.e. distance from the fracture front
+        EltTip (ndarray-int):           tip elements
+        EltRibbon (ndarray-int):        ribbon elements
+        stagnant (ndarray-boolean):     the stagnant tip cells
+        mesh (CartesianMesh object):    mesh
+        Eprime (ndarray):                 the plain strain modulus
+
+    Returns:
+        ndarray-float:                  the stress intensity factor of the stagnant cells. Zero is returned for the
+                                        tip cells that are moving.
+    """
+    from tip.volume_integral import Integral_over_cell
+    log = logging.getLogger('PyFrac.StressIntensityFactor')
+
+    # 1) Compute Kic at all ribbon cells
+    NoRib = len(EltRibbon)
+    KIPrime_ribbon = np.zeros((NoRib,), float)
+    for i in range(NoRib):
+        cell_ID = EltRibbon[i]
+        enclosing = get_8neighbors(mesh.NeiElements, cell_ID)  # eight enclosing cells
+        ls_on_cell_vertexes = get_LS_on_cell_vertexes(lvlSetData[enclosing], lvlSetData[cell_ID])
+
+        l_ind = np.argmin(ls_on_cell_vertexes)
+        l = -ls_on_cell_vertexes[l_ind]
+        lsAngle_on_cell_vertexes = get_LSangle_on_cell_vertexes(lvlSetData[enclosing], lvlSetData[cell_ID])
+        alpha = lsAngle_on_cell_vertexes[l_ind]
+        # get the order of Eprime
+        Eprime_i = Eprime[i]
+        orderEprime = np.trunc(np.log10(Eprime_i))
+        KIPrime_ribbon[i] = (w[cell_ID] * mesh.EltArea * 10.**orderEprime)/Integral_over_cell(EltTip, np.asarray([alpha]), [l], mesh, 'K', Kprime=[10.**orderEprime], Eprime=[Eprime_i], stagnant=[False])[0]
+
+    # 2) For each tip cell find the closest ribbons and take their average SIF as a tip KIPrime
+    KIPrime = np.zeros((EltTip.size,), float)
+    for i in range(0, len(EltTip)):
+        if stagnant[i]:
+            enclosing = get_8neighbors(mesh.NeiElements, EltTip[i])  # eight enclosing cells
+
+            indx_Ribbon = np.asarray([], int)  # find neighbors in Ribbon cells
+            for e in range(8):
+                found = np.where(EltRibbon == enclosing[e])[0]
+                if found.size > 0:
+                    indx_Ribbon = np.append(indx_Ribbon, found[0])
+
+            if indx_Ribbon.size == 1:
+                KIPrime[i] = KIPrime_ribbon[indx_Ribbon]
+
+            elif indx_Ribbon.size > 1:  # evaluate using linear least squares method
+                KIPrime[i] = np.mean(KIPrime_ribbon[indx_Ribbon])
+
+            else:  # ribbon cells not found in enclosure, evaluating with the closest ribbon cell
+                log.warning("ribbon cells not found in enclosure of the tip, evaluating with the closest ribbon cell")
+                RibbonCellsDist = ((mesh.CenterCoor[EltRibbon, 0] - mesh.CenterCoor[EltTip[i], 0]) ** 2 + (
+                        mesh.CenterCoor[EltRibbon, 1] - mesh.CenterCoor[EltTip[i], 1]) ** 2) ** 0.5
+                KIPrime[i] = KIPrime_ribbon[np.argmin(RibbonCellsDist)]
+
+            if KIPrime[i] < 0.:
+                KIPrime[i] = 0.
+
+    return KIPrime
 #-----------------------------------------------------------------------------------------------------------------------
 
 

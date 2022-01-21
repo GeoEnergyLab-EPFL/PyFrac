@@ -13,7 +13,7 @@ import numpy as np
 
 def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
     """
-    This function returns a list of elements that form a band where the location of the tip is expected to be.
+    It returns a list of elements that form a band where the location of the tip is expected to be.
     Args:
         mesh:
         EltRibbon:
@@ -76,3 +76,71 @@ def  get_front_region(mesh, EltRibbon, sgndDist_k_EltRibbon):
     # K[EltRibbon] = 2
     # plot_as_matrix(K, mesh)
     return front_region
+
+
+def get_LS_on_cell_vertexes(lvlSet_enclosing, lvlSet_cell):
+    """
+    It returns the level set at the vertexes of a given cell.
+
+       o----o----o----o
+       |enc6|enc5|enc4|
+       o----3----2----o
+       |enc7|cell|enc3|
+       o----0----1----o
+       |enc0|enc1|enc2|
+       o----o----o----o
+
+    :param lvlSet_enclosing:
+    :param lvlSet_cell:
+    :return:
+    """
+    ls_vertexes = np.empty(4, dtype=float)
+    [enc0, enc1, enc2, enc3, enc4, enc5, enc6, enc7] = lvlSet_enclosing[:]
+    ls_vertexes[0] = np.mean([enc0, enc1, enc7, lvlSet_cell])
+    ls_vertexes[1] = np.mean([enc1, enc2, enc3, lvlSet_cell])
+    ls_vertexes[2] = np.mean([enc3, enc4, enc5, lvlSet_cell])
+    ls_vertexes[3] = np.mean([enc5, enc6, enc7, lvlSet_cell])
+    return ls_vertexes
+
+
+def get_LSangle_on_cell_vertexes(lvlSet_enclosing, lvlSet_cell):
+    """
+    It returns the level set at the vertexes of a given cell.
+
+       o----o----o----o
+       |enc6|enc5|enc4|
+       o----3----2----o
+       |enc7|cell|enc3|
+       o----0----1----o
+       |enc0|enc1|enc2|
+       o----o----o----o
+
+    :param lvlSet_enclosing:
+    :param lvlSet_cell:
+    :return:
+    """
+    ls_angle_vertexes = np.empty(4, dtype=float)
+    [enc0, enc1, enc2, enc3, enc4, enc5, enc6, enc7] = lvlSet_enclosing[:]
+
+    dx_couples = [[enc1, enc0, enc7, lvlSet_cell],
+                  [enc1, enc2, enc3, lvlSet_cell],
+                  [enc4, enc5, enc3, lvlSet_cell],
+                  [enc6, enc5, enc7, lvlSet_cell]]
+
+    dy_couples = [[enc7, enc0, enc1, lvlSet_cell],
+                  [enc2, enc3, enc1, lvlSet_cell],
+                  [enc4, enc3, enc5, lvlSet_cell],
+                  [enc6, enc7, enc5, lvlSet_cell]]
+
+    for i in range(4):
+        # vertex i
+        dx_couple = dx_couples[i]
+        dx = np.mean([np.abs(dx_couple[0] - dx_couple[1]), np.abs(dx_couple[2] - dx_couple[3])])
+        dy_couple = dy_couples[i]
+        dy = np.mean([np.abs(dy_couple[0] - dy_couple[1]), np.abs(dy_couple[2] - dy_couple[3])])
+        if dx == 0.:
+            ls_angle_vertexes[i] = np.pi/2.
+        else:
+            ls_angle_vertexes[i] = np.arctan(dy/dx)
+
+    return ls_angle_vertexes
