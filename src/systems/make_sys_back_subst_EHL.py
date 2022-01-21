@@ -13,8 +13,8 @@ from scipy import sparse
 from scipy.sparse.linalg import LinearOperator
 
 # Internal imports
-from systems.systems_functions import get_finite_difference_matrix
-from systems.systems_functions import Gravity_term
+from systems.make_sys_common_fun import get_finite_difference_matrix
+from systems.make_sys_common_fun import Gravity_term
 
 def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, *args):
     """
