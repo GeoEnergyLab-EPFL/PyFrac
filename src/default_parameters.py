@@ -91,7 +91,7 @@ solve_sparse = True                     # if True, the fluid conductivity matrix
 
 # miscellaneous
 tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
-elastic_Kernel = 'R4'                   # specify 'R4' for the bi-quadratic DD-element and 'R0' for the constant DD-element.
+elastic_Kernel = 'R0'                   # specify 'R4' for the bi-quadratic DD-element and 'R0' for the constant DD-element.
 gravity = False                         # if True, the effect of gravity will be taken into account.
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 send_phone_msg = False                  # if True, you need to set up the function send_phone_message in the file utility
@@ -101,7 +101,7 @@ levelSetBandPrefactor = 12.66           # prefactor deciding on the thickness of
 symmetric = False                       # if True, only positive quarter of the cartesian coordinates will be solved.
 enable_GPU = False                      # if True, GPU will be use to do the dense matrix vector product.
 n_threads = 4                           # setting the number of threads for multi-threaded dot product for RKL scheme.
-use_block_toepliz_compression = False   # if True, only the unique coeff. of the elasticity matrix will be saved. It saves memory but it does more operations per time step.
+use_block_toepliz_compression = True   # if True, only the unique coeff. of the elasticity matrix will be saved. It saves memory but it does more operations per time step.
 
 #Front advancement
 proj_method = 'LS_continousfront'       # set the method to evaluate projection on front to the original ILSA method.

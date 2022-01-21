@@ -30,8 +30,8 @@ from tip.volume_integral import Integral_over_cell
 from tip.volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
 from tip.tip_inversion import TipAsymInversion, StressIntensityFactor
 
-from systems.systems_handler import solve_width_pressure
-from systems.systems_functions import calculate_fluid_flow_characteristics_laminar
+from systems.sol_sys_dispatcher import solve_width_pressure
+from systems.make_sys_common_fun import calculate_fluid_flow_characteristics_laminar
 from properties import IterationProperties, instrument_start, instrument_close
 from fluid.reyNumb import turbulence_check_tip
 from utilities.postprocess_fracture import append_to_json_file
