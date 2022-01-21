@@ -19,7 +19,7 @@ from time_step.ts_toughess_direction_loop import toughness_direction_loop
 
 from tip.volume_integral import Integral_over_cell
 from tip.volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
-from tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFormVolume
+from tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFromVolume
 
 from level_set.anisotropy import reconstruct_front_LS_gradient
 from level_set.anisotropy import find_zero_vertex
@@ -570,7 +570,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                             Eprime=Eprime_tip)
         else:
             Eprime_ribbon = np.full((EltRibbon_k.size,), mat_properties.Eprime, dtype=np.float64)
-            KIPrime = StressIntensityFactorFormVolume(w_k,
+            KIPrime = StressIntensityFactorFromVolume(w_k,
                                             sgndDist_k,
                                             EltsTipNew,
                                             EltRibbon_k,

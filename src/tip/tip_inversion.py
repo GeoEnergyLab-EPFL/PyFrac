@@ -878,7 +878,7 @@ def StressIntensityFactor(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Epri
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def StressIntensityFactorFormVolume(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Eprime):
+def StressIntensityFactorFromVolume(w, lvlSetData, EltTip, EltRibbon, stagnant, mesh, Eprime):
     """
     This function evaluate the stress intensity factor (SIF).
     While in Donstov & Pierce Comput. Methods Appl. Mech. Engrn. 2016, the SIF is evaluated by inverting the
