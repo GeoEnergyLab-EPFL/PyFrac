@@ -482,6 +482,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                        perfNode,
                                                        Vel_k,
                                                        corr_ribbon,
+                                                       stagnant,
                                                        doublefracturedictionary = doublefracturedictionary)
 
     # check if the new width is valid

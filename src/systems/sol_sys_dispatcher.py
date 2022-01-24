@@ -16,7 +16,7 @@ from systems.sol_sys_volume_and_load_control import sol_sys_volume_and_load_cont
 
 
 def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
-                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
+                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon, stagnant_tip,
                          doublefracturedictionary = None, inj_same_footprint = False):
     """
     This function evaluates the width and pressure by constructing and solving the coupled elasticity and fluid flow
@@ -30,5 +30,5 @@ def solve_width_pressure(Fr_lstTmStp, sim_properties, fluid_properties, mat_prop
 
     if sim_properties.get_viscousInjection():
         return sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
-                                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
+                                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon, stagnant_tip,
                                          doublefracturedictionary = doublefracturedictionary, inj_same_footprint = inj_same_footprint)
