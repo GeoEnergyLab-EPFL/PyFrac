@@ -69,6 +69,7 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
         wc_to_impose = []
         fully_closed = False
         corr_ribb_flag = False
+
         # Making and solving the system of equations. The width constraint is checked. If active, system is remade with
         # the constraint imposed and is resolved.
 

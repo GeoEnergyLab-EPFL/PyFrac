@@ -63,7 +63,7 @@ Fr_geometry = Geometry(shape='level set',
                        tip_distances=surv_cells_dist,
                        inner_cells=inner_cells)
 
-from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+from solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
 
 C = load_isotropic_elasticity_matrix(Mesh, Eprime)
 init_param = InitializationParameters(Fr_geometry,
