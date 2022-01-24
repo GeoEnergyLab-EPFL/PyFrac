@@ -29,9 +29,10 @@ from linear_solvers.linear_iterative_solver import Iterative_linear_solver
 from linear_solvers.preconditioners.prec_back_subst_EHL import EHL_iLU_Prec
 
 
-def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
-                         FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
-                         doublefracturedictionary = None, inj_same_footprint = False):
+def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C, Boundary,
+                FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon, stagnant_tip,
+                doublefracturedictionary = None, inj_same_footprint = False):
+
         log = logging.getLogger('PyFrac.solve_width_pressure.sol_sys_EHL')
 
         # velocity at the cell edges evaluated with the guess width. Used as guess
@@ -56,12 +57,14 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
         active_contraint = True
         to_solve = np.setdiff1d(EltCrack, EltTip)  # only taking channel elements to solve
 
+        # ---- the following has been taken out because it seems to be unphysical ---
         # adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also
         # solved for the stagnant tip cells as compared to tip cells which are moving.
-        if sim_properties.solveStagnantTip:
-            stagnant_tip = np.where(Vel < 1e-10)[0]
-        else:
-            stagnant_tip = []
+        # if sim_properties.solveStagnantTip:
+        #     stagnant_tip = np.where(Vel < 1e-10)[0]
+        # else:
+        #     stagnant_tip = []
+        # ---------------------------------------
         to_impose = np.delete(EltTip, stagnant_tip)
         imposed_val = np.delete(wTip, stagnant_tip)
         to_solve = np.append(to_solve, EltTip[stagnant_tip])
@@ -146,7 +149,10 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
                 LkOff,
                 neg,
                 corr_nei,
-                lst_edgeInCrk)
+                lst_edgeInCrk,
+                EltTip,       # needed for tip correction
+                stagnant_tip, # needed for tip correction
+                FillFrac)     # needed for tip correction
 
             w_guess = np.zeros(Fr_lstTmStp.mesh.NumberOfElts, dtype=np.float64)
             avg_dw = (sum(Qin) * timeStep / Fr_lstTmStp.mesh.EltArea - sum(
