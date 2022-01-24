@@ -11,7 +11,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 
 # local imports
-from solid.elsticity_kernels.isotropic_R4_elem import sig_zz_Dz_11, sig_zz_Dz_12, sig_zz_Dz_13, sig_zz_Dz_21, sig_zz_Dz_22, sig_zz_Dz_23, sig_zz_Dz_31, sig_zz_Dz_32, sig_zz_Dz_33
+from solid.elasticity_kernels.isotropic_R4_elem import sig_zz_Dz_11, sig_zz_Dz_12, sig_zz_Dz_13, sig_zz_Dz_21, sig_zz_Dz_22, sig_zz_Dz_23, sig_zz_Dz_31, sig_zz_Dz_32, sig_zz_Dz_33
 
 ###### TESTING ######
 

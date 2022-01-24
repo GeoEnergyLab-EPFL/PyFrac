@@ -22,10 +22,10 @@ from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='info')
+setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
-Mesh = CartesianMesh(2, 2, 41, 41)
+Mesh = CartesianMesh(2, 2, 31, 31)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -50,9 +50,13 @@ Fluid = FluidProperties(viscosity=viscosity)
 # simulation properties
 simulProp = SimulationProperties()
 simulProp.finalTime = 1e9                          # the time at which the simulation stops
-simulProp.saveTSJump, simulProp.plotTSJump = 5, 5   # save and plot after every 5 time steps
+simulProp.saveTSJump, simulProp.plotTSJump = 5, 1   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
+simulProp.useBlockToeplizCompression = True
+simulProp.EHL_GMRES = True
+simulProp.elasticKernel = 'R0'
+simulProp.frontAdvancing = 'implicit'
 
 # initializing fracture
 Fr_geometry = Geometry('radial')

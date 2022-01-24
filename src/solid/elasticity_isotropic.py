@@ -14,9 +14,9 @@ from numba.typed import List
 
 # internal imports
 from solid.elasticity_toeplitz import elasticity_matrix_toepliz, matvec_fast, getFast, getFast_sparseC
-from solid.elsticity_kernels.isotropic_R0_elem import get_toeplitzCoe_isotropic, get_R0_normal_traction_at
-from solid.elsticity_kernels.isotropic_R4_elem import get_toeplitzCoe_isotropic_R4, get_R4_normal_traction_at
-from solid.elsticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4, getFast_sparseC_R4
+from solid.elasticity_kernels.isotropic_R0_elem import get_toeplitzCoe_isotropic, get_R0_normal_traction_at
+from solid.elasticity_kernels.isotropic_R4_elem import get_toeplitzCoe_isotropic_R4, get_R4_normal_traction_at
+from solid.elasticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4, getFast_sparseC_R4
 
 # -----------------------------------------------------------------------------------------------------------------------
 

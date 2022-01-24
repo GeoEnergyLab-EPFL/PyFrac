@@ -20,14 +20,14 @@ from properties import LabelProperties, IterationProperties, PlotProperties
 from properties import instrument_start, instrument_close
 
 from solid.elasticity_Transv_Isotropic import load_TI_elasticity_matrix, load_TI_elasticity_matrix_toepliz
-from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+from solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
 from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from solid.elasticity_isotropic_symmetric import load_isotropic_elasticity_matrix_symmetric, symmetric_elasticity_matrix_from_full
 
 from mesh_obj.mesh import CartesianMesh
 from mesh_obj.remesh import *
 
-from time_step.time_step_solution import attempt_time_step
+from time_step.ts_solution import attempt_time_step
 from utilities.utility import append_new_line
 
 from utilities.visualization import plot_footprint_analytical, plot_analytical_solution,\

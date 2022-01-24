@@ -18,7 +18,7 @@ from properties import InjectionProperties, SimulationProperties
 from fracture_obj.fracture import Fracture
 from controller import Controller
 from fracture_obj.fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
-from solid.elsticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+from solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
 from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures
 
