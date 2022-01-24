@@ -143,7 +143,7 @@ class CartesianMesh:
         """
         log = logging.getLogger('PyFrac.mesh')
 
-        # set the limits of the physical domain
+        # set the limits of the mesh discretisation
         self.set_domainLimits(Lx,Ly)
 
         # check if the number of cells is odd to see if the origin would be at the mid point of a single cell
@@ -152,6 +152,9 @@ class CartesianMesh:
         # set the sizes of each cell
         self.hx = 2. * self.Lx / (self.nx - 1)
         self.hy = 2. * self.Ly / (self.ny - 1)
+
+        # set the limits of the physical domain
+        self.set_physDomainLimits()
 
         # set the size of the cell diagonal
         self.cellDiag = np.sqrt(self.hx**2 + self.hy**2)
@@ -539,6 +542,29 @@ class CartesianMesh:
     # -----------------------------------------------------------------------------------------------------------------------
 
     def set_domainLimits(self, Lx, Ly):
+
+        """
+        Notes: (see the picture below)
+        1) the domain limits considers dimensions between cell centers
+           while the physical domain is actually larger
+
+        2) depending on the input one can set:
+
+            |<-- -Lx -->|<-- +Lx -->|
+            |           |           |
+            |<--Lx[0]-->|<--Lx[1]-->|
+         ___|___ _______|_______ ___|___
+        |   |   |       |       |   |   |
+        |   x   |   x   |   x   |   x   |
+        |_______|_______|_______|_______|
+        |       |       |       |       |
+        |   x   |   x   |   X   |   x   |
+        |_______|_______|_______|_______|
+        |       |       |       |       |
+        |   x   |   x   |   x   |   x   |
+        |_______|_______|_______|_______|
+
+        """
         if not isinstance(Lx, list):
             self.Lx = Lx
             xlims = np.asarray([-Lx, Lx])
@@ -555,6 +581,11 @@ class CartesianMesh:
 
         self.domainLimits = np.hstack((ylims, xlims))
 
+    def set_physDomainLimits(self):
+        [yCmin, yCmax, xCmin, xCmax] = self.domainLimits
+        hxHalf = self.hx/2.
+        hyHalf = self.hy/2.
+        self.physDomainLimits = [yCmin-hyHalf, yCmax+hyHalf, xCmin-hxHalf, xCmax+hxHalf]
     # -----------------------------------------------------------------------------------------------------------------------
 
     def set_cell_number(self, nx, ny):
@@ -686,9 +717,9 @@ class CartesianMesh:
             range((self.ny - 3) * (self.nx) + self.nx + 1, (self.ny - 3) * (self.nx) + 2 * self.nx - 1))
         for i in range(1, self.ny - 3):
             # row of x at the left
-            Frontlist.append(self.nx + 1 + i * self.nx)
+            Frontlist.append(int(self.nx + 1 + i * self.nx))
             # row of x at the right
-            Frontlist.append(2 * self.nx - 2 + i * self.nx)
+            Frontlist.append(int(2 * self.nx - 2 + i * self.nx))
 
         # To check:
         # from utilities.utility import plot_as_matrix
