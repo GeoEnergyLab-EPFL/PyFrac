@@ -1269,6 +1269,8 @@ def get_fracture_geometric_parameters(fr_list):
     dist_lower_end = np.full((len(fr_list), 1), np.nan)
     dist_max_breadth = np.full((len(fr_list), 1), np.nan)
     l_head = np.full((len(fr_list), 1), np.nan)
+    wmaxh = np.full((len(fr_list), 1), np.nan)
+    pmaxh = np.full((len(fr_list), 1), np.nan)
 
     iter = 0
 
@@ -1289,7 +1291,8 @@ def get_fracture_geometric_parameters(fr_list):
 
         max_breadth[iter] = np.max(breadth[0, ::])
 
-        dist_max_breadth[iter] = np.abs(np.min(breadth[1, breadth[0, ::] >= 0.975 * max_breadth[iter]])) # we account for
+        dist_max_breadth[iter] = np.max(np.asarray([np.min(breadth[1, breadth[0, ::] >= 0.975
+                                                                          * max_breadth[iter]]), 0.])) # we account for
         # a 2.5% error on the breadth
 
         avg_breadth[iter] = np.mean(breadth[0, ::])
@@ -1299,6 +1302,7 @@ def get_fracture_geometric_parameters(fr_list):
                               np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
         dist_lower_end[iter] = np.abs(np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
 
+        pressure, line, cells = get_fracture_variable_slice_cell_center(jk.pNet, jk.mesh, orientation='vertical')
         opening, line, cells = get_fracture_variable_slice_cell_center(jk.w, jk.mesh, orientation='vertical')
         z_coord = jk.mesh.CenterCoor[cells][:, 1]
         ind_zero = np.argmin(np.abs(z_coord))
@@ -1342,9 +1346,27 @@ def get_fracture_geometric_parameters(fr_list):
                                    np.diff(opening[ind_zero + 1:][ind_inc:][:ind_w_max_head]))) != 0) * 1) == 1)[0][-1]
                                                                    + 1]
 
-        behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] -
-                                                      (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
-                                                       l_head[iter])).argmin()]
+        # --- This works fine so far but now we use it as an estimate and get the real length from the pressure
+        # Note: but let's only do this if we are no longer radial!
+        if np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - l_head[iter] <= dist_max_breadth[iter]:
+            behind_head_breadth[iter] = max_breadth[iter]
+            wmaxh[iter] = np.max(opening)
+            pmaxh[iter] = np.max(pressure)
+        else:
+            indEndhead = np.abs(z_coord - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                                           l_head[iter])).argmin()
+            indMinP = np.argmin(pressure[indEndhead:ind_tip])
+            if indMinP != 0 and indMinP != len(pressure[indEndhead:ind_tip]) - 1:
+                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                               z_coord[indEndhead:ind_tip][indMinP]
+
+            behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] -
+                                                          (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                                                           l_head[iter])).argmin()]
+
+            wmaxh[iter] = np.max(opening[indEndhead:])
+
+            pmaxh[iter] = np.max(pressure[indEndhead:])
 
         # --- We also need to get the gradient of the breadth
         # Note: we only want it between the max breadth and the head
@@ -1357,9 +1379,6 @@ def get_fracture_geometric_parameters(fr_list):
         else:
             dbdz_tail[iter] = np.mean(dbdz)
 
-
-
-
         iter = iter + 1
 
     out_dict = {
@@ -1371,7 +1390,9 @@ def get_fracture_geometric_parameters(fr_list):
       'dle': dist_lower_end.flatten().flatten(),
       'dbmax': dist_max_breadth.flatten().flatten(),
       'lhead': l_head.flatten().flatten(),
-      'dbdz': dbdz_tail.flatten().flatten()
+      'dbdz': dbdz_tail.flatten().flatten(),
+      'whmax': wmaxh.flatten().flatten(),
+      'phmax': pmaxh.flatten().flatten()
     }
 
     return out_dict
