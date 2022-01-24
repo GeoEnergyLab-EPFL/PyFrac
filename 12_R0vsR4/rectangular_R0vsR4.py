@@ -26,7 +26,7 @@ from src.tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFr
 # ----------------------------------------------
 
 
-run = True
+run = False
 
 
 if run:
@@ -34,6 +34,8 @@ if run:
     file_name = "results_rectangular_as10.json"
     aspec_ratio_set = [10, 20, 30]
     file_name_set = ["results_rectangular_as10.json", "results_rectangular_as20.json", "results_rectangular_as30.json"]
+    #aspec_ratio_set = [30]
+    #file_name_set = ["results_rectangular_as30.json"]
 
 
     for ar_i in range(len(aspec_ratio_set)):
@@ -97,7 +99,11 @@ if run:
                    "w_R0": [],
                    "w_R4": [],
                    "w_R0_tipcorr": [],
-                   "w_R4_tipcorr": []
+                   "w_R4_tipcorr": [],
+                   "allw_R0": [],
+                   "allw_R4": [],
+                   "allw_R0_tipcorr": [],
+                   "allw_R4_tipcorr": [],
                    }
 
 
@@ -207,7 +213,7 @@ if run:
                 xC = coorC[0]; yC = coorC[1]
                 temp = np.asarray([coorC[1], coorC[1], coorC[0], coorC[0]])
                 # remember Mesh.domainLimits = [yminF,ymaxF,xminF,xmaxF]
-                sgndDist[cell] = - np.min(np.abs(Mesh.domainLimits - temp))
+                sgndDist[cell] = - np.min(np.abs(Mesh.physDomainLimits - temp))
 
             # from utilities.utility import plot_as_matrix
             # plot_as_matrix(sgndDist, Mesh)
@@ -276,11 +282,14 @@ if run:
                                                                       Mesh,
                                                                       Eprime=np.full(Mesh.NumberOfElts,
                                                                                      sim_info["Eprime"]))
-
+            # from src.utilities.utility import plot_as_matrix
+            # K = np.ones(Mesh.NumberOfElts)
+            # K[EltTip] = KI_R0_vol
+            # plot_as_matrix(K, Mesh)
             # find all the elem at the tip with coordinate y==0
             centralTips = np.where(np.abs(Mesh.CenterCoor[EltTip, 1]) < 0.9 * Mesh.hy)[0][0]
-            relerr_KIPrime_R0_vol = 100. * (np.abs(KI_R0_vol[centralTips] - KI_ana) / KI_ana)
-            results["KI R0_fromVol"].append(relerr_KIPrime_R0_vol)
+            relerr_KI_R0_vol = 100. * (np.abs(KI_R0_vol[centralTips] - KI_ana) / KI_ana)
+            results["KI R0_fromVol"].append(relerr_KI_R0_vol)
 
             #
             all_w[EltCrack] = sol_R4
@@ -328,6 +337,10 @@ if run:
             results["w_R4"].append(sol_R4[centralElts].tolist())
             results["w_R0_tipcorr"].append(sol_R0_tipcorr[centralElts].tolist())
             results["w_R4_tipcorr"].append(sol_R4_tipcorr[centralElts].tolist())
+            results["allw_R0"].append(sol_R0.tolist())
+            results["allw_R4"].append(sol_R4.tolist())
+            results["allw_R0_tipcorr"].append(sol_R0_tipcorr.tolist())
+            results["allw_R4_tipcorr"].append(sol_R4_tipcorr.tolist())
 
             print(" ------------------- \n")
 
@@ -470,10 +483,10 @@ if post:
     plt.plot(results3["nx"], results3["KI R4 with tipcorr"], c='b', marker=".")
 
     # SIF from vol
-    plt.plot(results3["nx"], results3["KI R0_fromVol"], c='r--', marker="+")
-    plt.plot(results3["nx"], results3["KI R0_fromVol with tipcorr"], c='r--', marker=".")
-    plt.plot(results3["nx"], results3["KI R4_fromVol"], c='b--', marker="+")
-    plt.plot(results3["nx"], results3["KI R4_fromVol with tipcorr"], c='b--', marker=".")
+    plt.plot(results3["nx"], results3["KI R0_fromVol"], c='r', ls='--', marker="+")
+    plt.plot(results3["nx"], results3["KI R0_fromVol with tipcorr"], c='r', ls='--', marker=".")
+    plt.plot(results3["nx"], results3["KI R4_fromVol"], c='b',ls='--', marker="+")
+    plt.plot(results3["nx"], results3["KI R4_fromVol with tipcorr"], c='b', ls='--', marker=".")
 
     plt.tick_params(labeltop=True, labelright=True)
     plt.grid(True, which="both", ls="-")
@@ -484,7 +497,7 @@ if post:
                 'R4 - NO tip corr', 'R4 - tip corr as Ryder & Napier 1985',
                 'R0 - NO tip corr - vol est', 'R0 - tip corr - vol est',
                 'R4 - NO tip corr - vol est', 'R4 - tip corr - vol est'
-                ), loc='lower left', shadow=True, title='Aspect ratio = 30')
+                ), loc='lower right', shadow=True, title='Aspect ratio = 30')
     plt.xscale('log')
     plt.yscale('log')
 
@@ -568,27 +581,32 @@ if post:
     # A: from tip to h/2
     KI_A = 3. * Ep * np.sqrt(np.pi) * w1 / (8. * np.sqrt(hx))
     KI_A_relerr = 100 * np.abs(KI_A - KI_ana)/KI_ana
+    print(f'rel error KI A: {KI_A_relerr} %')
 
     # B: from tip to h
     KI_B = 3. * Ep * np.sqrt(np.pi*0.5) * w1 / (8. * np.sqrt(hx))
     KI_B_relerr = 100 * np.abs(KI_B - KI_ana)/KI_ana
+    print(f'rel error KI B: {KI_B_relerr} %')
 
     # C: from tip to 3 h/2
     KI_C =  Ep * np.sqrt(np.pi/3.) * (2*w1 + w2) / (8. * np.sqrt(hx))
     KI_C_relerr = 100 * np.abs(KI_C - KI_ana)/KI_ana
+    print(f'rel error KI C: {KI_C_relerr} %')
 
     # D: from tip to 2 h
     KI_D = 3. * Ep * np.sqrt(np.pi) * (w1 + w2) / (32. * np.sqrt(hx))
     KI_D_relerr = 100 * np.abs(KI_D - KI_ana)/KI_ana
+    print(f'rel error KI D: {KI_D_relerr} %')
 
-    # E: from h/2 to 3 h/2
+    # E: from h to 3 h/2
     KI_E =  3. * (4. + 3. * np.sqrt(6.)) * Ep * np.sqrt(np.pi/2.) * (w2) / (152. * np.sqrt(hx))
     KI_E_relerr = 100 * np.abs(KI_E - KI_ana)/KI_ana
+    print(f'rel error KI E: {KI_E_relerr} %')
 
-    # F: from h/2 to 2 h
+    # F: from h to 2 h
     KI_F = 3. * (4. + np.sqrt(2.)) * Ep * np.sqrt(np.pi) * (w2) / (112. * np.sqrt(hx))
     KI_F_relerr = 100 * np.abs(KI_F - KI_ana)/KI_ana
-
+    print(f'rel error KI F: {KI_F_relerr} %')
     plt.show()
 print(" <<<< DONE >>>>")
 

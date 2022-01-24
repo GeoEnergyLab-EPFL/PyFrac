@@ -20,6 +20,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 from level_set.continuous_front_reconstruction import plot_two_fronts
 
 from src.mesh_obj.mesh import CartesianMesh
+from src.tip.tip_inversion import StressIntensityFactorFromVolume
 
 
 def get_mix_err(var_ana, var_num):
@@ -181,6 +182,14 @@ if run:
                "KI R4 av": [],
                "KI R0 with tipcorr av": [],
                "KI R4 with tipcorr av": [],
+               "KI R0_fromVol": [],
+               "KI R4_fromVol": [],
+               "KI R0_fromVol with tipcorr": [],
+               "KI R4_fromVol with tipcorr": [],
+               "KI R0_fromVol av": [],
+               "KI R4_fromVol av": [],
+               "KI R0_fromVol with tipcorr av": [],
+               "KI R4_fromVol with tipcorr av": [],
                "n. of Elts" : [],
                "nu": sim_info["nu"],  # Poisson's ratio
                "youngs mod" : sim_info["youngs mod"],
@@ -370,6 +379,64 @@ if run:
         relerr_KIPrime_R4_tipcorr_av = 100 * np.mean(np.abs(KIPrime_R4_tipcorr - KI_ana) / KI_ana)
         results["KI R4 with tipcorr"].append(relerr_KIPrime_R4_tipcorr)
         results["KI R4 with tipcorr av"].append(relerr_KIPrime_R4_tipcorr_av)
+
+        # get SIF from volume
+        all_w[EltCrack] = sol_R0
+        KI_R0_vol = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                  sgndDist,
+                                                                  EltTip,
+                                                                  EltRibbon,
+                                                                  np.full(len(EltTip), True),
+                                                                  Mesh,
+                                                                  Eprime=np.full(Mesh.NumberOfElts, sim_info["Eprime"]))
+
+        relerr_KI_R0 = 100. * (np.abs(KI_R0_vol - KI_ana) / KI_ana).max()
+        relerr_KI_R0_av = 100. * np.mean(np.abs(KI_R0_vol - KI_ana) / KI_ana)
+        results["KI R0_fromVol"].append(relerr_KI_R0)
+        results["KI R0_fromVol av"].append(relerr_KI_R0_av)
+        #
+        all_w[EltCrack] = sol_R4
+        KI_R4_vol = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                  sgndDist,
+                                                                  EltTip,
+                                                                  EltRibbon,
+                                                                  np.full(len(EltTip), True),
+                                                                  Mesh,
+                                                                  Eprime=np.full(Mesh.NumberOfElts, sim_info["Eprime"]))
+        relerr_KI_R4 = 100 * (np.abs(KI_R4_vol - KI_ana) / KI_ana).max()
+        relerr_KI_R4_av = 100 * np.mean(np.abs(KI_R4_vol - KI_ana) / KI_ana)
+        results["KI R4_fromVol"].append(relerr_KI_R4)
+        results["KI R4_fromVol av"].append(relerr_KI_R4_av)
+        #
+        all_w[EltCrack] = sol_R0_tipcorr
+        KI_R0_vol_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                          sgndDist,
+                                                                          EltTip,
+                                                                          EltRibbon,
+                                                                          np.full(len(EltTip), True),
+                                                                          Mesh,
+                                                                          Eprime=np.full(Mesh.NumberOfElts,
+                                                                                         sim_info["Eprime"]))
+        relerr_KI_R0_tipcorr = 100 * (np.abs(KI_R0_vol_tipcorr - KI_ana) / KI_ana).max()
+        relerr_KI_R0_tipcorr_av = 100 * np.mean(np.abs(KI_R0_vol_tipcorr - KI_ana) / KI_ana)
+        results["KI R0_fromVol with tipcorr"].append(relerr_KI_R0_tipcorr)
+        results["KI R0_fromVol with tipcorr av"].append(relerr_KI_R0_tipcorr_av)
+        #
+        all_w[EltCrack] = sol_R4_tipcorr
+        KI_R4_vol_tipcorr = np.sqrt(np.pi / 32.) * StressIntensityFactorFromVolume(all_w,
+                                                                          sgndDist,
+                                                                          EltTip,
+                                                                          EltRibbon,
+                                                                          np.full(len(EltTip), True),
+                                                                          Mesh,
+                                                                          Eprime=np.full(Mesh.NumberOfElts,
+                                                                                         sim_info["Eprime"]))
+        relerr_KI_R4_tipcorr = 100 * (np.abs(KI_R4_vol_tipcorr - KI_ana) / KI_ana).max()
+        relerr_KI_R4_tipcorr_av = 100 * np.mean(np.abs(KI_R4_vol_tipcorr - KI_ana) / KI_ana)
+        results["KI R4_fromVol with tipcorr"].append(relerr_KI_R4_tipcorr)
+        results["KI R4_fromVol with tipcorr av"].append(relerr_KI_R4_tipcorr_av)
+
+
 
         # get the relative error w
         rel_e_R0, _ = get_err_w(sol_R0, sim_info, get_rel_err)
@@ -660,7 +727,7 @@ if sig_ahead_tip:
 
 
 
-other_plots = False
+other_plots = True
 if other_plots:
     # --------------------
     # volume - rel err
@@ -722,15 +789,27 @@ if other_plots:
     plt.suptitle('Radial crack test')
 
     plt.plot(results["n. of Elts"], results["KI R0"], c='r', marker="+")
-    plt.plot(results["n. of Elts"], results["KI R4"], c='b', marker="+")
+    plt.plot(results["n. of Elts"], results["KI R0_fromVol"], c='r', marker="+",ls='--',)
     plt.plot(results["n. of Elts"], results["KI R0 with tipcorr"], c='r', marker=".")
+    plt.plot(results["n. of Elts"], results["KI R0_fromVol with tipcorr"], c='r', marker=".",ls='--',)
+
+    plt.plot(results["n. of Elts"], results["KI R4"], c='b', marker="+")
+    plt.plot(results["n. of Elts"], results["KI R4_fromVol"], c='b', marker="+",ls='--',)
     plt.plot(results["n. of Elts"], results["KI R4 with tipcorr"], c='b', marker=".")
+    plt.plot(results["n. of Elts"], results["KI R4_fromVol with tipcorr"], c='b', marker=".",ls='--',)
     plt.tick_params(labeltop=True, labelright=True)
     plt.grid(True, which="both", ls="-")
 
     plt.xlabel('# of DOF in the crack')
     plt.ylabel('rel. err. KI max [%]')
-    plt.legend(('R0 - NO tip corr', 'R4 - NO tip corr','R0 - tip corr as Ryder & Napier 1985', 'R4 - tip corr as Ryder & Napier 1985', 'analytical'),loc='lower left', shadow=True)
+    plt.legend(('R0 - NO tip corr',
+                'R0 - NO tip corr - vol est',
+                'R0 - tip corr as Ryder & Napier 1985',
+                'R0 - tip corr - vol est',
+                'R4 - NO tip corr',
+                'R4 - NO tip corr - vol est',
+                'R4 - tip corr as Ryder & Napier 1985',
+                'R4 - tip corr - vol est'),loc='lower left', shadow=True)
     plt.xscale('log')
     plt.yscale('log')
 
@@ -741,15 +820,28 @@ if other_plots:
     plt.suptitle('Radial crack test')
 
     plt.plot(results["n. of Elts"], results["KI R0 av"], c='r', marker="+")
-    plt.plot(results["n. of Elts"], results["KI R4 av"], c='b', marker="+")
+    plt.plot(results["n. of Elts"], results["KI R0_fromVol av"], c='r', marker="+",ls='--',)
     plt.plot(results["n. of Elts"], results["KI R0 with tipcorr av"], c='r', marker=".")
+    plt.plot(results["n. of Elts"], results["KI R0_fromVol with tipcorr av"], c='r', marker=".",ls='--',)
+
+    plt.plot(results["n. of Elts"], results["KI R4 av"], c='b', marker="+")
+    plt.plot(results["n. of Elts"], results["KI R4_fromVol av"], c='b', marker="+",ls='--',)
     plt.plot(results["n. of Elts"], results["KI R4 with tipcorr av"], c='b', marker=".")
+    plt.plot(results["n. of Elts"], results["KI R4_fromVol with tipcorr av"], c='b', marker=".",ls='--',)
+
     plt.tick_params(labeltop=True, labelright=True)
     plt.grid(True, which="both", ls="-")
 
     plt.xlabel('# of DOF in the crack')
     plt.ylabel('<rel. err. KI> [%]')
-    plt.legend(('R0 - NO tip corr', 'R4 - NO tip corr','R0 - tip corr as Ryder & Napier 1985', 'R4 - tip corr as Ryder & Napier 1985', 'analytical'),loc='lower left', shadow=True)
+    plt.legend(('R0 - NO tip corr',
+                'R0 - NO tip corr - vol est',
+                'R0 - tip corr as Ryder & Napier 1985',
+                'R0 - tip corr - vol est',
+                'R4 - NO tip corr',
+                'R4 - NO tip corr - vol est',
+                'R4 - tip corr as Ryder & Napier 1985',
+                'R4 - tip corr - vol est'), loc='lower left', shadow=True)
     plt.xscale('log')
     plt.yscale('log')
 
@@ -826,7 +918,7 @@ if other_plots:
     plt.xlabel('r/R')
     plt.ylabel('rel. err. w [%]')
     plt.legend(('R0 - NO tip corr', 'R4 - NO tip corr','R0 - tip corr as Ryder & Napier 1985', 'R4 - tip corr as Ryder & Napier 1985', 'analytical'),loc='upper left', shadow=True)
-
+    plt.show()
 # # --------------------------
 # # abs err w(r) (fine mesh)
 # fig1 = plt.figure()
