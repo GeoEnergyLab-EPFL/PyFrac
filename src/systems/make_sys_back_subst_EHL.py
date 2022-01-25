@@ -689,17 +689,16 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     #               np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
     #               mat_prop.SigmaO[to_solve]
 
-    C._set_domain_IDX(to_solve)
-    C._set_codomain_IDX(to_solve)
-    pf_ch_prime = C._matvec_fast(frac.w[to_solve])
+    C._set_domain_and_codomain_IDX(to_solve, to_solve, )
+    pf_ch_prime = C._matvec(frac.w[to_solve])
 
     if n_tip > 0:
-        C._set_domain_IDX(to_impose)
-        pf_ch_prime = pf_ch_prime + C._matvec_fast(imposed_val)
+        C._set_domain_and_codomain_IDX(to_impose, to_solve)
+        pf_ch_prime = pf_ch_prime + C._matvec(imposed_val)
 
     if n_act > 0:
-        C._set_domain_IDX(active)
-        pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active])
+        C._set_domain_and_codomain_IDX(active, to_solve)
+        pf_ch_prime = pf_ch_prime + C._matvec(wNplusOne[active])
 
     pf_ch_prime = pf_ch_prime + mat_prop.SigmaO[to_solve]
 
@@ -866,17 +865,16 @@ class EHL_sys_obj(LinearOperator):
       S = np.zeros((n_total,), dtype=self.dtype)
 
       # compute pf_ch_prime:
-      C._set_domain_IDX(to_solve)
-      C._set_codomain_IDX(to_solve)
-      pf_ch_prime = C._matvec_fast(frac.w[to_solve])
+      C._set_domain_and_codomain_IDX(to_solve, to_solve)
+      pf_ch_prime = C._matvec(frac.w[to_solve])
 
       if len(to_impose) > 0:
-          C._set_domain_IDX(to_impose)
-          pf_ch_prime = pf_ch_prime + C._matvec_fast(imposed_val)
+          C._set_domain_and_codomain_IDX(to_impose, to_solve)
+          pf_ch_prime = pf_ch_prime + C._matvec(imposed_val)
 
       if len(active) > 0:
-          C._set_domain_IDX(active)
-          pf_ch_prime = pf_ch_prime + C._matvec_fast(wNplusOne[active]) + mat_prop.SigmaO[to_solve]
+          C._set_domain_and_codomain_IDX(active, to_solve)
+          pf_ch_prime = pf_ch_prime + C._matvec(wNplusOne[active]) + mat_prop.SigmaO[to_solve]
       else:
           pf_ch_prime = pf_ch_prime + mat_prop.SigmaO[to_solve]
 
@@ -989,25 +987,24 @@ def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
       [2,1] [2,2] [2,3] act
       [3,1] [3,2] [3,3] tip
     """
-    # [1,1] INDEXES: ch ch
-    C._set_domain_IDX(to_solve)
-    C._set_codomain_IDX(to_solve)
-    res[ch_indxs] = C._matvec_fast(solk[ch_indxs])
+    # [1,1] INDEXES: ch ch (generally)
+    C._set_domain_and_codomain_IDX(to_solve, to_solve)
+    res[ch_indxs] = C._matvec(solk[ch_indxs])
     c_dot_solk = np.copy(res[ch_indxs])
 
     res[ch_indxs] = - (dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs]).dot(res[ch_indxs]) \
                     + fluid_prop.compressibility * wcNplusHalf[to_solve] * res[ch_indxs] + solk[ch_indxs]
 
-    # [2,1] INDEXES: act ch
+    # [2,1] INDEXES: act ch (generally)
     res[act_indxs] = - (dt * FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(c_dot_solk)
 
-    # [3,1] INDEXES: tip ch
+    # [3,1] INDEXES: tip ch (generally)
     res[tip_indxs] = - (dt * FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(c_dot_solk)
 
-    # [1,2] INDEXES: ch act
+    # [1,2] INDEXES: ch act (generally)
     res[ch_indxs] = res[ch_indxs] - dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs])
 
-    # [2,2] INDEXES: act act
+    # [2,2] INDEXES: act act (generally)
     res[act_indxs] = res[act_indxs] - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs]) \
                      + fluid_prop.compressibility * wcNplusHalf[active] * solk[act_indxs]
 
@@ -1015,7 +1012,7 @@ def EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
     res[tip_indxs] = res[tip_indxs] -dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, act_indxs]).dot(solk[act_indxs])
 
 
-    # [1,3] INDEXES: ch tip
+    # [1,3] INDEXES: ch tip (generally)
     res[ch_indxs] = res[ch_indxs] -dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(solk[tip_indxs])
 
     # [2,3] INDEXES: act tip

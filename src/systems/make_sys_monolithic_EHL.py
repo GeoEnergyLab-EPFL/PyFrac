@@ -108,10 +108,9 @@ class Monolithic_EHL_sys_obj(LinearOperator):
 
       # compute RHS dw:
       active_and_toimpose = np.concatenate((active,to_impose)) #can be saved between iters
-      C._set_domain_IDX(active_and_toimpose)
-      C._set_codomain_IDX(to_solve)
+      C._set_domain_and_codomain_IDX(active_and_toimpose, to_solve)
       dw_active_and_tip = np.concatenate(((wc_to_impose - frac.w[active]),(imposed_val - frac.w[to_impose])))
-      S[:n_ch] = - (C._matvec_fast(dw_active_and_tip))
+      S[:n_ch] = - (C._matvec(dw_active_and_tip))
 
       # compute RHS dp:
       ch_act_toimpose = np.concatenate((to_solve, active, to_impose))  # can be saved between iters
@@ -203,10 +202,9 @@ def monolitic_EHL_dot(solk, args, wcNplusHalf, FinDiffOprtr, dtype=np.float64):
     res = np.zeros(n_total, dtype=dtype)
 
     # Consider the part dw(cc) of the solution
-    C._set_domain_IDX(to_solve)
-    C._set_codomain_IDX(to_solve)
-    res[w_ch_indxs] = C._matvec_fast(solk[w_ch_indxs]) / C.diag_val
-    res[w_ch_indxs] = res[w_ch_indxs] + C._matvec_fast(solk[p_ch_indxs]) / C.diag_val - solk[p_ch_indxs]
+    C._set_domain_and_codomain_IDX(to_solve, to_solve)
+    res[w_ch_indxs] = C._matvec(solk[w_ch_indxs]) / C.diag_val
+    res[w_ch_indxs] = res[w_ch_indxs] + C._matvec(solk[p_ch_indxs]) / C.diag_val - solk[p_ch_indxs]
 
     # Consider the part dp(cc) of the solution
     res[p_ch_indxs] = (solk[w_ch_indxs] - solk[p_ch_indxs]) / C.diag_val

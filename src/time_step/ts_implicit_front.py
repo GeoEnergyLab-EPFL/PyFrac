@@ -103,7 +103,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     # set the Tip correction as Rider & Napier, 1985.
     # it can be shown that tip correction and R0 kernel are performing better than R4 kernel and this type of tip correction
 
-    C._set_tipcorr(Fr_lstTmStp.FillF, Fr_lstTmStp.EltTip, same_domain_and_codomain=True)
+    C._set_tipcorr(Fr_lstTmStp.FillF, Fr_lstTmStp.EltTip)
     C._set_kerneltype_as_R0()
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
                                                  sim_properties,
@@ -683,6 +683,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     else:
         doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
 
+    C._set_tipcorr(FillFrac_k, EltsTipNew)
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                        sim_properties,
                                                        fluid_properties,
@@ -703,6 +704,8 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                        corr_ribbon,
                                                        stagnant,
                                                        doublefracturedictionary=doublefracturedictionary)
+    C.enable_tip_corr = False
+
     # from utility import plot_as_matrix
     # K = pf_n_plus1
     # plot_as_matrix(K, Fr_lstTmStp.mesh)
