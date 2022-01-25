@@ -73,11 +73,11 @@ def get_solution(C, p, EltCrack, x0=None, TipCorr = None):
     # prepare preconditioner
     Aprec = EHL_iLU_Prec(C._get9stencilC(EltCrack))
     counter = iteration_counter(log=log)  # to obtain the number of iteration and residual
-    C._set_domain_IDX(EltCrack)
-    C._set_codomain_IDX(EltCrack)
     if TipCorr is not None:
         FillF, EltTip = TipCorr
-        C._set_tipcorr(FillF, EltTip, same_domain_and_codomain=True)
+        C._set_tipcorr(FillF, EltTip)
+    C._set_domain_and_codomain_IDX(EltCrack, EltCrack, same_domain_and_codomain=True)
+
 
     sol_ = bicgstab(C, p, x0=x0, M=Aprec, atol=10.e-14, tol=1.e-9, maxiter=1000, callback=counter)
 

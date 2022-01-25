@@ -120,7 +120,7 @@ class Hdot_3DR0opening(LinearOperator):
     #     self.tipcorrINDX = correction_INDX
     #     self.enable_tip_corr = True
 
-    def _set_domain_IDX(self, domainIDX):
+    def _set_domain_and_codomain_IDX(self, domainIDX, codomainIDX):
         """
         General example:
         domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
@@ -131,17 +131,6 @@ class Hdot_3DR0opening(LinearOperator):
         o o o o    0 <-3    o <-3
         """
         self.domain_INDX = domainIDX
-
-    def _set_codomain_IDX(self, codomainIDX):
-        """
-        General example:
-        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
-        codomain indexes are [0, 2] of elements returned after the dot product
-        o o o o    0 <-0    x <-0
-        o o o o    x <-1  = o <-1
-        o o o o    x <-2    x <-2
-        o o o o    0 <-3    o <-3
-        """
         self.codomain_INDX = codomainIDX
         self._changeShape(codomainIDX.size)
 

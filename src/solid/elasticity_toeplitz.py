@@ -253,6 +253,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
         self.C_precision = C_precision
         self.useHMATdot = useHMATdot
+        self.HMAT_tshold = 10000 # size of the dot product above which to use the HMAT
         if useHMATdot:
             self.updateHMATuponRemeshing = True
         else:
@@ -359,8 +360,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.shape_ = (self.matvec_size_, self.matvec_size_)
         super().__init__(self.dtype_, self.shape_)
 
-        self._set_domain_IDX(np.arange(self.C_size_))
-        self._set_codomain_IDX(np.arange(self.C_size_))
+        self._set_domain_and_codomain_IDX(np.arange(self.C_size_), np.arange(self.C_size_), same_domain_and_codomain= True)
         ################ END TOEPLITZ Cdot SECTION ######################
 
 
@@ -378,7 +378,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _matvec_fast(self, uk):
-        if self.useHMATdot and len(uk) > 10000:
+        if self.useHMATdot and len(uk) > self.HMAT_tshold:
             return self.HMAT._matvec(uk)
         else:
             #mv_time = - time.time()
@@ -393,8 +393,16 @@ class elasticity_matrix_toepliz(LinearOperator):
 
     def _matvec(self, uk):
         if not self.enable_tip_corr and not self.left_precJ and not self.right_precJ:
-            return self.f_matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
-                               self.C_toeplitz_coe, self.C_precision)
+            if self.useHMATdot and len(uk) > self.HMAT_tshold:
+                return self.HMAT._matvec(uk)
+            else:
+                return self.f_matvec_fast(np.float64(uk),
+                                          self.domain_INDX,
+                                          self.codomain_INDX,
+                                          self.codomain_INDX.size,
+                                          self.nx,
+                                          self.C_toeplitz_coe,
+                                          self.C_precision)
 
         elif self.enable_tip_corr:
             if self.right_precJ:
@@ -403,8 +411,16 @@ class elasticity_matrix_toepliz(LinearOperator):
             # the tip correction acts only on the diagonal elements, so:
             # (A+tipcorr*I)*uk = A*uk+tipcorr*I*uk
             # compute A*uk
-            res = self.f_matvec_fast(uk, self.domain_INDX, self.codomain_INDX, self.codomain_INDX.size, self.nx,
-                              self.C_toeplitz_coe, self.C_precision)
+            if self.useHMATdot and len(uk) > self.HMAT_tshold:
+                res = self.HMAT._matvec(uk)
+            else:
+                res = self.f_matvec_fast(np.float64(uk),
+                                          self.domain_INDX,
+                                          self.codomain_INDX,
+                                          self.codomain_INDX.size,
+                                          self.nx,
+                                          self.C_toeplitz_coe,
+                                          self.C_precision)
 
             if self.left_precJ:
                 # TIPCORRECTION & LEFT PRECONDITIONER
@@ -455,7 +471,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         return Pm1_vec * uk
 
 
-    def _set_domain_IDX(self, domainIDX):
+    def _set_domain_and_codomain_IDX(self, domainIDX, codomainIDX, same_domain_and_codomain = False):
         """
         General example:
         domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
@@ -465,46 +481,14 @@ class elasticity_matrix_toepliz(LinearOperator):
         o o o o    x <-2    x <-2
         o o o o    0 <-3    o <-3
         """
+        # set domain
         self.domain_INDX = domainIDX
-        if self.useHMATdot:
-            return self.HMAT._set_domain_IDX(domainIDX)
 
-
-    def _set_codomain_IDX(self, codomainIDX):
-        """
-        General example:
-        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
-        codomain indexes are [0, 2] of elements returned after the dot product
-        o o o o    0 <-0    x <-0
-        o o o o    x <-1  = o <-1
-        o o o o    x <-2    x <-2
-        o o o o    0 <-3    o <-3
-        """
+        # set codomain
         self.codomain_INDX = codomainIDX
         self._changeShape(codomainIDX.size)
-        if self.useHMATdot:
-            return self.HMAT._set_codomain_IDX(codomainIDX)
 
-
-    def _set_tipcorr(self, FillFrac, EltTip, same_domain_and_codomain = False):
-        """
-        Tip correction as Rider & Napier, 1985.
-
-        :param correction_val: (array) contains the factors to be applied to each diagonal val. of the specified indexes based on the filling fraction of the cell
-        :param correction_INDX: (array) specified indexes where the correction_val should apply
-        :return:
-        """
-        # the following flag needs to be se to 0 when one wants to disable the tip correction
-        self.enable_tip_corr = True
-        # list of tip elem. IDs:
-        self.EltTip = EltTip
-        # build an array for all the elements in the mesh and fill it with the known values
-        self.tipcorr = np.full(self.C_size_, np.nan)
-        self.tipcorr[EltTip] = tip_correction_factors(FillFrac) * self.diag_val
-
-        if self.codomain_INDX is None:
-            raise SystemExit('please call _set_codomain_IDX(codomainIDX) before _set_tipcorr(FillFrac, EltTip)')
-        else:
+        if self.enable_tip_corr:
             # find the positions of the tip elements in the codomain
             self.tip_in_codomain, self.tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True, return_indices=True)
 
@@ -518,6 +502,30 @@ class elasticity_matrix_toepliz(LinearOperator):
             else:
                 self.tip_in_domain_and_codomain = self.tip_in_codomain
                 self.tipINDX_codomain_and_domain = self.tipINDX_codomain
+        else:
+            self.tip_in_domain_and_codomain = []
+            self.tipINDX_codomain_and_domain = []
+
+        if self.useHMATdot:
+            self.HMAT._set_domain_and_codomain_IDX(domainIDX, codomainIDX)
+
+
+    def _set_tipcorr(self, FillFrac, EltTip):
+        """
+        Tip correction as Rider & Napier, 1985.
+
+        :param correction_val: (array) contains the factors to be applied to each diagonal val. of the specified indexes based on the filling fraction of the cell
+        :param correction_INDX: (array) specified indexes where the correction_val should apply
+        :return:
+        """
+        # ATTENTION!
+        # the following flag needs to be se to 0 when one wants to disable the tip correction
+        self.enable_tip_corr = True
+        # list of tip elem. IDs:
+        self.EltTip = EltTip
+        # build an array for all the elements in the mesh and fill it with the known values
+        self.tipcorr = np.full(self.C_size_, np.nan)
+        self.tipcorr[EltTip] = tip_correction_factors(FillFrac) * self.diag_val
 
 
     def _changeShape(self, shape_):

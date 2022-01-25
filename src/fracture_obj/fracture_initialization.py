@@ -1073,9 +1073,8 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
                 p_calculated[EltCrack] = sol[EltCrack.size]
 
         elif volumeControlHMAT:
-            C._set_domain_IDX(EltCrack)
-            C._set_codomain_IDX(EltCrack)
-            C._set_tipcorr(FillFrac, np.asarray(EltTip), same_domain_and_codomain = True)
+            C._set_tipcorr(FillFrac, np.asarray(EltTip))
+            C._set_domain_and_codomain_IDX(EltCrack, EltCrack, same_domain_and_codomain = True)
 
             # known p
             if w is None and not p is None:

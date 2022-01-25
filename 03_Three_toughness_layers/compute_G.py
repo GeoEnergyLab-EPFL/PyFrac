@@ -64,9 +64,9 @@ def getW(fr):
 
     # prepare the elasticity matrix
     C = load_isotropic_elasticity_matrix_toepliz(fr.mesh, Solid_A.Eprime)
-    C._set_domain_IDX(fr.EltCrack)
-    C._set_codomain_IDX(fr.EltCrack)
-    C._set_tipcorr(fr.FillF, fr.EltTip, same_domain_and_codomain = True)
+    C._set_tipcorr(fr.FillF, fr.EltTip)
+    C._set_domain_and_codomain_IDX(fr.EltCrack, fr.EltCrack, same_domain_and_codomain=True)
+
 
     # solving the system using left or right preconditioner
     left_prec = True

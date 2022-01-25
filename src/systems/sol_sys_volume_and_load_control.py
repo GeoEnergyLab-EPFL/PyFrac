@@ -35,8 +35,7 @@ def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_propertie
         total_vol = (sum(Fr_lstTmStp.w) + sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea)  # - something
 
         # building the right hand side of the system premultiplied by a left preconditioner
-        C._set_domain_IDX(EltTip)
-        C._set_codomain_IDX(Fr_lstTmStp.EltChannel)
+        C._set_domain_and_codomain_IDX(EltTip, Fr_lstTmStp.EltChannel)
         if wTip.size == 0:
             g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel]) + D_i * S_i * (total_vol) * np.ones(
                 Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
