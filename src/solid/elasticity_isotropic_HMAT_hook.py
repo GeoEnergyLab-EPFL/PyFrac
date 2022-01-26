@@ -90,8 +90,7 @@ class Hdot_3DR0opening(LinearOperator):
 
         self.compressionratio = self.HMATtract.getCompressionRatio()
 
-        self._set_domain_IDX(np.arange(self.HMAT_size_))
-        self._set_codomain_IDX(np.arange(self.HMAT_size_))
+        self._set_domain_and_codomain_IDX(self, np.arange(self.HMAT_size_), np.arange(self.HMAT_size_))
 
 
     def _matvec(self, uk):
