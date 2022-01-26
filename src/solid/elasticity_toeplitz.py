@@ -263,7 +263,6 @@ class elasticity_matrix_toepliz(LinearOperator):
 
         self.elas_prop_HMAT = elas_prop_HMAT
         self.HMATparam = HMATparam
-        self.reload(Mesh)
 
         # ---- TIP CORRECTION ----
         self.enable_tip_corr = False  # one needs to specifically activate it in case it is needed
@@ -271,6 +270,10 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.tipcorr = None # vector of size & ordering as self.EltTip with the correction factors
         self.tipINDX_codomain = None # list of indexes of tip elem. in the codomain
         self.tip_in_codomain = None # list of tip elem. IDs in the codomain
+
+        # ---- LOAD THE OBJ ----
+        self.reload(Mesh)
+
         # ---- JACOBI PREC ----
         self.left_precJ = False
         self.right_precJ = False
