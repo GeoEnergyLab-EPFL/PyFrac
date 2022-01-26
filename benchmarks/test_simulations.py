@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # External imports
+import os
 import shutil
 
 # Internal imports
@@ -160,7 +161,7 @@ class TestClass:
         from utilities.postprocess_fracture import get_fracture_dimensions_analytical_with_properties
         from utilities.postprocess_fracture import get_HF_analytical_solution_at_point
         from utilities.postprocess_fracture import get_fracture_variable_at_point
-        from utilities.visualization import load_fractures
+        from utilities.postprocess_fracture import load_fractures
         from utilities.visualization import get_fracture_variable
         from utilities.visualization import plot_fracture_list_slice
         from properties import LabelProperties
