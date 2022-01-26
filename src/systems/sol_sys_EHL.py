@@ -205,7 +205,7 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
                 if sim_properties.solveDeltaP:
                     if sim_properties.solveSparse:
-                        if sim_properties.EHL_GMRES:
+                        if sim_properties.EHL_iter_lin_solve:
                             if not sim_properties.solve_monolithic:
                                 sys_fun = EHL_sys_obj(sys_size, dtype=np.float64)
                             else:
@@ -245,7 +245,7 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
 
 
                 # -Instantiate a direct or iterative linear solver object
-                if sim_properties.EHL_GMRES:
+                if sim_properties.EHL_iter_lin_solve:
                     if not sim_properties.solve_monolithic:
                         if inj_same_footprint: rcmp_prec_before2ndIter = True
                         else: rcmp_prec_before2ndIter = False
