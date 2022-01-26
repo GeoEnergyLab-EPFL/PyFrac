@@ -175,7 +175,7 @@ if run:
     simulProp.projMethod = 'LS_continousfront'  # <--- mandatory use
     simulProp.set_tipAsymptote('U1')
     simulProp.useBlockToeplizCompression = True
-    #simulProp.EHL_GMRES = True
+    #simulProp.EHL_iter_lin_solve = True
     simulProp.volumeControlGMRES = True
     # setting up mesh extension options
     simulProp.meshExtensionAllDir = False

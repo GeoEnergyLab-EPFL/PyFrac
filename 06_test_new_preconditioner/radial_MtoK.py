@@ -65,7 +65,7 @@ simulProp.finalTime = 1400.155421804482037                        # the time at 
 simulProp.saveTSJump, simulProp.plotTSJump = 1, 1   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
-simulProp.EHL_GMRES = True
+simulProp.EHL_iter_lin_solve = True
 simulProp.solve_monolithic = False
 simulProp.useBlockToeplizCompression = True
 simulProp.frontAdvancing = 'implicit'

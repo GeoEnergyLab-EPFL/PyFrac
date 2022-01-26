@@ -180,7 +180,7 @@ simulProp.remeshFactor = 2            # the factor by which the domain is expand
 #simulProp.projMethod = 'ILSA_orig'    # comment out this line so the default is continuous front scheme
 simulProp.set_tipAsymptote('U1')
 simulProp.useBlockToeplizCompression = True
-simulProp.EHL_GMRES = True
+simulProp.EHL_iter_lin_solve = True
 # simulProp.fixedTmStp = np.asarray([[0.0001, 0.5],[1., 0.6]])
 # simulProp.tmStpPrefactor = 1.
 # initialization parameters

@@ -204,7 +204,7 @@ if run:
         Fr = Fr_list[-1]
         simulProp.set_outputFolder(run_dir)
         simulProp.useBlockToeplizCompression = True
-        simulProp.EHL_GMRES = True
+        simulProp.EHL_iter_lin_solve = True
         simulProp.solve_monolithic = False
         simulProp.gmres_Restart = 1000
         simulProp.gmres_maxiter = 1000

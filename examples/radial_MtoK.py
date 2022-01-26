@@ -54,7 +54,7 @@ simulProp.saveTSJump, simulProp.plotTSJump = 5, 1   # save and plot after every 
 simulProp.set_outputFolder("./Data/MtoK")   # the disk address where the files are saved
 simulProp.plotVar = ['regime', 'w']
 simulProp.useBlockToeplizCompression = True
-simulProp.EHL_GMRES = True
+simulProp.EHL_iter_lin_solve = True
 simulProp.elasticKernel = 'R0'
 simulProp.frontAdvancing = 'implicit'
 

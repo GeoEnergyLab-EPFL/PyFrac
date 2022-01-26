@@ -181,7 +181,7 @@ if run:
     # simulProp.meshReductionPossible = True
     simulProp.simID = 'K1/K2=10.' # do not use _
 
-    simulProp.EHL_GMRES = True
+    simulProp.EHL_iter_lin_solve = True
     simulProp.solve_monolithic = False
     simulProp.gmres_Restart = 1000
     simulProp.gmres_maxiter = 1000

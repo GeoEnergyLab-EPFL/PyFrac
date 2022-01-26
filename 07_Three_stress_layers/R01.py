@@ -125,7 +125,7 @@ if run:
     simulProp.plotVar = ['footprint','regime','custom']
     simulProp.tolFractFront = 0.0001
     simulProp.useBlockToeplizCompression = True  # this is to use less memory on your laptop
-    simulProp.EHL_GMRES = True
+    simulProp.EHL_iter_lin_solve = True
 
 
     # initializing fracture
