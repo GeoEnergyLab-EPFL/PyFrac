@@ -147,13 +147,13 @@ class Volume_Control_4_gmres(LinearOperator):
     """
 
     def __init__(self,data):
-        HmatC, EltChannel, D_i, S_i = data
+        HmatC, EltsIDs, D_i, S_i = data
         self.HmatC = HmatC
-        self.HmatC._set_domain_and_codomain_IDX(EltChannel, EltChannel)
+        self.HmatC._set_domain_and_codomain_IDX(EltsIDs, EltsIDs)
         self.D_i = D_i
         self.S_i = S_i
-        self.EltChannel = EltChannel
-        self.NiC = EltChannel.size # number of elem in the channel
+        self.EltsIDs = EltsIDs
+        self.NiC = EltsIDs.size # number of elem in the channel
 
         # it is mandatory to define shape and dtype
         self.shape_ = (self.NiC + 1, self.NiC + 1)

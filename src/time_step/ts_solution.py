@@ -151,7 +151,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                               (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 /
                               (mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
 
-        # from utility import plot_as_matrix
+        # from utilities.utility import plot_as_matrix
         # K = np.zeros((Fr_k.mesh.NumberOfElts,), )
         # K[Fr_k.EltRibbon] = Kprime_k.of(Fr_k.sgndDist[Fr_k.EltRibbon])
         # plot_as_matrix(K, Fr_k.mesh)
@@ -166,7 +166,10 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
     if np.all(stagnant):
         delta_w = np.abs(Fr_k.w[Fr_k.EltRibbon]-Frac.w[Fr_k.EltRibbon])
-        if np.sum(Qin) * timeStep != 0. and np.max(delta_w) < sim_properties.tolerancewIncr :
+        sumQin_gt_0 = np.sum(Qin) * timeStep != 0.
+        dw_perc_w = np.max(delta_w)/ np.max(Fr_k.w) < 5./100.
+        hard_dw_threshold = np.max(delta_w) < sim_properties.tolerancewIncr
+        if sumQin_gt_0 and (dw_perc_w or hard_dw_threshold) :
             log.critical(f'The time step is too small to induce a significant change in opening (max dw = {np.max(delta_w)})')
             if sim_properties.get_volumeControl():
                 log.critical('   the time step will NOT be accepted!')
@@ -176,6 +179,25 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 return 1, Fr_k
         else:
             return 1, Fr_k
+            # -> comparing against the analytical radial solution
+            # frontR = np.mean(np.sqrt(Fr_k.Ffront[:, 0] * Fr_k.Ffront[:, 0] + Fr_k.Ffront[:, 1] * Fr_k.Ffront[:, 1]))
+            # w_werr = np.zeros(Fr_k.mesh.NumberOfElts)
+            # w_werr_rel = np.zeros(Fr_k.mesh.NumberOfElts)
+            # for i, el in enumerate(Fr_k.EltCrack):
+            #     x = Fr_k.mesh.CenterCoor[el, 0]
+            #     y = Fr_k.mesh.CenterCoor[el, 1]
+            #     r = np.sqrt(x ** 2 + y ** 2)
+            #     if frontR > r:
+            #         wtru = 3. * np.sum(Qin) * Fr_k.time * np.sqrt(frontR * frontR - r * r) / (
+            #                     2 * np.pi * frontR * frontR * frontR)
+            #         w_werr[el] = np.abs(Fr_k.w[el] - wtru)
+            #         w_werr_rel[el] = 100 * np.abs(Fr_k.w[el] - wtru) / wtru
+            # from utilities.utility import plot_as_matrix
+            # plot_as_matrix(w_werr_rel, Fr_k.mesh)
+            # K = np.zeros(Fr_k.mesh.NumberOfElts)
+            # K[Fr_k.EltCrack] = 1
+            # plot_as_matrix(K, Fr_k.mesh)
+            # plot_as_matrix(Fr_k.w, Fr_k.mesh)
 
     log.debug('Starting Fracture Front loop...')
 

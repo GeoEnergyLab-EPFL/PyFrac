@@ -60,10 +60,10 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
         # ---- the following has been taken out because it seems to be unphysical ---
         # adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also
         # solved for the stagnant tip cells as compared to tip cells which are moving.
-        # if sim_properties.solveStagnantTip:
-        #     stagnant_tip = np.where(Vel < 1e-10)[0]
-        # else:
-        #     stagnant_tip = []
+        #if sim_properties.solveStagnantTip:
+        #    stagnant_tip = np.where(Vel < 1e-10)[0]
+        #else:
+        #    stagnant_tip = []
         # ---------------------------------------
 
         # Initialising the arrays

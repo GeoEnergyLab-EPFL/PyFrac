@@ -26,34 +26,42 @@ def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_propertie
     if sim_properties.volumeControlGMRES:
 
         # time_beg = time.time()
-        # C is is the Hmat object
-        D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
-        S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
 
         counter = iteration_counter(log)  # to obtain the number of iteration and residual
-
+        # todo: include leakoff
         total_vol = (sum(Fr_lstTmStp.w) + sum(Qin[EltCrack]) * (timeStep) / Fr_lstTmStp.mesh.EltArea)  # - something
 
-        # building the right hand side of the system premultiplied by a left preconditioner
-        C._set_domain_and_codomain_IDX(EltTip, Fr_lstTmStp.EltChannel)
-        if wTip.size == 0:
-            g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel]) + D_i * S_i * (total_vol) * np.ones(
-                Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
+
+        # C can be either the Hmat object or a toeplitz matrix
+        D_i = np.reciprocal(C.diag_val)  # Only 1 value of the elasticity matrix
+        if inj_same_footprint: # this is the case where you do not impose the tip opening
+
+            S_i = -np.reciprocal(Fr_lstTmStp.EltCrack.size * D_i)  # Inverse Schur complement
+
+            g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltCrack]) + D_i * S_i * (total_vol) * np.ones(
+                Fr_lstTmStp.EltCrack.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
             g2 = S_i * (total_vol)  # S^-1 * vol_incr --> change
-        else:
+
+            data = C, Fr_lstTmStp.EltCrack, D_i, S_i
+        else: # this is the case where you do impose the tip opening
+
+            S_i = -np.reciprocal(Fr_lstTmStp.EltChannel.size * D_i)  # Inverse Schur complement
+
+            C._set_domain_and_codomain_IDX(EltTip, Fr_lstTmStp.EltChannel)
             g1 = D_i * (mat_properties.SigmaO[Fr_lstTmStp.EltChannel] - C._matvec(wTip)) + D_i * S_i * (
                         total_vol - np.sum(wTip)) * np.ones(
                 Fr_lstTmStp.EltChannel.size)  # D_e^-1 * sigma - vol_incr * S^-1 * D_e^-1 *[1...1](vertical)
             g2 = S_i * (total_vol - np.sum(wTip))  # S^-1 * vol_incr --> change
+            data = C, Fr_lstTmStp.EltChannel, D_i, S_i
+
         rhs_prec = np.concatenate((g1, np.asarray([g2])))  # preconditionned b (Ax=b)
 
-        # solving the system using a left preconditioner
-        data = C, Fr_lstTmStp.EltChannel, D_i, S_i
         system_dot_prod = Volume_Control_4_gmres(data)
-        # begtime_gmres=time.time()
+        # begtime_gmres=time.time
         sol_GMRES = gmres(system_dot_prod, rhs_prec, tol=sim_properties.gmres_tol,
                           maxiter=sim_properties.gmres_maxiter, callback=counter)
         # endtime_gmres=time.time()
+        # (C._matvec(sol_GMRES[0][0:-1]) - sol_GMRES[0][-1]) useful to check
         # check convergence
         # todo assess the convergence against the true residual (not the one with respect to the preconditioned rhs)
         if sol_GMRES[1] > 0:
@@ -72,8 +80,12 @@ def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_propertie
         # update the solution vectors w and p
         sol = sol_GMRES[0]
         w = np.copy(Fr_lstTmStp.w)
-        w[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
-        w[EltTip] = wTip
+        if inj_same_footprint:
+            w[Fr_lstTmStp.EltCrack] = sol[np.arange(Fr_lstTmStp.EltCrack.size)]
+        else:
+            w[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
+            w[EltTip] = wTip
+
 
         # from utility import plot_as_matrix
         # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
