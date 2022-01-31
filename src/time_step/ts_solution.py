@@ -15,7 +15,8 @@ import logging
 from level_set.continuous_front_reconstruction import you_advance_more_than_2_cells
 from utilities.labels import TS_errorMessages
 from time_step.ts_explicit_front import time_step_explicit_front
-from time_step.ts_implicit_front import injection_same_footprint, injection_extended_footprint
+from time_step.ts_implicit_front.inj_extended_footprint import injection_extended_footprint
+from time_step.ts_implicit_front.inj_same_footprint import injection_same_footprint
 from level_set.level_set_utils import get_front_region
 from level_set.anisotropy import projection_from_ribbon_LS_gradient_at_tip, get_toughness_from_cellCenter_iter
 from properties import IterationProperties, instrument_start, instrument_close
@@ -121,6 +122,8 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                     fluid_properties,
                                                     sim_properties,
                                                     perfNode_sameFP)
+
+
         if perfNode_sameFP is not None:
             instrument_close(perfNode, perfNode_sameFP, None,
                              len(Frac.EltCrack), exitstatus == 1,
@@ -137,6 +140,47 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     # Check for the propagation condition with the new width. If the all of the front is stagnant, return fracture as
     # final without front iteration.
     stagnant_crt = np.full((len(Fr_k.EltRibbon),), False, dtype=bool)
+              ###
+            ##   ##
+          ###  |  ###
+        ###    |    ###
+      ###      o      ###
+     #####################
+    #######################
+    ### NEW DEVELOPMENT ###
+    #######################
+    #
+    # if mat_properties.TI_elasticity:
+    #     Eprime_tip = TI_plain_strain_modulus(Fr_k.alpha_k,
+    #                                          mat_properties.Cij)
+    # else:
+    #     Eprime_tip = np.full((Fr_k.EltTip.size,), mat_properties.Eprime, dtype=np.float64)
+    #
+    # KIPrime = StressIntensityFactor(Fr_k.w,
+    #                                 Fr_k.sgndDist,
+    #                                 Fr_k.EltTip,
+    #                                 Fr_k.EltRibbon,
+    #                                 np.full((len(Fr_k.EltTip),), True, dtype=bool),
+    #                                 Fr_k.mesh,
+    #                                 Eprime=Eprime_tip)
+    # if mat_properties.inv_with_heter_K1c:
+    #     front_region = get_front_region(Fr_k.mesh, Fr_k.EltRibbon, Fr_k.sgndDist[Fr_k.EltRibbon])
+    #     alpha_ribbon = projection_from_ribbon_LS_gradient_at_tip(Fr_k.EltRibbon,
+    #                                                              front_region,
+    #                                                              Fr_k.mesh,
+    #                                                              Fr_k.sgndDist,
+    #                                                              global_alpha=mat_properties.inv_with_heter_K1c)
+    #     Kprime_k = get_toughness_from_cellCenter_iter(alpha_ribbon, Fr_k.mesh.CenterCoor[Fr_k.EltRibbon],
+    #                                                   mat_properties)
+    #     KIcPrime = Kprime_k.of(Fr_k.sgndDist[Fr_k.EltTip], mesh = Fr_k.mesh, ribbon = Fr_k.EltRibbon)
+    # else:
+    #     KIcPrime = mat_properties.Kprime[Fr_k.EltTip]
+
+    #######################
+    ###        END      ###
+    ### NEW DEVELOPMENT ###
+    #######################
+
     # stagnant cells where propagation criteria is not met
     if mat_properties.inv_with_heter_K1c:
         front_region = get_front_region(Fr_k.mesh, Fr_k.EltRibbon, Fr_k.sgndDist[Fr_k.EltRibbon])
@@ -158,6 +202,8 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     else:
         stagnant_crt[np.where(mat_properties.Kprime[Fr_k.EltRibbon] * (-Fr_k.sgndDist[Fr_k.EltRibbon]) ** 0.5 / (
                 mat_properties.Eprime * Fr_k.w[Fr_k.EltRibbon]) > 1)[0]] = True
+
+
     # stagnant cells where fracture is closed
     stagnant_closed = np.full((len(Fr_k.EltRibbon),), False, dtype=bool)
     for i in range(len(Fr_k.EltRibbon)):
