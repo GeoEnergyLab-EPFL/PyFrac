@@ -42,7 +42,7 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
         if fluid_properties.turbulence:
             vk = np.zeros((4, Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
             wguess = np.copy(Fr_lstTmStp.w)
-            wguess[EltTip] = wTip
+            if not inj_same_footprint: wguess[EltTip] = wTip
 
             vk = velocity(wguess,
                           EltCrack,
@@ -70,13 +70,19 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
         neg = np.array([], dtype=int)
         new_neg = np.array([], dtype=int)
         active_contraint = True
-        to_solve = np.setdiff1d(EltCrack, EltTip)  # only taking channel elements to solve
 
-        # adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also
-        # solved for the stagnant tip cells as compared to tip cells which are moving.
-        to_impose = np.delete(EltTip, stagnant_tip)
-        imposed_val = np.delete(wTip, stagnant_tip)
-        to_solve = np.append(to_solve, EltTip[stagnant_tip])
+        if inj_same_footprint:
+            to_solve = EltCrack
+            to_impose = np.array([], dtype=int)
+            imposed_val = np.array([], dtype=int)
+        else:
+            to_solve = np.setdiff1d(EltCrack, EltTip)  # only taking channel elements to solve
+
+            # adding stagnant tip cells to the cells which are solved. This adds stability as the elasticity is also
+            # solved for the stagnant tip cells as compared to tip cells which are moving.
+            to_impose = np.delete(EltTip, stagnant_tip)
+            imposed_val = np.delete(wTip, stagnant_tip)
+            to_solve = np.append(to_solve, EltTip[stagnant_tip])
 
         wc_to_impose = []
         fully_closed = False
@@ -103,10 +109,14 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
                 if sim_properties.solveTipCorrRib and corr_ribbon.size != 0:
                     if not corr_ribb_flag:
                         # do it once
+                        if inj_same_footprint:
+                            EltTip_loc = np.array([], dtype=int)
+                        else:
+                            EltTip_loc = EltTip
                         #   1) Returns the indices that would sort EltTip
-                        tip_sorted = np.argsort(EltTip)
+                        tip_sorted = np.argsort(EltTip_loc)
                         #   2) Returns the positions of "to_impose" in "EltTip[tip_sorted]" ordered as to_impose
-                        to_impose_pstn = np.searchsorted(EltTip[tip_sorted], to_impose)
+                        to_impose_pstn = np.searchsorted(EltTip_loc[tip_sorted], to_impose)
                         #   3) indexes of "to_impose" in EltTip ordered as to_impose
                         ind_toImps_tip = tip_sorted[to_impose_pstn]
                         #   4) list of "corr_ribbon" of "to_impose" ordered as to_impose
