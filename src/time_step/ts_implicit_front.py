@@ -109,7 +109,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  sim_properties,
                                                  fluid_properties,
                                                  mat_properties,
-                                                 empty, #Fr_lstTmStp.EltTip, #empty, #EltTip
+                                                 Fr_lstTmStp.EltTip, #empty, sending Eltip to set tip correction
                                                  empty, #partlyFilledTip
                                                  C,
                                                  Boundary,
@@ -543,7 +543,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
     # stagnant tip cells i.e. the tip cells whose distance from front has not changed.
     stagnant = (-(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) /
-                (Fr_lstTmStp.mesh.hx**2 + Fr_lstTmStp.mesh.hy**2)**0.5 < sim_properties.toleranceVStagnant)
+                Fr_lstTmStp.mesh.cellDiag < sim_properties.toleranceVStagnant)
     # we need to remove it:
     # if stagnant.any() and not ((sim_properties.get_tipAsymptote() == 'U') or (sim_properties.get_tipAsymptote() == 'U1')):
     #     log.warning("Stagnant front is only supported with universal tip asymptote. continuing...")
@@ -561,23 +561,23 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
     if stagnant.any():
         # if any tip cell with stagnant front calculate stress intensity factor for stagnant cells
-        if mat_properties.TI_elasticity:
-            KIPrime = StressIntensityFactor(w_k,
-                                            sgndDist_k,
-                                            EltsTipNew,
-                                            EltRibbon_k,
-                                            stagnant,
-                                            Fr_lstTmStp.mesh,
-                                            Eprime=Eprime_tip)
-        else:
-            Eprime_ribbon = np.full((EltRibbon_k.size,), mat_properties.Eprime, dtype=np.float64)
-            KIPrime = StressIntensityFactorFromVolume(w_k,
-                                            sgndDist_k,
-                                            EltsTipNew,
-                                            EltRibbon_k,
-                                            stagnant,
-                                            Fr_lstTmStp.mesh,
-                                            Eprime=Eprime_ribbon)
+        # if mat_properties.TI_elasticity:
+        KIPrime = StressIntensityFactor(w_k,
+                                        sgndDist_k,
+                                        EltsTipNew,
+                                        EltRibbon_k,
+                                        stagnant,
+                                        Fr_lstTmStp.mesh,
+                                        Eprime=Eprime_tip)
+        # else:
+        #     Eprime_ribbon = np.full((EltRibbon_k.size,), mat_properties.Eprime, dtype=np.float64)
+        #     KIPrime = StressIntensityFactorFromVolume(w_k,
+        #                                     sgndDist_k,
+        #                                     EltsTipNew,
+        #                                     EltRibbon_k,
+        #                                     stagnant,
+        #                                     Fr_lstTmStp.mesh,
+        #                                     Eprime=Eprime_ribbon)
 
 
         # todo: Find the right cause of failure
