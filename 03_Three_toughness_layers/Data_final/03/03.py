@@ -118,7 +118,7 @@ if run:
         else:
             print("ERROR")
 
-    def K1c_func(x,y):
+    def K1c_func(x,y,alpha):
         """ The function providing the toughness"""
         K_Ic = 0.5e6  # fracture toughness
         r = 14.8
