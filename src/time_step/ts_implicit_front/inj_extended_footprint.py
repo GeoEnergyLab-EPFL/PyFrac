@@ -477,7 +477,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     else:
         doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
 
-    #C._set_tipcorr(FillFrac_k, EltsTipNew)
+    C._set_tipcorr(FillFrac_k, EltsTipNew)
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                        sim_properties,
                                                        fluid_properties,
@@ -498,7 +498,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                        corr_ribbon,
                                                        stagnant,
                                                        doublefracturedictionary=doublefracturedictionary)
-    #C.enable_tip_corr = False
+    C.enable_tip_corr = False
 
     # from utility import plot_as_matrix
     # K = pf_n_plus1

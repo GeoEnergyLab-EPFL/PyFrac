@@ -118,7 +118,7 @@ if run:
         K_Ic = 0.4e6  # fracture toughness
         r = 1.48
         delta = 0.001
-        return smoothing(K_Ic, 100.*K_Ic, r, delta, x)
+        return smoothing(K_Ic, 50.*K_Ic, r, delta, x)
 
 
     # ---- plot Kic_max vs time ---
