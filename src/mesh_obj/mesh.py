@@ -769,6 +769,40 @@ class CartesianMesh:
         return Boundarylist
 
     # ----------------------------------------------------------------------------------------------------------------------
+    def get_cells_outside_box(self,xmin,xmax,ymin,ymax):
+        """
+        We create a list of cell IDs that are outside a given box.
+        Decision made based on cell centers
+
+         _____________________________
+        | x  | x  | x  | x  | x  | x  |
+        |____|____|____|____|____|____|
+        | x  | x  |    |    |    | x  |
+        |____|____|____|____|____|____|
+        | x  | x  |    |    |    | x  |
+        |____|____|____|____|____|____|
+        | x  | x  | x  | x  | x  | x  |
+        |____|____|____|____|____|____|
+        | x  | x  | x  | x  | x  | x  |
+        |____|____|____|____|____|____|
+        | x  | x  | x  | x  | x  | x  |
+        |____|____|____|____|____|____|
+        """
+
+        cells_outside_box = []
+
+        for i in range(self.NumberOfElts):
+            xc, yc = self.CenterCoor[i,:]
+            if not ((xc > xmin and xc < xmax)  and (yc > ymin and yc < ymax)):
+                cells_outside_box.append(i)
+        # To check:
+        # from utilities.utility import plot_as_matrix
+        # K=np.zeros(self.NumberOfElts)
+        # K[cells_outside_box] = 1
+        # plot_as_matrix(K,self)
+        return cells_outside_box
+
+    # ----------------------------------------------------------------------------------------------------------------------
 
     def get_cells_inside_circle(self, r, center):
         """
