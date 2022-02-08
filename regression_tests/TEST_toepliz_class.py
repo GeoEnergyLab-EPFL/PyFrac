@@ -219,6 +219,6 @@ def test_toepliz_TI_Kernel():
     C_obj_asfull = C_obj[np.arange(C_obj.C_size_),np.arange(C_obj.C_size_)]
 
     diff = C_obj_asfull - C
-    assert diff.max() + diff.min() < 1.e-6
+    assert np.abs(diff.max()) + np.abs(diff.min()) < 1.e-6
 
 
