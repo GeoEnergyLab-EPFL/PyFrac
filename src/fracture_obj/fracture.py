@@ -281,7 +281,7 @@ class Fracture:
 
         self.TarrvlZrVrtx = np.full((mesh.NumberOfElts,), np.nan, dtype=np.float64)
         self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
-        if self.v is not None:
+        if self.v is not None and not np.isnan(self.v).any():
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
 
 
