@@ -18,6 +18,7 @@ import matplotlib.patches as mpatches
 import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
+from matplotlib.colors import LinearSegmentedColormap
 import copy
 
 # Internal imports
@@ -26,10 +27,49 @@ from properties import PlotProperties, LabelProperties
 from utilities.labels import supported_variables, supported_projections, \
                    unidimensional_variables, suitable_elements
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-def plot_fracture_list(fracture_list, variable='footprint', projection=None, elements=None, plot_prop=None, fig=None,
-                       edge=4, contours_at=None, labels=None, mat_properties=None, backGround_param=None,
-                       plot_non_zero=True, source_loc=np.asarray([0,0])):
+def EPFLcolor():
+    """
+       This function generates a colormap using the six colors defined by EPFL corporate design indexed between 0 and 1.
+       One can simply call the function and the output is the colormap. It can then be used within matplotlib
+       applications or to generate colored lines as any other matplotlib colormap.
+
+       Args: None
+
+       Output: matplotlib.cm using EPFL corporate design colors indexed.
+
+       """
+
+    cdict = {'red': [(0.0, 0.792156862745098, 0.792156862745098),
+                     (0.2, 0.254901960784314, 0.254901960784314),
+                     (0.4, 0.0, 0.0),
+                     (0.6, 0.0, 0.0),
+                     (0.8, 0.709803921568628, 0.709803921568628),
+                     (1.0, 1.0, 1.0)],
+
+             'green': [(0.0, 0.780392156862745, 0.780392156862745),
+                       (0.2, 0.239215686274510, 0.239215686274510),
+                       (0.4, 0.454901960784314, 0.454901960784314),
+                       (0.6, 0.654901960784314, 0.654901960784314),
+                       (0.8, 0.121568627450980, 0.121568627450980),
+                       (1.0, 0.0, 0.0)],
+
+             'blue': [(0.0, 0.780392156862745, 0.780392156862745),
+                      (0.2, 0.227450980392157, 0.227450980392157),
+                      (0.4, 0.501960784313726, 0.501960784313726),
+                      (0.6, 0.623529411764706, 0.623529411764706),
+                      (0.8, 0.121568627450980, 0.121568627450980),
+                      (1.0, 0.0, 0.0)]}
+
+    return LinearSegmentedColormap('EPFLcmap', segmentdata=cdict, N=256)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def plot_fracture_list(fracture_list, variable='footprint', projection=None, elements=None,
+                       plot_prop=PlotProperties(color_map=EPFLcolor()), fig=None, edge=4, contours_at=None, labels=None,
+                       mat_properties=None, backGround_param=None, plot_non_zero=True, source_loc=np.asarray([0,0])):
     """
     This function plots the fracture evolution with time. The state of the fracture at different times is provided in
     the form of a list of Fracture objects.
@@ -2510,4 +2550,3 @@ def plot_points_to_mkmtTriangle(fig, rgbpoints):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-
