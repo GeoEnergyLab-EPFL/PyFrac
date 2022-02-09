@@ -36,7 +36,7 @@ from fracture_obj.fracture_initialization import Geometry, InitializationParamet
 
 from HF_reference_solutions import HF_analytical_sol
 
-from utilities.visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory
+from utilities.visualization import plot_fracture_list, plot_fracture_list_slice, to_precision, zoom_factory, EPFLcolor
 from utilities.labels import unidimensional_variables
 
 from properties import PlotProperties
@@ -288,7 +288,7 @@ class Fracture:
 #-----------------------------------------------------------------------------------------------------------------------
 
     def plot_fracture(self, variable='complete', mat_properties=None, projection='3D', elements=None,
-                      backGround_param=None, plot_prop=None, fig=None, edge=4, contours_at=None, labels=None,
+                      backGround_param=None, plot_prop=PlotProperties(color_map=EPFLcolor()), fig=None, edge=4, contours_at=None, labels=None,
                       plot_non_zero=True):
         """
         This function plots the fracture.
