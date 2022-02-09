@@ -942,10 +942,10 @@ class get_toughness_from_cellCenter_iter():
                 Kprime = self.matProp.Kprime_func(x, y, alpha_loc)
 
         # ------- plot point's location --------
-        # from continuous_front_reconstruction import plot_xy_points
+        # from src.level_set.continuous_front_reconstruction import plot_xy_points
         # background_Color = np.zeros(mesh.NumberOfElts)
         # for ii in range(mesh.NumberOfElts):
-        #     background_Color[ii] = self.matProp.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1])
+        #     background_Color[ii] = self.matProp.Kprime_func(mesh.CenterCoor[ii, 0], mesh.CenterCoor[ii, 1],0.)
         # plot_xy_points(np.arange(mesh.NumberOfElts), mesh, background_Color, ribbon, x, y, fig=None,
         #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
         #                oldfront=None, joinPoints=False, disregard_plus=True)

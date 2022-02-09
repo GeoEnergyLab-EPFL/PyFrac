@@ -27,11 +27,12 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = True
 run_dir =  "./"
+restart= True
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(2., 2., 55, 55)
+    Mesh = CartesianMesh(0.5, 0.5, 155, 155)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -60,8 +61,8 @@ if run:
         K_Ic = 1.e6  # fracture toughness
         r = 1.48
         delta = 0.001
-        return smoothing(K_Ic, 4.5*K_Ic, r, delta, x)
-        #return K_Ic
+        #return smoothing(K_Ic, 4.5*K_Ic, r, delta, x)
+        return K_Ic
 
     def sigmaO_func(x, y):
         return 0
@@ -73,11 +74,11 @@ if run:
                               minimum_width=0.)
 
     # injection parameters
-    Q0 = 0.01
+    Q0 = 1.
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=0.001)
+    Fluid = FluidProperties(viscosity=1.)
 
     # simulation properties
     simulProp = SimulationProperties()
@@ -102,7 +103,7 @@ if run:
     # simulProp.set_mesh_extension_direction(['vertical'])
     simulProp.meshReductionPossible = False
 
-    simulProp.simID = 'K1/K2=2.' # do not use _
+    simulProp.simID = 'mtok' # do not use _
 
     simulProp.EHL_iter_lin_solve = True
     simulProp.gmres_Restart = 1000
@@ -111,7 +112,7 @@ if run:
 
     # initialization parameters
     Fr_geometry = Geometry('radial')
-    init_param = InitializationParameters(Fr_geometry, regime='M', time=0.05)
+    init_param = InitializationParameters(Fr_geometry, regime='M', time=0.0001)
 
     # creating fracture object
     Fr = Fracture(Mesh,
@@ -120,6 +121,28 @@ if run:
                   Fluid,
                   Injection,
                   simulProp)
+
+    ################################################################################
+    # the following lines are needed if you want to restart an existing simulation #
+    ################################################################################
+    if restart:
+        from src.utilities.visualization import *
+        Fr_list, properties = load_fractures(address=run_dir, step_size=100)
+        Solid, Fluid, Injection, simulProp = properties
+        Fr = Fr_list[-1]
+
+        Solid = MaterialProperties(Fr.mesh,
+                                  Eprime,
+                                  K1c_func=K1c_func,
+                                  confining_stress_func = sigmaO_func,
+                                  confining_stress=0.,
+                                  minimum_width=0.)
+
+        Injection = InjectionProperties(Q0, Fr.mesh)
+        simulProp.meshReductionPossible = True
+        simulProp.meshExtensionAllDir = False
+        simulProp.finalTime = 10.**30
+    ############################################################################
 
     # create a Controller
     controller = Controller(Fr,

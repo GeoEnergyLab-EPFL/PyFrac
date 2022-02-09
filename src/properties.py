@@ -311,7 +311,7 @@ class LoadingProperties:
 # ----------------------------------------------------------------------------------------------------------------------
 
 class SimulationProperties:
-    # todo: add descriptions missing
+    # todo: add missing descriptions
     """
     Class defining the simulation properties.
 
@@ -612,6 +612,29 @@ class SimulationProperties:
 
         # parameter deciding to save the leak-off tip parameter
         self.saveChi = simul_param.save_chi
+
+        # define the terminating criterion function
+        self.terminating_criterion = self.default_terminating_criterion
+
+        # defining the return function in case the simulation ends according to the terminating criterion function
+        self.return_function = self.default_return_function
+
+        # defining the default time refinement
+        self.adaptive_time_refinement = self.default_adaptive_time_refinement
+
+    def default_terminating_criterion(self, fracture):
+        # criterion based on the final time
+        if fracture.time < 0.999 * self.finalTime:
+            return True
+        else:
+            return False
+
+    def default_return_function(self, fracture):
+        return True
+
+    def default_adaptive_time_refinement(self, Fr_current, Fr_new, timestep):
+        return timestep, False
+
 
 # ----------------------------------------------------------------------------------------------------------------------
     def set_logging_to_file(self, address, verbosity_level=None):

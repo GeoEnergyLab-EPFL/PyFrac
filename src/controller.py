@@ -184,7 +184,6 @@ class Controller:
                 warnings.warn(
                     "You have forced <limitAdancementTo2cells> to be True and set <timeStepLimit> - the first one might be uneffective onto the second one until the prefactor has been reduced to produce a time step < timeStepLimit")
 #-----------------------------------------------------------------------------------------------------------------------
-
     def run(self):
         """
         This function runs the simulation according to the parameters given in the properties classes. See especially
@@ -267,7 +266,7 @@ class Controller:
             send_phone_message("Starting time = " + repr(self.fracture.time))
 
         # starting time stepping loop
-        while self.fracture.time < 0.999 * self.sim_prop.finalTime and self.TmStpCount < self.sim_prop.maxTimeSteps:
+        while self.sim_prop.terminating_criterion(self.fracture) and self.TmStpCount < self.sim_prop.maxTimeSteps:
 
             timeStep = self.get_time_step()
 
@@ -277,10 +276,29 @@ class Controller:
                 tmStp_perf = None
 
             # advancing time step
-            status, Fr_n_pls1 = self.advance_time_step(self.fracture,
-                                                         self.C,
-                                                         timeStep,
-                                                         tmStp_perf)
+            # a mechanism for goal oriented time refinement is implemented
+            timeStep_i = timeStep
+            adaptive_time_refinement = True
+            it_counter = 0
+            while adaptive_time_refinement:
+                it_counter = it_counter + 1
+                if it_counter > 1:
+                    log.info(f" adaptive time refinement iter: {it_counter} ")
+                status, Fr_n_pls1 = self.advance_time_step(self.fracture,
+                                                             self.C,
+                                                             timeStep_i,
+                                                             tmStp_perf)
+
+                # legend for the status
+                # if status ==  1: Successful time step
+                # if status == 12: or 16: remeshing required
+                # if status == 14: fracture fully closed
+                # if status == 17: advancing more than one cell
+                # if status == any other number, reattempt going back or the simulation fails
+                if status == 1:
+                    timeStep_i, adaptive_time_refinement = self.sim_prop.adaptive_time_ref(self.fracture, Fr_n_pls1, timeStep_i)
+                else:
+                    adaptive_time_refinement = False
 
             if self.sim_prop.collectPerfData:
                 tmStp_perf.CpuTime_end = time.time()
@@ -294,6 +312,7 @@ class Controller:
             # Successful time step
                 log.info("Time step successful!")
                 log.debug(f"Solved time: {Fr_n_pls1.time} s")
+                log.debug(f"for a time step of: {Fr_n_pls1.time - self.fracture.time} s")
                 log.debug("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
                 log.debug("Nx: " + str(Fr_n_pls1.mesh.nx))
                 log.debug("Ny: " + str(Fr_n_pls1.mesh.ny))
@@ -935,7 +954,10 @@ class Controller:
             os.makedirs(os.path.dirname(file_address), exist_ok=True)
             with open(file_address, 'wb') as output:
                 dill.dump(self.perfData, output, -1)
-        return True
+
+        # the return function can be customized. By default it returns True
+        return self.sim_prop.return_function(self.fracture)
+
 
 
 #-----------------------------------------------------------------------------------------------------------------------
