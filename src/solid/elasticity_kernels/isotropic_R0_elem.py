@@ -146,7 +146,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
-
+@njit(nogil=True, cache=True, parallel = True)
 def get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     """
 

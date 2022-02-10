@@ -37,7 +37,7 @@ def common_test_for_all_toepliz_tests(C, C_new, expect_simmetric=False):
 
 ###### TESTING ######
 
-# common parameeters
+# common parameters
 nu = 0.4                            # Poisson's ratio
 youngs_mod = 3.3e10                 # Young's modulus
 Ep = youngs_mod / (1 - nu ** 2) # plain strain modulus
