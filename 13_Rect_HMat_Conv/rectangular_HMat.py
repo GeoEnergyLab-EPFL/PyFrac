@@ -35,8 +35,8 @@ run = True
 if run:
 
     ## --- Setting the different parameters --- ##
-    Nx_set = [7, 15, 25, 50, 75, 100, 200] # Number of elements in the cross section
-    aspect_ratio_set = [2.5, 5, 10, 25, 50, 75, 100, 200] # Aspect ratios
+    Nx_set = [7, 15, 25, 50, 75, 100, 150, 200] # Number of elements in the cross section
+    aspect_ratio_set = [2, 5, 10, 25, 50, 75, 100, 200] # Aspect ratios
     leaf_size_set = [5, 10, 100, 500] # leaf size
     eta_set = [3, 5, 10] # distance threshold
     epsilon_set = [1e-3, 1e-4, 1e-5] # limit on final accuracy
@@ -181,10 +181,10 @@ if run:
         ## --- State that one Nx is done --- ##
         print(F" <<<< FINISHED Nx = {Nx_i} completely  >>>>")
 
-print("Saving to file")
-content = results
-action = 'dump_this_dictionary'
-append_to_json_file("HMatConvergence_Results", [content], action, delete_existing_filename=True)
+    print("Saving to file")
+    content = results
+    action = 'dump_this_dictionary'
+    append_to_json_file("HMatConvergence_Results", [content], action, delete_existing_filename=True)
 
 # ----------------------------------------------
 # ----------------------------------------------
@@ -195,38 +195,38 @@ post = False
 if post:
     ## --- Define colors marker etc. --- ##
     cmap = EPFLcolor()
-    colors = cmap([0, .2, .4, .5, .6, .8, 1.0])
+    colors = cmap([0, .2, .3, .4, .5, .6, .8, 1.0])
     markers = ["+", "o", "s", "d", "v"]
 
     ## --- load the data --- ##
-    file_name = "HMatConvergence_Results"
+    file_name = "HMatConvergence_Results.json"
     with open(file_name, "r+") as json_file:
         results_loaded = json.load(json_file)[0]  # get the data
     print("Plotting results")
 
     ## --- prepare all the unique parts --- ##
     # Nx --> color
-    unique_Nx = np.unique(results_loaded["Nx"])
+    unique_Nx = np.unique(results_loaded["nx"])
     Nx_indexes = []
-    for Nx_i in Nx_indexes:
-        Nx_indexes.append(np.where(results_loaded["Nx"] == Nx_i)[0])
+    for Nx_i in unique_Nx:
+        Nx_indexes.append(np.where(results_loaded["nx"] == Nx_i)[0])
 
     # leaf size
     unique_ls = np.unique(results_loaded["leaf size"])
     ls_indexes = []
-    for ls_i in ls_indexes:
+    for ls_i in unique_ls:
         ls_indexes.append(np.where(results_loaded["leaf size"] == ls_i)[0])
 
     # eta
     unique_eta = np.unique(results_loaded["eta"])
     eta_indexes = []
-    for eta_i in eta_indexes:
+    for eta_i in unique_eta:
         eta_indexes.append(np.where(results_loaded["eta"] == eta_i)[0])
 
     # epsilon
     unique_epsilon = np.unique(results_loaded["epsilon"])
     epsilon_indexes = []
-    for epsilon_i in epsilon_indexes:
+    for epsilon_i in unique_epsilon:
         epsilon_indexes.append(np.where(results_loaded["epsilon"] == epsilon_i)[0])
 
     #######################
@@ -242,12 +242,13 @@ if post:
         for ind2 in range(len(unique_ls)):
             legend.append('Nx = ' + str(unique_Nx[ind]) + ', ls = ' + str(unique_ls[ind2]))
             indexes = reduce(np.intersect1d, (Nx_indexes[ind], ls_indexes[ind2], eta_indexes[0], epsilon_indexes[0]))
-            plt.plot(results_loaded["aspect ratio"][indexes], results_loaded["max rel_err"][indexes], c=colors[ind],
-                     marker=markers[ind2])
+            plt.plot(np.asarray(results_loaded["aspect ratio"])[indexes],
+                     np.asarray(results_loaded["max rel_err"])[indexes], c=colors[ind], marker=markers[ind2])
 
     plt.xlabel('Fracture aspect ratio')
     plt.ylabel('Rel err on pressure for uniform opening DD [%]')
-    plt.legend(legend, loc='upper right', shadow=True, title='eta = ' + unique_eta[0] + ', eps = ' + unique_epsilon[0])
+    plt.legend(tuple(legend), loc='upper right', shadow=True,
+               title='eta = ' + str(unique_eta[0]) + ', eps = ' + str(unique_epsilon[0]))
     plt.xscale('log')
     plt.yscale('log')
     # Add a grid
@@ -267,12 +268,13 @@ if post:
         for ind2 in range(len(unique_ls)):
             legend.append('Nx = ' + str(unique_Nx[ind]) + ', ls = ' + str(unique_ls[ind2]))
             indexes = reduce(np.intersect1d, (Nx_indexes[ind], ls_indexes[ind2], eta_indexes[0], epsilon_indexes[0]))
-            plt.plot(results_loaded["aspect ratio"][indexes], results_loaded["compression ratio"][indexes],
-                     c=colors[ind], marker=markers[ind2])
+            plt.plot(np.asarray(results_loaded["aspect ratio"])[indexes],
+                     np.asarray(results_loaded["compression ratio"])[indexes],  c=colors[ind], marker=markers[ind2])
 
     plt.xlabel('Fracture aspect ratio')
     plt.ylabel('Compression ratio [%]')
-    plt.legend(legend, loc='upper right', shadow=True, title='eta = ' + unique_eta[0] + ', eps = ' + unique_epsilon[0])
+    plt.legend(tuple(legend), loc='upper right', shadow=True,
+               title='eta = ' + str(unique_eta[0]) + ', eps = ' + str(unique_epsilon[0]))
     plt.xscale('log')
     plt.yscale('log')
     # Add a grid
@@ -284,224 +286,53 @@ if post:
     #####################
 
     ## --- prepare the plot --- ##
-    fig2 = plt.figure()
-    ax = fig2.add_subplot(1, 1, 1)
+    fig3 = plt.figure()
+    ax = fig3.add_subplot(1, 1, 1)
     plt.suptitle('Rectangular crack test: leaf size')
     legend = []
     for ind in range(len(unique_Nx)):
         for ind2 in range(len(unique_ls)):
             legend.append('Nx = ' + str(unique_Nx[ind]) + ', ls = ' + str(unique_ls[ind2]))
             indexes = reduce(np.intersect1d, (Nx_indexes[ind], ls_indexes[ind2], eta_indexes[0], epsilon_indexes[0]))
-            plt.plot(results_loaded["aspect ratio"][indexes], results_loaded["t_Hmat"][indexes],
+            plt.plot(np.asarray(results_loaded["aspect ratio"][indexes]), np.asarray(results_loaded["t_Hmat"])[indexes],
                      c=colors[ind], marker=markers[ind2])
 
     plt.xlabel('Fracture aspect ratio')
     plt.ylabel('Computation time for HMat [s]')
-    plt.legend(legend, loc='upper right', shadow=True, title='eta = ' + unique_eta[0] + ', eps = ' + unique_epsilon[0])
+    plt.legend(tuple(legend), loc='upper right', shadow=True,
+               title='eta = ' + str(unique_eta[0]) + ', eps = ' + str(unique_epsilon[0]))
     plt.xscale('log')
     plt.yscale('log')
     # Add a grid
     ax.grid(which='both')
-    fig2 = plt.figure()
+    fig3 = plt.figure()
 
-    #########################
-    # Dot product time time #
-    #########################
+    ####################
+    # Dot product time #
+    ####################
 
     ## --- prepare the plot --- ##
-    fig2 = plt.figure()
-    ax = fig2.add_subplot(1, 1, 1)
+    fig4 = plt.figure()
+    ax = fig4.add_subplot(1, 1, 1)
     plt.suptitle('Rectangular crack test: leaf size')
     legend = []
     for ind in range(len(unique_Nx)):
         for ind2 in range(len(unique_ls)):
             legend.append('Nx = ' + str(unique_Nx[ind]) + ', ls = ' + str(unique_ls[ind2]))
             indexes = reduce(np.intersect1d, (Nx_indexes[ind], ls_indexes[ind2], eta_indexes[0], epsilon_indexes[0]))
-            plt.plot(results_loaded["aspect ratio"][indexes], results_loaded["t_Dot"][indexes],
+            plt.plot(np.asarray(results_loaded["aspect ratio"])[indexes], np.asarray(results_loaded["t_Dot"])[indexes],
                      c=colors[ind], marker=markers[ind2])
 
     plt.xlabel('Fracture aspect ratio')
     plt.ylabel('Computation time for Dot product [s]')
-    plt.legend(legend, loc='upper right', shadow=True, title='eta = ' + unique_eta[0] + ', eps = ' + unique_epsilon[0])
+    plt.legend(legend, loc='upper right', shadow=True,
+               title='eta = ' + str(unique_eta[0]) + ', eps = ' + str(unique_epsilon[0]))
     plt.xscale('log')
     plt.yscale('log')
     # Add a grid
     ax.grid(which='both')
-    fig2 = plt.figure()
+    fig4 = plt.figure()
+    plt.show()
 
-    # plt.suptitle('Rectangular crack test')
-    #
-    # res = [results1, results2, results3]
-    # for res_i in range(3):
-    #     y_ana = []
-    #     for H_i in range(len(res[res_i]["H"])):
-    #         y_ana.append(wmax_plane_strain_solution(res[res_i]["youngs mod"], res[res_i]["nu"],res[res_i]["p"], res[res_i]["H"][H_i]))
-    #     y_ana = np.asarray(y_ana)
-    #     n1 = 0.6+0.1*res_i
-    #     n2 = 0.6 - 0.1 * res_i
-    #     plt.plot(res[res_i]["nx"], 100 * (100 * np.abs(np.asarray(res[res_i]["max w R0"]) - y_ana))/(100 *y_ana), c=(n1, n2, 0.), marker="+")
-    #     plt.plot(res[res_i]["nx"], 100 * (100 * np.abs(np.asarray(res[res_i]["max w R0 with tipcorr"]) - y_ana)) / (100 * y_ana), c=(n1, n2, 0.),marker="o")
-    #     plt.plot(res[res_i]["nx"], 100 * (100 * np.abs(np.asarray(res[res_i]["max w R4"]) - y_ana))/(100 *y_ana), c=(0., n2, n1), marker="+")
-    #     plt.plot(res[res_i]["nx"], 100 * (100 * np.abs(np.asarray(res[res_i]["max w R4 with tipcorr"]) - y_ana)) / (100 * y_ana), c=(0., n2, n1), marker="o")
-    #
-    # plt.tick_params(labeltop=True, labelright=True)
-    # plt.grid(True, which="both", ls="-")
-    #
-    # plt.xlabel('# of DOF in the transversal direction')
-    # plt.ylabel('rel. err. w max [%]')
-    # plt.legend(('R0 - aspect ratio 10',
-    #             'R0 with tip corr - aspect ratio 10',
-    #             'R4 - aspect ratio 10',
-    #             'R4 with tip corr - aspect ratio 10',
-    #             'R0 - aspect ratio 20',
-    #             'R0 with tip corr - aspect ratio 20',
-    #             'R4 - aspect ratio 20',
-    #             'R4 with tip corr - aspect ratio 20',
-    #             'R0 - aspect ratio 30',
-    #             'R0 with tip corr - aspect ratio 30',
-    #             'R4 - aspect ratio 30',
-    #             'R4 with tip corr - aspect ratio 30'
-    #             ), loc='lower left', shadow=True, title='tip corr as Ryder & Napier 1985' )
-    # plt.xscale('log')
-    # plt.yscale('log')
-    #
-    # ####################
-    # # SIF              #
-    # ####################
-    #
-    # fig1 = plt.figure()
-    # plt.suptitle('Rectangular crack test')
-    #
-    # plt.plot(results3["nx"], results3["KI R0"], c='r', marker="+")
-    # plt.plot(results3["nx"], results3["KI R0 with tipcorr"], c='r', marker=".")
-    # plt.plot(results3["nx"], results3["KI R4"], c='b', marker="+")
-    # plt.plot(results3["nx"], results3["KI R4 with tipcorr"], c='b', marker=".")
-    #
-    # # SIF from vol
-    # plt.plot(results3["nx"], results3["KI R0_fromVol"], c='r', ls='--', marker="+")
-    # plt.plot(results3["nx"], results3["KI R0_fromVol with tipcorr"], c='r', ls='--', marker=".")
-    # plt.plot(results3["nx"], results3["KI R4_fromVol"], c='b',ls='--', marker="+")
-    # plt.plot(results3["nx"], results3["KI R4_fromVol with tipcorr"], c='b', ls='--', marker=".")
-    #
-    # plt.tick_params(labeltop=True, labelright=True)
-    # plt.grid(True, which="both", ls="-")
-    #
-    # plt.xlabel('# of DOF in x direction crack')
-    # plt.ylabel('rel. err. KI [%]')
-    # plt.legend(('R0 - NO tip corr',  'R0 - tip corr as Ryder & Napier 1985',
-    #             'R4 - NO tip corr', 'R4 - tip corr as Ryder & Napier 1985',
-    #             'R0 - NO tip corr - vol est', 'R0 - tip corr - vol est',
-    #             'R4 - NO tip corr - vol est', 'R4 - tip corr - vol est'
-    #             ), loc='lower right', shadow=True, title='Aspect ratio = 30')
-    # plt.xscale('log')
-    # plt.yscale('log')
-    #
-    # ####################
-    # # w(x) adim        #
-    # ####################
-    # res = [results1, results2, results3]
-    # ar = [10,20,30]
-    # for res_i in range(3):
-    #     fig1 = plt.figure()
-    #     plt.suptitle('Rectangular crack test')
-    #     xadim = np.asarray(res[res_i]["x_center_section"][-1])/((res[res_i]["H"][-1])/2.)
-    #     xsol = np.sqrt(1 - xadim * xadim)
-    #     w_R0 = np.asarray(res[res_i]["w_R0"][-1]) / np.asarray(res[res_i]["w_R0"][-1]).max()
-    #     w_R0_tipcorr = np.asarray(res[res_i]["w_R0_tipcorr"][-1]) / np.asarray(res[res_i]["w_R0_tipcorr"][-1]).max()
-    #     w_R4 = np.asarray(res[res_i]["w_R4"][-1]) / np.asarray(res[res_i]["w_R4"][-1]).max()
-    #     w_R4_tipcorr = np.asarray(res[res_i]["w_R4_tipcorr"][-1]) / np.asarray(res[res_i]["w_R4_tipcorr"][-1]).max()
-    #
-    #     re_w_R0 = 100 * np.abs(w_R0-xsol) / (xsol)
-    #     re_w_R0_tc = 100 * np.abs(w_R0_tipcorr - xsol) / (xsol)
-    #     re_w_R4 = 100 * np.abs(w_R4-xsol) / (xsol)
-    #     re_w_R4_tc = 100 * np.abs(w_R4_tipcorr - xsol) / (xsol)
-    #
-    #     plt.plot(xadim, re_w_R0, c='r', marker="+")
-    #     plt.plot(xadim, re_w_R0_tc, c='r', marker=".")
-    #     plt.plot(xadim, re_w_R4, c='b', marker="+")
-    #     plt.plot(xadim, re_w_R4_tc, c='b', marker=".")
-    #     plt.tick_params(labeltop=True, labelright=True)
-    #     plt.grid(True, which="both", ls="-")
-    #
-    #     plt.ylabel('rel error w [%]')
-    #     plt.xlabel('x/(H/2)')
-    #     plt.legend(('R0 - NO tip corr',  'R0 - tip corr as Ryder & Napier 1985',
-    #                 'R4 - NO tip corr', 'R4 - tip corr as Ryder & Napier 1985'), loc='upper center', shadow=True, title='Aspect ratio = '+str(ar[res_i]))
-    #     plt.xlim([0,1])
-    #
-    # ####################
-    # # w(x)             #
-    # ####################
-    # res = [results1, results2, results3]
-    # ar = [10, 20, 30]
-    # for res_i in range(3):
-    #     fig1 = plt.figure()
-    #     plt.suptitle('Rectangular crack test')
-    #     xadim = np.asarray(res[res_i]["x_center_section"][-1]) / ((res[res_i]["H"][-1]) / 2.)
-    #     xsol = np.sqrt(1 - xadim * xadim) * wmax_plane_strain_solution(res[res_i]["youngs mod"], res[res_i]["nu"],res[res_i]["p"], res[res_i]["H"][H_i])
-    #     w_R0 = np.asarray(res[res_i]["w_R0"][-1])
-    #     w_R0_tipcorr = np.asarray(res[res_i]["w_R0_tipcorr"][-1])
-    #     w_R4 = np.asarray(res[res_i]["w_R4"][-1])
-    #     w_R4_tipcorr = np.asarray(res[res_i]["w_R4_tipcorr"][-1])
-    #
-    #     re_w_R0 = 100 * np.abs(w_R0 - xsol) / (xsol)
-    #     re_w_R0_tc = 100 * np.abs(w_R0_tipcorr - xsol) / (xsol)
-    #     re_w_R4 = 100 * np.abs(w_R4 - xsol) / (xsol)
-    #     re_w_R4_tc = 100 * np.abs(w_R4_tipcorr - xsol) / (xsol)
-    #
-    #     plt.plot(xadim, re_w_R0, c='r', marker="+")
-    #     plt.plot(xadim, re_w_R0_tc, c='r', marker=".")
-    #     plt.plot(xadim, re_w_R4, c='b', marker="+")
-    #     plt.plot(xadim, re_w_R4_tc, c='b', marker=".")
-    #     plt.tick_params(labeltop=True, labelright=True)
-    #     plt.grid(True, which="both", ls="-")
-    #
-    #     plt.ylabel('rel error w [%]')
-    #     plt.xlabel('x/(H/2)')
-    #     plt.legend(('R0 - NO tip corr', 'R0 - tip corr as Ryder & Napier 1985',
-    #                 'R4 - NO tip corr', 'R4 - tip corr as Ryder & Napier 1985'), loc='upper center', shadow=True,
-    #                title='Aspect ratio = ' + str(ar[res_i]))
-    #     plt.xlim([0, 1])
-    #
-    #
-    # ####################
-    # # SIF by volume    #
-    # ####################
-    # Ep = results3["youngs mod"] / (1 - results3["nu"]**2)
-    # hx = 2. * results3["Lx"][-1] / (results3["nx"][-1] - 1)
-    # KI_ana = KI_2DPS_solution(results3["p"], results3["H"][-1])
-    # w1 = results3["w_R0_tipcorr"][-1][-1]
-    # w2 = results3["w_R0_tipcorr"][-1][-2]
-    #
-    # # A: from tip to h/2
-    # KI_A = 3. * Ep * np.sqrt(np.pi) * w1 / (8. * np.sqrt(hx))
-    # KI_A_relerr = 100 * np.abs(KI_A - KI_ana)/KI_ana
-    # print(f'rel error KI A: {KI_A_relerr} %')
-    #
-    # # B: from tip to h
-    # KI_B = 3. * Ep * np.sqrt(np.pi*0.5) * w1 / (8. * np.sqrt(hx))
-    # KI_B_relerr = 100 * np.abs(KI_B - KI_ana)/KI_ana
-    # print(f'rel error KI B: {KI_B_relerr} %')
-    #
-    # # C: from tip to 3 h/2
-    # KI_C =  Ep * np.sqrt(np.pi/3.) * (2*w1 + w2) / (8. * np.sqrt(hx))
-    # KI_C_relerr = 100 * np.abs(KI_C - KI_ana)/KI_ana
-    # print(f'rel error KI C: {KI_C_relerr} %')
-    #
-    # # D: from tip to 2 h
-    # KI_D = 3. * Ep * np.sqrt(np.pi) * (w1 + w2) / (32. * np.sqrt(hx))
-    # KI_D_relerr = 100 * np.abs(KI_D - KI_ana)/KI_ana
-    # print(f'rel error KI D: {KI_D_relerr} %')
-    #
-    # # E: from h to 3 h/2
-    # KI_E =  3. * (4. + 3. * np.sqrt(6.)) * Ep * np.sqrt(np.pi/2.) * (w2) / (152. * np.sqrt(hx))
-    # KI_E_relerr = 100 * np.abs(KI_E - KI_ana)/KI_ana
-    # print(f'rel error KI E: {KI_E_relerr} %')
-    #
-    # # F: from h to 2 h
-    # KI_F = 3. * (4. + np.sqrt(2.)) * Ep * np.sqrt(np.pi) * (w2) / (112. * np.sqrt(hx))
-    # KI_F_relerr = 100 * np.abs(KI_F - KI_ana)/KI_ana
-    # print(f'rel error KI F: {KI_F_relerr} %')
-    # plt.show()
 print(" <<<< FINISHED with All >>>>")
 
