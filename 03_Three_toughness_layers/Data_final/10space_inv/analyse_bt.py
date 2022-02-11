@@ -124,9 +124,10 @@ def get_fracture_sizes(Fr):
 
 # define the terminating criterion function
 class terminating_criterion_factory:
-    def __init__(self, aspect_ratio_target, xmax_lim):
+    def __init__(self, aspect_ratio_target, xmax_lim, aspect_ratio_toll):
         self.xmax_lim = xmax_lim  # max value of x that can be reached during the simulation
         self.aspect_ratio_target = aspect_ratio_target  # target aspect ratio that can be reached during the simulation
+        self.aspect_ratio_toll = aspect_ratio_toll
 
     def __call__(self, fracture):
         """ The implementing the terminating_criterion"""
@@ -135,7 +136,7 @@ class terminating_criterion_factory:
         x_dimension = np.abs(x_min) + x_max
         y_dimension = np.abs(y_min) + y_max
         aspect_ratio = y_dimension / x_dimension
-        if larger_abs_x < self.xmax_lim and aspect_ratio < self.aspect_ratio_target:
+        if larger_abs_x < self.xmax_lim and aspect_ratio < (self.aspect_ratio_target - self.aspect_ratio_toll):
             return True
         else:
             return False
@@ -168,7 +169,7 @@ class adapive_time_ref_factory():
         if aspect_ratio_c < (self.aspect_ratio_max - self.aspect_ratio_toll) and \
                 aspect_ratio_n > (self.aspect_ratio_max + self.aspect_ratio_toll):
             # we should limit the time step
-            timestep_new = Fr_current.time + (Fr_new.time + Fr_current.time) * 0.5
+            timestep_new = np.abs(Fr_new.time - Fr_current.time) * 0.5
             return  timestep_new, True
         return timestep, False
 
@@ -177,10 +178,10 @@ file_name = "analyse_bt_res.json"
 globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv'
 date_ext = '2022-02-02__09_02_40'
 basename = '/simulation__'+date_ext+'_file_'
-# [KK, MM, K, M, MK]
-todo = ["1643","1000","1400","1100"]
-todo_n = [1643, 1000, 1400, 1100]
-for number in range(1000, 1650, 25):
+
+todo = []
+todo_n = []
+for number in range(0, 1600, 10):
     if number not in todo_n:
         todo.append(str(number))
 todo_n = len(todo)
@@ -188,7 +189,8 @@ todo_n = len(todo)
 # copy the file for safety!
 baseloc = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
 file_name_copy = "analyse_bt_res_copy.json"
-shutil.copyfile(baseloc+file_name, baseloc+file_name_copy)
+if os.path.isfile(file_name):
+    shutil.copyfile(baseloc+file_name, baseloc+file_name_copy)
 
 
 # initialize some vars
@@ -207,7 +209,8 @@ results = {"toughness ratio" : [],
             }
 
 KIc_ratio = None
-KIc_ratio_old = None
+KIc_ratio_upper = None
+KIc_ratio_lower = None
 
 # define the results
 if not os.path.isfile(file_name):
@@ -251,132 +254,152 @@ for num_id, num in enumerate(todo):
         Solid_loaded, Fluid, Injection, simulProp = properties
         contunue_loop = True
         it_count = 0
-        while contunue_loop:
 
-            Fr = copy.deepcopy(Fr_list[-1])
+        if not len(Fr_list[-1].EltCrack) > 5000:
+            while contunue_loop:
 
-            # define the hard limit
-            x_min, x_max, y_min, y_max = get_fracture_sizes(Fr)
-            r_0 = np.maximum(np.abs(x_min), np.abs(x_max)) + Fr.mesh.hx
-            delta = Fr.mesh.hx / 100.
-            x_lim = r_0
+                Fr = copy.deepcopy(Fr_list[-1])
 
-            # tollerance aspect ratio
-            aspect_ratio_toll = 0.005
-            # target aspect ratio
-            aspect_ratio_max = 1.02
-            # aspect ratio when to stop the simulation
-            aspect_ratio_target = aspect_ratio_max
+                # define the hard limit
+                x_min, x_max, y_min, y_max = get_fracture_sizes(Fr)
+                r_0 = np.maximum(np.abs(x_min), np.abs(x_max)) + Fr.mesh.hx
+                delta = Fr.mesh.hx / 100.
+                x_lim = r_0
 
-            # tollerance xmax
-            toll_xmax = delta/5.
-            xmax_lim = x_lim + toll_xmax
+                # tollerance aspect ratio
+                aspect_ratio_toll = 0.002
+                # target aspect ratio
+                aspect_ratio_max = 1.02
+                # aspect ratio when to stop the simulation
+                aspect_ratio_target = aspect_ratio_max
 
-            # current state variables
-            if KIc_ratio is None or (num_id == 0 and it_count ==0): KIc_ratio = 50.
-            if KIc_ratio_old is None or (num_id == 0 and it_count ==0): KIc_ratio_old = 1.
+                # tollerance xmax
+                toll_xmax = delta
+                xmax_lim = x_lim + toll_xmax
 
-            print(f' toughness ratio: {KIc_ratio}')
+                # current state variables
+                if KIc_ratio is None or (num_id == 0 and it_count ==0): KIc_ratio = 117.87413570419311
 
-            # define the toughenss function
-            K1c_func = K1c_func_factory(r_0, Solid_loaded.K1c[0], KIc_ratio, Fr.mesh.hx, Fr.mesh.hy, delta = delta)
-            Solid = MaterialProperties(Fr.mesh,
-                                       Solid_loaded.Eprime,
-                                       K1c_func=K1c_func,
-                                       confining_stress_func=sigmaO_func,
-                                       confining_stress=0.,
-                                       minimum_width=0.)
-            Injection = InjectionProperties(Injection.injectionRate[1,0], Fr.mesh)
-            simulProp.meshReductionPossible = False
-            simulProp.meshExtensionAllDir = True
-            simulProp.finalTime = 10. ** 30
-            simulProp.set_outputFolder(simdir)
-            simulProp.LHyst__ = []
-            simulProp.tHyst__ = []
-            # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
-            simulProp.adaptive_time_ref = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
+                if KIc_ratio_upper is None or (num_id == 0 and it_count ==0): KIc_ratio_upper = 200.
+                elif KIc_ratio_upper is not None and it_count ==0: KIc_ratio_upper = KIc_ratio
 
-            # define the terminating criterion function
-            simulProp.terminating_criterion = terminating_criterion_factory(aspect_ratio_target, xmax_lim)
+                if KIc_ratio_lower is None or (it_count ==0): KIc_ratio_lower = 1.
 
-            # defining the return function in case the simulation ends according to the terminating criterion function
-            simulProp.return_function = return_function
+                print(f'\n iterations on tough. ratio: {it_count} of 200, ID: {num}')
+                print(f' toughness ratio: {KIc_ratio}')
+                print(f' tough. min: {KIc_ratio_lower}')
+                print(f' tough. max: {KIc_ratio_upper}')
+                print(f' rel diff limits: {100 * np.abs(KIc_ratio_lower-KIc_ratio_upper)/KIc_ratio_lower} %')
 
-            # create a Controller
-            controller = Controller(Fr,
-                                    Solid,
-                                    Fluid,
-                                    Injection,
-                                    simulProp)
+                # define the toughenss function
+                K1c_func = K1c_func_factory(r_0, Solid_loaded.K1c[0], KIc_ratio, Fr.mesh.hx, Fr.mesh.hy, delta = delta)
+                Solid = MaterialProperties(Fr.mesh,
+                                           Solid_loaded.Eprime,
+                                           K1c_func=K1c_func,
+                                           confining_stress_func=sigmaO_func,
+                                           confining_stress=0.,
+                                           minimum_width=0.)
+                Injection = InjectionProperties(Injection.injectionRate[1,0], Fr.mesh)
+                simulProp.meshReductionPossible = False
+                simulProp.meshExtensionAllDir = True
+                simulProp.finalTime = 10. ** 30
+                simulProp.set_outputFolder(simdir)
+                simulProp.LHyst__ = []
+                simulProp.tHyst__ = []
+                # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
+                simulProp.adaptive_time_ref = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
 
-            # run the simulation
-            last_Fr = controller.run()
+                # define the terminating criterion function
+                simulProp.terminating_criterion = terminating_criterion_factory(aspect_ratio_target, xmax_lim, aspect_ratio_toll)
 
-            # check if xmax < xlim
-            x_min_c, x_max_c, y_min_c, y_max_c = get_fracture_sizes(last_Fr)
-            larger_abs_x_c = np.maximum(np.abs(x_min_c), x_max_c)
-            smaller_abs_x_c = np.minimum(np.abs(x_min_c), x_max_c)
-            x_dimension_c = np.abs(x_min_c) + x_max_c
-            y_dimension_c = np.abs(y_min_c) + y_max_c
-            aspect_ratio_c = y_dimension_c / x_dimension_c
+                # defining the return function in case the simulation ends according to the terminating criterion function
+                simulProp.return_function = return_function
 
-            # update the counter:
-            it_count = it_count + 1
-            if it_count < 200:
-                if larger_abs_x_c > xmax_lim:
-                    print(' increasing toughness ratio')
-                    print(f' x/xlim: {larger_abs_x_c / x_lim}')
-                    # increase toughness in the bounding layers
-                    KIc_ratio_new = (KIc_ratio_old + (KIc_ratio + KIc_ratio_old)*0.5)
-                    KIc_ratio_old = KIc_ratio
-                    KIc_ratio = KIc_ratio_new
-                    # delete the folder and get a new one
-                    src_folder = simdir + '_copy'
-                    dest_folder = simdir
-                    copy_dir(dest_folder, src_folder)
-                elif larger_abs_x_c < x_lim:
-                    print(' decreasing toughness ratio')
-                    print(f' x/xlim: {larger_abs_x_c/x_lim}')
-                    # decrease toughness in the bounding layers
-                    KIc_ratio_new = smoothing(Solid_loaded.K1c[0], Solid_loaded.K1c[0] * KIc_ratio, r_0, delta, smaller_abs_x_c)/Solid_loaded.K1c[0]#(KIc_ratio_old + KIc_ratio)/2
-                    KIc_ratio_old = KIc_ratio
-                    KIc_ratio = KIc_ratio_new
-                    # delete the folder and get a new one
-                    src_folder = simdir + '_copy'
-                    dest_folder = simdir
-                    copy_dir(dest_folder, src_folder)
+                # create a Controller
+                controller = Controller(Fr,
+                                        Solid,
+                                        Fluid,
+                                        Injection,
+                                        simulProp)
+
+                # run the simulation
+                last_Fr = controller.run()
+
+                # check if xmax < xlim
+                x_min_c, x_max_c, y_min_c, y_max_c = get_fracture_sizes(last_Fr)
+                larger_abs_x_c = np.maximum(np.abs(x_min_c), x_max_c)
+                smaller_abs_x_c = np.minimum(np.abs(x_min_c), x_max_c)
+                x_dimension_c = np.abs(x_min_c) + x_max_c
+                y_dimension_c = np.abs(y_min_c) + y_max_c
+                aspect_ratio_c = y_dimension_c / x_dimension_c
+
+                # update the counter:
+                it_count = it_count + 1
+                if it_count < 200:
+                    if larger_abs_x_c > xmax_lim and np.abs(KIc_ratio_lower-KIc_ratio_upper)/KIc_ratio_lower >0.005:
+                        print(' increasing toughness ratio')
+                        print(f' x/xlim: {larger_abs_x_c / x_lim}')
+                        # increase toughness in the bounding layers
+                        KIc_ratio_lower = KIc_ratio
+                        KIc_ratio_new = (KIc_ratio + KIc_ratio_upper)*0.5
+                        KIc_ratio = KIc_ratio_new
+                        # delete the folder and get a new one
+                        src_folder = simdir + '_copy'
+                        dest_folder = simdir
+                        copy_dir(dest_folder, src_folder)
+                    elif larger_abs_x_c < x_lim and np.abs(KIc_ratio_lower-KIc_ratio_upper)/KIc_ratio_lower >0.005:
+                        print(' decreasing toughness ratio')
+                        print(f' x/xlim: {larger_abs_x_c/x_lim}')
+                        # decrease toughness in the bounding layers
+                        KIc_ratio_upper = KIc_ratio
+                        KIc_ratio_new = (KIc_ratio + KIc_ratio_lower) * 0.5
+                        KIc_ratio = KIc_ratio_new
+                        #KIc_ratio_new = smoothing(Solid_loaded.K1c[0], Solid_loaded.K1c[0] * KIc_ratio, r_0, delta, smaller_abs_x_c)/Solid_loaded.K1c[0]
+                        # delete the folder and get a new one
+                        src_folder = simdir + '_copy'
+                        dest_folder = simdir
+                        copy_dir(dest_folder, src_folder)
+                    else:
+                        # accept solution
+                        print('-solution achieved')
+                        print(f' x/xlim: {larger_abs_x_c / x_lim}')
+                        contunue_loop = False
+                        results["toughness ratio"].append(KIc_ratio)
+                        results["sim id"].append(int(num))
+                        results["aspect ratio"].append(aspect_ratio_c)
+                        results["aspect_ratio_toll"].append(aspect_ratio_toll)
+                        results["aspect_ratio_target"].append(aspect_ratio_target)
+                        results["x_max"].append(x_max_c)
+                        results["x_min"].append(x_min_c)
+                        results["x_lim"].append(x_lim)
+                        results["xmax_lim"].append(xmax_lim)
+                        results["delta"].append(delta)
+                        results["halfH"].append(r_0)
+                        results["ended"].append(True)
+                        print(" Saving to file")
+                        content = results
+                        action = 'dump_this_dictionary'
+                        append_to_json_file(file_name, [content], action, delete_existing_filename=True)
+
+                        # make a copy of the input folder
+                        print(' delete the copy of the starting folder')
+                        dest_folder = simdir + '_copy'
+                        shutil.rmtree(dest_folder)
+
+                        # copy the file for safety!
+                        file_name_copy = "analyse_bt_res_copy.json"
+                        shutil.copyfile(baseloc + file_name, baseloc + file_name_copy)
+                        print('-----------------------------')
                 else:
-                    # accept solution
-                    print('-solution achieved')
-                    print(f' x/xlim: {larger_abs_x_c / x_lim}')
-                    contunue_loop = False
-                    results["toughness ratio"].append(KIc_ratio)
-                    results["sim id"].append(int(num))
-                    results["aspect ratio"].append(aspect_ratio_c)
-                    results["aspect_ratio_toll"].append(aspect_ratio_toll)
-                    results["aspect_ratio_target"].append(aspect_ratio_target)
-                    results["x_max"].append(x_max_c)
-                    results["x_min"].append(x_min_c)
-                    results["x_lim"].append(x_lim)
-                    results["xmax_lim"].append(xmax_lim)
-                    results["delta"].append(delta)
-                    results["halfH"].append(r_0)
-                    results["ended"].append(True)
-                    print(" Saving to file")
-                    content = results
-                    action = 'dump_this_dictionary'
-                    append_to_json_file(file_name, [content], action, delete_existing_filename=True)
-
-                    # make a copy of the input folder
-                    print(' delete the copy of the starting folder')
-                    dest_folder = simdir + '_copy'
-                    shutil.rmtree(dest_folder)
-
-                    # copy the file for safety!
-                    file_name_copy = "analyse_bt_res_copy.json"
-                    shutil.copyfile(baseloc + file_name, baseloc + file_name_copy)
+                    print('-convergence on the toughness ratio not achieved!')
+                    print(f'simulaton ID: '+num)
                     print('-----------------------------')
-            else:
-                print('-convergence on the toughness ratio not achieved!')
-                print(f'simulaton ID: '+num)
-                print('-----------------------------')
+        else:
+            # remove the copies and go next
+            dest_folder = simdir + '_copy'
+            shutil.rmtree(dest_folder)
+            dest_folder = simdir
+            shutil.rmtree(dest_folder)
+
+            # delete some variables
+            del Fr_list, properties, Solid_loaded, Fluid, Injection, simulProp
