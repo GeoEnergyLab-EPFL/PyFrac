@@ -37,8 +37,7 @@ if run:
     ## --- Setting the different parameters --- ##
     Nx_set = [7, 15, 25, 50, 75, 100, 150, 200] # Number of elements in the cross section
     aspect_ratio_set = [2, 5, 10, 25, 50, 75, 100, 200] # Aspect ratios
-    leaf_size_set = [5, 10, 100, 500] # leaf size
-    eta_set = [3, 5, 10] # distance threshold
+    eta_set = [5, 10, 20] # distance threshold
     epsilon_set = [1e-3, 1e-4, 1e-5] # limit on final accuracy
 
     # solid properties
@@ -97,7 +96,10 @@ if run:
                        "rel_err": [],
                        "compression ratio": []
                        }
-
+            nel = Nx_i ** 2 * ar_i
+            uplim = max([min([500, int(nel/10)]), 100])
+            lowlim = min([max([50, int(nel/100)]), 100])
+            leaf_size_set = np.around(np.linspace(lowlim, uplim, 4, endpoint=True), -1).astype(int) # leaf size
             for ls_i in leaf_size_set:
                 for eta_i in eta_set:
                     for epsilon_i in epsilon_set:
