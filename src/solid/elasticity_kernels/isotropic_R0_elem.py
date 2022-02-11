@@ -146,7 +146,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
-
+@njit(nogil=True, cache=True, parallel = True)
 def get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     """
 
@@ -161,7 +161,8 @@ def get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     const = (Ep / (8. * np.pi))
     n_xy_obs = xy_obs.shape[0]
     n_xy_crack = xy_crack.shape[0]
-    normal_trac = np.zeros((n_xy_obs, n_xy_crack))
+    #normal_trac = np.zeros((n_xy_obs, n_xy_crack))
+    normal_trac = np.zeros(n_xy_obs)
     total_comp = n_xy_obs * n_xy_crack
     a = hx / 2.
     b = hy / 2.
@@ -182,8 +183,13 @@ def get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
         SQ_apx = np.square(apx)
         SQ_bpy = np.square(bpy)
 
-        normal_trac[ind_obs,ind_crack] = w_crack[ind_crack] * const * (np.sqrt(SQ_amx + SQ_bmy) / (amx * bmy)
+        # normal_trac[ind_obs,ind_crack] = w_crack[ind_crack] * const * (np.sqrt(SQ_amx + SQ_bmy) / (amx * bmy)
+        #                                                + np.sqrt(SQ_apx + SQ_bmy) / (apx * bmy)
+        #                                                + np.sqrt(SQ_amx + SQ_bpy) / (amx * bpy)
+        #                                                + np.sqrt(SQ_apx + SQ_bpy) / (apx * bpy))
+        normal_trac[ind_obs] = normal_trac[ind_obs]  +  w_crack[ind_crack] * const * (np.sqrt(SQ_amx + SQ_bmy) / (amx * bmy)
                                                        + np.sqrt(SQ_apx + SQ_bmy) / (apx * bmy)
                                                        + np.sqrt(SQ_amx + SQ_bpy) / (amx * bpy)
                                                        + np.sqrt(SQ_apx + SQ_bpy) / (apx * bpy))
-    return np.sum(normal_trac, axis=1)
+    # return np.sum(normal_trac, axis=1)
+    return normal_trac

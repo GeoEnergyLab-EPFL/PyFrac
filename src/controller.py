@@ -296,7 +296,7 @@ class Controller:
                 # if status == 17: advancing more than one cell
                 # if status == any other number, reattempt going back or the simulation fails
                 if status == 1:
-                    timeStep_i, adaptive_time_refinement = self.sim_prop.adaptive_time_ref(self.fracture, Fr_n_pls1, timeStep_i)
+                    timeStep_i, adaptive_time_refinement = self.sim_prop.adaptive_time_refinement(self.fracture, Fr_n_pls1, timeStep_i)
                 else:
                     adaptive_time_refinement = False
 
