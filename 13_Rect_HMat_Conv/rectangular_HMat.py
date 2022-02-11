@@ -51,31 +51,6 @@ if run:
     # uniform opening
     sim_info["wset"] = 1
 
-    ## --- prepare the results array --- ##
-    results = {"aspect ratio": [],
-               "leaf size": [],
-               "eta": [],
-               "epsilon": [],
-               "nx": [],
-               "ny": [],
-               "Lx": [],
-               "Ly": [],
-               "max p": [],
-               "n. of Elts": [],
-               "nu": sim_info["nu"],  # Poisson's ratio
-               "youngs mod": sim_info["youngs mod"],
-               "H": [],
-               "w": sim_info["wset"],
-               "x_center_section": [],
-               "p": [],
-               "allp": [],
-               "t_Hmat": [],
-               "t_Dot": [],
-               "max rel_err": [],
-               "rel_err": [],
-               "compression ratio": []
-               }
-
     for Nx_i in Nx_set:
         for ar_i in aspect_ratio_set:
             new_ar = True
@@ -98,12 +73,37 @@ if run:
             # setting the constant opening DD
             w = np.full(len(EltCrack), sim_info["wset"])
 
+            ## --- prepare the results array --- ##
+            results = {"aspect ratio": [],
+                       "leaf size": [],
+                       "eta": [],
+                       "epsilon": [],
+                       "nx": [],
+                       "ny": [],
+                       "Lx": [],
+                       "Ly": [],
+                       "max p": [],
+                       "n. of Elts": [],
+                       "nu": sim_info["nu"],  # Poisson's ratio
+                       "youngs mod": sim_info["youngs mod"],
+                       # "H": [],
+                       "w": sim_info["wset"],
+                       # "x_center_section": [],
+                       # "p": [],
+                       # "allp": [],
+                       "t_Hmat": [],
+                       "t_Dot": [],
+                       "max rel_err": [],
+                       "rel_err": [],
+                       "compression ratio": []
+                       }
+
             for ls_i in leaf_size_set:
                 for eta_i in eta_set:
                     for epsilon_i in epsilon_set:
                         ## --- Append first results/sim parameters --- ##
-                        results["x_center_section"].append(Mesh.CenterCoor[centralElts, 0].tolist())
-                        results["H"].append(H)
+                        # results["x_center_section"].append(Mesh.CenterCoor[centralElts, 0].tolist())
+                        # results["H"].append(H)
                         results["n. of Elts"].append(int(len(EltCrack)))
                         results["nx"].append(int(Mesh.nx))
                         results["ny"].append(int(Mesh.ny))
@@ -169,14 +169,18 @@ if run:
 
                         ## --- store nonzero p and elements index --- ##
 
-                        results["p"].append(sol_p[centralElts].tolist())
-                        results["allp"].append(sol_p.tolist())
+                        # results["p"].append(sol_p[centralElts].tolist())
+                        # results["allp"].append(sol_p.tolist())
                         dummy = dummy + time.time()
                         print(f"     --> Stored in {dummy} [s]")
                         print(" ------------------- \n")
 
             ## --- State that one ar is done --- ##
             print(F" <<<< FINISHED Nx = {Nx_i}, Ar = {ar_i}  >>>>")
+            print("Saving to file")
+            content = results
+            action = 'dump_this_dictionary'
+            append_to_json_file("HMatConvergence_Nx_" + str(Nx_i) + "_Ar_" + str(ar_i) , [content], action, delete_existing_filename=True)
 
         ## --- State that one Nx is done --- ##
         print(F" <<<< FINISHED Nx = {Nx_i} completely  >>>>")
