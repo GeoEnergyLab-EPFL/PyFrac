@@ -181,7 +181,7 @@ basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-for number in range(0, 1600, 10):
+for number in range(0, 2107, 10):
     if number not in todo_n:
         todo.append(str(number))
 todo_n = len(todo)
@@ -255,7 +255,7 @@ for num_id, num in enumerate(todo):
         contunue_loop = True
         it_count = 0
 
-        if not len(Fr_list[-1].EltCrack) > 5000:
+        if not len(Fr_list[-1].EltCrack) > 8000:
             while contunue_loop:
 
                 Fr = copy.deepcopy(Fr_list[-1])
@@ -307,7 +307,7 @@ for num_id, num in enumerate(todo):
                 simulProp.LHyst__ = []
                 simulProp.tHyst__ = []
                 # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
-                simulProp.adaptive_time_ref = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
+                simulProp.adaptive_time_refinement = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
 
                 # define the terminating criterion function
                 simulProp.terminating_criterion = terminating_criterion_factory(aspect_ratio_target, xmax_lim, aspect_ratio_toll)
