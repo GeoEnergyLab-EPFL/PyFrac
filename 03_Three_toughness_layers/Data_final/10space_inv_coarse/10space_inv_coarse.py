@@ -27,12 +27,12 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = True
 run_dir =  "./"
-restart= False
+restart= True
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(0.4, 0.4, 135, 135)
+    Mesh = CartesianMesh(0.25, 0.25, 95, 95)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
