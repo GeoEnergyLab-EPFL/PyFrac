@@ -30,7 +30,7 @@ from src.tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFr
 # ----------------------------------------------
 
 
-run = False
+run = True
 
 
 if run:
@@ -40,8 +40,8 @@ if run:
                                                                                                 # for Ar = 1
     Nx_set_10 = [33, 45, 53, 73, 101, 109, 127, 137, 159, 201, 317]    # Number of elements # for Ar = 10
     aspect_ratio_set = [1, 10] # Aspect ratios
-    eta_set = [5, 10, 15] # distance threshold
-    epsilon_set = [1e-3, 5e-4, 1e-4] # limit on final accuracy
+    eta_set = [3, 5, 10] # distance threshold
+    epsilon_set = [5e-4, 1e-4, 5e-5] # limit on final accuracy
 
     # solid properties
     sim_info = {"nu": 0.4 , "youngs mod": 3.3e4} # Poissons'ratio and young's modulus
@@ -110,11 +110,11 @@ if run:
             # lowlim = min([max([50, int(nel/100)]), 100])
             # leaf_size_set = np.around(np.linspace(lowlim, uplim, 4, endpoint=True), -1).astype(int) # leaf size
             if int(len(EltCrack)) >= 5e5:
-                leaf_size_set = [350, 500, 750]
+                leaf_size_set = [750, 1000, 1250]
             elif int(len(EltCrack)) >= 1e5:
-                leaf_size_set = [200, 350, 500]
+                leaf_size_set = [350, 500, 750]
             else:
-                leaf_size_set = [100, 150, 250]
+                leaf_size_set = [150, 250, 350]
 
             print(f"Leaf sizes: {leaf_size_set}")
             for ls_i in leaf_size_set:
@@ -229,7 +229,7 @@ if run:
 # POSTPROCESS
 # ----------------------------------------------
 # ----------------------------------------------
-post = True
+post = False
 if post:
     #################
     # What to plot? #
@@ -237,8 +237,8 @@ if post:
     plot_ar = False
     plot_dof = True
 
-    old_data_set = True
-    new_data_set = False
+    old_data_set = False
+    new_data_set = True
 
     ###############################
     # Prepare some plotting stuff #
@@ -263,6 +263,12 @@ if post:
             else:
                 results_loaded = {key: results_loaded[key] + results_loaded_int[key] for key in results_loaded}
 
+        lind_vals = [0, 3]
+        nls = 4
+        lsskip = 36
+
+        lslegend = [', smallest ls', ', small ls', ', big ls', ', largest ls']
+
     if new_data_set:
         print("Loading new data_set")
         file_name = 'DoF_HMatConvergence'
@@ -276,6 +282,12 @@ if post:
                 check = False
             else:
                 results_loaded = {key: results_loaded[key] + results_loaded_int[key] for key in results_loaded}
+
+        lind_vals = [0, 2]
+        nls = 3
+        lsskip = 27
+
+        lslegend = [', smallest ls', ', mean ls', ', largest ls']
 
     print("Plotting results")
 
@@ -307,30 +319,63 @@ if post:
                'Computation time for HMat [s]',
                'Computation time for Hmat dot prodcut [s]']
 
-    lslegend = [', smallest ls', ', small ls', ', big ls', ', largest ls']
+    if plot_ar:
+        colors = cmap(np.linspace(0.1, 1., len(unique_Nx), endpoint=True))
+        ##############################
+        # Plotting varying leaf size #
+        ##############################
+        for plotvar in range(len(vars)):
+            ## --- prepare the plot --- ##
+            locals()['fig' + str(plotvar)] = plt.figure()
+            ax = locals()['fig' + str(plotvar)].add_subplot(1, 1, 1)
+            plt.suptitle('Rectangular crack test: leaf size')
+            legend = []
+            for ind in range(len(unique_Nx)):
+                # find unique As number then for this generate the number indexes as always 4 niner packages per as
+                nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[ind]]))
+                start_ls = [y * lsskip for y in range(nAs)]
+                for ind2 in range(nls):
+                    ls_indexes = [[y + ls for y in range(ind2 * 9, (ind2 + 1) * 9)] for ls in start_ls]
+                    ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
+                    indexes = reduce(np.intersect1d, (Nx_indexes[ind][ls_indexes], eta_indexes[1], epsilon_indexes[1]))
+                    sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["aspect ratio"])[indexes])]
+                    legend.append('Nx = ' + str(unique_Nx[ind]) + lslegend[ind2])
+                    plt.plot(np.asarray(results_loaded["aspect ratio"])[sorted_indexes],
+                             (np.asarray(results_loaded[vars[plotvar]])[sorted_indexes]),
+                             c=colors[ind], marker=markers[ind2])
 
-    if old_data_set:
-        if plot_ar:
-            colors = cmap(np.linspace(0.1, 1., len(unique_Nx), endpoint=True))
-            ##############################
-            # Plotting varying leaf size #
-            ##############################
+            plt.xlabel('Fracture aspect ratio')
+            plt.ylabel(ylabels[plotvar])
+            plt.xscale('log')
+            plt.yscale('log')
+            # Add a grid
+            ax.grid(which='both')
+            locals()['fig' + str(plotvar)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) + ', eps = ' +
+                                                                       str(unique_epsilon[1]), loc=7)
+            locals()['fig' + str(plotvar)].tight_layout()
+            plt.subplots_adjust(right=0.675)
+
+        ############################
+        # Plotting varying epsilon #
+        ############################
+        for lind in lind_vals:
             for plotvar in range(len(vars)):
                 ## --- prepare the plot --- ##
                 locals()['fig' + str(plotvar)] = plt.figure()
                 ax = locals()['fig' + str(plotvar)].add_subplot(1, 1, 1)
-                plt.suptitle('Rectangular crack test: leaf size')
+                plt.suptitle('Rectangular crack test: epsilon')
                 legend = []
                 for ind in range(len(unique_Nx)):
                     # find unique As number then for this generate the number indexes as always 4 niner packages per as
                     nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[ind]]))
-                    start_ls = [y * 36 for y in range(nAs)]
-                    for ind2 in range(4):
-                        ls_indexes = [[y + ls for y in range(ind2 * 9, (ind2 + 1) * 9)] for ls in start_ls]
-                        ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
-                        indexes = reduce(np.intersect1d, (Nx_indexes[ind][ls_indexes], eta_indexes[1], epsilon_indexes[1]))
+                    start_ls = [y * lsskip for y in range(nAs)]
+                    ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
+                    ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
+                    for ind2 in range(len(unique_epsilon)):
+                        indexes = reduce(np.intersect1d, (epsilon_indexes[ind2], Nx_indexes[ind][ls_indexes],
+                                                          eta_indexes[1]))
                         sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["aspect ratio"])[indexes])]
-                        legend.append('Nx = ' + str(unique_Nx[ind]) + lslegend[ind2])
+                        legend.append('Nx = ' + str(unique_Nx[ind]) + ', eps = ' + str(unique_epsilon[ind2]))
                         plt.plot(np.asarray(results_loaded["aspect ratio"])[sorted_indexes],
                                  (np.asarray(results_loaded[vars[plotvar]])[sorted_indexes]),
                                  c=colors[ind], marker=markers[ind2])
@@ -341,111 +386,116 @@ if post:
                 plt.yscale('log')
                 # Add a grid
                 ax.grid(which='both')
-                locals()['fig' + str(plotvar)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) + ', eps = ' +
-                                                                           str(unique_epsilon[1]), loc=7)
+                locals()['fig' + str(plotvar)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) + lslegend[lind]
+                                                      , loc=7)
                 locals()['fig' + str(plotvar)].tight_layout()
                 plt.subplots_adjust(right=0.675)
 
-            ############################
-            # Plotting varying epsilon #
-            ############################
-            for lind in [0, 3]:
-                for plotvar in range(len(vars)):
-                    ## --- prepare the plot --- ##
-                    locals()['fig' + str(plotvar)] = plt.figure()
-                    ax = locals()['fig' + str(plotvar)].add_subplot(1, 1, 1)
-                    plt.suptitle('Rectangular crack test: epsilon')
-                    legend = []
-                    for ind in range(len(unique_Nx)):
-                        # find unique As number then for this generate the number indexes as always 4 niner packages per as
-                        nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[ind]]))
-                        start_ls = [y * 36 for y in range(nAs)]
-                        ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
-                        ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
-                        for ind2 in range(len(unique_epsilon)):
-                            indexes = reduce(np.intersect1d, (epsilon_indexes[ind2], Nx_indexes[ind][ls_indexes],
-                                                              eta_indexes[1]))
-                            sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["aspect ratio"])[indexes])]
-                            legend.append('Nx = ' + str(unique_Nx[ind]) + ', eps = ' + str(unique_epsilon[ind2]))
-                            plt.plot(np.asarray(results_loaded["aspect ratio"])[sorted_indexes],
-                                     (np.asarray(results_loaded[vars[plotvar]])[sorted_indexes]),
-                                     c=colors[ind], marker=markers[ind2])
+        ############################
+        # Plotting varying eta #
+        ############################
+        for lind in lind_vals:
+            for plotvar in range(len(vars)):
+                ## --- prepare the plot --- ##
+                locals()['fig' + str(plotvar)] = plt.figure()
+                ax = locals()['fig' + str(plotvar)].add_subplot(1, 1, 1)
+                plt.suptitle('Rectangular crack test: eta')
+                legend = []
+                for ind in range(len(unique_Nx)):
+                    # find unique As number then for this generate the number indexes as always 4 niner packages per as
+                    nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[ind]]))
+                    start_ls = [y * lsskip for y in range(nAs)]
+                    ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
+                    ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
+                    for ind2 in range(len(unique_eta)):
+                        indexes = reduce(np.intersect1d, (epsilon_indexes[1], Nx_indexes[ind][ls_indexes],
+                                                          eta_indexes[ind2]))
+                        sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["aspect ratio"])[indexes])]
+                        legend.append('Nx = ' + str(unique_Nx[ind]) + ', eta = ' + str(unique_eta[ind2]))
+                        plt.plot(np.asarray(results_loaded["aspect ratio"])[sorted_indexes],
+                                 (np.asarray(results_loaded[vars[plotvar]])[sorted_indexes]),
+                                 c=colors[ind], marker=markers[ind2])
 
-                    plt.xlabel('Fracture aspect ratio')
-                    plt.ylabel(ylabels[plotvar])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    # Add a grid
-                    ax.grid(which='both')
-                    locals()['fig' + str(plotvar)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) + lslegend[lind]
-                                                          , loc=7)
-                    locals()['fig' + str(plotvar)].tight_layout()
-                    plt.subplots_adjust(right=0.675)
+                plt.xlabel('Fracture aspect ratio')
+                plt.ylabel(ylabels[plotvar])
+                plt.xscale('log')
+                plt.yscale('log')
+                # Add a grid
+                ax.grid(which='both')
+                locals()['fig' + str(plotvar)].legend(tuple(legend), title='eps = ' + str(unique_epsilon[1]) +
+                                                                           lslegend[lind], loc=7)
+                locals()['fig' + str(plotvar)].tight_layout()
+                plt.subplots_adjust(right=0.675)
 
-            ############################
-            # Plotting varying eta #
-            ############################
-            for lind in [0, 3]:
-                for plotvar in range(len(vars)):
-                    ## --- prepare the plot --- ##
-                    locals()['fig' + str(plotvar)] = plt.figure()
-                    ax = locals()['fig' + str(plotvar)].add_subplot(1, 1, 1)
-                    plt.suptitle('Rectangular crack test: eta')
-                    legend = []
-                    for ind in range(len(unique_Nx)):
-                        # find unique As number then for this generate the number indexes as always 4 niner packages per as
-                        nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[ind]]))
-                        start_ls = [y * 36 for y in range(nAs)]
-                        ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
-                        ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
-                        for ind2 in range(len(unique_eta)):
-                            indexes = reduce(np.intersect1d, (epsilon_indexes[1], Nx_indexes[ind][ls_indexes],
-                                                              eta_indexes[ind2]))
-                            sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["aspect ratio"])[indexes])]
-                            legend.append('Nx = ' + str(unique_Nx[ind]) + ', eta = ' + str(unique_eta[ind2]))
-                            plt.plot(np.asarray(results_loaded["aspect ratio"])[sorted_indexes],
-                                     (np.asarray(results_loaded[vars[plotvar]])[sorted_indexes]),
-                                     c=colors[ind], marker=markers[ind2])
+    if plot_dof:
+        ##############################
+        # Plotting varying leaf size #
+        ##############################
+        for plotvar in range(len(vars)):
+            ## --- prepare the plot --- ##
+            locals()['fig' + str(plotvar + 1)] = plt.figure()
+            ax = locals()['fig' + str(plotvar + 1)].add_subplot(1, 1, 1)
+            plt.suptitle('Rectangular crack test: leaf size')
+            legend = []
+            colors = cmap(np.linspace(0.1, 1., 4, endpoint=True))
+            for indls in range(nls):
+                varvals = np.array([])
+                Dofvals = np.array([])
+                for indNx in range(len(unique_Nx)):
+                    # find unique As number then for this generate the number indexes as always 4 niner packages per as
+                    nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[indNx]]))
+                    start_ls = [y * lsskip for y in range(nAs)]
+                    ls_indexes = [[y + ls for y in range(indls * 9, (indls + 1) * 9)] for ls in start_ls]
+                    ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
+                    indexes = reduce(np.intersect1d, (Nx_indexes[indNx][ls_indexes], eta_indexes[1],
+                                                      epsilon_indexes[1]))
+                    sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["n. of Elts"])[indexes])]
+                    varvals = np.append(varvals, np.asarray(results_loaded[vars[plotvar]])[sorted_indexes])
+                    Dofvals = np.append(Dofvals, np.asarray(results_loaded["n. of Elts"])[sorted_indexes])
+                legend.append(lslegend[indls])
+                sorted_indexes = np.argsort(Dofvals)
+                plt.plot(Dofvals[sorted_indexes], varvals[sorted_indexes], c=colors[indls], marker=markers[indls])
 
-                    plt.xlabel('Fracture aspect ratio')
-                    plt.ylabel(ylabels[plotvar])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    # Add a grid
-                    ax.grid(which='both')
-                    locals()['fig' + str(plotvar)].legend(tuple(legend), title='eps = ' + str(unique_epsilon[1]) +
-                                                                               lslegend[lind], loc=7)
-                    locals()['fig' + str(plotvar)].tight_layout()
-                    plt.subplots_adjust(right=0.675)
+            plt.xlabel('#DoF')
+            plt.ylabel(ylabels[plotvar])
+            plt.xscale('log')
+            plt.yscale('log')
+            # Add a grid
+            ax.grid(which='both')
+            locals()['fig' + str(plotvar + 1)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) + ', eps = ' +
+                                                                       str(unique_epsilon[1]), loc=7)
+            locals()['fig' + str(plotvar + 1)].tight_layout()
+            plt.subplots_adjust(right=0.675)
 
-        if plot_dof:
-            ##############################
-            # Plotting varying leaf size #
-            ##############################
+
+        ############################
+        # Plotting varying eta #
+        ############################
+        for lind in lind_vals:
             for plotvar in range(len(vars)):
                 ## --- prepare the plot --- ##
                 locals()['fig' + str(plotvar + 1)] = plt.figure()
                 ax = locals()['fig' + str(plotvar + 1)].add_subplot(1, 1, 1)
-                plt.suptitle('Rectangular crack test: leaf size')
+                plt.suptitle('Rectangular crack test: eta')
                 legend = []
-                colors = cmap(np.linspace(0.1, 1., 4, endpoint=True))
-                for indls in range(4):
+                for indEta in range(len(unique_eta)):
                     varvals = np.array([])
                     Dofvals = np.array([])
                     for indNx in range(len(unique_Nx)):
                         # find unique As number then for this generate the number indexes as always 4 niner packages per as
                         nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[indNx]]))
-                        start_ls = [y * 36 for y in range(nAs)]
-                        ls_indexes = [[y + ls for y in range(indls * 9, (indls + 1) * 9)] for ls in start_ls]
+                        start_ls = [y * lsskip for y in range(nAs)]
+                        ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
                         ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
-                        indexes = reduce(np.intersect1d, (Nx_indexes[indNx][ls_indexes], eta_indexes[1],
-                                                          epsilon_indexes[1]))
+                        indexes = reduce(np.intersect1d, (epsilon_indexes[1], Nx_indexes[indNx][ls_indexes],
+                                                          eta_indexes[indEta]))
                         sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["n. of Elts"])[indexes])]
                         varvals = np.append(varvals, np.asarray(results_loaded[vars[plotvar]])[sorted_indexes])
                         Dofvals = np.append(Dofvals, np.asarray(results_loaded["n. of Elts"])[sorted_indexes])
-                    legend.append(lslegend[indls])
+                    legend.append("Eta = " + str(unique_eta[indEta]))
                     sorted_indexes = np.argsort(Dofvals)
-                    plt.plot(Dofvals[sorted_indexes], varvals[sorted_indexes], c=colors[indls], marker=markers[indls])
+                    plt.plot(Dofvals[sorted_indexes], varvals[sorted_indexes], c=colors[indEta],
+                             marker=markers[indEta])
 
                 plt.xlabel('#DoF')
                 plt.ylabel(ylabels[plotvar])
@@ -453,91 +503,50 @@ if post:
                 plt.yscale('log')
                 # Add a grid
                 ax.grid(which='both')
-                locals()['fig' + str(plotvar + 1)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) + ', eps = ' +
-                                                                           str(unique_epsilon[1]), loc=7)
+                locals()['fig' + str(plotvar + 1)].legend(tuple(legend), title='eps = ' + str(unique_epsilon[1]) +
+                                                                           lslegend[lind], loc=7)
                 locals()['fig' + str(plotvar + 1)].tight_layout()
                 plt.subplots_adjust(right=0.675)
 
+        ############################
+        # Plotting varying epsilon #
+        ############################
+        for lind in lind_vals:
+            for plotvar in range(len(vars)):
+                ## --- prepare the plot --- ##
+                locals()['fig' + str(plotvar + 1)] = plt.figure()
+                ax = locals()['fig' + str(plotvar + 1)].add_subplot(1, 1, 1)
+                plt.suptitle('Rectangular crack test: epsilon')
+                legend = []
+                for indEps in range(len(unique_epsilon)):
+                    varvals = np.array([])
+                    Dofvals = np.array([])
+                    for indNx in range(len(unique_Nx)):
+                        # find unique As number then for this generate the number indexes as always 4 niner packages per as
+                        nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[indNx]]))
+                        start_ls = [y * lsskip for y in range(nAs)]
+                        ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
+                        ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
+                        indexes = reduce(np.intersect1d, (epsilon_indexes[indEps], Nx_indexes[indNx][ls_indexes],
+                                                          eta_indexes[1]))
+                        sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["n. of Elts"])[indexes])]
+                        varvals = np.append(varvals, np.asarray(results_loaded[vars[plotvar]])[sorted_indexes])
+                        Dofvals = np.append(Dofvals, np.asarray(results_loaded["n. of Elts"])[sorted_indexes])
+                    legend.append("Epsilon = " + str(unique_epsilon[indEps]))
+                    sorted_indexes = np.argsort(Dofvals)
+                    plt.plot(Dofvals[sorted_indexes], varvals[sorted_indexes], c=colors[indEps],
+                             marker=markers[indEps])
 
-            ############################
-            # Plotting varying eta #
-            ############################
-            for lind in [0, 3]:
-                for plotvar in range(len(vars)):
-                    ## --- prepare the plot --- ##
-                    locals()['fig' + str(plotvar + 1)] = plt.figure()
-                    ax = locals()['fig' + str(plotvar + 1)].add_subplot(1, 1, 1)
-                    plt.suptitle('Rectangular crack test: eta')
-                    legend = []
-                    for indEta in range(len(unique_eta)):
-                        varvals = np.array([])
-                        Dofvals = np.array([])
-                        for indNx in range(len(unique_Nx)):
-                            # find unique As number then for this generate the number indexes as always 4 niner packages per as
-                            nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[indNx]]))
-                            start_ls = [y * 36 for y in range(nAs)]
-                            ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
-                            ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
-                            indexes = reduce(np.intersect1d, (epsilon_indexes[1], Nx_indexes[indNx][ls_indexes],
-                                                              eta_indexes[indEta]))
-                            sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["n. of Elts"])[indexes])]
-                            varvals = np.append(varvals, np.asarray(results_loaded[vars[plotvar]])[sorted_indexes])
-                            Dofvals = np.append(Dofvals, np.asarray(results_loaded["n. of Elts"])[sorted_indexes])
-                        legend.append("Eta = " + str(unique_eta[indEta]))
-                        sorted_indexes = np.argsort(Dofvals)
-                        plt.plot(Dofvals[sorted_indexes], varvals[sorted_indexes], c=colors[indEta],
-                                 marker=markers[indEta])
-
-                    plt.xlabel('#DoF')
-                    plt.ylabel(ylabels[plotvar])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    # Add a grid
-                    ax.grid(which='both')
-                    locals()['fig' + str(plotvar + 1)].legend(tuple(legend), title='eps = ' + str(unique_epsilon[1]) +
-                                                                               lslegend[lind], loc=7)
-                    locals()['fig' + str(plotvar + 1)].tight_layout()
-                    plt.subplots_adjust(right=0.675)
-
-            ############################
-            # Plotting varying epsilon #
-            ############################
-            for lind in [0, 3]:
-                for plotvar in range(len(vars)):
-                    ## --- prepare the plot --- ##
-                    locals()['fig' + str(plotvar + 1)] = plt.figure()
-                    ax = locals()['fig' + str(plotvar + 1)].add_subplot(1, 1, 1)
-                    plt.suptitle('Rectangular crack test: epsilon')
-                    legend = []
-                    for indEps in range(len(unique_epsilon)):
-                        varvals = np.array([])
-                        Dofvals = np.array([])
-                        for indNx in range(len(unique_Nx)):
-                            # find unique As number then for this generate the number indexes as always 4 niner packages per as
-                            nAs = len(np.unique(np.asarray(results_loaded["aspect ratio"])[Nx_indexes[indNx]]))
-                            start_ls = [y * 36 for y in range(nAs)]
-                            ls_indexes = [[y + ls for y in range(lind * 9, (lind + 1) * 9)] for ls in start_ls]
-                            ls_indexes = np.sort(np.asarray([item for sublist in ls_indexes for item in sublist]).astype(int))
-                            indexes = reduce(np.intersect1d, (epsilon_indexes[indEps], Nx_indexes[indNx][ls_indexes],
-                                                              eta_indexes[1]))
-                            sorted_indexes = indexes[np.argsort(np.asarray(results_loaded["n. of Elts"])[indexes])]
-                            varvals = np.append(varvals, np.asarray(results_loaded[vars[plotvar]])[sorted_indexes])
-                            Dofvals = np.append(Dofvals, np.asarray(results_loaded["n. of Elts"])[sorted_indexes])
-                        legend.append("Epsilon = " + str(unique_epsilon[indEps]))
-                        sorted_indexes = np.argsort(Dofvals)
-                        plt.plot(Dofvals[sorted_indexes], varvals[sorted_indexes], c=colors[indEps],
-                                 marker=markers[indEps])
-
-                    plt.xlabel('#DoF')
-                    plt.ylabel(ylabels[plotvar])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    # Add a grid
-                    ax.grid(which='both')
-                    locals()['fig' + str(plotvar + 1)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) +
-                                                                               lslegend[lind], loc=7)
-                    locals()['fig' + str(plotvar + 1)].tight_layout()
-                    plt.subplots_adjust(right=0.675)
+                plt.xlabel('#DoF')
+                plt.ylabel(ylabels[plotvar])
+                plt.xscale('log')
+                plt.yscale('log')
+                # Add a grid
+                ax.grid(which='both')
+                locals()['fig' + str(plotvar + 1)].legend(tuple(legend), title='eta = ' + str(unique_eta[1]) +
+                                                                           lslegend[lind], loc=7)
+                locals()['fig' + str(plotvar + 1)].tight_layout()
+                plt.subplots_adjust(right=0.675)
 
 print(" <<<< FINISHED with All >>>>")
 
