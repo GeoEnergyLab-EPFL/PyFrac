@@ -220,7 +220,12 @@ class Fracture:
         self.timeStep_last = None
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
-        self.Tarrival[self.EltCrack] = self.time
+
+        if solid.Carters_t0 is not None:
+            self.Tarrival[self.EltCrack] = solid.Carters_t0
+        else:
+            self.Tarrival[self.EltCrack] = self.time
+
         self.LkOff = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
         self.LkOffTotal = 0.
         self.efficiency = 1.
