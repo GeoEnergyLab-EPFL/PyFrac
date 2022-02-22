@@ -247,7 +247,9 @@ basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-for number in range(0, 2107, 10):
+locallist = [180, 280, 1880]
+forced_recompute = locallist
+for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
         todo.append(str(number))
 todo_n = len(todo)
@@ -298,7 +300,7 @@ for num_id, num in enumerate(todo):
                     and results["x_max"][pos] <= results["x_lim"][pos] + results["delta"][pos])
         check_ar = results["aspect ratio"][pos] >= results["aspect_ratio_target"][pos] \
                    and results["aspect ratio"][pos] <(results["aspect_ratio_target"][pos] + 0.001)
-        if not check_ar or not check_xbt:
+        if not check_ar or not check_xbt or int(num) in forced_recompute:
             print(f'AR is in the proper range: {check_ar}, AR: {results["aspect ratio"][pos]}')
             print(f'xbt is in the proper range {check_xbt}, 100(xbt - x_lim)/delta {100*(results["x_max"][pos]-results["x_lim"][pos])/results["delta"][pos]}')
             results["toughness ratio"].pop(pos)

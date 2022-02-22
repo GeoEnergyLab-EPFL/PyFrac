@@ -192,6 +192,7 @@ velocity_ttouch_lst = []
 max_velocity_ttouch_lst = []
 min_velocity_ttouch_lst = []
 variance_velocity_ttouch_lst = []
+dimlessKold_lst = []
 
 Fr_list = []
 properties = []
@@ -240,10 +241,13 @@ for num_id, num in enumerate(simlist):
     Q_o = Injection.injectionRate[1][0]
     Eprime = Solid_loaded.Eprime
     K1c1 = np.min(Solid_loaded.K1c)
-    mu = Fluid.muPrime/12.
+    muPrime = Fluid.muPrime
 
-    dimlessK = ( ((K1c1**18)*(time_touch**2)) / ((mu**5)*(Q_o**3)*(Eprime**13)) )**(1./18.)
+    dimlessK = ( ((K1c1**4)*(xlim*2)) / ((muPrime)*(Q_o)*(Eprime**3)) )**(1./4.)
+    dimlessK_old = (((K1c1 ** 18) * (time_touch ** 2)) / (((muPrime/12.) ** 5) * (Q_o ** 3) * (Eprime ** 13))) ** (1. / 18.)
+
     dimlessK_lst.append(dimlessK)
+    dimlessKold_lst.append(dimlessK_old)
 
     # get the average velocity at t_touch
     # get the min and max velocity at t_touch
@@ -257,13 +261,14 @@ results["t_touch_lst"] = t_touch_lst
 results["error_on_xtouch_lst"] = error_on_xtouch_lst
 results["average_R_lst"] = average_R_lst
 results["dimlessK_lst"] = dimlessK_lst
+results["dimlessKold_lst"] = dimlessKold_lst
 results["elts_in_crack_lst"] = elts_in_crack_lst
 results["time_bt_lst"] = time_bt_lst
 results["velocity_ttouch_lst"] = velocity_ttouch_lst
 results["max_velocity_ttouch_lst"] = max_velocity_ttouch_lst
 results["min_velocity_ttouch_lst"] = min_velocity_ttouch_lst
 results["variance_velocity_ttouch_lst"] = variance_velocity_ttouch_lst
-results["mu"]=mu
+results["mu"]=muPrime/12
 results["Eprime"]=Eprime
 results["K1c"]=K1c1
 results["Qo"]=Q_o
