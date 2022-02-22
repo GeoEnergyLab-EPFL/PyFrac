@@ -172,8 +172,11 @@ def TipAsym_MK_deltaC_Res(dist, *args):
     w_tld = Eprime * wEltRibbon / (Kprime * dist ** 0.5)
 
     V = (dist - DistLstTSEltRibbon) / dt
-    l_mk = (Kprime ** 3 / (Eprime ** 2 * fluidProp.muPrime * V)) ** 2
-    x_tld = (dist / l_mk) ** (1/2)
+    if V != 0.:
+        l_mk = (Kprime ** 3 / (Eprime ** 2 * fluidProp.muPrime * V)) ** 2
+        x_tld = (dist / l_mk) ** (1/2)
+    else:
+        x_tld = 0.
     delta = 1 / 3 * beta_m ** 3 * x_tld / (1 + beta_m ** 3 * x_tld)
     return w_tld - (1 + 3 * C1(delta) * x_tld) ** (1/3)
 
