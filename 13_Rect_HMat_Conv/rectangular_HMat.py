@@ -86,6 +86,9 @@ if run:
                        # "p": [],
                        # "allp": [],
                        "t_Hmat": [],
+                       "t_HmatBuild": [],
+                       "t_BlckClstTree": [],
+                       "t_BinaryClst": [],
                        "t_Dot": [],
                        "max rel_err": [],
                        "rel_err": [],
@@ -153,6 +156,9 @@ if run:
                         tHmatLoad = tHmatLoad + time.time()
                         print(f"     --> HMat loaded in {tHmatLoad} [s]")
                         results["t_Hmat"].append(tHmatLoad)
+                        results["t_HmatBuild"].append(C.HMAT.HMATtract.getHmatTime())
+                        results["t_BlckClstTree"].append(C.HMAT.HMATtract.getBlockClstrTime())
+                        results["t_BinaryClst"].append(C.HMAT.HMATtract.getBinaryClstrTime())
 
                         ## --- Do the multiplication --- ##
                         print(f" Solving for pressure")
