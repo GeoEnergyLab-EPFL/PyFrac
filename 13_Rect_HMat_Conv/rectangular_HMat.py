@@ -41,7 +41,7 @@ if run:
     Nx_set_10 = [33, 45, 53, 73, 101, 109, 127, 137, 159, 201, 317]    # Number of elements # for Ar = 10
     aspect_ratio_set = [1, 10] # Aspect ratios
     eta_set = [3, 5, 10] # distance threshold
-    epsilon_set = [5e-4, 1e-4, 5e-5] # limit on final accuracy
+    epsilon_set = [5e-4, 7.5e-4, 1e-4] # limit on final accuracy
 
     # solid properties
     sim_info = {"nu": 0.4 , "youngs mod": 3.3e4} # Poissons'ratio and young's modulus
@@ -182,6 +182,8 @@ if run:
                         results["max p"].append(sol_p.max())
                         results["max rel_err"].append(rel_err_num.max())
 
+                        print(f"     --> Maximum error is {rel_err_num.max()} [%]")
+
                         ## --- extract all p --- ##
                         all_p = np.zeros(Mesh.NumberOfElts)
                         all_p[EltCrack] = sol_p
@@ -229,7 +231,7 @@ if run:
 # POSTPROCESS
 # ----------------------------------------------
 # ----------------------------------------------
-post = False
+post = True
 if post:
     #################
     # What to plot? #
