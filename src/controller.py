@@ -323,7 +323,7 @@ class Controller:
 
                 # custom plotting on the fly
                 if self.sim_prop.customPlotsOnTheFly:
-                    apply_custom_prop(self.sim_prop, Fr_n_pls1)
+                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, Fr_n_pls1)
 
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
@@ -1139,7 +1139,7 @@ class Controller:
                                               fig=self.Figures[index])
 
                     elif plt_var == 'custom':
-                        self.Figures[index] = custom_plot(self.sim_prop, fig=self.Figures[index])
+                        self.Figures[index] = self.sim_prop.custom.custom_plot(self.sim_prop, fig=self.Figures[index])
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
