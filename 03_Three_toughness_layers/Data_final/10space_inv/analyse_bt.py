@@ -7,6 +7,7 @@ import numpy as np
 
 # internal imports
 from controller import Controller
+from matplotlib import pyplot as plt
 from properties import InjectionProperties
 from solid.solid_prop import MaterialProperties
 from utilities.postprocess_fracture import load_fractures, append_to_json_file
@@ -14,7 +15,7 @@ from utilities.utility import setup_logging_to_console
 
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='debug')
+setup_logging_to_console(verbosity_level='info')
 
 def check_make_folder(simdir):
     if os.path.isdir(simdir):
@@ -195,6 +196,37 @@ class adapive_time_ref_factory():
                 SystemExit("ERROR adapive_time_ref_factory: option not allowed")
         return timestep, False
 
+class custom_factory():
+    def __init__(self, r_0, xlabel, ylabel):
+        self.data = {'xlabel' : xlabel,
+                     'ylabel': ylabel,
+                     'xdata': [],
+                     'ydata': [],
+                     'H/2': r_0} # max value of x that can be reached during the simulation
+
+    def custom_plot(self, sim_prop, fig=None):
+        # this method is mandatory
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.gca()
+        else:
+            ax = fig.get_axes()[0]
+
+        ax.scatter(self.data['xdata'], self.data['ydata'], color='k')
+        ax.set_xlabel(self.data['xlabel'])
+        ax.set_ylabel(self.data['ylabel'])
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        return fig
+
+    def postprocess_fracture(self, sim_prop, fr):
+        # this method is mandatory
+        x_min_n, x_max_n, y_min_n, y_max_n = get_fracture_sizes(fr)
+        self.data['xdata'].append(y_max_n / self.data['H/2'])
+        self.data['ydata'].append(x_max_n / self.data['H/2'])
+        fr.postprocess_info = self.data
+        return fr
+
 def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     # define the toughenss function
     K1c_func = K1c_func_factory(r_0, Solid_loaded.K1c[0], KIc_ratio, Fr.mesh.hx, Fr.mesh.hy, delta=delta)
@@ -208,12 +240,11 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     simulProp.meshReductionPossible = False
     simulProp.meshExtensionAllDir = True
     simulProp.finalTime = 10. ** 30
-    simulProp.maxFrontItrs = 45
+    simulProp.maxFrontItrs = 95
     simulProp.tmStpPrefactor = 0.10
     simulProp.tolFractFront = 0.0001
     simulProp.set_outputFolder(simdir)
-    simulProp.LHyst__ = []
-    simulProp.tHyst__ = []
+    simulProp.custom = custom_factory(r_0, 'x/(0.5 H)', 'y/(0.5 H)')
     # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
     simulProp.adaptive_time_refinement = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
 
@@ -237,6 +268,9 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
 # --------------------------------------------------------------
 # --------------------------------------------------------------
 print('STARTING SIMULATION:')
+"""
+we fix an aspect ratio target and we loop on the toughness ratio from the moment we touch
+"""
 # educated  guess
 # 430 is 25.15635786183006
 TR = np.asarray([106.917185481925, 23.988447321363665, 7.999417382598588, 7.078244250253137, 6.674610843009765, 4.25540730566231, 1.7741874780639637, 1.4287380449729226, 1.4060753589175625, 1.34375, 110.2154412738598, 77.24778713486634, 32.87565342867487, 31.879539259028782, 49.53006308329436, 45.55276195149959, 117.87413570419311, 91.80141011018539, 56.847730402357456, 44.90514509436578, 27.647511224415616, 27.823979905656486, 64.6152790349907, 25.237905789552585, 21.474085895589518, 16.277029034014507, 13.629805293793265, 11.683741966638067, 10.099601610262912, 10.25443151013145, 9.340843671961121, 5.850190820510264, 5.697990573314791, 4.936385510414589, 5.003375991127431, 4.550624892690718, 3.848481392454521, 2.8963250655543007, 2.449034498944342, 2.1680369874482697, 1.8200747720671098, 1.6121301060492836, 1.5840184937241348, 1.5514235878663767, 1.3124865389282827, 1.2975685012603453, 1.210736583581057, 1.2061131990555705, 1.4152003420871764, 1.4039258535445787, 1.2109375, 1.2754254657920683, 1.2049531456395393, 1.0544406793105026, 1.1247531793105026, 1.3172580621230026, 1.1467716727514226, 1.049220173014882, 1.2777413159664945, 1.10205078125, 1.1152692157920683, 1.0796001517557432, 1.0830205056228568, 1.189253663087742, 58.10357100799947, 37.79264252139599, 1.075421473714736])
@@ -249,7 +283,7 @@ basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-locallist = SIM_ID #[10,20,1980,1960]#,180,270,430,470]
+locallist = [1560,1570,1640,1720,1810,1890,1980,2050]#,180,270,430,470]
 forced_recompute = locallist
 for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:

@@ -80,7 +80,6 @@ def sigmaO_func(x, y):
     return 0
 
 # --------------------------------------------------------------
-
 def get_fracture_sizes(Fr):
     # Now we are at a given time step.
     # This function returns the coordinates of the smallest rectangle containing the fracture footprint
@@ -89,36 +88,37 @@ def get_fracture_sizes(Fr):
     x_max_temp = 0.
     y_min_temp = 0.
     y_max_temp = 0.
-
+    hx = Fr.mesh.hx; hy = Fr.mesh.hy
     # loop over the segments defining the fracture front
     for i in range(Fr.Ffront.shape[0]):
         segment = Fr.Ffront[i]
 
         # to find the x_max at this segment:
-        if segment[0] > x_max_temp:
+        if segment[0] > x_max_temp and np.abs(segment[1])<2.*hy:
             x_max_temp = segment[0]
-        if segment[2] > x_max_temp:
+        if segment[2] > x_max_temp and np.abs(segment[3])<2.*hy:
             x_max_temp = segment[2]
 
         # to find the n_min at this segment:
-        if segment[0] < x_min_temp:
+        if segment[0] < x_min_temp and np.abs(segment[1])<2.*hy:
             x_min_temp = segment[0]
-        if segment[2] < x_min_temp:
+        if segment[2] < x_min_temp and np.abs(segment[3])<2.*hy:
             x_min_temp = segment[2]
 
         # to find the y_max at this segment:
-        if segment[1] > y_max_temp:
+        if segment[1] > y_max_temp and np.abs(segment[0])<2.*hx:
             y_max_temp = segment[1]
-        if segment[3] > y_max_temp:
+        if segment[3] > y_max_temp and np.abs(segment[2])<2.*hx:
             y_max_temp = segment[3]
 
         # to find the y_min at this segment:
-        if segment[1] < y_min_temp:
+        if segment[1] < y_min_temp and np.abs(segment[0])<2.*hx:
             y_min_temp = segment[1]
-        if segment[3] < y_min_temp:
+        if segment[3] < y_min_temp and np.abs(segment[2])<2.*hx:
             y_min_temp = segment[3]
 
     return x_min_temp, x_max_temp, y_min_temp, y_max_temp
+
 
 # --------------------------------------------------------------
 
