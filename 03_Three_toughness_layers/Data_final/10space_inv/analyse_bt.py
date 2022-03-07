@@ -245,6 +245,7 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     simulProp.tolFractFront = 0.0001
     simulProp.set_outputFolder(simdir)
     simulProp.frontAdvancing = 'implicit'
+    simulProp.plotFigure = False
     simulProp.custom = custom_factory(r_0, 'y/(0.5 H)', 'x/(0.5 H)')
     # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
     simulProp.adaptive_time_refinement = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
@@ -266,6 +267,12 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     last_Fr = controller.run()
     return last_Fr
 
+# upper bound function
+def upper_bound_Kratio(muPrime, Q_o, Eprime, K1c1, xlim):
+    dimlessK = ( ((K1c1**4)*(xlim*2)) / ((muPrime)*(Q_o)*(Eprime**3)) )**(1./4.)
+    upper_bound_Kr = np.maximum((1+0.31881409564007984/(dimlessK**3))**(1/3),2.)
+    return upper_bound_Kr
+
 # --------------------------------------------------------------
 # --------------------------------------------------------------
 print('STARTING SIMULATION:')
@@ -284,8 +291,8 @@ basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-locallist = range(1500, 2107, 2)
-forced_recompute = locallist
+locallist = range(0, 2107, 3)
+forced_recompute = []
 for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
         todo.append(str(number))
@@ -400,16 +407,16 @@ for num_id, num in enumerate(todo):
 
         relative_pos_xlim = ((r_0 - 0.5 * Fr.mesh.hx) % Fr.mesh.hx) / Fr.mesh.hx
 
-        print(f'\n -number of elts {len(Fr_list[-1].EltCrack)} and rel pos x_lim {relative_pos_xlim}')
-        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .95:
+        print(f'\n -number of elts {len(Fr_list[-1].EltCrack)} \n sim {num_id + 1}\n and rel pos x_lim {relative_pos_xlim}')
+        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .75:
             while contunue_loop:
 
                 Fr = copy.deepcopy(Fr_list[-1])
 
                 # define the hard limit
                 x_min, x_max, y_min, y_max = get_fracture_sizes(Fr)
-                r_0 = np.maximum(np.abs(x_min), np.abs(x_max)) + Fr.mesh.hx
                 delta = Fr.mesh.hx / 100.
+                r_0 = np.maximum(np.abs(x_min), np.abs(x_max)) + delta
                 x_lim = r_0
 
                 # tollerance aspect ratio
@@ -430,21 +437,26 @@ for num_id, num in enumerate(todo):
                     if int(num) in SIM_ID:
                         pos = np.where(SIM_ID==int(num))[0][0]
                         KIc_ratio = TR[pos]
-                        KIc_ratio_upper = KIc_ratio + 0.5
-                        KIc_ratio_lower = KIc_ratio - 0.5
+                        KIc_ratio_upper = KIc_ratio + 1.5
+                        KIc_ratio_lower = KIc_ratio - 1.5
                         if KIc_ratio_lower < 1.:
                             KIc_ratio_lower = 1.
                         skip = True
 
                 if not skip:
                     if KIc_ratio_upper is None or (num_id == 0 and it_count ==0):
-                        KIc_ratio_upper = 5.
+
+                        Q_o = Injection.injectionRate[1][0]
+                        Eprime = Solid_loaded.Eprime
+                        K1c1 = np.min(Solid_loaded.K1c)
+                        muPrime = Fluid.muPrime
+                        KIc_ratio_upper = upper_bound_Kratio(muPrime, Q_o, Eprime, K1c1, x_lim)
                         KIc_ratio = KIc_ratio_upper
                     elif KIc_ratio_upper is not None and it_count ==0:
                         KIc_ratio_upper = KIc_ratio
 
                     if KIc_ratio_lower is None or (it_count ==0):
-                        KIc_ratio_lower = 1.
+                        KIc_ratio_lower = np.maximum(1., KIc_ratio_upper * .5)
 
                 print(f'\n iterations on tough. ratio: {it_count} of 200, ID: {num}')
                 print(f' toughness ratio: {KIc_ratio}')
