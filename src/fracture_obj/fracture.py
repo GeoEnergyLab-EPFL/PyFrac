@@ -522,9 +522,23 @@ class Fracture:
 
     def SaveFracture(self, filename):
         """ This function saves the fracture object to a file on hard dist using dill module"""
+        # temporary copy
+        mesh_obj = copy.deepcopy(self.mesh)
 
+        # removing the mesh from the fracture object and storing the minimal info to it
+        domainLimits = copy.deepcopy(self.mesh.domainLimits)
+        nx = copy.deepcopy(self.mesh.nx)
+        ny = copy.deepcopy(self.mesh.ny)
+        mesh_dict = {'domain Limits' : domainLimits,
+                     'nx': nx,
+                     'ny': ny}
+        self.mesh = mesh_dict
         with open(filename, 'wb') as output:
             dill.dump(self, output, -1)
+
+        # restoring the mesh
+        self.mesh = mesh_obj
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 

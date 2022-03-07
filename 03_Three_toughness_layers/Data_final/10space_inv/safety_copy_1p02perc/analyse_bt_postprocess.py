@@ -7,7 +7,6 @@ import numpy as np
 
 # internal imports
 from controller import Controller
-from matplotlib import pyplot as plt
 from properties import InjectionProperties
 from solid.solid_prop import MaterialProperties
 from utilities.postprocess_fracture import load_fractures, append_to_json_file
@@ -15,9 +14,6 @@ from utilities.utility import setup_logging_to_console
 
 
 # setting up the verbosity level of the log at console
-from src.properties import PlotProperties
-from src.utilities.visualization import plot_fracture_list
-
 setup_logging_to_console(verbosity_level='debug')
 
 def check_make_folder(simdir):
@@ -184,7 +180,7 @@ with open(baseloc+file_name, "r+") as json_file:
     results = json.load(json_file)[0]  # get the data
 
 # get the list with simulations names
-simlist = copy.deepcopy(results["sim id"])
+simlist = results["sim id"]
 
 t_touch_lst = []
 error_on_xtouch_lst = []
@@ -198,74 +194,19 @@ min_velocity_ttouch_lst = []
 variance_velocity_ttouch_lst = []
 dimlessKold_lst = []
 
-full_list_rel_pos_xlim = []
-num_full_list_rel_pos_xlim = []
-
-del_list_rel_pos_xlim = []
-del_num_full_list_rel_pos_xlim = []
-
 Fr_list = []
 properties = []
-num_id = -1
-for num_id_iter, num in enumerate(simlist):
-    num_id = num_id + 1
-    remove_value = False
+for num_id, num in enumerate(simlist):
     print(f'analyzing {num_id+1} out of {len(simlist)}')
     # get H/2
     xlim = results["x_lim"][num_id]
-
     # get results path
     globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/bt/simulation_'+str(num)+'__2022-02-02__09_02_40/'
 
     # load the fracture obj
     del Fr_list, properties
-    try:
-        Fr_list, properties = load_fractures(address=globalpath, step_size=1)
-        Solid_loaded, Fluid, Injection, simulProp = properties
-    except:
-        remove_value = True
-        Fr_list = []
-        properties = []
-
-    # check if one can accept the solution
-    if not remove_value:
-        hx = Fr_list[-1].mesh.hx
-        relative_pos_xlim = ((xlim - 0.5 * hx) % hx) / hx
-        full_list_rel_pos_xlim.append(relative_pos_xlim)
-        num_full_list_rel_pos_xlim.append(num)
-    else:
-        relative_pos_xlim = 0.
-    if (not (relative_pos_xlim > .5 and relative_pos_xlim < .75) ) or remove_value:
-        # remove info about simulation
-        results["toughness ratio"].pop(num_id)
-        results["sim id"].pop(num_id)
-        results["aspect ratio"].pop(num_id)
-        results["ended"].pop(num_id)
-        results["aspect_ratio_toll"].pop(num_id)
-        results["aspect_ratio_target"].pop(num_id)
-        results["x_max"].pop(num_id)
-        results["x_min"].pop(num_id)
-        results["x_lim"].pop(num_id)
-        results["xmax_lim"].pop(num_id)
-        results["delta"].pop(num_id)
-        results["halfH"].pop(num_id)
-        if not remove_value:
-            #shutil.rmtree(globalpath)
-            # plot_prop = PlotProperties()
-            # Fig_R = plot_fracture_list(Fr_list,
-            #                            variable='footprint',
-            #                            plot_prop=plot_prop)
-            # Fig_R = plot_fracture_list(Fr_list,
-            #                            fig=Fig_R,
-            #                            variable='mesh',
-            #                            mat_properties=Solid_loaded,
-            #                            backGround_param='K1c',
-            #                            plot_prop=plot_prop)
-            # plt.show()
-            del_list_rel_pos_xlim.append(relative_pos_xlim)
-            del_num_full_list_rel_pos_xlim.append(num)
-        num_id = num_id - 1
-        continue
+    Fr_list, properties = load_fractures(address=globalpath, step_size=1)
+    Solid_loaded, Fluid, Injection, simulProp = properties
 
 
     for II in range(len(Fr_list)):
@@ -316,11 +257,6 @@ for num_id_iter, num in enumerate(simlist):
     variance_velocity_ttouch_lst.append(np.var(Fr_list[target_fr].v))
 
 # save the results
-del_list_rel_pos_xlim = np.asarray(del_list_rel_pos_xlim)
-del_num_full_list_rel_pos_xlim =np.asarray(del_num_full_list_rel_pos_xlim)
-full_list_rel_pos_xlim = np.asarray(full_list_rel_pos_xlim)
-num_full_list_rel_pos_xlim =np.asarray(num_full_list_rel_pos_xlim)
-
 results["t_touch_lst"] = t_touch_lst
 results["error_on_xtouch_lst"] = error_on_xtouch_lst
 results["average_R_lst"] = average_R_lst
@@ -342,29 +278,4 @@ content = results
 action = 'dump_this_dictionary'
 file_name_post = "analyse_bt_res_copy_post.json"
 append_to_json_file(baseloc+file_name_post, [content], action, delete_existing_filename=True)
-
-#
-# # resetting
-# results.pop("t_touch_lst",None)
-# results.pop("error_on_xtouch_lst",None)
-# results.pop("average_R_lst",None)
-# results.pop("dimlessK_lst",None)
-# results.pop("dimlessKold_lst",None)
-# results.pop("elts_in_crack_lst",None)
-# results.pop("time_bt_lst",None)
-# results.pop("velocity_ttouch_lst",None)
-# results.pop("max_velocity_ttouch_lst",None)
-# results.pop("min_velocity_ttouch_lst",None)
-# results.pop("variance_velocity_ttouch_lst",None)
-# results.pop("mu",None)
-# results.pop("Eprime",None)
-# results.pop("K1c",None)
-# results.pop("Qo",None)
-#
-# file_name_post = "analyse_bt_res_copy.json"
-# append_to_json_file(baseloc+file_name_post, [content], action, delete_existing_filename=True)
-#
-# file_name_post = "analyse_bt_res.json"
-# append_to_json_file(baseloc+file_name_post, [content], action, delete_existing_filename=True)
-# print("here")
 

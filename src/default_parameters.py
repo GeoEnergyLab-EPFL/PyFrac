@@ -39,7 +39,7 @@ max_reattemps = 8                       # maximum reattempts in case of time ste
 reattempt_factor = 0.8                  # the factor by which time step is reduced on reattempts.
 
 # output
-plot_figure = True                      # if True, figure will be plotted after the given time period.
+plotFigure = True                       # if True, figure will be plotted after the given time period.
 plot_analytical = False                 # if True, analytical solution will also be plotted.
 analytical_sol = None                   # the analytical solution to be plotted.
 bck_color = None                        # the parameter according to which background is color coded (see class doc).
