@@ -522,7 +522,7 @@ class SimulationProperties:
         self.maxReattemptsFracAdvMore2Cells = simul_param.max_reattemps_FracAdvMore2Cells
 
         # output parameters
-        self.plotFigure = simul_param.plot_figure
+        self.plotFigure = simul_param.plotFigure
         self.plotAnalytical = simul_param.plot_analytical
         self.analyticalSol = simul_param.analytical_sol
         self.set_simulation_name(simul_param.sim_name)
