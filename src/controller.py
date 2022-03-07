@@ -459,6 +459,7 @@ class Controller:
                                            cent_point[0] + (new_elems[0] - round((new_elems[0] - 1)/(1 / col_frac + 1))
                                                             - 1) * self.fracture.mesh.hx *
                                            reduction_factor],
+
                                           [cent_point[1] - round((new_elems[1] - 1) / (row_frac + 1)) *
                                            self.fracture.mesh.hy * reduction_factor,
                                            cent_point[1] + (new_elems[1] - round((new_elems[1] - 1) / (row_frac + 1))
@@ -1328,7 +1329,8 @@ class Controller:
                     TS_delta_vol = self.lstTmStp / abs(delta_vol) * 0.12
 
             # getting pre-factor for current time
-            current_prefactor = self.sim_prop.get_time_step_prefactor(self.fracture.time)
+            estimated_ts = [TS_cell_length, TS_fracture_length, TS_inj_cell, TS_delta_vol]
+            current_prefactor = self.sim_prop.get_time_step_prefactor(self.fracture.time, self.fracture, estimated_ts)
             time_step = current_prefactor * min(TS_cell_length,
                                               TS_fracture_length,
                                               TS_inj_cell,

@@ -1565,11 +1565,11 @@ class Fracture:
         Fr.mesh = newMesh # the new mesh
 
         #plot the new front and the old one together
-        from level_set.continuous_front_reconstruction import plot_xy_points, get_xy_from_Ffront
-        x, y = get_xy_from_Ffront(Fr.Ffront)
-        plot_xy_points(Fr.front_region, newMesh, Fr.sgndDist, Fr.EltRibbon, x, y, fig=None, annotate_cellName=False,
-                       annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=oldfront, joinPoints=True,
-                       disregard_plus=False)
+        # from level_set.continuous_front_reconstruction import plot_xy_points, get_xy_from_Ffront
+        # x, y = get_xy_from_Ffront(Fr.Ffront)
+        # plot_xy_points(Fr.front_region, newMesh, Fr.sgndDist, Fr.EltRibbon, x, y, fig=None, annotate_cellName=False,
+        #                annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=oldfront, joinPoints=True,
+        #                disregard_plus=False)
         return Solid, Fr
 
 # -----------------------------------------------------------------------------------------------------------------------
