@@ -838,7 +838,7 @@ class SimulationProperties:
     def get_timeStamp(self):
         return self.__timeStamp
 
-    def get_time_step_prefactor(self, t):
+    def get_time_step_prefactor(self, t, fracture_obj, estimated_ts):
         if isinstance(self.tmStpPrefactor, np.ndarray):
             if self.tmStpPrefactor.shape[0] == 2:
                 indxCurTime = max(np.where(t >= self.tmStpPrefactor[0, :])[0])
