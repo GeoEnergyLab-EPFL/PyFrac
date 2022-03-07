@@ -244,7 +244,8 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     simulProp.tmStpPrefactor = 0.10
     simulProp.tolFractFront = 0.0001
     simulProp.set_outputFolder(simdir)
-    simulProp.custom = custom_factory(r_0, 'x/(0.5 H)', 'y/(0.5 H)')
+    simulProp.frontAdvancing = 'implicit'
+    simulProp.custom = custom_factory(r_0, 'y/(0.5 H)', 'x/(0.5 H)')
     # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
     simulProp.adaptive_time_refinement = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
 
@@ -283,7 +284,7 @@ basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-locallist = [1560,1570,1640,1720,1810,1890,1980,2050]#,180,270,430,470]
+locallist = range(1500, 2107, 2)
 forced_recompute = locallist
 for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
@@ -388,7 +389,19 @@ for num_id, num in enumerate(todo):
         contunue_loop = True
         it_count = 0
 
-        if not len(Fr_list[-1].EltCrack) > 8000:
+        # check the location of the barrier
+        Fr = copy.deepcopy(Fr_list[-1])
+
+        # define the hard limit
+        x_min, x_max, y_min, y_max = get_fracture_sizes(Fr)
+        r_0 = np.maximum(np.abs(x_min), np.abs(x_max)) + Fr.mesh.hx
+        delta = Fr.mesh.hx / 100.
+        x_lim = r_0
+
+        relative_pos_xlim = ((r_0 - 0.5 * Fr.mesh.hx) % Fr.mesh.hx) / Fr.mesh.hx
+
+        print(f'\n -number of elts {len(Fr_list[-1].EltCrack)} and rel pos x_lim {relative_pos_xlim}')
+        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .95:
             while contunue_loop:
 
                 Fr = copy.deepcopy(Fr_list[-1])
@@ -425,7 +438,8 @@ for num_id, num in enumerate(todo):
 
                 if not skip:
                     if KIc_ratio_upper is None or (num_id == 0 and it_count ==0):
-                        KIc_ratio_upper = 200.
+                        KIc_ratio_upper = 5.
+                        KIc_ratio = KIc_ratio_upper
                     elif KIc_ratio_upper is not None and it_count ==0:
                         KIc_ratio_upper = KIc_ratio
 
