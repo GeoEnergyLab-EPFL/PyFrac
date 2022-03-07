@@ -342,8 +342,9 @@ for num_id, num in enumerate(todo):
         pos = np.where(np.asarray(results["sim id"]) == int(num))[0][0]
         check_xbt = (results["x_max"][pos] >= results["x_lim"][pos]
                     and results["x_max"][pos] <= results["x_lim"][pos] + results["delta"][pos])
-        check_ar = results["aspect ratio"][pos] >= results["aspect_ratio_target"][pos] \
-                   and results["aspect ratio"][pos] <(results["aspect_ratio_target"][pos] + 0.001)
+        # check_ar = results["aspect ratio"][pos] >= results["aspect_ratio_target"][pos] \
+        #            and results["aspect ratio"][pos] <(results["aspect_ratio_target"][pos] + 0.001)
+        check_ar = True
         if not check_ar or not check_xbt or int(num) in forced_recompute:
             print(f'AR is in the proper range: {check_ar}, AR: {results["aspect ratio"][pos]}')
             print(f'xbt is in the proper range {check_xbt}, 100(xbt - x_lim)/delta {100*(results["x_max"][pos]-results["x_lim"][pos])/results["delta"][pos]}')
@@ -484,6 +485,7 @@ for num_id, num in enumerate(todo):
                     print(f' |KIc_ratio_lower-KIc_ratio_upper|/KIc_ratio_lower = {np.abs(KIc_ratio_lower - KIc_ratio_upper) / KIc_ratio_lower} < 0.001')
 
                 ar_GE_target = aspect_ratio_c >= aspect_ratio_target
+                print(f"aspect ratio {aspect_ratio_c} vs {aspect_ratio_target}")
                 if ar_GE_target:
                     print(" aspect ratio >= target ")
                 else:
@@ -509,7 +511,7 @@ for num_id, num in enumerate(todo):
                         print(' increasing toughness ratio')
                         print(f' x/xlim: {larger_abs_x_c / x_lim}')
                         # increase toughness in the bounding layers
-                        if KIc_ratio >= KIc_ratio_upper or (aspect_ratio_c <= aspect_ratio_target and larger_abs_x_c > x_lim):
+                        if (aspect_ratio_c <= aspect_ratio_target and larger_abs_x_c > x_lim and KIc_ratio >= KIc_ratio_upper):
                             KIc_ratio_upper = 1. + KIc_ratio_upper
                             KIc_ratio_new = KIc_ratio_upper
                         else:
