@@ -67,7 +67,7 @@ class Iterative_linear_solver(Linear_solver):
             #probability = 0.5
           elif sys_size < 100000:
               decay_tshold = 0.81
-              fill_factor = 3
+              fill_factor = 30
           else:
               decay_tshold = 0.81
               fill_factor = 40
