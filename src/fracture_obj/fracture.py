@@ -1609,35 +1609,36 @@ class Fracture:
         moving = np.arange(self.EltRibbon.shape[0])[~np.in1d(self.EltRibbon, self.EltRibbon[stagnant])]
 
         for i in moving:
-            if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
-                log.debug('Why nan distance?')
-            wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
-            wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
-                 * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
-            wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel[i] * mat_prop.Cprime[self.EltRibbon[i]] ** 2
-                                     / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
+            if vel[i] != 0.:
+                if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
+                    log.debug('Why nan distance?')
+                wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
+                wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
+                     * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
+                wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel[i] * mat_prop.Cprime[self.EltRibbon[i]] ** 2
+                                         / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
 
-            nk = wk / (self.w[self.EltRibbon[i]] - wk)
-            nm = wm / (self.w[self.EltRibbon[i]] - wm)
-            nmtilde = wmtilde / (self.w[self.EltRibbon[i]] - wmtilde)
+                nk = wk / (self.w[self.EltRibbon[i]] - wk)
+                nm = wm / (self.w[self.EltRibbon[i]] - wm)
+                nmtilde = wmtilde / (self.w[self.EltRibbon[i]] - wmtilde)
 
-            Nk = nk / (nk + nm + nmtilde)
-            Nm = nm / (nk + nm + nmtilde)
-            Nmtilde = nmtilde / (nk + nm + nmtilde)
+                Nk = nk / (nk + nm + nmtilde)
+                Nm = nm / (nk + nm + nmtilde)
+                Nmtilde = nmtilde / (nk + nm + nmtilde)
 
-            if Nk > 1.:
-                Nk = 1
-            elif Nk < 0.:
-                Nk = 0
-            if Nm > 1.:
-                Nm = 1
-            elif Nm < 0.:
-                Nm = 0
-            if Nmtilde > 1.:
-                Nmtilde = 1
-            elif Nmtilde < 0.:
-                Nmtilde = 0
+                if Nk > 1.:
+                    Nk = 1
+                elif Nk < 0.:
+                    Nk = 0
+                if Nm > 1.:
+                    Nm = 1
+                elif Nm < 0.:
+                    Nm = 0
+                if Nmtilde > 1.:
+                    Nmtilde = 1
+                elif Nmtilde < 0.:
+                    Nmtilde = 0
 
-            self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
+                self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
 
 # -----------------------------------------------------------------------------------------------------------------------

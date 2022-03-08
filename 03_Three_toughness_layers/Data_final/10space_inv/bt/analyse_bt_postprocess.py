@@ -235,7 +235,7 @@ for num_id_iter, num in enumerate(simlist):
         num_full_list_rel_pos_xlim.append(num)
     else:
         relative_pos_xlim = 0.
-    if (not (relative_pos_xlim > .5 and relative_pos_xlim < .75) ) or remove_value:
+    if (not (relative_pos_xlim > .5 and relative_pos_xlim < .76) ) or remove_value:
         # remove info about simulation
         results["toughness ratio"].pop(num_id)
         results["sim id"].pop(num_id)
@@ -301,9 +301,10 @@ for num_id_iter, num in enumerate(simlist):
     Eprime = Solid_loaded.Eprime
     K1c1 = np.min(Solid_loaded.K1c)
     muPrime = Fluid.muPrime
+    kprime = (np.sqrt(32./np.pi) * K1c1)
 
     dimlessK = ( ((K1c1**4)*(xlim*2)) / ((muPrime)*(Q_o)*(Eprime**3)) )**(1./4.)
-    dimlessK_old = (((K1c1 ** 18) * (time_touch ** 2)) / (((muPrime/12.) ** 5) * (Q_o ** 3) * (Eprime ** 13))) ** (1. / 18.)
+    dimlessK_old = (( (kprime**18) * (time_touch ** 2)) / (((muPrime) ** 5) * (Q_o ** 3) * (Eprime ** 13))) ** (1. / 18.)
 
     dimlessK_lst.append(dimlessK)
     dimlessKold_lst.append(dimlessK_old)

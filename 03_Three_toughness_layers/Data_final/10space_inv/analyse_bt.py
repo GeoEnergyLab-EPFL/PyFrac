@@ -345,6 +345,7 @@ for num_id, num in enumerate(todo):
         # check_ar = results["aspect ratio"][pos] >= results["aspect_ratio_target"][pos] \
         #            and results["aspect ratio"][pos] <(results["aspect_ratio_target"][pos] + 0.001)
         check_ar = True
+        check_xbt = True
         if not check_ar or not check_xbt or int(num) in forced_recompute:
             print(f'AR is in the proper range: {check_ar}, AR: {results["aspect ratio"][pos]}')
             print(f'xbt is in the proper range {check_xbt}, 100(xbt - x_lim)/delta {100*(results["x_max"][pos]-results["x_lim"][pos])/results["delta"][pos]}')
@@ -457,7 +458,12 @@ for num_id, num in enumerate(todo):
                         KIc_ratio_upper = KIc_ratio
 
                     if KIc_ratio_lower is None or (it_count ==0):
-                        KIc_ratio_lower = np.maximum(1., KIc_ratio_upper * .5)
+                        Q_o = Injection.injectionRate[1][0]
+                        Eprime = Solid_loaded.Eprime
+                        K1c1 = np.min(Solid_loaded.K1c)
+                        muPrime = Fluid.muPrime
+                        KIc_ratio_upper_local = upper_bound_Kratio(muPrime, Q_o, Eprime, K1c1, x_lim)
+                        KIc_ratio_lower = np.maximum(1., KIc_ratio_upper_local * .5)
 
                 print(f'\n iterations on tough. ratio: {it_count} of 200, ID: {num}')
                 print(f' toughness ratio: {KIc_ratio}')
