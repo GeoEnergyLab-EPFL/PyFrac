@@ -65,9 +65,12 @@ class Iterative_linear_solver(Linear_solver):
           #   decay_tshold = 0.71
           #   fill_factor = 20
             #probability = 0.5
+          elif sys_size < 100000:
+              decay_tshold = 0.81
+              fill_factor = 3
           else:
               decay_tshold = 0.81
-              fill_factor = 30
+              fill_factor = 40
           # (A, self.b, self.interItr, self.indicies) = self.sys_fun._getsys(solk, interItr, *args)
           (A, self.b, self.interItr, self.indices) = self.sys_func._getsys_simplif(solk, interItr, *args, decay_tshold=decay_tshold, probability=1.)
           A_creation = A_creation + time.time()
