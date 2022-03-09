@@ -318,7 +318,10 @@ class elasticity_matrix_toepliz(LinearOperator):
                 SystemExit("HMAT not implemented for kerneltype different from Isotropic_R0")
 
             # HMATcreationTime = -time.time()
+            hmattime = -time.time()
             self.HMAT.set(data)
+            hmattime = hmattime + time.time()
+            print(f'TOTAL TIME HMAT minutes : {hmattime/60. : 0.2f} ')
             # self.HMATcreationTime.append(HMATcreationTime + time.time())
             # self._get_full_blocks(Mesh.VertexCoor, Mesh.Connectivity, elas_prop)
         ################ END HMAT dot SECTION ######################
