@@ -235,7 +235,7 @@ for num_id_iter, num in enumerate(simlist):
         num_full_list_rel_pos_xlim.append(num)
     else:
         relative_pos_xlim = 0.
-    if (not (relative_pos_xlim > .5 and relative_pos_xlim < .76) ) or remove_value:
+    if (not (relative_pos_xlim > .5 and relative_pos_xlim < .95) ) or remove_value:
         # remove info about simulation
         results["toughness ratio"].pop(num_id)
         results["sim id"].pop(num_id)

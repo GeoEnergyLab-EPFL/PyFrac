@@ -281,8 +281,8 @@ we fix an aspect ratio target and we loop on the toughness ratio from the moment
 """
 # educated  guess
 # 430 is 25.15635786183006
-TR = np.asarray([106.917185481925, 23.988447321363665, 7.999417382598588, 7.078244250253137, 6.674610843009765, 4.25540730566231, 1.7741874780639637, 1.4287380449729226, 1.4060753589175625, 1.34375, 110.2154412738598, 77.24778713486634, 32.87565342867487, 31.879539259028782, 49.53006308329436, 45.55276195149959, 117.87413570419311, 91.80141011018539, 56.847730402357456, 44.90514509436578, 27.647511224415616, 27.823979905656486, 64.6152790349907, 25.237905789552585, 21.474085895589518, 16.277029034014507, 13.629805293793265, 11.683741966638067, 10.099601610262912, 10.25443151013145, 9.340843671961121, 5.850190820510264, 5.697990573314791, 4.936385510414589, 5.003375991127431, 4.550624892690718, 3.848481392454521, 2.8963250655543007, 2.449034498944342, 2.1680369874482697, 1.8200747720671098, 1.6121301060492836, 1.5840184937241348, 1.5514235878663767, 1.3124865389282827, 1.2975685012603453, 1.210736583581057, 1.2061131990555705, 1.4152003420871764, 1.4039258535445787, 1.2109375, 1.2754254657920683, 1.2049531456395393, 1.0544406793105026, 1.1247531793105026, 1.3172580621230026, 1.1467716727514226, 1.049220173014882, 1.2777413159664945, 1.10205078125, 1.1152692157920683, 1.0796001517557432, 1.0830205056228568, 1.189253663087742, 58.10357100799947, 37.79264252139599, 1.075421473714736])
-SIM_ID = np.asarray([10, 420, 720, 760, 770, 910, 1190, 1330, 1340, 1640, 20, 80, 320, 330, 220, 230, 0, 30, 170, 270, 370, 380, 130, 430, 470, 520, 570, 620, 660, 670, 710, 810, 820, 860, 870, 920, 960, 1010, 1060, 1110, 1180, 1250, 1260, 1270, 1400, 1410, 1480, 1490, 1560, 1570, 1630, 1720, 1890, 1960, 1970, 1980, 2050, 2060, 1420, 1650, 1710, 1730, 1800, 1810, 180, 280, 1880])
+TR = np.asarray([93.61391011018539, 106.61874640274064, 80.7970187583269, 77.00965850403033, 56.55396796389728, 54.34482859030754, 48.40086296324266, 38.94756941573432, 33.470567466646685, 32.44203925902878, 28.893691215072508, 23.13752616831978, 19.883811550899814, 19.262442439934194, 17.155612798066393, 13.723555293793265, 11.793680330603586, 11.425127820272223, 10.193351610262912, 8.282098183338617, 5.661590555016632, 4.843313795111884, 4.162222792674275, 4.064670695970972, 3.6200973385991473, 3.3938412549367003, 2.916582328461227, 2.5292237379624707, 2.4699450566039753, 2.219091261792634, 2.089066383171972, 1.207741502771296, 1.207741502771296, 1.201249580809693, 1.1484375, 1.1484375, 1.106109619140625, 1.0728979110717773, 1.0768041610717773, 1.0672036409378052, 1.0544101931154728, 1.0596709884164284, 1.0596709884164284, 1.782560198980692, 1.773382602299877, 1.6098982231623729, 1.6098982231623729, 1.5924362300972816, 1.5957372437241348, 1.5870641419922453, 1.5784481949216573, 1.569890511563989, 1.561392588765474, 1.5631423378663767, 1.2991693669915128, 1.2991693669915128, 1.2991693669915128, 1.2929189934281524, 1.2929189934281524, 1.2883421341558376, 1.2860894612327451, 1.2860894612327451, 1.2777413159664945, 1.2777413159664945, 6.892419811827882, 6.762501468009765, 1.4375, 1.4375, 1.4345974199729223, 65.3652790349907, 64.0674938341572, 1.0417187499999998, 1.04828125, 1.0406640624999999, 1.069853515625])
+SIM_ID = np.asarray([30, 9, 72, 81, 174, 183, 219, 276, 321, 330, 366, 423, 468, 477, 513, 570, 615, 624, 660, 717, 819, 864, 909, 918, 954, 966, 1011, 1056, 1065, 1101, 1113, 1482, 1488, 1494, 1557, 1563, 1635, 1713, 1719, 1734, 1794, 1800, 1815, 1192, 1194, 1254, 1256, 1258, 1260, 1262, 1264, 1266, 1268, 1270, 1404, 1406, 1408, 1410, 1412, 1414, 1416, 1418, 1420, 1422, 766, 770, 1326, 1328, 1330, 130, 134, 1959, 1893, 1878, 1791])
 
 file_name = "analyse_bt_res.json"
 globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv'
@@ -291,7 +291,9 @@ basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-locallist = range(0, 2107, 3)
+#locallist = range(0, 2107, 3) # used with relative position interface to cell size between to 0.5 and 0.75
+#locallist = range(1791, 1792, 1) # used with relative position interface to cell size between to 0.5 and 0.80
+locallist = np.sort(SIM_ID)
 forced_recompute = []
 for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
@@ -410,7 +412,7 @@ for num_id, num in enumerate(todo):
         relative_pos_xlim = ((r_0 - 0.5 * Fr.mesh.hx) % Fr.mesh.hx) / Fr.mesh.hx
 
         print(f'\n -number of elts {len(Fr_list[-1].EltCrack)} \n sim {num_id + 1}\n and rel pos x_lim {relative_pos_xlim}')
-        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .75:
+        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .98:
             while contunue_loop:
 
                 Fr = copy.deepcopy(Fr_list[-1])
@@ -424,7 +426,7 @@ for num_id, num in enumerate(todo):
                 # tollerance aspect ratio
                 aspect_ratio_toll = 0.001
                 # target aspect ratio
-                aspect_ratio_max = 1.02
+                aspect_ratio_max = 1.10 #1.02
                 # aspect ratio when to stop the simulation
                 aspect_ratio_target = aspect_ratio_max
 
@@ -439,8 +441,8 @@ for num_id, num in enumerate(todo):
                     if int(num) in SIM_ID:
                         pos = np.where(SIM_ID==int(num))[0][0]
                         KIc_ratio = TR[pos]
-                        KIc_ratio_upper = KIc_ratio + 1.5
-                        KIc_ratio_lower = KIc_ratio - 1.5
+                        KIc_ratio_upper = KIc_ratio + 0.5 * KIc_ratio
+                        KIc_ratio_lower = KIc_ratio
                         if KIc_ratio_lower < 1.:
                             KIc_ratio_lower = 1.
                         skip = True
@@ -452,7 +454,9 @@ for num_id, num in enumerate(todo):
                         Eprime = Solid_loaded.Eprime
                         K1c1 = np.min(Solid_loaded.K1c)
                         muPrime = Fluid.muPrime
-                        KIc_ratio_upper = upper_bound_Kratio(muPrime, Q_o, Eprime, K1c1, x_lim)
+                        KIc_ratio_upper = 1.5* upper_bound_Kratio(muPrime, Q_o, Eprime, K1c1, x_lim)
+                        # to force the ratio uncomment the following:
+                        #KIc_ratio_upper = 1.1
                         KIc_ratio = KIc_ratio_upper
                     elif KIc_ratio_upper is not None and it_count ==0:
                         KIc_ratio_upper = KIc_ratio
@@ -464,6 +468,8 @@ for num_id, num in enumerate(todo):
                         muPrime = Fluid.muPrime
                         KIc_ratio_upper_local = upper_bound_Kratio(muPrime, Q_o, Eprime, K1c1, x_lim)
                         KIc_ratio_lower = np.maximum(1., KIc_ratio_upper_local * .5)
+                        # to force the ratio uncomment the following:
+                        #KIc_ratio_lower = 1.03
 
                 print(f'\n iterations on tough. ratio: {it_count} of 200, ID: {num}')
                 print(f' toughness ratio: {KIc_ratio}')
@@ -491,6 +497,7 @@ for num_id, num in enumerate(todo):
                     print(f' |KIc_ratio_lower-KIc_ratio_upper|/KIc_ratio_lower = {np.abs(KIc_ratio_lower - KIc_ratio_upper) / KIc_ratio_lower} < 0.001')
 
                 ar_GE_target = aspect_ratio_c >= aspect_ratio_target
+                target_reduction = target_reduction or not ar_GE_target
                 print(f"aspect ratio {aspect_ratio_c} vs {aspect_ratio_target}")
                 if ar_GE_target:
                     print(" aspect ratio >= target ")
