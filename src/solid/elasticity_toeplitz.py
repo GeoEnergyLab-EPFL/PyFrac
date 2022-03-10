@@ -400,7 +400,7 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
         #coeff9stencilC = [diag, dy, diag, dx, self, dx, diag, dy, diag]
-        self.coeff9stencilC = [self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
+        self.coeff9stencilC = np.asarray([self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
                                self.C_toeplitz_coe[nx],      # 0 dx 1 dy - dy
                                self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
                                self.C_toeplitz_coe[1],       # 1 dx 0 dy - dx
@@ -409,7 +409,7 @@ class elasticity_matrix_toepliz(LinearOperator):
                                self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
                                self.C_toeplitz_coe[nx],      # 0 dx 1 dy - dy
                                self.C_toeplitz_coe[nx + 1]   # 1 dx 1 dy - diag
-                               ]
+                               ])
 
         # define the size = number of elements in the mesh
         self.C_size_ = int(Mesh.nx * Mesh.ny)
