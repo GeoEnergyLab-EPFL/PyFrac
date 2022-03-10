@@ -9,6 +9,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # external imports
 import numpy as np
 from numba import njit, prange, boolean, uint16, uint64, int64
+import numba as nb
 from scipy.sparse import coo_matrix
 from numba import config
 from numba.typed import List
@@ -136,13 +137,27 @@ def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
+@njit(fastmath=True, nogil=True, cache=True)
+def _concat_equal1(array1, array2, out):
+    N = len(array1)
+    for i in range(N):
+        out[i] = array1[i]
+
+    for i in range(N):
+        out[N+i] = array2[i]
+    return out
+
+@njit(fastmath=True, nogil=True, cache=True)
+def concat_equal1(array1, array2):
+    out = np.empty(shape=(2 * len(array1)))
+    return _concat_equal1(array1, array2, out)
 
 @njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
 def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
-    self_c = C_toeplitz_coe[0]
+    self_c = 0.5 * C_toeplitz_coe[0]
     #myR = range(dimX)
     data = List()
     rows = List()
@@ -162,17 +177,20 @@ def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_
                 rows.append(iter1)
                 data.append(C_toeplitz_coe[ii2])
                 # symmetry
-                rows.append(iter2)
-                cols.append(iter1)
-                data.append(C_toeplitz_coe[ii2])
-
+                # rows.append(iter2)
+                # cols.append(iter1)
+                # data.append(C_toeplitz_coe[ii2])
+    # symmetry
+    rows_new = concat_equal1(rows,cols)
+    cols = concat_equal1(cols,rows)
+    data = concat_equal1(data,data)
 
     # import matplotlib
     # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
 
     # fill ratio:
     # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
-    return data, rows, cols, dimX
+    return data, rows_new, cols, dimX
 
 #@njit(fastmath=True, nogil=True, cache=True, parallel = True)
 def getFast_sparseC(coeff9stencilC, elmts, nx):
