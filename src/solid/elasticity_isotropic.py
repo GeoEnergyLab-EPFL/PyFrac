@@ -13,7 +13,7 @@ from mesh_obj.mesh import Neighbors
 from numba.typed import List
 
 # internal imports
-from solid.elasticity_toeplitz import elasticity_matrix_toepliz, matvec_fast, getFast, getFast_sparseC
+from solid.elasticity_toeplitz import elasticity_matrix_toepliz, matvec_fast, getFast, getSuperFast_sparseC
 from solid.elasticity_kernels.isotropic_R0_elem import get_toeplitzCoe_isotropic, get_R0_normal_traction_at
 from solid.elasticity_kernels.isotropic_R4_elem import get_toeplitzCoe_isotropic_R4, get_R4_normal_traction_at
 from solid.elasticity_kernels.isotropic_R4_elem import matvec_fast_R4, getFast_R4, getFast_sparseC_R4
@@ -48,7 +48,7 @@ class load_isotropic_elasticity_matrix_toepliz(elasticity_matrix_toepliz):
                              HMATparam=HMATparam,
                              f_matvec_fast = matvec_fast,
                              f_getFast = getFast,
-                             f_getFast_sparseC = getFast_sparseC)
+                             f_getFast_sparseC = getSuperFast_sparseC)
 
     def reload_toepliz_Coe(self, Lx, Ly, nx, ny, hx, hy, mat_prop):
         typedList_mat_prop = List()
