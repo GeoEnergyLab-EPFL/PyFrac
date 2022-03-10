@@ -158,18 +158,21 @@ def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_
     j = elmts - nx * i
     dimX = len(elmts)
     self_c = 0.5 * C_toeplitz_coe[0]
+    # self_c = C_toeplitz_coe[0]
     #myR = range(dimX)
     data = List()
     rows = List()
     cols = List()
     i *= nx
     for iter1 in prange(dimX):
-        index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
+        #index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
+        index = np.abs(j[:iter1] - j[iter1]) + np.abs(i[:iter1] - i[iter1])
         # self effect
         data.append(self_c)
         rows.append(iter1)
         cols.append(iter1)
-        for iter2 in range(iter1 + 1, dimX):
+        #for iter2 in range(iter1 + 1, dimX):
+        for iter2 in range(iter1):
             ii2 = index[iter2]
             if C_toeplitz_coe_decay[ii2] > decay_tshold:# and random.random() < probability:
             #if C_toeplitz_coe_decay[ii2] > decay_tshold:
@@ -191,6 +194,46 @@ def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_
     # fill ratio:
     # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
     return data, rows_new, cols, dimX
+    #return data, rows, cols, dimX
+
+@njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
+def getSuperFast_sparseC_smooth(coeff9stencilC, elmts, nx):
+    i = np.floor_divide(elmts, nx)
+    j = elmts - nx * i
+    dimX = len(elmts)
+    self_c = 0.5 * coeff9stencilC[4]
+
+    data = List()
+    rows = List()
+    cols = List()
+
+    for iter1 in prange(dimX):
+        dj = (j[:iter1] - j[iter1])
+        di = (i[:iter1] - i[iter1])
+        # self effect
+        data.append(self_c)
+        rows.append(iter1)
+        cols.append(iter1)
+        for iter2 in range(iter1):
+            ii2_a = dj[iter2]
+            ii2_b = di[iter2]
+            if ii2_a < 2 and ii2_b < 2 and ii2_a > -2 and ii2_b > -2 :
+                cols.append(iter2)
+                rows.append(iter1)
+                data.append(coeff9stencilC[([[0, 1, 2], [3, 4, 5], [6, 7, 8]])[ii2_a + 1][ii2_b + 1]])
+
+    # symmetry
+    rows_new = concat_equal1(rows,cols)
+    cols = concat_equal1(cols,rows)
+    data = concat_equal1(data,data)
+
+    # import matplotlib
+    # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
+
+    # fill ratio:
+    # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
+    return data, rows_new, cols, dimX
+    #return data, rows, cols, dimX
 
 #@njit(fastmath=True, nogil=True, cache=True, parallel = True)
 def getFast_sparseC(coeff9stencilC, elmts, nx):
@@ -614,6 +657,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         data, rows, cols, dimX = self.f_getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
                                                  elmts, self.nx,
                                                  decay_tshold=decay_tshold, probability=probability)
+
         # data, rows, cols, dimX = self.f_getFast_sparseC(self.coeff9stencilC,elmts, self.nx)
 
         # to see the matrix
