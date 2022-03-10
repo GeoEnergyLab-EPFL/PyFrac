@@ -138,7 +138,7 @@ def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
 
 
 @njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
-def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
+def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
@@ -174,8 +174,8 @@ def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshol
     # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
     return data, rows, cols, dimX
 
-@njit(fastmath=True, nogil=True, cache=True, parallel = True)
-def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
+#@njit(fastmath=True, nogil=True, cache=True, parallel = True)
+def getFast_sparseC(coeff9stencilC, elmts, nx):
     """
     Relative position and numbering:
     o---o---o---o
@@ -196,7 +196,7 @@ def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
     o---o---o---o
     """
     dimX = len(elmts)
-    interactions_BOOL = np.full((dimX, 9), False, dtype=boolean)
+    interactions_BOOL = np.full((dimX, 9), False) #, dtype=boolean)
     interactions_PAIRS = np.zeros((dimX, 9))
 
 
@@ -204,19 +204,14 @@ def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
     j = elmts - nx * i
 
     for ii in prange(0, int(dimX*(dimX+1)/2)):
-        position_table = np.asarray([[0, 1, 2], [3, 4, 5], [6, 7, 8]],dtype=uint16)
+        position_table = np.asarray([[0, 1, 2], [3, 4, 5], [6, 7, 8]])#,dtype=uint16)
         source = int(np.floor_divide((-1 + np.sqrt(1 + 8 * ii)),2))
         receiver = int(ii - source*(source+1)/2)
         #source_ID = elmts[source]
         #receiver_ID = elmts[receiver]
-        i_source = i[source]
-        i_receiver = i[receiver]
-        j_source = j[source]
-        j_receiver = j[receiver]
-        di = i_source - i_receiver
-        dj = j_source - j_receiver
-        dip1 = di + 1
-        djp1 = dj + 1
+        dip1 = i[source] - i[receiver] + 1
+        djp1 = j[source] - j[receiver] + 1
+
         if dip1 in range(3):
             if djp1 in range(3):
                 interactions_BOOL[source,position_table[dip1, djp1]] = True
@@ -231,7 +226,7 @@ def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
     cols = np.zeros(size_of_output)
 
 
-    index_results = np.zeros(dimX, dtype=int64)
+    index_results = np.zeros(dimX, dtype=int) #, dtype=int64)
     cumulative_index = 0
     for ii in range(dimX):
         cumulative_index = int(cumulative_index + 2 * (np.sum(interactions_BOOL[ii, :]) - 1))
@@ -250,6 +245,7 @@ def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
                 cols[starting_index] = interactions_PAIRS[ii,jj]
                 starting_index = starting_index + 1
 
+    for ii in prange(dimX):
         # writing the self effect
         index =  size_of_output_NoSelfEff + ii
         data[index] = coeff9stencilC[4]
@@ -597,10 +593,10 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _get9stencilC(self, elmts, decay_tshold=0.9, probability=0.15):
-        # data, rows, cols, dimX = self.f_getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
-        #                                          elmts, self.nx,
-        #                                          decay_tshold=decay_tshold, probability=probability)
-        data, rows, cols, dimX = self.f_getFast_sparseC(self.coeff9stencilC,elmts, self.nx)
+        data, rows, cols, dimX = self.f_getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
+                                                 elmts, self.nx,
+                                                 decay_tshold=decay_tshold, probability=probability)
+        # data, rows, cols, dimX = self.f_getFast_sparseC(self.coeff9stencilC,elmts, self.nx)
 
         # to see the matrix
         # import matplotlib.pylab as plt
