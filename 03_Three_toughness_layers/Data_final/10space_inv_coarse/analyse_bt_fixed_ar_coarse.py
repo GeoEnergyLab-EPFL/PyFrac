@@ -245,7 +245,7 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     simulProp.tolFractFront = 0.0001
     simulProp.set_outputFolder(simdir)
     simulProp.frontAdvancing = 'implicit'
-    #simulProp.plotFigure = False
+    simulProp.plotFigure = False
     simulProp.custom = custom_factory(r_0, 'y/(0.5 H)', 'x/(0.5 H)')
     # define the adaptive time step function to get the simulation reaching ar = ar_desired +/- toll
     simulProp.adaptive_time_refinement = adapive_time_ref_factory(aspect_ratio_max, aspect_ratio_toll, xmax_lim)
@@ -389,7 +389,7 @@ for num_id, num in enumerate(todo):
         relative_pos_xlim = ((r_0 - 0.5 * Fr.mesh.hx) % Fr.mesh.hx) / Fr.mesh.hx
 
         print(f'\n -number of elts {len(Fr_list[-1].EltCrack)} \n sim {num_id + 1}\n and rel pos x_lim {relative_pos_xlim}')
-        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .75:
+        if not len(Fr_list[-1].EltCrack) > 6000 and relative_pos_xlim > .5 and relative_pos_xlim < .75:
             increase_KIc = True
             iter = -1
             while increase_KIc:
@@ -418,7 +418,7 @@ for num_id, num in enumerate(todo):
                     if len(results["toughness ratio"]) > 0:
                         KIc_ratio = np.maximum(2., 1.1 * (np.asarray(results["toughness ratio"])).max())
                     else:
-                        KIc_ratio = 2.
+                        KIc_ratio = 4.
 
 
                 print(f'\n ID: {num}')

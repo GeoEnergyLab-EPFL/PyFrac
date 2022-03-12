@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import numpy as np
+import glob
 
 # internal imports
 from controller import Controller
@@ -43,8 +44,6 @@ def copy_dir(dest_folder, src_folder):
     else:
         print('  the folder does not exist: abort')
         raise SystemExit
-
-
 # --------------------------------------------------------------
 def smoothing(K1, K2, r, delta, x):
     # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
@@ -75,7 +74,6 @@ class K1c_func_factory:
      def __call__(self, x, y, alpha):
          """ The function providing the toughness"""
          return smoothing(self.K_Ic, self.KIc_ratio * self.K_Ic, self.r, self.delta, x)
-
 
 def sigmaO_func(x, y):
     return 0
@@ -119,8 +117,8 @@ def get_fracture_sizes(Fr):
             y_min_temp = segment[3]
 
     return x_min_temp, x_max_temp, y_min_temp, y_max_temp
-# --------------------------------------------------------------
 
+# --------------------------------------------------------------
 # define the terminating criterion function
 class terminating_criterion_factory:
     def __init__(self, aspect_ratio_target, xmax_lim, aspect_ratio_toll):
@@ -139,7 +137,6 @@ class terminating_criterion_factory:
             return True
         else:
             return False
-
 
 # defining the return function in case the simulation ends according to the terminating criterion function
 def return_function(fracture):
@@ -247,6 +244,8 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     simulProp.maxFrontItrs = 95
     simulProp.tmStpPrefactor = 0.5
     simulProp.tolFractFront = 0.0001
+    simulProp.gmres_Restart = 500
+    simulProp.gmres_maxiter = 1000
     simulProp.set_outputFolder(simdir)
     simulProp.frontAdvancing = 'implicit'
     simulProp.plotFigure = False
@@ -274,28 +273,41 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
 # --------------------------------------------------------------
 # --------------------------------------------------------------
 print('STARTING SIMULATION:')
-TR = np.asarray([2.711510062829433, 1.34521484375, 2.0391845703125])
-SIM_ID = np.asarray([1180, 1000, 800])
+"""
+we fix an aspect ratio target and we loop on the toughness ratio from the moment we touch
+"""
+# educated  guess
+# 430 is 25.15635786183006
+TR = np.asarray([4.0, 4.4, 4.840000000000001, 5.324000000000002, 5.8564000000000025, 6.442040000000003, 7.086244000000004, 7.794868400000006, 8.574355240000006, 9.431790764000008, 10.37496984040001, 11.412466824440012, 12.553713506884014, 13.809084857572417, 15.18999334332966, 16.708992677662625, 18.379891945428888, 20.217881139971777, 22.239669253968955, 29.463636179365853, 32.40999979730244, 50.65099977703269, 55.716099754735964, 81.28770973020957, 89.41648070323053, 128.35812877355357, 151.19394165090895, 166.31333581599986])
+SIM_ID = np.asarray([1968, 1959, 1878, 1800, 1794, 1791, 1719, 1713, 1641, 1635, 1563, 1557, 1482, 1101, 1056, 954, 909, 660, 615, 513, 468, 366, 321, 219, 174, 72, 30, 9])
 
 file_name = "analyse_bt_res.json"
-globalpath = '/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/10space_inv_coarse/'
-date_ext = '2022-02-11__09_41_49'
+globalpath = '/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/10space_inv_coarse/contained_at_1p5/'
+globalpath_json = '/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/10space_inv_coarse/'
+date_ext = '2022-02-02__09_02_40'
 basename = '/simulation__'+date_ext+'_file_'
 
 todo = []
 todo_n = []
-locallist = [700]
-forced_recompute = locallist
-for number in locallist: #range(1100, 1210, 10):
+#locallist = range(0, 2107, 3) # used with relative position interface to cell size between to 0.5 and 0.75
+#locallist = range(1791, 1792, 1) # used with relative position interface to cell size between to 0.5 and 0.80
+#remove some values
+new_SIM_ID = SIM_ID.tolist()
+to_remove = [72]
+for elem in to_remove:
+    new_SIM_ID.remove(elem)
+
+locallist = np.sort(new_SIM_ID)
+forced_recompute = []
+for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
         todo.append(str(number))
-todo.reverse()
 todo_n = len(todo)
 
 # copy the file for safety!
 file_name_copy = "analyse_bt_res_copy.json"
 if os.path.isfile(file_name):
-    shutil.copyfile(globalpath+file_name, globalpath+file_name_copy)
+    shutil.copyfile(globalpath_json+file_name, globalpath_json+file_name_copy)
 
 
 # initialize some vars
@@ -326,10 +338,18 @@ else:
     with open(file_name, "r+") as json_file:
         results = json.load(json_file)[0]  # get the data
 
+# load the results with the min toughness ratio
+if not os.path.isfile(globalpath_json + 'AR_high_K.json'):
+    SystemExit("file not found")
+else:
+    with open(globalpath_json + 'AR_high_K.json', "r+") as json_file:
+        results_AR_high_K = json.load(json_file)[0]  # get the data
+    resARsimID = np.asarray(results_AR_high_K['sim id'])
+    resARtoughRatio = np.asarray(results_AR_high_K['toughness ratio'])
+
 for num_id, num in enumerate(todo):
 
     print(f'sim {num_id+1} of {todo_n}\n')
-
 
     # check error and eventually recompute
     if int(num) in results["sim id"]:
@@ -339,6 +359,7 @@ for num_id, num in enumerate(todo):
         # check_ar = results["aspect ratio"][pos] >= results["aspect_ratio_target"][pos] \
         #            and results["aspect ratio"][pos] <(results["aspect_ratio_target"][pos] + 0.001)
         check_ar = True
+        check_xbt = True
         if not check_ar or not check_xbt or int(num) in forced_recompute:
             print(f'AR is in the proper range: {check_ar}, AR: {results["aspect ratio"][pos]}')
             print(f'xbt is in the proper range {check_xbt}, 100(xbt - x_lim)/delta {100*(results["x_max"][pos]-results["x_lim"][pos])/results["delta"][pos]}')
@@ -355,13 +376,13 @@ for num_id, num in enumerate(todo):
             results["delta"].pop(pos)
             results["halfH"].pop(pos)
             # remove the folder
-            if os.path.isdir(globalpath + '/bt/simulation_' + num + '__' + date_ext):
-                shutil.rmtree(globalpath + '/bt/simulation_' + num + '__' + date_ext)
-            if os.path.isdir(globalpath + '/bt/simulation_' + num + '__' + date_ext + '_copy'):
-                shutil.rmtree(globalpath + '/bt/simulation_' + num + '__' + date_ext + '_copy')
+            if os.path.isdir(globalpath_json + 'bt/simulation_' + num + '__' + date_ext):
+                shutil.rmtree(globalpath_json + 'bt/simulation_' + num + '__' + date_ext)
+            if os.path.isdir(globalpath_json + 'bt/simulation_' + num + '__' + date_ext + '_copy'):
+                shutil.rmtree(globalpath_json + 'bt/simulation_' + num + '__' + date_ext + '_copy')
 
     if int(num) not in results["sim id"]:
-        simdir = globalpath + 'bt/simulation_'+num+'__' + date_ext
+        simdir = globalpath_json + 'bt/simulation_'+num+'__' + date_ext
 
         # make the folder if it does not exist
         print(' -check if the folder existed')
@@ -370,13 +391,20 @@ for num_id, num in enumerate(todo):
         # copy properties if they do not exist
         print('\n -check if the properties existed')
         dest_file = simdir + '/properties'
-        src_file = globalpath + 'simulation__' + date_ext + '/properties'
+        src_file = globalpath + 'simulation_'+num+'__'+date_ext+'/simulation__'+date_ext+'/properties'
         check_copy_file(dest_file, src_file)
 
         # check if the timestep exist in the source dir and copy
         print('\n -check if the initial file existed')
         dest_file = simdir + '/simulation_'+num+'__' + date_ext +'_file_0'
-        src_file = globalpath + 'simulation__' + date_ext + '/simulation__' + date_ext + '_file_' + num
+        base = globalpath + 'simulation_'+num+'__'+date_ext+'/simulation__'+date_ext+ '/simulation__' + date_ext + '_file_*'
+        filelist = glob.glob(base)
+        filelist_n = []
+        for name in filelist:
+            filelist_n.append(int(name[len(base[:-1]):]))
+        filelist_n = np.asarray(filelist_n)
+        np.ndarray.sort(filelist_n)
+        src_file = globalpath + 'simulation_'+num+'__'+date_ext+'/simulation__'+date_ext+ '/simulation__' + date_ext + '_file_' + str(filelist_n[-3])
         check_copy_file(dest_file, src_file)
 
         # make a copy of the input folder
@@ -386,7 +414,7 @@ for num_id, num in enumerate(todo):
         copy_dir(dest_folder, src_folder)
 
         # load the fracture obj
-        Fr_list, properties = load_fractures(address=globalpath + 'bt', step_size=100, sim_name='simulation_' + num)
+        Fr_list, properties = load_fractures(address=globalpath_json + 'bt', step_size=100, sim_name='simulation_' + num)
         Solid_loaded, Fluid, Injection, simulProp = properties
         contunue_loop = True
         it_count = 0
@@ -403,7 +431,7 @@ for num_id, num in enumerate(todo):
         relative_pos_xlim = ((r_0 - 0.5 * Fr.mesh.hx) % Fr.mesh.hx) / Fr.mesh.hx
 
         print(f'\n -number of elts {len(Fr_list[-1].EltCrack)} \n sim {num_id + 1}\n and rel pos x_lim {relative_pos_xlim}')
-        if not len(Fr_list[-1].EltCrack) > 8000 and relative_pos_xlim > .5 and relative_pos_xlim < .75:
+        if not len(Fr_list[-1].EltCrack) > 28000 and relative_pos_xlim > .5 and relative_pos_xlim < .75:
             while contunue_loop:
 
                 Fr = copy.deepcopy(Fr_list[-1])
@@ -417,7 +445,7 @@ for num_id, num in enumerate(todo):
                 # tollerance aspect ratio
                 aspect_ratio_toll = 0.001
                 # target aspect ratio
-                aspect_ratio_max = 1.55
+                aspect_ratio_max = 1.6
                 # aspect ratio when to stop the simulation
                 aspect_ratio_target = aspect_ratio_max
 
@@ -428,11 +456,12 @@ for num_id, num in enumerate(todo):
                 # current state variables
                 skip = False
                 if KIc_ratio is None or (it_count ==0):
-                    if int(num) in SIM_ID:
-                        pos = np.where(SIM_ID==int(num))[0][0]
-                        KIc_ratio = TR[pos]
-                        KIc_ratio_upper = KIc_ratio + 1.5
-                        KIc_ratio_lower = KIc_ratio - 1.5
+                    if int(num) in resARsimID:
+                        pos = np.where(resARsimID==int(num))[0][0]
+                        KIc_ratio = resARtoughRatio[pos]
+                        KIc_ratio_upper = KIc_ratio + 0.2 * resARtoughRatio[pos]
+                        KIc_ratio_lower = resARtoughRatio[pos]
+                        KIc_ratio = (KIc_ratio_upper + KIc_ratio_lower) * .5
                         if KIc_ratio_lower < 1.:
                             KIc_ratio_lower = 1.
                         skip = True
@@ -474,6 +503,7 @@ for num_id, num in enumerate(todo):
                     print(f' |KIc_ratio_lower-KIc_ratio_upper|/KIc_ratio_lower = {np.abs(KIc_ratio_lower - KIc_ratio_upper) / KIc_ratio_lower} < 0.001')
 
                 ar_GE_target = aspect_ratio_c >= aspect_ratio_target
+                target_reduction = target_reduction or not ar_GE_target
                 print(f"aspect ratio {aspect_ratio_c} vs {aspect_ratio_target}")
                 if ar_GE_target:
                     print(" aspect ratio >= target ")
@@ -565,15 +595,14 @@ for num_id, num in enumerate(todo):
 
                         # copy the file for safety!
                         file_name_copy = "analyse_bt_res_copy.json"
-                        shutil.copyfile(globalpath + file_name, globalpath + file_name_copy)
+                        shutil.copyfile(globalpath_json + file_name, globalpath + file_name_copy)
                         print('-----------------------------')
                 else:
                     print('-convergence on the toughness ratio not achieved!')
-                    print(f'simulaton ID: ' + num)
+                    print(f'simulaton ID: '+num)
                     print('-----------------------------')
                     SystemExit()
         else:
-            print(f'too many elements ({len(Fr_list[-1].EltCrack)}) for ID ' + num)
             # remove the copies and go next
             dest_folder = simdir + '_copy'
             shutil.rmtree(dest_folder)
