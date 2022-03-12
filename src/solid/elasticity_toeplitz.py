@@ -30,7 +30,7 @@ from utilities.utility import append_new_line
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'tbb'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
 @njit(parallel=True, fastmath=True, nogil=True, cache=True)  # <------parallel compilation
@@ -153,7 +153,9 @@ def concat_equal1(array1, array2):
     return _concat_equal1(array1, array2, out)
 
 @njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
-def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
+def getSuperFast_sparseC_smooth(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
+    # this is not faster than its non smooth version but it provides a better approximation for the preconditioner
+    # this has been disable in order to achieve better performances for 10^6 elements
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
@@ -197,7 +199,7 @@ def getSuperFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_
     #return data, rows, cols, dimX
 
 @njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
-def getSuperFast_sparseC_smooth(coeff9stencilC, elmts, nx):
+def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
@@ -405,9 +407,9 @@ class elasticity_matrix_toepliz(LinearOperator):
         #################### HMAT dot SECTION ###################
         if self.updateHMATuponRemeshing:
             if self.HMATparam is None:
-                self.max_leaf_size = 100
-                self.eta = 5
-                self.eps_aca = 1.e-6
+                self.max_leaf_size = 750
+                self.eta = 8
+                self.eps_aca = 1.e-4
                 self.HMATtract = None
             else:
                 self.max_leaf_size = self.HMATparam[0]
@@ -654,11 +656,11 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _get9stencilC(self, elmts, decay_tshold=0.9, probability=0.15):
-        data, rows, cols, dimX = self.f_getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
-                                                 elmts, self.nx,
-                                                 decay_tshold=decay_tshold, probability=probability)
+        # data1, rows1, cols1, dimX1 = getSuperFast_sparseC_smooth(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
+        #                                          elmts, self.nx,
+        #                                          decay_tshold=decay_tshold, probability=probability)
 
-        # data, rows, cols, dimX = self.f_getFast_sparseC(self.coeff9stencilC,elmts, self.nx)
+        data, rows, cols, dimX = self.f_getFast_sparseC(self.coeff9stencilC,elmts, self.nx)
 
         # to see the matrix
         # import matplotlib.pylab as plt
