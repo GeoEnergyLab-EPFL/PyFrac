@@ -74,7 +74,7 @@ class MaterialProperties:
 
     """
 
-    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., confining_stress=0., grain_size=0., K1c_func=None,
+    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., Carters_t0= None, confining_stress=0., grain_size=0., K1c_func=None,
                  anisotropic_K1c=False, confining_stress_func = None, Carters_coef_func = None, TI_elasticity=False,
                  Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6,
                  pore_pressure=-1.e100):
@@ -109,6 +109,9 @@ class MaterialProperties:
         else:
             self.Cl = Carters_coef
             self.Cprime = 2. * Carters_coef * np.ones((Mesh.NumberOfElts,), float)
+
+        #  initial time for the Carter law with which initialize the leak-off into the crack
+        self.Carters_t0 = Carters_t0
 
         if isinstance(confining_stress, np.ndarray):  # check if float or ndarray
             if confining_stress.size == Mesh.NumberOfElts:  # check if size equal to the mesh size

@@ -65,15 +65,20 @@ class Iterative_linear_solver(Linear_solver):
           #   decay_tshold = 0.71
           #   fill_factor = 20
             #probability = 0.5
-          else:
+          elif sys_size < 100000:
               decay_tshold = 0.81
               fill_factor = 30
+          else:
+              decay_tshold = 0.81
+              fill_factor = 50
           # (A, self.b, self.interItr, self.indicies) = self.sys_fun._getsys(solk, interItr, *args)
           (A, self.b, self.interItr, self.indices) = self.sys_func._getsys_simplif(solk, interItr, *args, decay_tshold=decay_tshold, probability=1.)
           A_creation = A_creation + time.time()
+          self.log.debug(f' --> preconditioner: creation approx system {A_creation : .2f} s')
           ILU_comp = -time.time()
           self.prec = self.prec_func(A, drop_tol=1.e-10, fill_factor=fill_factor)
           ILU_comp = ILU_comp + time.time()
+          self.log.debug(f' --> preconditioner: spilu of the approx system {ILU_comp : .2f} s')
           self.ILU_comp = ILU_comp
           self.A_creation = A_creation
       else:
@@ -83,13 +88,14 @@ class Iterative_linear_solver(Linear_solver):
       x0 = self.residual_iter(solk, niter = 1)
 
       # solve the system
+      solution_time = -time.time()
       sol_ = self.solver_call(self.counter, x0=x0)
-
+      solution_time = solution_time + time.time()
       # check solution
       if sol_[1] > 0:
           self.log.warning("Iterative solver did NOT converge after " + str(sol_[1]) + " iterations!")
       elif sol_[1] == 0:
-          self.log.debug(" --> iterative solver converged after " + str(self.counter.niter) + " iter. (system size: " + str(len(self.b))  + " )")
+          self.log.debug(f' --> iterative solver converged after {self.counter.niter} iter. taking {solution_time : .1f} s (system size:{len(self.b)})')
       # file_name = "/Users/carloperuzzo/Desktop/Pyfrac_formulation/_gmres_dev/_preconditioner/_data&performances/Gmres_with_parallel_Hdot/_data_Elast_stencil/gmres_iter_vs_size.txt"
       # append_new_line(file_name, str(len(b)) + ' ' + str(self.counter.niter))
       self.call_ID += 1

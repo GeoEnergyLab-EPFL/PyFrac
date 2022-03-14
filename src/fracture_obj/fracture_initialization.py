@@ -918,8 +918,11 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
         if w is None:
             w_calculated = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
+        elif not isinstance(w, np.ndarray):
+            w_calculated = np.zeros((mesh.NumberOfElts,), dtype=np.float64)
+            w_calculated[EltCrack] = np.full((EltCrack.size,), w, dtype=np.float64)
         elif w.size != mesh.NumberOfElts and not w is None:
-            raise ValueError("The given width should be an ndarray with the size equal to the number of cells in mesh!")
+            raise ValueError("The given width should be an ndarray with the size equal to the ndarrayumber of cells in mesh!")
         else:
             w_calculated = w
 
