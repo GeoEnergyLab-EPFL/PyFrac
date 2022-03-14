@@ -26,7 +26,7 @@ sim_info["Eprime"] = sim_info["youngs mod"] / (1 - sim_info["nu"] ** 2)  # plain
 sim_info["domain x"] = [-100, 100]
 
 # uniform opening
-sim_info["wset"] = 5e-4
+sim_info["wset"] = 1
 
 ## --- creating the mesh --- ##
 Mesh = CartesianMesh([-18.79048192, 18.79048192], [-13.4217728, 848.25604096], 85, 3855)
@@ -40,7 +40,7 @@ w = np.full(len(EltCrack), sim_info["wset"])
 
 
 ## --- prepare the HMat parameters --- ##
-HMATparam = [350, 10, 1e-4]
+HMATparam = [500, 10, 1e-4]
 
 ## --- load HMat --- ##
 print(f" Loading the HMat")
@@ -64,8 +64,9 @@ p_ana = C.get_normal_traction_at(Mesh.CenterCoor, Mesh.CenterCoor, w)
 
 # some plots
 rel_err_num = 100 * np.abs(sol_p - p_ana) / p_ana
-plot_as_matrix(rel_err_num, mesh=Mesh) # 2D plot
+#plot_as_matrix(rel_err_num, mesh=Mesh) # 2D plot
 #plot_3d_scatter(sol_p, Mesh.CenterCoor[:, 0], Mesh.CenterCoor[:, 1]) # 3D plot
 #plot_3d_scatter(p_ana, Mesh.CenterCoor[:, 0], Mesh.CenterCoor[:, 1])  # 3D plot
 
 print(f"     --> The max rel error is {rel_err_num.max()} [%]")
+print(f" Done ")

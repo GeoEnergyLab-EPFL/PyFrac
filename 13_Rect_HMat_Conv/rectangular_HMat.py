@@ -30,7 +30,7 @@ from src.tip.tip_inversion import StressIntensityFactor, StressIntensityFactorFr
 # ----------------------------------------------
 
 
-run = True
+run = False
 
 
 if run:
@@ -321,11 +321,14 @@ if post:
         epsilon_indexes.append(np.where(results_loaded["epsilon"] == epsilon_i)[0])
 
     ## --- define the variables to plot, y labels and the leaf size legend --- ##
-    vars = ["max rel_err", "compression ratio", "t_Hmat", "t_Dot"]
-    ylabels = ['Rel err on pressure for uniform opening DD [%]',
-               'Compression ratio [%]',
-               'Computation time for HMat [s]',
-               'Computation time for Hmat dot prodcut [s]']
+    vars = ["t_Dot"]#["max rel_err", "compression ratio", "t_Hmat", "t_Dot", "t_HmatBuild", "t_BlckClstTree", "t_BinaryClst"]
+    ylabels = ['Computation time for Hmat dot prodcut [s]']#['Rel err on pressure for uniform opening DD [%]',
+               # 'Compression ratio [%]',
+               # 'Computation time for HMat [s]',
+               # 'Computation time for Hmat dot prodcut [s]',
+               # 'Computation time for Hmat build [s]',
+               # 'Creation time for Block Cluster Tree [s]',
+               # 'Creation time for Binary Cluster Tree [s]']
 
     if plot_ar:
         colors = cmap(np.linspace(0.1, 1., len(unique_Nx), endpoint=True))
