@@ -8,7 +8,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 # external imports
 import numpy as np
-from numba import njit, prange
+from numba import njit, prange, boolean, uint16, uint64, int64
+import numba as nb
 from scipy.sparse import coo_matrix
 from numba import config
 from numba.typed import List
@@ -29,7 +30,7 @@ from utilities.utility import append_new_line
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'workqueue'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
+config.THREADING_LAYER = 'tbb'  # 'workqueue', 'threadsafe' ,'tbb', 'omp'
 
 
 @njit(parallel=True, fastmath=True, nogil=True, cache=True)  # <------parallel compilation
@@ -136,59 +137,44 @@ def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
                 C_sub[iter1, 0:dimX] = localC_toeplotz_coe[np.abs(j1 - jX) + nx * np.abs(i1 - iX)]
             return C_sub
 
+@njit(fastmath=True, nogil=True, cache=True)
+def _concat_equal1(array1, array2, out):
+    N = len(array1)
+    for i in range(N):
+        out[i] = array1[i]
 
-@njit(fastmath=True, nogil=True, parallel=True, cache=True)
-def getFast_bandedC(coeff9stencilC, elmts, nx, dtype=np.float64):
-    ##############################
-    ##  UNUSED AT THE MOMENT    ##
-    ##  NEED TO BE REWRITTEN    ##
-    ##  IN CASE OF R4 ELEM      ##
-    ##############################
-    # coeff9stencilC contains [C_0dx_0dy, C_1dx_0dy, C_0dx_1dy, C_1dx_1dy]
-    i = np.floor_divide(elmts, nx)
-    j = elmts - nx * i
-    dimX = len(elmts)
+    for i in range(N):
+        out[N+i] = array2[i]
+    return out
 
-    data = dimX * [coeff9stencilC[0]]
-    rows = [ii for ii in range(dimX)]
-    cols = [ii for ii in range(dimX)]
-    for iter1 in prange(dimX):
-        i1 = i[iter1]
-        j1 = j[iter1]
-        delta_j = np.abs(j - j1)
-        delta_i = np.abs(i - i1)
-        coeff9stencilC_array_coord = delta_j ** 3 + 2 * delta_i ** 3
-        coeff9stencilC_array_coord_bool = coeff9stencilC_array_coord < 4
-        for iter2 in range(iter1 + 1, dimX):
-            if coeff9stencilC_array_coord_bool[iter2]:
-                cols.append(iter2)
-                rows.append(iter1)
-                data.append(coeff9stencilC[coeff9stencilC_array_coord[iter2]])
-                cols.append(iter1)
-                rows.append(iter2)
-                data.append(coeff9stencilC[coeff9stencilC_array_coord[iter2]])
-
-    return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype).tocsc()
-
+@njit(fastmath=True, nogil=True, cache=True)
+def concat_equal1(array1, array2):
+    out = np.empty(shape=(2 * len(array1)))
+    return _concat_equal1(array1, array2, out)
 
 @njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
-def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
+def getSuperFast_sparseC_smooth(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
+    # this is not faster than its non smooth version but it provides a better approximation for the preconditioner
+    # this has been disable in order to achieve better performances for 10^6 elements
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
     dimX = len(elmts)
-    self_c = C_toeplitz_coe[0]
+    self_c = 0.5 * C_toeplitz_coe[0]
+    # self_c = C_toeplitz_coe[0]
     #myR = range(dimX)
     data = List()
     rows = List()
     cols = List()
     i *= nx
     for iter1 in prange(dimX):
-        index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
+        #index = np.abs(j - j[iter1]) + np.abs(i - i[iter1])
+        index = np.abs(j[:iter1] - j[iter1]) + np.abs(i[:iter1] - i[iter1])
         # self effect
         data.append(self_c)
         rows.append(iter1)
         cols.append(iter1)
-        for iter2 in range(iter1 + 1, dimX):
+        #for iter2 in range(iter1 + 1, dimX):
+        for iter2 in range(iter1):
             ii2 = index[iter2]
             if C_toeplitz_coe_decay[ii2] > decay_tshold:# and random.random() < probability:
             #if C_toeplitz_coe_decay[ii2] > decay_tshold:
@@ -196,18 +182,140 @@ def getFast_sparseC(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshol
                 rows.append(iter1)
                 data.append(C_toeplitz_coe[ii2])
                 # symmetry
-                rows.append(iter2)
-                cols.append(iter1)
-                data.append(C_toeplitz_coe[ii2])
-
+                # rows.append(iter2)
+                # cols.append(iter1)
+                # data.append(C_toeplitz_coe[ii2])
+    # symmetry
+    rows_new = concat_equal1(rows,cols)
+    cols = concat_equal1(cols,rows)
+    data = concat_equal1(data,data)
 
     # import matplotlib
     # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
 
     # fill ratio:
     # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
-    return data, rows, cols, dimX
+    return data, rows_new, cols, dimX
+    #return data, rows, cols, dimX
 
+@njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
+def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
+    i = np.floor_divide(elmts, nx)
+    j = elmts - nx * i
+    dimX = len(elmts)
+    self_c = 0.5 * coeff9stencilC[4]
+
+    data = List()
+    rows = List()
+    cols = List()
+
+    for iter1 in prange(dimX):
+        dj = (j[:iter1] - j[iter1])
+        di = (i[:iter1] - i[iter1])
+        # self effect
+        data.append(self_c)
+        rows.append(iter1)
+        cols.append(iter1)
+        for iter2 in range(iter1):
+            ii2_a = dj[iter2]
+            ii2_b = di[iter2]
+            if ii2_a < 2 and ii2_b < 2 and ii2_a > -2 and ii2_b > -2 :
+                cols.append(iter2)
+                rows.append(iter1)
+                data.append(coeff9stencilC[([[0, 1, 2], [3, 4, 5], [6, 7, 8]])[ii2_a + 1][ii2_b + 1]])
+
+    # symmetry
+    rows_new = concat_equal1(rows,cols)
+    cols = concat_equal1(cols,rows)
+    data = concat_equal1(data,data)
+
+    # import matplotlib
+    # matplotlib.pyplot.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=dtype))
+
+    # fill ratio:
+    # print('fill ratio ' + str(100*len(data)/(dimX*dimX)))
+    return data, rows_new, cols, dimX
+    #return data, rows, cols, dimX
+
+#@njit(fastmath=True, nogil=True, cache=True, parallel = True)
+def getFast_sparseC(coeff9stencilC, elmts, nx):
+    """
+    Relative position and numbering:
+    o---o---o---o
+    | 0 | 1 | 2 |
+    o---o---o---o
+    | 3 | 4 | 5 |
+    o---o---o---o
+    | 6 | 7 | 8 |
+    o---o---o---o
+                            0,   1,   2,   3,   4,   5,   6,  7,  8
+    coeff9stencilC =     [diag, dy, diag, dx, self, dx, diag, dy, diag ]
+    o---o---o---o
+    | 3 | 2 | 3 |
+    o---o---o---o
+    | 1 | 0 | 1 |
+    o---o---o---o
+    | 3 | 2 | 3 |
+    o---o---o---o
+    """
+    dimX = len(elmts)
+    interactions_BOOL = np.full((dimX, 9), False) #, dtype=boolean)
+    interactions_PAIRS = np.zeros((dimX, 9))
+
+
+    i = np.floor_divide(elmts, nx)
+    j = elmts - nx * i
+
+    for ii in prange(0, int(dimX*(dimX+1)/2)):
+        position_table = np.asarray([[0, 1, 2], [3, 4, 5], [6, 7, 8]])#,dtype=uint16)
+        source = int(np.floor_divide((-1 + np.sqrt(1 + 8 * ii)),2))
+        receiver = int(ii - source*(source+1)/2)
+        #source_ID = elmts[source]
+        #receiver_ID = elmts[receiver]
+        dip1 = i[source] - i[receiver] + 1
+        djp1 = j[source] - j[receiver] + 1
+
+        if dip1 in range(3):
+            if djp1 in range(3):
+                interactions_BOOL[source,position_table[dip1, djp1]] = True
+                interactions_PAIRS[source, position_table[dip1, djp1]] = receiver
+
+
+    size_of_output_symm = np.sum(interactions_BOOL)
+    size_of_output_NoSelfEff = 2 * (size_of_output_symm - dimX)
+    size_of_output = size_of_output_NoSelfEff + dimX
+    data = np.zeros(size_of_output, dtype=np.float64)
+    rows = np.zeros(size_of_output)
+    cols = np.zeros(size_of_output)
+
+
+    index_results = np.zeros(dimX, dtype=int) #, dtype=int64)
+    cumulative_index = 0
+    for ii in range(dimX):
+        cumulative_index = int(cumulative_index + 2 * (np.sum(interactions_BOOL[ii, :]) - 1))
+        index_results[ii] = int(cumulative_index)
+
+    for ii in prange(dimX):
+        starting_index = index_results[ii]
+        for jj in [0,1,2,3,5,6,7,8]: # missing 4 because it is the self effect
+            if interactions_BOOL[ii,jj]:
+                data[starting_index] = coeff9stencilC[jj]
+                rows[starting_index] = interactions_PAIRS[ii,jj]
+                cols[starting_index] = ii
+                starting_index = starting_index + 1
+                data[starting_index] = coeff9stencilC[jj]
+                rows[starting_index] = ii
+                cols[starting_index] = interactions_PAIRS[ii,jj]
+                starting_index = starting_index + 1
+
+    for ii in prange(dimX):
+        # writing the self effect
+        index =  size_of_output_NoSelfEff + ii
+        data[index] = coeff9stencilC[4]
+        rows[index] = ii
+        cols[index] = ii
+
+    return data, rows, cols, dimX
 
 class elasticity_matrix_toepliz(LinearOperator):
     """
@@ -231,11 +339,12 @@ class elasticity_matrix_toepliz(LinearOperator):
     """
 
     def __init__(self, Mesh, mat_prop, elas_prop_HMAT, C_precision=np.float64, useHMATdot=False,
-                 kerneltype = 'Isotropic_R4',
+                 kerneltype = 'Isotropic_R0',
                  HMATparam = None,
                  f_matvec_fast = matvec_fast,
                  f_getFast = getFast,
-                 f_getFast_sparseC = getFast_sparseC):
+                 f_getFast_sparseC = getSuperFast_sparseC #getFast_sparseC
+                 ):
         """
             Arguments:
                 Mesh:                           -- Cartesian Mesh object
@@ -298,9 +407,9 @@ class elasticity_matrix_toepliz(LinearOperator):
         #################### HMAT dot SECTION ###################
         if self.updateHMATuponRemeshing:
             if self.HMATparam is None:
-                self.max_leaf_size = 100
-                self.eta = 5
-                self.eps_aca = 1.e-6
+                self.max_leaf_size = 750
+                self.eta = 8
+                self.eps_aca = 1.e-4
                 self.HMATtract = None
             else:
                 self.max_leaf_size = self.HMATparam[0]
@@ -318,7 +427,10 @@ class elasticity_matrix_toepliz(LinearOperator):
                 SystemExit("HMAT not implemented for kerneltype different from Isotropic_R0")
 
             # HMATcreationTime = -time.time()
+            hmattime = -time.time()
             self.HMAT.set(data)
+            hmattime = hmattime + time.time()
+            print(f'TOTAL TIME HMAT minutes : {hmattime/60. : 0.2f} ')
             # self.HMATcreationTime.append(HMATcreationTime + time.time())
             # self._get_full_blocks(Mesh.VertexCoor, Mesh.Connectivity, elas_prop)
         ################ END HMAT dot SECTION ######################
@@ -345,12 +457,18 @@ class elasticity_matrix_toepliz(LinearOperator):
             C_toeplitz_coe_exp = C_toeplitz_coe_exp / C_toeplitz_coe_exp[0]
             self.C_toeplitz_coe_decay = List(C_toeplitz_coe_exp.tolist())  # between 0 and 1
 
-        #### NOT USED: IN THE FUTURE IT CAN BE DELETED WITH THE RELATED FUNCTION #####
-        # self.coeff9stencilC = [self.C_toeplitz_coe[0],  # 0 dx 0 dy
-        #                        self.C_toeplitz_coe[1],  # 1 dx 0 dy
-        #                        self.C_toeplitz_coe[nx],  # 0 dx 1 dy
-        #                        self.C_toeplitz_coe[nx + 1]  # 1 dx 1 dy
-        #                        ]
+
+        #coeff9stencilC = [diag, dy, diag, dx, self, dx, diag, dy, diag]
+        self.coeff9stencilC = np.asarray([self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
+                               self.C_toeplitz_coe[nx],      # 0 dx 1 dy - dy
+                               self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
+                               self.C_toeplitz_coe[1],       # 1 dx 0 dy - dx
+                               self.C_toeplitz_coe[0],       # 0 dx 0 dy - self
+                               self.C_toeplitz_coe[1],       # 1 dx 0 dy - dx
+                               self.C_toeplitz_coe[nx + 1],  # 1 dx 1 dy - diag
+                               self.C_toeplitz_coe[nx],      # 0 dx 1 dy - dy
+                               self.C_toeplitz_coe[nx + 1]   # 1 dx 1 dy - diag
+                               ])
 
         # define the size = number of elements in the mesh
         self.C_size_ = int(Mesh.nx * Mesh.ny)
@@ -538,9 +656,15 @@ class elasticity_matrix_toepliz(LinearOperator):
 
 
     def _get9stencilC(self, elmts, decay_tshold=0.9, probability=0.15):
-        data, rows, cols, dimX = self.f_getFast_sparseC(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
-                                                 elmts, self.nx,
-                                                 decay_tshold=decay_tshold, probability=probability)
+        # data1, rows1, cols1, dimX1 = getSuperFast_sparseC_smooth(self.C_toeplitz_coe, self.C_toeplitz_coe_decay,
+        #                                          elmts, self.nx,
+        #                                          decay_tshold=decay_tshold, probability=probability)
+
+        data, rows, cols, dimX = self.f_getFast_sparseC(self.coeff9stencilC,elmts, self.nx)
+
+        # to see the matrix
+        # import matplotlib.pylab as plt
+        # plt.spy(coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=self.C_precision).tocsc())
         return coo_matrix((data, (rows, cols)), shape=(dimX, dimX), dtype=self.C_precision).tocsc()
 
 
@@ -551,7 +675,8 @@ class elasticity_matrix_toepliz(LinearOperator):
             # set the functions needed for the dot product
             self.f_matvec_fast = matvec_fast
             self.f_getFast = getFast
-            self.f_getFast_sparseC = getFast_sparseC
+            #self.f_getFast_sparseC = getFast_sparseC
+            self.f_getFast_sparseC = getSuperFast_sparseC
 
             # set the matrix coeff.
             self.diag_val_pause = self.diag_val

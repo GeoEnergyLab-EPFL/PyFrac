@@ -220,7 +220,12 @@ class Fracture:
         self.timeStep_last = None
         # setting arrival time to current time (assuming leak off starts at the time the fracture is initialized)
         self.Tarrival = np.full((self.mesh.NumberOfElts,), np.nan, dtype=np.float64)
-        self.Tarrival[self.EltCrack] = self.time
+
+        if solid.Carters_t0 is not None:
+            self.Tarrival[self.EltCrack] = solid.Carters_t0
+        else:
+            self.Tarrival[self.EltCrack] = self.time
+
         self.LkOff = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
         self.LkOffTotal = 0.
         self.efficiency = 1.
@@ -517,9 +522,23 @@ class Fracture:
 
     def SaveFracture(self, filename):
         """ This function saves the fracture object to a file on hard dist using dill module"""
+        # temporary copy
+        mesh_obj = copy.deepcopy(self.mesh)
 
+        # removing the mesh from the fracture object and storing the minimal info to it
+        domainLimits = copy.deepcopy(self.mesh.domainLimits)
+        nx = copy.deepcopy(self.mesh.nx)
+        ny = copy.deepcopy(self.mesh.ny)
+        mesh_dict = {'domain Limits' : domainLimits,
+                     'nx': nx,
+                     'ny': ny}
+        self.mesh = mesh_dict
         with open(filename, 'wb') as output:
             dill.dump(self, output, -1)
+
+        # restoring the mesh
+        self.mesh = mesh_obj
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 
@@ -1560,11 +1579,11 @@ class Fracture:
         Fr.mesh = newMesh # the new mesh
 
         #plot the new front and the old one together
-        from level_set.continuous_front_reconstruction import plot_xy_points, get_xy_from_Ffront
-        x, y = get_xy_from_Ffront(Fr.Ffront)
-        plot_xy_points(Fr.front_region, newMesh, Fr.sgndDist, Fr.EltRibbon, x, y, fig=None, annotate_cellName=False,
-                       annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=oldfront, joinPoints=True,
-                       disregard_plus=False)
+        # from level_set.continuous_front_reconstruction import plot_xy_points, get_xy_from_Ffront
+        # x, y = get_xy_from_Ffront(Fr.Ffront)
+        # plot_xy_points(Fr.front_region, newMesh, Fr.sgndDist, Fr.EltRibbon, x, y, fig=None, annotate_cellName=False,
+        #                annotate_edgeName=False, annotatePoints=True, grid=True, oldfront=oldfront, joinPoints=True,
+        #                disregard_plus=False)
         return Solid, Fr
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1590,35 +1609,36 @@ class Fracture:
         moving = np.arange(self.EltRibbon.shape[0])[~np.in1d(self.EltRibbon, self.EltRibbon[stagnant])]
 
         for i in moving:
-            if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
-                log.debug('Why nan distance?')
-            wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
-            wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
-                 * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
-            wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel[i] * mat_prop.Cprime[self.EltRibbon[i]] ** 2
-                                     / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
+            if vel[i] != 0.:
+                if np.isnan(self.sgndDist[self.EltRibbon[i]]).any():
+                    log.debug('Why nan distance?')
+                wk = mat_prop.Kprime[self.EltRibbon[i]] / mat_prop.Eprime * (abs(self.sgndDist[self.EltRibbon[i]])) ** (1/2)
+                wm = beta_m * (fluid_prop.muPrime * vel[i] / mat_prop.Eprime) ** (1/3)\
+                     * (abs(self.sgndDist[self.EltRibbon[i]])) ** (2/3)
+                wmtilde = beta_mtilde * (4 * fluid_prop.muPrime ** 2 * vel[i] * mat_prop.Cprime[self.EltRibbon[i]] ** 2
+                                         / mat_prop.Eprime ** 2) ** (1/8) * (abs(self.sgndDist[self.EltRibbon[i]])) ** (5/8)
 
-            nk = wk / (self.w[self.EltRibbon[i]] - wk)
-            nm = wm / (self.w[self.EltRibbon[i]] - wm)
-            nmtilde = wmtilde / (self.w[self.EltRibbon[i]] - wmtilde)
+                nk = wk / (self.w[self.EltRibbon[i]] - wk)
+                nm = wm / (self.w[self.EltRibbon[i]] - wm)
+                nmtilde = wmtilde / (self.w[self.EltRibbon[i]] - wmtilde)
 
-            Nk = nk / (nk + nm + nmtilde)
-            Nm = nm / (nk + nm + nmtilde)
-            Nmtilde = nmtilde / (nk + nm + nmtilde)
+                Nk = nk / (nk + nm + nmtilde)
+                Nm = nm / (nk + nm + nmtilde)
+                Nmtilde = nmtilde / (nk + nm + nmtilde)
 
-            if Nk > 1.:
-                Nk = 1
-            elif Nk < 0.:
-                Nk = 0
-            if Nm > 1.:
-                Nm = 1
-            elif Nm < 0.:
-                Nm = 0
-            if Nmtilde > 1.:
-                Nmtilde = 1
-            elif Nmtilde < 0.:
-                Nmtilde = 0
+                if Nk > 1.:
+                    Nk = 1
+                elif Nk < 0.:
+                    Nk = 0
+                if Nm > 1.:
+                    Nm = 1
+                elif Nm < 0.:
+                    Nm = 0
+                if Nmtilde > 1.:
+                    Nmtilde = 1
+                elif Nmtilde < 0.:
+                    Nmtilde = 0
 
-            self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
+                self.regime_color[self.EltRibbon[i], ::] = np.transpose(np.vstack((Nk, Nmtilde, Nm)))
 
 # -----------------------------------------------------------------------------------------------------------------------

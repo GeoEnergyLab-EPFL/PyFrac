@@ -32,7 +32,7 @@ restart= True
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(0.5, 0.5, 155, 155)
+    Mesh = CartesianMesh(0.25, 0.25, 95, 95)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
@@ -98,10 +98,10 @@ if run:
     simulProp.tHyst__ = []
 
     # setting up mesh extension options
-    simulProp.meshExtensionAllDir = True
-    simulProp.set_mesh_extension_factor(1.5)
-    # simulProp.set_mesh_extension_direction(['vertical'])
-    simulProp.meshReductionPossible = False
+    # simulProp.meshExtensionAllDir = True
+    # simulProp.set_mesh_extension_factor(1.5)
+    # # simulProp.set_mesh_extension_direction(['vertical'])
+    # simulProp.meshReductionPossible = False
 
     simulProp.simID = 'mtok' # do not use _
 

@@ -16,14 +16,14 @@ import os
 import re
 import sys
 import json
+from typing import Dict
+import copy
 
 # Internal Imports
 from systems.make_sys_common_fun import calculate_fluid_flow_characteristics_laminar
 from utilities.utility import ReadFracture
 from HF_reference_solutions import HF_analytical_sol, get_fracture_dimensions_analytical
 from utilities.labels import *
-# import FractureInitialization
-
 
 if 'win32' in sys.platform or 'win64' in sys.platform:
     slash = '\\'
@@ -55,6 +55,8 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         fracture_list(list):            -- a list of fractures.
 
     """
+    from src.mesh_obj.mesh import CartesianMesh
+
     log = logging.getLogger('PyFrac.load_fractures')
     log.info('Returning fractures...')
 
@@ -136,6 +138,11 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
 
+    for num, fr in enumerate(fracture_list):
+        if isinstance(fr.mesh, Dict):
+            mesh_dict = copy.deepcopy(fr.mesh)
+            fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
+                          mesh_dict['nx'], mesh_dict['ny'])
     return fracture_list, properties
 
 

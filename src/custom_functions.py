@@ -12,8 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def getH__(Ffront):
-    return np.abs(np.max(np.hstack((Ffront[::, 1], Ffront[::, 3]))) - np.min(np.hstack((Ffront[::, 1], Ffront[::, 3]))))
+
 
 def update_limits(x1, x2, xmax, xmin):
     #the following function updates x and y
@@ -61,14 +60,72 @@ def getwAtMovingCenter__(fr):
 def getwmax__(w):
     return w.max()
 
+def get_fracture_sizes(Fr):
+    # Now we are at a given time step.
+    # This function returns the coordinates of the smallest rectangle containing the fracture footprint
+
+    x_min_temp = 0.
+    x_max_temp = 0.
+    y_min_temp = 0.
+    y_max_temp = 0.
+    hx = Fr.mesh.hx; hy = Fr.mesh.hy
+    # loop over the segments defining the fracture front
+    for i in range(Fr.Ffront.shape[0]):
+        segment = Fr.Ffront[i]
+
+        # to find the x_max at this segment:
+        if segment[0] > x_max_temp and np.abs(segment[1])<2.*hy:
+            x_max_temp = segment[0]
+        if segment[2] > x_max_temp and np.abs(segment[3])<2.*hy:
+            x_max_temp = segment[2]
+
+        # to find the n_min at this segment:
+        if segment[0] < x_min_temp and np.abs(segment[1])<2.*hy:
+            x_min_temp = segment[0]
+        if segment[2] < x_min_temp and np.abs(segment[3])<2.*hy:
+            x_min_temp = segment[2]
+
+        # to find the y_max at this segment:
+        if segment[1] > y_max_temp and np.abs(segment[0])<2.*hx:
+            y_max_temp = segment[1]
+        if segment[3] > y_max_temp and np.abs(segment[2])<2.*hx:
+            y_max_temp = segment[3]
+
+        # to find the y_min at this segment:
+        if segment[1] < y_min_temp and np.abs(segment[0])<2.*hx:
+            y_min_temp = segment[1]
+        if segment[3] < y_min_temp and np.abs(segment[2])<2.*hx:
+            y_min_temp = segment[3]
+
+    return x_min_temp, x_max_temp, y_min_temp, y_max_temp
+
+def getH__(Ffront):
+    return np.abs(np.max(np.hstack((Ffront[::, 1], Ffront[::, 3]))) - np.min(np.hstack((Ffront[::, 1], Ffront[::, 3]))))
+
+def getASPECTRATIO__(Ffront):
+    xmax, xmin, ymax, ymin = getFfrontBounds__(Ffront)
+    Lhalf = (np.abs(xmax) + np.abs(xmin))/2.
+    Hhalf = (np.abs(ymax) + np.abs(ymin)) / 2.
+    return Hhalf/Lhalf
+
+def getwAtMovingCenter__(fr):
+    xmax, xmin, ymax, ymin = getFfrontBounds__(fr.Ffront)
+    xmean = 0.5 * (xmax + xmin)
+    ymean = 0.5 * (ymax + ymin)
+    elem_id = fr.mesh.locate_element(xmean, ymean)
+    return fr.w[elem_id]
+
 def apply_custom_prop(sim_prop, fr):
-    #sim_prop.LHyst__.append(getASPECTRATIO__(fr.Ffront))
+    x_min_n, x_max_n, y_min_n, y_max_n = get_fracture_sizes(fr)
+    sim_prop.tHyst__.append(y_max_n/sim_prop.xlim)
     #sim_prop.LHyst__.append(getL__(fr.Ffront))
     #sim_prop.LHyst__.append(getwmax__(fr.w))
     #sim_prop.LHyst__.append(getwmax__(fr.pFluid))
     #sim_prop.LHyst__.append(getwAtMovingCenter__(fr))
+    sim_prop.LHyst__.append(x_max_n/sim_prop.xlim)
     sim_prop.HHyst__.append(getH__(fr.Ffront))
     sim_prop.tHyst__.append(fr.time)
+
 
 def custom_plot(sim_prop, fig = None):
     if fig is None:
