@@ -1421,13 +1421,21 @@ class Controller:
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
         log.info("Recalculting the elasticity matrix")
+        updateHMATuponRemeshing = copy.deepcopy(self.C.updateHMATuponRemeshing)
+        nu = copy.deepcopy(self.C.nu)
+        Kernel=copy.deepcopy(self.C.Kernel)
+        HMATparam =copy.deepcopy(self.C.HMATparam)
+        if updateHMATuponRemeshing:
+            self.C.HMAT._unset()
+            log.info("   --> memory of the old elasticity matrix is now free")
 
         self.C = load_isotropic_elasticity_matrix_toepliz(coarse_mesh,
                                                           self.solid_prop.Eprime,
                                                           C_precision = np.float64,
-                                                          useHMATdot = self.C.updateHMATuponRemeshing,
-                                                          nu = self.C.nu,
-                                                          Kernel = self.C.Kernel)
+                                                          useHMATdot = updateHMATuponRemeshing,
+                                                          nu = nu,
+                                                          HMATparam=HMATparam,
+                                                          Kernel = Kernel)
 
         # Ensuring that we always use block topliz compression.
         if not self.sim_prop.useBlockToeplizCompression:
