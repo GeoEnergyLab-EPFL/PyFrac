@@ -33,7 +33,8 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False,
+                   load_meshes=True):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -50,6 +51,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         step_size (int):                -- the number of time steps to skip before loading the next fracture. If not
                                            provided, all of the fractures will be loaded.
         load_all (bool):                -- avoid jumping time steps too close to each other
+        laod_meshes (bool):             -- boolean to decide if the meshes should be loaded.
 
     Returns:
         fracture_list(list):            -- a list of fractures.
@@ -138,11 +140,12 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
 
-    for num, fr in enumerate(fracture_list):
-        if isinstance(fr.mesh, Dict):
-            mesh_dict = copy.deepcopy(fr.mesh)
-            fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
-                          mesh_dict['nx'], mesh_dict['ny'])
+    if load_meshes:
+        for num, fr in enumerate(fracture_list):
+            if isinstance(fr.mesh, Dict):
+                mesh_dict = copy.deepcopy(fr.mesh)
+                fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
+                              mesh_dict['nx'], mesh_dict['ny'])
     return fracture_list, properties
 
 
