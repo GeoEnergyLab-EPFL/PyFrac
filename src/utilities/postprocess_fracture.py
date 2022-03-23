@@ -166,14 +166,8 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
     if load_all_meshes:
         convert_meshDict_to_mesh(fracture_list)
-        distinct_meshes = [fr.mesh for fr in fracture_list]
-        for num, fr in enumerate(fracture_list):
-            fr.mesh = num
-        # for num, fr in enumerate(fracture_list):
-        #     if isinstance(fr.mesh, Dict):
-        #         mesh_dict = copy.deepcopy(fr.mesh)
-        #         fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
-        #                       mesh_dict['nx'], mesh_dict['ny'])
+
+        return fracture_list, properties
     else:
         #--- instantiate the list ---#
         distinct_meshes = list()
@@ -201,22 +195,17 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                         distinct_meshes.append(fr.mesh)
                         meshCounter += 1
 
-                    fr.mesh = meshCounter
-                elif isinstance(fr.mesh, CartesianMesh):
+                else:
                     if fr.mesh != distinct_meshes[-1]:
-                        distinct_meshes.appnd(fr.mesh)
+                        distinct_meshes.append(fr.mesh)
                         meshCounter += 1
                         intDict = {'domain Limits' : fr.mesh.domainLimits,
                                    'nx': fr.mesh.nx,
                                    'ny': fr.mesh.ny}
 
-                    fr.mesh = meshCounter
-                    # here compare the mesh to the last entry. If so create the dict from it.
-                    distinct_meshes.append(fr.mesh)
-                    current_ind = num
+                fracture_list[num].mesh = meshCounter
 
-
-    return fracture_list, properties, distinct_meshes
+        return fracture_list, properties, distinct_meshes
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -1476,6 +1465,85 @@ def get_fracture_geometric_parameters(fr_list):
 
     return out_dict
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_head_volume(fr_list, geometric_data=None):
+    # get the geometric data if necessary
+    if geometric_data == None:
+        geometric_data = get_fracture_geometric_parameters(fr_list)
+    # instantiate head and total volume
+    v_head = np.full((len(fr_list), 1), np.nan)
+    v_tot = np.full((len(fr_list), 1), np.nan)
+    #loop over time steps to get the volume
+    iter = 0
+    for jk in fr_list:
+        z_head = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))-geometric_data['lhead'][iter]
+        el_head_tip = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
+        el_head_channel = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
+        v_head[iter] = (np.sum(jk.w[jk.EltChannel[el_head_channel]]) + np.sum(jk.w[jk.EltTip[el_head_tip]] *
+                                                                              jk.FillF[el_head_tip])) * jk.mesh.EltArea
+        v_tot[iter] = jk.mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
+        iter += 1
+    return v_tot.flatten(), v_head.flatten()
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def init_list_of_objects(size):
+    list_of_objects = list()
+    for i in range(0, size):
+        list_of_objects.append(list()) #different object reference each time
+    return list_of_objects
+
+#-----------------------------------------------------------------------------------------------------------------------
+def get_breadth_at_point(Fr_list, points):
+
+    log = logging.getLogger('PyFrac.get_front_intercepts')
+    breadth = init_list_of_objects(len(Fr_list))
+    Az = init_list_of_objects(len(Fr_list))
+    for p in range(len(points)):
+        for Fr in range(len(Fr_list)):
+            if p == 0:
+                breadth[Fr] = len(points) * [0.]
+                Az[Fr] = len(points) * [0.]
+            fr = Fr_list[Fr]
+            intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
+            pnt_cell = fr.mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
+            if pnt_cell not in fr.EltChannel:
+                log.warning("Point is not inside fracture!")
+            else:
+                pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]  # the y coordinate of the cell
+                cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0] # all the cells with the same y coord
+                tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)  # the tip cells with the same y coord
+
+                # find out the left and right cells
+                cells_left = tipCells_x_axis[fr.mesh.CenterCoor[tipCells_x_axis, 0] < fr.mesh.CenterCoor[pnt_cell, 0]]
+                cells_right = tipCells_x_axis[fr.mesh.CenterCoor[tipCells_x_axis, 0] > fr.mesh.CenterCoor[pnt_cell, 0]]
+                lft_cell = cells_left[abs(fr.mesh.CenterCoor[cells_left, 0] - fr.mesh.CenterCoor[pnt_cell, 0]) ==
+                                      min(abs(fr.mesh.CenterCoor[cells_left, 0] - fr.mesh.CenterCoor[pnt_cell, 0]))]
+                rgt_cell = cells_right[abs(fr.mesh.CenterCoor[pnt_cell, 0] - fr.mesh.CenterCoor[cells_right, 0]) ==
+                                      min(abs(fr.mesh.CenterCoor[pnt_cell, 0] - fr.mesh.CenterCoor[cells_right, 0]))]
+
+                lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+                rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+
+                # find the intersection using the equations of the front lines in the tip cells
+                if lft_in_tip.size > 0:
+                    intrcp_lft = (points[p][1] - fr.Ffront[lft_in_tip, 3]) / \
+                                 (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                         fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                                 fr.Ffront[lft_in_tip, 2]
+
+                if rgt_in_tip.size > 0:
+                    intrcp_rgt = (points[p][1] - fr.Ffront[rgt_in_tip, 3]) / \
+                                 (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                         fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                                 fr.Ffront[rgt_in_tip, 2]
+
+                breadth[Fr][p] = intrcp_rgt[0]-intrcp_lft[0]
+
+                Az[Fr][p] = np.sum(fr.w[cells_x_axis]) * fr.mesh.hx
+
+    return breadth, Az
 
 #-----------------------------------------------------------------------------------------------------------------------
 
