@@ -164,48 +164,40 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
 
-    if load_all_meshes:
-        convert_meshDict_to_mesh(fracture_list)
+    #--- instantiate the list ---#
+    intDict = []
 
-        return fracture_list, properties
+    #--- do the first instance ---#
+    if isinstance(fracture_list[0].mesh, Dict):
+        intDict = copy.deepcopy(fracture_list[0].mesh)
+        convert_meshDict_to_mesh(fracture_list[0])
+        distinct_mesh = fracture_list[0].mesh
     else:
-        #--- instantiate the list ---#
-        distinct_meshes = list()
-        intDict = []
-        meshCounter = 0
+        distinct_mesh = fracture_list[0].mesh
 
-        #--- do the first instance ---#
-        if isinstance(fracture_list[0].mesh, Dict):
-            intDict = copy.deepcopy(fracture_list[0].mesh)
-            convert_meshDict_to_mesh(fracture_list[0])
-            distinct_meshes.append(fracture_list[0].mesh)
-        else:
-            distinct_meshes.append(fracture_list[0].mesh)
+    fracture_list[0].mesh = distinct_mesh
 
-        fracture_list[0].mesh = meshCounter
+    #--- loop over the rest ---#
+    for num, fr in enumerate(fracture_list):
+        if num != 0:
+            if isinstance(fr.mesh, Dict):
+                if not ((fr.mesh["domain Limits"] == intDict["domain Limits"]).all() and
+                        fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
+                    intDict = copy.deepcopy(fr.mesh)
+                    convert_meshDict_to_mesh(fr)
+                    distinct_mesh = fr.mesh
 
-        #--- loop over the rest ---#
-        for num, fr in enumerate(fracture_list):
-            if num != 0:
-                if isinstance(fr.mesh, Dict):
-                    if not ((fr.mesh["domain Limits"] == intDict["domain Limits"]).all() and
-                            fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
-                        intDict = copy.deepcopy(fr.mesh)
-                        convert_meshDict_to_mesh(fr)
-                        distinct_meshes.append(fr.mesh)
-                        meshCounter += 1
+            else:
+                if fr.mesh != distinct_mesh:
+                    distinct_mesh = fr.mesh
+                    intDict = {'domain Limits' : fr.mesh.domainLimits,
+                               'nx': fr.mesh.nx,
+                               'ny': fr.mesh.ny}
 
-                else:
-                    if fr.mesh != distinct_meshes[-1]:
-                        distinct_meshes.append(fr.mesh)
-                        meshCounter += 1
-                        intDict = {'domain Limits' : fr.mesh.domainLimits,
-                                   'nx': fr.mesh.nx,
-                                   'ny': fr.mesh.ny}
+            fracture_list[num].mesh = distinct_mesh
 
-                fracture_list[num].mesh = meshCounter
 
-        return fracture_list, properties, distinct_meshes
+    return fracture_list, properties
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -510,11 +502,24 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
     else:
         for i in range(len(fracture_list)):
             if variable in bidimensional_variables:
-                value_point = griddata(fracture_list[i].mesh.CenterCoor,
-                                       var_values[i],
+                ind = fracture_list[i].mesh.locate_element(point[0][0], point[0][1])[0]
+                xmin = fracture_list[i].mesh.CenterCoor[ind][0] - 3 * fracture_list[i].mesh.cellDiag
+                xmax = fracture_list[i].mesh.CenterCoor[ind][0] + 3 * fracture_list[i].mesh.cellDiag
+                ymin = fracture_list[i].mesh.CenterCoor[ind][1] - 3 * fracture_list[i].mesh.cellDiag
+                ymax = fracture_list[i].mesh.CenterCoor[ind][1] + 3 * fracture_list[i].mesh.cellDiag
+                indBox = fracture_list[i].mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
+
+                value_point = griddata(fracture_list[i].mesh.CenterCoor[indBox],
+                                       var_values[i][indBox],
                                        point,
                                        method='linear',
                                        fill_value=np.nan)
+                # interpolate the neighbours of the element only
+                # value_point = griddata(fracture_list[i].mesh.CenterCoor,
+                #                        var_values[i],
+                #                        point,
+                #                        method='linear',
+                #                        fill_value=np.nan)
                 if np.isnan(value_point):
                     log.warning('Point outside fracture.')
 
