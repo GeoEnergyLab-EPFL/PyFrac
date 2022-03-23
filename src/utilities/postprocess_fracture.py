@@ -31,6 +31,30 @@ else:
     slash = '/'
 
 #-----------------------------------------------------------------------------------------------------------------------
+def convert_meshDict_to_mesh(fracture_list):
+    """
+
+    :return:
+    """
+    from src.mesh_obj.mesh import CartesianMesh
+    from src.fracture_obj.fracture import Fracture
+
+    if isinstance(fracture_list, list):
+        for num, fr in enumerate(fracture_list):
+            if isinstance(fr.mesh, Dict):
+                mesh_dict = copy.deepcopy(fr.mesh)
+                fracture_list[num].mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
+                                                        mesh_dict['domain Limits'][[0, 1]].tolist(),
+                                                        mesh_dict['nx'], mesh_dict['ny'])
+
+    else:
+        if isinstance(fracture_list.mesh, Dict):
+            mesh_dict = copy.deepcopy(fracture_list.mesh)
+            fracture_list.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
+                                               mesh_dict['domain Limits'][[0, 1]].tolist(),
+                                               mesh_dict['nx'], mesh_dict['ny'])
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False,
@@ -141,49 +165,58 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         raise ValueError("Fracture list is empty")
 
     if load_all_meshes:
-        # convert_meshDict_to_mesh(fracture_list)
-        # distinct_meshes = False
+        convert_meshDict_to_mesh(fracture_list)
+        distinct_meshes = [fr.mesh for fr in fracture_list]
         for num, fr in enumerate(fracture_list):
-            if isinstance(fr.mesh, Dict):
-                mesh_dict = copy.deepcopy(fr.mesh)
-                fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
-                              mesh_dict['nx'], mesh_dict['ny'])
+            fr.mesh = num
+        # for num, fr in enumerate(fracture_list):
+        #     if isinstance(fr.mesh, Dict):
+        #         mesh_dict = copy.deepcopy(fr.mesh)
+        #         fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
+        #                       mesh_dict['nx'], mesh_dict['ny'])
     else:
+        #--- instantiate the list ---#
         distinct_meshes = list()
+        intDict = []
+        meshCounter = 0
+
+        #--- do the first instance ---#
+        if isinstance(fracture_list[0].mesh, Dict):
+            intDict = copy.deepcopy(fracture_list[0].mesh)
+            convert_meshDict_to_mesh(fracture_list[0])
+            distinct_meshes.append(fracture_list[0].mesh)
+        else:
+            distinct_meshes.append(fracture_list[0].mesh)
+
+        fracture_list[0].mesh = meshCounter
+
+        #--- loop over the rest ---#
         for num, fr in enumerate(fracture_list):
-            test = hi
-            # if isinstance(fr.mesh, Dict):
-            #
-            #     if isinstance(fr.mesh, Dict):
-            #     convert_meshDict_to_mesh(fr)
-            #     distinct_meshes.append(fr.mesh)
-            #     current_ind = num
+            if num != 0:
+                if isinstance(fr.mesh, Dict):
+                    if not ((fr.mesh["domain Limits"] == intDict["domain Limits"]).all() and
+                            fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
+                        intDict = copy.deepcopy(fr.mesh)
+                        convert_meshDict_to_mesh(fr)
+                        distinct_meshes.append(fr.mesh)
+                        meshCounter += 1
+
+                    fr.mesh = meshCounter
+                elif isinstance(fr.mesh, CartesianMesh):
+                    if fr.mesh != distinct_meshes[-1]:
+                        distinct_meshes.appnd(fr.mesh)
+                        meshCounter += 1
+                        intDict = {'domain Limits' : fr.mesh.domainLimits,
+                                   'nx': fr.mesh.nx,
+                                   'ny': fr.mesh.ny}
+
+                    fr.mesh = meshCounter
+                    # here compare the mesh to the last entry. If so create the dict from it.
+                    distinct_meshes.append(fr.mesh)
+                    current_ind = num
 
 
-    return fracture_list, properties #, distinct_meshes
-
-#-----------------------------------------------------------------------------------------------------------------------
-def convert_meshDict_to_mesh(fracture_list):
-    """
-
-    :return:
-    """
-    from src.mesh_obj.mesh import CartesianMesh
-
-    if isinstance(fracture_list, list):
-        for num, fr in enumerate(fracture_list):
-            if isinstance(fr.mesh, Dict):
-                mesh_dict = copy.deepcopy(fr.mesh)
-                fracture_list[num].mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
-                                                        mesh_dict['domain Limits'][[0, 1]].tolist(),
-                                                        mesh_dict['nx'], mesh_dict['ny'])
-
-    elif isinstance(fracture_list, Fracture):
-        if isinstance(fracture_list.mesh, Dict):
-            mesh_dict = copy.deepcopy(fracture_list.mesh)
-            fracture_list.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
-                                               mesh_dict['domain Limits'][[0, 1]].tolist(),
-                                               mesh_dict['nx'], mesh_dict['ny'])
+    return fracture_list, properties, distinct_meshes
 
 #-----------------------------------------------------------------------------------------------------------------------
 

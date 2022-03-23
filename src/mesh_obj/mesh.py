@@ -541,6 +541,17 @@ class CartesianMesh:
 
     # -----------------------------------------------------------------------------------------------------------------------
 
+    def __eq__(self, other):
+        if isinstance(other, CartesianMesh):
+            if other.domainLimits == self.domainLimits and other.nx == self.nx and other.ny == self.ny:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    # -----------------------------------------------------------------------------------------------------------------------
+
     def set_domainLimits(self, Lx, Ly):
 
         """
