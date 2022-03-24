@@ -186,6 +186,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                         fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
                     intDict = copy.deepcopy(fr.mesh)
                     convert_meshDict_to_mesh(fr)
+                    distinct_mesh = fr.mesh
                     mesh_ind = num
                 else:
                     fr.mesh = mesh_ind
@@ -195,6 +196,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                     intDict = {'domain Limits' : fr.mesh.domainLimits,
                                'nx': fr.mesh.nx,
                                'ny': fr.mesh.ny}
+                    distinct_mesh = fr.mesh
                     mesh_ind = num
                 else:
                     fr.mesh = mesh_ind
@@ -1336,22 +1338,23 @@ def write_properties_csv_file(file_name, properties):
 
 def get_fracture_geometric_parameters(fr_list):
     # --- Initializing all the solution vectors --- #
-    max_breadth = np.full((len(fr_list), 1), np.nan)
-    avg_breadth = np.full((len(fr_list), 1), np.nan)
-    var_breadth = np.full((len(fr_list), 1), np.nan)
-    behind_head_breadth = np.full((len(fr_list), 1), np.nan)
-    dbdz_tail = np.full((len(fr_list), 1), np.nan)
-    height = np.full((len(fr_list), 1), np.nan)
-    dist_lower_end = np.full((len(fr_list), 1), np.nan)
-    dist_max_breadth = np.full((len(fr_list), 1), np.nan)
-    l_head = np.full((len(fr_list), 1), np.nan)
-    wmaxh = np.full((len(fr_list), 1), np.nan)
-    pmaxh = np.full((len(fr_list), 1), np.nan)
+    max_breadth = np.full((len(fr_list), 1), np.nan) # maximum breadth
+    avg_breadth = np.full((len(fr_list), 1), np.nan) # average breadth
+    var_breadth = np.full((len(fr_list), 1), np.nan) # variance of the breadth
+    behind_head_breadth = np.full((len(fr_list), 1), np.nan) # head breadth
+    dbdz_tail = np.full((len(fr_list), 1), np.nan) # gradient of dbdz between max breadth and head
+    height = np.full((len(fr_list), 1), np.nan) # fracture height / length
+    dist_lower_end = np.full((len(fr_list), 1), np.nan) # distance to the lower end of the fracture (from inj. point)
+    dist_max_breadth = np.full((len(fr_list), 1), np.nan) # distance to the maximum breadth
+    l_head = np.full((len(fr_list), 1), np.nan) # length of the head
+    wmaxh = np.full((len(fr_list), 1), np.nan) # maximum opening in the head
+    pmaxh = np.full((len(fr_list), 1), np.nan) # maximum pressure in the head
 
+    # --- Loop over the different timesteps to get the values --- #
     iter = 0
 
     for jk in fr_list:
-        # we need to decide on the mesh (reference or directly there)
+        # get the mesh (either stored there or retrieve from location)
         if isinstance(jk.mesh, int):
             fr_mesh = fr_list[jk.mesh].mesh
         else:
@@ -1491,12 +1494,17 @@ def get_fracture_head_volume(fr_list, geometric_data=None):
     #loop over time steps to get the volume
     iter = 0
     for jk in fr_list:
+        # get the mesh (either stored there or retrieve from location)
+        if isinstance(jk.mesh, int):
+            fr_mesh = fr_list[jk.mesh].mesh
+        else:
+            fr_mesh = jk.mesh
         z_head = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))-geometric_data['lhead'][iter]
-        el_head_tip = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
-        el_head_channel = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
+        el_head_tip = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
+        el_head_channel = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
         v_head[iter] = (np.sum(jk.w[jk.EltChannel[el_head_channel]]) + np.sum(jk.w[jk.EltTip[el_head_tip]] *
-                                                                              jk.FillF[el_head_tip])) * jk.mesh.EltArea
-        v_tot[iter] = jk.mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
+                                                                              jk.FillF[el_head_tip])) * fr_mesh.EltArea
+        v_tot[iter] = fr_mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
         iter += 1
     return v_tot.flatten(), v_head.flatten()
 
