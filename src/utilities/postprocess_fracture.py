@@ -1351,8 +1351,14 @@ def get_fracture_geometric_parameters(fr_list):
     iter = 0
 
     for jk in fr_list:
+        # we need to decide on the mesh (reference or directly there)
+        if isinstance(jk.mesh, int):
+            fr_mesh = fr_list[jk.mesh].mesh
+        else:
+            fr_mesh = jk.mesh
+
         if len(jk.source) != 0:
-            left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+            left, right = get_Ffront_as_vector(jk, fr_mesh.CenterCoor[jk.source[0], ::])[1:]
         else:
             left, right = get_Ffront_as_vector(jk, [0., 0.])[1:]
 
@@ -1378,9 +1384,9 @@ def get_fracture_geometric_parameters(fr_list):
                               np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
         dist_lower_end[iter] = np.abs(np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
 
-        pressure, line, cells = get_fracture_variable_slice_cell_center(jk.pNet, jk.mesh, orientation='vertical')
-        opening, line, cells = get_fracture_variable_slice_cell_center(jk.w, jk.mesh, orientation='vertical')
-        z_coord = jk.mesh.CenterCoor[cells][:, 1]
+        pressure, line, cells = get_fracture_variable_slice_cell_center(jk.pNet, fr_mesh, orientation='vertical')
+        opening, line, cells = get_fracture_variable_slice_cell_center(jk.w, fr_mesh, orientation='vertical')
+        z_coord = fr_mesh.CenterCoor[cells][:, 1]
         ind_zero = np.argmin(np.abs(z_coord))
         ind_max_w = np.argmax(opening)
         ind_tip = np.argwhere((np.diff(np.sign(np.diff(opening))) != 0) * 1)[-1][0] + 1
