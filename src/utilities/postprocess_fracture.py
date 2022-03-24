@@ -176,6 +176,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         distinct_mesh = fracture_list[0].mesh
 
     fracture_list[0].mesh = distinct_mesh
+    mesh_ind = 0
 
     #--- loop over the rest ---#
     for num, fr in enumerate(fracture_list):
@@ -185,16 +186,18 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                         fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
                     intDict = copy.deepcopy(fr.mesh)
                     convert_meshDict_to_mesh(fr)
-                    distinct_mesh = fr.mesh
+                    mesh_ind = num
+                else:
+                    fr.mesh = mesh_ind
 
             else:
                 if fr.mesh != distinct_mesh:
-                    distinct_mesh = fr.mesh
                     intDict = {'domain Limits' : fr.mesh.domainLimits,
                                'nx': fr.mesh.nx,
                                'ny': fr.mesh.ny}
-
-            fracture_list[num].mesh = distinct_mesh
+                    mesh_ind = num
+                else:
+                    fr.mesh = mesh_ind
 
 
     return fracture_list, properties
