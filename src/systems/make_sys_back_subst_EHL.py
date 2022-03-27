@@ -449,24 +449,24 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     else:
         tb_n = np.zeros((len(wNplusOne),), dtype=dtype)
         delta_tb = np.zeros((len(wNplusOne),), dtype=dtype)
-    a = -time.time()
+    #a = -time.time()
     FinDiffOprtr = get_finite_difference_matrix(wNplusOne, solk,   frac,
                                  EltCrack,  neiInCrack, fluid_prop,
                                  mat_prop,  sim_prop,   frac.mesh,
                                  InCrack,   C,  interItr,   to_solve,
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
-    a = a + time.time()
-    print(f'1 {a}')
+    #a = a + time.time()
+    #print(f'1 {a}')
 
 
-    a = -time.time()
+    #a = -time.time()
     FinDiffOprtr = FinDiffOprtr.tocsr()
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
                     frac.mesh,  InCrack,    sim_prop)
-    a = a + time.time()
-    print(f'2 {a}')
+    #a = a + time.time()
+    #print(f'2 {a}')
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -478,16 +478,16 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     tip_indxs = n_ch + n_act + np.arange(n_tip)
 
     #A = np.zeros((n_total, n_total), dtype=dtype)
-    a = -time.time()
+    #a = -time.time()
     ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
-    a = a + time.time()
-    print(f'3 {a}')
+    #a = a + time.time()
+    #print(f'3 {a}')
 
-    a = -time.time()
+    #a = -time.time()
     C_loc = C._get9stencilC(to_solve, decay_tshold = decay_tshold, probability = probability)
-    a = a + time.time()
-    print(f'4 {a}')
+    #a = a + time.time()
+    #print(f'4 {a}')
     """
     (1)
     *ch_ch*  ch_act    ch_tip
