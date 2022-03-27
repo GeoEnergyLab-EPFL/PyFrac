@@ -31,9 +31,34 @@ else:
     slash = '/'
 
 #-----------------------------------------------------------------------------------------------------------------------
+def convert_meshDict_to_mesh(fracture_list):
+    """
+
+    :return:
+    """
+    from src.mesh_obj.mesh import CartesianMesh
+    from src.fracture_obj.fracture import Fracture
+
+    if isinstance(fracture_list, list):
+        for num, fr in enumerate(fracture_list):
+            if isinstance(fr.mesh, Dict):
+                mesh_dict = copy.deepcopy(fr.mesh)
+                fracture_list[num].mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
+                                                        mesh_dict['domain Limits'][[0, 1]].tolist(),
+                                                        mesh_dict['nx'], mesh_dict['ny'])
+
+    else:
+        if isinstance(fracture_list.mesh, Dict):
+            mesh_dict = copy.deepcopy(fracture_list.mesh)
+            fracture_list.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
+                                               mesh_dict['domain Limits'][[0, 1]].tolist(),
+                                               mesh_dict['nx'], mesh_dict['ny'])
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False,
+                   load_all_meshes=True):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -50,6 +75,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         step_size (int):                -- the number of time steps to skip before loading the next fracture. If not
                                            provided, all of the fractures will be loaded.
         load_all (bool):                -- avoid jumping time steps too close to each other
+        load_all_meshes (bool):         -- boolean to decide if the meshes should be loaded.
 
     Returns:
         fracture_list(list):            -- a list of fractures.
@@ -138,13 +164,40 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
 
-    for num, fr in enumerate(fracture_list):
-        if isinstance(fr.mesh, Dict):
-            mesh_dict = copy.deepcopy(fr.mesh)
-            fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
-                          mesh_dict['nx'], mesh_dict['ny'])
-    return fracture_list, properties
+    #--- instantiate the list ---#
+    intDict = []
 
+    #--- do the first instance ---#
+    if isinstance(fracture_list[0].mesh, Dict):
+        intDict = copy.deepcopy(fracture_list[0].mesh)
+        convert_meshDict_to_mesh(fracture_list[0])
+        distinct_mesh = fracture_list[0].mesh
+    else:
+        distinct_mesh = fracture_list[0].mesh
+
+    fracture_list[0].mesh = distinct_mesh
+
+    #--- loop over the rest ---#
+    for num, fr in enumerate(fracture_list):
+        if num != 0:
+            if isinstance(fr.mesh, Dict):
+                if not ((fr.mesh["domain Limits"] == intDict["domain Limits"]).all() and
+                        fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
+                    intDict = copy.deepcopy(fr.mesh)
+                    convert_meshDict_to_mesh(fr)
+                    distinct_mesh = fr.mesh
+
+            else:
+                if fr.mesh != distinct_mesh:
+                    distinct_mesh = fr.mesh
+                    intDict = {'domain Limits' : fr.mesh.domainLimits,
+                               'nx': fr.mesh.nx,
+                               'ny': fr.mesh.ny}
+
+            fracture_list[num].mesh = distinct_mesh
+
+
+    return fracture_list, properties
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -449,11 +502,24 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
     else:
         for i in range(len(fracture_list)):
             if variable in bidimensional_variables:
-                value_point = griddata(fracture_list[i].mesh.CenterCoor,
-                                       var_values[i],
+                ind = fracture_list[i].mesh.locate_element(point[0][0], point[0][1])[0]
+                xmin = fracture_list[i].mesh.CenterCoor[ind][0] - 3 * fracture_list[i].mesh.cellDiag
+                xmax = fracture_list[i].mesh.CenterCoor[ind][0] + 3 * fracture_list[i].mesh.cellDiag
+                ymin = fracture_list[i].mesh.CenterCoor[ind][1] - 3 * fracture_list[i].mesh.cellDiag
+                ymax = fracture_list[i].mesh.CenterCoor[ind][1] + 3 * fracture_list[i].mesh.cellDiag
+                indBox = fracture_list[i].mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
+
+                value_point = griddata(fracture_list[i].mesh.CenterCoor[indBox],
+                                       var_values[i][indBox],
                                        point,
                                        method='linear',
                                        fill_value=np.nan)
+                # interpolate the neighbours of the element only
+                # value_point = griddata(fracture_list[i].mesh.CenterCoor,
+                #                        var_values[i],
+                #                        point,
+                #                        method='linear',
+                #                        fill_value=np.nan)
                 if np.isnan(value_point):
                     log.warning('Point outside fracture.')
 
@@ -1404,6 +1470,85 @@ def get_fracture_geometric_parameters(fr_list):
 
     return out_dict
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_fracture_head_volume(fr_list, geometric_data=None):
+    # get the geometric data if necessary
+    if geometric_data == None:
+        geometric_data = get_fracture_geometric_parameters(fr_list)
+    # instantiate head and total volume
+    v_head = np.full((len(fr_list), 1), np.nan)
+    v_tot = np.full((len(fr_list), 1), np.nan)
+    #loop over time steps to get the volume
+    iter = 0
+    for jk in fr_list:
+        z_head = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))-geometric_data['lhead'][iter]
+        el_head_tip = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
+        el_head_channel = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
+        v_head[iter] = (np.sum(jk.w[jk.EltChannel[el_head_channel]]) + np.sum(jk.w[jk.EltTip[el_head_tip]] *
+                                                                              jk.FillF[el_head_tip])) * jk.mesh.EltArea
+        v_tot[iter] = jk.mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
+        iter += 1
+    return v_tot.flatten(), v_head.flatten()
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def init_list_of_objects(size):
+    list_of_objects = list()
+    for i in range(0, size):
+        list_of_objects.append(list()) #different object reference each time
+    return list_of_objects
+
+#-----------------------------------------------------------------------------------------------------------------------
+def get_breadth_at_point(Fr_list, points):
+
+    log = logging.getLogger('PyFrac.get_front_intercepts')
+    breadth = init_list_of_objects(len(Fr_list))
+    Az = init_list_of_objects(len(Fr_list))
+    for p in range(len(points)):
+        for Fr in range(len(Fr_list)):
+            if p == 0:
+                breadth[Fr] = len(points) * [0.]
+                Az[Fr] = len(points) * [0.]
+            fr = Fr_list[Fr]
+            intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
+            pnt_cell = fr.mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
+            if pnt_cell not in fr.EltChannel:
+                log.warning("Point is not inside fracture!")
+            else:
+                pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]  # the y coordinate of the cell
+                cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0] # all the cells with the same y coord
+                tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)  # the tip cells with the same y coord
+
+                # find out the left and right cells
+                cells_left = tipCells_x_axis[fr.mesh.CenterCoor[tipCells_x_axis, 0] < fr.mesh.CenterCoor[pnt_cell, 0]]
+                cells_right = tipCells_x_axis[fr.mesh.CenterCoor[tipCells_x_axis, 0] > fr.mesh.CenterCoor[pnt_cell, 0]]
+                lft_cell = cells_left[abs(fr.mesh.CenterCoor[cells_left, 0] - fr.mesh.CenterCoor[pnt_cell, 0]) ==
+                                      min(abs(fr.mesh.CenterCoor[cells_left, 0] - fr.mesh.CenterCoor[pnt_cell, 0]))]
+                rgt_cell = cells_right[abs(fr.mesh.CenterCoor[pnt_cell, 0] - fr.mesh.CenterCoor[cells_right, 0]) ==
+                                      min(abs(fr.mesh.CenterCoor[pnt_cell, 0] - fr.mesh.CenterCoor[cells_right, 0]))]
+
+                lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+                rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+
+                # find the intersection using the equations of the front lines in the tip cells
+                if lft_in_tip.size > 0:
+                    intrcp_lft = (points[p][1] - fr.Ffront[lft_in_tip, 3]) / \
+                                 (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                         fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                                 fr.Ffront[lft_in_tip, 2]
+
+                if rgt_in_tip.size > 0:
+                    intrcp_rgt = (points[p][1] - fr.Ffront[rgt_in_tip, 3]) / \
+                                 (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                         fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                                 fr.Ffront[rgt_in_tip, 2]
+
+                breadth[Fr][p] = intrcp_rgt[0]-intrcp_lft[0]
+
+                Az[Fr][p] = np.sum(fr.w[cells_x_axis]) * fr.mesh.hx
+
+    return breadth, Az
 
 #-----------------------------------------------------------------------------------------------------------------------
 
