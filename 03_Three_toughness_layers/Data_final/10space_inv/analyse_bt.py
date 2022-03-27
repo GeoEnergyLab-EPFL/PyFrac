@@ -300,7 +300,7 @@ for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
         todo.append(str(number))
 todo_n = len(todo)
-
+todo.reverse()
 # copy the file for safety!
 baseloc = "/home/peruzzo/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
 #baseloc = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
