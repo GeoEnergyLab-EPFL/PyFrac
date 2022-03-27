@@ -114,3 +114,24 @@ def get_mesh(sim_info, refinement_ID):
     if nx % 2 == 0 : nx = nx + 1
 
     return CartesianMesh(d_x, d_y, nx, ny)
+
+# ----------------------------------------------
+def get_mesh_Hmat(sim_info):
+
+    ar = sim_info["aspect ratio"]
+    lx = sim_info["domain x"][1] - sim_info["domain x"][0]
+    ly = lx * ar
+    d_x = sim_info["domain x"]
+    d_y = [-ly / 2., ly / 2.]
+
+    # # define ny should be an odd number
+    # if sim_info["Ny"] % 2 == 0:
+    #     ny = sim_info["Ny"]
+    # else:
+    #     ny = sim_info["Ny"] + 1
+    # if sim_info["Nx"] % 2 == 0:
+    #     ny = sim_info["Nx"]
+    # else:
+    #     nx = sim_info["Nx"] + 1
+
+    return CartesianMesh(d_x, d_y, sim_info["Nx"], sim_info["Ny"])
