@@ -33,7 +33,7 @@ from utilities.utility import append_new_line
 config.THREADING_LAYER = 'omp' #'tbb'   'workqueue', 'threadsafe' ,'tbb'
 
 
-@njit(parallel=True, fastmath=True, nogil=True, cache=True)  # <------parallel compilation
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)  # <------parallel compilation
 def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # uk (numpy array), vector to which multiply the matrix C
     # nx (int), n. of element in x direction in the cartesian mesh
@@ -63,7 +63,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
         res[iter1] = np.dot(C_toeplitz_coe[np.abs(jX - jY[iter1]) + np.abs(iX - iY[iter1])], uk)
     return res
 #
-# @njit(parallel=True, fastmath=True, nogil=True, cache=True)  # <------parallel compilation
+# @njit(parallel=True, cache = True, nogil=True, fastmath=True)  # <------parallel compilation
 # def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
 #     # uk (numpy array), vector to which multiply the matrix C
 #     # nx (int), n. of element in x direction in the cartesian mesh
@@ -93,7 +93,7 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
 #     return res
 
 
-@njit(fastmath=True, nogil=True, parallel=True, cache=True)
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
     dimX = elemX.size  # number of elements to consider on x axis
     dimY = elemY.size  # number of elements to consider on y axis
@@ -152,7 +152,7 @@ def concat_equal1(array1, array2):
     out = np.empty(shape=(2 * len(array1)))
     return _concat_equal1(array1, array2, out)
 
-@njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
+@njit(cache = True, nogil=True, fastmath=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
 def getSuperFast_sparseC_smooth(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     # this is not faster than its non smooth version but it provides a better approximation for the preconditioner
     # this has been disable in order to achieve better performances for 10^6 elements
@@ -198,7 +198,7 @@ def getSuperFast_sparseC_smooth(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx,
     return data, rows_new, cols, dimX
     #return data, rows, cols, dimX
 
-@njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
+@njit(cache = True, nogil=True, fastmath=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
 def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
@@ -237,7 +237,7 @@ def getSuperFast_sparseC(coeff9stencilC, elmts, nx):
     return data, rows_new, cols, dimX
     #return data, rows, cols, dimX
 
-#@njit(fastmath=True, nogil=True, cache=True, parallel = True)
+#@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def getFast_sparseC(coeff9stencilC, elmts, nx):
     """
     Relative position and numbering:
