@@ -11,7 +11,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 from numba import prange, njit
 
-@njit(parallel=True, fastmath=True, nogil=True, cache=True)
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def tip_correction_factors(FillFrac):
     """
     This function is used to apply the <<filling fraction tip correction>> according to:

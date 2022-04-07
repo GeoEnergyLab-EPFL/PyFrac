@@ -241,7 +241,7 @@ def run(r_0, Solid_loaded, Injection, Fr, KIc_ratio, delta, simulProp, Fluid):
     simulProp.meshExtensionAllDir = True
     simulProp.finalTime = 10. ** 30
     simulProp.maxFrontItrs = 95
-    simulProp.tmStpPrefactor = 0.50
+    simulProp.tmStpPrefactor = 0.50 #0.1
     simulProp.tolFractFront = 0.0001
     simulProp.set_outputFolder(simdir)
     simulProp.frontAdvancing = 'implicit'
@@ -285,7 +285,8 @@ TR = np.asarray([93.61391011018539, 106.61874640274064, 80.7970187583269, 77.009
 SIM_ID = np.asarray([30, 9, 72, 81, 174, 183, 219, 276, 321, 330, 366, 423, 468, 477, 513, 570, 615, 624, 660, 717, 819, 864, 909, 918, 954, 966, 1011, 1056, 1065, 1101, 1113, 1482, 1488, 1494, 1557, 1563, 1635, 1713, 1719, 1734, 1794, 1800, 1815, 1192, 1194, 1254, 1256, 1258, 1260, 1262, 1264, 1266, 1268, 1270, 1404, 1406, 1408, 1410, 1412, 1414, 1416, 1418, 1420, 1422, 766, 770, 1326, 1328, 1330, 130, 134, 1959, 1893, 1878, 1791])
 
 file_name = "analyse_bt_res.json"
-globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv'
+#globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv'
+globalpath = '/home/peruzzo/PyFrac/03_Three_toughness_layers/Data_final/10space_inv'
 date_ext = '2022-02-02__09_02_40'
 basename = '/simulation__'+date_ext+'_file_'
 
@@ -299,9 +300,10 @@ for number in locallist: #range(0, 2107, 10):
     if number not in todo_n:
         todo.append(str(number))
 todo_n = len(todo)
-
+todo.reverse()
 # copy the file for safety!
-baseloc = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
+baseloc = "/home/peruzzo/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
+#baseloc = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
 file_name_copy = "analyse_bt_res_copy.json"
 if os.path.isfile(file_name):
     shutil.copyfile(baseloc+file_name, baseloc+file_name_copy)
@@ -427,6 +429,7 @@ for num_id, num in enumerate(todo):
                 aspect_ratio_toll = 0.001
                 # target aspect ratio
                 aspect_ratio_max = 1.6 #1.10 #1.02
+                #aspect_ratio_max = 3.00 #1.02
                 # aspect ratio when to stop the simulation
                 aspect_ratio_target = aspect_ratio_max
 
