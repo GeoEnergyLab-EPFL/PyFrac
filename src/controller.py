@@ -313,7 +313,7 @@ class Controller:
                 log.info("Time step successful!")
                 log.debug(f"Solved time: {Fr_n_pls1.time} s")
                 log.debug(f"for a time step of: {Fr_n_pls1.time - self.fracture.time} s")
-                log.debug("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
+                log.info("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
                 log.debug("Nx: " + str(Fr_n_pls1.mesh.nx))
                 log.debug("Ny: " + str(Fr_n_pls1.mesh.ny))
                 log.debug("hx: " + str(Fr_n_pls1.mesh.hx))
