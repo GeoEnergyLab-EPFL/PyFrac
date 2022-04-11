@@ -457,7 +457,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
     a = a + time.time()
-    print(f'1 {a}')
+    # print(f'1 {a}')
 
 
     a = -time.time()
@@ -466,7 +466,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
                     frac.mesh,  InCrack,    sim_prop)
     a = a + time.time()
-    print(f'2 {a}')
+    # print(f'2 {a}')
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -482,12 +482,12 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     ch_AplusCf = dt * FinDiffOprtr[ch_indxs, :].tocsc()[:, ch_indxs] \
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
     a = a + time.time()
-    print(f'3 {a}')
+    # print(f'3 {a}')
 
     a = -time.time()
     C_loc = C._get9stencilC(to_solve, decay_tshold = decay_tshold, probability = probability)
     a = a + time.time()
-    print(f'4 {a}')
+    # print(f'4 {a}')
     """
     (1)
     *ch_ch*  ch_act    ch_tip
