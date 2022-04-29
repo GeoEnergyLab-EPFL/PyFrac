@@ -141,7 +141,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
             log.info('Returning fracture at ' + repr(ff.time) + ' s')
             fracture_list.append(ff)
         else:
-            if  1. - next_t / ff.time >= -1e-8:
+            if 1. - next_t / ff.time >= -1e-8:
                 # if the current fracture time has advanced the output time period
                 log.info('Returning fracture at ' + repr(ff.time) + ' s')
 
