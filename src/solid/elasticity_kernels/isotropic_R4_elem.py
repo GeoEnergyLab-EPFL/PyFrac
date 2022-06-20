@@ -125,7 +125,7 @@ def isotropic_R4_kernel(dx, dy, hx, hy, a, b, const):
                           sig_zz_Dz_31(a, b, dx3, dy1) + sig_zz_Dz_32(a, b, dx3, dy2) + sig_zz_Dz_33(a, b, dx3, dy3))
 
 
-@njit(fastmath=True, nogil=True, parallel=True, cache=True)
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
     """
     Let us make some definitions:
@@ -183,7 +183,7 @@ def get_toeplitzCoe_isotropic_R4(nx, ny, hx, hy, matprop, C_precision):
         C_toeplitz_coe[1, ind] = isotropic_R4_kernel(-dx, dy, hx, hy, a, b, const)
     return C_toeplitz_coe
 
-@njit(fastmath=True, nogil=True, parallel=True, cache=True)
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     """
 
@@ -218,7 +218,7 @@ def get_R4_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
 
 
 
-@njit(parallel=True, fastmath=True, nogil=True, cache=True)  # <------parallel compilation
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)  # <------parallel compilation
 def matvec_fast_R4(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     # uk (numpy array), vector to which multiply the matrix C
     # nx (int), n. of element in x direction in the cartesian mesh
@@ -262,7 +262,7 @@ def matvec_fast_R4(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
     return res
 
 
-@njit(fastmath=True, nogil=True, parallel=True, cache=True)
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def getFast_R4(elemX, elemY, nx, C_toeplitz_coe, C_precision):
     dimX = elemX.size  # number of elements to consider on x axis
     dimY = elemY.size  # number of elements to consider on y axis
@@ -353,7 +353,7 @@ def getFast_R4(elemX, elemY, nx, C_toeplitz_coe, C_precision):
             return C_sub
 
 
-@njit(fastmath=True, nogil=True, cache=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
+@njit(cache = True, nogil=True, fastmath=True) # <-- here parallel can not be set to True because currently appending to list is not threadsafe
 def getFast_sparseC_R4(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx, decay_tshold=0.9, probability=0.05):
     i = np.floor_divide(elmts, nx)
     j = elmts - nx * i
