@@ -568,10 +568,11 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                     value_point = [np.nan]
                 else:
                     ind = fr_mesh.locate_element(point[0][0], point[0][1])[0]
-                    xmin = fr_mesh.CenterCoor[ind][0] - 3 * fr_mesh.cellDiag
-                    xmax = fr_mesh.CenterCoor[ind][0] + 3 * fr_mesh.cellDiag
-                    ymin = fr_mesh.CenterCoor[ind][1] - 3 * fr_mesh.cellDiag
-                    ymax = fr_mesh.CenterCoor[ind][1] + 3 * fr_mesh.cellDiag
+                    cellDiag = np.sqrt(fr_mesh.hx ** 2 + fr_mesh.hy ** 2)
+                    xmin = (fr_mesh.CenterCoor[ind].flatten())[0] - 3 * cellDiag
+                    xmax = (fr_mesh.CenterCoor[ind].flatten())[0] + 3 * cellDiag
+                    ymin = (fr_mesh.CenterCoor[ind].flatten())[1] - 3 * cellDiag
+                    ymax = (fr_mesh.CenterCoor[ind].flatten())[1] + 3 * cellDiag
                     indBox = fr_mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
 
                     value_point = griddata(fr_mesh.CenterCoor[indBox],
@@ -1467,7 +1468,8 @@ def get_fracture_geometric_parameters(fr_list):
         ind_zero = np.argmin(np.abs(z_coord))
         ind_max_w = np.argmax(opening)
         ind_tip = np.argwhere((np.diff(np.sign(np.diff(opening))) != 0) * 1)[-1][0] + 1
-        if ind_max_w not in set(np.arange(ind_zero, ind_zero + 4)):  # the max is not at the origin so it must be in the head
+        if ind_max_w not in set(np.arange(ind_zero, ind_zero + 4)) and len(opening[ind_zero + 1:ind_max_w - 1]) != 0:
+            # the max is not at the origin so it must be in the head
             # then we can check if in between the injection point and the max opening (in the head) we have a sign
             # sign change.
             if ((np.diff(np.sign(np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1).any():
@@ -1500,10 +1502,13 @@ def get_fracture_geometric_parameters(fr_list):
             ind_inc = np.argwhere((np.sign(np.diff(opening[ind_zero + 1:])) == 1) * 1)[0][0] - 1 # Index where we
                                                                                     # get out of the source influence
             ind_w_max_head = np.argmax(opening[ind_zero + 1:][ind_inc:]) # index of the maximum opening in the head
-            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
-                               z_coord[ind_zero + 1:][ind_inc:][:ind_w_max_head][np.where(((np.diff(np.sign(
-                                   np.diff(opening[ind_zero + 1:][ind_inc:][:ind_w_max_head]))) != 0) * 1) == 1)[0][-1]
-                                                                   + 1]
+            if ind_w_max_head != 0 and ind_w_max_head != 1 and ind_w_max_head != 2:
+                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                                   z_coord[ind_zero + 1:][ind_inc:][:ind_w_max_head][np.where(((np.diff(np.sign(
+                                       np.diff(opening[ind_zero + 1:][ind_inc:][:ind_w_max_head]))) != 0) * 1) == 1)
+                                                                                     [0][-1] + 1]
+            else:
+                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
 
         # --- This works fine so far but now we use it as an estimate and get the real length from the pressure
         # Note: but let's only do this if we are no longer radial!
