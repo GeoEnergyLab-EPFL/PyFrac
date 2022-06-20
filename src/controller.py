@@ -28,13 +28,11 @@ from mesh_obj.mesh import CartesianMesh
 from mesh_obj.remesh import *
 
 from time_step.ts_solution import attempt_time_step
-from utilities.utility import append_new_line
 
 from utilities.visualization import plot_footprint_analytical, plot_analytical_solution,\
-                          plot_injection_source, get_elements
+                          plot_injection_source, get_elements, EPFLcolor
 from utilities.labels import TS_errorMessages, supported_projections, suitable_elements
 
-from solid.elasticity_isotropic_HMAT_hook import Hdot_3DR0opening
 from custom_functions import *
 
 class Controller:
@@ -313,7 +311,7 @@ class Controller:
                 log.info("Time step successful!")
                 log.debug(f"Solved time: {Fr_n_pls1.time} s")
                 log.debug(f"for a time step of: {Fr_n_pls1.time - self.fracture.time} s")
-                log.debug("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
+                log.info("Element in the crack: "+str(len(Fr_n_pls1.EltCrack)))
                 log.debug("Nx: " + str(Fr_n_pls1.mesh.nx))
                 log.debug("Ny: " + str(Fr_n_pls1.mesh.ny))
                 log.debug("hx: " + str(Fr_n_pls1.mesh.hx))
@@ -471,7 +469,7 @@ class Controller:
                             # Check that the injection cell does not become a ribbon cell
                             if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
                                            + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
-                                2.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                                5.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
                                                (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
                                 self.sim_prop.meshExtensionAllDir = True
                                 self.sim_prop.set_mesh_extension_direction(['all'])
@@ -587,7 +585,7 @@ class Controller:
                         # Check that the injection cell does not become a ribbon cell
                         if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
                                        + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
-                            2.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
+                            5.0*np.min(np.abs([(new_limits[0][0]-new_limits[0][1])/elems[0],
                                            (new_limits[1][0]-new_limits[1][1])/elems[1]]))):
                             self.sim_prop.meshExtensionAllDir = True
                             self.sim_prop.set_mesh_extension_direction(['all'])
@@ -811,7 +809,7 @@ class Controller:
                         # Check that the injection cell does not become a ribbon cell
                         if (np.min(np.sqrt((self.fracture.Ffront[::, [0, 2]].flatten() - cent_point[0]) ** 2
                                            + (self.fracture.Ffront[::, [1, 3]].flatten() - cent_point[1]) ** 2)) <
-                                2.0*np.min(np.abs([(new_limits[0][0] - new_limits[0][1]) / elems[0],
+                                5.0*np.min(np.abs([(new_limits[0][0] - new_limits[0][1]) / elems[0],
                                                (new_limits[1][0] - new_limits[1][1]) / elems[1]]))):
                             self.sim_prop.meshExtensionAllDir = True
                             self.sim_prop.set_mesh_extension_direction(['all'])
@@ -1099,7 +1097,7 @@ class Controller:
 
                 for index, plt_var in enumerate(self.sim_prop.plotVar):
                     log.info("Plotting solution at " + repr(Fr_advanced.time) + "...")
-                    plot_prop = PlotProperties()
+                    plot_prop = PlotProperties(color_map=EPFLcolor())
 
                     if self.Figures[index]:
                         axes = self.Figures[index].get_axes()   # save axes from last figure

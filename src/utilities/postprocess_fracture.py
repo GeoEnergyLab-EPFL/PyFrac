@@ -1381,7 +1381,8 @@ def get_fracture_geometric_parameters(fr_list):
         ind_zero = np.argmin(np.abs(z_coord))
         ind_max_w = np.argmax(opening)
         ind_tip = np.argwhere((np.diff(np.sign(np.diff(opening))) != 0) * 1)[-1][0] + 1
-        if ind_max_w not in set(np.arange(ind_zero, ind_zero + 4)):  # the max is not at the origin so it must be in the head
+        if ind_max_w not in set(np.arange(ind_zero, ind_zero + 4)) and len(opening[ind_zero + 1:ind_max_w - 1]) != 0:
+            # the max is not at the origin so it must be in the head
             # then we can check if in between the injection point and the max opening (in the head) we have a sign
             # sign change.
             if ((np.diff(np.sign(np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1).any():
