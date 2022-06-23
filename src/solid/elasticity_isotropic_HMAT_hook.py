@@ -137,3 +137,5 @@ class Hdot_3DR0opening(LinearOperator):
         self.shape_ = (shape_, shape_)
         super().__init__(self.dtype_, self.shape_)
 
+    def _unset(self):
+        self.HMATtract.hmatDestructor()
