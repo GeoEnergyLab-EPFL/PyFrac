@@ -464,7 +464,7 @@ def plot_final_reconstruction(mesh,
         plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
         plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
     plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
-    plt.plot(mesh.CenterCoor[oldRibbon,0]*1.05, mesh.CenterCoor[oldRibbon,1], '.',color='green')
+    plt.plot(mesh.CenterCoor[oldRibbon,0] + mesh.hx / 5, mesh.CenterCoor[oldRibbon,1], '.',color='green')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
 
 

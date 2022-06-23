@@ -339,6 +339,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+    Vel_k[Vel_k < 0] = 0
 
     if perfNode is not None:
         perfNode_tipWidth = instrument_start('tip width', perfNode)
@@ -565,6 +566,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                                      fluid_properties, timeStep, log, perfNode)
 
     Fr_kplus1.v = -(sgndDist_k[Fr_kplus1.EltTip] - Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip]) / timeStep
+    Fr_kplus1.v[Fr_kplus1.v < 0] = 0
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.Ffront_last = Fr_lstTmStp.Ffront
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
