@@ -3125,8 +3125,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             #
             # "-" means: "take away the names of"
             #
-            # this is not enough, we need to account for positive cells that have been excluded from drowing the front because
-            # it was having to high curvature within it. In order to find the cells I am speaking about we can use the folowing reasoning.
+            # this is not enough, we need to account for positive cells that have been excluded from drawing the front because
+            # it was having to high curvature within it. In order to find the cells I am speaking about, we can use the folowing reasoning.
             #
             # [CCPbF] = [CCPbF] + neighbours of [CCPbF] - [cells at the previous channell (meaning ribbon+fracture)]  - [tip cells]
             #
@@ -3135,7 +3135,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             # update the levelset with the distance at the tip cells according to the distance to the reconstructed front
             # this is important in order to proper estimate the distance to the front of the fully traversed cells
             # this should not be done if we discover that we have coalescence and we would need to recompute the front location
-            # according with a LS thats why we make a copy of the original sgndDist_k and we will restore it in case we see
+            # according with a LS. Thats why we make a copy of the original sgndDist_k and we will restore it in case we see
             # that we have coalescence
             original_sgndDist_k = np.copy(sgndDist_k)
             sgndDist_k = sgndDist_k_new
@@ -3172,19 +3172,71 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     fmmStruct = fmm(mesh)
 
                     # The original tip cells are the location of the known solution and we solve outwards from there.
-                    toEval = np.setdiff1d(anularegion, negative_cells)
+                    toEval = np.unique(np.hstack((np.setdiff1d(anularegion, negative_cells),
+                                                  global_list_of_TIPcellsONLY)))
                     fmmStruct.solveFMM((original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
                                        toEval, mesh)
 
                     # The original tip cells are the location of the known solution and we solve inwards from there.
                     # Sign change needed.
-                    toEval = np.hstack((negative_cells, global_list_of_TIPcellsONLY))
+                    toEval = np.unique(np.hstack((negative_cells, global_list_of_TIPcellsONLY)))
                     fmmStruct.solveFMM((-original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
                                        toEval, mesh)
 
                     # Assign the LS and change back the sign.
                     sgndDist_k = fmmStruct.LS
                     sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                    # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+                    # configurations we implement a front loop to fix the level set there as well
+                    ngtv_region = np.setdiff1d(negative_cells, global_list_of_TIPcellsONLY)
+                    recession = True
+                    if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                        log.warning(
+                            'We get a recession of the front. Iterate on the level set of the explicit time step')
+                        fixedElts = np.hstack(
+                            (global_list_of_TIPcellsONLY, ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                        fixedSgndDist = np.hstack(
+                            (sgndDist_k[global_list_of_TIPcellsONLY],
+                             original_sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]))
+                        recession = False
+                        iterator = 0
+
+                    while not recession:
+                        log.warning('The channel elements with a negative level set are ' +
+                                    str(ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                        iterator = iterator + 1
+                        fmmStruct = fmm(mesh)
+
+                        # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+                        fmmStruct.solveFMM((fixedSgndDist, fixedElts),
+                                           np.unique(np.hstack((np.setdiff1d(anularegion, negative_cells),
+                                                                fixedElts))), mesh)
+
+                        # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+                        # we need a sign change on the level set (positive inside)
+                        toEval = np.unique(np.hstack((ngtv_region, fixedElts)))
+                        fmmStruct.solveFMM((-fixedSgndDist, fixedElts), toEval, mesh)
+
+                        # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+                        # negative inside and positive outside.
+                        sgndDist_k = fmmStruct.LS
+                        sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                        if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) == 0 and iterator < 100:
+                            recession = True
+                            log.warning('Required iterations on the level set were ' + str(iterator))
+                        elif iterator >= 100:
+                            recession = True
+                            sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]] = \
+                                original_sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]
+                            log.warning('Required iterations exceeded ' + str(iterator) +
+                                        ', we simply fix the cells and accept it like this')
+                        else:
+                            newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+                            fixedElts = np.hstack((fixedElts, newFixedElts))
+                            newFixedSgndDist = original_sgndDist_k[newFixedElts]
+                            fixedSgndDist = np.hstack((fixedSgndDist, newFixedSgndDist))
 
                 fullyfractured_angle = []
                 fullyfractured_distance = []
