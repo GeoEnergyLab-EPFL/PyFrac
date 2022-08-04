@@ -110,6 +110,53 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     sgndDist_k = fmmStruct.LS
     sgndDist_k[toEval] = -sgndDist_k[toEval]
 
+    # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+    # configurations we implement a front loop to fix the level set there as well
+    recession = True
+    if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+        log.warning('We get a recession of the front. Iterate on the level set of the explicit time step')
+        newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+        newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
+        fixedElts = np.hstack((Fr_lstTmStp.EltTip, newFixedElts))
+        fixedSgndDist = np.hstack((Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v),
+                                   newFixedSgndDist))
+        recession = False
+        iterator = 0
+
+    while not recession:
+        log.warning('The channel elements with a negative level set are ' +
+                    str(ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+        iterator = iterator + 1
+        fmmStruct = fmm(Fr_lstTmStp.mesh)
+
+        # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+        fmmStruct.solveFMM((fixedSgndDist, fixedElts), np.unique(np.hstack((pstv_region, fixedElts))), Fr_lstTmStp.mesh)
+
+        # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+        # we need a sign change on the level set (positive inside)
+        toEval = np.unique(np.hstack((ngtv_region, fixedElts)))
+        fmmStruct.solveFMM((-fixedSgndDist, fixedElts), toEval, Fr_lstTmStp.mesh)
+
+        # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+        # negative inside and positive outside.
+        sgndDist_k = fmmStruct.LS
+        sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+        if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) == 0 and iterator < 100:
+            recession = True
+            log.warning('Required iterations on the level set were ' + str(iterator))
+        elif iterator >= 100:
+            recession = True
+            sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]] = \
+                Fr_lstTmStp.sgndDist[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]
+            log.warning('Required iterations exceeded ' + str(iterator) +
+                        ', we simply fix the cells and accept it like this')
+        else:
+            newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+            fixedElts = np.hstack((fixedElts, newFixedElts))
+            newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
+            fixedSgndDist = np.hstack((fixedSgndDist, newFixedSgndDist))
+
     eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
     # Gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
@@ -195,6 +242,53 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                 # negative inside and positive outside.
                 sgndDist_k = fmmStruct.LS
                 sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+                # configurations we implement a front loop to fix the level set there as well
+                recession = True
+                if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                    log.warning('We get a recession of the front. Iterate on the level set of the explicit time step')
+                    fixedElts = np.hstack((Fr_lstTmStp.EltTip, ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                    fixedSgndDist = np.hstack((Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v),
+                                               Fr_lstTmStp.sgndDist[
+                                                   ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]))
+                    recession = False
+                    iterator = 0
+
+                while not recession:
+                    log.warning('The channel elements with a negative level set are ' +
+                                str(ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                    iterator = iterator + 1
+                    fmmStruct = fmm(Fr_lstTmStp.mesh)
+
+                    # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+                    fmmStruct.solveFMM((fixedSgndDist, fixedElts), np.unique(np.hstack((pstv_region, fixedElts))),
+                                       Fr_lstTmStp.mesh)
+
+                    # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+                    # we need a sign change on the level set (positive inside)
+                    toEval = np.unique(np.hstack((ngtv_region, fixedElts)))
+                    fmmStruct.solveFMM((-fixedSgndDist, fixedElts), toEval, Fr_lstTmStp.mesh)
+
+                    # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+                    # negative inside and positive outside.
+                    sgndDist_k = fmmStruct.LS
+                    sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                    if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) == 0 and iterator < 100:
+                        recession = True
+                        log.warning('Required iterations on the level set were ' + str(iterator))
+                    elif iterator >= 100:
+                        recession = True
+                        sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]] = \
+                            Fr_lstTmStp.sgndDist[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]
+                        log.warning('Required iterations exceeded ' + str(iterator) +
+                                    ', we simply fix the cells and accept it like this')
+                    else:
+                        newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+                        fixedElts = np.hstack((fixedElts, newFixedElts))
+                        newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
+                        fixedSgndDist = np.hstack((fixedSgndDist, newFixedSgndDist))
 
                 eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
