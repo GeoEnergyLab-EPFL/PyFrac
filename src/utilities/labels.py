@@ -415,6 +415,8 @@ TS_errorMessages = [ "Propagation not attempted!",                              
                      "iterating more is not leading the iterations on the front position to converge!",#15
                      "maximum number of elements in the crack reached!",                               #16
                      "you advanced more than two cells in a row. Repeating with a smaller time step",  #17
-                     "Inaccuracy of the solution due to machine precision!"                            #18
+                     "Inaccuracy of the solution due to machine precision!",                           #18
+                     "A Channel cell became a tip cell during the explicit time step!",                #19
+                     "A Channel cell became a tip cell during the continuous front construction!"      #20
                     ]
 
