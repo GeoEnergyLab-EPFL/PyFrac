@@ -1023,6 +1023,10 @@ class Controller:
             else:
                 log.warning(self.errorMessages[status])
                 log.warning("Time step failed...")
+                if status == 19:
+                    self.sim_prop.frontAdvancing = 'implicit'
+                elif status == 20:
+                    self.sim_prop.projMethod = 'ILSA_orig'
 
 
         return status, Fr
