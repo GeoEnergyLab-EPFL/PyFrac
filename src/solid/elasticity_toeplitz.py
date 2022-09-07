@@ -535,14 +535,16 @@ class elasticity_matrix_toepliz(LinearOperator):
             if self.useHMATdot and len(uk) > self.HMAT_tshold:
                 res = self.HMAT._matvec(uk)
             else:
-                res = self.HMAT._matvec(uk)
-                # res = self.f_matvec_fast(np.float64(uk),
-                #                           self.domain_INDX,
-                #                           self.codomain_INDX,
-                #                           self.codomain_INDX.size,
-                #                           self.nx,
-                #                           self.C_toeplitz_coe,
-                #                           self.C_precision)
+                # todo: In the case of using HMat and activating a width constraint in a number of cells below the
+                #  threshold, the code can break due to multiple definitions of the function f_matvec_fast.
+                # res = self.HMAT._matvec(uk)
+                res = self.f_matvec_fast(np.float64(uk),
+                                          self.domain_INDX,
+                                          self.codomain_INDX,
+                                          self.codomain_INDX.size,
+                                          self.nx,
+                                          self.C_toeplitz_coe,
+                                          self.C_precision)
 
             if self.left_precJ:
                 # TIPCORRECTION & LEFT PRECONDITIONER
