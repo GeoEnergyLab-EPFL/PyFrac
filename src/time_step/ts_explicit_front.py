@@ -678,7 +678,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     Fr_kplus1.LkOff = LkOff
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+    Fr_kplus1.efficiency = Fr_kplus1.mesh.EltArea * (np.sum(Fr_kplus1.w[Fr_kplus1.EltTip] * Fr_kplus1.FillF) +
+                                                     np.sum(Fr_kplus1.w[Fr_kplus1.EltChannel])) / Fr_kplus1.injectedVol
+    # Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if sim_properties.saveRegime:
