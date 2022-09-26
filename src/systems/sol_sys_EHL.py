@@ -320,6 +320,19 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
             else:
                 raise SystemExit("The given elasto-hydrodynamic solver is not supported!")
 
+            # Check if just the iterative linear solve did not go well
+            if (sol == None).any():
+                print('Could not solve the linear system. Retry with a monolithic version')
+                sol, data_nonLinSolve = Anderson(Direct_linear_solver(Monolithic_EHL_sys_obj(len(to_solve_k) +
+                                                                                             sys_size,
+                                                                                             dtype=np.float64,
+                                                                                             *arg)),
+                                                 guess,
+                                                 inter_itr_init,
+                                                 sim_properties,
+                                                 *arg,
+                                                 perf_node=perfNode_widthConstrItr)
+
             # Check if the solution is NaN at any point and why it failed
             failed_sol = np.isnan(sol).any()
 

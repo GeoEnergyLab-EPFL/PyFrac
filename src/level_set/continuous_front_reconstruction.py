@@ -3191,12 +3191,12 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     # configurations we implement a front loop to fix the level set there as well
                     ngtv_region = np.setdiff1d(negative_cells, global_list_of_TIPcellsONLY)
                     # recession = True
-                    if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
-                        log.warning(
-                            'We get a recession of the front. Changing to the classical front reconstruction.')
-                        correct_size_of_pstv_region = [False, False, False, True]
-                        return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, \
-                               None, None, None, None
+                    # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                    #     log.warning(
+                    #         'We get a recession of the front. Changing to the classical front reconstruction.')
+                    #     correct_size_of_pstv_region = [False, False, False, True]
+                    #     return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, \
+                    #            None, None, None, None
                     #     fixedElts = np.hstack(
                     #         (global_list_of_TIPcellsONLY, ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
                     #     fixedSgndDist = np.hstack(
@@ -3549,19 +3549,23 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
 
         if np.unique(EltCrack_k).size != EltCrack_k.size:
             # uncomment this to see the source of the error:
-            plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
-                                   shifty=0.01, annotate_cellName=False, grid=True)
-            plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
-                                   annotate_cellName=False, grid=True)
-            message = 'FRONT RECONSTRUCTION ERROR: \n the source of this error can be found because of two reasons. ' \
-                      '\n1)The first reason is that the front is entering more than 1 time the same cell ' \
-                      '\n2)The second reason is more in depth in how the scheme works.\n' \
-                      '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
-                      '    some of the tip elements they will became channel element of the previous time step. ' \
-                      '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
-                      'PS: After removing a point, the LevelSet is recomputed by assuming the distance  \nto the reconstructed front.' \
-                      'This might result in a numerical recession of the front \n but at worst it can be detected and solved by spatial or temporal refinement.'
-            raise SystemExit(message)
+            # plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
+            #                        shifty=0.01, annotate_cellName=False, grid=True)
+            # plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
+            #                        annotate_cellName=False, grid=True)
+            # message = 'FRONT RECONSTRUCTION ERROR: \n the source of this error can be found because of two reasons. ' \
+            #           '\n1)The first reason is that the front is entering more than 1 time the same cell ' \
+            #           '\n2)The second reason is more in depth in how the scheme works.\n' \
+            #           '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
+            #           '    some of the tip elements they will became channel element of the previous time step. ' \
+            #           '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
+            #           'PS: After removing a point, the LevelSet is recomputed by assuming the distance  \nto the reconstructed front.' \
+            #           'This might result in a numerical recession of the front \n but at worst it can be detected and solved by spatial or temporal refinement.'
+            # raise SystemExit(message)
+            EltCrack_k = np.unique(EltCrack_k)
+            EltChannel_k = np.setdiff1d(EltChannel_k,np.intersect1d(EltChannel_k, EltTip_k))
+            print('A ribbon became a tip cell again. We allow for this through bookkeeping and see what happens')
+
 
         EltRibbon_k = newRibbon
 

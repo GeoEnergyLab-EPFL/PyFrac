@@ -113,10 +113,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
     # configurations we implement a front loop to fix the level set there as well
     # recession = True
-    if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
-        log.warning('We get a recession of the front. We change the scheme to implicit, and re-attempt.')
-        exitstatus = 19
-        return exitstatus, None
+    # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+    #     log.warning('We get a recession of the front. We change the scheme to implicit, and re-attempt.')
+    #     exitstatus = 19
+    #     return exitstatus, None
         # newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
     #     newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
     #     fixedElts = np.hstack((Fr_lstTmStp.EltTip, newFixedElts))
@@ -252,10 +252,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                 # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
                 # configurations we implement a front loop to fix the level set there as well
                 # recession = True
-                if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
-                    log.warning('We get a recession of the front. Changing to the classical front reconstruction.')
-                    exitstatus = 20
-                    return exitstatus, None
+                # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                #     log.warning('We get a recession of the front. Changing to the classical front reconstruction.')
+                #     exitstatus = 20
+                #     return exitstatus, None
                     # fixedElts = np.hstack((Fr_lstTmStp.EltTip, ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
                     # fixedSgndDist = np.hstack((Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v),
                     #                            Fr_lstTmStp.sgndDist[
