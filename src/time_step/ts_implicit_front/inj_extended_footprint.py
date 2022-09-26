@@ -175,10 +175,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                 # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
                 # configurations we implement a front loop to fix the level set there as well
                 # recession = True
-                if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
-                    log.warning('We get a recession of the front. Changing to the classical front reconstruction.')
-                    exitstatus = 20
-                    return exitstatus, None
+                # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                #     log.warning('We get a recession of the front. Changing to the classical front reconstruction.')
+                #     exitstatus = 20
+                #     return exitstatus, None
 
                 eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
