@@ -86,6 +86,14 @@ def Anderson(linear_solver, guess, interItr_init, sim_prop, *args, perf_node=Non
             perfNode_linSolve = instrument_start("linear system solve", perf_node)
 
             sol = linear_solver.solve(xks_current, interItr, *args)
+            if np.any(np.isnan(sol)):
+                print('Could not solve it linear system, solving it monolithically!')
+                solk = np.full((len(xks[mk]),), None, dtype=np.float64)
+                if perf_node is not None:
+                    instrument_close(perf_node, perfNode_linSolve, None,
+                                     len(linear_solver.b), False, 'singular matrix', None)
+                    perf_node.linearSolve_data.append(perfNode_linSolve)
+                return solk, None
             if sim_prop.solve_monolithic:
                 Gks[mk + 1, ::] = linear_solver.sys_func._matvec_PastSolution(sol)
             else:

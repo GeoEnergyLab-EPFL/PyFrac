@@ -147,8 +147,10 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
     # Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - sum(Fr_kplus1.LkOffTotal[Fr_kplus1.EltCrack])) \
     #                        / Fr_kplus1.injectedVol
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol -Fr_kplus1.LkOffTotal) \
-                           / Fr_kplus1.injectedVol
+    # Fr_kplus1.efficiency = (Fr_kplus1.injectedVol -Fr_kplus1.LkOffTotal) \
+    #                        / Fr_kplus1.injectedVol
+    Fr_kplus1.efficiency = Fr_kplus1.mesh.EltArea * (np.sum(Fr_kplus1.w[Fr_kplus1.EltTip] * Fr_kplus1.FillF) +
+                                                     np.sum(Fr_kplus1.w[Fr_kplus1.EltChannel])) / Fr_kplus1.injectedVol
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
 
 

@@ -199,7 +199,9 @@ class Fracture:
                                                    gmres_maxiter = simulProp.gmres_maxiter)
 
             if init_param.fractureVolume is None and init_param.time is None:
-                volume = np.sum(self.w) * mesh.EltArea
+                # volume = np.sum(self.w) * mesh.EltArea
+                volume = self.mesh.EltArea * (np.sum(self.w[self.EltTip] * self.FillF) +
+                                              np.sum(self.w[self.EltChannel]))
                 self.time = volume / injection.injectionRate[1, 0]
             elif init_param.time is not None:
                 self.time = init_param.time
@@ -229,8 +231,10 @@ class Fracture:
         self.LkOff = np.zeros((self.mesh.NumberOfElts,), dtype=np.float64)
         self.LkOffTotal = 0.
         self.efficiency = 1.
-        self.FractureVolume = np.sum(self.w) * mesh.EltArea
-        self.injectedVol = np.sum(self.w) * mesh.EltArea
+        self.FractureVolume = self.mesh.EltArea * (np.sum(self.w[self.EltTip] * self.FillF) +
+                                                   np.sum(self.w[self.EltChannel]))
+        self.injectedVol = self.mesh.EltArea * (np.sum(self.w[self.EltTip] * self.FillF) +
+                                                np.sum(self.w[self.EltChannel]))
         self.InCrack = np.zeros((self.mesh.NumberOfElts,), dtype=np.uint8)
         self.InCrack[self.EltCrack] = 1
         self.wHist = np.copy(self.w)
@@ -942,7 +946,10 @@ class Fracture:
             Fr_coarse.LkOff = LkOff
             Fr_coarse.LkOffTotal = self.LkOffTotal
             Fr_coarse.injectedVol = self.injectedVol
-            Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
+            Fr_coarse.efficiency = Fr_coarse.mesh.EltArea * (np.sum(Fr_coarse.w[Fr_coarse.EltTip] * Fr_coarse.FillF) +
+                                                             np.sum(Fr_coarse.w[Fr_coarse.EltChannel])) \
+                                   / Fr_coarse.injectedVol
+            # Fr_coarse.efficiency = (Fr_coarse.injectedVol - Fr_coarse.LkOffTotal) / Fr_coarse.injectedVol
             Fr_coarse.time = self.time
             Fr_coarse.closed = np.asarray([])
             Fr_coarse.wHist = wHist_coarse
