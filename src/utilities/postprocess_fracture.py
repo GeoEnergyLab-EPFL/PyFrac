@@ -240,6 +240,8 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     elif variable == 'net pressure' or variable == 'pn':
         for i in fracture_list:
             variable_list.append(i.pNet)
+            if len(i.closed) != 0:
+                variable_list[-1][i.closed] = 0
             time_srs.append(i.time)
 
     elif variable == 'front velocity' or variable == 'v':
@@ -502,24 +504,26 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
     else:
         for i in range(len(fracture_list)):
             if variable in bidimensional_variables:
-                ind = fracture_list[i].mesh.locate_element(point[0][0], point[0][1])[0]
-                xmin = fracture_list[i].mesh.CenterCoor[ind][0] - 3 * fracture_list[i].mesh.cellDiag
-                xmax = fracture_list[i].mesh.CenterCoor[ind][0] + 3 * fracture_list[i].mesh.cellDiag
-                ymin = fracture_list[i].mesh.CenterCoor[ind][1] - 3 * fracture_list[i].mesh.cellDiag
-                ymax = fracture_list[i].mesh.CenterCoor[ind][1] + 3 * fracture_list[i].mesh.cellDiag
-                indBox = fracture_list[i].mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
+                else:
+                    fr_mesh = fracture_list[i].mesh
+                try:
+                    ind = fr_mesh.locate_element(point[0][0], point[0][1])[0]
+                    cellDiag = np.sqrt(fr_mesh.hx ** 2 + fr_mesh.hy ** 2)
+                    xmin = (fr_mesh.CenterCoor[ind].flatten())[0] - 3 * cellDiag
+                    xmax = (fr_mesh.CenterCoor[ind].flatten())[0] + 3 * cellDiag
+                    ymin = (fr_mesh.CenterCoor[ind].flatten())[1] - 3 * cellDiag
+                    ymax = (fr_mesh.CenterCoor[ind].flatten())[1] + 3 * cellDiag
+                    indBox = fr_mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
 
-                value_point = griddata(fracture_list[i].mesh.CenterCoor[indBox],
-                                       var_values[i][indBox],
-                                       point,
-                                       method='linear',
-                                       fill_value=np.nan)
-                # interpolate the neighbours of the element only
-                # value_point = griddata(fracture_list[i].mesh.CenterCoor,
-                #                        var_values[i],
-                #                        point,
-                #                        method='linear',
-                #                        fill_value=np.nan)
+                    value_point = griddata(fracture_list[i].mesh.CenterCoor[indBox],
+                                           var_values[i][indBox],
+                                           point,
+                                           method='linear',
+                                           fill_value=np.nan)
+                except:
+                    value_point = [np.nan]
                 if np.isnan(value_point):
                     log.warning('Point outside fracture.')
 
@@ -1050,7 +1054,6 @@ def write_fracture_mesh_csv_file(file_name, mesh_list):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-
 def append_to_json_file(file_name, content, action, key=None, delete_existing_filename=False):
     """ This function appends data of a mesh as a json file.
 
@@ -1331,19 +1334,30 @@ def write_properties_csv_file(file_name, properties):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_fracture_geometric_parameters(fr_list):
+def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
     # --- Initializing all the solution vectors --- #
     max_breadth = np.full((len(fr_list), 1), np.nan)
     avg_breadth = np.full((len(fr_list), 1), np.nan)
     var_breadth = np.full((len(fr_list), 1), np.nan)
-    behind_head_breadth = np.full((len(fr_list), 1), np.nan)
-    dbdz_tail = np.full((len(fr_list), 1), np.nan)
     height = np.full((len(fr_list), 1), np.nan)
     dist_lower_end = np.full((len(fr_list), 1), np.nan)
     dist_max_breadth = np.full((len(fr_list), 1), np.nan)
-    l_head = np.full((len(fr_list), 1), np.nan)
-    wmaxh = np.full((len(fr_list), 1), np.nan)
-    pmaxh = np.full((len(fr_list), 1), np.nan)
+
+    if head:
+        behind_head_breadth = np.full((len(fr_list), 1), np.nan)
+        # dbdz_tail = np.full((len(fr_list), 1), np.nan)
+        l_head = np.full((len(fr_list), 1), np.nan)
+        wmaxh = np.full((len(fr_list), 1), np.nan)
+        pmaxh = np.full((len(fr_list), 1), np.nan)
+
+    if lateral_diking:
+        coord_max_w = np.full((len(fr_list), 2), np.nan)
+        max_w = np.full((len(fr_list), 1), np.nan)
+        p_at_max_w = np.full((len(fr_list), 1), np.nan)
+        b_at_max_w = np.full((len(fr_list), 1), np.nan)
+        a_plus = np.full((len(fr_list), 1), np.nan)
+        a_minus = np.full((len(fr_list), 1), np.nan)
+        adjusted_V = np.full((len(fr_list), 1), np.nan)
 
     iter = 0
 
@@ -1375,98 +1389,171 @@ def get_fracture_geometric_parameters(fr_list):
                               np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
         dist_lower_end[iter] = np.abs(np.min(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))))
 
-        pressure, line, cells = get_fracture_variable_slice_cell_center(jk.pNet, jk.mesh, orientation='vertical')
-        opening, line, cells = get_fracture_variable_slice_cell_center(jk.w, jk.mesh, orientation='vertical')
-        z_coord = jk.mesh.CenterCoor[cells][:, 1]
-        ind_zero = np.argmin(np.abs(z_coord))
-        ind_max_w = np.argmax(opening)
-        ind_tip = np.argwhere((np.diff(np.sign(np.diff(opening))) != 0) * 1)[-1][0] + 1
-        if ind_max_w not in set(np.arange(ind_zero, ind_zero + 4)):  # the max is not at the origin so it must be in the head
-            # then we can check if in between the injection point and the max opening (in the head) we have a sign
-            # sign change.
-            if ((np.diff(np.sign(np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1).any():
-                # If we have such a sign change we have a part where the opening reduces and then restarts to grow.
-                # So we search for the sign change closest to the head as the beginning of the head
-                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
-                               z_coord[ind_zero + 1:ind_max_w - 1][np.where(((np.diff(np.sign(
-                                   np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1) == 1)[0][-1] + 1]
-            else:
-                # If we don't have a sign change we need to search for the inflexion point second closest to the maximum
-                # opening. The closest one is where the opening starts to reduce again towards the max
-                secDer = np.gradient(np.gradient(opening[ind_zero + 1:ind_max_w - 1],
-                                                 z_coord[ind_zero + 1:ind_max_w - 1]),
-                                     z_coord[ind_zero + 1:ind_max_w - 1])
-                if len(np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)) < 2:
-                    l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
-                else:
+        if head:
+            pressure, line, cells = get_fracture_variable_slice_cell_center(jk.pNet, jk.mesh, orientation='vertical')
+            opening, line, cells = get_fracture_variable_slice_cell_center(jk.w, jk.mesh, orientation='vertical')
+            z_coord = jk.mesh.CenterCoor[cells][:, 1]
+            ind_zero = np.argmin(np.abs(z_coord))
+            ind_max_w = np.argmax(opening)
+            ind_tip = np.argwhere((np.diff(np.sign(np.diff(opening))) != 0) * 1)[-1][0] + 1
+            if ind_max_w not in set(np.arange(ind_zero - 4, ind_zero + 4)):  # the max is not at the origin so it must be in the head
+                # then we can check if in between the injection point and the max opening (in the head) we have a sign
+                # sign change.
+                if ((np.diff(np.sign(np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1).any():
+                    # If we have such a sign change we have a part where the opening reduces and then restarts to grow.
+                    # So we search for the sign change closest to the head as the beginning of the head
                     l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
-                                   z_coord[ind_zero + 1:ind_max_w - 1][
-                                       np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)[-2][0] + 1]
-        elif not (np.sign(
-                np.diff(opening[ind_zero + 1:ind_tip - 2])) == 1.0)[4:].any():  # the max is at the origin: and there
-            # is no sign change so we should still be radial
-            # Note: sometimes we get a numerical non-linearity at the tip so that is what we want to exclude here.
-            # The -2 is thus used to exclude the elements closest to the tip.
-            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
-        else:
-            # So we have the max at the origin but we have a head. We need to get where the max of the head
-            # is located as to solve again for the inflection point from there on
-            ind_inc = np.argwhere((np.sign(np.diff(opening[ind_zero + 1:])) == 1) * 1)[0][0] - 1 # Index where we
-                                                                                    # get out of the source influence
-            ind_w_max_head = np.argmax(opening[ind_zero + 1:][ind_inc:]) # index of the maximum opening in the head
-            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
-                               z_coord[ind_zero + 1:][ind_inc:][:ind_w_max_head][np.where(((np.diff(np.sign(
-                                   np.diff(opening[ind_zero + 1:][ind_inc:][:ind_w_max_head]))) != 0) * 1) == 1)[0][-1]
-                                                                   + 1]
+                                   z_coord[ind_zero + 1:ind_max_w - 1][np.where(((np.diff(np.sign(
+                                       np.diff(opening[ind_zero + 1:ind_max_w - 1]))) != 0) * 1) == 1)[0][-1] + 1]
+                else:
+                    # If we don't have a sign change we need to search for the inflexion point second closest to the maximum
+                    # opening. The closest one is where the opening starts to reduce again towards the max
+                    try:
+                        secDer = np.gradient(np.gradient(opening[ind_zero + 1:ind_max_w - 1],
+                                                         z_coord[ind_zero + 1:ind_max_w - 1]),
+                                             z_coord[ind_zero + 1:ind_max_w - 1])
+                    except:
+                        secDer = np.gradient(np.gradient(opening[ind_max_w + 1:ind_zero - 1],
+                                                         z_coord[ind_max_w + 1:ind_zero - 1]),
+                                             z_coord[ind_max_w + 1:ind_zero - 1])
+                    if len(np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)) < 2:
+                        l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+                    else:
+                        try:
+                            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                                           z_coord[ind_zero + 1:ind_max_w - 1][
+                                               np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)[-2][0] + 1]
+                        except:
+                            l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                                           z_coord[ind_max_w + 1:ind_zero - 1][
+                                               np.argwhere((np.diff(np.sign(secDer)) != 0) * 1)[-2][0] + 1]
+            elif not (np.sign(
+                    np.diff(opening[ind_zero + 1:ind_tip - 2])) == 1.0)[4:].any():  # the max is at the origin: and there
+                # is no sign change so we should still be radial
+                # Note: sometimes we get a numerical non-linearity at the tip so that is what we want to exclude here.
+                # The -2 is thus used to exclude the elements closest to the tip.
+                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+            else:
+                # So we have the max at the origin but we have a head. We need to get where the max of the head
+                # is located as to solve again for the inflection point from there on
+                ind_inc = np.argwhere((np.sign(np.diff(opening[ind_zero + 1:])) == 1) * 1)[0][0] - 1 # Index where we
+                                                                                        # get out of the source influence
+                ind_w_max_head = np.argmax(opening[ind_zero + 1:][ind_inc:]) # index of the maximum opening in the head
+                try:
+                    l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                                       z_coord[ind_zero + 1:][ind_inc:][:ind_w_max_head][np.where(((np.diff(np.sign(
+                                           np.diff(opening[ind_zero + 1:][ind_inc:][:ind_w_max_head]))) != 0) * 1) == 1)
+                                                                                         [0][-1]+ 1]
+                except:
+                    l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
 
-        # --- This works fine so far but now we use it as an estimate and get the real length from the pressure
-        # Note: but let's only do this if we are no longer radial!
-        if np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - l_head[iter] <= dist_max_breadth[iter]:
-            behind_head_breadth[iter] = max_breadth[iter]
-            wmaxh[iter] = np.max(opening)
-            pmaxh[iter] = np.max(pressure)
-        else:
-            indEndhead = np.abs(z_coord - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
-                                           l_head[iter])).argmin()
-            indMinP = np.argmin(pressure[indEndhead:ind_tip])
-            if indMinP != 0 and indMinP != len(pressure[indEndhead:ind_tip]) - 1:
-                l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
-                               z_coord[indEndhead:ind_tip][indMinP]
+            # --- This works fine so far but now we use it as an estimate and get the real length from the pressure
+            # Note: but let's only do this if we are no longer radial!
+            if np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - l_head[iter] <= dist_max_breadth[iter]:
+                behind_head_breadth[iter] = max_breadth[iter]
+                wmaxh[iter] = np.max(opening)
+                pmaxh[iter] = np.max(pressure)
+            else:
+                indEndhead = np.abs(z_coord - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                                               l_head[iter])).argmin()
+                indMinP = np.argmin(pressure[indEndhead:ind_tip])
+                if indMinP != 0 and indMinP != len(pressure[indEndhead:ind_tip]) - 1:
+                    l_head[iter] = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) - \
+                                   z_coord[indEndhead:ind_tip][indMinP]
 
-            behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] -
-                                                          (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
-                                                           l_head[iter])).argmin()]
+                behind_head_breadth[iter] = breadth[0, np.abs(breadth[1, ::] -
+                                                              (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3]))) -
+                                                               l_head[iter])).argmin()]
 
-            wmaxh[iter] = np.max(opening[indEndhead:])
+                wmaxh[iter] = np.max(opening[indEndhead:])
 
-            pmaxh[iter] = np.max(pressure[indEndhead:])
+                pmaxh[iter] = np.max(pressure[indEndhead:])
 
-        # --- We also need to get the gradient of the breadth
-        # Note: we only want it between the max breadth and the head
-        ind_start = np.argwhere(breadth[1, ::] == np.min(breadth[1, breadth[0, ::] == max_breadth[iter]])).flatten()[0]
-        ind_end = np.max([np.abs(breadth[1, ::] - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
-                                           - l_head[iter])).argmin(), ind_start + 1])
-        dbdz = np.gradient(breadth[0, ind_start:ind_end + 1], breadth[1, ind_start:ind_end + 1])
-        if ind_end == ind_start + 1:
-            dbdz_tail[iter] = 0.
-        else:
-            dbdz_tail[iter] = np.mean(dbdz)
+            # # --- We also need to get the gradient of the breadth
+            # # Note: we only want it between the max breadth and the head
+            # ind_start = np.argwhere(breadth[1, ::] == np.min(breadth[1, breadth[0, ::] == max_breadth[iter]])).flatten()[0]
+            # ind_end = np.max([np.abs(breadth[1, ::] - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
+            #                                    - l_head[iter])).argmin(), ind_start + 1])
+            # dbdz = np.gradient(breadth[0, ind_start:ind_end + 1], breadth[1, ind_start:ind_end + 1])
+            # if ind_end == ind_start + 1:
+            #     dbdz_tail[iter] = 0.
+            # else:
+            #     dbdz_tail[iter] = np.mean(dbdz)
+
+        if lateral_diking:
+            ind_max_w = np.argmax(jk.w)
+            coord_max_w[iter] = jk.mesh.CenterCoor[ind_max_w]
+            max_w[iter] = jk.w[ind_max_w]
+            p_at_max_w[iter] = jk.pNet[ind_max_w]
+            idx = (np.abs(breadth[1] - coord_max_w[iter][1])).argmin()
+            b_at_max_w[iter] = breadth[0][idx]
+
+            el_trapped_tip = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltTip, 1] <= a_minus[iter])).flatten()
+            el_trapped_channel = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltChannel, 1] <= a_minus[iter])).flatten()
+            v_trapped = (np.sum(jk.w[jk.EltChannel[el_trapped_channel]])
+                                   + np.sum(jk.w[jk.EltTip[el_trapped_tip]] *
+                                            jk.FillF[el_trapped_tip])) * jk.mesh.EltArea
+            v_total = jk.mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
+            adjusted_V[iter] = v_total - v_trapped
 
         iter = iter + 1
 
-    out_dict = {
-      'l': height.flatten().flatten(),
-      'bmax': max_breadth.flatten().flatten(),
-      'bavg': avg_breadth.flatten().flatten(),
-      'bvar': var_breadth.flatten(),
-      'bhead': behind_head_breadth.flatten(),
-      'dle': dist_lower_end.flatten().flatten(),
-      'dbmax': dist_max_breadth.flatten().flatten(),
-      'lhead': l_head.flatten().flatten(),
-      'dbdz': dbdz_tail.flatten().flatten(),
-      'whmax': wmaxh.flatten().flatten(),
-      'phmax': pmaxh.flatten().flatten()
-    }
+    if head and lateral_diking:
+        out_dict = {
+          'l': height.flatten().flatten(),
+          'bmax': max_breadth.flatten().flatten(),
+          'bavg': avg_breadth.flatten().flatten(),
+          'bvar': var_breadth.flatten(),
+          'bhead': behind_head_breadth.flatten(),
+          'dle': dist_lower_end.flatten().flatten(),
+          'dbmax': dist_max_breadth.flatten().flatten(),
+          'lhead': l_head.flatten().flatten(),
+          # 'dbdz': dbdz_tail.flatten().flatten(),
+          'whmax': wmaxh.flatten().flatten(),
+          'phmax': pmaxh.flatten().flatten(),
+          'coord max w': coord_max_w.flatten().flatten(),
+          'max w': max_w.flatten().flatten(),
+          'p at max w': p_at_max_w.flatten().flatten(),
+          'b at max w': b_at_max_w.flatten().flatten(),
+          'V_adjusted': adjusted_V
+        }
+    elif head:
+        out_dict = {
+          'l': height.flatten().flatten(),
+          'bmax': max_breadth.flatten().flatten(),
+          'bavg': avg_breadth.flatten().flatten(),
+          'bvar': var_breadth.flatten(),
+          'bhead': behind_head_breadth.flatten(),
+          'dle': dist_lower_end.flatten().flatten(),
+          'dbmax': dist_max_breadth.flatten().flatten(),
+          'lhead': l_head.flatten().flatten(),
+          # 'dbdz': dbdz_tail.flatten().flatten(),
+          'whmax': wmaxh.flatten().flatten(),
+          'phmax': pmaxh.flatten().flatten()
+        }
+    elif lateral_diking:
+        out_dict = {
+          'l': height.flatten().flatten(),
+          'bmax': max_breadth.flatten().flatten(),
+          'bavg': avg_breadth.flatten().flatten(),
+          'bvar': var_breadth.flatten(),
+          'dle': dist_lower_end.flatten().flatten(),
+          'dbmax': dist_max_breadth.flatten().flatten(),
+          'coord max w': coord_max_w.flatten().flatten(),
+          'max w': max_w.flatten().flatten(),
+          'p at max w': p_at_max_w.flatten().flatten(),
+          'b at max w': b_at_max_w.flatten().flatten(),
+          'V_adjusted': adjusted_V
+        }
+    else:
+        out_dict = {
+          'l': height.flatten().flatten(),
+          'bmax': max_breadth.flatten().flatten(),
+          'bavg': avg_breadth.flatten().flatten(),
+          'bvar': var_breadth.flatten(),
+          'dle': dist_lower_end.flatten().flatten(),
+          'dbmax': dist_max_breadth.flatten().flatten()
+        }
 
     return out_dict
 
