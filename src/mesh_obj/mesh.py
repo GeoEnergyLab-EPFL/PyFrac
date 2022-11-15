@@ -8,8 +8,6 @@ See the LICENSE.TXT file for more details.
 """
 
 # external imports
-import numpy as np
-import logging
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import matplotlib.patches as mpatches
@@ -19,7 +17,7 @@ from matplotlib.collections import PatchCollection
 
 # internal imports
 from properties import PlotProperties
-from utilities.visualization import zoom_factory, to_precision, text3d
+from utilities.visualization import zoom_factory, to_precision, text3d, EPFLcolor
 from mesh_obj.symmetry import *
 from numba import njit, uint64
 
@@ -873,7 +871,7 @@ class CartesianMesh:
 
     # ----------------------------------------------------------------------------------------------------------------------
 
-    def plot(self, material_prop=None, backGround_param=None, fig=None, plot_prop=None):
+    def plot(self, material_prop=None, backGround_param=None, fig=None, plot_prop=PlotProperties(color_map=EPFLcolor())):
         """
         This function plots the mesh in 2D. If the material properties is given, the cells will be color coded
         according to the parameter given by the backGround_param argument.

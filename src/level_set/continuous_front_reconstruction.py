@@ -464,7 +464,7 @@ def plot_final_reconstruction(mesh,
         plt.plot(mesh.VertexCoor[vertexID, 0], mesh.VertexCoor[vertexID, 1], '.', color='red')
         plt.plot(xintersectionsfromzerovertex, yintersectionsfromzerovertex, '.', color='red')
     plt.plot(mesh.CenterCoor[newRibbon,0], mesh.CenterCoor[newRibbon,1], '.',color='orange')
-    plt.plot(mesh.CenterCoor[oldRibbon,0]*1.05, mesh.CenterCoor[oldRibbon,1], '.',color='green')
+    plt.plot(mesh.CenterCoor[oldRibbon,0] + mesh.hx / 5, mesh.CenterCoor[oldRibbon,1], '.',color='green')
     plt.plot(mesh.CenterCoor[listofTIPcells, 0] + mesh.hx / 10, mesh.CenterCoor[listofTIPcells, 1] + mesh.hy / 10, '.', color='blue')
 
 
@@ -2186,7 +2186,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             #negativefront = np.where(sgndDist_k < 0)[0]
             #intwithFrontlist = np.intersect1d(negativefront, np.asarray(mesh.Frontlist))
             #cp --
-            correct_size_of_pstv_region = [False, True, False]
+            correct_size_of_pstv_region = [False, True, False, False]
             return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
 
         """
@@ -2220,7 +2220,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
         if exitstatus:
             if np.any(sgndDist_k[mesh.Frontlist]<0):
                 log.info('increasing the thickness of the band will not help to reconstruct the front becuse it will be outside of the mesh: Failing the time-step')
-                correct_size_of_pstv_region = [False, False, True]
+                correct_size_of_pstv_region = [False, False, True, False]
                 return  None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
             else:
                 log.debug('I am increasing the thickness of the band (directive from find fictitius cells routine)')
@@ -2228,7 +2228,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 # K = np.zeros((mesh.NumberOfElts,), )
                 # K[anularegion] = sgndDist_k[anularegion]
                 # plot_as_matrix(K, mesh)
-                correct_size_of_pstv_region = [False, False, False]
+                correct_size_of_pstv_region = [False, False, False, False]
                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
 
         """
@@ -2282,13 +2282,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                             intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))), np.asarray(mesh.Frontlist))
                             if intwithFrontlist.size >0:
                                 log.info('The new front reaches the boundary. Remeshing')
-                                correct_size_of_pstv_region = [False, True, False]
+                                correct_size_of_pstv_region = [False, True, False, False]
                                 # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                                 # (in case of anisotropic remeshing)
                                 return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                             else:
                                 log.debug('I am increasing the thickness of the band (tip i cell not found in the anularegion)')
-                                correct_size_of_pstv_region = [False, False, False]
+                                correct_size_of_pstv_region = [False, False, False, False]
                                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, sgndDist_k, None, None, None
                         cell_type = get_fictitius_cell_type(LSet_temp)
                     else:
@@ -2311,7 +2311,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     intwithFrontlist = np.intersect1d(np.unique(np.ndarray.flatten(get_fictitius_cell_all_names(Fracturelist, mesh.NeiElements))),np.asarray(mesh.Frontlist))
                     if intwithFrontlist.size > 0:
                         log.info('The new front reaches the boundary. Remeshing')
-                        correct_size_of_pstv_region = [False, False, True]
+                        correct_size_of_pstv_region = [False, False, True, False]
                         # Returning the intersection between the fictitius cells and the frontlist as tip in order to decide the direction of remeshing
                         # (in case of anisotropic remeshing)
                         return intwithFrontlist, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
@@ -2378,7 +2378,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 [x, y, typeindex, edgeORvertexID] = process_fictitius_cells_4(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
             if len(indexesFC_TYPE_2) > 0:
                 log.debug('Type 2 to be tested')
-                correct_size_of_pstv_region = [False, False, True]
+                correct_size_of_pstv_region = [False, False, True, False]
                 return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, None, None, None, None
                 #[x, y, typeindex, edgeORvertexID] = process_fictitius_cells_2(indexesFC_TYPE_4, Args, x, y, typeindex,edgeORvertexID)
                 #raise SystemExit('FRONT RECONSTRUCTION ERROR: type 2 to be tested')
@@ -3125,8 +3125,8 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             #
             # "-" means: "take away the names of"
             #
-            # this is not enough, we need to account for positive cells that have been excluded from drowing the front because
-            # it was having to high curvature within it. In order to find the cells I am speaking about we can use the folowing reasoning.
+            # this is not enough, we need to account for positive cells that have been excluded from drawing the front because
+            # it was having to high curvature within it. In order to find the cells I am speaking about, we can use the folowing reasoning.
             #
             # [CCPbF] = [CCPbF] + neighbours of [CCPbF] - [cells at the previous channell (meaning ribbon+fracture)]  - [tip cells]
             #
@@ -3135,7 +3135,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             # update the levelset with the distance at the tip cells according to the distance to the reconstructed front
             # this is important in order to proper estimate the distance to the front of the fully traversed cells
             # this should not be done if we discover that we have coalescence and we would need to recompute the front location
-            # according with a LS thats why we make a copy of the original sgndDist_k and we will restore it in case we see
+            # according with a LS. Thats why we make a copy of the original sgndDist_k and we will restore it in case we see
             # that we have coalescence
             original_sgndDist_k = np.copy(sgndDist_k)
             sgndDist_k = sgndDist_k_new
@@ -3172,19 +3172,74 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                     fmmStruct = fmm(mesh)
 
                     # The original tip cells are the location of the known solution and we solve outwards from there.
-                    toEval = np.setdiff1d(anularegion, negative_cells)
+                    toEval = np.unique(np.hstack((np.setdiff1d(anularegion, negative_cells),
+                                                  global_list_of_TIPcellsONLY)))
                     fmmStruct.solveFMM((original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
                                        toEval, mesh)
 
                     # The original tip cells are the location of the known solution and we solve inwards from there.
                     # Sign change needed.
-                    toEval = np.hstack((negative_cells, global_list_of_TIPcellsONLY))
+                    toEval = np.unique(np.hstack((negative_cells, global_list_of_TIPcellsONLY)))
                     fmmStruct.solveFMM((-original_sgndDist_k[global_list_of_TIPcellsONLY], global_list_of_TIPcellsONLY),
                                        toEval, mesh)
 
                     # Assign the LS and change back the sign.
                     sgndDist_k = fmmStruct.LS
                     sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                    # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+                    # configurations we implement a front loop to fix the level set there as well
+                    ngtv_region = np.setdiff1d(negative_cells, global_list_of_TIPcellsONLY)
+                    # recession = True
+                    # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                    #     log.warning(
+                    #         'We get a recession of the front. Changing to the classical front reconstruction.')
+                    #     correct_size_of_pstv_region = [False, False, False, True]
+                    #     return None, None, None, None, None, None, None, None, correct_size_of_pstv_region, \
+                    #            None, None, None, None
+                    #     fixedElts = np.hstack(
+                    #         (global_list_of_TIPcellsONLY, ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                    #     fixedSgndDist = np.hstack(
+                    #         (sgndDist_k[global_list_of_TIPcellsONLY],
+                    #          original_sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]))
+                    #     recession = False
+                    #     iterator = 0
+                    #
+                    # while not recession:
+                    #     log.warning('The channel elements with a negative level set are ' +
+                    #                 str(ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                    #     iterator = iterator + 1
+                    #     fmmStruct = fmm(mesh)
+                    #
+                    #     # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+                    #     fmmStruct.solveFMM((fixedSgndDist, fixedElts),
+                    #                        np.unique(np.hstack((np.setdiff1d(anularegion, negative_cells),
+                    #                                             fixedElts))), mesh)
+                    #
+                    #     # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+                    #     # we need a sign change on the level set (positive inside)
+                    #     toEval = np.unique(np.hstack((ngtv_region, fixedElts)))
+                    #     fmmStruct.solveFMM((-fixedSgndDist, fixedElts), toEval, mesh)
+                    #
+                    #     # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+                    #     # negative inside and positive outside.
+                    #     sgndDist_k = fmmStruct.LS
+                    #     sgndDist_k[toEval] = -sgndDist_k[toEval]
+                    #
+                    #     if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) == 0 and iterator < 100:
+                    #         recession = True
+                    #         log.warning('Required iterations on the level set were ' + str(iterator))
+                    #     elif iterator >= 100:
+                    #         recession = True
+                    #         sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]] = \
+                    #             original_sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]
+                    #         log.warning('Required iterations exceeded ' + str(iterator) +
+                    #                     ', we simply fix the cells and accept it like this')
+                    #     else:
+                    #         newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+                    #         fixedElts = np.hstack((fixedElts, newFixedElts))
+                    #         newFixedSgndDist = original_sgndDist_k[newFixedElts]
+                    #         fixedSgndDist = np.hstack((fixedSgndDist, newFixedSgndDist))
 
                 fullyfractured_angle = []
                 fullyfractured_distance = []
@@ -3319,7 +3374,7 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
             newRibbon = newRibbon[np.nonzero(temp)]
             newRibbon = np.setdiff1d(newRibbon, np.asarray(global_list_of_TIPcellsONLY))
             global_list_of_newRibbon.extend(newRibbon.tolist())  # np
-            correct_size_of_pstv_region = [True, False, False]
+            correct_size_of_pstv_region = [True, False, False, False]
 
             # compute the coordinates for the Ffront variable in the Fracture object
             # for each cell where the front is passing you have to list the coordinates with the intersection with
@@ -3494,19 +3549,23 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
 
         if np.unique(EltCrack_k).size != EltCrack_k.size:
             # uncomment this to see the source of the error:
-            plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
-                                   shifty=0.01, annotate_cellName=False, grid=True)
-            plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
-                                   annotate_cellName=False, grid=True)
-            message = 'FRONT RECONSTRUCTION ERROR: \n the source of this error can be found because of two reasons. ' \
-                      '\n1)The first reason is that the front is entering more than 1 time the same cell ' \
-                      '\n2)The second reason is more in depth in how the scheme works.\n' \
-                      '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
-                      '    some of the tip elements they will became channel element of the previous time step. ' \
-                      '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
-                      'PS: After removing a point, the LevelSet is recomputed by assuming the distance  \nto the reconstructed front.' \
-                      'This might result in a numerical recession of the front \n but at worst it can be detected and solved by spatial or temporal refinement.'
-            raise SystemExit(message)
+            # plot = plot_cell_lists(mesh, listofTIPcellsONLY, fig=None, mycolor='b', mymarker=".", shiftx=0.0,
+            #                        shifty=0.01, annotate_cellName=False, grid=True)
+            # plot = plot_cell_lists(mesh, EltChannel_k, fig=plot, mycolor='g', mymarker="_", shiftx=0.01, shifty=0.01,
+            #                        annotate_cellName=False, grid=True)
+            # message = 'FRONT RECONSTRUCTION ERROR: \n the source of this error can be found because of two reasons. ' \
+            #           '\n1)The first reason is that the front is entering more than 1 time the same cell ' \
+            #           '\n2)The second reason is more in depth in how the scheme works.\n' \
+            #           '    If one fracture front is receding because of an artificial deletion of points at the front then\n' \
+            #           '    some of the tip elements they will became channel element of the previous time step. ' \
+            #           '\n\n>>> You can solve this problem by refining more the mesh. <<<\n\n' \
+            #           'PS: After removing a point, the LevelSet is recomputed by assuming the distance  \nto the reconstructed front.' \
+            #           'This might result in a numerical recession of the front \n but at worst it can be detected and solved by spatial or temporal refinement.'
+            # raise SystemExit(message)
+            EltCrack_k = np.unique(EltCrack_k)
+            EltChannel_k = np.setdiff1d(EltChannel_k,np.intersect1d(EltChannel_k, EltTip_k))
+            print('A ribbon became a tip cell again. We allow for this through bookkeeping and see what happens')
+
 
         EltRibbon_k = newRibbon
 
@@ -3519,7 +3578,7 @@ def UpdateListsFromContinuousFrontRec(newRibbon,
         # from utility import plot_as_matrix
         # K = np.zeros((mesh.NumberOfElts,), )
         # plot_as_matrix(CellStatus_k, mesh)
-        return   EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, CellStatus_k, fully_traversed
+        return EltChannel_k, EltTip_k, EltCrack_k, EltRibbon_k, CellStatus_k, fully_traversed
 
 # check if:
 def you_advance_more_than_2_cells(fully_traversed_k,EltTip_last_tmstp,NeiElements,oldfront,newfront,mesh):
