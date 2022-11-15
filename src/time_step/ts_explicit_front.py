@@ -436,8 +436,11 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
         t_since_arrival = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
         t_since_arrival[t_since_arrival < 0.] = 0.
-        LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((t_since_arrival
-                                                                                              + timeStep) ** 0.5 - t_since_arrival ** 0.5) * Fr_lstTmStp.mesh.EltArea
+        if np.isnan(t_since_arrival).any():
+            log.debug("Why are we here?")
+        LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] \
+                                        * ((t_since_arrival
+                                            + timeStep) ** 0.5 - t_since_arrival ** 0.5) * Fr_lstTmStp.mesh.EltArea
         if np.isnan(LkOff[Fr_lstTmStp.EltChannel]).any():
             exitstatus = 13
             return exitstatus, None
@@ -504,8 +507,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     new_channel = np.array([], dtype=int)
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
-    if np.any(Vel_k[new_channel]==0):
+    if np.any(Vel_k[new_channel]<=0):
         log.debug("why we have zeros?")
+        Vel_k[new_channel[np.argwhere(Vel_k[new_channel]<=0)]] <= 0
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
     max_l = Fr_lstTmStp.mesh.hx * np.cos(alpha_k[new_channel]) + Fr_lstTmStp.mesh.hy * np.sin(alpha_k[new_channel])
     t_leave = Fr_lstTmStp.time + timeStep - (l_k[new_channel] - max_l) / Vel_k[new_channel]
