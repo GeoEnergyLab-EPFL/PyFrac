@@ -928,7 +928,7 @@ class CartesianMesh:
             sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                        norm=plt.Normalize(vmin=min_value, vmax=max_value))
             sm._A = []
-            clr_bar = fig.colorbar(sm, alpha=0.65)
+            clr_bar = fig.colorbar(sm, alpha=0.65, ax=fig.gca())
             clr_bar.set_label(parameter)
 
         else:
