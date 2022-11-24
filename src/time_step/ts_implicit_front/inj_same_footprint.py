@@ -61,7 +61,11 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
         # Calculate leak-off term for the channel cell
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
-        t_lst_min_t0[t_lst_min_t0 < 0.] = 0.
+        t_lst_min_t0[t_lst_min_t0 < 0.] <= 0.
+        if np.isnan(t_lst_min_t0).any():
+            t_lst_min_t0[np.argwhere(np.isnan(t_lst_min_t0))] = 0.
+        if (np.abs(t_lst_min_t0) == np.inf).any():
+            t_lst_min_t0[np.argwhere(np.abs(t_lst_min_t0) == np.inf)] = 0.
         t_min_t0 = t_lst_min_t0 + timeStep
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (t_min_t0 ** 0.5 -
                                                                                              t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
