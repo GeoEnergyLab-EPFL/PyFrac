@@ -458,7 +458,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0.:
         # todo: no need to evaluate on each iteration. Need to decide. Evaluating here for now for better readability
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
-        t_lst_min_t0[t_lst_min_t0 < 0.] = 0.
+        t_lst_min_t0[t_lst_min_t0 <= 0.] = 0.
+        if np.isnan(t_lst_min_t0).any():
+            t_lst_min_t0[np.argwhere(np.isnan(t_lst_min_t0))] = 0.
+        if (np.abs(t_lst_min_t0) == np.inf).any():
+            t_lst_min_t0[np.argwhere(np.abs(t_lst_min_t0) == np.inf)] = 0.
         t_min_t0 = t_lst_min_t0 + timeStep
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (
                 t_min_t0 ** 0.5 - t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
@@ -528,12 +532,20 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     new_channel = np.array([], dtype=int)
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
+    if np.any(Vel_k[new_channel] <= 0.):  # negative velocitz set to zero...
+        Vel_k[new_channel[np.where(Vel_k[new_channel] <= 0.)]] = 1e-6
+        log.debug("Some zero velocities are set to a minimum velocity to evaluate the leak-off.")
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
     max_l = Fr_lstTmStp.mesh.hx * np.cos(alpha_k[new_channel]) + Fr_lstTmStp.mesh.hy * np.sin(alpha_k[new_channel])
     t_leave = Fr_lstTmStp.time + timeStep - (l_k[new_channel] - max_l) / Vel_k[new_channel]
     Tarrival_k[EltsTipNew[new_channel]] = (t_enter + t_leave) / 2
     to_correct = np.where(Tarrival_k[EltsTipNew[new_channel]] < max_Tarrival)[0]
     Tarrival_k[EltsTipNew[new_channel[to_correct]]] = max_Tarrival
+    if np.isnan(Tarrival_k[EltChannel_k]).any(): # How is this happening?!
+        Tarrival_k[EltChannel_k[np.isnan(Tarrival_k[EltChannel_k])]] = \
+            Fr_lstTmStp.Tarrival[EltChannel_k[np.isnan(Tarrival_k[EltChannel_k])]]
+    if (np.abs(Tarrival_k[EltChannel_k]) == np.inf).any():
+        Tarrival_k[EltChannel_k[np.argwhere(np.abs(Tarrival_k[EltChannel_k]) == np.inf)]] = max_Tarrival
 
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
