@@ -1501,16 +1501,6 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
         iter = iter + 1
 
     if head and lateral_diking:
-            # --- We also need to get the gradient of the breadth
-            # Note: we only want it between the max breadth and the head
-            ind_start = np.argwhere(breadth[1, ::] == np.min(breadth[1, breadth[0, ::] == max_breadth[iter]])).flatten()[0]
-            ind_end = np.max([np.abs(breadth[1, ::] - (np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))
-                                               - l_head[iter])).argmin(), ind_start + 1])
-            dbdz = np.gradient(breadth[0, ind_start:ind_end + 1], breadth[1, ind_start:ind_end + 1])
-
-        iter = iter + 1
-
-    if head:
         out_dict = {
           'l': height.flatten().flatten(),
           'bmax': max_breadth.flatten().flatten(),
