@@ -1692,7 +1692,7 @@ def get_fracture_fp(fr_list):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
+def get_velocity_as_vector(Solid, Fluid, Fr_list, SimProp): #CP 2020
     """This function gets the velocity components of the fluid flux for a given list of fractures
 
     :param Solid: Instance of the class MaterialProperties - see related documentation
@@ -1710,13 +1710,15 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
         Rey_num, \
         fluid_flux_components, \
         fluid_vel_components = calculate_fluid_flow_characteristics_laminar(i.w,
-                                                                            i.pFluid,
+                                                                            i.pNet,
                                                                             Solid.SigmaO,
                                                                             i.mesh,
                                                                             i.EltCrack,
                                                                             i.InCrack,
                                                                             Fluid.muPrime,
-                                                                            Fluid.density)
+                                                                            Fluid.density,
+                                                                            SimProp,
+                                                                            Solid)
         # fluid_vel_components_for_one_elem = [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge, fy bottom edge, fx top edge, fy top edge]
         #
         #                 6  7
@@ -1735,7 +1737,7 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list): #CP 2020
     return fluid_vel_list, time_srs
 
 #-----------------------------------------------------------------------------------------------------------------------
-def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux',orientation='horizontal'): #CP 2020
+def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, simProp, vel_direction = 'ux',orientation='horizontal'): #CP 2020
     """
     This function returns, at each time station, the velocity component in x or y direction along a horizontal or vertical section passing
     through a given point.
@@ -1754,7 +1756,7 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux
     """
 
     # initial_point - of the slice
-    fluid_vel_list, time_srs = get_velocity_as_vector(Solid, Fluid, Fr_list)
+    fluid_vel_list, time_srs = get_velocity_as_vector(Solid, Fluid, Fr_list, simProp)
     nOFtimes = len(time_srs)
     # fluid_vel_list is a list and each entry contains a matrix with the information about the fluid velocity for each of the edges of any mesh element
     # fluid_vel_components_for_one_elem = [fx left edge, fy left edge, fx right edge, fy right edge, fx bottom edge, fy bottom edge, fx top edge, fy top edge]
@@ -1826,3 +1828,297 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, vel_direction = 'ux
         list_of_fluid_vel_lists.append(fluid_vel_list_final_i)
 
     return list_of_fluid_vel_lists, time_srs, list_of_sampling_lines
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_energy_split(Solid, Fluid, SimProp, Fr_list): #AM 2022, based on CP routines
+    """This function returns the powers for a given series of fractures
+
+    :param Solid: Instance of the class MaterialProperties - see related documentation
+    :param Fluid: Instance of the class FluidProperties - see related documentation
+    :param SimProp: Instance of the class SimulationProperties - see related documentation
+    :param Fr_list: List of Instances of the class Fracture - see related documentation
+    :return: List containing a matrix with the information about the fluid velocity for each of the edges of any mesh
+             element, List of time stations
+    """
+
+    if not hasattr(SimProp, 'gravityValue'):
+        SimProp.gravityValue = 9.81
+
+    Viscous_EN = init_list_of_objects(len(Fr_list)-1)
+    Fracture_EN = init_list_of_objects(len(Fr_list)-1)
+    Elastic_EN = init_list_of_objects(len(Fr_list)-1)
+    External_EN = init_list_of_objects(len(Fr_list)-1)
+    Internal_EN = init_list_of_objects(len(Fr_list)-1)
+    LeakOff_EN = init_list_of_objects(len(Fr_list)-1)
+    energy_time = init_list_of_objects(len(Fr_list)-1)
+
+    # 4) loop on the fractures and get the different time steps
+    NoT = len(Fr_list)
+    iter = 0
+    for i in range(1, NoT):
+        print("\n Processing: " + str(int(100.*i/(NoT-1))) +' %')
+
+        fr_i = Fr_list[i]
+        fr_im1 = Fr_list[i-1]
+
+        if isinstance(fr_i.mesh, int):
+            fr_i_mesh = Fr_list[fr_i.mesh]
+        else:
+            fr_i_mesh = fr_i.mesh
+
+        if isinstance(fr_im1.mesh, int):
+            fr_im1_mesh = Fr_list[fr_im1.mesh]
+        else:
+            fr_im1_mesh = fr_im1.mesh
+
+        # check if fr_i and fr_im1 have the same mesh
+
+        if (fr_i_mesh.hx == fr_im1_mesh.hx and
+            fr_i_mesh.hy == fr_im1_mesh.hy and
+            fr_i_mesh.nx == fr_im1_mesh.nx and
+            fr_i_mesh.ny == fr_im1_mesh.ny and
+            fr_i_mesh.domainLimits[0] == fr_im1_mesh.domainLimits[0] and
+            fr_i_mesh.domainLimits[1] == fr_im1_mesh.domainLimits[1] and
+            fr_i_mesh.domainLimits[2] == fr_im1_mesh.domainLimits[2] and
+            fr_i_mesh.domainLimits[3] == fr_im1_mesh.domainLimits[3]):
+
+            # only if we have not yet defined it before!
+            Solid.density = 2700 * np.ones((fr_i_mesh.NumberOfElts,), float)
+
+            Viscous_EN[iter] = get_Viscous_EN(fr_i, Fluid, Solid, SimProp, fr_i_mesh)
+            Fracture_EN[iter] = get_Fracture_EN(fr_i, Solid, fr_i_mesh)
+            Elastic_EN[iter] = get_Elastic_EN(fr_im1, fr_i, fr_i_mesh)
+            External_EN[iter] = get_External_EN(fr_im1, fr_i)
+            Internal_EN[iter] = Viscous_EN[iter]+Fracture_EN[iter]+Elastic_EN[iter]
+            # Not yet implemented!
+            # if sum(fr_i.leakOff) != 0:
+            #     LeakOff_EN[iter] = get_leakOff_EN(fr_im1, fr_i)
+            energy_time[iter] = fr_i.time
+            if fr_i.time > .85e-5 and fr_i.time < 1.25e-5:
+                print("hey")
+            if fr_i.time > .85e-2 and fr_i.time < 1.25e-2:
+                print("hey")
+            if fr_i.time > 45 and fr_i.time < 60:
+                print("hey")
+            if fr_i.time > 0.9e6 and fr_i.time < 1.1e6:
+                print("hey")
+            iter = iter + 1
+    end_energy = iter
+    return External_EN[:end_energy], Internal_EN[:end_energy], Viscous_EN[:end_energy], Fracture_EN[:end_energy],\
+           Elastic_EN[:end_energy], LeakOff_EN[:end_energy], energy_time[:end_energy]
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_Viscous_EN(fr_i, Fluid, Solid, SimProp, fr_i_mesh):
+    """This function calculates the power dissipated by viscous flow in the fracture
+
+    :param fr_i: Fracture object of the current time step - see related documentation
+    :param Solid: Instance of the class MaterialProperties - see related documentation
+    :param Fluid: Instance of the class FluidProperties - see related documentation
+    :param fr_i_mesh: Mesh corresponding to the current fracture
+    :return: float value of the energy dissipated by viscous flow for this time-step
+    """
+
+    viscosity = Fluid.viscosity # the viscosity of the fluid
+    cell_area = fr_i_mesh.hx * fr_i_mesh.hy # the surface of one cell (regular grid)
+    w = fr_i.w[fr_i.EltCrack] # the opening of all cells in the crack
+
+    fluid_vel_list, waste = get_velocity_as_vector(Solid, Fluid, [fr_i], SimProp) # the fluid flow velocity of the cells
+    fluid_vel = fluid_vel_list[0]
+
+    # define the velocity at the center as the average of the velocity on the edges
+    # we take the square of the average to be able to have non zero energy dissipation at the injection point
+    nEltCrack=fr_i.EltCrack.size
+    sqVx = np.zeros(nEltCrack)
+    sqVy = np.zeros(nEltCrack)
+    sqV = np.zeros(nEltCrack)
+    Viscous_EN_vec = np.zeros(nEltCrack)
+    for i in range(nEltCrack):
+        ID = fr_i.EltCrack[i]
+        if not ID in fr_i.EltTip:
+            sqVx[i] = (fluid_vel[0, i]**2 + fluid_vel[2, i]**2 + fluid_vel[4, i]**2 + fluid_vel[6, i]**2 )/4.
+            sqVy[i] = (fluid_vel[1, i]**2 + fluid_vel[3, i]**2 + fluid_vel[5, i]**2 + fluid_vel[7, i]**2 )/4.
+            sqV[i] = sqVx[i] + sqVy[i]
+            Viscous_EN_vec[i] = sqV[i]/w[i]
+        else:
+            tip_ind = np.where(fr_i.EltTip==ID)[0]
+            Viscous_EN_vec[i] = fr_i.FillF[tip_ind]*fr_i.v[tip_ind]**2 / w[i]
+
+    # the viscous energy is the cell area times the parallel plate viscosity (12 \mu) * the square of the flow velocity.
+    # k = np.zeros(fr_i.mesh.NumberOfElts)
+    # k[fr_i.EltCrack] = cell_area * 12 * viscosity * Viscous_EN_vec
+    # from utilities.utility import plot_as_matrix
+    # plot_as_matrix(k, fr_i.mesh)
+    # plt.show(block=True)
+    Viscous_EN = cell_area * 12 * viscosity * np.sum(Viscous_EN_vec)
+    return Viscous_EN
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_l_Ffront_ordered_as_v(Ffront, EltTip, mesh):
+    """This function calculates the circumference of the fracture. This is necessary to estimate the fracture energy.
+
+    :param Ffront: numpy array of the intersection points of the fracture front with the grid.
+    :param EltTip: numpy array of the indices of the elements where the front passes through.
+    :param mesh: mesh object of the evaluated fracture footprint - see related documentation
+    :return: three numpy arrays containing the length of the front segment, the x-coordinate of its center, and the
+                y-coordinate of its center
+    """
+    # get the length of the fracture circumference
+    l_collection = np.zeros(len(Ffront))
+    center_collection_x = np.zeros(len(Ffront))
+    center_collection_y = np.zeros(len(Ffront))
+    frontIDlist = np.zeros(len(Ffront), dtype=int)
+    for point_ID, point in enumerate(Ffront):
+        [x1, y1] = [point[0], point[1]]
+        [x2, y2] = [point[2], point[3]]
+        l = np.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
+        l_collection[point_ID] = l
+        center_collection_x[point_ID] = 0.5 * (x1 + x2)
+        center_collection_y[point_ID] = 0.5 * (y1 + y2)
+        frontIDlist[point_ID] = mesh.locate_element(center_collection_x[point_ID], center_collection_y[point_ID])[0]
+        front_length = np.sum(l_collection)
+
+    # check if there are duplicates
+    frontIDlist_new = np.unique(frontIDlist)
+    if len(frontIDlist) != len(frontIDlist_new):
+        print("ERROR locating the front cell from the front edge coordinates")
+        SystemExit()
+    # check if the number of elements is the same to the tip elements
+    if len(EltTip) != len(frontIDlist_new):
+        print("ERROR the number of tip elements is not the same as the one derived by the front segments")
+        SystemExit()
+    # check if the elements are the same:
+    if np.sum(np.sort(EltTip) - np.sort(frontIDlist_new)) != 0:
+        print("ERROR Fr.EltTip does not contain the same elements as in 'frontIDlist_new' ")
+        SystemExit()
+    # check if the elements are the same:
+    if np.sum(EltTip - frontIDlist_new) != 0:  # get the sorting vect
+    # strategy:
+    #   v1 = [1 3 5 2]      -> [1 2 3 5]  and via [1 4 2 3]
+    #   v2 = [5 2 3 1]      -> [4 2 3 1]  and via [4 2 3 1]
+    #      so element in pos 1 correspond to elem in pos 4
+    #      so element in pos 4 correspond to elem in pos 2
+    #      so element in pos 2 correspond to elem in pos 3
+    #      so element in pos 3 correspond to elem in pos 1
+
+        indSort1 = np.argsort(EltTip)
+        indSort2 = np.argsort(frontIDlist_new)
+        sorted_l = np.zeros(len(EltTip))
+        sorted_center_collection_x = np.zeros(len(EltTip))
+        sorted_center_collection_y = np.zeros(len(EltTip))
+        check_ = np.zeros(len(EltTip))
+        # sort  frontIDlist_new and length as Fr.EltTip
+        for ii in range(len(indSort1)):
+            sorted_l[indSort1[ii]] = l_collection[indSort2[ii]]
+            sorted_center_collection_x[indSort1[ii]] = center_collection_x[indSort2[ii]]
+            sorted_center_collection_y[indSort1[ii]] = center_collection_y[indSort2[ii]]
+            check_[indSort1[ii]] = frontIDlist_new[indSort2[ii]]
+        if np.sum(check_ - EltTip) != 0:
+            print("ERROR sorting the arrays has a bug ")
+            SystemExit()
+        else:
+            l_collection = sorted_l
+            center_collection_x = sorted_center_collection_x
+            center_collection_y = sorted_center_collection_y
+    return l_collection, center_collection_x, center_collection_y
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_Fracture_EN(fr_i, Solid,fr_i_mesh):
+    """This function calculates the energy spent to create new fractures for a current time-step.
+
+    :param fr_i: fracture object of the current time step - see related documentation
+    :param Solid: A material properties object - see related documentation
+    :param fr_i_mesh: mesh object corresponding to the fracture object of the current time step -
+                        see related documentation
+    :return: the value of the fracturing energy
+    """
+    # Note: 1) It can be improved by having the direction dependent toughness.
+    #       2) Not yet for TI material.
+    #       3) could be improved by having "get_l_Ffront_ordered_as_v" faster
+
+    NofFfrontSegments = len(fr_i.Ffront)
+    Fracture_EN_vec = np.zeros(NofFfrontSegments)
+    Toughness_function = True
+    try:
+        Solid.K1cFunc[0., 0., 0.]
+    except:
+        Toughness_function = False
+
+    l,x_m,y_m = get_l_Ffront_ordered_as_v(fr_i.Ffront, fr_i.EltTip, fr_i_mesh)
+
+    if Toughness_function:
+        for i in range(NofFfrontSegments):
+            l_i=l[i]
+            x_m_i = x_m[i]
+            y_m_i = y_m[i]
+            angle = 0.
+            Fracture_EN_vec[i] = l_i * fr_i.v[i] * Solid.K1cFunc[x_m_i,y_m_i,angle]**2/Solid.Eprime
+    else:
+        homogeneous = False
+        if Solid.K1c.max() == Solid.K1c.min():
+            homogeneous = True
+        if homogeneous:
+            KIc = Solid.K1c.max()
+            for i in range(NofFfrontSegments):
+                l_i = l[i]
+                Fracture_EN_vec[i] = l_i * fr_i.v[i] * KIc**2/Solid.Eprime
+        else:
+            print("Not implemented for heterogenous toughness defined without a function")
+
+    Fracture_EN = np.sum(Fracture_EN_vec)
+    return Fracture_EN
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_Elastic_EN(fr_im1, fr_i, fr_i_mesh):
+    """This function calculates the Elastic power stored in the system.
+
+    :param fr_im1: fracture object of the previous time step - see related documentation
+    :param fr_i: fracture object of the current time step - see related documentation
+    :param fr_i_mesh: mesh object corresponding to the fracture object of the current time step -
+                        see related documentation
+    :return: the value of the elastically stored power
+    """
+    #  Note:   1) this function can be improved by considering the filling fraction
+    dt = np.abs(fr_i.time - fr_im1.time)
+    cell_area = fr_i_mesh.hx * fr_i_mesh.hy
+    w = fr_i.w[fr_i.EltCrack]
+    pNet = fr_i.pNet[fr_i.EltCrack]
+    nEltCrack=fr_i.EltCrack.size
+    Elastic_EN_vec = np.zeros(nEltCrack)
+    for i in range(nEltCrack):
+        ID=fr_i.EltCrack[i]
+        w_old = fr_im1.w[ID]
+        pNet_old = fr_im1.pNet[ID]
+        if not ID in fr_i.EltTip:
+            Elastic_EN_vec[i] = 0.5 * (w[i]*pNet[i]-pNet_old*w_old)/dt
+        else:
+            tip_ind = np.where(fr_i.EltTip==ID)[0]
+            Elastic_EN_vec[i] = fr_i.FillF[tip_ind] * 0.5 * (w[i]*pNet[i]-pNet_old*w_old)/dt
+    Elastic_EN = cell_area * np.sum(Elastic_EN_vec)
+
+    return Elastic_EN
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_External_EN(fr_im1, fr_i):
+    """This function calculates the external power added to the system.
+
+    :param fr_im1: fracture object of the previous time step - see related documentation
+    :param fr_i: fracture object of the current time step - see related documentation
+    :return: the value of the external power added to the system
+    """
+    # Note: 1) this is coded up for only one injection point
+    External_EN = 0.
+    if len(fr_i.source) != 0:
+        External_EN = fr_i.pNet[fr_i.source[0]] * (fr_i.injectedVol - fr_im1.injectedVol) / (
+                    fr_i.time - fr_im1.time)
+    return External_EN
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_leakOff_EN(fr_im1, fr_i):
+    return None

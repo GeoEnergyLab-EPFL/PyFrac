@@ -731,7 +731,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                                                           Fr_kplus1.EltCrack,
                                                                                           Fr_kplus1.InCrack,
                                                                                           fluid_properties.muPrime,
-                                                                                          fluid_properties.density)
+                                                                                          fluid_properties.density,
+                                                                                          sim_properties,
+                                                                                          mat_properties)
 
             if sim_properties.saveFluidFlux:
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)

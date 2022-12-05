@@ -74,10 +74,10 @@ class MaterialProperties:
 
     """
 
-    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., Carters_t0= None, confining_stress=0., grain_size=0., K1c_func=None,
-                 anisotropic_K1c=False, confining_stress_func = None, Carters_coef_func = None, TI_elasticity=False,
-                 Cij = None, free_surf=False, free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6,
-                 pore_pressure=-1.e100):
+    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., Carters_t0= None, confining_stress=0.,
+                 grain_size=0., K1c_func=None, anisotropic_K1c=False, confining_stress_func=None,
+                 Carters_coef_func=None, TI_elasticity=False, Cij = None, free_surf=False, free_surf_depth=1.e300,
+                 TI_plane_angle=0., minimum_width=1e-6, pore_pressure=-1.e100, density=2700, density_func=None):
         """
         The constructor function
         """
@@ -163,13 +163,24 @@ class MaterialProperties:
         self.FreeSurfDepth = free_surf_depth
         self.TI_PlaneAngle = TI_plane_angle
 
+        if isinstance(density, np.ndarray):  # check if float or ndarray
+            if density.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.density = density
+            else:
+                # error
+                raise ValueError('Error in the size of toughness input!')
+        else:
+            self.density = density * np.ones((Mesh.NumberOfElts,), float)
+
 
         self.K1cFunc = K1c_func
         self.SigmaOFunc = confining_stress_func
         self.ClFunc = Carters_coef_func
+        self.DensityFunc = density_func
 
         # overriding with the values evaluated by the given functions
-        if (K1c_func is not None) or (confining_stress_func is not None) or (Carters_coef_func is not None):
+        if (K1c_func is not None) or (confining_stress_func is not None) or (Carters_coef_func is not None) \
+                or (density_func is not None):
             self.remesh(Mesh)
 
         self.wc = minimum_width
@@ -216,7 +227,14 @@ class MaterialProperties:
         else:
             self.Cprime = np.full((mesh.NumberOfElts,), self.Cprime[0])
 
+        if self.DensityFunc is not None:
+            self.density = np.empty((mesh.NumberOfElts,), dtype=np.float64)
+            for i in range(mesh.NumberOfElts):
+                self.density[i] = self.DensityFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+        else:
+            self.density = np.full((mesh.NumberOfElts,), self.density[0])
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def Kprime_func(self, x, y, alpha):
         return self.K1cFunc(x, y, alpha) * (32. / np.pi) ** 0.5
-
-#-----------------------------------------------------------------------------------------------------------------------
