@@ -406,7 +406,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                   Vel=Vel_k,
                                   stagnant=stagnant,
                                   KIPrime=KIPrime,
-                                  Kprime = Kprime_tip,
+                                  Kprime=Kprime_tip,
                                   Eprime=Eprime_tip,
                                   Cprime=Cprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
