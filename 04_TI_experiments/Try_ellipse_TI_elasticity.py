@@ -116,7 +116,10 @@ Solid = MaterialProperties(Mesh,
                            toughness=K1c_func(0,0,np.pi/2),
                            K1c_func=K1c_func,
                            TI_elasticity=True,
-                           Cij=Cij)
+                           Cij=Cij,
+                           Carters_coef = 1.e-5,
+                           Carters_t0 = -1.e-5
+                           )
 
 # injection parameters
 # Original averaged rates - too many data points

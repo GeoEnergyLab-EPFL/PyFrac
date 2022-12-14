@@ -33,7 +33,7 @@ else:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False):
+def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False, load_mesh=True):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -137,15 +137,55 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
     if len(fracture_list) == 0:
         raise ValueError("Fracture list is empty")
+    if load_mesh:
+        for num, fr in enumerate(fracture_list):
+            compute_mesh = None
+            previous_in_list = None
+            if isinstance(fr.mesh, Dict):
+                mesh_dict = copy.deepcopy(fr.mesh)
+                if num>0:
+                    previous_in_list = fracture_list[num-1]
+                    if (previous_in_list.mesh.nx == mesh_dict['nx'] and
+                        previous_in_list.mesh.ny == mesh_dict['ny'] and
+                        sum(previous_in_list.mesh.domainLimits == mesh_dict['domain Limits']) == 4):
+                        compute_mesh = False
+                    else:
+                        compute_mesh = True
+                else:
+                    compute_mesh = True
 
+                if compute_mesh:
+                    fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
+                                  mesh_dict['nx'], mesh_dict['ny'])
+                else:
+                    fr.mesh = previous_in_list.mesh
+    return fracture_list, properties
+#-----------------------------------------------------------------------------------------------------------------------
+def load_mesh_to_fr_list(fracture_list):
+    from src.mesh_obj.mesh import CartesianMesh
     for num, fr in enumerate(fracture_list):
+        compute_mesh = None
+        previous_in_list = None
         if isinstance(fr.mesh, Dict):
             mesh_dict = copy.deepcopy(fr.mesh)
-            fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(), mesh_dict['domain Limits'][[0, 1]].tolist(),
-                          mesh_dict['nx'], mesh_dict['ny'])
-    return fracture_list, properties
+            if num > 0:
+                previous_in_list = fracture_list[num - 1]
+                if (previous_in_list.mesh.nx == mesh_dict['nx'] and
+                        previous_in_list.mesh.ny == mesh_dict['ny'] and
+                        sum(previous_in_list.mesh.domainLimits == mesh_dict['domain Limits']) == 4):
+                    compute_mesh = False
+                else:
+                    compute_mesh = True
+            else:
+                compute_mesh = True
 
-
+            if compute_mesh:
+                fr.mesh = CartesianMesh(mesh_dict['domain Limits'][[2, 3]].tolist(),
+                                        mesh_dict['domain Limits'][[0, 1]].tolist(),
+                                        mesh_dict['nx'], mesh_dict['ny'])
+            else:
+                fr.mesh = previous_in_list.mesh
+    return fracture_list
 #-----------------------------------------------------------------------------------------------------------------------
 
 def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):

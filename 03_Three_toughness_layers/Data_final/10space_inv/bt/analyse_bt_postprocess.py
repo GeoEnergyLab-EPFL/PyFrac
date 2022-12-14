@@ -179,7 +179,7 @@ class adapive_time_ref_factory():
 print('STARTING SIMULATION:')
 # load the file with the results
 file_name = "analyse_bt_res_copy.json"
-baseloc = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
+baseloc = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/"
 with open(baseloc+file_name, "r+") as json_file:
     results = json.load(json_file)[0]  # get the data
 
@@ -211,11 +211,12 @@ for num_id_iter, num in enumerate(simlist):
     num_id = num_id + 1
     remove_value = False
     print(f'analyzing {num_id+1} out of {len(simlist)}')
-    # get H/2
+    # get H/2 and delta
     xlim = results["x_lim"][num_id]
+    delta = results["delta"][num_id]
 
     # get results path
-    globalpath = '/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/bt/simulation_'+str(num)+'__2022-02-02__09_02_40/'
+    globalpath = '/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/10space_inv/bt/simulation_'+str(num)+'__2022-02-02__09_02_40/'
 
     # load the fracture obj
     del Fr_list, properties
@@ -233,6 +234,7 @@ for num_id_iter, num in enumerate(simlist):
         relative_pos_xlim = ((xlim - 0.5 * hx) % hx) / hx
         full_list_rel_pos_xlim.append(relative_pos_xlim)
         num_full_list_rel_pos_xlim.append(num)
+        time_bt_lst.append(Fr_list[-1].time)
     else:
         relative_pos_xlim = 0.
     if (not (relative_pos_xlim > .5 and relative_pos_xlim < .95) ) or remove_value:
@@ -270,12 +272,12 @@ for num_id_iter, num in enumerate(simlist):
 
     for II in range(len(Fr_list)):
         x_min, x_max, y_min, y_max = get_fracture_sizes(Fr_list[II])
-        if x_max > xlim or np.abs(x_min) > xlim:
+        if x_max > xlim-delta or np.abs(x_min) > xlim-delta:
             break
         else :
             target_fr = II
-            e1 = np.abs(x_max - xlim)/xlim
-            e2 = np.abs(np.abs(x_min)  - xlim)/xlim
+            e1 = np.abs(x_max - (xlim-delta))/(xlim-delta)
+            e2 = np.abs(np.abs(x_min)  - (xlim-delta))/(xlim-delta)
             error_on_xtouch = np.maximum(e1,e2)
 
     # append the error on xtouch
