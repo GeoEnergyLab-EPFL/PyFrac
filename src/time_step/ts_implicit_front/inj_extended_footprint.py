@@ -94,7 +94,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                              Fr_lstTmStp.EltChannel,
                                                                              Fr_lstTmStp.mesh)
     elif sim_properties.projMethod == 'LS_continousfront':
-        correct_size_of_pstv_region = [False, False, False]
+        correct_size_of_pstv_region = [False, False, False, False]
         recomp_LS_4fullyTravCellsAfterCoalescence_OR_RemovingPtsOnCommonEdge = False
         while not correct_size_of_pstv_region[0]:
             EltsTipNew, \
@@ -116,6 +116,10 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                 # or because a fictitius cell has intersected the mesh.frontlist
+                return exitstatus, None
+
+            if correct_size_of_pstv_region[3]:
+                exitstatus = 20  # You are here because the level set has negative values in one of the channel cells
                 return exitstatus, None
 
             if correct_size_of_pstv_region[1]:
@@ -154,20 +158,27 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
 
                 # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
                 fmmStruct.solveFMM(
-                    (Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v), Fr_lstTmStp.EltTip),
-                    np.unique(np.hstack((pstv_region, Fr_lstTmStp.EltTip))), Fr_lstTmStp.mesh)
+                    (sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon),
+                    np.unique(np.hstack((pstv_region, Fr_lstTmStp.EltRibbon))), Fr_lstTmStp.mesh)
 
                 # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
                 # we need a sign change on the level set (positive inside)
-                toEval = np.unique(np.hstack((ngtv_region, Fr_lstTmStp.EltTip)))
-                fmmStruct.solveFMM(
-                    (-(Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v)), Fr_lstTmStp.EltTip),
-                    toEval, Fr_lstTmStp.mesh)
+                toEval = np.unique(np.hstack((ngtv_region, Fr_lstTmStp.EltRibbon)))
+                fmmStruct.solveFMM((-sgndDist_k[Fr_lstTmStp.EltRibbon], Fr_lstTmStp.EltRibbon), toEval,
+                                   Fr_lstTmStp.mesh)
 
                 # The solution stored in the object is the calculated level set. we need however to change the sign as to have
                 # negative inside and positive outside.
                 sgndDist_k = fmmStruct.LS
                 sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+                # configurations we implement a front loop to fix the level set there as well
+                # recession = True
+                # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                #     log.warning('We get a recession of the front. Changing to the classical front reconstruction.')
+                #     exitstatus = 20
+                #     return exitstatus, None
 
                 eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
@@ -220,6 +231,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+    Vel_k[Vel_k < 0] = 0
 
     # Calculate filling fraction of the tip cells for the current fracture position
     FillFrac_k = Integral_over_cell(EltsTipNew,
@@ -394,7 +406,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                   Vel=Vel_k,
                                   stagnant=stagnant,
                                   KIPrime=KIPrime,
-                                  Kprime = Kprime_tip,
+                                  Kprime=Kprime_tip,
                                   Eprime=Eprime_tip,
                                   Cprime=Cprime_tip) / Fr_lstTmStp.mesh.EltArea
     else:
@@ -446,7 +458,11 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0.:
         # todo: no need to evaluate on each iteration. Need to decide. Evaluating here for now for better readability
         t_lst_min_t0 = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
-        t_lst_min_t0[t_lst_min_t0 < 0.] = 0.
+        t_lst_min_t0[t_lst_min_t0 <= 0.] = 0.
+        if np.isnan(t_lst_min_t0).any():
+            t_lst_min_t0[np.argwhere(np.isnan(t_lst_min_t0))] = 0.
+        if (np.abs(t_lst_min_t0) == np.inf).any():
+            t_lst_min_t0[np.argwhere(np.abs(t_lst_min_t0) == np.inf)] = 0.
         t_min_t0 = t_lst_min_t0 + timeStep
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * (
                 t_min_t0 ** 0.5 - t_lst_min_t0 ** 0.5) * Fr_lstTmStp.mesh.EltArea
@@ -516,12 +532,20 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     new_channel = np.array([], dtype=int)
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
+    if np.any(Vel_k[new_channel] <= 0.):  # negative velocitz set to zero...
+        Vel_k[new_channel[np.where(Vel_k[new_channel] <= 0.)]] = 1e-6
+        log.debug("Some zero velocities are set to a minimum velocity to evaluate the leak-off.")
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
     max_l = Fr_lstTmStp.mesh.hx * np.cos(alpha_k[new_channel]) + Fr_lstTmStp.mesh.hy * np.sin(alpha_k[new_channel])
     t_leave = Fr_lstTmStp.time + timeStep - (l_k[new_channel] - max_l) / Vel_k[new_channel]
     Tarrival_k[EltsTipNew[new_channel]] = (t_enter + t_leave) / 2
     to_correct = np.where(Tarrival_k[EltsTipNew[new_channel]] < max_Tarrival)[0]
     Tarrival_k[EltsTipNew[new_channel[to_correct]]] = max_Tarrival
+    if np.isnan(Tarrival_k[EltChannel_k]).any(): # How is this happening?!
+        Tarrival_k[EltChannel_k[np.isnan(Tarrival_k[EltChannel_k])]] = \
+            Fr_lstTmStp.Tarrival[EltChannel_k[np.isnan(Tarrival_k[EltChannel_k])]]
+    if (np.abs(Tarrival_k[EltChannel_k]) == np.inf).any():
+        Tarrival_k[EltChannel_k[np.argwhere(np.abs(Tarrival_k[EltChannel_k]) == np.inf)]] = max_Tarrival
 
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
@@ -581,7 +605,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Fr_kplus1.LkOff = LkOff
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+    Fr_kplus1.efficiency = Fr_kplus1.mesh.EltArea * (np.sum(Fr_kplus1.w[Fr_kplus1.EltTip] * Fr_kplus1.FillF) +
+                                                     np.sum(Fr_kplus1.w[Fr_kplus1.EltChannel])) / Fr_kplus1.injectedVol
+    # Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
 
     if sim_properties.saveRegime and not sim_properties.get_volumeControl():
         # regime = find_regime(w_k, Fr_lstTmStp, mat_properties, fluid_properties, sim_properties, timeStep, Kprime_k,
@@ -616,7 +642,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                                           Fr_kplus1.EltCrack,
                                                                                           Fr_kplus1.InCrack,
                                                                                           fluid_properties.muPrime,
-                                                                                          fluid_properties.density)
+                                                                                          fluid_properties.density,
+                                                                                          sim_properties,
+                                                                                          mat_properties)
 
             if sim_properties.saveFluidFlux:
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)

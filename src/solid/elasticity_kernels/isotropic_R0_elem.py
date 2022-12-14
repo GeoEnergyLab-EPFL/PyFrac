@@ -73,7 +73,7 @@ def load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float32):
     return C
 
 
-@njit(fastmath=True, nogil=True, parallel=True, cache=True)
+@njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def get_toeplitzCoe_isotropic(nx, ny, hx, hy, matprop, C_precision):
     """
     Let us make some definitions:
@@ -146,7 +146,7 @@ def get_isotropic_el_self_eff(hx, hy, Ep):
     sqrt_aa_p_bb = np.sqrt(aa + bb) / (a * b)
     return sqrt_aa_p_bb * Ep / (2. * np.pi)
 
-@njit(nogil=True, cache=True, parallel = True)
+@njit(parallel=True, cache = True, nogil=True)
 def get_R0_normal_traction_at(xy_obs, xy_crack, w_crack, Ep, hx, hy):
     """
 
