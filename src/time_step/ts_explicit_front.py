@@ -110,6 +110,55 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     sgndDist_k = fmmStruct.LS
     sgndDist_k[toEval] = -sgndDist_k[toEval]
 
+    # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+    # configurations we implement a front loop to fix the level set there as well
+    # recession = True
+    # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+    #     log.warning('We get a recession of the front. We change the scheme to implicit, and re-attempt.')
+    #     exitstatus = 19
+    #     return exitstatus, None
+        # newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+    #     newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
+    #     fixedElts = np.hstack((Fr_lstTmStp.EltTip, newFixedElts))
+    #     fixedSgndDist = np.hstack((Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v),
+    #                                newFixedSgndDist))
+    #     recession = False
+    #     iterator = 0
+    #
+    # while not recession:
+    #     log.warning('The channel elements with a negative level set are ' +
+    #                 str(ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+    #     iterator = iterator + 1
+    #     fmmStruct = fmm(Fr_lstTmStp.mesh)
+    #
+    #     # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+    #     fmmStruct.solveFMM((fixedSgndDist, fixedElts), np.unique(np.hstack((pstv_region, fixedElts))), Fr_lstTmStp.mesh)
+    #
+    #     # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+    #     # we need a sign change on the level set (positive inside)
+    #     toEval = np.unique(np.hstack((ngtv_region, fixedElts)))
+    #     fmmStruct.solveFMM((-fixedSgndDist, fixedElts), toEval, Fr_lstTmStp.mesh)
+    #
+    #     # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+    #     # negative inside and positive outside.
+    #     sgndDist_k = fmmStruct.LS
+    #     sgndDist_k[toEval] = -sgndDist_k[toEval]
+    #
+    #     if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) == 0 and iterator < 100:
+    #         recession = True
+    #         log.warning('Required iterations on the level set were ' + str(iterator))
+    #     elif iterator >= 100:
+    #         recession = True
+    #         sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]] = \
+    #             Fr_lstTmStp.sgndDist[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]
+    #         log.warning('Required iterations exceeded ' + str(iterator) +
+    #                     ', we simply fix the cells and accept it like this')
+    #     else:
+    #         newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+    #         fixedElts = np.hstack((fixedElts, newFixedElts))
+    #         newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
+    #         fixedSgndDist = np.hstack((fixedSgndDist, newFixedSgndDist))
+
     eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
     # Gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
@@ -148,6 +197,10 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
             if correct_size_of_pstv_region[2]:
                 exitstatus = 7 # You are here because the level set has negative values until the end of the mesh
                                # or because a fictitius cell has intersected the mesh.frontlist
+                return exitstatus, None
+
+            if correct_size_of_pstv_region[3]:
+                exitstatus = 20 # You are here because the level set has negative values in one of the channel cells
                 return exitstatus, None
 
             if correct_size_of_pstv_region[1]:
@@ -195,6 +248,55 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                 # negative inside and positive outside.
                 sgndDist_k = fmmStruct.LS
                 sgndDist_k[toEval] = -sgndDist_k[toEval]
+
+                # In the case of explicit time steps and particular geometries one can get a sign change in the channel for these
+                # configurations we implement a front loop to fix the level set there as well
+                # recession = True
+                # if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) != 0:
+                #     log.warning('We get a recession of the front. Changing to the classical front reconstruction.')
+                #     exitstatus = 20
+                #     return exitstatus, None
+                    # fixedElts = np.hstack((Fr_lstTmStp.EltTip, ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                    # fixedSgndDist = np.hstack((Fr_lstTmStp.sgndDist[Fr_lstTmStp.EltTip] - (timeStep * Fr_lstTmStp.v),
+                    #                            Fr_lstTmStp.sgndDist[
+                    #                                ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]))
+                    # recession = False
+                    # iterator = 0
+
+                # while not recession:
+                #     log.warning('The channel elements with a negative level set are ' +
+                #                 str(ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]))
+                #     iterator = iterator + 1
+                #     fmmStruct = fmm(Fr_lstTmStp.mesh)
+                #
+                #     # We define the tip elements as the known elements and solve from there outwards to the domain boundary.
+                #     fmmStruct.solveFMM((fixedSgndDist, fixedElts), np.unique(np.hstack((pstv_region, fixedElts))),
+                #                        Fr_lstTmStp.mesh)
+                #
+                #     # We define the tip elements as the known elements and solve from there inwards (inside the fracture). To do so,
+                #     # we need a sign change on the level set (positive inside)
+                #     toEval = np.unique(np.hstack((ngtv_region, fixedElts)))
+                #     fmmStruct.solveFMM((-fixedSgndDist, fixedElts), toEval, Fr_lstTmStp.mesh)
+                #
+                #     # The solution stored in the object is the calculated level set. we need however to change the sign as to have
+                #     # negative inside and positive outside.
+                #     sgndDist_k = fmmStruct.LS
+                #     sgndDist_k[toEval] = -sgndDist_k[toEval]
+                #
+                #     if len(np.where(sgndDist_k[ngtv_region] >= 0)[0]) == 0 and iterator < 100:
+                #         recession = True
+                #         log.warning('Required iterations on the level set were ' + str(iterator))
+                #     elif iterator >= 100:
+                #         recession = True
+                #         sgndDist_k[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]] = \
+                #             Fr_lstTmStp.sgndDist[ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]]
+                #         log.warning('Required iterations exceeded ' + str(iterator) +
+                #                     ', we simply fix the cells and accept it like this')
+                #     else:
+                #         newFixedElts = ngtv_region[np.where(sgndDist_k[ngtv_region] >= 0)[0]]
+                #         fixedElts = np.hstack((fixedElts, newFixedElts))
+                #         newFixedSgndDist = Fr_lstTmStp.sgndDist[newFixedElts]
+                #         fixedSgndDist = np.hstack((fixedSgndDist, newFixedSgndDist))
 
                 eval_region = np.where(sgndDist_k[front_region] >= -Fr_lstTmStp.mesh.cellDiag)[0]
 
@@ -339,6 +441,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+    Vel_k[Vel_k < 0] = 0
 
     if perfNode is not None:
         perfNode_tipWidth = instrument_start('tip width', perfNode)
@@ -436,8 +539,15 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     if sum(mat_properties.Cprime[Fr_lstTmStp.EltChannel]) > 0:
         t_since_arrival = Fr_lstTmStp.time - Fr_lstTmStp.Tarrival[Fr_lstTmStp.EltChannel]
         t_since_arrival[t_since_arrival < 0.] = 0.
+        if np.isnan(t_since_arrival).any():
+            t_since_arrival[np.argwhere(np.isnan(t_since_arrival))] = 0.
+        if (np.abs(t_since_arrival) == np.inf).any():
+            t_since_arrival[np.argwhere(np.abs(t_since_arrival) == np.inf)] = 0.
         LkOff[Fr_lstTmStp.EltChannel] = 2 * mat_properties.Cprime[Fr_lstTmStp.EltChannel] * ((t_since_arrival
-                                                                                              + timeStep) ** 0.5 - t_since_arrival ** 0.5) * Fr_lstTmStp.mesh.EltArea
+                                                                                              + timeStep) ** 0.5
+                                                                                             - t_since_arrival ** 0.5) \
+                                        * Fr_lstTmStp.mesh.EltArea
+
         if np.isnan(LkOff[Fr_lstTmStp.EltChannel]).any():
             exitstatus = 13
             return exitstatus, None
@@ -504,14 +614,20 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     new_channel = np.array([], dtype=int)
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
-    if np.any(Vel_k[new_channel]==0):
-        log.debug("why we have zeros?")
+    if np.any(Vel_k[new_channel] <= 0.):  # negative velocitz set to zero...
+        Vel_k[new_channel[np.where(Vel_k[new_channel] <= 0.)]] = 1e-6
+        log.debug("Some zero velocities are set to a minimum velocity to evaluate the leak-off.")
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
     max_l = Fr_lstTmStp.mesh.hx * np.cos(alpha_k[new_channel]) + Fr_lstTmStp.mesh.hy * np.sin(alpha_k[new_channel])
     t_leave = Fr_lstTmStp.time + timeStep - (l_k[new_channel] - max_l) / Vel_k[new_channel]
     Tarrival_k[EltsTipNew[new_channel]] = (t_enter + t_leave) / 2
     to_correct = np.where(Tarrival_k[EltsTipNew[new_channel]] < max_Tarrival)[0]
     Tarrival_k[EltsTipNew[new_channel[to_correct]]] = max_Tarrival
+    if np.isnan(Tarrival_k[EltChannel_k]).any():
+        Tarrival_k[EltChannel_k[np.isnan(Tarrival_k[EltChannel_k])]] = \
+            Fr_lstTmStp.Tarrival[EltChannel_k[np.isnan(Tarrival_k[EltChannel_k])]]
+    if (np.abs(Tarrival_k[EltChannel_k]) == np.inf).any():
+        Tarrival_k[EltChannel_k[np.argwhere(np.abs(Tarrival_k[EltChannel_k]) == np.inf)]] = max_Tarrival
 
     # the fracture to be returned for k plus 1 iteration
     Fr_kplus1 = copy.deepcopy(Fr_lstTmStp)
@@ -565,6 +681,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                                      fluid_properties, timeStep, log, perfNode)
 
     Fr_kplus1.v = -(sgndDist_k[Fr_kplus1.EltTip] - Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip]) / timeStep
+    Fr_kplus1.v[Fr_kplus1.v < 0] = 0
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.Ffront_last = Fr_lstTmStp.Ffront
     Fr_kplus1.sgndDist_last = Fr_lstTmStp.sgndDist
@@ -574,7 +691,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     Fr_kplus1.LkOff = LkOff
     Fr_kplus1.LkOffTotal += np.sum(LkOff)
     Fr_kplus1.injectedVol += sum(Qin) * timeStep
-    Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
+    Fr_kplus1.efficiency = Fr_kplus1.mesh.EltArea * (np.sum(Fr_kplus1.w[Fr_kplus1.EltTip] * Fr_kplus1.FillF) +
+                                                     np.sum(Fr_kplus1.w[Fr_kplus1.EltChannel])) / Fr_kplus1.injectedVol
+    # Fr_kplus1.efficiency = (Fr_kplus1.injectedVol - Fr_kplus1.LkOffTotal) / Fr_kplus1.injectedVol
     Fr_kplus1.source = np.where(Qin != 0)[0]
 
     if sim_properties.saveRegime:
@@ -612,7 +731,9 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                                                           Fr_kplus1.EltCrack,
                                                                                           Fr_kplus1.InCrack,
                                                                                           fluid_properties.muPrime,
-                                                                                          fluid_properties.density)
+                                                                                          fluid_properties.density,
+                                                                                          sim_properties,
+                                                                                          mat_properties)
 
             if sim_properties.saveFluidFlux:
                 fflux = np.zeros((4, Fr_kplus1.mesh.NumberOfElts), dtype=np.float32)

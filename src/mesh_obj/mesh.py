@@ -8,8 +8,6 @@ See the LICENSE.TXT file for more details.
 """
 
 # external imports
-import numpy as np
-import logging
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import matplotlib.patches as mpatches
@@ -19,7 +17,7 @@ from matplotlib.collections import PatchCollection
 
 # internal imports
 from properties import PlotProperties
-from utilities.visualization import zoom_factory, to_precision, text3d
+from utilities.visualization import zoom_factory, to_precision, text3d, EPFLcolor
 from mesh_obj.symmetry import *
 from numba import njit, uint64
 
@@ -541,6 +539,17 @@ class CartesianMesh:
 
     # -----------------------------------------------------------------------------------------------------------------------
 
+    def __eq__(self, other):
+        if isinstance(other, CartesianMesh):
+            if (other.domainLimits == self.domainLimits).all() and other.nx == self.nx and other.ny == self.ny:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    # -----------------------------------------------------------------------------------------------------------------------
+
     def set_domainLimits(self, Lx, Ly):
 
         """
@@ -803,6 +812,40 @@ class CartesianMesh:
         return cells_outside_box
 
     # ----------------------------------------------------------------------------------------------------------------------
+    def get_cells_inside_box(self,xmin,xmax,ymin,ymax):
+        """
+        We create a list of cell IDs that are outside a given box.
+        Decision made based on cell centers
+
+         _____________________________
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        |    |    | x  | x  | x  |    |
+        |____|____|____|____|____|____|
+        |    |    | x  | x  | x  |    |
+        |____|____|____|____|____|____|
+        |    |    |    |    |    |    |
+        |____|____|____|____|____|____|
+        """
+
+        cells_inside_box = []
+
+        for i in range(self.NumberOfElts):
+            xc, yc = self.CenterCoor[i, :]
+            if (xc > xmin and xc < xmax) and (yc > ymin and yc < ymax):
+                cells_inside_box.append(i)
+        # To check:
+        # from utilities.utility import plot_as_matrix
+        # K=np.zeros(self.NumberOfElts)
+        # K[cells_outside_box] = 1
+        # plot_as_matrix(K,self)
+        return cells_inside_box
+
+    # ----------------------------------------------------------------------------------------------------------------------
 
     def get_cells_inside_circle(self, r, center):
         """
@@ -828,7 +871,7 @@ class CartesianMesh:
 
     # ----------------------------------------------------------------------------------------------------------------------
 
-    def plot(self, material_prop=None, backGround_param=None, fig=None, plot_prop=None):
+    def plot(self, material_prop=None, backGround_param=None, fig=None, plot_prop=PlotProperties(color_map=EPFLcolor())):
         """
         This function plots the mesh in 2D. If the material properties is given, the cells will be color coded
         according to the parameter given by the backGround_param argument.
@@ -885,7 +928,7 @@ class CartesianMesh:
             sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                        norm=plt.Normalize(vmin=min_value, vmax=max_value))
             sm._A = []
-            clr_bar = fig.colorbar(sm, alpha=0.65)
+            clr_bar = fig.colorbar(sm, alpha=0.65, ax=fig.gca())
             clr_bar.set_label(parameter)
 
         else:
