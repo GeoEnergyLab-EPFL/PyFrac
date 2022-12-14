@@ -103,7 +103,7 @@ def export(simulation_name, myfolder):
     # 11) get w(x,y,t) and pf(x,y,t)
     # 12) get fields of velocity and fluxes at selected times
 
-    to_export = [1,2,3,4,5]
+    to_export = [1,2,3,11]
 
     if export_results:
 
@@ -122,7 +122,7 @@ def export(simulation_name, myfolder):
         #
         if 1 in to_export:
             print("\n 1) loading results")
-            Fr_list, properties = load_fractures(address=myfolder,load_all=True) # or load_fractures(address=myfolder,time_srs=np.linspace(5., 8.0,600))
+            Fr_list, properties = load_fractures(address=myfolder,load_all=False,step_size=50) # or load_fractures(address=myfolder,time_srs=np.linspace(5., 8.0,600))
             Solid, Fluid, Injection, simulProp = properties
             print(" <-- DONE\n")
 
@@ -371,10 +371,10 @@ def export(simulation_name, myfolder):
 
 
 ### export multiple files
-
-#for simID in ["01","02","03","04","05","06","07","08","09","10","11","12","14","15","16","17","18","19","20","21"]:
-#for simID in ["10", "16", "17","18","20","21"]:
-for simID in ["07"]:
-    simulation_name = "B"+str(simID)
+# ["single_fp_fine"]
+# ["exp_positive_SJ"]
+# ["single_fp_coarse"]
+for simID in ["single_fp_coarse"]:
+    simulation_name = simID
     myfolder = "./Data/"+simulation_name
     export(simulation_name, myfolder)
