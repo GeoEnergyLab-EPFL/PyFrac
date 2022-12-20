@@ -139,6 +139,10 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
             break
 
         fileNo += step_size
+
+        if ff.time == 0.:
+            ff.time = 1.e-16
+
         if load_all:
             log.info('Returning fracture at ' + repr(ff.time) + ' s')
             fracture_list.append(ff)
@@ -447,6 +451,29 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             variable_list.append(fr.source)
             time_srs.append(fr.time)
 
+    elif variable == 'injection line pressure' or variable == 'ilp':
+        for fr in fracture_list:
+            if fr.pInjLine is None:
+                raise ValueError("It seems that injection line is not solved. Injection line pressure is not available")
+            else:
+                variable_list.append(fr.pInjLine)
+            time_srs.append(fr.time)
+
+    elif variable == 'injection rate' or variable == 'ir':
+        for fr in fracture_list:
+            if fr.injectionRate is None:
+                raise ValueError("It seems that injection line is not solved. Injection rate is not available")
+            else:
+                variable_list.append(fr.injectionRate)
+            time_srs.append(fr.time)
+
+    elif variable == 'total injection rate' or variable == 'tir':
+        for fr in fracture_list:
+            if fr.injectionRate is None:
+                raise ValueError("It seems that injection line is not solved. Injection rate is not available")
+            else:
+                variable_list.append(np.sum(fr.injectionRate))
+            time_srs.append(fr.time)
     else:
         raise ValueError('The variable type is not correct.')
 

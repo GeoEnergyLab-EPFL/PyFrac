@@ -19,7 +19,7 @@ from systems.sol_sys_dispatcher import solve_width_pressure
 from tip.volume_integral import leak_off_stagnant_tip
 
 
-def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
+def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, inj_properties, sim_properties,
                              perfNode=None):
     """
     This function solves the ElastoHydrodynamic equations to get the fracture width. The fracture footprint is taken
@@ -92,6 +92,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  sim_properties,
                                                  fluid_properties,
                                                  mat_properties,
+                                                 inj_properties,
                                                  Fr_lstTmStp.EltTip, #empty, sending Eltip to set tip correction
                                                  empty, #partlyFilledTip
                                                  C,
@@ -152,7 +153,19 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     Fr_kplus1.efficiency = Fr_kplus1.mesh.EltArea * (np.sum(Fr_kplus1.w[Fr_kplus1.EltTip] * Fr_kplus1.FillF) +
                                                      np.sum(Fr_kplus1.w[Fr_kplus1.EltChannel])) / Fr_kplus1.injectedVol
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
-
+    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
+    if len(return_data) > 3:
+        Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
+        Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + return_data[3]
+        Fr_kplus1.injectionRate[return_data[4][1]] = return_data[4][0]
+        Fr_kplus1.injectionRate[return_data[5][1]] = return_data[5][0]
+        Q_indx = np.where(abs(Qin) > 0)[0]
+        print('dPIL ' + repr(return_data[3]))
+        print('PIL ' + repr(Fr_kplus1.pInjLine))
+        print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
+        # print("pressure drop " + repr(
+        #     inj_properties.perforationFriction * Fr_kplus1.injectionRate[Q_indx] ** 2))
+        # print("pressure at injection " + repr(Fr_kplus1.pFluid[Q_indx]))
 
     if return_data[0]!=None:
         Fr_kplus1.effVisc = return_data[0][1]

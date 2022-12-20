@@ -69,6 +69,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                     Qin,
                                                     mat_properties,
                                                     fluid_properties,
+                                                    inj_properties,
                                                     sim_properties,
                                                     perfNode_explFront)
 
@@ -98,6 +99,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                     Qin,
                                                     mat_properties,
                                                     fluid_properties,
+                                                    inj_properties,
                                                     sim_properties,
                                                     perfNode_explFront)
 
@@ -120,6 +122,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                     Qin,
                                                     mat_properties,
                                                     fluid_properties,
+                                                    inj_properties,
                                                     sim_properties,
                                                     perfNode_sameFP)
 
@@ -273,6 +276,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                           Qin,
                                                           mat_properties,
                                                           fluid_properties,
+                                                          inj_properties,
                                                           sim_properties,
                                                           perfNode_extFront,
                                                           front_previous_iter=Fr_k.Ffront)

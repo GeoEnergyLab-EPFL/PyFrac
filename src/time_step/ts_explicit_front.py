@@ -39,7 +39,7 @@ from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties,
+def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties, inj_properties,
                              perfNode=None):
     """
     This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
@@ -574,6 +574,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                        sim_properties,
                                                        fluid_properties,
                                                        mat_properties,
+                                                       inj_properties,
                                                        EltsTipNew,
                                                        partlyFilledTip,
                                                        C,
@@ -660,6 +661,18 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
         Fr_kplus1.effVisc = data[0][1]
         Fr_kplus1.yieldRatio = data[0][2]
 
+    if len(data) > 3:
+        Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
+        Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
+        Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
+        Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
+        Q_indx = np.where(abs(Qin) > 0)[0]
+        print('dPIL ' + repr(data[3]))
+        print('PIL ' + repr(Fr_kplus1.pInjLine))
+        print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
+        # print("pressure drop " + repr(
+        #     inj_properties.perforationFriction * Fr_kplus1.injectionRate[Q_indx] ** 2))
+        # print("pressure at injection " + repr(Fr_kplus1.pFluid[Q_indx]))
 
     log.debug("Solved...")
     log.debug("Finding velocity of front...")

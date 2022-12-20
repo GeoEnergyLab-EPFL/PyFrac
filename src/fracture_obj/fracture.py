@@ -293,6 +293,10 @@ class Fracture:
         if self.v is not None and not np.isnan(self.v).any():
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
 
+        if injection.modelInjLine:
+            self.pInjLine = np.float64(injection.initPressure)
+            self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -943,6 +947,11 @@ class Fracture:
                                                                                    Fr_coarse.mesh.NeiElements[
                                                                                        Fr_coarse.EltTip[elt]]])
 
+            coarse_closed = []
+            for e in self.closed:
+                coarse_closed.append(self.mesh.locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
+            Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))
+
             Fr_coarse.LkOff = LkOff
             Fr_coarse.LkOffTotal = self.LkOffTotal
             Fr_coarse.injectedVol = self.injectedVol
@@ -962,6 +971,9 @@ class Fracture:
                 log.critical('The error on the volume is bigger than 1% it is Ev = ' +
                              str(abs(old_volume - new_volume)/old_volume))
 
+            if inj_prop.modelInjLine:
+                Fr_coarse.pInjLine = self.pInjLine
+                # self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
             return Fr_coarse
             # The hidden part is the new way of the evaluation.
 
