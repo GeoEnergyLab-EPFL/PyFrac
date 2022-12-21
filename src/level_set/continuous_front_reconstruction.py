@@ -799,7 +799,7 @@ def find_fictitius_cells(anularegion, NeiElements, sgndDist_k):
          True + False  = True  (1)
     5-   Find the indexes of False values, i.e. of the i cells in each valid fictitius cell
     
-    NOTE: I am expectin non empty list of fictitius cells        
+    NOTE: I am expecting a non empty list of fictitius cells        
     """
     i_indexes_of_fictitius_cells = np.where(np.column_stack((np.all(LS > 0.,axis=1), np.all(LS < 0.,axis=1))).sum(axis=1) == 0)[0]
 
@@ -2262,10 +2262,13 @@ def reconstruct_front_continuous(sgndDist_k, anularegion, Ribbon, eltsChannel, m
                 first_cell_name = dict_FC_names[next(iter(dict_FC_names))]
                 Fracturelist.append(first_cell_name)
                 [Cells_type_1_list, Cells_type_2_list, Cells_type_3_list, Cells_type_4_list] = append_to_typelists(len(Fracturelist)-1, i_1_2_3_4_FC_type[str(first_cell_name)], Cells_type_1_list, Cells_type_2_list, Cells_type_3_list, Cells_type_4_list)
-                del dict_FC_names[next(iter(dict_FC_names))]
+                del dict_FC_names[next(iter(dict_FC_names))] #<--- are you sure you want to delete this?
                 NofCells_explored += 1
 
                 # todo: in case of cells of type 2 this have to be reviewed: do not delete cell of type 2
+                # the first cell name can be of celltype=2 then, for the next cell take always one of the ones among type2 if present
+                # as to be "the next cell".
+                # on the other hand, if the cell type of the first cell is different than 2, <all good>
                 next_cell_name = get_next_cell_name_from_first(first_cell_name,i_1_2_3_4_FC_type[str(first_cell_name)],mesh,sgndDist_k)
 
                 while next_cell_name != first_cell_name :

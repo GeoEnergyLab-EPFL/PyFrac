@@ -75,7 +75,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 setup_logging_to_console(verbosity_level='debug')
 
 ########## OPTIONS #########
-run = False
+run = True
 run_dir =  "./"
 restart = True
 
@@ -83,106 +83,68 @@ restart = True
 plot_B = False
 output_fol_B = run_dir
 output_fol  = "./"
-ftPntJUMP = 100
+ftPntJUMP = 1
 plot_slices = False
 ############################
 
 if run:
     # creating mesh
-    Mesh = CartesianMesh(0.000075, 0.000075, 57, 57)
+    Mesh = CartesianMesh(0.005, 0.005, 91, 91)
 
     # solid properties
     nu = 0.4  # Poisson's ratio
-    youngs_mod = 3.3e8  # Young's modulus
+    youngs_mod = 3.3e9  # Young's modulus
     Eprime = youngs_mod / (1 - nu ** 2)  # plain strain modulus
 
-    def smoothing(K1, K2, r, delta, x):
-        # instead of having -10/10, take the MESHNAME.Ly/Lx (if mesh square)
-        #### LINEAR - DIRAC DELTA ####
-        x = np.abs(x)
-        if  x < r-delta :
-            return K1
-        elif x >= r-delta and x<r :
-            K12 = K1 + (K2-K1)*0.5
-            a = (K12 - K1) / (delta)
-            b = K1 - a * (r - delta)
-            return a * x + b
-        elif x >= r:
-            return K2
-        else:
-            print("ERROR")
-
-
-    def K1c_func(x,y, alpha):
-        """ The function providing the toughness"""
-        K_Ic = 0.4e6  # fracture toughness
-        r = 1.48
-        delta = 0.001
-        return smoothing(K_Ic, 50.*K_Ic, r, delta, x)
-
-
-    # ---- plot Kic_max vs time ---
-    # import matplotlib.pyplot as plt
-    # xlabel = 'x [m]'
-    # ylabel = 'KIc [kPa.m^(1/2)]'
-    # fig, ax = plt.subplots()
-    # x = []
-    # y = []
-    # aa = 0.00001
-    # for i in range(int((1.484-1.46)/aa)):
-    #     x.append(1.46+i*aa)
-    #     y.append(K1c_func(x[i],0.))
-    # ax.scatter(x, y, color='k')
-    # ax.set_xlabel(xlabel)
-    # ax.set_ylabel(ylabel)
-    # plt.show()
 
     def sigmaO_func(x, y):
-        return 0
+
+        """ The function providing the confining stress"""
+        r = 1.48
+        if x > r:
+            return 0.5e7
+        elif x < -r:
+            return 0.5e7
+        else:
+            return 1.e6
 
     Solid = MaterialProperties(Mesh,
                               Eprime,
-                              K1c_func=K1c_func,
+                              toughness=0.4e6,  # fracture toughness
                               confining_stress_func = sigmaO_func,
-                              minimum_width=0.)
+                              minimum_width=1.e-6)
+
 
     # injection parameters
     Q0 = 0.001
     Injection = InjectionProperties(Q0, Mesh)
 
     # fluid properties
-    Fluid = FluidProperties(viscosity=10000)
+    Fluid = FluidProperties(viscosity=0.0001)
 
     # simulation properties
     simulProp = SimulationProperties()
-    simulProp.finalTime = 1000005.12
-    simulProp.tmStpPrefactor = 0.8
+    simulProp.finalTime = 105.12
+    simulProp.tmStpPrefactor = 0.6
     simulProp.saveToDisk = True
     simulProp.tolFractFront = 0.0001
-    simulProp.plotTSJump = 4
-    simulProp.saveTSJump = 1
-    simulProp.maxFrontItrs = 100
+    simulProp.plotTSJump = 10
     simulProp.set_volumeControl(False)
-    simulProp.bckColor = 'K1c'
+    simulProp.bckColor = 'confining stress'
     simulProp.set_outputFolder(run_dir)
+    simulProp.toleranceEHL = 1.e-5
     #simulProp.plotVar = ['ffvf', 'custom', 'regime']
-    simulProp.plotVar = ['custom', 'regime','footprint']
+    simulProp.plotVar = ['footprint']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront'
-    simulProp.customPlotsOnTheFly = True
+    simulProp.customPlotsOnTheFly = False
     simulProp.useBlockToeplizCompression = True
-    simulProp.LHyst__ = []
-    simulProp.tHyst__ = []
-    simulProp.saveFluidFluxAsVector = False
 
     # setting up mesh extension options
-    #simulProp.meshExtensionAllDir = True
-    #simulProp.set_mesh_extension_factor(1.5)
-    #simulProp.set_mesh_extension_direction(['vertical'])
-    simulProp.plotVar = ['custom', 'regime', 'footprint']
-    simulProp.meshReductionPossible = True
-
-    simulProp.simID = 'K1/K2=100.' # do not use _
+    simulProp.meshExtensionAllDir = False
+    simulProp.set_mesh_extension_factor(1.5)
+    simulProp.set_mesh_extension_direction(['vertical'])
+    simulProp.meshReductionPossible = False
 
     simulProp.EHL_iter_lin_solve = True
     simulProp.solve_monolithic = False
@@ -191,8 +153,11 @@ if run:
 
 
     # initialization parameters
-    Fr_geometry = Geometry('radial')
-    init_param = InitializationParameters(Fr_geometry, regime='M', time=0.00000001)
+    Fr_geometry = Geometry('radial', radius=0.001)
+
+    C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
+
+    init_param = InitializationParameters(Fr_geometry, regime='M', elasticity_matrix=C)
 
     # creating fracture object
     Fr = Fracture(Mesh,
@@ -208,23 +173,35 @@ if run:
     if restart:
         from utilities.visualization import *
         Fr_list, properties = load_fractures(address=run_dir, step_size=100)
-        Solid, Fluid, Injection, simulProp = properties
+        Solid_old, Fluid, Injection, simulProp = properties
+        simulProp.tmStpPrefactor = 0.6
         Fr = Fr_list[-1]
+        simulProp.EHL_iter_lin_solve = True
+        simulProp.gmres_tol=1.e-8
+        simulProp.toleranceEHL = 1.e-4
+        simulProp.solve_monolithic = False
+        simulProp.gmres_Restart = 1000
+        simulProp.gmres_maxiter = 1000
+
+
+        def sigmaO_func_new(x, y):
+
+            """ The function providing the confining stress"""
+            r = 1.48
+            if x > r:
+                return 3.e6
+            elif x < -r:
+                return 3.e6
+            else:
+                return 1.e6
+
 
         Solid = MaterialProperties(Fr.mesh,
-                                  Eprime,
-                                  K1c_func=K1c_func,
-                                  confining_stress_func = sigmaO_func,
-                                  confining_stress=0.,
-                                  minimum_width=0.)
-
-        Injection = InjectionProperties(Q0, Fr.mesh)
-        simulProp.meshExtensionAllDir = True
-        simulProp.set_mesh_extension_factor(1.5)
-        simulProp.set_mesh_extension_direction(['vertical'])
-        simulProp.plotVar = ['custom', 'regime', 'footprint']
-        simulProp.meshReductionPossible = False
-
+                                   Eprime,
+                                   toughness=0.4e6,  # fracture toughness
+                                   confining_stress_func=sigmaO_func_new,
+                                   minimum_width=1.e-6)
+        C = load_isotropic_elasticity_matrix_toepliz(Fr.mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
     ############################################################################
 
 
@@ -233,8 +210,8 @@ if run:
                             Solid,
                             Fluid,
                             Injection,
-                            simulProp
-                            )
+                            simulProp,
+                            C=C)
 
     # run the simulation
     controller.run()
@@ -261,7 +238,8 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
 
     # plot fracture radius
     my_list = []
-    mytime = 195000
+    mytime = 1.8
+    ftPntJUMP=20
     for i in np.arange(0,len(Fr_list_A),ftPntJUMP):
         if Fr_list_A[i].time < mytime:
             my_list.append(Fr_list_A[i])
@@ -277,7 +255,7 @@ if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of speci
                                fig=Fig_R,
                                variable='mesh',
                                mat_properties=properties_A[0],
-                               backGround_param='K1c',
+                               backGround_param='confining stress',
                                plot_prop=plot_prop)
     plt.show()
     #
