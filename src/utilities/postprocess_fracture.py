@@ -1850,19 +1850,17 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list): #AM 2022, based on CP routi
     if not hasattr(SimProp, 'gravityValue'):
         SimProp.gravityValue = 9.81
 
-    # * -- We check if we get a negative background stress, not physical, we correct it -- * #
+    # * -- For back compatibility, we check if the fracture properties have a stored density -- * #
+    hasDensity = True
+    if not hasattr(Solid, 'density'):
+        hasDensity = False
+
+    # * -- We check if we get a negative background stress, not physical, we correct it by adding a constant -- * #
     if min(Fr_list[-1].pFluid - Fr_list[-1].pNet) < 0.:
         offset = -10 * min(Fr_list[-1].pFluid - Fr_list[-1].pNet)
         for iter in range(len(Fr_list)):
             Fr_list[iter].pFluid[Fr_list[iter].EltCrack] += offset
         Solid.SigmaO += offset
-
-    # from matplotlib import pyplot as plt
-    # from utilities.utility import plot_as_matrix
-    # k = np.empty(Fr_list[-1].mesh.NumberOfElts)
-    # k[Fr_list[-1].EltCrack] = Fr_list[-1].pFluid[Fr_list[-1].EltCrack]
-    # plot_as_matrix(k, Fr_list[-1].mesh)
-    # plt.show(block=True)
 
     # * -- Preparing the output lists -- * #
     Viscous_P = init_list_of_objects(len(Fr_list)-1)
@@ -1902,21 +1900,38 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list): #AM 2022, based on CP routi
             fr_i_mesh.domainLimits[2] == fr_im1_mesh.domainLimits[2] and
             fr_i_mesh.domainLimits[3] == fr_im1_mesh.domainLimits[3]):
 
-            #Todo: This needs to be generalized!
-            Solid.density = 2700 * np.ones((fr_i_mesh.NumberOfElts,), float)
+            # - Do we have a density (back compatibility) - #
+            if hasDensity:
+                Density_function = True
+                # - Check if a density function exists - #
+                try:
+                    Solid.DensityFunc[0., 0.]
+                except:
+                    Density_function = False
+
+                # - We have a density function - #
+                if Density_function:
+                    Solid.density = np.empty((fr_i_mesh.NumberOfElts,), dtype=np.float64)
+                    for i in range(fr_i_mesh.NumberOfElts):
+                        Solid.density[i] = Solid.DensityFunc(fr_i_mesh.CenterCoor[i, 0], fr_i_mesh.CenterCoor[i, 1])
+                else:
+                    Solid.density = Solid.density[0] * np.ones((fr_i_mesh.NumberOfElts,), float)
+            else:
+                # - Generally a density of 2700 was used for relevant simulations before the density was added - #
+                Solid.density = 2700 * np.ones((fr_i_mesh.NumberOfElts,), float)
 
             # - Get the length and location of the front segments and their intersection with the grid - #
             l, x_m, y_m, x, y = get_l_Ffront_ordered_as_v(fr_i.Ffront, fr_i.EltTip, fr_i_mesh)
 
             # - Calculate the various powers - #
             Viscous_P[iter] = get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh)
-            Fracture_P[iter] = get_Fracture_P(fr_i, Solid, l, x_m, y_m)
+            Fracture_P[iter] = get_Fracture_P(fr_i, Solid, l, x_m, y_m, x, y)
             Elastic_P[iter] = get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pNet, fr_im1.pNet)
             Elastic_Stress_P[iter] = 2 * get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pFluid-fr_i.pNet,
                                                   fr_im1.pFluid-fr_im1.pNet)
             External_P[iter] = get_External_P(fr_im1, fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y)
             Internal_P[iter] = Viscous_P[iter]+Fracture_P[iter]+Elastic_P[iter]+Elastic_Stress_P[iter]
-            # LeakOff_EN[iter] = get_leakOff_EN(fr_im1, fr_i)
+            LeakOff_P[iter] = get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid)
 
             # - Store the time and mark the next iteration - #
             power_time_steps[iter] = fr_i.time
@@ -2058,13 +2073,20 @@ def get_l_Ffront_ordered_as_v(Ffront, EltTip, mesh):
         if np.sum(check_ - EltTip) != 0:
             print("ERROR sorting the arrays has a bug ")
             SystemExit()
+        else:
+            # - Re-assigne the sorted collections - #
+            l_collection = sorted_l
+            center_collection_x = sorted_center_collection_x
+            center_collection_y = sorted_center_collection_y
+            collection_x = sorted_collection_x
+            collection_y = sorted_collection_y
 
     # - Export the sorted results - #
-    return sorted_l, sorted_center_collection_x, sorted_center_collection_y, sorted_collection_x, sorted_collection_y
+    return l_collection, center_collection_x, center_collection_y, collection_x, collection_y
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_Fracture_P(fr_i, Solid, l, x_m, y_m):
+def get_Fracture_P(fr_i, Solid, l, x_m, y_m, x, y):
     """This function calculates the power dissipated to create new fractures for a current time-step.
 
     :param fr_i: fracture object of the current time step - see related documentation
@@ -2072,11 +2094,12 @@ def get_Fracture_P(fr_i, Solid, l, x_m, y_m):
     :param l: a list containing the length of the different front segments
     :param x_m: a list containing x coordinate of the center of the front segment
     :param y_m: a list containing y coordinate of the center of the front segment
+    :param x: a list containing x coordinates of the intersections of the tip segments with the grid
+    :param y: a list containing y coordinates of the intersections of the tip segments with the grid
     :return: the value of the dissipated fracturing power
     """
-    # Note: 1) It can be improved by having the direction dependent toughness.
-    #       2) Not yet for TI material.
-    #       3) could be improved by having "get_l_Ffront_ordered_as_v" faster
+    # Note: 1) Not yet for TI material.
+    #       2) could be improved by having "get_l_Ffront_ordered_as_v" faster
 
     # * -- Initialize the solution and administrative parameters -- * #
     NofFfrontSegments = len(fr_i.Ffront)
@@ -2093,10 +2116,21 @@ def get_Fracture_P(fr_i, Solid, l, x_m, y_m):
     if Toughness_function:
         # * -- Evaluate the power using the function for fracturing toughness -- * #
         for i in range(NofFfrontSegments):
+            # - The following is to calculate the normal - #
+            ID = fr_i.EltCrack[i]                           # global index
+            tip_ind = np.where(fr_i.EltTip == ID)[0][0]     # tip index
+            coord_zero_vertex = fr_i_mesh.VertexCoor[fr_i_mesh.Connectivity[ID][fr_i.ZeroVertex[tip_ind]]]
+            [alpha, xint, yint] = findangle(x[tip_ind][0], y[tip_ind][0], x[tip_ind][1], y[tip_ind][1],
+                                            coord_zero_vertex[0], coord_zero_vertex[1],
+                                            100*np.sqrt(np.finfo(float).eps))
+            normal_x = xint - coord_zero_vertex[0]
+            normal_y = yint - coord_zero_vertex[1]
+            normal_x = normal_x / np.sqrt(normal_x ** 2 + normal_y ** 2)
+            normal_y = normal_y / np.sqrt(normal_x ** 2 + normal_y ** 2)
+            angle = np.tan(normal_x / normal_y)
             # - Evaluate the power as l * v * KIc^2/E' - #
             # Note: The function assumes a homogeneous and constant E'
-            #todo: we could get the normal and hence tha angle to the horizontal
-            Fracture_P_vec[i] = l[i] * fr_i.v[i] * Solid.K1cFunc[x_m[i], y_m[i], 0.]**2 / Solid.Eprime
+            Fracture_P_vec[i] = l[i] * fr_i.v[i] * Solid.K1cFunc[x_m[i], y_m[i], angle]**2 / Solid.Eprime
     else:
         # * -- Evaluate the power using a homogeneous fracturing toughness or arrest the simulation -- * #
         homogeneous = False
@@ -2260,17 +2294,49 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_leakOff_EN(fr_im1, fr_i):
+def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid):
     """This function calculates the dissipated power due to fluid leak-off to the medium.
 
+    :param fr_im1: fracture object of the previous time step - see related documentation
     :param fr_i: fracture object of the current time step - see related documentation
-    :param Fluid: Instance of the class FluidProperties - see related documentation
-    :param Solid: Instance of the class MaterialProperties - see related documentation
-    :param SimProp: Instance of the class SimulationProperties - see related documentation
     :param fr_i_mesh: mesh object corresponding to the fracture object of the current time step -
                       see related documentation
-    :param x: a list containing x coordinates of the intersections of the tip segments with the grid
-    :param y: a list containing y coordinates of the intersections of the tip segments with the grid
-    :return: the value of the external power created by gravitational flow
+    :param Solid: Instance of the class MaterialProperties - see related documentation
+    :return: the value of the external power dissipated by fluid leak-off
     """
-    return None
+
+    # * -- Check if we do not have a zero leak-off case -- * #
+    if sum(Solid.Cprime) != 0:
+        # * -- Extract some base parameters -- * #
+        dt = np.abs(fr_i.time - fr_im1.time)        # the time step
+        cell_area = fr_i_mesh.hx * fr_i_mesh.hy     # the cell area (constant cell grid)
+        nEltCrack = fr_i.EltCrack.size              # the number of elements in the crack
+
+        # * -- Initialize the solution vector -- * #
+        leakOff_P_vec = np.zeros(nEltCrack)
+
+        # * -- Loop over all the elements in the crack -- * #
+        for i in range(nEltCrack):
+            ID = fr_i.EltCrack[i]   # The index of the cell in the global context
+
+            # - calculate the leak-off rate - #
+            # fr_i.LkOff stores the leaked volume during the last time step of this cell.
+            v_lkOff = fr_i.LkOff[ID] / (dt * cell_area)
+
+            # - We average the tractions between two time-steps - #
+            # fr_i.LkOff stores the leaked volume during the last time step of this cell.
+            pf_avg = (fr_i.pFluid[ID] + fr_im1.pFluid[ID]) / 2
+
+            # - Switch in function of the cell being a channel or a tip element - #
+            if not ID in fr_i.EltTip:
+                leakOff_P_vec[i] = v_lkOff * pf_avg
+            else:
+                # - If a tip element, identify the corresponding filling fraction and apply it to the result - #
+                tip_ind = np.where(fr_i.EltTip == ID)[0]
+                leakOff_P_vec[i] = fr_i.FillF[tip_ind] * v_lkOff * pf_avg
+
+        # * -- Export the total dissipated power -- * #
+        return cell_area * np.sum(leakOff_P_vec)
+    else:
+        # - If no leak-off is there the dissipated power is simply zero - #
+        return 0
