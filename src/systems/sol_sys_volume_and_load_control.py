@@ -19,7 +19,7 @@ from mesh_obj.symmetry import get_symetric_elements
 from properties import instrument_start, instrument_close
 from linear_solvers.linear_iterative_solver import iteration_counter
 
-def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
+def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, inj_properties, EltTip, partlyFilledTip, C,Boundary,
                                      FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
                                      doublefracturedictionary = None, inj_same_footprint = False):
     log = logging.getLogger('PyFrac.solve_width_pressure.sol_sys_volume_and_load_control')
@@ -54,6 +54,9 @@ def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_propertie
             g2 = S_i * (total_vol - np.sum(wTip))  # S^-1 * vol_incr --> change
             data = C, Fr_lstTmStp.EltChannel, D_i, S_i
 
+        #rhs_prec = np.zeros(g2.size+1)
+        #rhs_prec[0] = g1
+        #rhs_prec[1::] = np.asarray([g2])
         rhs_prec = np.concatenate((g1, np.asarray([g2])))  # preconditionned b (Ax=b)
 
         system_dot_prod = Volume_Control_4_gmres(data)
@@ -86,11 +89,8 @@ def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_propertie
             w[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
             w[EltTip] = wTip
 
-
-        # from utility import plot_as_matrix
-        # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
-        # K[Fr_lstTmStp.EltChannel] = sol[np.arange(Fr_lstTmStp.EltChannel.size)]
-        # plot_as_matrix(K, Fr_lstTmStp.mesh)
+        # from utilities.utility import plot_as_matrix
+        # plot_as_matrix(w, Fr_lstTmStp.mesh)
 
         p = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
         p[EltCrack] = sol[-1]

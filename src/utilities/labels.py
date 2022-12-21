@@ -58,7 +58,14 @@ Fig_labels = {
     'effective viscosity': 'Effective Viscosity',
     'ev': 'Effective Viscosity',
     'yield ratio': 'Yield Ratio',
-    'y': 'Yield Ratio'
+    'y': 'Yield Ratio',
+    'injection line pressure': 'Injection Line Pressure',
+    'ilp': 'Injection Line Pressure',
+    'injection rate': 'Injection Rate',
+    'ir': 'Injection Rate',
+    'total injection rate': 'Total Injection Rate',
+    'tir': 'Total Injection Rate'
+
 }
 
 var_labels = {
@@ -112,7 +119,13 @@ var_labels = {
     'effective viscosity': 'effective viscosity',
     'ev': 'effective viscosity',
     'yield ratio': 'yield ratio',
-    'y': 'yield ratio'
+    'y': 'yield ratio',
+    'injection line pressure': 'injection line pressure',
+    'ilp': 'injection line pressure',
+    'injection rate': 'injection rate',
+    'ir': 'injection rate',
+    'total injection rate': 'total injection rate',
+    'tir': 'total injection rate'
 }
 
 units = {
@@ -166,7 +179,13 @@ units = {
     'effective viscosity': '($Pa\cdot s$)',
     'ev': '($Pa\cdot s$)',
     'yield ratio': '',
-    'y': ''
+    'y': '',
+    'injection line pressure': ' MPa',
+    'ilp': ' MPa',
+    'injection rate': ' $m^3/s$',
+    'ir': ' $m^3/s$',
+    'total injection rate': ' $m^3/s$',
+    'tir': ' $m^3/s$'
 }
 
 unit_conversion = {
@@ -220,7 +239,13 @@ unit_conversion = {
     'effective viscosity': 1.,
     'ev': 1.,
     'yield ratio': 1.,
-    'y': 1.
+    'y': 1.,
+    'injection line pressure': 1e6,
+    'ilp': 1e6,
+    'injection rate': 1.,
+    'ir': 1.,
+    'total injection rate': 1.,
+    'tir': 1.
 }
 
 
@@ -235,17 +260,20 @@ supported_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure
                        'V', 'lk', 'leak off', 'lkt', 'leaked off total',
                        'ar', 'aspect ratio', 'efficiency', 'ef', 'surface', 'front intercepts', 'fi',
                        'chi', 'regime', 'source elements', 'se', 'effective viscosity', 'ev',
-                       'yield ratio', 'y']
+                       'yield ratio', 'y', 'injection line pressure', 'ilp', 'injection rate', 'ir',
+                       'total injection rate', 'tir']
 
 unidimensional_variables = ['time', 't', 'front_dist_min', 'd_min', 'front_dist_max',
                             'd_max', 'V', 'volume', 'front_dist_mean', 'd_mean',
-                            'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total']
+                            'efficiency', 'ef', 'aspect ratio', 'ar', 'lkt', 'leaked off total',
+                            'injection line pressure', 'ilp', 'total injection rate', 'tir']
 bidimensional_variables = ['w', 'width', 'pf', 'fluid pressure', 'pn', 'net pressure',
                            'dpdx', 'pressure gradient x', 'dpdy', 'pressure gradient y',
                            'front velocity', 'v', 'Reynolds number', 'Re', 'fluid flux', 'ff',
                            'fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf',
                            'fluid velocity', 'fv', 'lk', 'leak off', 'surface', 'front intercepts', 'fi',
-                           'chi', 'regime', 'effective viscosity', 'ev', 'yield ratio', 'y']
+                           'chi', 'regime', 'effective viscosity', 'ev', 'yield ratio', 'y',
+                           'injection rate', 'ir']
 
 required_string = {
     't': '100000',
@@ -289,7 +317,10 @@ err_msg_variable = 'Given variable is not supported. Select one of the following
                     '-- \'regime\'\n' \
                     '-- \'se\' or \'source elements\'\n' \
                     '-- \'ev\' or \'effective viscosity\'\n' \
-                    '-- \'yielded\' or \'y\'\n'
+                    '-- \'yielded\' or \'y\'\n' \
+                    '-- \'injection line pressure\' or \'ilp\'\n' \
+                    '-- \'injection rate\' or \'ir\'\n' \
+                    '-- \'total injection rate\' or \'tir\'\n'\
 
 supported_projections ={
     'w': ['2D_clrmap', '2D_contours', '3D'],
@@ -342,7 +373,13 @@ supported_projections ={
     'effective viscosity': ['2D_clrmap', '2D_contours', '3D'],
     'ev': ['2D_clrmap', '2D_contours', '3D'],
     'yield ratio': ['2D_clrmap', '2D_contours', '3D'],
-    'y': ['2D_clrmap', '2D_contours', '3D']
+    'y': ['2D_clrmap', '2D_contours', '3D'],
+    'injection line pressure': ['1D'],
+    'ilp': ['1D'],
+    'injection rate': ['2D_clrmap', '2D_contours', '3D'],
+    'ir': ['2D_clrmap', '2D_contours', '3D'],
+    'total injection rate': ['1D'],
+    'tir': ['1D']
 }
 
 suitable_elements ={
@@ -393,6 +430,12 @@ suitable_elements ={
     'ev': 'channel',
     'yield ratio': 'channel',
     'y': 'channel',
+    'injection line pressure': None,
+    'ilp': None,
+    'injection rate': 'crack',
+    'ir': 'crack',
+    'total injection rate': None,
+    'tir': None
 }
 err_var_not_saved = "The required variable is not available. Probably, saving of the variable was not\n" \
                     "enabled during the simulation. Enable saving it through simulation properties."
