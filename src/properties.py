@@ -611,6 +611,7 @@ class SimulationProperties:
             raise ValueError("Parameters from tip not yet supported!")
         self.saveReynNumb = simul_param.save_ReyNumb
         self.gravity = simul_param.gravity
+        self.gravityValue = simul_param.gravityValue
         self.TI_KernelExecPath = simul_param.TI_Kernel_exec_path
         self.saveReynNumb = simul_param.save_ReyNumb
         self.saveFluidFlux = simul_param.save_fluid_flux

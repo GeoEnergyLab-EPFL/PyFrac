@@ -12,6 +12,7 @@ import numpy as np
 from scipy import sparse
 from scipy.optimize import brentq
 from numba import jit, prange
+import copy
 
 # Internal imports
 from fluid.fluid_model import friction_factor_vector, friction_factor_MDR
@@ -89,7 +90,8 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
             wBtmEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 2]]
             wTopEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 3]]
 
-            G[EltCrack] = fluidProp.density * 9.81 * (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy / fluidProp.muPrime
+            G[EltCrack] = fluidProp.density * simProp.gravityValue * (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy\
+                          / fluidProp.muPrime
         else:
             raise SystemExit("Effect of gravity is only supported for Newtonian fluid in laminar flow regime yet!")
 
@@ -710,7 +712,8 @@ def pressure_gradient_form_pressure( pf, Mesh, EltCrack, InCrack):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, InCrack, muPrime, density):
+def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, InCrack, muPrime, density, simulProp,
+                                                 solid):
     """
     This function calculate fluid flux and velocity at the cell edges evaluated with the pressure calculated from the
     elasticity relation for the given fracture width and the poisoille's Law.
@@ -772,15 +775,36 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
         #                                                      fy top edge
         fluid_flux_components = np.vstack((fluid_flux_components, -wTopEdge ** 3 * dp[3, EltCrack] / muPrime))
 
+        if simulProp.gravity:
+            # we average the density between neighboring cells
+            rhoLftEdge = (solid.density[EltCrack] + solid.density[Mesh.NeiElements[EltCrack, 0]]) / 2
+            rhoRgtEdge = (solid.density[EltCrack] + solid.density[Mesh.NeiElements[EltCrack, 1]]) / 2
+            rhoBtmEdge = (solid.density[EltCrack] + solid.density[Mesh.NeiElements[EltCrack, 2]]) / 2
+            rhoTopEdge = (solid.density[EltCrack] + solid.density[Mesh.NeiElements[EltCrack, 3]]) / 2
 
+            # we add the gravity term for fluid flux
+            fluid_flux[-1, :] = fluid_flux[-1, :] -\
+                                (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) * simulProp.gravityValue)
+            fluid_flux[-2, :] = fluid_flux[-2, :] -\
+                                (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) * simulProp.gravityValue)
 
-        fluid_vel = np.copy(fluid_flux)
-        wEdges = [wLftEdge,wRgtEdge,wBtmEdge,wTopEdge]
+            # we add the gravity term for the fluid flux components.
+            fluid_flux_components[1, :] = fluid_flux_components[1, :] -\
+                                          (-wLftEdge ** 3 / muPrime * (rhoLftEdge - density) * simulProp.gravityValue)
+            fluid_flux_components[3, :] = fluid_flux_components[3, :] -\
+                                          (-wRgtEdge ** 3 / muPrime * (rhoRgtEdge - density) * simulProp.gravityValue)
+            fluid_flux_components[5, :] = fluid_flux_components[5, :] -\
+                                          (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) * simulProp.gravityValue)
+            fluid_flux_components[7, :] = fluid_flux_components[7, :] -\
+                                          (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) * simulProp.gravityValue)
+
+        fluid_vel = copy.deepcopy(fluid_flux)
+        wEdges = [wLftEdge, wRgtEdge, wBtmEdge, wTopEdge]
         for i in range(4):
             local_nonzero_indexes=fluid_vel[i].nonzero()
             fluid_vel[i][local_nonzero_indexes] /= wEdges[i][local_nonzero_indexes]
 
-        fluid_vel_components = np.copy(fluid_flux_components)
+        fluid_vel_components = copy.deepcopy(fluid_flux_components)
         for i in range(8):
             local_nonzero_indexes=fluid_vel_components[i].nonzero()
             fluid_vel_components[i][local_nonzero_indexes] /= wEdges[int(np.trunc(i/2))][local_nonzero_indexes]
