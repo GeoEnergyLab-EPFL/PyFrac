@@ -77,7 +77,7 @@ setup_logging_to_console(verbosity_level='debug')
 ########## OPTIONS #########
 run = True
 run_dir =  "./"
-restart = True
+restart = False
 
 # postprocessing
 plot_B = False
@@ -166,10 +166,10 @@ if run:
     simulProp.bckColor = 'K1c'
     simulProp.set_outputFolder(run_dir)
     #simulProp.plotVar = ['ffvf', 'custom', 'regime']
-    simulProp.plotVar = ['custom', 'regime','footprint']
+    simulProp.plotVar = ['footprint']
     simulProp.frontAdvancing = 'implicit'
     simulProp.projMethod = 'LS_continousfront'
-    simulProp.customPlotsOnTheFly = True
+    simulProp.customPlotsOnTheFly = False
     simulProp.useBlockToeplizCompression = True
     simulProp.LHyst__ = []
     simulProp.tHyst__ = []
@@ -179,7 +179,6 @@ if run:
     simulProp.meshExtensionAllDir = True
     simulProp.set_mesh_extension_factor(1.5)
     simulProp.set_mesh_extension_direction(['vertical'])
-    simulProp.plotVar = ['custom', 'regime', 'footprint']
     simulProp.meshReductionPossible = False
 
     simulProp.simID = 'K1/K2=10.' # do not use _
@@ -226,7 +225,7 @@ if run:
         simulProp.meshExtensionAllDir = True
         simulProp.set_mesh_extension_factor(1.5)
         simulProp.set_mesh_extension_direction(['vertical'])
-        simulProp.plotVar = ['custom', 'regime', 'footprint']
+        simulProp.plotVar = ['footprint']
         simulProp.meshReductionPossible = False
         C = load_isotropic_elasticity_matrix_toepliz(Fr.mesh, Eprime, C_precision=np.float64, useHMATdot=False, nu=nu)
     ############################################################################
