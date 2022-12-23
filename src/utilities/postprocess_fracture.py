@@ -110,7 +110,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
         Tmst_sorted = sorted(time_stamps)
         sim_full_name = sim_name + '__' + Tmst_sorted[-1]
-    sim_full_path = address +  sim_full_name
+    sim_full_path = address + sim_full_name
     properties_file = sim_full_path + slash + 'properties'
     try:
         with open(properties_file, 'rb') as inp:
@@ -130,7 +130,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         next_t = time_srs[t_srs_indx]
 
     # time at wich the first fracture file was modified
-    while fileNo < 5000:
+    while fileNo < 1e5:
 
         # trying to load next file. exit loop if not found
         try:
@@ -147,7 +147,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
             log.info('Returning fracture at ' + repr(ff.time) + ' s')
             fracture_list.append(ff)
         else:
-            if  1. - next_t / ff.time >= -1e-8:
+            if 1. - next_t / ff.time >= -1e-8:
                 # if the current fracture time has advanced the output time period
                 log.info('Returning fracture at ' + repr(ff.time) + ' s')
 
@@ -162,7 +162,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                 else:
                     next_t = ff.time + time_period
 
-    if fileNo >= 5000:
+    if fileNo >= 1e5:
         raise SystemExit('too many files.')
 
     if len(fracture_list) == 0:
@@ -2366,4 +2366,4 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid):
         return cell_area * np.sum(leakOff_P_vec)
     else:
         # - If no leak-off is there the dissipated power is simply zero - #
-        return 0
+        return 0.

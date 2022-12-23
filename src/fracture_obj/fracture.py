@@ -103,7 +103,8 @@ class Fracture:
 
     """
 
-    def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None, boundaryEffect = None, footprint_info=None):
+    def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None, boundaryEffect=None,
+                 footprint_info=None):
         """
         Initialize the fracture according to the given initialization parameters.
 
@@ -537,7 +538,7 @@ class Fracture:
         domainLimits = copy.deepcopy(self.mesh.domainLimits)
         nx = copy.deepcopy(self.mesh.nx)
         ny = copy.deepcopy(self.mesh.ny)
-        mesh_dict = {'domain Limits' : domainLimits,
+        mesh_dict = {'domain Limits': domainLimits,
                      'nx': nx,
                      'ny': ny}
         self.mesh = mesh_dict
@@ -689,9 +690,9 @@ class Fracture:
 
     def update_regime_color(self, old, ind_new_elts, ind_old_elts, new_size):
         value_new_elem = np.asarray([1., 1., 1.])
-        new = np.ndarray((new_size,3),dtype=np.float32)
-        new[ind_old_elts,:] = old[:,:]
-        new[ind_new_elts,:] = value_new_elem[:]
+        new = np.ndarray((new_size,3), dtype=np.float32)
+        new[ind_old_elts, :] = old[:, :]
+        new[ind_new_elts, :] = value_new_elem[:]
         return new
 #-----------------------------------------------------------------------------------------------------------------------
 
