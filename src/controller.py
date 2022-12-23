@@ -1200,7 +1200,7 @@ class Controller:
                                               fig=self.Figures[index])
 
                     # plotting closed cells
-                    if len(Fr_advanced.closed) > 0:
+                    if len(Fr_advanced.closed) > 0 and plt_var != 'custom':
                         plot_prop.lineColor = 'orangered'
                         self.Figures[index] = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
                                                                                 fig=self.Figures[index],
